@@ -1,0 +1,60 @@
+services:
+  s3mock:
+    image: adobe/s3mock:3.5.2
+    environment:
+      - initialBuckets=bucket
+    ports:
+      - "9090:9090"
+  mongodb:
+    image: mongo:5
+    restart: always
+    volumes:
+      - mongodb:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: password
+    ports:
+      - "27017:27017"
+  postgres:
+    image: postgres:14-alpine
+    restart: always
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_USER=root
+      - POSTGRES_DB=main_db
+    ports:
+      - "27016:5432"
+  mysql:
+    image: mysql:8.0
+    # NOTE: use of "mysql_native_password" is not recommended: https://dev.mysql.com/doc/refman/8.0/en/upgrading-from-previous-series.html#upgrade-caching-sha2-password
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_ROOT_PASSWORD: mypassword
+      MYSQL_DATABASE: catsdb
+    ports:
+      - "27015:3306"
+    volumes:
+      - mysql:/var/lib/mysql
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    restart: always
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=Password123!
+      - MSSQL_PID=Express
+    ports:
+      - "27014:1433"
+    volumes:
+      - sqlserver:/var/opt/mssql
+
+volumes:
+  mongodb:
+    driver: local
+  postgres:
+    driver: local
+  mysql:
+    driver: local
+  sqlserver:
+    driver: local
