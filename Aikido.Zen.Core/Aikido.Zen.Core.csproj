@@ -1,0 +1,33 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <OutputPath>..\nupkgs</OutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+
+    <VersionPrefix>0.0.1-alpha</VersionPrefix>
+    <VersionSuffix>-b-$()</VersionSuffix>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <Version>0.0.1</Version>
+  </PropertyGroup>
+
+
+  <Target Name="PostBuild" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug'">
+    <Message Text="Creating NuGet packages..." Importance="high" />
+    <Exec Command="powershell -ExecutionPolicy Bypass -File ..\\pack.ps1 -buildConfiguration $(Configuration)" />
+  </Target>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.2.0" />
+    <PackageReference Include="System.Text.Json" Version="9.0.0" />
+  </ItemGroup>
+
+</Project>

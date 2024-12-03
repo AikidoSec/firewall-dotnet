@@ -421,6 +421,10 @@ FodyWeavers.xsd
 # JetBrains Rider
 *.sln.iml
 
+# exclude nupkgs
+nupkgs/
+**/nupkgs/
+
 ### VisualStudio Patch ###
 # Additional files built by Visual Studio
 
