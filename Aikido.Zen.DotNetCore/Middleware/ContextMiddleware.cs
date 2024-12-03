@@ -20,6 +20,7 @@ namespace Aikido.Zen.Middleware
 
 			if (httpContext.Request.ContentLength > 0)
 			{
+				httpContext.Request.EnableRewind();
 				try
 				{
 					using var reader = new StreamReader(httpContext.Request.Body);
@@ -28,11 +29,9 @@ namespace Aikido.Zen.Middleware
 				}
 				catch (Exception)
 				{
-					// TODO: Log the exception here
 				}
 				finally
 				{
-					// Reset the stream position to 0, so it can be read again
 					httpContext.Request.Body.Position = 0;
 				}
 			}

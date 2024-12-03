@@ -34,19 +34,13 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
 			{
 				try
 				{
-					using (var reader = new StreamReader(httpContext.Request.InputStream))
-					{
-						var body = reader.ReadToEnd();
-						context.Body = body;
-					}
+					var buffer = new byte[httpContext.Request.ContentLength];
+					httpContext.Request.InputStream.Read(buffer, 0, buffer.Length);
+					context.Body = System.Text.Encoding.UTF8.GetString(buffer);
+					httpContext.Request.InputStream.Position = 0;
 				}
 				catch (Exception)
 				{
-					// TODO: Log the exception here
-				}
-				finally
-				{	
-					// Reset the stream position to 0, so it can be read again
 					httpContext.Request.InputStream.Position = 0;
 				}
 
