@@ -29,7 +29,7 @@ namespace Aikido.Zen.DotNetFramework.Configuration
 			if (section != null)
 			{
 				XmlNode zenTokenNode = section.ChildNodes
-					 .Cast<XmlNode?>()
+					 .Cast<XmlNode>()
 					.FirstOrDefault(cn => cn != null && cn.Name.Equals("zenToken", StringComparison.OrdinalIgnoreCase));
 				if (zenTokenNode != null && zenTokenNode.Attributes["value"] != null)
 				{

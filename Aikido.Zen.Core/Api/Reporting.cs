@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Aikido.Zen.Core.Models.Events;
 
 namespace Aikido.Zen.Core.Api
 {
@@ -46,7 +47,7 @@ namespace Aikido.Zen.Core.Api
 			return new ReportingAPIResponse { Success = false, Error = "unknown_error" };
 		}
 
-		public async Task<ReportingAPIResponse> ReportAsync(string token, Event @event, int timeoutInMS)
+		public async Task<ReportingAPIResponse> ReportAsync(string token, IEvent @event, int timeoutInMS)
 		{
 			using (var cts = new CancellationTokenSource(timeoutInMS))
 			{
@@ -76,11 +77,6 @@ namespace Aikido.Zen.Core.Api
 				}
 			}
 		}
-	}
-
-	public class Event
-	{
-		// Add appropriate event properties
 	}
 
 	public class ReportingAPIResponse

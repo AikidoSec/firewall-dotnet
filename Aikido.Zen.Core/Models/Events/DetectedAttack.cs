@@ -1,7 +1,7 @@
-namespace Aikido.Zen.Core.Models {
-    public class DetectedAttack
+namespace Aikido.Zen.Core.Models.Events {
+    public class DetectedAttack : IEvent
     {
-        public string Type { get; set; } = "detected_attack";
+        public const string Type = "detected_attack";
         public RequestInfo Request { get; set; }
         public Attack Attack { get; set; }
         public AgentInfo Agent { get; set; }

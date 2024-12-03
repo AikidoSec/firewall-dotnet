@@ -6,7 +6,7 @@ namespace Aikido.Zen.Core.Models {
         public bool DryMode { get; set; }
         public string Hostname { get; set; }
         public string Version { get; set; }
-        public string Library { get; set; }
+        public string Library { get; set; } = "firewall-dotnet";
         public Dictionary<string, string> Packages { get; set; }
         public string IpAddress { get; set; }
         public bool PreventedPrototypePollution { get; set; }
@@ -14,7 +14,7 @@ namespace Aikido.Zen.Core.Models {
         public Os Os { get; set; }
         public Platform Platform { get; set; }
         public string NodeEnv { get; set; }
-        public bool Serverless { get; set; }
+        public bool Serverless { get; set; } = false;
         public List<string> Stack { get; set; }
     }
 }

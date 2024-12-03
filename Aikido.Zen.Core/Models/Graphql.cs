@@ -6,4 +6,3 @@ namespace Aikido.Zen.Core.Models
         public string Name { get; set; }
     }
 }
-}

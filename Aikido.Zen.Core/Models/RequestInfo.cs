@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace Aikido.Zen.Core.Models {
     public class RequestInfo
     {

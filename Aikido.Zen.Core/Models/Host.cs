@@ -1,8 +1,8 @@
 namespace Aikido.Zen.Core.Models
 {
-    public class Hostname
+    public class Host
     {
-        public string Hostname { get; set; }
+        public string Name { get; set; }
         public int? Port { get; set; }
     }
 

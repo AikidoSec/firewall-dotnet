@@ -3,7 +3,7 @@ using System.Collections.Generic;
 namespace Aikido.Zen.Core.Models {
     public class Attack
     {
-        public Kind Kind { get; set; }
+        public AttackKind Kind { get; set; }
         public string Operation { get; set; }
         public string Module { get; set; }
         public bool Blocked { get; set; }

@@ -21,7 +21,7 @@
 
 
   <Target Name="PostBuild" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug'">
-    <Message Text="Creating NuGet packages..." Importance="high" />
+    <Message Text="Creating NuGet package for Core..." Importance="high" />
     <Exec Command="powershell -ExecutionPolicy Bypass -File ..\\pack.ps1 -buildConfiguration $(Configuration)" />
   </Target>
 

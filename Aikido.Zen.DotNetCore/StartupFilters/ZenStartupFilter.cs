@@ -1,4 +1,4 @@
-﻿using Aikido.Zen.Middleware;
+﻿using Aikido.Zen.DotNetCore.Middleware;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 

@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Api;
 using Aikido.Zen.DotNetCore.StartupFilters;
+using Microsoft.Extensions.Options;
 
 namespace Aikido.Zen.DotNetCore
 {
@@ -26,10 +27,19 @@ namespace Aikido.Zen.DotNetCore
 			// register the zen Api
 			services.AddZenApi();
 
+			// register the agent
+			var options = services.BuildServiceProvider().GetService<IOptions<AikidoZenConfig>>();
+			services.AddAIkidoZenAgent(options?.Value?.ZenToken ?? "");
+
 			return services;
 		}
 
 		public static IApplicationBuilder UseZenFireWall(this IApplicationBuilder app) {
+			var agent = app.ApplicationServices.GetRequiredService<Agent>();
+			var options = app.ApplicationServices.GetRequiredService<IOptions<AikidoZenConfig>>();
+			if (options?.Value?.ZenToken != null) {
+				agent.Start(options.Value.ZenToken);
+			}
 			return app;
 		}
 
@@ -45,6 +55,14 @@ namespace Aikido.Zen.DotNetCore
 				return new ReportingAPIClient(new Uri("https://guard.aikido.dev"));
 			});
 			services.AddTransient<IZenApi, ZenApi>();
+			return services;
+		}
+
+		public static IServiceCollection AddAIkidoZenAgent(this IServiceCollection services, string apiToken)
+		{			
+			// Add ReportingAgent as a singleton
+			services.AddSingleton<Agent>();
+			
 			return services;
 		}
 	}

@@ -2,12 +2,16 @@
 using Aikido.Zen.Core;
 using System.Web;
 using System.Linq;
-using System.IO;
+using Aikido.Zen.DotNetFramework.Configuration;
+using Aikido.Zen.Core.Api;
 
 namespace Aikido.Zen.DotNetFramework.HttpModules
 {
 	internal class ContextModule : IHttpModule
 	{
+		private static Agent _agent;
+		private static string _apiToken;
+
 		public void Dispose()
 		{
 			throw new NotImplementedException();
@@ -15,11 +19,23 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
 
 		public void Init(HttpApplication context)
 		{
-			context.OnExecuteRequestStep(PopulateContext);
+			// Initialize agent if not already done
+			if (_agent == null)
+			{
+				var config = ZenConfiguration.Config;
+				_apiToken = config.ZenToken;
+				_agent = Firewall.Agent;
+			}
+
+			context.BeginRequest += Context_BeginRequest;
+			context.EndRequest += Context_EndRequest;
+			context.Error += Context_Error;
 		}
 
-		private void PopulateContext(HttpContextBase httpContext, Action action)
+		private void Context_BeginRequest(object sender, EventArgs e)
 		{
+			var httpContext = ((HttpApplication)sender).Context;
+			
 			var context = new Context
 			{
 				Url = httpContext.Request.Path,
@@ -51,8 +67,19 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
 			context.User = new User(id, name);
 
 			httpContext.Items["Aikido.Zen.Context"] = context;
+		}
 
-			action();
+		private void Context_EndRequest(object sender, EventArgs e)
+		{
+			var httpContext = ((HttpApplication)sender).Context;
+			var context = (Context)httpContext.Items["Aikido.Zen.Context"];
+		}
+
+		private void Context_Error(object sender, EventArgs e)
+		{
+			var httpContext = ((HttpApplication)sender).Context;
+			var context = (Context)httpContext.Items["Aikido.Zen.Context"];
+			var exception = httpContext.Server.GetLastError();
 		}
 	}
 }
