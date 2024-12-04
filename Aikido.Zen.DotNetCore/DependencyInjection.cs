@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -27,29 +27,32 @@ namespace Aikido.Zen.DotNetCore
 			// register the zen Api
 			services.AddZenApi();
 
-			// register the agent
-			var options = services.BuildServiceProvider().GetService<IOptions<AikidoZenConfig>>();
-			services.AddAIkidoZenAgent(options?.Value?.ZenToken ?? "");
+            // register the agent
+            var token = configuration["Aikido:AikidoToken"] ?? string.Empty;
+			services.AddAIkidoZenAgent(token);
 
 			return services;
 		}
 
 		public static IApplicationBuilder UseZenFireWall(this IApplicationBuilder app) {
 			var agent = app.ApplicationServices.GetRequiredService<Agent>();
-			var options = app.ApplicationServices.GetRequiredService<IOptions<AikidoZenConfig>>();
-			if (options?.Value?.ZenToken != null) {
-				agent.Start(options.Value.ZenToken);
+			var options = app.ApplicationServices.GetRequiredService<IOptions<AikidoOptions>>();
+			if (options?.Value?.AikidoToken != null) {
+				agent.Start(options.Value.AikidoToken);
 			}
 			return app;
 		}
 
 		internal static IServiceCollection AddAikidoZenConfiguration(this IServiceCollection services, IConfiguration configuration)
 		{
-			services.Configure<AikidoZenConfig>(_ => configuration.GetSection(AikidoZenConfig.SectionName));
-			return services;
+            services.Configure<AikidoOptions>(options =>
+            {
+                options.AikidoToken = configuration["Aikido:AikidoToken"] ?? Environment.GetEnvironmentVariable("AIKIDO_TOKEN");
+            });
+            return services;
 		}
 
-		public static IServiceCollection AddZenApi(this IServiceCollection services) {
+		internal static IServiceCollection AddZenApi(this IServiceCollection services) {
 			services.AddTransient<IReportingAPIClient>(provider =>
 			{
 				return new ReportingAPIClient(new Uri("https://guard.aikido.dev"));
@@ -58,7 +61,7 @@ namespace Aikido.Zen.DotNetCore
 			return services;
 		}
 
-		public static IServiceCollection AddAIkidoZenAgent(this IServiceCollection services, string apiToken)
+		internal static IServiceCollection AddAIkidoZenAgent(this IServiceCollection services, string apiToken)
 		{			
 			// Add ReportingAgent as a singleton
 			services.AddSingleton<Agent>();

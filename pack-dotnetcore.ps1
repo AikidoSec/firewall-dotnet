@@ -21,8 +21,8 @@ $latestVersion = $latestPackage.Name -replace '^Aikido\.Zen\.DotNetCore\.|\.nupk
 
 Write-Host "Latest Aikido.Zen.Core version: $latestVersion"
 
-# Update the version in the sample apps
-foreach ($app in $sampleApps) {
-    Write-Host "Updating $app with Aikido.Zen.Core v$latestVersion"
-    dotnet add $app package 'Aikido.Zen.Core' --version $latestVersion
-}
+# Update the version in the sample apps, uncomment this if you don't want to use project references
+# foreach ($app in $sampleApps) {
+#     Write-Host "Updating $app with Aikido.Zen.Core v$latestVersion"
+#     dotnet add $app package 'Aikido.Zen.Core' --version $latestVersion
+# }

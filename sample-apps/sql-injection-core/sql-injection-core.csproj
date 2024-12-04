@@ -4,12 +4,16 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>sql_injection_core</RootNamespace>
+    <UserSecretsId>6c0615d2-37e7-425f-906b-95a936adb05c</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.0" />
     <PackageReference Include="MySql.Data" Version="9.1.0" />
     <PackageReference Include="Npgsql" Version="9.0.1" />
-    <PackageReference Include="Aikido.Zen.DotnetCore" Version="" />
+    <PackageReference Include="Aikido.Zen.DotnetCore" Version="1.0.0-20241204090513" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Aikido.Zen.DotNetCore\Aikido.Zen.DotNetCore.csproj" />
   </ItemGroup>
 </Project>

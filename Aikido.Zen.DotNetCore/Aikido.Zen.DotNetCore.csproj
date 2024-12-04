@@ -12,8 +12,11 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Hosting.Abstractions" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
-    <PackageReference Include="Aikido.Zen.Core" Version="0.0.1-alpha-20241203171342" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Aikido.Zen.Core\Aikido.Zen.Core.csproj" />
   </ItemGroup>
 
 	<Target Name="PostBuild" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug'">

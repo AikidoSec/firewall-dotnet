@@ -1,11 +1,11 @@
-﻿using Aikido.Zen.Core;
+using Aikido.Zen.Core;
 using Aikido.Zen.Core.Api;
 using System;
 using Aikido.Zen.DotNetFramework.Configuration;
 
 namespace Aikido.Zen.DotNetFramework
 {
-    public class Firewall
+    public class Zen
     {
     private static Agent _agent;
         public static Agent Agent {
@@ -25,7 +25,7 @@ namespace Aikido.Zen.DotNetFramework
 
         public static void Start() {
             // Send the started event
-            Agent.Start(ZenConfiguration.Config.ZenToken);
+            Agent.Start(AikidoConfiguration.Options.AikidoToken);
         }
     }
 }

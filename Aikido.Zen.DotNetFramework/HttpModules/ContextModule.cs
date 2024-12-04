@@ -1,9 +1,8 @@
-﻿using System;
+using System;
 using Aikido.Zen.Core;
 using System.Web;
 using System.Linq;
 using Aikido.Zen.DotNetFramework.Configuration;
-using Aikido.Zen.Core.Api;
 
 namespace Aikido.Zen.DotNetFramework.HttpModules
 {
@@ -22,9 +21,9 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
 			// Initialize agent if not already done
 			if (_agent == null)
 			{
-				var config = ZenConfiguration.Config;
-				_apiToken = config.ZenToken;
-				_agent = Firewall.Agent;
+				var config = AikidoConfiguration.Options;
+				_apiToken = config.AikidoToken;
+				_agent = Zen.Agent;
 			}
 
 			context.BeginRequest += Context_BeginRequest;
@@ -62,7 +61,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
 
 			}
 
-			var id = httpContext.User.Identity.Name ?? string.Empty;
+			var id = httpContext.User?.Identity?.Name ?? string.Empty;
 			var name = id;
 			context.User = new User(id, name);
 

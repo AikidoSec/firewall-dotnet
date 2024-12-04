@@ -1,4 +1,4 @@
-﻿using Aikido.Zen.Core;
+using Aikido.Zen.Core;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 
@@ -9,10 +9,10 @@ namespace Aikido.Zen.DotNetCore.Middleware
 		private readonly Agent _agent;
 		private readonly string _apiToken;
 
-		public ContextMiddleware(Agent agent, IOptions<AikidoZenConfig> config)
+		public ContextMiddleware(Agent agent, IOptions<AikidoOptions> config)
 		{
 			_agent = agent;
-			_apiToken = config.Value.ZenToken;
+			_apiToken = config.Value.AikidoToken;
 		}
 
 		public async Task InvokeAsync(HttpContext httpContext, RequestDelegate next)
