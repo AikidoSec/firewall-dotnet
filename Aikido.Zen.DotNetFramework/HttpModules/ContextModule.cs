@@ -1,13 +1,16 @@
-﻿using System;
+using System;
 using Aikido.Zen.Core;
 using System.Web;
 using System.Linq;
-using System.IO;
+using Aikido.Zen.DotNetFramework.Configuration;
 
 namespace Aikido.Zen.DotNetFramework.HttpModules
 {
 	internal class ContextModule : IHttpModule
 	{
+		private static Agent _agent;
+		private static string _apiToken;
+
 		public void Dispose()
 		{
 			throw new NotImplementedException();
@@ -15,11 +18,23 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
 
 		public void Init(HttpApplication context)
 		{
-			context.OnExecuteRequestStep(PopulateContext);
+			// Initialize agent if not already done
+			if (_agent == null)
+			{
+				var config = AikidoConfiguration.Options;
+				_apiToken = config.AikidoToken;
+				_agent = Zen.Agent;
+			}
+
+			context.BeginRequest += Context_BeginRequest;
+			context.EndRequest += Context_EndRequest;
+			context.Error += Context_Error;
 		}
 
-		private void PopulateContext(HttpContextBase httpContext, Action action)
+		private void Context_BeginRequest(object sender, EventArgs e)
 		{
+			var httpContext = ((HttpApplication)sender).Context;
+			
 			var context = new Context
 			{
 				Url = httpContext.Request.Path,
@@ -34,10 +49,12 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
 			{
 				try
 				{
+					// We read the stream to a buffer, then reset the stream position
 					var buffer = new byte[httpContext.Request.ContentLength];
 					httpContext.Request.InputStream.Read(buffer, 0, buffer.Length);
-					context.Body = System.Text.Encoding.UTF8.GetString(buffer);
-					httpContext.Request.InputStream.Position = 0;
+                    httpContext.Request.InputStream.Position = 0;
+                    var body = System.Text.Encoding.UTF8.GetString(buffer);
+                    context.Body = body;
 				}
 				catch (Exception)
 				{
@@ -46,13 +63,24 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
 
 			}
 
-			var id = httpContext.User.Identity.Name ?? string.Empty;
+			var id = httpContext.User?.Identity?.Name ?? string.Empty;
 			var name = id;
 			context.User = new User(id, name);
 
 			httpContext.Items["Aikido.Zen.Context"] = context;
+		}
 
-			action();
+		private void Context_EndRequest(object sender, EventArgs e)
+		{
+			var httpContext = ((HttpApplication)sender).Context;
+			var context = (Context)httpContext.Items["Aikido.Zen.Context"];
+		}
+
+		private void Context_Error(object sender, EventArgs e)
+		{
+			var httpContext = ((HttpApplication)sender).Context;
+			var context = (Context)httpContext.Items["Aikido.Zen.Context"];
+			var exception = httpContext.Server.GetLastError();
 		}
 	}
 }

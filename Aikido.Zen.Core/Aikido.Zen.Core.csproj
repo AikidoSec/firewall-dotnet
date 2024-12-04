@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
@@ -20,10 +20,10 @@
   </PropertyGroup>
 
 
-  <Target Name="PostBuild" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug'">
-    <Message Text="Creating NuGet packages..." Importance="high" />
+  <!--<Target Name="PostBuild" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug'">
+    <Message Text="Creating NuGet package for Core..." Importance="high" />
     <Exec Command="powershell -ExecutionPolicy Bypass -File ..\\pack.ps1 -buildConfiguration $(Configuration)" />
-  </Target>
+  </Target>-->
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.2.0" />

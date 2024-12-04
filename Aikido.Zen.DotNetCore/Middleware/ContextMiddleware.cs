@@ -1,10 +1,20 @@
-﻿using Aikido.Zen.Core;
+using Aikido.Zen.Core;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Options;
 
-namespace Aikido.Zen.Middleware
+namespace Aikido.Zen.DotNetCore.Middleware
 {
 	public class ContextMiddleware : IMiddleware
 	{
+		private readonly Agent _agent;
+		private readonly string _apiToken;
+
+		public ContextMiddleware(Agent agent, IOptions<AikidoOptions> config)
+		{
+			_agent = agent;
+			_apiToken = config.Value.AikidoToken;
+		}
+
 		public async Task InvokeAsync(HttpContext httpContext, RequestDelegate next)
 		{
 			var context = new Context
@@ -20,17 +30,16 @@ namespace Aikido.Zen.Middleware
 
 			if (httpContext.Request.ContentLength > 0)
 			{
-				httpContext.Request.EnableRewind();
 				try
 				{
-					using var reader = new StreamReader(httpContext.Request.Body);
-					var body = await reader.ReadToEndAsync();
-					context.Body = body;
+                    // we need to leave the body stream unread, so we copy it to a buffer
+                    // and then replace the body with a new memory stream that we can read multiple times
+                    var buffer = new byte[httpContext.Request.ContentLength.Value];
+                    await httpContext.Request.Body.ReadAsync(buffer, 0, buffer.Length);
+                    context.Body = System.Text.Encoding.UTF8.GetString(buffer);
+                    httpContext.Request.Body = new MemoryStream(buffer);
 				}
 				catch (Exception)
-				{
-				}
-				finally
 				{
 					httpContext.Request.Body.Position = 0;
 				}
@@ -41,8 +50,6 @@ namespace Aikido.Zen.Middleware
 			context.User = new User(id, name);
 
 			httpContext.Items["Aikido.Zen.Context"] = context;
-
-			await next(httpContext);
 		}
 	}
 }

@@ -4,14 +4,18 @@ using Npgsql;
 using MySql.Data.MySqlClient;
 using System.Data.Common;
 using sql_injection_core;
+using Aikido.Zen.DotNetCore;
 
 /// <summary>
 /// Creates and configures the web application
 /// </summary>
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddZenFireWall();
 builder.Services.AddEndpointsApiExplorer();
 
 var app = builder.Build();
+// use the firewall
+app.UseZenFireWall();
 
 /// <summary>
 /// Dictionary containing database configurations for different database types

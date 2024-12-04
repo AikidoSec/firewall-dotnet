@@ -1,9 +1,10 @@
-﻿using Aikido.Zen.Core.Api;
+using Aikido.Zen.Core.Api;
 using System.Threading.Tasks;
+using Aikido.Zen.Core.Models.Events;
 
 namespace Aikido.Zen.Core.Api { 
 	public interface IReportingAPIClient
 	{
-		Task<ReportingAPIResponse> ReportAsync(string token, Event @event, int timeoutInMS);
+		Task<ReportingAPIResponse> ReportAsync(string token, object @event, int timeoutInMS);
 	}
 }

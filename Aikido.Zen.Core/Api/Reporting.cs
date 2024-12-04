@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
@@ -46,17 +46,18 @@ namespace Aikido.Zen.Core.Api
 			return new ReportingAPIResponse { Success = false, Error = "unknown_error" };
 		}
 
-		public async Task<ReportingAPIResponse> ReportAsync(string token, Event @event, int timeoutInMS)
+		public async Task<ReportingAPIResponse> ReportAsync(string token, object @event, int timeoutInMS)
 		{
 			using (var cts = new CancellationTokenSource(timeoutInMS))
 			{
 
-				var requestContent = new StringContent(JsonSerializer.Serialize(@event), Encoding.UTF8, "application/json");
+                var eventAsJson = JsonSerializer.Serialize(@event, options: new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+				var requestContent = new StringContent(eventAsJson, Encoding.UTF8, "application/json");
 				var request = new HttpRequestMessage(HttpMethod.Post, new Uri(_reportingUrl, "api/runtime/events"))
 				{
 					Content = requestContent
 				};
-				request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue(token);
 
 				try
 				{
@@ -76,11 +77,6 @@ namespace Aikido.Zen.Core.Api
 				}
 			}
 		}
-	}
-
-	public class Event
-	{
-		// Add appropriate event properties
 	}
 
 	public class ReportingAPIResponse
