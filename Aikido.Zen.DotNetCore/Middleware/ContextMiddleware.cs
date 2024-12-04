@@ -32,10 +32,12 @@ namespace Aikido.Zen.DotNetCore.Middleware
 			{
 				try
 				{
-					var buffer = new byte[httpContext.Request.ContentLength.Value];
-					await httpContext.Request.Body.ReadAsync(buffer, 0, buffer.Length);
-					context.Body = System.Text.Encoding.UTF8.GetString(buffer);
-					httpContext.Request.Body.Position = 0;
+                    // we need to leave the body stream unread, so we copy it to a buffer
+                    // and then replace the body with a new memory stream that we can read multiple times
+                    var buffer = new byte[httpContext.Request.ContentLength.Value];
+                    await httpContext.Request.Body.ReadAsync(buffer, 0, buffer.Length);
+                    context.Body = System.Text.Encoding.UTF8.GetString(buffer);
+                    httpContext.Request.Body = new MemoryStream(buffer);
 				}
 				catch (Exception)
 				{

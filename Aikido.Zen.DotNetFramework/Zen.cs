@@ -12,12 +12,11 @@ namespace Aikido.Zen.DotNetFramework
             get {
                 if (_agent == null)
                 {
-
-                    _agent = new Agent(
-                        new ZenApi(
-                            new ReportingAPIClient(new Uri(Environment.GetEnvironmentVariable("AIKIDO_URL") ?? "https://guard.aikido.dev"))
-                            )
-                        );
+                    var baseUrl = Environment.GetEnvironmentVariable("AIKIDO_URL") ?? "https://guard.aikido.dev";
+                    var uri = new Uri(baseUrl);
+                    var apiClient = new ReportingAPIClient(uri);
+                    var zenApi = new ZenApi(apiClient);
+                    _agent = new Agent(zenApi);
                 }
 				return _agent;
 			}

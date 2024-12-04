@@ -49,10 +49,12 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
 			{
 				try
 				{
+					// We read the stream to a buffer, then reset the stream position
 					var buffer = new byte[httpContext.Request.ContentLength];
 					httpContext.Request.InputStream.Read(buffer, 0, buffer.Length);
-					context.Body = System.Text.Encoding.UTF8.GetString(buffer);
-					httpContext.Request.InputStream.Position = 0;
+                    httpContext.Request.InputStream.Position = 0;
+                    var body = System.Text.Encoding.UTF8.GetString(buffer);
+                    context.Body = body;
 				}
 				catch (Exception)
 				{

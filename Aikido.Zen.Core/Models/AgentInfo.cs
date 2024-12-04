@@ -9,8 +9,6 @@ namespace Aikido.Zen.Core.Models {
         public string Library { get; set; } = "firewall-dotnet";
         public Dictionary<string, string> Packages { get; set; } = new Dictionary<string, string>();
         public string IpAddress { get; set; }
-        public bool PreventedPrototypePollution { get; set; }
-        public IncompatiblePackages IncompatiblePackages { get; set; } = new IncompatiblePackages();
         public Os Os { get; set; } = new Os();
         public Platform Platform { get; set; } = new Platform();
         public string NodeEnv { get; set; } = "";
