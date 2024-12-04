@@ -20,6 +20,8 @@ namespace Aikido.Zen.Core
 		private const int RetryDelayMs = 250;
 		private const int EmptyQueueDelayMs = 100;
 		private const int ErrorRetryDelayMs = 1000;
+		private const string HeartbeatScheduleId = "heartbeat";
+		private static readonly TimeSpan HeartbeatInterval = TimeSpan.FromMinutes(10);
 
 		public Agent(IZenApi api, int batchTimeoutMs = 5000)
 		{
@@ -35,6 +37,11 @@ namespace Aikido.Zen.Core
             QueueEvent(token, new Started {
                 Agent = AgentInfoHelper.GetInfo()			
             });
+
+            // Schedule heartbeat event every 10 minutes
+            ScheduleEvent(token, new Heartbeat {
+				Agent = AgentInfoHelper.GetInfo()
+			}, HeartbeatInterval, HeartbeatScheduleId);
         }
 
 		public void QueueEvent(string token, IEvent evt)
