@@ -6,6 +6,7 @@ using Aikido.Zen.Core;
 using Aikido.Zen.Core.Api;
 using Aikido.Zen.DotNetCore.StartupFilters;
 using Microsoft.Extensions.Options;
+using Aikido.Zen.DotNetCore.Middleware;
 
 namespace Aikido.Zen.DotNetCore
 {
@@ -27,6 +28,9 @@ namespace Aikido.Zen.DotNetCore
 			// register the zen Api
 			services.AddZenApi();
 
+            // register the middleware
+            services.AddAikidoZenMiddleware();
+
             // register the agent
             var token = configuration["Aikido:AikidoToken"] ?? string.Empty;
 			services.AddAIkidoZenAgent(token);
@@ -42,6 +46,12 @@ namespace Aikido.Zen.DotNetCore
 			}
 			return app;
 		}
+
+        internal static IServiceCollection AddAikidoZenMiddleware(this IServiceCollection services)
+        {
+            services.AddTransient<ContextMiddleware>();
+            return services;
+        }
 
 		internal static IServiceCollection AddAikidoZenConfiguration(this IServiceCollection services, IConfiguration configuration)
 		{

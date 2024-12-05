@@ -28,6 +28,10 @@ namespace Aikido.Zen.DotNetCore.Middleware
 				Cookies = httpContext.Request.Cookies.ToDictionary(c => c.Key, c => c.Value)
 			};
 
+            // add request context to agent, so it can be included in the next heartbeat
+            var clientIp = httpContext.Connection.RemoteIpAddress?.ToString();
+            _agent.AddRequestContext(httpContext.Request.Host.Value, context.User, httpContext.Request.Path, context.Method, clientIp);
+
 			if (httpContext.Request.ContentLength > 0)
 			{
 				try
@@ -44,12 +48,9 @@ namespace Aikido.Zen.DotNetCore.Middleware
 					httpContext.Request.Body.Position = 0;
 				}
 			}
-			var id = httpContext.User.Identities.FirstOrDefault()?.Claims.FirstOrDefault(c => c.Type == "id")?.Value
-				?? string.Empty;
-			var name = httpContext.User.Identity?.Name ?? string.Empty;
-			context.User = new User(id, name);
 
 			httpContext.Items["Aikido.Zen.Context"] = context;
+            await next(httpContext);
 		}
 	}
 }

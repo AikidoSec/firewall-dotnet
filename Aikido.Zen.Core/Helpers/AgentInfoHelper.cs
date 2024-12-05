@@ -1,4 +1,4 @@
-﻿using Aikido.Zen.Core.Models;
+using Aikido.Zen.Core.Models;
 using System;
 
 namespace Aikido.Zen.Core.Helpers

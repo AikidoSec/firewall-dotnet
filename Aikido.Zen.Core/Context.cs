@@ -1,4 +1,5 @@
-﻿using System;
+using Aikido.Zen.Core.Models;
+using System;
 using System.Collections.Generic;
 
 namespace Aikido.Zen.Core
@@ -16,7 +17,7 @@ namespace Aikido.Zen.Core
 		public bool AttackDetected { get; set; }
 		public bool ConsumedRateLimitForIP { get; set; }
 		public bool ConsumedRateLimitForUser { get; set; }
-		public User? User { get; set; }
+		public User User { get; set; }
 		public string Source { get; set; } = string.Empty;
 		public string Route { get; set; } = string.Empty;
 		public string[] Graphql { get; set; }
@@ -25,18 +26,6 @@ namespace Aikido.Zen.Core
 		public Dictionary<string, HashSet<string>> Cache { get; set; }
 		public List<RedirectInfo> OutgoingRequestRedirects { get; set; }
 
-	}
-
-	public struct User
-	{
-
-        public User(string id = "", string name = "")
-		{
-			Id = id;
-			Name = name;
-		}
-        public string Id { get; set; }
-		public string Name { get; set; }
 	}
 
 	public struct RedirectInfo
