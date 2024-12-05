@@ -30,9 +30,9 @@ namespace Aikido.Zen.DotNetCore.Middleware
 			};
 
             var clientIp = httpContext.Connection.RemoteIpAddress?.ToString();
-            // Add request information to the agent, which will collect it and send it to the Zen server
-            // every x minutes, the context will be sent to the Zen server as a heartbeat event, and the context will be cleared
-            _agent.AddRequestContext(httpContext.Request.Host.Value, context.User, httpContext.Request.Path, context.Method, clientIp);
+            // Add request information to the agent, which will collect routes, users and stats
+            // every x minutes, this information will be sent to the Zen server as a heartbeat event, and the collected info will be cleared
+            _agent.AddRequestContext(context.User, httpContext.Request.Path, context.Method, clientIp);
 
 			if (httpContext.Request.ContentLength > 0)
 			{

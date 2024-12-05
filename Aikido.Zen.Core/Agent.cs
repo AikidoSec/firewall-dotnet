@@ -168,13 +168,11 @@ namespace Aikido.Zen.Core
         /// <summary>
         /// Adds request context information to the monitoring data.
         /// </summary>
-        /// <param name="hostname">The hostname of the request</param>
         /// <param name="user">The user making the request</param>
         /// <param name="path">The request path</param>
         /// <param name="method">The HTTP method</param>
         /// <param name="ipAddress">The IP address of the requester</param>
-        public void AddRequestContext(string hostname, User user, string path, string method, string ipAddress) {
-            _context.AddHostname(hostname);
+        public void AddRequestContext(User user, string path, string method, string ipAddress) {
             if (user != null)
                 _context.AddUser(user, ipAddress);
             _context.AddRoute(path, method);
