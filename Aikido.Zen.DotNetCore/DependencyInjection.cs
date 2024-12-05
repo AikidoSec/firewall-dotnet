@@ -32,8 +32,7 @@ namespace Aikido.Zen.DotNetCore
             services.AddAikidoZenMiddleware();
 
             // register the agent
-            var token = configuration["Aikido:AikidoToken"] ?? string.Empty;
-			services.AddAIkidoZenAgent(token);
+			services.AddAIkidoZenAgent();
 
 			return services;
 		}
@@ -71,7 +70,7 @@ namespace Aikido.Zen.DotNetCore
 			return services;
 		}
 
-		internal static IServiceCollection AddAIkidoZenAgent(this IServiceCollection services, string apiToken)
+		internal static IServiceCollection AddAIkidoZenAgent(this IServiceCollection services)
 		{			
 			// Add ReportingAgent as a singleton
 			services.AddSingleton<Agent>();

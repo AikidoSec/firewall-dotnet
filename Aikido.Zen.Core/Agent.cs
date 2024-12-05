@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Aikido.Zen.Core.Api;
+using Aikido.Zen.Core.EventHandling;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Models.Events;
@@ -45,6 +46,7 @@ namespace Aikido.Zen.Core
             _batchTimeoutMs = batchTimeoutMs;
             _backgroundTask = Task.Run(ProcessEventsAsync);
             _context = new AgentContext();
+			WireEvents();
         }
 
         /// <summary>
@@ -163,20 +165,6 @@ namespace Aikido.Zen.Core
         /// </summary>
         public void ClearContext() {
             _context.Clear();
-        }
-
-        /// <summary>
-        /// Adds request context information to the monitoring data.
-        /// </summary>
-        /// <param name="user">The user making the request</param>
-        /// <param name="path">The request path</param>
-        /// <param name="method">The HTTP method</param>
-        /// <param name="ipAddress">The IP address of the requester</param>
-        public void AddRequestContext(User user, string path, string method, string ipAddress) {
-            if (user != null)
-                _context.AddUser(user, ipAddress);
-            _context.AddRoute(path, method);
-            _context.AddRequest();
         }
 
 
@@ -339,6 +327,25 @@ namespace Aikido.Zen.Core
             ClearContext();
             return heartbeat;
         }
+
+		// event handlers
+
+		private void WireEvents() {
+            Mediator.Instance.Register<InboundRequestEvent>(OnInboundRequest, priority: 1000);
+		}
+
+		private async Task OnInboundRequest(InboundRequestEvent evt) {
+            // Add request information to the agent, which will collect routes, users and stats
+            // every x minutes, this information will be sent to the Zen server as a heartbeat event, and the collected info will be cleared
+            if (evt.Data != null)
+            {
+                if (evt.Data.User != null)
+                    _context.AddUser(evt.Data.User, evt.Data.IpAddress);
+                _context.AddRoute(evt.Data.Url, evt.Data.Method);
+                _context.AddRequest();
+            }
+            await Task.CompletedTask;
+		}
 
 	}
 }

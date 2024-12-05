@@ -1,19 +1,12 @@
 using Aikido.Zen.Core;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
+using Aikido.Zen.Core.EventHandling;
 
 namespace Aikido.Zen.DotNetCore.Middleware
 {
 	public class ContextMiddleware : IMiddleware
 	{
-		private readonly Agent _agent;
-		private readonly string _apiToken;
-
-		public ContextMiddleware(Agent agent, IOptions<AikidoOptions> config)
-		{
-			_agent = agent;
-			_apiToken = config.Value.AikidoToken;
-		}
 
 		public async Task InvokeAsync(HttpContext httpContext, RequestDelegate next)
 		{
@@ -31,9 +24,9 @@ namespace Aikido.Zen.DotNetCore.Middleware
 
             // no need to use X-FORWARDED-FOR, .NET Core already handles this
             var clientIp = httpContext.Connection.RemoteIpAddress?.ToString();
-            // Add request information to the agent, which will collect routes, users and stats
-            // every x minutes, this information will be sent to the Zen server as a heartbeat event, and the collected info will be cleared
-            _agent.AddRequestContext(context.User, httpContext.Request.Path, context.Method, clientIp);
+
+            // trigger the inbound request event
+            await Mediator.Instance.PublishAsync(new InboundRequestEvent(context.User, httpContext.Request.Path, context.Method, clientIp));
 
 			if (httpContext.Request.ContentLength > 0)
 			{
