@@ -1,3 +1,4 @@
+using Aikido.Zen.Core.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,7 +15,7 @@ namespace Aikido.Zen.Core.Models
         private int _attacksDetected = 0;
         private int _attacksBlocked = 0;
         private int _requestsAborted = 0;
-        private long _started = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        private long _started = DateTimeHelper.UTCNowUnixMilliseconds();
 
 
         public void AddRequest() {
@@ -50,14 +51,14 @@ namespace Aikido.Zen.Core.Models
             if (userExtended == null) {
                 userExtended = new UserExtended
                 {
-                    FirstSeenAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                    FirstSeenAt = DateTimeHelper.UTCNowUnixMilliseconds(),
                     Name = user.Name,
                     Id = user.Id
                 };
                 _users.Add(user.Id, userExtended);
             }
             userExtended.LastIpAddress = ipAddress;
-            userExtended.LastSeenAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            userExtended.LastSeenAt = DateTimeHelper.UTCNowUnixMilliseconds();
         }
 
         public void AddRoute(string path, string method) {
@@ -81,7 +82,7 @@ namespace Aikido.Zen.Core.Models
             _attacksDetected = 0;
             _attacksBlocked = 0;
             _requestsAborted = 0;
-            _started = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            _started = DateTimeHelper.UTCNowUnixMilliseconds();
         }
 
         public IEnumerable<Host> Hostnames => _hostnames.Select(x => x.Value);

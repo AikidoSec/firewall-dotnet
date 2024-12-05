@@ -1,3 +1,4 @@
+using Aikido.Zen.Core.Helpers;
 using System;
 using System.Collections.Generic;
 
@@ -12,7 +13,7 @@ namespace Aikido.Zen.Core.Models.Events
         public IEnumerable<Route> Routes { get; set; }
         public IEnumerable<UserExtended> Users { get; set; }
         public AgentInfo Agent { get; set; }
-        public long Time => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        public long Time => DateTimeHelper.UTCNowUnixMilliseconds();
 
         // Constants for the heartbeat event
         public const string ScheduleId = "heartbeat";

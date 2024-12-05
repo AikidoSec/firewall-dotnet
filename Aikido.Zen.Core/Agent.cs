@@ -248,7 +248,7 @@ namespace Aikido.Zen.Core
             if (requestsThisSecond >= RateLimitPerSecond)
             {
                 // wait until the next second starts
-                var delayMs = Math.Max(0, (int)((currentSecond + 1) * 1000 - DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()));
+                var delayMs = Math.Max(0, (int)((currentSecond + 1) * 1000 - DateTimeHelper.UTCNowUnixMilliseconds()));
                 await Task.Delay(delayMs, _cancellationSource.Token);
                 return (true, currentSecond, requestsThisSecond);
             }
@@ -335,7 +335,7 @@ namespace Aikido.Zen.Core
                 Total = _context.AttacksDetected
             };
             heartbeat.Stats.StartedAt = _context.Started;
-            heartbeat.Stats.EndedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            heartbeat.Stats.EndedAt = DateTimeHelper.UTCNowUnixMilliseconds();
             ClearContext();
             return heartbeat;
         }

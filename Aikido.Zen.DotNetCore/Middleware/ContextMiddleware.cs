@@ -29,6 +29,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
 				Cookies = httpContext.Request.Cookies.ToDictionary(c => c.Key, c => c.Value)
 			};
 
+            // no need to use X-FORWARDED-FOR, .NET Core already handles this
             var clientIp = httpContext.Connection.RemoteIpAddress?.ToString();
             // Add request information to the agent, which will collect routes, users and stats
             // every x minutes, this information will be sent to the Zen server as a heartbeat event, and the collected info will be cleared

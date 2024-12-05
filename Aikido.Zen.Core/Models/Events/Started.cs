@@ -1,3 +1,4 @@
+using Aikido.Zen.Core.Helpers;
 using System;
 
 namespace Aikido.Zen.Core.Models.Events
@@ -6,6 +7,6 @@ namespace Aikido.Zen.Core.Models.Events
     {
         public string Type => "started";
         public AgentInfo Agent { get; set; }
-        public long Time => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        public long Time => DateTimeHelper.UTCNowUnixMilliseconds();
     }
 }
