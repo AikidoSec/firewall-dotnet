@@ -17,6 +17,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
 
 		public async Task InvokeAsync(HttpContext httpContext, RequestDelegate next)
 		{
+            // this will be used to check for attacks
 			var context = new Context
 			{
 				Url = httpContext.Request.Path.ToString(),
@@ -27,6 +28,12 @@ namespace Aikido.Zen.DotNetCore.Middleware
 				RemoteAddress = httpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty,
 				Cookies = httpContext.Request.Cookies.ToDictionary(c => c.Key, c => c.Value)
 			};
+
+            // no need to use X-FORWARDED-FOR, .NET Core already handles this
+            var clientIp = httpContext.Connection.RemoteIpAddress?.ToString();
+            // Add request information to the agent, which will collect routes, users and stats
+            // every x minutes, this information will be sent to the Zen server as a heartbeat event, and the collected info will be cleared
+            _agent.AddRequestContext(context.User, httpContext.Request.Path, context.Method, clientIp);
 
 			if (httpContext.Request.ContentLength > 0)
 			{
@@ -44,12 +51,9 @@ namespace Aikido.Zen.DotNetCore.Middleware
 					httpContext.Request.Body.Position = 0;
 				}
 			}
-			var id = httpContext.User.Identities.FirstOrDefault()?.Claims.FirstOrDefault(c => c.Type == "id")?.Value
-				?? string.Empty;
-			var name = httpContext.User.Identity?.Name ?? string.Empty;
-			context.User = new User(id, name);
 
 			httpContext.Items["Aikido.Zen.Context"] = context;
+            await next(httpContext);
 		}
 	}
 }

@@ -45,6 +45,13 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
 				Cookies = httpContext.Request.Cookies.AllKeys.ToDictionary(k => k, k => httpContext.Request.Cookies[k].Value)
 			};
 
+            var clientIp = !string.IsNullOrEmpty(httpContext.Request.ServerVariables["HTTP_X_FORWARDED_FOR"])
+                ? httpContext.Request.ServerVariables["HTTP_X_FORWARDED_FOR"]
+                : HttpContext.Current.Request.ServerVariables["REMOTE_ADDR"];
+            // Add request information to the agent, which will collect routes, users and stats
+            // every x minutes, this information will be sent to the Zen server as a heartbeat event, and the collected info will be cleared
+            _agent.AddRequestContext(context.User, httpContext.Request.Url.AbsolutePath, context.Method, clientIp);
+
 			if (httpContext.Request.ContentLength > 0)
 			{
 				try
@@ -62,10 +69,6 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
 				}
 
 			}
-
-			var id = httpContext.User?.Identity?.Name ?? string.Empty;
-			var name = id;
-			context.User = new User(id, name);
 
 			httpContext.Items["Aikido.Zen.Context"] = context;
 		}

@@ -11,8 +11,16 @@ namespace Aikido.Zen.Core.Models {
         public string IpAddress { get; set; }
         public Os Os { get; set; } = new Os();
         public Platform Platform { get; set; } = new Platform();
-        public string NodeEnv { get; set; } = "";
         public bool Serverless { get; set; } = false;
         public List<string> Stack { get; set; } = new List<string>();
+
+        // these properties are not needed for the .net firewall, so we might be able to remove this in the near future.
+        // For now, the api expects these fields
+        public bool PreventedPrototypePollution => false;
+
+        public IDictionary<string, string> IncompatiblePackages = new Dictionary<string, string> {
+            { "incompatiblePackages", null }
+        };
+        public string NodeEnv => "";
     }
 }
