@@ -50,14 +50,14 @@ namespace Aikido.Zen.Core.Models
             if (userExtended == null) {
                 userExtended = new UserExtended
                 {
-                    FirstSeenAt = System.DateTime.UtcNow.Ticks,
+                    FirstSeenAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
                     Name = user.Name,
                     Id = user.Id
                 };
                 _users.Add(user.Id, userExtended);
             }
             userExtended.LastIpAddress = ipAddress;
-            userExtended.LastSeenAt = System.DateTime.UtcNow.Ticks;
+            userExtended.LastSeenAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         }
 
         public void AddRoute(string path, string method) {
