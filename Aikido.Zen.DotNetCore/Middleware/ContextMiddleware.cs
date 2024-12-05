@@ -17,6 +17,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
 
 		public async Task InvokeAsync(HttpContext httpContext, RequestDelegate next)
 		{
+            // this will be used to check for attacks
 			var context = new Context
 			{
 				Url = httpContext.Request.Path.ToString(),
@@ -28,8 +29,9 @@ namespace Aikido.Zen.DotNetCore.Middleware
 				Cookies = httpContext.Request.Cookies.ToDictionary(c => c.Key, c => c.Value)
 			};
 
-            // add request context to agent, so it can be included in the next heartbeat
             var clientIp = httpContext.Connection.RemoteIpAddress?.ToString();
+            // Add request information to the agent, which will collect it and send it to the Zen server
+            // every x minutes, the context will be sent to the Zen server as a heartbeat event, and the context will be cleared
             _agent.AddRequestContext(httpContext.Request.Host.Value, context.User, httpContext.Request.Path, context.Method, clientIp);
 
 			if (httpContext.Request.ContentLength > 0)
