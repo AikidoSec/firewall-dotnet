@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -36,6 +36,9 @@ namespace Aikido.Zen.DotNetCore
 		}
 
 		public static IApplicationBuilder UseZenFireWall(this IApplicationBuilder app) {
+            if (Environment.GetEnvironmentVariable("AIKIDO_DISABLE") == "true") {
+                return app;
+            }
             var agent = Agent.GetInstance(app.ApplicationServices.GetRequiredService<IZenApi>());
 			var options = app.ApplicationServices.GetRequiredService<IOptions<AikidoOptions>>();
 			if (options?.Value?.AikidoToken != null) {

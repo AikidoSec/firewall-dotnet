@@ -18,8 +18,7 @@ builder.Services.AddEndpointsApiExplorer();
 
 var app = builder.Build();
 // use the firewall
-if (Environment.GetEnvironmentVariable("AIKIDO_ZEN_OFF") != "true")
-    app.UseZenFireWall();
+app.UseZenFireWall();
 
 /// <summary>
 /// Dictionary containing database configurations for different database types

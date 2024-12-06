@@ -16,8 +16,7 @@ namespace DotNetFramework.Sample.App
 			FilterConfig.RegisterGlobalFilters(GlobalFilters.Filters);
 			RouteConfig.RegisterRoutes(RouteTable.Routes);
 			BundleConfig.RegisterBundles(BundleTable.Bundles);
-            if (Environment.GetEnvironmentVariable("AIKIDO_ZEN_OFF") != "true")
-                Zen.Start();
+            Zen.Start();
 		}
 	}
 }

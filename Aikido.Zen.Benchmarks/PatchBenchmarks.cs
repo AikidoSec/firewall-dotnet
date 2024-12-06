@@ -17,13 +17,13 @@ namespace Aikido.Zen.Benchmarks
     {
         private HttpClient _httpClient;
         private HttpWebRequest _webRequest;
-        private static bool _patchesApplied;
+        private static string aikidoUrl = Environment.GetEnvironmentVariable("AIKIDO_URL") ?? "https://guard.aikido.dev";
 
         [GlobalSetup(Targets = [nameof(HttpClientUnpatched), nameof(HttpWebRequestUnpatched)])]
         public void UnpatchedSetup()
         {
             _httpClient = new HttpClient();
-            Agent.GetInstance(new ZenApi(new ReportingAPIClient(new Uri("https://guard.aikido.dev"))));
+            Agent.GetInstance(new ZenApi(new ReportingAPIClient(new Uri(aikidoUrl))));
 
             Patcher.Unpatch();
         }
@@ -32,7 +32,7 @@ namespace Aikido.Zen.Benchmarks
         public void PatchedSetup()
         {
             _httpClient = new HttpClient();
-            Agent.GetInstance(new ZenApi(new ReportingAPIClient(new Uri("https://guard.aikido.dev"))));
+            Agent.GetInstance(new ZenApi(new ReportingAPIClient(new Uri(aikidoUrl))));
 
             Patcher.Patch();
         }
