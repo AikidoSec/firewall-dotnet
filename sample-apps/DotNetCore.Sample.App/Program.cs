@@ -3,8 +3,11 @@ using Microsoft.Data.Sqlite;
 using Npgsql;
 using MySql.Data.MySqlClient;
 using System.Data.Common;
-using sql_injection_core;
+using DotNetCore.Sample.App;
 using Aikido.Zen.DotNetCore;
+using System.Net;
+using RestSharp;
+
 
 /// <summary>
 /// Creates and configures the web application
@@ -15,7 +18,8 @@ builder.Services.AddEndpointsApiExplorer();
 
 var app = builder.Build();
 // use the firewall
-app.UseZenFireWall();
+if (Environment.GetEnvironmentVariable("AIKIDO_ZEN_OFF") != "true")
+    app.UseZenFireWall();
 
 /// <summary>
 /// Dictionary containing database configurations for different database types
@@ -63,6 +67,51 @@ var databases = new Dictionary<string, (DbProviderFactory factory, DbSIConfig co
 		DropTableQuery = "DROP TABLE IF EXISTS Users"
 	})}
 };
+
+
+/// <summary>
+/// Maps GET endpoint that demonstrates outbound HTTP requests using HttpClient
+/// </summary>
+/// <param name="context">The HTTP context for the request</param>
+/// <param name="domainName">The domain name to send the request to</param>
+/// <returns>The HTTP response from the request</returns>
+app.MapGet("outbound/httpclient/{domainName}", async (HttpContext context, string domainName) =>
+{
+	domainName = Uri.UnescapeDataString(domainName);
+    var client = new HttpClient();
+    client.BaseAddress = new Uri(domainName);
+    return await client.GetAsync("", HttpCompletionOption.ResponseHeadersRead);
+});
+
+/// <summary>
+/// Maps GET endpoint that demonstrates outbound HTTP requests using WebRequest
+/// </summary>
+/// <param name="context">The HTTP context for the request</param>
+/// <param name="domainName">The domain name to send the request to</param>
+/// <returns>The HTTP response from the request</returns>
+app.MapGet("outbound/webrequest/{domainName}", async (HttpContext context, string domainName) =>
+{
+	domainName = Uri.UnescapeDataString(domainName);
+    var request = WebRequest.Create(domainName);
+    // only HEAD
+    request.Method = "HEAD";
+    return await request.GetResponseAsync();
+});
+
+/// <summary>
+/// Maps GET endpoint that demonstrates outbound HTTP requests using RestSharp
+/// </summary>
+/// <param name="context">The HTTP context for the request</param>
+/// <param name="domainName">The domain name to send the request to</param>
+/// <returns>The HTTP response from the request</returns>
+app.MapGet("outbound/restsharp/{domainName}", async (HttpContext context, string domainName) =>
+{
+	domainName = Uri.UnescapeDataString(domainName);
+    var client = new RestClient(domainName);
+    var request = new RestRequest();
+    request.CompletionOption = HttpCompletionOption.ResponseHeadersRead;
+    return await client.ExecuteAsync(request);
+});
 
 /// <summary>
 /// Maps GET endpoint that demonstrates SQL injection vulnerability

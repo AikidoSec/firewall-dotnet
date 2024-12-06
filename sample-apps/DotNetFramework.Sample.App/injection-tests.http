@@ -72,3 +72,18 @@ GET https://localhost:44351/api/si/MySql?name=NotAdmin' AND EXTRACTVALUE(1,CONCA
 
 # Time-based Blind SQL injection
 GET https://localhost:44351/api/si/MySql?name=NotAdmin' AND SLEEP(10) -- 
+
+### Test Outbound HTTP Requests
+
+# Test HttpClient endpoint
+GET https://localhost:44351/api/outbound/httpclient/https://www.google.com
+
+### Test Outbound HTTP Requests
+
+# Test WebRequest endpoint 
+GET https://localhost:44351/api/outbound/webrequest/https://www.google.com
+
+### Test Outbound HTTP Requests
+
+# Test WebRequest endpoint 
+GET https://localhost:44351/api/outbound/restsharp/https://www.google.com

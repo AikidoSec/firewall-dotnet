@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Linq;
@@ -9,7 +9,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.Data.Sqlite;
 using MySql.Data.MySqlClient;
 
-namespace sql_injection_framework.Controllers
+namespace DotNetFramework.Sample.App.Controllers
 {
 	[RoutePrefix("api/si")]
 	public class SIController : ApiController

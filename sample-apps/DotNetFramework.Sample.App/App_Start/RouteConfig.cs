@@ -5,7 +5,7 @@ using System.Web;
 using System.Web.Mvc;
 using System.Web.Routing;
 
-namespace sql_injection_framework
+namespace DotNetFramework.Sample.App
 {
 	public class RouteConfig
 	{
