@@ -31,6 +31,20 @@ namespace Aikido.Zen.Core
 
         private AgentContext _context;
 
+        // instance
+        private static Agent _instance;
+
+        public static Agent Instance => _instance;
+
+        public static Agent GetInstance(IZenApi api, int batchTimeoutMs = 5000)
+        {
+            if (_instance == null)
+            {
+                _instance = new Agent(api, batchTimeoutMs);
+            }
+            return _instance;
+        }
+
         /// <summary>
         /// Initializes a new instance of the Agent class.
         /// </summary>
@@ -166,17 +180,26 @@ namespace Aikido.Zen.Core
         }
 
         /// <summary>
-        /// Adds request context information to the monitoring data.
+        /// Captures inbound requests.
         /// </summary>
         /// <param name="user">The user making the request</param>
         /// <param name="path">The request path</param>
         /// <param name="method">The HTTP method</param>
         /// <param name="ipAddress">The IP address of the requester</param>
-        public void AddRequestContext(User user, string path, string method, string ipAddress) {
+        public void CaptureInboundRequest(User user, string path, string method, string ipAddress) {
             if (user != null)
                 _context.AddUser(user, ipAddress);
             _context.AddRoute(path, method);
             _context.AddRequest();
+        }
+
+        /// <summary>
+        /// Captures outbound requests.
+        /// </summary>
+        /// <param name="host"></param>
+        /// <param name="port"></param>
+        public void CaptureOutboundRequest(string host, int? port) {
+            _context.AddHostname(host + (port.HasValue ? $":{port}" : ""));
         }
 
 
