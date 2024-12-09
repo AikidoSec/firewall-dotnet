@@ -1,0 +1,153 @@
+[
+    {
+        "queryParams": {
+            "param1": "value1"
+        },
+        "headers": {
+            "header1": "value1"
+        },
+        "cookies": {
+            "cookie1": "value1"
+        },
+        "body": "{\"key\":\"value\"}",
+        "contentType": "application/json",
+        "expectedResult": {
+            "query.param1": "value1",
+            "headers.header1": "value1",
+            "cookies.cookie1": "value1",
+            "body.key": "value"
+        }
+    },
+    {
+        "queryParams": {
+            "param1": "value1"
+        },
+        "headers": {
+            "header1": "value1"
+        },
+        "cookies": {
+            "cookie1": "value1"
+        },
+        "body": "{\"key\":\"value\"}",
+        "contentType": "application/json",
+        "expectedResult": {
+            "query.param1": "value1",
+            "headers.header1": "value1",
+            "cookies.cookie1": "value1",
+            "body.key": "value"
+        }
+    },
+    {
+        "queryParams": {
+            "param1": "value1"
+        },
+        "headers": {
+            "header1": "value1"
+        },
+        "cookies": {
+            "cookie1": "value1"
+        },
+        "body": "",
+        "contentType": "application/json",
+        "expectedResult": {
+            "query.param1": "value1",
+            "headers.header1": "value1",
+            "cookies.cookie1": "value1"
+        }
+    },
+    {
+        "queryParams": {
+            "param1": "value1"
+        },
+        "headers": {
+            "header1": "value1"
+        },
+        "cookies": {
+            "cookie1": "value1"
+        },
+        "body": "malformed json",
+        "contentType": "application/json",
+        "expectedResult": {
+            "query.param1": "value1",
+            "headers.header1": "value1",
+            "cookies.cookie1": "value1"
+        }
+    },
+    {
+        "queryParams": {
+            "param1": "value1"
+        },
+        "headers": {
+            "header1": "value1"
+        },
+        "cookies": {
+            "cookie1": "value1"
+        },
+        "body": "<root><key>value</key></root>",
+        "contentType": "application/xml",
+        "expectedResult": {
+            "query.param1": "value1",
+            "headers.header1": "value1",
+            "cookies.cookie1": "value1",
+            "body.root.key": "value"
+        }
+    },
+    {
+        "queryParams": {
+            "param1": "value1"
+        },
+        "headers": {
+            "header1": "value1"
+        },
+        "cookies": {
+            "cookie1": "value1"
+        },
+        "body": "--boundary\r\nContent-Disposition: form-data; name=\"key\"\r\n\r\nvalue\r\n--boundary--",
+        "contentType": "multipart/form-data; boundary=boundary",
+        "expectedResult": {
+            "query.param1": "value1",
+            "headers.header1": "value1",
+            "cookies.cookie1": "value1",
+            "body.section.0.key": "value"
+        }
+    },
+    {
+        "queryParams": {
+            "param1": "value1"
+        },
+        "headers": {
+            "header1": "value1"
+        },
+        "cookies": {
+            "cookie1": "value1"
+        },
+        "body": "plain text body",
+        "contentType": "text/plain",
+        "expectedResult": {
+            "query.param1": "value1",
+            "headers.header1": "value1",
+            "cookies.cookie1": "value1",
+            "body.text": "plain text body"
+        }
+    },
+    {
+        "queryParams": {
+            "param1": "value1"
+        },
+        "headers": {
+            "header1": "value1"
+        },
+        "cookies": {
+            "cookie1": "value1"
+        },
+        "body": "key1=value1&key2=value2",
+        "contentType": "application/x-www-form-urlencoded",
+        "expectedResult": {
+            "query.param1": "value1",
+            "headers.header1": "value1",
+            "cookies.cookie1": "value1",
+            "body.key1": "value1",
+            "body.key2": "value2"
+        }
+    }
+]
