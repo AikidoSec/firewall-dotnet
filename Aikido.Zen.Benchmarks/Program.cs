@@ -7,8 +7,12 @@ namespace Aikido.Zen.Benchmarks
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Running patch benchmarks...");
-            BenchmarkRunner.Run<PatchBenchmarks>();
+            // Console.WriteLine("Running patch benchmarks...");
+            // BenchmarkRunner.Run<PatchBenchmarks>();
+
+            Console.WriteLine("Running http helper benchmarks...");
+            BenchmarkRunner.Run<HttpHelperBenchmarks>();
+            
             Console.ReadLine();
         }
     }
