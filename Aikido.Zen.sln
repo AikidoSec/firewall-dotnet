@@ -15,6 +15,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		nuget.config = nuget.config
 	EndProjectSection
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Aikido.Zen.Benchmarks", "Aikido.Zen.Benchmarks\Aikido.Zen.Benchmarks.csproj", "{5979ED36-9260-43A3-95B9-7B7E859F7DDC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -37,6 +39,10 @@ Global
 		{E932836E-B927-41DC-937B-3328ACE8BCC1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E932836E-B927-41DC-937B-3328ACE8BCC1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E932836E-B927-41DC-937B-3328ACE8BCC1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5979ED36-9260-43A3-95B9-7B7E859F7DDC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5979ED36-9260-43A3-95B9-7B7E859F7DDC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5979ED36-9260-43A3-95B9-7B7E859F7DDC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5979ED36-9260-43A3-95B9-7B7E859F7DDC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

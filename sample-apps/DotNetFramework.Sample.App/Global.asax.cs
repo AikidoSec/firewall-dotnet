@@ -1,10 +1,11 @@
 using Aikido.Zen.DotNetFramework;
+using System;
 using System.Web.Http;
 using System.Web.Mvc;
 using System.Web.Optimization;
 using System.Web.Routing;
 
-namespace sql_injection_framework
+namespace DotNetFramework.Sample.App
 {
 	public class WebApiApplication : System.Web.HttpApplication
 	{

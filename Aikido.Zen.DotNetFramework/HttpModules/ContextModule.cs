@@ -8,8 +8,6 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
 {
 	internal class ContextModule : IHttpModule
 	{
-		private static Agent _agent;
-		private static string _apiToken;
 
 		public void Dispose()
 		{
@@ -18,13 +16,6 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
 
 		public void Init(HttpApplication context)
 		{
-			// Initialize agent if not already done
-			if (_agent == null)
-			{
-				var config = AikidoConfiguration.Options;
-				_apiToken = config.AikidoToken;
-				_agent = Zen.Agent;
-			}
 
 			context.BeginRequest += Context_BeginRequest;
 			context.EndRequest += Context_EndRequest;
@@ -50,7 +41,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 : HttpContext.Current.Request.ServerVariables["REMOTE_ADDR"];
             // Add request information to the agent, which will collect routes, users and stats
             // every x minutes, this information will be sent to the Zen server as a heartbeat event, and the collected info will be cleared
-            _agent.AddRequestContext(context.User, httpContext.Request.Url.AbsolutePath, context.Method, clientIp);
+            Agent.Instance.CaptureInboundRequest(context.User, httpContext.Request.Url.AbsolutePath, context.Method, clientIp);
 
 			if (httpContext.Request.ContentLength > 0)
 			{

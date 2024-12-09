@@ -1,7 +1,7 @@
 using System.Web;
 using System.Web.Optimization;
 
-namespace sql_injection_framework
+namespace DotNetFramework.Sample.App
 {
 	public class BundleConfig
 	{

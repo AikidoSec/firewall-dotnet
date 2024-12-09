@@ -1,4 +1,4 @@
-namespace sql_injection_framework
+namespace DotNetFramework.Sample.App
 {
 	public class DbSIConfig
 	{

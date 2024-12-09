@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "sql-injection-core", "sql-injection-core\sql-injection-core.csproj", "{F15FDC67-3E3D-42A8-B581-E23E87F87226}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DotNetCore.Sample.App", "DotNetCore.Sample.App\DotNetCore.Sample.App.csproj", "{F15FDC67-3E3D-42A8-B581-E23E87F87226}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "sql-injection-framework", "sql-injection-framework\sql-injection-framework.csproj", "{2FECB1FE-D637-4E3B-806D-568CEAE234E7}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotNetFramework.Sample.App", "DotNetFramework.Sample.App\DotNetFramework.Sample.App.csproj", "{2FECB1FE-D637-4E3B-806D-568CEAE234E7}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Aikido.Zen.DotNetCore", "..\Aikido.Zen.DotNetCore\Aikido.Zen.DotNetCore.csproj", "{7C092BF3-6E9F-4701-A801-90426D23A816}"
 EndProject

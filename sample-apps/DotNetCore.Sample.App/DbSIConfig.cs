@@ -1,4 +1,4 @@
-namespace sql_injection_core;
+namespace DotNetCore.Sample.App;
 /// <summary>
 /// Configuration for a database with SQL injection vulnerability
 /// </summary>

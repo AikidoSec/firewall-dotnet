@@ -97,3 +97,18 @@ GET https://localhost:7086/inject/MySql?name=NotAdmin' AND EXTRACTVALUE(1,CONCAT
 
 # Time-based Blind SQL injection
 GET https://localhost:7086/inject/MySql?name=NotAdmin' AND SLEEP(10) -- 
+
+### Test Outbound HTTP Requests
+
+# Test HttpClient endpoint
+GET https://localhost:7086/outbound/httpclient/https%3A%2F%2Fwww.google.com
+
+### Test Outbound HTTP Requests
+
+# Test WebRequest endpoint 
+GET https://localhost:7086/outbound/webrequest/https%3A%2F%2Fwww.google.com
+
+### Test Outbound HTTP Requests
+
+# Test WebRequest endpoint 
+GET https://localhost:7086/outbound/restsharp/https%3A%2F%2Fwww.google.com

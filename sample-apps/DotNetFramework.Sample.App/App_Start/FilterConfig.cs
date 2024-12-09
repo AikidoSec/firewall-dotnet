@@ -1,7 +1,7 @@
 ﻿using System.Web;
 using System.Web.Mvc;
 
-namespace sql_injection_framework
+namespace DotNetFramework.Sample.App
 {
 	public class FilterConfig
 	{
