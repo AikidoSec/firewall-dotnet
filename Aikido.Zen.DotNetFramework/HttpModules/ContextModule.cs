@@ -2,7 +2,7 @@ using System;
 using Aikido.Zen.Core;
 using System.Web;
 using System.Linq;
-using Aikido.Zen.DotNetFramework.Configuration;
+using Aikido.Zen.Core.Helpers;
 
 namespace Aikido.Zen.DotNetFramework.HttpModules
 {
@@ -47,12 +47,18 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
 			{
 				try
 				{
-					// We read the stream to a buffer, then reset the stream position
-					var buffer = new byte[httpContext.Request.ContentLength];
-					httpContext.Request.InputStream.Read(buffer, 0, buffer.Length);
-                    httpContext.Request.InputStream.Position = 0;
-                    var body = System.Text.Encoding.UTF8.GetString(buffer);
-                    context.Body = body;
+                    var request = httpContext.Request;
+                    // take all the user input and flatten it into a dictionary for easier processing
+                    var parsedUserInput = HttpHelper.ReadAndFlattenHttpDataAsync(
+                        queryParams: request.QueryString.AllKeys.ToDictionary(k => k, k => request.QueryString.Get(k)),
+                        headers: request.Headers.AllKeys.ToDictionary(k => k, k => request.Headers.Get(k)),
+                        cookies: request.Cookies.AllKeys.ToDictionary(k => k, k => request.Cookies[k].Value),
+                        body: request.InputStream,
+                        contentType: request.ContentType,
+                        contentLength: request.ContentLength
+                    ).Result;
+                    context.ParsedUserInput = parsedUserInput;
+
 				}
 				catch (Exception)
 				{

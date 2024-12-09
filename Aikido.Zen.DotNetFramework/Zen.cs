@@ -12,7 +12,7 @@ namespace Aikido.Zen.DotNetFramework
         {
             if (Environment.GetEnvironmentVariable("AIKIDO_DISABLE") == "true")
             {
-                return app;
+                return;
             }
             // patch the sinks
             Patcher.Patch();
