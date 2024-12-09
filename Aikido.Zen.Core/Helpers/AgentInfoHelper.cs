@@ -3,8 +3,15 @@ using System;
 
 namespace Aikido.Zen.Core.Helpers
 {
+	/// <summary>
+	/// Helper class for retrieving agent information about the current runtime environment.
+	/// </summary>
 	public class AgentInfoHelper
 	{
+		/// <summary>
+		/// Gets information about the current runtime environment including OS, platform, and configuration details.
+		/// </summary>
+		/// <returns>An AgentInfo object containing the environment information.</returns>
 		public static AgentInfo GetInfo()
 		{
 			return new AgentInfo
