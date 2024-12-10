@@ -30,30 +30,27 @@ namespace Aikido.Zen.DotNetCore.Middleware
             // every x minutes, this information will be sent to the Zen server as a heartbeat event, and the collected info will be cleared
             Agent.Instance.CaptureInboundRequest(context.User, httpContext.Request.Path, context.Method, clientIp);
 
-            if (httpContext.Request.ContentLength > 0)
+            try
             {
-                try
-                {
-                    var request = httpContext.Request;
-                    // allow the body to be read multiple times
-                    request.EnableBuffering();
-                    var parsedUserInput = await HttpHelper.ReadAndFlattenHttpDataAsync(
-                        queryParams: context.Query.ToDictionary(h => h.Key, h => string.Join(',', h.Value)),
-                        headers: context.Headers.ToDictionary(h => h.Key, h => string.Join(',', h.Value)),
-                        cookies: context.Cookies,
-                        body: request.Body,
-                        contentType: request.ContentType,
-                        contentLength: request.ContentLength ?? 0
-                    );
-                    context.ParsedUserInput = parsedUserInput;
+                var request = httpContext.Request;
+                // allow the body to be read multiple times
+                request.EnableBuffering();
+                var parsedUserInput = await HttpHelper.ReadAndFlattenHttpDataAsync(
+                    queryParams: context.Query.ToDictionary(h => h.Key, h => string.Join(',', h.Value)),
+                    headers: context.Headers.ToDictionary(h => h.Key, h => string.Join(',', h.Value)),
+                    cookies: context.Cookies,
+                    body: request.Body,
+                    contentType: request.ContentType,
+                    contentLength: request.ContentLength ?? 0
+                );
+                context.ParsedUserInput = parsedUserInput;
 
-                }
-                catch (Exception e)
-                {
-                    var message = e.Message;
-                    var trace = e.StackTrace;
-                    throw;
-                }
+            }
+            catch (Exception e)
+            {
+                var message = e.Message;
+                var trace = e.StackTrace;
+                throw;
             }
 
             httpContext.Items["Aikido.Zen.Context"] = context;

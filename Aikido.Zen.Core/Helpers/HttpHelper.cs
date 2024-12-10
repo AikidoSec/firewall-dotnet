@@ -6,7 +6,6 @@ using System.Xml;
 using System.Text.Json;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Net.Http.Headers;
-using System.Linq;
 
 namespace Aikido.Zen.Core.Helpers
 {
@@ -33,7 +32,7 @@ namespace Aikido.Zen.Core.Helpers
             string contentType,
             long contentLength)
         {
-            var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase); // Case-insensitive keys
+            var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
             // Process Query Parameters
             ProcessQueryParameters(queryParams, result);
@@ -71,7 +70,6 @@ namespace Aikido.Zen.Core.Helpers
             }
         }
 
-        // Processes cookies and adds them to the result dictionary.
         private static void ProcessCookies(IDictionary<string, string> cookies, IDictionary<string, string> result)
         {
             foreach (var cookie in cookies)
@@ -80,129 +78,104 @@ namespace Aikido.Zen.Core.Helpers
             }
         }
 
-        // Processes the request body based on its content type and adds the data to the result dictionary.
         private static async Task ProcessRequestBodyAsync(Stream body, string contentType, IDictionary<string, string> result)
         {
-            try
+            if (IsMultipart(contentType, out var boundary))
             {
-                if (IsMultipart(contentType, out string boundary))
+                await ProcessMultipartFormDataAsync(body, boundary, result);
+            }
+            else
+            {
+                body.Seek(0, SeekOrigin.Begin);
+                using (var reader = new StreamReader(body, detectEncodingFromByteOrderMarks: true, bufferSize: 4096, leaveOpen: true, encoding: System.Text.Encoding.UTF8))
                 {
-                    await ProcessMultipartFormDataAsync(body, boundary, result);
-                }
-                else
-                {
-                    using (var reader = new StreamReader(body, detectEncodingFromByteOrderMarks: true, bufferSize: 4096, leaveOpen: true, encoding: System.Text.Encoding.UTF8))
+                    if (contentType.Contains("application/json"))
                     {
-                        if (contentType.Contains("application/json"))
+                        try
                         {
-                            string json = await reader.ReadToEndAsync();
-                            try {
-                                var jsonData = JsonSerializer.Deserialize<Dictionary<string, object>>(json);
-                                Flatten(result, jsonData, "body");
-                            }
-                            catch (JsonException)
+                            using (JsonDocument document = await JsonDocument.ParseAsync(body))
                             {
-                                result["body.text"] = json;
+                                FlattenJson(result, document.RootElement, "body");
                             }
                         }
-                        else if (contentType.Contains("application/xml") || contentType.Contains("text/xml"))
+                        catch (Exception)
                         {
-                            string xmlString = await reader.ReadToEndAsync();
-                            var xmlDoc = new XmlDocument();
-                            try
-                            {
-                                xmlDoc.LoadXml(xmlString);
-                                FlattenXml(result, xmlDoc.DocumentElement, "body");
+                            result["body.text"] = await reader.ReadToEndAsync();
+                        }
 
-                            }
-                            catch (Exception)
-                            {
-                                result["body.text"] = xmlString;
-                            }
-                        }
-                        else if (contentType.Contains("application/x-www-form-urlencoded"))
+                    }
+                    else if (contentType.Contains("application/xml") || contentType.Contains("text/xml"))
+                    {
+                        using (var xmlReader = XmlReader.Create(body, new XmlReaderSettings { Async = true }))
                         {
-                            string formString = await reader.ReadToEndAsync();
-                            var formPairs = QueryHelpers.ParseQuery(formString);
-                            foreach (var pair in formPairs)
-                            {
-                                result[$"body.{pair.Key}"] = pair.Value;
-                            }
-                        }
-                        else
-                        {
-                            string text = await reader.ReadToEndAsync();
-                            result["body.text"] = text;
+                            var xmlDoc = new XmlDocument();
+                            xmlDoc.Load(xmlReader);
+                            FlattenXml(result, xmlDoc.DocumentElement, "body");
                         }
                     }
+                    else if (contentType.Contains("application/x-www-form-urlencoded"))
+                    {
+                        string formString = await reader.ReadToEndAsync();
+                        var formPairs = QueryHelpers.ParseQuery(formString);
+                        foreach (var pair in formPairs)
+                        {
+                            result[$"body.{pair.Key}"] = pair.Value;
+                        }
+                    }
+                    else
+                    {
+                        string text = await reader.ReadToEndAsync();
+                        result["body.text"] = text;
+                    }
                 }
-            }
-            finally
-            {
-                body.Seek(0, SeekOrigin.Begin); // Reset the stream position
             }
         }
 
-        // Processes multipart form-data and adds the data to the result dictionary.
         private static async Task ProcessMultipartFormDataAsync(Stream body, string boundary, IDictionary<string, string> result)
         {
             var reader = new MultipartReader(boundary, body);
-            MultipartSection currentSection = null;
-            var currentSectionIndex = 0;
-            do
+            MultipartSection section = null;
+            int sectionIndex = 0;
+
+            while ((section = await reader.ReadNextSectionAsync()) != null)
             {
-                currentSection = await reader.ReadNextSectionAsync();
-                if (currentSection != null)
+                var contentDisposition = section.GetContentDispositionHeader();
+                if (contentDisposition != null)
                 {
-                    var contentDisposition = currentSection.GetContentDispositionHeader();
-                    if (contentDisposition == null)
-                        continue;
-                    if (currentSection.ContentType == "application/json")
+                    if (section.ContentType == "application/json")
                     {
-                        var json = await currentSection.ReadAsStringAsync();
-                        try
+                        using (JsonDocument document = await JsonDocument.ParseAsync(section.Body))
                         {
-                            var jsonData = JsonSerializer.Deserialize<Dictionary<string, object>>(json);
-                            Flatten(result, jsonData, "body.section." + currentSectionIndex);
-                        }
-                        catch (Exception)
-                        {
-                            result[$"body.section.{currentSectionIndex}.text"] = json;
+                            FlattenJson(result, document.RootElement, $"body.section.{sectionIndex}");
                         }
                     }
-                    else if (currentSection.ContentType == "application/xml" || currentSection.ContentType == "text/xml")
+                    else if (section.ContentType == "application/xml" || section.ContentType == "text/xml")
                     {
-                        var xmlString = await currentSection.ReadAsStringAsync();
-                        var xmlDoc = new XmlDocument();
-                        try
+                        using (var xmlReader = XmlReader.Create(section.Body, new XmlReaderSettings { Async = true }))
                         {
-                            xmlDoc.LoadXml(xmlString);
-                            FlattenXml(result, xmlDoc.DocumentElement, "body.section." + currentSectionIndex);
-                        }
-                        catch (Exception)
-                        {
-                            result[$"body.section.{currentSectionIndex}.text"] = xmlString;
+                            var xmlDoc = new XmlDocument();
+                            xmlDoc.Load(xmlReader);
+                            FlattenXml(result, xmlDoc.DocumentElement, $"body.section.{sectionIndex}");
                         }
                     }
                     else if (contentDisposition.IsFileDisposition())
                     {
                         var fileName = contentDisposition.FileName.Value;
-                        var fileSize = currentSection.Body.Length / 1024 / 1024;
-                        var fileContent = fileSize < 1 ? await currentSection.ReadAsStringAsync() : $"File size: {fileSize} MB";
-                        result[$"body.section.{currentSectionIndex}.file.{fileName}"] = fileContent;
+                        var fileSize = section.Body.Length / 1024 / 1024;
+                        var fileContent = fileSize < 1 ? await section.ReadAsStringAsync() : $"File size: {fileSize} MB";
+                        result[$"body.section.{sectionIndex}.file.{fileName}"] = fileContent;
                     }
                     else if (contentDisposition.IsFormDisposition())
                     {
                         var formField = contentDisposition.Name.Value;
-                        var formContent = await currentSection.ReadAsStringAsync();
-                        result[$"body.section.{currentSectionIndex}.{formField}"] = formContent;
-                    }
-                    else
-                    {
-                        result[$"body.section.{currentSectionIndex}.text"] = await currentSection.ReadAsStringAsync();
+                        using (var formReader = new StreamReader(section.Body))
+                        {
+                            result[$"body.section.{sectionIndex}.{formField}"] = await section.ReadAsStringAsync();
+                        }
                     }
                 }
-            } while (currentSection != null);
+                sectionIndex++;
+            }
         }
 
         // Checks if the content type is multipart and extracts the boundary string.
@@ -219,73 +192,33 @@ namespace Aikido.Zen.Core.Helpers
         }
 
         private static void FlattenJson(IDictionary<string, string> result, JsonElement element, string prefix)
-        private static void Flatten(IDictionary<string, string> result, IDictionary<string, object> data, string prefix)
         {
-            foreach (var kvp in data)
+            foreach (var property in element.EnumerateObject())
             {
-                string key = string.IsNullOrEmpty(prefix) ? kvp.Key : $"{prefix}.{kvp.Key}";
-
-                if (kvp.Value is IDictionary<string, object> dicValue)
+                string key = string.IsNullOrEmpty(prefix) ? property.Name : $"{prefix}.{property.Name}";
+                if (property.Value.ValueKind == JsonValueKind.Object)
                 {
-                    Flatten(result, dicValue, key);
+                    FlattenJson(result, property.Value, key);
                 }
                 else
                 {
-                    result[key] = kvp.Value?.ToString() ?? string.Empty;
+                    result[key] = property.Value.ToString();
                 }
             }
         }
 
-        // // Recursively flattens an XML element into a dictionary using dot notation for keys.
         private static void FlattenXml(IDictionary<string, string> result, XmlElement element, string prefix)
         {
             string newPrefix = string.IsNullOrEmpty(prefix) ? element.Name : $"{prefix}.{element.Name}";
-
-            // Keep track of how many times we've seen each element name
-            var elementCounts = new Dictionary<string, int>();
-
             foreach (XmlNode childNode in element.ChildNodes)
             {
                 if (childNode is XmlElement childElement)
                 {
-                    // For repeated elements, append an index, we do this by checking if there is more than one child element with the same name
-                    if (!elementCounts.ContainsKey(childElement.Name))
-                    {
-                        elementCounts[childElement.Name] = 0;
-                    }
-                    string indexedPrefix = $"{newPrefix}.{childElement.Name}";
-                    if (element.ChildNodes.Cast<XmlNode>().Count(n => n.Name == childElement.Name) > 1)
-                        indexedPrefix += $".{elementCounts[childElement.Name]}";
-                    elementCounts[childElement.Name]++;
-
-                    if (childElement.ChildNodes.Count == 1 && childElement.FirstChild is XmlText textNode)
-                    {
-                        // If element has only text content, add it directly
-                        result[indexedPrefix] = textNode.Value.Trim();
-                    }
-                    else
-                    {
-                        // If element has child elements, recurse
-                        FlattenXml(result, childElement, indexedPrefix);
-                    }
-
-                    // Process attributes
-                    foreach (XmlAttribute attribute in childElement.Attributes)
-                    {
-                        result[$"{indexedPrefix}.{attribute.Name}"] = attribute.Value.Trim();
-                    }
+                    FlattenXml(result, childElement, newPrefix);
                 }
-                else if (childNode is XmlText textNode && !string.IsNullOrWhiteSpace(textNode.Value))
+                else if (childNode is XmlText textNode)
                 {
-                    // For text nodes, add or update the value directly
-                    if (result.ContainsKey(newPrefix) && result[newPrefix] != textNode.Value.Trim())
-                    {
-                        result[newPrefix] = textNode.Value.Trim();
-                    }
-                    else
-                    {
-                        result[newPrefix] = textNode.Value.Trim();
-                    }
+                    result[newPrefix] = textNode.Value.Trim();
                 }
             }
         }

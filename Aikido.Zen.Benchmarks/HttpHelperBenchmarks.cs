@@ -8,12 +8,13 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Text;
 using System.Linq;
+using BenchmarkDotNet.Columns;
 
 namespace Aikido.Zen.Benchmarks
 {
     [SimpleJob(RuntimeMoniker.Net48, baseline: false, warmupCount: 1, iterationCount: 5)]
     [SimpleJob(RuntimeMoniker.Net80, baseline: true, warmupCount: 1, iterationCount: 5)]
-    [SimpleJob(RuntimeMoniker.NativeAot80, baseline: false, warmupCount: 1, iterationCount: 5)]
+    [HideColumns(Column.StdErr, Column.StdDev, Column.Error, Column.Min, Column.Max, Column.RatioSD)]
     public class HttpHelperBenchmarks
     {
         private IDictionary<string, string> _queryParams;
@@ -25,8 +26,6 @@ namespace Aikido.Zen.Benchmarks
         private Stream _multipartFormBody;
 
         private string _boundary;
-        private IDictionary<string,string> _formValues;
-        private IDictionary<string, string> _multiPartFormValues;
 
         private const string JsonContentType = "application/json";
         private const string XmlContentType = "application/xml";
@@ -48,53 +47,6 @@ namespace Aikido.Zen.Benchmarks
             var items = Enumerable.Range(1, size)
                 .Select(i => $"<key{i}>value{i}</key{i}>");
             return "<root>" + string.Join("", items) + "</root>";
-        }
-
-        private IDictionary<string, string> FormContentToFormValues(string content)
-        {
-            return content.Split('&')
-                .Select(item => item.Split('='))
-                .ToDictionary(pair => pair[0], pair => pair[1]);
-        }
-
-        private IDictionary<string,string> MultipartFormContentToFormValues(string content)
-        {
-            var formValues = new Dictionary<string, string>();
-            var parts = content.Split(new[] { "--" + _boundary }, StringSplitOptions.RemoveEmptyEntries);
-            
-            foreach (var part in parts)
-            {
-                if (string.IsNullOrWhiteSpace(part) || part == "--") continue;
-
-                var lines = part.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
-                if (lines.Length < 1) continue;
-
-                var contentDisposition = lines[0];
-                if (!contentDisposition.StartsWith("Content-Disposition:")) continue;
-
-                var nameMatch = contentDisposition.Split(new[] { "name=\"" }, StringSplitOptions.None);
-                if (nameMatch.Length < 2) continue;
-
-                var name = nameMatch[1].Split('\"')[0];
-                var value = "";
-
-                // Find the value after the empty line
-                for (int i = 1; i < lines.Length; i++)
-                {
-                    if (string.IsNullOrEmpty(lines[i]))
-                    {
-                        if (i + 1 < lines.Length)
-                        {
-                            value = lines[i + 1];
-                            break;
-                        }
-                    }
-                }
-
-                formValues[name] = value;
-            }
-
-            return formValues;
         }
 
         private string CreateFormContent(int size)
@@ -169,9 +121,6 @@ namespace Aikido.Zen.Benchmarks
             _xmlBody = new MemoryStream(Encoding.UTF8.GetBytes(xmlContent));
             _formBody = new MemoryStream(Encoding.UTF8.GetBytes(formContent));
             _multipartFormBody = new MemoryStream(Encoding.UTF8.GetBytes(multipartContent));
-
-            _formValues = FormContentToFormValues(formContent);
-            _multiPartFormValues = MultipartFormContentToFormValues(multipartContent);
         }
 
         [Benchmark]
