@@ -218,7 +218,7 @@ namespace Aikido.Zen.Core.Helpers
             return isMultipart;
         }
 
-        // Recursively flattens a nested dictionary into a single-level dictionary using dot notation for keys.
+        private static void FlattenJson(IDictionary<string, string> result, JsonElement element, string prefix)
         private static void Flatten(IDictionary<string, string> result, IDictionary<string, object> data, string prefix)
         {
             foreach (var kvp in data)
