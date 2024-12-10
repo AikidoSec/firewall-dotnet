@@ -66,9 +66,13 @@ namespace Aikido.Zen.Core
         /// </summary>
         /// <param name="token">The authentication token for the Zen API</param>
         public void Start(string token) {
+            // send started event
             QueueEvent(token, new Started {
                 Agent = AgentInfoHelper.GetInfo()
             });
+
+            // get blocked ip list
+            var blockedIps = _api.Reporting.GetBlockedIps(token).Result;
 
             // Schedule heartbeat event every x minutes
             ScheduleEvent(
