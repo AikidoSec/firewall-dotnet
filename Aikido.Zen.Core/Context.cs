@@ -8,12 +8,12 @@ namespace Aikido.Zen.Core
 	{
 		public string Url { get; set; } = string.Empty;
 		public string Method { get; set; } = string.Empty;
-		public Dictionary<string, string[]> Query { get; set; } = new Dictionary<string, string[]>();
-		public Dictionary<string, string[]> Headers { get; set; } = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
-		public Dictionary<string, string> RouteParams { get; set; }
+		public IDictionary<string, string[]> Query { get; set; } = new Dictionary<string, string[]>();
+		public IDictionary<string, string[]> Headers { get; set; } = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
+		public IDictionary<string, string> RouteParams { get; set; }
 		public string RemoteAddress { get; set; } = string.Empty;
-		public object Body { get; set; }
-		public Dictionary<string, string> Cookies { get; set; } = new Dictionary<string, string>();
+		public IDictionary<string, string> Body { get; set; }
+		public IDictionary<string, string> Cookies { get; set; } = new Dictionary<string, string>();
 		public bool AttackDetected { get; set; }
 		public bool ConsumedRateLimitForIP { get; set; }
 		public bool ConsumedRateLimitForUser { get; set; }
@@ -25,6 +25,7 @@ namespace Aikido.Zen.Core
 		public string[] Subdomains { get; set; } = Array.Empty<string>();
 		public Dictionary<string, HashSet<string>> Cache { get; set; }
 		public List<RedirectInfo> OutgoingRequestRedirects { get; set; }
+        public IDictionary<string, string> ParsedUserInput { get; set; }
 
 	}
 

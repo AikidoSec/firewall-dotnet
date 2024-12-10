@@ -361,6 +361,7 @@
     <Compile Include="App_Start\FilterConfig.cs" />
     <Compile Include="App_Start\RouteConfig.cs" />
     <Compile Include="App_Start\WebApiConfig.cs" />
+    <Compile Include="Controllers\ContentTypeController.cs" />
     <Compile Include="Controllers\OutboundController.cs" />
     <Compile Include="Controllers\SIController.cs" />
     <Compile Include="DbSIConfig.cs" />

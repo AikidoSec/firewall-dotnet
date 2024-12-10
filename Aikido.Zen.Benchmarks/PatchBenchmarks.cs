@@ -7,19 +7,20 @@ using Aikido.Zen.Core.Api;
 using System;
 using System.Threading.Tasks;
 using System.Net.Http;
+using BenchmarkDotNet.Columns;
 
 namespace Aikido.Zen.Benchmarks
 {
     [SimpleJob(RuntimeMoniker.Net48, baseline: false, warmupCount: 1, iterationCount: 5)]
     [SimpleJob(RuntimeMoniker.Net80, baseline: true, warmupCount: 1, iterationCount: 5)]
-    [SimpleJob(RuntimeMoniker.NativeAot80, baseline: false, warmupCount: 1, iterationCount: 5)]
+    [HideColumns(Column.StdErr, Column.StdDev, Column.Error, Column.Min, Column.Max, Column.RatioSD)]
     public class PatchBenchmarks
     {
         private HttpClient _httpClient;
         private HttpWebRequest _webRequest;
         private static string aikidoUrl = Environment.GetEnvironmentVariable("AIKIDO_URL") ?? "https://guard.aikido.dev";
 
-        [GlobalSetup(Targets = [nameof(HttpClientUnpatched), nameof(HttpWebRequestUnpatched)])]
+        [GlobalSetup(Targets = new[] { nameof(HttpClientUnpatched), nameof(HttpWebRequestUnpatched) })]
         public void UnpatchedSetup()
         {
             _httpClient = new HttpClient();
@@ -28,7 +29,7 @@ namespace Aikido.Zen.Benchmarks
             Patcher.Unpatch();
         }
 
-        [GlobalSetup(Targets = [nameof(HttpClientPatched), nameof(HttpWebRequestPatched)])]
+        [GlobalSetup(Targets = new[] { nameof(HttpClientPatched), nameof(HttpWebRequestPatched) })]
         public void PatchedSetup()
         {
             _httpClient = new HttpClient();

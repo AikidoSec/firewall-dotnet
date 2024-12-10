@@ -8,11 +8,13 @@ namespace Aikido.Zen.DotNetFramework
 {
     public class Zen
     {
+        // we need to reference Harmony somewhere to ensure it is copied with our package
+        private static HarmonyLib.Harmony harmony = new HarmonyLib.Harmony("reference");
         public static void Start()
         {
             if (Environment.GetEnvironmentVariable("AIKIDO_DISABLE") == "true")
             {
-                return app;
+                return;
             }
             // patch the sinks
             Patcher.Patch();
