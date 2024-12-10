@@ -28,7 +28,7 @@ namespace DotNetFramework.Sample.App.Controllers
         /// <returns>Information about the received files and form data</returns>
         [HttpPost]
         [Route("multipart")]
-        public async Task<IHttpActionResult> PostMultipartFormData()
+        public IHttpActionResult PostMultipartFormData()
         {
             return Ok(HttpContext.Current.Items["Aikido.Zen.Context"]);
         }
@@ -39,7 +39,7 @@ namespace DotNetFramework.Sample.App.Controllers
         /// <returns>The received text</returns>
         [HttpPost]
         [Route("text")]
-        public async Task<IHttpActionResult> PostText()
+        public IHttpActionResult PostText()
         {
             return Ok(HttpContext.Current.Items["Aikido.Zen.Context"]);
         }
@@ -63,7 +63,9 @@ namespace DotNetFramework.Sample.App.Controllers
         [Route("xml")]
         public IHttpActionResult PostXml()
         {
-            return Ok(HttpContext.Current.Items["Aikido.Zen.Context"]);
+            // we consume xml, but want to return json
+            HttpContext.Current.Response.ContentType = "application/json";
+            return Json(HttpContext.Current.Items["Aikido.Zen.Context"]);
         }
     }
 }

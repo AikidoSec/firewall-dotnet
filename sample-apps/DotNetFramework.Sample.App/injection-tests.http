@@ -167,4 +167,9 @@ Content-Type: application/xml
 <root>
   <item>value1</item>
   <item>value2</item>
+  <nested>
+    <item>value3</item>
+    <item text="value4" />
+    <item value="value5" />
+  </nested>
 </root>
