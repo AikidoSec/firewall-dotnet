@@ -14,13 +14,14 @@
     <ProjectTypeGuids>{349c5851-65df-11da-9384-00065b846f21};{fae04ec0-301f-11d3-bf4b-00c04f79efbc}</ProjectTypeGuids>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>sql_injection_framework</RootNamespace>
-    <AssemblyName>sql-injection-framework</AssemblyName>
+    <RootNamespace>DotNetFramework.Sample.App</RootNamespace>
+    <AssemblyName>DotNetFramework.Sample.App</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <MvcBuildViews>false</MvcBuildViews>
     <UseIISExpress>true</UseIISExpress>
     <Use64BitIISExpress />
     <IISExpressSSLPort>44351</IISExpressSSLPort>
+    <IISExpressPort>5095</IISExpressPort>
     <IISExpressAnonymousAuthentication />
     <IISExpressWindowsAuthentication />
     <IISExpressUseClassicPipelineMode />
@@ -361,6 +362,7 @@
     <Compile Include="App_Start\FilterConfig.cs" />
     <Compile Include="App_Start\RouteConfig.cs" />
     <Compile Include="App_Start\WebApiConfig.cs" />
+    <Compile Include="Controllers\BenchmarkController.cs" />
     <Compile Include="Controllers\ContentTypeController.cs" />
     <Compile Include="Controllers\OutboundController.cs" />
     <Compile Include="Controllers\SIController.cs" />
@@ -384,6 +386,7 @@
   <ItemGroup>
     <Folder Include="App_Data\" />
     <Folder Include="Models\" />
+    <Folder Include="Views\Becnhmark\" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
