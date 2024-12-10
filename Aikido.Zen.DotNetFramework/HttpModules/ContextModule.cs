@@ -3,6 +3,7 @@ using Aikido.Zen.Core;
 using System.Web;
 using System.Linq;
 using Aikido.Zen.Core.Helpers;
+using System.Threading.Tasks;
 
 namespace Aikido.Zen.DotNetFramework.HttpModules
 {
@@ -17,12 +18,12 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
 		public void Init(HttpApplication context)
 		{
 
-			context.BeginRequest += Context_BeginRequest;
+			context.BeginRequest += (sender, e) => Task.Run(() => Context_BeginRequest(sender,e));
 			context.EndRequest += Context_EndRequest;
 			context.Error += Context_Error;
 		}
 
-		private void Context_BeginRequest(object sender, EventArgs e)
+		private async Task Context_BeginRequest(object sender, EventArgs e)
 		{
 			var httpContext = ((HttpApplication)sender).Context;
 			
@@ -38,7 +39,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
 
             var clientIp = !string.IsNullOrEmpty(httpContext.Request.ServerVariables["HTTP_X_FORWARDED_FOR"])
                 ? httpContext.Request.ServerVariables["HTTP_X_FORWARDED_FOR"]
-                : HttpContext.Current.Request.ServerVariables["REMOTE_ADDR"];
+                : httpContext.Request.ServerVariables["REMOTE_ADDR"];
             // Add request information to the agent, which will collect routes, users and stats
             // every x minutes, this information will be sent to the Zen server as a heartbeat event, and the collected info will be cleared
             Agent.Instance.CaptureInboundRequest(context.User, httpContext.Request.Url.AbsolutePath, context.Method, clientIp);
@@ -49,14 +50,14 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
 				{
                     var request = httpContext.Request;
                     // take all the user input and flatten it into a dictionary for easier processing
-                    var parsedUserInput = HttpHelper.ReadAndFlattenHttpDataAsync(
+                    var parsedUserInput = await HttpHelper.ReadAndFlattenHttpDataAsync(
                         queryParams: request.QueryString.AllKeys.ToDictionary(k => k, k => request.QueryString.Get(k)),
                         headers: request.Headers.AllKeys.ToDictionary(k => k, k => request.Headers.Get(k)),
                         cookies: request.Cookies.AllKeys.ToDictionary(k => k, k => request.Cookies[k].Value),
                         body: request.InputStream,
                         contentType: request.ContentType,
                         contentLength: request.ContentLength
-                    ).Result;
+                    );
                     context.ParsedUserInput = parsedUserInput;
 
 				}
