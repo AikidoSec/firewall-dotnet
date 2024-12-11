@@ -45,12 +45,14 @@ namespace Aikido.Zen.DotNetCore
 				agent.Start(options.Value.AikidoToken);
 			}
 			Patcher.Patch();
+            app.UseMiddleware<BlockingMiddleware>();
 			return app;
 		}
 
         internal static IServiceCollection AddAikidoZenMiddleware(this IServiceCollection services)
         {
             services.AddTransient<ContextMiddleware>();
+            services.AddTransient<BlockingMiddleware>();
             return services;
         }
 
@@ -64,10 +66,16 @@ namespace Aikido.Zen.DotNetCore
 		}
 
 		internal static IServiceCollection AddZenApi(this IServiceCollection services) {
+            var aikidoUrl = new Uri(Environment.GetEnvironmentVariable("AIKIDO_URL") ?? "https://guard.aikido.dev");
+            var runtimeUrl = new Uri(Environment.GetEnvironmentVariable("AIKIDO_REALTIME_URL") ?? "https://runtime.aikido.dev");
 			services.AddTransient<IReportingAPIClient>(provider =>
 			{
-				return new ReportingAPIClient(new Uri("https://guard.aikido.dev"));
+				return new ReportingAPIClient(aikidoUrl);
 			});
+            services.AddTransient<IRuntimeAPIClient>(provider =>
+            {
+                return new RuntimeAPIClient(runtimeUrl, aikidoUrl);
+            });
 			services.AddTransient<IZenApi, ZenApi>();
 			return services;
 		}
