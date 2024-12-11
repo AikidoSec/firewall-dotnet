@@ -4,6 +4,9 @@ using System.Web;
 using System.Linq;
 using Aikido.Zen.Core.Helpers;
 using System.Threading.Tasks;
+using Aikido.Zen.Core.Models;
+using System.Runtime.Remoting.Contexts;
+using Context = Aikido.Zen.Core.Context;
 
 namespace Aikido.Zen.DotNetFramework.HttpModules
 {
@@ -17,10 +20,29 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
 
         public void Init(HttpApplication context)
         {
-
+            context.PostAuthenticateRequest += Context_PostAuthenticateRequest;
             context.BeginRequest += (sender, e) => Task.Run(() => Context_BeginRequest(sender, e));
             context.EndRequest += Context_EndRequest;
             context.Error += Context_Error;
+        }
+
+        private void Context_PostAuthenticateRequest(object sender, EventArgs e)
+        {
+            var httpContext = ((HttpApplication)sender).Context;
+            var user = Zen.SetUserAction(httpContext);
+            httpContext.Items["Aikido.Zen.CurrentUser"] = user;
+            var clientIp = !string.IsNullOrEmpty(httpContext.Request.ServerVariables["HTTP_X_FORWARDED_FOR"])
+                ? httpContext.Request.ServerVariables["HTTP_X_FORWARDED_FOR"]
+                : httpContext.Request.ServerVariables["REMOTE_ADDR"];
+            Agent.Instance.CaptureUser(user, clientIp);
+            // block the request if the user is blocked
+            if (Agent.Instance.Context.IsBlocked(user, clientIp, $"{httpContext.Request.HttpMethod}|{httpContext.Request.Path}"))
+            {
+                Agent.Instance.Context.AddAbortedRequest();
+                httpContext.Response.StatusCode = 403;
+                // stop the request from being processed
+                httpContext.Response.End();
+            }
         }
 
         private async Task Context_BeginRequest(object sender, EventArgs e)
