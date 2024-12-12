@@ -1,14 +1,5 @@
-using Microsoft.Data.SqlClient;
-using Microsoft.Data.Sqlite;
-using Npgsql;
-using MySql.Data.MySqlClient;
-using System.Data.Common;
-using DotNetCore.Sample.App;
 using Aikido.Zen.DotNetCore;
-using System.Net;
-using RestSharp;
-using System.Xml.Linq;
-using Microsoft.AspNetCore.Mvc;
+using Aikido.Zen.DotNetCore.Middleware;
 
 
 /// <summary>
@@ -18,15 +9,25 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddZenFireWall();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services
+    .AddRouting()
     .AddControllers()
     .AddXmlDataContractSerializerFormatters();
 
 var app = builder.Build();
 app
-    // add the firewall first
-    .UseZenFireWall()
     // add routing
     .UseRouting()
+    // authorize users
+    .Use((context, next) =>
+    {
+        var id = context.User?.Identity?.Name ?? "test";
+        var name = context.User?.Identity?.Name ?? "Anonymous";
+        if (!string.IsNullOrEmpty(id))
+            Zen.SetUser(id, name, context);
+        return next();
+    })
+    // add Zen middleware
+    .UseZenFireWall()
     // add controllers
     .UseEndpoints(endpoints => endpoints.MapControllers());
 
