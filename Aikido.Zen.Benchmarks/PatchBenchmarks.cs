@@ -19,7 +19,7 @@ namespace Aikido.Zen.Benchmarks
         private HttpClient _httpClient;
         private HttpWebRequest _webRequest;
         private static string aikidoUrl = Environment.GetEnvironmentVariable("AIKIDO_URL") ?? "https://guard.aikido.dev";
-        private static string aikidoRuntimeUrl = Environment.GetEnvironmentVariable("AIKIDO_RUNTIME_URL") ?? "https://runtime.aikido.dev";
+        private static string aikidoRuntimeUrl = Environment.GetEnvironmentVariable("AIKIDO_REALTIME_URL") ?? "https://runtime.aikido.dev";
 
         [GlobalSetup(Targets = new[] { nameof(HttpClientUnpatched), nameof(HttpWebRequestUnpatched) })]
         public void UnpatchedSetup()
