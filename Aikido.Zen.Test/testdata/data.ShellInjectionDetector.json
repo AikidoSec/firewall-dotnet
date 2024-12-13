@@ -1,0 +1,152 @@
+[
+    {
+        "command": "ls `",
+        "userInput": "`",
+        "description": "SAFE: Single character backtick is safe",
+        "isInjection": false
+    },
+    {
+        "command": "ls *", 
+        "userInput": "*",
+        "description": "SAFE: Single character wildcard is safe",
+        "isInjection": false
+    },
+    {
+        "command": "ls",
+        "userInput": "",
+        "description": "SAFE: Empty user input is safe",
+        "isInjection": false
+    },
+    {
+        "command": "ls",
+        "userInput": "$(echo)",
+        "description": "SAFE: User input not in command is safe",
+        "isInjection": false
+    },
+    {
+        "command": "ls $(echo)",
+        "userInput": "$(echo)",
+        "description": "ATTACK: Command substitution",
+        "isInjection": true
+    },
+    {
+        "command": "ls \"$(echo)\"",
+        "userInput": "$(echo)",
+        "description": "ATTACK: Command substitution in double quotes",
+        "isInjection": true
+    },
+    {
+        "command": "ls '$(echo)'",
+        "userInput": "$(echo)",
+        "description": "SAFE: Command substitution in single quotes is safe",
+        "isInjection": false
+    },
+    {
+        "command": "echo `echo`",
+        "userInput": "`echo`", 
+        "description": "ATTACK: Backtick command substitution",
+        "isInjection": true
+    },
+    {
+        "command": "ls ''single quote''",
+        "userInput": "'single quote'",
+        "description": "ATTACK: Single quote between single quotes",
+        "isInjection": true
+    },
+    {
+        "command": "ls whatever;",
+        "userInput": "whatever;",
+        "description": "ATTACK: Command chaining with semicolon",
+        "isInjection": true
+    },
+    {
+        "command": "ls \"whatever;\"",
+        "userInput": "whatever;",
+        "description": "SAFE: Semicolon in double quotes is safe",
+        "isInjection": false
+    },
+    {
+        "command": "ls; rm -rf",
+        "userInput": "; rm -rf",
+        "description": "ATTACK: Dangerous rm command with semicolon",
+        "isInjection": true
+    },
+    {
+        "command": "ls && rm -rf /",
+        "userInput": "&& rm -rf /",
+        "description": "ATTACK: Command chaining with &&",
+        "isInjection": true
+    },
+    {
+        "command": "ls || echo 'malicious code'",
+        "userInput": "|| echo 'malicious code'",
+        "description": "ATTACK: Command chaining with ||",
+        "isInjection": true
+    },
+    {
+        "command": "ls > /dev/null",
+        "userInput": "> /dev/null",
+        "description": "ATTACK: Output redirection",
+        "isInjection": true
+    },
+    {
+        "command": "echo 'data' >> /etc/passwd",
+        "userInput": ">> /etc/passwd",
+        "description": "ATTACK: Append redirection",
+        "isInjection": true
+    },
+    {
+        "command": "cat file.txt | grep 'password'",
+        "userInput": "| grep 'password'",
+        "description": "ATTACK: Pipe character",
+        "isInjection": true
+    },
+    {
+        "command": "echo '|'",
+        "userInput": "|",
+        "description": "SAFE: Pipe in single quotes is safe",
+        "isInjection": false
+    },
+    {
+        "command": "echo $USER",
+        "userInput": "$USER",
+        "description": "ATTACK: Environment variable expansion",
+        "isInjection": true
+    },
+    {
+        "command": "echo '$USER'",
+        "userInput": "$USER",
+        "description": "SAFE: Environment variable in single quotes is safe",
+        "isInjection": false
+    },
+    {
+        "command": "ls \nrm",
+        "userInput": "\nrm",
+        "description": "ATTACK: Command injection with newline",
+        "isInjection": true
+    },
+    {
+        "command": "rm -rf /",
+        "userInput": "rm -rf /",
+        "description": "ATTACK: Dangerous rm command",
+        "isInjection": true
+    },
+    {
+        "command": "sleep 10",
+        "userInput": "sleep 10",
+        "description": "ATTACK: Dangerous sleep command",
+        "isInjection": true
+    },
+    {
+        "command": "shutdown -h now",
+        "userInput": "shutdown -h now",
+        "description": "ATTACK: Dangerous shutdown command",
+        "isInjection": true
+    },
+    {
+        "command": "chmod 777",
+        "userInput": "chmod 777",
+        "description": "ATTACK: Dangerous chmod command",
+        "isInjection": true
+    }
+]

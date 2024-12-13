@@ -1,0 +1,58 @@
+[
+    {
+        "command": "SELECT * FROM users WHERE id = '' OR 1=1 -- '",
+        "dialect": 0,
+        "userInput": "' OR 1=1 --",
+        "description": "ATTACK: Basic OR condition with comment",
+        "isInjection": true
+    },
+    {
+        "command": "SELECT * FROM users WHERE id = '1'; DROP TABLE users; -- '",
+        "dialect": 0,
+        "userInput": "1'; DROP TABLE users; -- ",
+        "description": "ATTACK: Command chaining with comment", 
+        "isInjection": true
+    },
+    {
+        "command": "SELECT * FROM users WHERE id = 1 OR 1=1",
+        "dialect": 0,
+        "userInput": "1 OR 1=1",
+        "description": "ATTACK: Basic OR condition",
+        "isInjection": true
+    },
+    {
+        "command": "SELECT * FROM users WHERE id = $$1$$ OR 1=1 -- $$",
+        "dialect": 9,
+        "userInput": "1$$ OR 1=1 -- ",
+        "description": "ATTACK: PostgreSQL dollar sign injection",
+        "isInjection": true
+    },
+    {
+        "command": "SELECT * FROM users WHERE id = $name$1$name$ OR 1=1 -- $name$",
+        "dialect": 9,
+        "userInput": "1$name$ OR 1=1 -- ",
+        "description": "ATTACK: PostgreSQL named dollar sign injection",
+        "isInjection": true
+    },
+    {
+        "command": "SELECT * FROM users WHERE id = 'users\\\\'",
+        "dialect": 0,
+        "userInput": "users\\\\",
+        "description": "SAFE: Escaped backslashes",
+        "isInjection": false
+    },
+    {
+        "command": "SELECT * FROM users WHERE id = $$' OR 1=1 -- $$",
+        "dialect": 9,
+        "userInput": "' OR 1=1 -- ",
+        "description": "SAFE: PostgreSQL dollar sign quotes",
+        "isInjection": false
+    },
+    {
+        "command": "SELECT * FROM users WHERE id = $name$' OR 1=1 -- $name$",
+        "dialect": 9,
+        "userInput": "' OR 1=1 -- ",
+        "description": "SAFE: PostgreSQL named dollar sign quotes",
+        "isInjection": false
+    }
+]
