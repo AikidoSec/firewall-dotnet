@@ -20,6 +20,9 @@ namespace Aikido.Zen.Benchmarks
             Console.WriteLine("Running sql detection benchmarks...");
             summaries.Add(BenchmarkRunner.Run<SQLInjectionDetectionBenchmarks>());
 
+            Console.WriteLine("Running shell detection benchmarks...");
+            summaries.Add(BenchmarkRunner.Run<ShellInjectionDetectionBenchmarks>());
+
             foreach (var summary in summaries)
             {
                 // Export the results to a markdown file
