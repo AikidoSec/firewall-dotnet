@@ -20,6 +20,14 @@
     <Version>0.0.1</Version>
   </PropertyGroup>
 
+    <!-- always copy the \libraries directory to the output directory-->
+    <ItemGroup>
+        <Content Include=".\libraries\**\*.*">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
+    </ItemGroup>
+        
+
 
   <!--<Target Name="PostBuild" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug'">
     <Message Text="Creating NuGet package for Core..." Importance="high" />
