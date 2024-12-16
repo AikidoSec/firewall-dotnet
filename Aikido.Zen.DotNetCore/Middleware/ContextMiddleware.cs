@@ -50,6 +50,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
                     contentLength: request.ContentLength ?? 0
                 );
                 context.ParsedUserInput = parsedUserInput;
+                context.Body = request.Body;
 
             }
             catch (Exception e)

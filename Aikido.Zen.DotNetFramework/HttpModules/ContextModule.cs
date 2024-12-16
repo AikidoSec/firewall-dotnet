@@ -4,9 +4,8 @@ using System.Web;
 using System.Linq;
 using Aikido.Zen.Core.Helpers;
 using System.Threading.Tasks;
-using Aikido.Zen.Core.Models;
-using System.Runtime.Remoting.Contexts;
 using Context = Aikido.Zen.Core.Context;
+using Aikido.Zen.Core.Exceptions;
 
 namespace Aikido.Zen.DotNetFramework.HttpModules
 {
@@ -39,9 +38,15 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             if (Agent.Instance.Context.IsBlocked(user, clientIp, $"{httpContext.Request.HttpMethod}|{httpContext.Request.Path}"))
             {
                 Agent.Instance.Context.AddAbortedRequest();
+                // don't actually block the request if we are in dry mode
+                if (AgentInfoHelper.DryMode)
+                {
+                    return;
+                }
                 httpContext.Response.StatusCode = 403;
                 // stop the request from being processed
                 httpContext.Response.End();
+                throw AikidoException.RequestBlocked($"{httpContext.Request.HttpMethod}|{httpContext.Request.Path}", clientIp);
             }
         }
 
