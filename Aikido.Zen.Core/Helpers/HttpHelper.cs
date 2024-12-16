@@ -6,6 +6,7 @@ using System.Xml;
 using System.Text.Json;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Net.Http.Headers;
+using Aikido.Zen.Core.Models;
 
 namespace Aikido.Zen.Core.Helpers
 {
@@ -52,6 +53,47 @@ namespace Aikido.Zen.Core.Helpers
             return result;
         }
 
+        /// <summary>
+        /// Reads the raw body content from a stream.
+        /// </summary>
+        /// <param name="body"></param>
+        /// <returns></returns>
+        public static string GetRawBody(Stream body)
+        {
+            using (var reader = new StreamReader(body, detectEncodingFromByteOrderMarks: true, bufferSize: 4096, leaveOpen: true, encoding: System.Text.Encoding.UTF8))
+            {
+                return reader.ReadToEnd();
+            }
+        }
+
+        /// <summary>
+        /// Extracts the source of the user input from the path.
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        public static Source GetSourceFromUserInputPath(string path)
+        {
+            path = path.ToLower();
+
+            if (path.Contains("query"))
+            {
+                return Source.Query;
+            }
+            else if (path.Contains("headers"))
+            {
+                return Source.Headers;
+            }
+            else if (path.Contains("cookies"))
+            {
+                return Source.Cookies;
+            }
+            else if (path.Contains("route"))
+            {
+                return Source.RouteParams;
+            }
+            return Source.Body;
+        }
+
         // Processes query parameters and adds them to the result dictionary.
         private static void ProcessQueryParameters(IDictionary<string, string> queryParams, IDictionary<string, string> result)
         {
@@ -80,54 +122,53 @@ namespace Aikido.Zen.Core.Helpers
 
         private static async Task ProcessRequestBodyAsync(Stream body, string contentType, IDictionary<string, string> result)
         {
-            if (IsMultipart(contentType, out var boundary))
+            try
             {
-                await ProcessMultipartFormDataAsync(body, boundary, result);
-            }
-            else
-            {
-                body.Seek(0, SeekOrigin.Begin);
-                using (var reader = new StreamReader(body, detectEncodingFromByteOrderMarks: true, bufferSize: 4096, leaveOpen: true, encoding: System.Text.Encoding.UTF8))
+                if (IsMultipart(contentType, out var boundary))
                 {
-                    if (contentType.Contains("application/json"))
+                    await ProcessMultipartFormDataAsync(body, boundary, result);
+                }
+                else
+                {
+                    using (var reader = new StreamReader(body, detectEncodingFromByteOrderMarks: true, bufferSize: 4096, leaveOpen: true, encoding: System.Text.Encoding.UTF8))
                     {
-                        try
+                        if (contentType.Contains("application/json"))
                         {
                             using (JsonDocument document = await JsonDocument.ParseAsync(body))
                             {
                                 FlattenJson(result, document.RootElement, "body");
                             }
-                        }
-                        catch (Exception)
-                        {
-                            result["body.text"] = await reader.ReadToEndAsync();
-                        }
 
-                    }
-                    else if (contentType.Contains("application/xml") || contentType.Contains("text/xml"))
-                    {
-                        using (var xmlReader = XmlReader.Create(body, new XmlReaderSettings { Async = true }))
-                        {
-                            var xmlDoc = new XmlDocument();
-                            xmlDoc.Load(xmlReader);
-                            FlattenXml(result, xmlDoc.DocumentElement, "body");
                         }
-                    }
-                    else if (contentType.Contains("application/x-www-form-urlencoded"))
-                    {
-                        string formString = await reader.ReadToEndAsync();
-                        var formPairs = QueryHelpers.ParseQuery(formString);
-                        foreach (var pair in formPairs)
+                        else if (contentType.Contains("application/xml") || contentType.Contains("text/xml"))
                         {
-                            result[$"body.{pair.Key}"] = pair.Value;
+                            using (var xmlReader = XmlReader.Create(body, new XmlReaderSettings { Async = true }))
+                            {
+                                var xmlDoc = new XmlDocument();
+                                xmlDoc.Load(xmlReader);
+                                FlattenXml(result, xmlDoc.DocumentElement, "body");
+                            }
                         }
-                    }
-                    else
-                    {
-                        string text = await reader.ReadToEndAsync();
-                        result["body.text"] = text;
+                        else if (contentType.Contains("application/x-www-form-urlencoded"))
+                        {
+                            string formString = await reader.ReadToEndAsync();
+                            var formPairs = QueryHelpers.ParseQuery(formString);
+                            foreach (var pair in formPairs)
+                            {
+                                result[$"body.{pair.Key}"] = pair.Value;
+                            }
+                        }
                     }
                 }
+            }
+            catch (Exception e)
+            {
+                // log error
+            }
+            finally
+            {
+                // reset the stream position
+                body.Seek(0, SeekOrigin.Begin);
             }
         }
 
