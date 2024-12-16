@@ -75,7 +75,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
 
         private static bool ShouldReturnEarly(string query, string userInput)
         {
-            if (userInput.Length <= 1 || query.Length < userInput.Length)
+            if (query == null || userInput == null || userInput.Length <= 1 || query.Length < userInput.Length)
             {
                 return true;
             }
