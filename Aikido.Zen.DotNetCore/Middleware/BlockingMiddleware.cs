@@ -1,4 +1,5 @@
 using Aikido.Zen.Core;
+using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.Core.Models;
 using Microsoft.AspNetCore.Http;
 
@@ -18,7 +19,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
             {
                 Agent.Instance.Context.AddAbortedRequest();
                 context.Response.StatusCode = 403;
-                return Task.CompletedTask;
+                throw AikidoException.RequestBlocked($"{context.Request.Method}|{context.Request.Path}", context.Connection.RemoteIpAddress?.ToString());
             }
 
             return next(context);
