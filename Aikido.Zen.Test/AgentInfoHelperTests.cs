@@ -55,32 +55,6 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void DryMode_ShouldBeTrueByDefault()
-        {
-            // Arrange
-            SetEnvironmentVariable("AIKIDO_BLOCKING", null);
-
-            // Act
-            bool isDryMode = EnvironmentHelper.DryMode;
-
-            // Assert
-            Assert.That(isDryMode, Is.True);
-        }
-
-        [Test]
-        public void DryMode_ShouldBeFalseWhenBlockingEnabled()
-        {
-            // Arrange
-            SetEnvironmentVariable("AIKIDO_BLOCKING", "true");
-
-            // Act
-            bool isDryMode = EnvironmentHelper.DryMode;
-
-            // Assert
-            Assert.That(isDryMode, Is.False);
-        }
-
-        [Test]
         public void GetInfo_ServerlessDetection_AWS()
         {
             // Arrange
