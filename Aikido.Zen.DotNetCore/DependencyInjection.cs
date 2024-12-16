@@ -7,7 +7,7 @@ using Aikido.Zen.Core.Api;
 using Aikido.Zen.DotNetCore.StartupFilters;
 using Microsoft.Extensions.Options;
 using Aikido.Zen.DotNetCore.Middleware;
-using Aikido.Zen.Core.Patches;
+using Aikido.Zen.DotNetCore.Patches;
 
 namespace Aikido.Zen.DotNetCore
 {
@@ -28,6 +28,11 @@ namespace Aikido.Zen.DotNetCore
 			// register the configuration
 			services.AddAikidoZenConfiguration(configuration);
 
+            // make sure we use the httpcontext accessor
+            services.AddHttpContextAccessor();
+            // now we can register our context accessor
+            services.AddTransient<ContextAccessor>();
+
 			// register the startup filter
 			services.AddTransient<IStartupFilter, ZenStartupFilter>();
 
@@ -44,10 +49,15 @@ namespace Aikido.Zen.DotNetCore
             if (Environment.GetEnvironmentVariable("AIKIDO_DISABLE") == "true") {
                 return app;
             }
+            Zen.Initialize(app.ApplicationServices);
             var agent = Agent.GetInstance(app.ApplicationServices.GetRequiredService<IZenApi>());
 			var options = app.ApplicationServices.GetRequiredService<IOptions<AikidoOptions>>();
 			if (options?.Value?.AikidoToken != null) {
-				agent.Start(options.Value.AikidoToken);
+                if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AIKIDO_TOKEN")))
+                {
+                    Environment.SetEnvironmentVariable("AIKIDO_TOKEN", options.Value.AikidoToken);
+                }
+				agent.Start();
 			}
 			Patcher.Patch();
             app.UseMiddleware<BlockingMiddleware>();
@@ -66,6 +76,9 @@ namespace Aikido.Zen.DotNetCore
             services.Configure<AikidoOptions>(options =>
             {
                 options.AikidoToken = configuration["Aikido:AikidoToken"] ?? Environment.GetEnvironmentVariable("AIKIDO_TOKEN");
+                if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AIKIDO_TOKEN"))) {
+                    Environment.SetEnvironmentVariable("AIKIDO_TOKEN", options.AikidoToken);
+                }
             });
             return services;
 		}

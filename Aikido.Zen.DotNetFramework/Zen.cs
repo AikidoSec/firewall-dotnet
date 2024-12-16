@@ -2,7 +2,7 @@ using Aikido.Zen.Core;
 using Aikido.Zen.Core.Api;
 using System;
 using Aikido.Zen.DotNetFramework.Configuration;
-using Aikido.Zen.Core.Patches;
+using Aikido.Zen.DotNetFramework.Patches;
 using System.Web;
 using Aikido.Zen.Core.Models;
 
@@ -32,7 +32,7 @@ namespace Aikido.Zen.DotNetFramework
                 var zenApi = new ZenApi(reportingApiClient, runtimeApiClient);
                 Agent.GetInstance(zenApi);
             }
-            Agent.Instance.Start(AikidoConfiguration.Options.AikidoToken);
+            Agent.Instance.Start();
         }
 
         internal static Func<HttpContext, User> SetUserAction { get; set; } = (context) => new User(context.User.Identity?.Name ?? context.Session.SessionID, context.User.Identity?.Name ?? "Anonymous");
@@ -40,6 +40,16 @@ namespace Aikido.Zen.DotNetFramework
         public static void SetUser(Func<HttpContext, User> setUser)
         {
             SetUserAction = setUser;
+        }
+
+        public static Context GetContext()
+        {
+            return (Context)HttpContext.Current.Items["Aikido.Zen.Context"];
+        }
+
+        public static User GetUser()
+        {
+            return (User)HttpContext.Current.Items["Aikido.Zen.CurrentUser"];
         }
     }
 }
