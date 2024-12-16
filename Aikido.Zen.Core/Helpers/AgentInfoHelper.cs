@@ -30,12 +30,12 @@ namespace Aikido.Zen.Core.Helpers
 					Arch = Environment.Version.Major >= 5 ? "core" : "framework"
 				},
 				IpAddress = IPHelper.Server,
-				DryMode = Environment.GetEnvironmentVariable("AIKIDO_BLOCKING") == "true",
+				DryMode = EnvironmentHelper.DryMode,
 				// check if lambda or azure function
 				Serverless = Environment.GetEnvironmentVariable("AWS_LAMBDA_FUNCTION_NAME") != null || Environment.GetEnvironmentVariable("WEBSITE_INSTANCE_ID") != null,
 				Library = "firewall-dotnet",
 				Version = "1.0.0"
 			};
 		}
-	}
+    }
 }
