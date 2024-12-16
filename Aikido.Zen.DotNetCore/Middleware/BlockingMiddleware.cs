@@ -1,5 +1,6 @@
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Exceptions;
+using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 using Microsoft.AspNetCore.Http;
 
@@ -18,8 +19,12 @@ namespace Aikido.Zen.DotNetCore.Middleware
             if (Agent.Instance.Context.IsBlocked(user, context.Connection.RemoteIpAddress?.ToString(), $"{context.Request.Method}|{context.Request.Path}"))
             {
                 Agent.Instance.Context.AddAbortedRequest();
-                context.Response.StatusCode = 403;
-                throw AikidoException.RequestBlocked($"{context.Request.Method}|{context.Request.Path}", context.Connection.RemoteIpAddress?.ToString());
+                // don't actually block the request if we are in dry mode
+                if (!EnvironmentHelper.DryMode)
+                {
+                    context.Response.StatusCode = 403;
+                    throw AikidoException.RequestBlocked($"{context.Request.Method}|{context.Request.Path}", context.Connection.RemoteIpAddress?.ToString());
+                }
             }
 
             return next(context);
