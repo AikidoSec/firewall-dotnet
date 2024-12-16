@@ -1,6 +1,7 @@
 using Aikido.Zen.Core.Models;
 using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace Aikido.Zen.Core
 {
@@ -12,7 +13,7 @@ namespace Aikido.Zen.Core
 		public IDictionary<string, string[]> Headers { get; set; } = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
 		public IDictionary<string, string> RouteParams { get; set; }
 		public string RemoteAddress { get; set; } = string.Empty;
-		public IDictionary<string, string> Body { get; set; }
+		public Stream Body { get; set; }
 		public IDictionary<string, string> Cookies { get; set; } = new Dictionary<string, string>();
 		public bool AttackDetected { get; set; }
 		public bool ConsumedRateLimitForIP { get; set; }
