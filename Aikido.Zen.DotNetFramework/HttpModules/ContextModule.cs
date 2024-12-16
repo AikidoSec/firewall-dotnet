@@ -39,7 +39,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             {
                 Agent.Instance.Context.AddAbortedRequest();
                 // don't actually block the request if we are in dry mode
-                if (AgentInfoHelper.DryMode)
+                if (EnvironmentHelper.DryMode)
                 {
                     return;
                 }
