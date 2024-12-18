@@ -1,13 +1,19 @@
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Helpers;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
+using Microsoft.AspNetCore.Routing.Patterns;
+using Microsoft.AspNetCore.Routing.Template;
+using System;
 
 namespace Aikido.Zen.DotNetCore.Middleware
 {
     public class ContextMiddleware : IMiddleware
     {
-        public ContextMiddleware()
+        private readonly IEnumerable<Endpoint> _endpoints;
+        public ContextMiddleware(IEnumerable<EndpointDataSource> endpointSources)
         {
+            _endpoints = endpointSources.SelectMany(s => s.Endpoints).ToList();
         }
 
         public async Task InvokeAsync(HttpContext httpContext, RequestDelegate next)
@@ -27,7 +33,10 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 Headers = httpContext.Request.Headers
                     .ToDictionary(h => h.Key, h => h.Value.ToArray()),
                 RemoteAddress = httpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty,
-                Cookies = httpContext.Request.Cookies.ToDictionary(c => c.Key, c => c.Value)
+                Cookies = httpContext.Request.Cookies.ToDictionary(c => c.Key, c => c.Value),
+                UserAgent = httpContext.Request.Headers["User-Agent"].ToString(),
+                Source = httpContext.Request.Path.ToString(),
+                Route = GetRoute(httpContext),
             };
 
             // no need to use X-FORWARDED-FOR, .NET Core already handles this
@@ -62,6 +71,13 @@ namespace Aikido.Zen.DotNetCore.Middleware
 
             httpContext.Items["Aikido.Zen.Context"] = context;
             await next(httpContext);
+        }
+
+        private string? GetRoute(HttpContext context)
+        {
+            var path = context.Request.Path.Value;
+            var endpoint = _endpoints.FirstOrDefault(e => (e as RouteEndpoint) != null && RouteHelper.MatchRoute((e as RouteEndpoint)!.RoutePattern.RawText, path));
+            return (endpoint as RouteEndpoint)?.RoutePattern.RawText;
         }
     }
 }
