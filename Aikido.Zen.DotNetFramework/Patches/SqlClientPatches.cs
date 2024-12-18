@@ -1,4 +1,3 @@
-
 using Aikido.Zen.Core.Helpers;
 using HarmonyLib;
 using Microsoft.Data.SqlClient;
@@ -9,61 +8,84 @@ using Npgsql;
 using Aikido.Zen.Core.Models;
 using MySqlX.XDevAPI.Relational;
 using System.Reflection;
+using Aikido.Zen.Core.Exceptions;
 
 namespace Aikido.Zen.DotNetFramework.Patches
 {
-    // SQL server
-    [HarmonyPatch(typeof(SqlCommand), "ExecuteNonQuery")]
-    [HarmonyPatch(typeof(SqlCommand), "ExecuteScalar")]
-    [HarmonyPatch(typeof(SqlCommand), "ExecuteReader")]
-    // SQLite
-    [HarmonyPatch(typeof(SqliteCommand), "ExecuteNonQuery")]
-    [HarmonyPatch(typeof(SqliteCommand), "ExecuteScalar")]
-    [HarmonyPatch(typeof(SqliteCommand), "ExecuteReader")]
-    // MySql, MariaDB
-    [HarmonyPatch(typeof(MySqlCommand), "ExecuteNonQuery")]
-    [HarmonyPatch(typeof(MySqlCommand), "ExecuteScalar")]
-    [HarmonyPatch(typeof(MySqlCommand), "ExecuteReader")]
-    // PostgreSQL
-    [HarmonyPatch(typeof(NpgsqlCommand), "ExecuteNonQuery")]
-    [HarmonyPatch(typeof(NpgsqlCommand), "ExecuteScalar")]
-    [HarmonyPatch(typeof(NpgsqlCommand), "ExecuteReader")]
-
-    internal class SqlClientPatches
+    internal static class SqlClientPatches
     {
-        [HarmonyPrefix]
-        internal static bool OnCommandExecuting(MethodInfo methodInfo, DbCommand command)
+        public static void ApplyPatches(Harmony harmony)
         {
+            // SQL Server
+            PatchMethod(harmony, typeof(SqlCommand), "ExecuteNonQuery");
+            PatchMethod(harmony, typeof(SqlCommand), "ExecuteScalar");
+            PatchMethod(harmony, typeof(SqlCommand), "ExecuteReader", typeof(System.Data.CommandBehavior));
+
+            // SQLite
+            PatchMethod(harmony, typeof(SqliteCommand), "ExecuteNonQuery");
+            PatchMethod(harmony, typeof(SqliteCommand), "ExecuteScalar");
+            PatchMethod(harmony, typeof(SqliteCommand), "ExecuteReader", typeof(System.Data.CommandBehavior));
+
+            // MySql, MariaDB
+            PatchMethod(harmony, typeof(MySqlCommand), "ExecuteNonQuery");
+            PatchMethod(harmony, typeof(MySqlCommand), "ExecuteScalar");
+            PatchMethod(harmony, typeof(MySqlCommand), "ExecuteReader", typeof(System.Data.CommandBehavior));
+
+            // PostgreSQL
+            PatchMethod(harmony, typeof(NpgsqlCommand), "ExecuteNonQuery");
+            PatchMethod(harmony, typeof(NpgsqlCommand), "ExecuteScalar");
+            PatchMethod(harmony, typeof(NpgsqlCommand), "ExecuteReader", typeof(System.Data.CommandBehavior));
+
+            // MySqlX
+            PatchMethod(harmony, typeof(Table), "Select");
+            PatchMethod(harmony, typeof(Table), "Insert");
+            PatchMethod(harmony, typeof(Table), "Update");
+            PatchMethod(harmony, typeof(Table), "Delete");
+        }
+
+        private static void PatchMethod(Harmony harmony, Type type, string methodName, params Type[] parameters)
+        {
+            var method = AccessTools.Method(type, methodName, parameters);
+            if (method != null)
+            {
+                harmony.Patch(method, new HarmonyMethod(typeof(SqlClientPatches).GetMethod(nameof(OnCommandExecuting), BindingFlags.Static | BindingFlags.NonPublic)));
+            }
+        }
+
+        private static bool OnCommandExecuting(object[] __args, MethodBase __originalMethod, DbCommand __instance)
+        {
+            var command = __instance;
+            var methodInfo = __originalMethod as MethodInfo;
             var context = Zen.GetContext();
+
             if (context == null)
             {
                 return true;
             }
-            if (SqlCommandHelper.DetectSQLInjection(command.CommandText, GetDialect(command, out var type, out var assembly), context, assembly, $"{type}.{methodInfo.Name}"))
+            if (command != null && SqlCommandHelper.DetectSQLInjection(command.CommandText, GetDialect(command, out var type, out var assembly), context, assembly, $"{type}.{methodInfo.Name}"))
             {
                 // keep going if dry mode
                 if (EnvironmentHelper.DryMode)
                 {
                     return true;
                 }
-                return false;
+                throw AikidoException.SQLInjectionDetected(command.CommandText);
             }
             return true;
         }
 
         private static SQLDialect GetDialect(DbCommand dbCommand, out string type, out string assembly)
         {
-            // get the dialect of the command
             if (dbCommand is SqlCommand)
             {
                 type = nameof(SqlCommand);
-                assembly = typeof(SqlCommand).AssemblyQualifiedName;
+                assembly = typeof(SqlCommand).Assembly.FullName?.Split(", Culture=")[0];
                 return SQLDialect.MicrosoftSQL;
             }
             else if (dbCommand is SqliteCommand)
             {
                 type = nameof(SqliteCommand);
-                assembly = typeof(SqliteCommand).AssemblyQualifiedName;
+                assembly = typeof(SqliteCommand).Assembly.FullName.Split(", Culture=")[0];
                 return SQLDialect.Generic;
             }
             else if (dbCommand is MySqlCommand)
@@ -81,32 +103,6 @@ namespace Aikido.Zen.DotNetFramework.Patches
             type = null;
             assembly = null;
             return SQLDialect.Generic;
-        }
-    }
-
-    [HarmonyPatch(typeof(Table), "Select")]
-    [HarmonyPatch(typeof(Table), "Insert")]
-    [HarmonyPatch(typeof(Table), "Update")]
-    [HarmonyPatch(typeof(Table), "Delete")]
-    internal class MySqlXPatches
-    {
-        internal static bool OnCommandExecuting(MethodInfo methodInfo, SqlStatement command)
-        {
-            var context = Zen.GetContext();
-            if (context == null)
-            {
-                return true;
-            }
-            if (SqlCommandHelper.DetectSQLInjection(command.SQL, SQLDialect.MySQL, context, typeof(Table).AssemblyQualifiedName, typeof(Table).Name + "." + methodInfo.Name))
-            {
-                // keep going if dry mode
-                if (EnvironmentHelper.DryMode)
-                {
-                    return true;
-                }
-                return false;
-            }
-            return true;
         }
     }
 }
