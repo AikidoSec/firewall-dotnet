@@ -8,6 +8,7 @@ using System;
 using System.Threading.Tasks;
 using System.Net.Http;
 using BenchmarkDotNet.Columns;
+using Aikido.Zen.Core.Helpers;
 
 namespace Aikido.Zen.Benchmarks
 {
@@ -18,15 +19,13 @@ namespace Aikido.Zen.Benchmarks
     {
         private HttpClient _httpClient;
         private HttpWebRequest _webRequest;
-        private static string aikidoUrl = Environment.GetEnvironmentVariable("AIKIDO_URL") ?? "https://guard.aikido.dev";
-        private static string aikidoRuntimeUrl = Environment.GetEnvironmentVariable("AIKIDO_REALTIME_URL") ?? "https://runtime.aikido.dev";
 
         [GlobalSetup(Targets = new[] { nameof(HttpClientUnpatched), nameof(HttpWebRequestUnpatched) })]
         public void UnpatchedSetup()
         {
             _httpClient = new HttpClient();
-            var reportingAPIClient = new ReportingAPIClient(new Uri(aikidoUrl));
-            var runtimeAPIClient = new RuntimeAPIClient(new Uri(aikidoRuntimeUrl), new Uri(aikidoUrl));
+            var reportingAPIClient = new ReportingAPIClient();
+            var runtimeAPIClient = new RuntimeAPIClient();
             Agent.GetInstance(new ZenApi(reportingAPIClient, runtimeAPIClient));
 
             Patcher.Unpatch();
@@ -36,8 +35,8 @@ namespace Aikido.Zen.Benchmarks
         public void PatchedSetup()
         {
             _httpClient = new HttpClient();
-            var reportingAPIClient = new ReportingAPIClient(new Uri(aikidoUrl));
-            var runtimeAPIClient = new RuntimeAPIClient(new Uri(aikidoRuntimeUrl), new Uri(aikidoUrl));
+            var reportingAPIClient = new ReportingAPIClient();
+            var runtimeAPIClient = new RuntimeAPIClient();
             Agent.GetInstance(new ZenApi(reportingAPIClient, runtimeAPIClient));
 
             Patcher.Patch();
