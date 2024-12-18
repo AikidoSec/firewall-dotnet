@@ -10,8 +10,7 @@ namespace Aikido.Zen.DotNetCore.Patches
         {
             CorePatcher.Patch();
             var harmony = new Harmony("aikido.zen.dotnetcore");
-            var executingAssembly = System.Reflection.Assembly.GetExecutingAssembly();
-            harmony.PatchAll(executingAssembly);
+            SqlClientPatches.ApplyPatches(harmony);
 
         }
 
