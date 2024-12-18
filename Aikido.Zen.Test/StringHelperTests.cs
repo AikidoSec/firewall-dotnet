@@ -40,21 +40,5 @@ namespace Aikido.Zen.Test
             Assert.AreEqual(expectedRemainder, remainder.ToString());
         }
 
-        [TestCase("{parameter}", true)]
-        [TestCase("{parameter", false)]
-        [TestCase("parameter}", false)]
-        [TestCase("parameter", false)]
-        [TestCase("thing={value}", false)]
-        public void IsRouteParameter_ShouldReturnExpectedResult(string input, bool expectedResult)
-        {
-            // Arrange
-            var inputSpan = input.AsSpan();
-
-            // Act
-            var result = inputSpan.IsRouteParameter();
-
-            // Assert
-            Assert.AreEqual(expectedResult, result);
-        }
     }
 }
