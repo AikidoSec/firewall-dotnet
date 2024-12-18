@@ -8,6 +8,7 @@ using Aikido.Zen.DotNetCore.StartupFilters;
 using Microsoft.Extensions.Options;
 using Aikido.Zen.DotNetCore.Middleware;
 using Aikido.Zen.DotNetCore.Patches;
+using Microsoft.AspNetCore.Http;
 
 namespace Aikido.Zen.DotNetCore
 {
@@ -31,7 +32,11 @@ namespace Aikido.Zen.DotNetCore
             // make sure we use the httpcontext accessor
             services.AddHttpContextAccessor();
             // now we can register our context accessor
-            services.AddTransient<ContextAccessor>();
+            services.AddTransient<ContextAccessor>(factory =>
+            {
+                var httpContextAccessor = factory.GetRequiredService<IHttpContextAccessor>();
+                return new ContextAccessor(httpContextAccessor);
+            });
 
 			// register the startup filter
 			services.AddTransient<IStartupFilter, ZenStartupFilter>();
@@ -50,13 +55,9 @@ namespace Aikido.Zen.DotNetCore
                 return app;
             }
             Zen.Initialize(app.ApplicationServices);
-            var agent = Agent.GetInstance(app.ApplicationServices.GetRequiredService<IZenApi>());
 			var options = app.ApplicationServices.GetRequiredService<IOptions<AikidoOptions>>();
 			if (options?.Value?.AikidoToken != null) {
-                if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AIKIDO_TOKEN")))
-                {
-                    Environment.SetEnvironmentVariable("AIKIDO_TOKEN", options.Value.AikidoToken);
-                }
+                var agent = Agent.GetInstance(app.ApplicationServices.GetRequiredService<IZenApi>());
 				agent.Start();
 			}
 			Patcher.Patch();
@@ -79,20 +80,22 @@ namespace Aikido.Zen.DotNetCore
                 if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AIKIDO_TOKEN"))) {
                     Environment.SetEnvironmentVariable("AIKIDO_TOKEN", options.AikidoToken);
                 }
+                options.AikidoUrl = configuration["Aikido:AikidoUrl"] ?? Environment.GetEnvironmentVariable("AIKIDO_URL");
+                if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AIKIDO_URL"))) {
+                    Environment.SetEnvironmentVariable("AIKIDO_URL", options.AikidoUrl);
+                }
             });
             return services;
 		}
 
 		internal static IServiceCollection AddZenApi(this IServiceCollection services) {
-            var aikidoUrl = new Uri(Environment.GetEnvironmentVariable("AIKIDO_URL") ?? "https://guard.aikido.dev");
-            var runtimeUrl = new Uri(Environment.GetEnvironmentVariable("AIKIDO_REALTIME_URL") ?? "https://runtime.aikido.dev");
 			services.AddTransient<IReportingAPIClient>(provider =>
 			{
-				return new ReportingAPIClient(aikidoUrl);
+				return new ReportingAPIClient();
 			});
             services.AddTransient<IRuntimeAPIClient>(provider =>
             {
-                return new RuntimeAPIClient(runtimeUrl, aikidoUrl);
+                return new RuntimeAPIClient();
             });
 			services.AddTransient<IZenApi, ZenApi>();
 			return services;
