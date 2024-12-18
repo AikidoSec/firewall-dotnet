@@ -1,7 +1,10 @@
 using System;
+using System.Runtime.Serialization;
+using System.Text.Json.Serialization;
 
 namespace Aikido.Zen.Core.Models
 {
+    [JsonConverter(typeof(JsonStringEnumConverter))]
     public enum AttackKind
     {
         // leave this out for now, until we cover nosql attacks
@@ -14,6 +17,25 @@ namespace Aikido.Zen.Core.Models
 
     public static class AttackKindExtensions 
     {
+        public static string ToJsonName(this AttackKind kind) {
+            switch (kind)
+            {
+                // leave this out for now, until we cover nosql attacks
+                // case AttackKind.NosqlInjection:
+                //     return "a NoSQL injection";
+                case AttackKind.SqlInjection:
+                    return "sql_injection";
+                case AttackKind.ShellInjection:
+                    return "shell_injection";
+                case AttackKind.PathTraversal:
+                    return "path_traversal";
+                case AttackKind.Ssrf:
+                    return "ssrf";
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(kind));
+            }
+        }
+
         public static string ToHumanName(this AttackKind kind)
         {
             switch (kind)
