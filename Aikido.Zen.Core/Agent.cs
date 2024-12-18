@@ -274,25 +274,27 @@ namespace Aikido.Zen.Core
             var attack = new Attack
             {
                 Blocked = blocked,
-                Kind = kind,
+                Kind = kind.ToJsonName(),
                 Module = module, // the qualified assembly name
                 Path = path,
-                User = context.User,
+                User = context.User ?? new User("unkown", "unkown"),
                 Payload = payload,
                 Operation = operation, // the class + method where the attack was detected
                 Metadata = metadata,
-                Stack = new StackTrace().ToString(),
-                Source = source
+                Stack = "stack",//new StackTrace().ToString().Substring(0, 4096),
+                Source = source.ToJsonName()
             };
 
             var request = new RequestInfo
             {
                 Headers = context.Headers.ToDictionary(h => h.Key, h => string.Join(",", h.Value)),
                 Method = context.Method,
-                Source = context.Source,
+                Source = "App",
                 Url = context.Url,
                 Body = HttpHelper.GetRawBody(context.Body),
                 Route = context.Route,
+                IpAddress = context.RemoteAddress,
+                UserAgent = context.UserAgent
             };
 
             QueueEvent(EnvironmentHelper.Token, new DetectedAttack { 

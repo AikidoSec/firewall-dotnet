@@ -11,7 +11,7 @@ namespace Aikido.Zen.Core
 		public string Method { get; set; } = string.Empty;
 		public IDictionary<string, string[]> Query { get; set; } = new Dictionary<string, string[]>();
 		public IDictionary<string, string[]> Headers { get; set; } = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
-		public IDictionary<string, string> RouteParams { get; set; }
+		public IDictionary<string, string> RouteParams { get; set; } = new Dictionary<string, string>();
 		public string RemoteAddress { get; set; } = string.Empty;
 		public Stream Body { get; set; }
 		public IDictionary<string, string> Cookies { get; set; } = new Dictionary<string, string>();
@@ -24,10 +24,10 @@ namespace Aikido.Zen.Core
 		public string[] Graphql { get; set; }
 		public object Xml { get; set; }
 		public string[] Subdomains { get; set; } = Array.Empty<string>();
-		public Dictionary<string, HashSet<string>> Cache { get; set; }
-		public List<RedirectInfo> OutgoingRequestRedirects { get; set; }
-        public IDictionary<string, string> ParsedUserInput { get; set; }
-
+		public Dictionary<string, HashSet<string>> Cache { get; set; } = new Dictionary<string, HashSet<string>>();
+		public List<RedirectInfo> OutgoingRequestRedirects { get; set; } = new List<RedirectInfo>();
+        public IDictionary<string, string> ParsedUserInput { get; set; } = new Dictionary<string, string>();
+        public string UserAgent { get; set; } = string.Empty;
 	}
 
 	public struct RedirectInfo
