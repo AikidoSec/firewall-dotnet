@@ -1,8 +1,5 @@
 using Aikido.Zen.Core.Models;
-using Aikido.Zen.Core.Models.Ip;
 using NetTools;
-using NUnit.Framework;
-using System.Collections.Generic;
 
 namespace Aikido.Zen.Test
 {
@@ -26,10 +23,10 @@ namespace Aikido.Zen.Test
             _agentContext.UpdateBlockedUsers(users);
 
             // Assert
-            Assert.IsTrue(_agentContext.IsUserBlocked("user1"));
-            Assert.IsTrue(_agentContext.IsUserBlocked("user2"));
-            Assert.IsTrue(_agentContext.IsUserBlocked("user3"));
-            Assert.IsFalse(_agentContext.IsUserBlocked("user4"));
+            Assert.That(_agentContext.IsUserBlocked("user1"), Is.True);
+            Assert.That(_agentContext.IsUserBlocked("user2"), Is.True);
+            Assert.That(_agentContext.IsUserBlocked("user3"), Is.True);
+            Assert.That(_agentContext.IsUserBlocked("user4"), Is.False);
         }
 
         [Test]
@@ -42,7 +39,7 @@ namespace Aikido.Zen.Test
             _agentContext.UpdateBlockedUsers(System.Array.Empty<string>());
 
             // Assert
-            Assert.IsFalse(_agentContext.IsUserBlocked("user1"));
+            Assert.That(_agentContext.IsUserBlocked("user1"), Is.False);
         }
 
         [Test]
@@ -67,6 +64,147 @@ namespace Aikido.Zen.Test
             Assert.IsFalse(_agentContext.IsBlocked(null, "10.0.0.1", url)); // In allowed subnet
             Assert.IsFalse(_agentContext.IsBlocked(null, "invalid.ip", url)); // Invalid IP should not be blocked
             Assert.IsFalse(_agentContext.IsBlocked(new User("user2", "allowed"), "10.0.0.1", url)); // Non-blocked user in allowed subnet
+        }
+
+        [Test]
+        public void AddRequest_ShouldIncrementRequests()
+        {
+            // Act
+            _agentContext.AddRequest();
+
+            // Assert
+            Assert.That(_agentContext.Requests, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void AddAbortedRequest_ShouldIncrementRequestsAborted()
+        {
+            // Act
+            _agentContext.AddAbortedRequest();
+
+            // Assert
+            Assert.That(_agentContext.RequestsAborted, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void AddAttackDetected_ShouldIncrementAttacksDetected()
+        {
+            // Act
+            _agentContext.AddAttackDetected();
+
+            // Assert
+            Assert.That(_agentContext.AttacksDetected, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void AddAttackBlocked_ShouldIncrementAttacksBlocked()
+        {
+            // Act
+            _agentContext.AddAttackBlocked();
+
+            // Assert
+            Assert.That(_agentContext.AttacksBlocked, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void AddHostname_ShouldAddHostnameToDictionary()
+        {
+            // Arrange
+            var hostname = "example.com:8080";
+
+            // Act
+            _agentContext.AddHostname(hostname);
+
+            // Assert
+            var host = _agentContext.Hostnames.FirstOrDefault(h => h.Hostname == "example.com");
+            Assert.IsNotNull(host);
+            Assert.That(host.Port, Is.EqualTo(8080));
+        }
+
+        [Test]
+        public void AddUser_ShouldAddUserToDictionary()
+        {
+            // Arrange
+            var user = new User("user1", "User One");
+            var ipAddress = "192.168.1.1";
+
+            // Act
+            _agentContext.AddUser(user, ipAddress);
+
+            // Assert
+            var userExtended = _agentContext.Users.FirstOrDefault(u => u.Id == "user1");
+            Assert.IsNotNull(userExtended);
+            Assert.That(userExtended.Name, Is.EqualTo("User One"));
+            Assert.That(userExtended.LastIpAddress, Is.EqualTo(ipAddress));
+        }
+
+        [Test]
+        public void AddRoute_ShouldAddRouteToDictionary()
+        {
+            // Arrange
+            var path = "/api/test";
+            var method = "GET";
+
+            // Act
+            _agentContext.AddRoute(path, method);
+
+            // Assert
+            var route = _agentContext.Routes.FirstOrDefault(r => r.Path == path);
+            Assert.IsNotNull(route);
+            Assert.That(route.Method, Is.EqualTo(method));
+            Assert.That(route.Hits, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void Clear_ShouldResetAllProperties()
+        {
+            // Arrange
+            _agentContext.AddRequest();
+            _agentContext.AddAbortedRequest();
+            _agentContext.AddAttackDetected();
+            _agentContext.AddAttackBlocked();
+            _agentContext.AddHostname("example.com:8080");
+            _agentContext.AddUser(new User("user1", "User One"), "192.168.1.1");
+            _agentContext.AddRoute("/api/test", "GET");
+
+            // Act
+            _agentContext.Clear();
+
+            // Assert
+            Assert.That(_agentContext.Requests, Is.EqualTo(0));
+            Assert.That(_agentContext.RequestsAborted, Is.EqualTo(0));
+            Assert.That(_agentContext.AttacksDetected, Is.EqualTo(0));
+            Assert.That(_agentContext.AttacksBlocked, Is.EqualTo(0));
+            Assert.IsEmpty(_agentContext.Hostnames);
+            Assert.IsEmpty(_agentContext.Users);
+            Assert.IsEmpty(_agentContext.Routes);
+        }
+
+        [Test]
+        public void IsBlocked_ShouldReturnTrue_WhenUserIsBlocked()
+        {
+            // Arrange
+            var user = new User("user1", "User One");
+            _agentContext.UpdateBlockedUsers(new[] { "user1" });
+
+            // Act
+            var isBlocked = _agentContext.IsBlocked(user, string.Empty, string.Empty);
+
+            // Assert
+            Assert.IsTrue(isBlocked);
+        }
+
+        [Test]
+        public void IsBlocked_ShouldReturnFalse_WhenUserIsNotBlocked()
+        {
+            // Arrange
+            var user = new User("user1", "User One");
+
+            // Act
+            var isBlocked = _agentContext.IsBlocked(user, string.Empty, string.Empty);
+
+            // Assert
+            Assert.IsFalse(isBlocked);
         }
     }
 }
