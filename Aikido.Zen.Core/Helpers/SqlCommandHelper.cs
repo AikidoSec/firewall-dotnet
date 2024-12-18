@@ -18,9 +18,7 @@ namespace Aikido.Zen.Core.Helpers
                 if (SQLInjectionDetector.IsSQLInjection(commandText, userInput.Value, dialect))
                 {
                     var metadata = new Dictionary<string, object> {
-                        { "sql", commandText },
-                        { "userInput", userInput.Value },
-                        { "command", commandText }
+                        { "sql", commandText }
                     };
                     // send an attack event
                     Agent.Instance.SendAttackEvent(

@@ -62,7 +62,7 @@ namespace Aikido.Zen.Core.Helpers
         {
             using (var reader = new StreamReader(body, detectEncodingFromByteOrderMarks: true, bufferSize: 4096, leaveOpen: true, encoding: System.Text.Encoding.UTF8))
             {
-                return reader.ReadToEnd();
+                return reader.ReadToEndAsync().Result;
             }
         }
 
