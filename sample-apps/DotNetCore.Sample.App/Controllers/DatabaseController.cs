@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace DotNetCore.Sample.App.Controllers
 {
     [ApiController]
-    [Route("inject")]
+    [Route("database")]
     public class DatabaseController : ControllerBase
     {
         private readonly Dictionary<string, (DbProviderFactory factory, DbSIConfig config)> _databases =
@@ -17,7 +17,7 @@ namespace DotNetCore.Sample.App.Controllers
         { "SqlServer", (SqlClientFactory.Instance, new DbSIConfig
             {
                 Name = "SqlServer",
-                ConnectionString = "Server=localhost,27014;Database=master;User Id=sa;Password=Password123!;TrustServerCertificate=True;",
+                ConnectionString = "Server=localhost,27014;Database=YourDatabaseName;User Id=sa;Password=Strong@Password123!;TrustServerCertificate=True;",
                 InjectionQuery = "SELECT * FROM Users WHERE Name = '{0}'",
                 CreateTableQuery = "IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Users') CREATE TABLE Users (Id int, Name nvarchar(50))",
                 CreateDbIfNotExistsQuery = "IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'UsersDb') CREATE DATABASE UsersDb",
