@@ -28,5 +28,19 @@ namespace Aikido.Zen.Core.Helpers
 
             return false;
         }
+
+
+        public static ReadOnlySpan<char> GetNextSegment(this ReadOnlySpan<char> span, out ReadOnlySpan<char> remainder)
+        {
+            int slashIndex = span.IndexOf('/');
+            if (slashIndex == -1)
+            {
+                remainder = ReadOnlySpan<char>.Empty;
+                return span;
+            }
+
+            remainder = span.Slice(slashIndex + 1);
+            return span.Slice(0, slashIndex);
+        }
     }
 }
