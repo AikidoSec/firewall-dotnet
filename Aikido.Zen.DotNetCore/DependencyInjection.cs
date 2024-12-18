@@ -14,8 +14,13 @@ namespace Aikido.Zen.DotNetCore
 	public static class DependencyInjection 
 	{
 		public static IServiceCollection AddZenFireWall(this IServiceCollection services) {
-			// register the options
-			services.AddOptions();
+            if (Environment.GetEnvironmentVariable("AIKIDO_DISABLE") == "true")
+            {
+                return services;
+            }
+
+            // register the options
+            services.AddOptions();
 
 			// get the configuration
 			var configuration = services.BuildServiceProvider().GetService<IConfiguration>()!;

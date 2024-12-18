@@ -12,12 +12,6 @@ namespace Aikido.Zen.DotNetCore.Middleware
 
         public async Task InvokeAsync(HttpContext httpContext, RequestDelegate next)
         {
-            if (Environment.GetEnvironmentVariable("AIKIDO_DISABLE") == "true")
-            {
-                await next(httpContext);
-                return;
-            }
-
             // this will be used to check for attacks
             var context = new Context
             {

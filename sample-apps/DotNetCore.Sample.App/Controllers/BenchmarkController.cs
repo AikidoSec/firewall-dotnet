@@ -9,17 +9,9 @@ namespace DotNetCore.Sample.App.Controllers
 
         private const string html = "<html><head><title>Test</title></head><body><h1>Test</h1></body></html>";
 
-        [HttpGet("with-firewall")]
+        [HttpGet("hello")]
         public IActionResult Benchmark1()
         {
-            Environment.SetEnvironmentVariable("AIKIDO_DISABLE", null);
-            return Ok(html);
-        }
-
-        [HttpGet("without-firewall")]
-        public IActionResult Benchmark2()
-        {
-            Environment.SetEnvironmentVariable("AIKIDO_DISABLE", "true");
             return Ok(html);
         }
     }

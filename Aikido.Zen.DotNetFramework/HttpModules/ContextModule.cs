@@ -25,12 +25,6 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
 
         private async Task Context_BeginRequest(object sender, EventArgs e)
         {
-
-            if (Environment.GetEnvironmentVariable("AIKIDO_DISABLE") == "true")
-            {
-                return;
-            }
-
             var httpContext = ((HttpApplication)sender).Context;
 
             var context = new Context
