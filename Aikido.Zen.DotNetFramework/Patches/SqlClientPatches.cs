@@ -9,6 +9,7 @@ using Aikido.Zen.Core.Models;
 using MySqlX.XDevAPI.Relational;
 using System.Reflection;
 using Aikido.Zen.Core.Exceptions;
+using System;
 
 namespace Aikido.Zen.DotNetFramework.Patches
 {
@@ -79,13 +80,13 @@ namespace Aikido.Zen.DotNetFramework.Patches
             if (dbCommand is SqlCommand)
             {
                 type = nameof(SqlCommand);
-                assembly = typeof(SqlCommand).Assembly.FullName?.Split(", Culture=")[0];
+                assembly = typeof(SqlCommand).Assembly.FullName?.Split(new string[] { ", Culture=" }, StringSplitOptions.None)[0];
                 return SQLDialect.MicrosoftSQL;
             }
             else if (dbCommand is SqliteCommand)
             {
                 type = nameof(SqliteCommand);
-                assembly = typeof(SqliteCommand).Assembly.FullName.Split(", Culture=")[0];
+                assembly = typeof(SqliteCommand).Assembly.FullName.Split(new string[] { ", Culture=" }, StringSplitOptions.None)[0];
                 return SQLDialect.Generic;
             }
             else if (dbCommand is MySqlCommand)
