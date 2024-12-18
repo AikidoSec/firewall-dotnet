@@ -23,12 +23,8 @@ namespace Aikido.Zen.DotNetFramework
             // setup the agent
             if (Agent.Instance == null)
             {
-                var baseUrl = Environment.GetEnvironmentVariable("AIKIDO_URL") ?? "https://guard.aikido.dev";
-                var runtimeUrl = Environment.GetEnvironmentVariable("AIKIDO_REALTIME_URL") ?? "https://runtime.aikido.dev";
-                var aikidoUrl = new Uri(baseUrl);
-                var runtimeUri = new Uri(runtimeUrl);
-                var reportingApiClient = new ReportingAPIClient(aikidoUrl);
-                var runtimeApiClient = new RuntimeAPIClient(runtimeUri, aikidoUrl);
+                var reportingApiClient = new ReportingAPIClient();
+                var runtimeApiClient = new RuntimeAPIClient();
                 var zenApi = new ZenApi(reportingApiClient, runtimeApiClient);
                 Agent.GetInstance(zenApi);
             }
