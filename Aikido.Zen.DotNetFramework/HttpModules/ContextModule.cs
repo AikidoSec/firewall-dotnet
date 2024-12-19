@@ -59,9 +59,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 Cookies = httpContext.Request.Cookies.AllKeys.ToDictionary(k => k, k => httpContext.Request.Cookies[k].Value)
             };
 
-            var clientIp = !string.IsNullOrEmpty(httpContext.Request.ServerVariables["HTTP_X_FORWARDED_FOR"])
-                ? httpContext.Request.ServerVariables["HTTP_X_FORWARDED_FOR"]
-                : httpContext.Request.ServerVariables["REMOTE_ADDR"];
+            string clientIp = GetClientIp(httpContext);
             // Add request information to the agent, which will collect routes, users and stats
             // every x minutes, this information will be sent to the Zen server as a heartbeat event, and the collected info will be cleared
             Agent.Instance.CaptureInboundRequest(context.User, httpContext.Request.Url.AbsolutePath, context.Method, clientIp);
@@ -88,6 +86,13 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
 
 
             httpContext.Items["Aikido.Zen.Context"] = context;
+        }
+
+        private static string GetClientIp(HttpContext httpContext)
+        {
+            return !string.IsNullOrEmpty(httpContext.Request.ServerVariables["HTTP_X_FORWARDED_FOR"])
+                ? httpContext.Request.ServerVariables["HTTP_X_FORWARDED_FOR"]
+                : httpContext.Request.ServerVariables["REMOTE_ADDR"];
         }
 
         private void Context_EndRequest(object sender, EventArgs e)

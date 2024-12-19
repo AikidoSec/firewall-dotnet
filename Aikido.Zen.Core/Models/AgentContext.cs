@@ -14,6 +14,7 @@ namespace Aikido.Zen.Core.Models
         private IDictionary<string, UserExtended> _users = new Dictionary<string, UserExtended>();
 
         private BlockList _blockList = new BlockList();
+        private HashSet<string> _blockedUsers = new HashSet<string>();
 
         private int _requests = 0;
         private int _attacksDetected = 0;
@@ -85,14 +86,20 @@ namespace Aikido.Zen.Core.Models
             _attacksBlocked = 0;
             _requestsAborted = 0;
             _started = DateTimeHelper.UTCNowUnixMilliseconds();
+            _blockedUsers.Clear();
         }
 
         public bool IsBlocked(User user, string ip, string endpoint) {
-            return _blockList.IsBlocked(user, ip, endpoint);
+            return (user != null && IsUserBlocked(user.Id)) || _blockList.IsBlocked(ip, endpoint);
         }
 
-        internal bool IsBlocked(User user) {
-            return _blockList.IsUserBlocked(user.Id);
+        public bool IsUserBlocked(string userId) {
+            return _blockedUsers.Contains(userId);
+        }
+
+        public void UpdateBlockedUsers(IEnumerable<string> users) {
+            _blockedUsers.Clear();
+            _blockedUsers.UnionWith(users);
         }
 
         public IEnumerable<Host> Hostnames => _hostnames.Select(x => x.Value);

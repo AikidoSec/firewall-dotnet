@@ -15,35 +15,6 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void UpdateBlockedUsers_ShouldUpdateBlockedUsersList()
-        {
-            // Arrange
-            var users = new[] { "user1", "user2", "user3" };
-
-            // Act
-            _blockList.UpdateBlockedUsers(users);
-
-            // Assert
-            Assert.IsTrue(_blockList.IsUserBlocked("user1"));
-            Assert.IsTrue(_blockList.IsUserBlocked("user2")); 
-            Assert.IsTrue(_blockList.IsUserBlocked("user3"));
-            Assert.IsFalse(_blockList.IsUserBlocked("user4"));
-        }
-
-        [Test]
-        public void UpdateBlockedUsers_WithEmptyList_ShouldClearBlockedUsers()
-        {
-            // Arrange
-            _blockList.UpdateBlockedUsers(new[] { "user1" });
-
-            // Act
-            _blockList.UpdateBlockedUsers(Array.Empty<string>());
-
-            // Assert
-            Assert.IsFalse(_blockList.IsUserBlocked("user1"));
-        }
-
-        [Test]
         public void UpdateBlockedSubnets_ShouldUpdateBlockedSubnetsList()
         {
             // Arrange
@@ -170,11 +141,9 @@ namespace Aikido.Zen.Test
         public void IsBlocked_ShouldCheckAllBlockingConditions()
         {
             // Arrange
-            var user = new User("user1", "blocked");
             var ip = "192.168.1.100";
             var url = "GET|testurl";
 
-            _blockList.UpdateBlockedUsers(new[] { "user1" });
             _blockList.AddIpAddressToBlocklist("192.168.1.101");
             _blockList.UpdateAllowedSubnets(new Dictionary<string, IEnumerable<IPAddressRange>>
             {
@@ -182,12 +151,11 @@ namespace Aikido.Zen.Test
             });
 
             // Act & Assert
-            Assert.IsTrue(_blockList.IsBlocked(user, "192.168.1.102", url)); // Blocked user
-            Assert.IsTrue(_blockList.IsBlocked(null, "192.168.1.101", url)); // Blocked IP
-            Assert.IsTrue(_blockList.IsBlocked(null, ip, url)); // Not in allowed subnet
-            Assert.IsFalse(_blockList.IsBlocked(null, "10.0.0.1", url)); // In allowed subnet
-            Assert.IsFalse(_blockList.IsBlocked(null, "invalid.ip", url)); // Invalid IP should not be blocked
-            Assert.IsFalse(_blockList.IsBlocked(new User("user2", "allowed"), "10.0.0.1", url)); // Non-blocked user in allowed subnet
+            Assert.IsTrue(_blockList.IsBlocked("192.168.1.101", url)); // Blocked IP
+            Assert.IsTrue(_blockList.IsBlocked(ip, url)); // Not in allowed subnet
+            Assert.IsFalse(_blockList.IsBlocked("10.0.0.1", url)); // In allowed subnet
+            Assert.IsFalse(_blockList.IsBlocked("invalid.ip", url)); // Invalid IP should not be blocked
+            Assert.IsFalse(_blockList.IsBlocked("10.0.0.1", url)); // Non-blocked user in allowed subnet
         }
     }
 }

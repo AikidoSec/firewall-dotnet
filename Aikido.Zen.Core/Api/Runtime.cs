@@ -24,7 +24,7 @@ namespace Aikido.Zen.Core.Api
             _aikidoUrl = aikidoUrl;
         }
 
-        public async Task<CheckConfigAPIResponse> GetConfigVersion(string token)
+        public async Task<ReportingAPIResponse> GetConfigVersion(string token)
         {
             using (var cts = new CancellationTokenSource(5000))
             {
@@ -33,12 +33,12 @@ namespace Aikido.Zen.Core.Api
                 try
                 {
                     var response = await _httpClient.SendAsync(request, cts.Token);
-                    return APIHelper.ToAPIResponse<CheckConfigAPIResponse>(response);
+                    return APIHelper.ToAPIResponse<ReportingAPIResponse>(response);
                 }
                 catch (TaskCanceledException)
                 {
                     if (!cts.Token.IsCancellationRequested)
-                        return new CheckConfigAPIResponse { Success = false, Error = "timeout" };
+                        return new ReportingAPIResponse { Success = false, Error = "timeout" };
 
                     throw;
                 }
@@ -49,7 +49,7 @@ namespace Aikido.Zen.Core.Api
             }
         }
 
-        public async Task<CheckConfigAPIResponse> GetConfig(string token)
+        public async Task<ReportingAPIResponse> GetConfig(string token)
         {
             using (var cts = new CancellationTokenSource(5000))
             {
@@ -58,12 +58,12 @@ namespace Aikido.Zen.Core.Api
                 try
                 {
                     var response = await _httpClient.SendAsync(request, cts.Token);
-                    return APIHelper.ToAPIResponse<CheckConfigAPIResponse>(response);
+                    return APIHelper.ToAPIResponse<ReportingAPIResponse>(response);
                 }
                 catch (TaskCanceledException)
                 {
                     if (!cts.Token.IsCancellationRequested)
-                        return new CheckConfigAPIResponse { Success = false, Error = "timeout" };
+                        return new ReportingAPIResponse { Success = false, Error = "timeout" };
 
                     throw;
                 }

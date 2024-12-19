@@ -6,14 +6,13 @@ using NetTools;
 namespace Aikido.Zen.Core.Models.Ip
 {
     /// <summary>
-    /// Manages IP and user blocklists and allowed subnet rules
+    /// Manages IP blocklists and allowed subnet rules
     /// </summary>
     public class BlockList
     {
         private readonly HashSet<string> _blockedAddresses = new HashSet<string>();
         private readonly List<IPAddressRange> _blockedSubnets = new List<IPAddressRange>();
         private readonly IDictionary<string, IEnumerable<IPAddressRange>> _allowedSubnets = new Dictionary<string, IEnumerable<IPAddressRange>>();
-        private readonly HashSet<string> _blockedUsers = new HashSet<string>();
 
         /// <summary>
         /// Updates the allowed subnet ranges per URL
@@ -26,15 +25,6 @@ namespace Aikido.Zen.Core.Models.Ip
             {
                 _allowedSubnets.Add(subnet.Key, subnet.Value);
             }
-        }
-
-        /// <summary>
-        /// Updates the blocked user IDs
-        /// </summary>
-        public void UpdateBlockedUsers(IEnumerable<string> users)
-        {
-            _blockedUsers.Clear();
-            _blockedUsers.UnionWith(users);
         }
 
         /// <summary>
@@ -77,6 +67,8 @@ namespace Aikido.Zen.Core.Models.Ip
                 {
                     if (IPHelper.IsInSubnet(address, subnet))
                     {
+                        // we add this IP to the blocklist to avoid having to check it again
+                        // this is done for performance reasons
                         AddIpAddressToBlocklist(ip);
                         return true;
                     }
@@ -109,22 +101,13 @@ namespace Aikido.Zen.Core.Models.Ip
         }
 
         /// <summary>
-        /// Checks if a user ID is blocked
-        /// <param name="userId">The user ID</param>
-        /// </summary>
-        public bool IsUserBlocked(string userId)
-        {
-            return _blockedUsers.Contains(userId);
-        }
-
-        /// <summary>
-        /// Checks if access should be blocked based on user, IP and URL
+        /// Checks if access should be blocked based on IP and URL
         /// <param name="user">The user object</param>  
         /// <param name="ip">The IP address</param>
         /// <param name="endpoint">The endpoint. e.g. GET|the/path</param>
         /// </summary>
-        public bool IsBlocked(User user, string ip, string endpoint) {
-            return (user != null && IsUserBlocked(user.Id)) || IsIPBlocked(ip) || !IsIPAllowed(ip, endpoint);
+        public bool IsBlocked(string ip, string endpoint) {
+            return IsIPBlocked(ip) || !IsIPAllowed(ip, endpoint);
         }
     }
 }
