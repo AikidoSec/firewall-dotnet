@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -7,6 +8,7 @@ using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Models.Events;
+using NetTools;
 
 namespace Aikido.Zen.Core
 {
@@ -17,11 +19,14 @@ namespace Aikido.Zen.Core
     public class Agent : IDisposable
     {
         private readonly IZenApi _api;
-        private readonly ConcurrentQueue<(string token, IEvent evt, Action<IEvent> callback)> _eventQueue;
+        private readonly ConcurrentQueue<QueuedItem> _eventQueue;
         private readonly CancellationTokenSource _cancellationSource;
         private readonly Task _backgroundTask;
         private readonly int _batchTimeoutMs;
-        private readonly ConcurrentDictionary<string, (string token, Func<IEvent> evt, TimeSpan interval, DateTime nextRun, Action<IEvent> callback)> _scheduledEvents;
+        private readonly ConcurrentDictionary<string, ScheduledItem> _scheduledEvents;
+        private long _lastConfigCheck = DateTime.UtcNow.Ticks;
+
+        private string _token;
 
         // Rate limiting and timing constants for the event processing loop
         private const int RateLimitPerSecond = 10;
@@ -53,11 +58,11 @@ namespace Aikido.Zen.Core
         public Agent(IZenApi api, int batchTimeoutMs = 5000)
         {
             _api = api ?? throw new ArgumentNullException(nameof(api));
-            _eventQueue = new ConcurrentQueue<(string token, IEvent evt, Action<IEvent> callback)>();
-            _scheduledEvents = new ConcurrentDictionary<string, (string token, Func<IEvent> evt, TimeSpan interval, DateTime nextRun, Action<IEvent> callback)>();
+            _eventQueue = new ConcurrentQueue<QueuedItem>();
+            _scheduledEvents = new ConcurrentDictionary<string, ScheduledItem>();
             _cancellationSource = new CancellationTokenSource();
             _batchTimeoutMs = batchTimeoutMs;
-            _backgroundTask = Task.Run(ProcessEventsAsync);
+            _backgroundTask = Task.Run(ProcessRecurringTasksAsync);
             _context = new AgentContext();
         }
 
@@ -66,16 +71,42 @@ namespace Aikido.Zen.Core
         /// </summary>
         /// <param name="token">The authentication token for the Zen API</param>
         public void Start(string token) {
+            // store token
+            _token = token;
+            // send started event
             QueueEvent(token, new Started {
                 Agent = AgentInfoHelper.GetInfo()
+            },
+            (evt, response) =>
+            {
+                if (response.Success)
+                {
+                    var reportingResponse = response as ReportingAPIResponse;
+                    Task.Run(() => UpdateConfig(reportingResponse.BlockedUserIds, reportingResponse.Endpoints, reportingResponse.ConfigUpdatedAt));
+                }
             });
 
+            // get blocked ip list and add to context
+            Task.Run(UpdateBlockedIps);
+
             // Schedule heartbeat event every x minutes
+            var scheduledHeartBeat = new ScheduledItem
+            {
+                Token = token,
+                EventFactory = ConstructHeartbeat,
+                Interval = Heartbeat.Interval,
+                Callback = (evt, response) =>
+                {
+                    var reportingResponse = response as ReportingAPIResponse;
+                    if (reportingResponse != null && reportingResponse.Success)
+                    {
+                        _context.UpdateBlockedUsers(reportingResponse.BlockedUserIds);
+                    }
+                }
+            };
             ScheduleEvent(
-                token: token,
-                evtFactory: ConstructHeartbeat,
-                interval: Heartbeat.Interval,
-                scheduleId: Heartbeat.ScheduleId
+                Heartbeat.ScheduleId,
+                scheduledHeartBeat
             );
         }
 
@@ -85,32 +116,36 @@ namespace Aikido.Zen.Core
         /// <param name="token">The authentication token</param>
         /// <param name="evt">The event to queue</param>
         /// <param name="callback">Optional callback to execute when the event is processed</param>
-        public void QueueEvent(string token, IEvent evt, Action<IEvent> callback = null)
+        public void QueueEvent(string token, IEvent evt, Action<IEvent, APIResponse> callback = null)
         {
+            var queuedItem = new QueuedItem {
+                Token = token,
+                Event = evt,
+                Callback = callback,
+            };
             if (string.IsNullOrEmpty(token)) throw new ArgumentNullException(nameof(token));
             if (evt == null) throw new ArgumentNullException(nameof(evt));
 
-            _eventQueue.Enqueue((token, evt, callback));
+            _eventQueue.Enqueue(queuedItem);
         }
 
         /// <summary>
         /// Schedules an event to be triggered at regular intervals.
         /// </summary>
-        /// <param name="token">The authentication token</param>
-        /// <param name="evtFactory">The factory that creates the event to schedule</param>
-        /// <param name="interval">The interval between event triggers</param>
         /// <param name="scheduleId">Unique identifier for the scheduled event</param>
-        /// <param name="callback">Optional callback to execute when the event triggers</param>
-        public void ScheduleEvent(string token, Func<IEvent> evtFactory, TimeSpan interval, string scheduleId, Action<IEvent> callback = null)
+        /// <param name="item">The item to schedule</param>
+        public void ScheduleEvent(string scheduleId, ScheduledItem item)
         {
-            if (string.IsNullOrEmpty(token)) throw new ArgumentNullException(nameof(token));
+            if (string.IsNullOrEmpty(item.Token)) throw new ArgumentNullException(nameof(item.Token));
             if (string.IsNullOrEmpty(scheduleId)) throw new ArgumentNullException(nameof(scheduleId));
-            if (interval <= TimeSpan.Zero) throw new ArgumentException("Interval must be positive", nameof(interval));
+            if (item.Interval <= TimeSpan.Zero) throw new ArgumentException("Interval must be positive", nameof(item.Interval));
+
+            item.NextRun = DateTime.UtcNow + item.Interval;
 
             _scheduledEvents.AddOrUpdate(
                 scheduleId,
-                (token, evtFactory, interval, DateTime.UtcNow + interval, callback),
-                (_, __) => (token, evtFactory, interval, DateTime.UtcNow + interval, callback)
+                item,
+                (_,__) => item
             );
         }
 
@@ -122,17 +157,25 @@ namespace Aikido.Zen.Core
         /// <param name="interval">The interval between event triggers</param>
         /// <param name="scheduleId">Unique identifier for the scheduled event</param>
         /// <param name="callback">Optional callback to execute when the event triggers</param>
-        public void ScheduleEvent(string token, IEvent evt, TimeSpan interval, string scheduleId, Action<IEvent> callback)
+        public void ScheduleEvent(string token, IEvent evt, TimeSpan interval, string scheduleId, Action<IEvent, APIResponse> callback)
         {
             if (string.IsNullOrEmpty(token)) throw new ArgumentNullException(nameof(token));
             if (evt == null) throw new ArgumentNullException(nameof(evt));
             if (string.IsNullOrEmpty(scheduleId)) throw new ArgumentNullException(nameof(scheduleId));
             if (interval <= TimeSpan.Zero) throw new ArgumentException("Interval must be positive", nameof(interval));
 
+            var scheduledItem = new ScheduledItem
+            {
+                Token = token,
+                EventFactory = () => evt,
+                Interval = interval,
+                NextRun = DateTime.UtcNow + interval
+            };
+
             _scheduledEvents.AddOrUpdate(
                 scheduleId,
-                (token, () => evt, interval, DateTime.UtcNow + interval, callback),
-                (_, __) => (token, () => evt, interval, DateTime.UtcNow + interval, callback)
+                scheduledItem,
+                (_, __) => scheduledItem
             );
         }
 
@@ -194,6 +237,15 @@ namespace Aikido.Zen.Core
         }
 
         /// <summary>
+        /// Captures the current user
+        /// </summary>
+        /// <param name="user"></param>
+        /// <param name="ipAddress"></param>
+        public void CaptureUser(User user, string ipAddress) {
+            _context.AddUser(user, ipAddress);
+        }
+
+        /// <summary>
         /// Captures outbound requests.
         /// </summary>
         /// <param name="host"></param>
@@ -203,8 +255,8 @@ namespace Aikido.Zen.Core
         }
 
 
-        // Main event processing loop that handles scheduled events and queued events
-        private async Task ProcessEventsAsync()
+        // Main event processing loop that handles config checks, scheduled events and queued events
+        private async Task ProcessRecurringTasksAsync()
         {
             var currentSecond = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             var requestsThisSecond = 0;
@@ -213,6 +265,16 @@ namespace Aikido.Zen.Core
             {
                 try
                 {
+                    // check for config updates every minute
+                    if (_lastConfigCheck + TimeSpan.FromMinutes(1).Ticks < DateTime.UtcNow.Ticks)
+                    {
+                        if (ConfigChanged(out var response))
+                        {
+                            await UpdateConfig(response.BlockedUserIds, response.Endpoints, response.ConfigUpdatedAt);
+                        }
+                        _lastConfigCheck = DateTime.UtcNow.Ticks;
+                    }
+                    
                     await ProcessScheduledEvents();
                     // we rate limit ourselves to 10 requests per second to the Zen API
                     var (shouldContinue, newCurrentSecond, newRequestCount) = await HandleRateLimit(currentSecond, requestsThisSecond);
@@ -245,15 +307,24 @@ namespace Aikido.Zen.Core
             {
                 if (_cancellationSource.Token.IsCancellationRequested) break;
 
-                var (token, evt, interval, nextRun, callback) = kvp.Value;
-                if (now >= nextRun)
+                var scheduledItem = kvp.Value;
+                if (now >= scheduledItem.NextRun)
                 {
-                    QueueEvent(token, evt.Invoke(), callback);
+                    QueueEvent(scheduledItem.Token, scheduledItem.EventFactory.Invoke(), scheduledItem.Callback);
+                    var updatedItem = new ScheduledItem
+                    {
+                        Token = scheduledItem.Token,
+                        EventFactory = scheduledItem.EventFactory,
+                        Interval = scheduledItem.Interval,
+                        NextRun = scheduledItem.NextRun.Add(scheduledItem.Interval),
+                        Callback = scheduledItem.Callback
+                    };
                     _scheduledEvents.TryUpdate(
                         kvp.Key,
-                        (token, evt, interval, nextRun + interval, callback),
-                        (token, evt, interval, nextRun, callback)
+                        updatedItem,
+                        scheduledItem
                     );
+
                 }
             }
         }
@@ -292,36 +363,35 @@ namespace Aikido.Zen.Core
             }
         }
 
-        private async Task<int> ProcessSingleEvent((string token, IEvent evt, Action<IEvent> callback) eventItem, int requestsThisSecond)
+        private async Task<int> ProcessSingleEvent(QueuedItem queuedItem, int requestsThisSecond)
         {
-            var (token, evt, callback) = eventItem;
             try
             {
                 requestsThisSecond++;
-                var response = await _api.Reporting.ReportAsync(token, evt, _batchTimeoutMs)
+                var response = await _api.Reporting.ReportAsync(queuedItem.Token, queuedItem.Event, _batchTimeoutMs)
                     .ConfigureAwait(false);
 
                 if (!response.Success)
                 {
                     if (response.Error == "rate_limited" || response.Error == "timeout")
                     {
-                        _eventQueue.Enqueue(eventItem);
+                        _eventQueue.Enqueue(queuedItem);
                         await Task.Delay(RetryDelayMs, _cancellationSource.Token);
                     }
                     // Other errors are dropped to avoid infinite retries
                 }
-                callback?.Invoke(evt);
+                queuedItem.Callback?.Invoke(queuedItem.Event, response);
             }
             catch (OperationCanceledException) when (_cancellationSource.Token.IsCancellationRequested)
             {
                 // Graceful shutdown
-                _eventQueue.Enqueue(eventItem);
+                _eventQueue.Enqueue(queuedItem);
                 throw;
             }
             catch (Exception)
             {
                 // Requeue on error and delay
-                _eventQueue.Enqueue(eventItem);
+                _eventQueue.Enqueue(queuedItem);
                 await Task.Delay(RetryDelayMs, _cancellationSource.Token);
             }
             return requestsThisSecond;
@@ -361,6 +431,58 @@ namespace Aikido.Zen.Core
             heartbeat.Stats.EndedAt = DateTimeHelper.UTCNowUnixMilliseconds();
             ClearContext();
             return heartbeat;
+        }
+
+        private bool ConfigChanged(out ReportingAPIResponse response) {
+
+            response = _api.Runtime.GetConfigVersion(_token).Result;
+            if (!response.Success) return false;
+            if (response.ConfigUpdatedAt != _context.ConfigVersion) {
+                response = _api.Runtime.GetConfig(_token).Result;
+                return true;
+            }
+            return false;
+        }
+
+        private async Task UpdateConfig(IEnumerable<string> blockedUsers, IEnumerable<EndpointConfig> endpoints, long configVersion) {
+        
+            _context.UpdateBlockedUsers(blockedUsers);
+            _context.BlockList.UpdateAllowedSubnets(endpoints.ToDictionary(e => $"{e.Method}|{e.Route}", e => e.AllowedIPAddresses.Select(ip => IPAddressRange.Parse(ip))));
+            _context.ConfigVersion = configVersion; 
+            await UpdateBlockedIps();
+        }
+
+        private async Task UpdateBlockedIps() {
+            if (string.IsNullOrEmpty(_token))
+                return;
+            var blockedIPsResponse = await _api.Reporting.GetBlockedIps(_token);
+            if (blockedIPsResponse.Success && blockedIPsResponse.BlockedIPAddresses != null)
+            {
+                var blockedIPs = blockedIPsResponse.Ips();
+                var ranges = new List<IPAddressRange>();
+                foreach (var ip in blockedIPs)
+                {
+                    if (IPAddressRange.TryParse(ip, out var range))
+                    {
+                        ranges.Add(range);
+                    }
+                }
+                _context.BlockList.UpdateBlockedSubnets(ranges);
+            }
+        }
+
+        public class QueuedItem {
+            public string Token { get; set; }
+            public IEvent Event { get; set; }
+            public Action<IEvent, APIResponse> Callback { get; set; }
+        }
+
+        public class ScheduledItem  {
+            public string Token { get; set; }
+            public Func<IEvent> EventFactory { get; set; }
+            public TimeSpan Interval { get; set; }
+            public DateTime NextRun { get; set; }
+            public Action<IEvent, APIResponse> Callback { get; set; }
         }
 
 	}

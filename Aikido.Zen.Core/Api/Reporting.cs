@@ -1,4 +1,8 @@
+using Aikido.Zen.Core.Helpers;
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
@@ -14,55 +18,25 @@ namespace Aikido.Zen.Core.Api
 
 		public ReportingAPIClient(Uri reportingUrl)
 		{
-			_httpClient = new HttpClient();
+            var handler = new HttpClientHandler();
+            handler.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
+
+            _httpClient = new HttpClient(handler);
 			_reportingUrl = reportingUrl;
-		}
-
-		private ReportingAPIResponse ToAPIResponse(HttpResponseMessage response)
-		{
-			if ((int)response.StatusCode == 429) // Too many requests
-			{
-				return new ReportingAPIResponse { Success = false, Error = "rate_limited" };
-			}
-
-			if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-			{
-				return new ReportingAPIResponse { Success = false, Error = "invalid_token" };
-			}
-
-			if (response.StatusCode == System.Net.HttpStatusCode.OK)
-			{
-				try
-				{
-					var data = response.Content.ReadAsStringAsync().Result;
-					return JsonSerializer.Deserialize<ReportingAPIResponse>(data);
-				}
-				catch
-				{
-					// Fall through
-				}
-			}
-
-			return new ReportingAPIResponse { Success = false, Error = "unknown_error" };
 		}
 
 		public async Task<ReportingAPIResponse> ReportAsync(string token, object @event, int timeoutInMS)
 		{
 			using (var cts = new CancellationTokenSource(timeoutInMS))
 			{
-
                 var eventAsJson = JsonSerializer.Serialize(@event, options: new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
 				var requestContent = new StringContent(eventAsJson, Encoding.UTF8, "application/json");
-				var request = new HttpRequestMessage(HttpMethod.Post, new Uri(_reportingUrl, "api/runtime/events"))
-				{
-					Content = requestContent
-				};
-                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue(token);
+				var request = APIHelper.CreateRequest(token, _reportingUrl, "api/runtime/events", HttpMethod.Post, requestContent);
 
 				try
 				{
 					var response = await _httpClient.SendAsync(request, cts.Token);
-					return ToAPIResponse(response);
+					return APIHelper.ToAPIResponse<ReportingAPIResponse>(response);
 				}
 				catch (TaskCanceledException)
 				{
@@ -77,11 +51,29 @@ namespace Aikido.Zen.Core.Api
 				}
 			}
 		}
-	}
 
-	public class ReportingAPIResponse
-	{
-		public bool Success { get; set; }
-		public string Error { get; set; }
-	}
+        public async Task<BlockedIpsAPIResponse> GetBlockedIps(string token)
+        {
+            using (var cts = new CancellationTokenSource(5000))
+            {
+                var request = APIHelper.CreateRequest(token, _reportingUrl, "api/runtime/firewall/lists", HttpMethod.Get);
+                try
+                {
+                    var response = await _httpClient.SendAsync(request, cts.Token);
+                    return APIHelper.ToAPIResponse<BlockedIpsAPIResponse>(response);
+                }
+                catch (TaskCanceledException)
+                {
+                    if (!cts.Token.IsCancellationRequested)
+                        return new BlockedIpsAPIResponse { Success = false, Error = "timeout" };
+
+                    throw;
+                }
+                catch (Exception)
+                {
+                    throw;
+                }
+            }
+        }
+    }
 }

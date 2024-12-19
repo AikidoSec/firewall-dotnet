@@ -27,6 +27,7 @@
   </Target>-->
 
   <ItemGroup>
+    <PackageReference Include="IPAddressRange" Version="6.1.0" />
     <PackageReference Include="Lib.Harmony" Version="2.3.3" />
     <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="2.2.0" />

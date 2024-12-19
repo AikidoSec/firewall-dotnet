@@ -1,4 +1,3 @@
-
 ## HttpHelper benchmark results
 
 BenchmarkDotNet v0.14.0, Windows 11 (10.0.22635.4515)

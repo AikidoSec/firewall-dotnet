@@ -1,4 +1,6 @@
 using Aikido.Zen.Core.Helpers;
+using Aikido.Zen.Core.Models.Ip;
+using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,15 +9,19 @@ namespace Aikido.Zen.Core.Models
 {
 	public class AgentContext
 	{
-        private IDictionary<string, Host> _hostnames { get; set; } = new Dictionary<string, Host>();
-        private IDictionary<string, Route> _routes { get; set; } = new Dictionary<string, Route>();
-        private IDictionary<string, UserExtended> _users { get; set; } = new Dictionary<string, UserExtended>();
+        private IDictionary<string, Host> _hostnames = new Dictionary<string, Host>();
+        private IDictionary<string, Route> _routes = new Dictionary<string, Route>();
+        private IDictionary<string, UserExtended> _users = new Dictionary<string, UserExtended>();
+
+        private BlockList _blockList = new BlockList();
+        private HashSet<string> _blockedUsers = new HashSet<string>();
 
         private int _requests = 0;
         private int _attacksDetected = 0;
         private int _attacksBlocked = 0;
         private int _requestsAborted = 0;
         private long _started = DateTimeHelper.UTCNowUnixMilliseconds();
+        public long ConfigVersion { get; set; } = 0;
 
 
         public void AddRequest() {
@@ -47,13 +53,10 @@ namespace Aikido.Zen.Core.Models
         }
 
         public void AddUser(User user, string ipAddress) {
-            _users.TryGetValue(user.Id, out UserExtended userExtended);
-            if (userExtended == null) {
-                userExtended = new UserExtended
+            if (!_users.TryGetValue(user.Id, out UserExtended userExtended)) {
+                userExtended = new UserExtended(user.Id, user.Name)
                 {
                     FirstSeenAt = DateTimeHelper.UTCNowUnixMilliseconds(),
-                    Name = user.Name,
-                    Id = user.Id
                 };
                 _users.Add(user.Id, userExtended);
             }
@@ -83,6 +86,20 @@ namespace Aikido.Zen.Core.Models
             _attacksBlocked = 0;
             _requestsAborted = 0;
             _started = DateTimeHelper.UTCNowUnixMilliseconds();
+            _blockedUsers.Clear();
+        }
+
+        public bool IsBlocked(User user, string ip, string endpoint) {
+            return (user != null && IsUserBlocked(user.Id)) || _blockList.IsBlocked(ip, endpoint);
+        }
+
+        public bool IsUserBlocked(string userId) {
+            return _blockedUsers.Contains(userId);
+        }
+
+        public void UpdateBlockedUsers(IEnumerable<string> users) {
+            _blockedUsers.Clear();
+            _blockedUsers.UnionWith(users);
         }
 
         public IEnumerable<Host> Hostnames => _hostnames.Select(x => x.Value);
@@ -93,5 +110,6 @@ namespace Aikido.Zen.Core.Models
         public int AttacksDetected => _attacksDetected;
         public int AttacksBlocked => _attacksBlocked;
         public long Started => _started;
+        public BlockList BlockList => _blockList;
 	}
 }
