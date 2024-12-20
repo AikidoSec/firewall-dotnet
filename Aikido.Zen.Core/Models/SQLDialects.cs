@@ -31,6 +31,7 @@ namespace Aikido.Zen.Core.Models
 
         public static int ToRustDialectInt(this SQLDialect dialect)
         {
+            // Reference : https://github.com/AikidoSec/zen-internals/blob/main/src/sql_injection/helpers/select_dialect_based_on_enum.rs
             switch (dialect)
             {
                 case SQLDialect.Generic:
