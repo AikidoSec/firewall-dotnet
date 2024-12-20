@@ -289,7 +289,7 @@ namespace Aikido.Zen.Core
             {
                 Headers = context.Headers.ToDictionary(h => h.Key, h => string.Join(",", h.Value)),
                 Method = context.Method,
-                Source = "App",
+                Source = Environment.Version.Major >= 5 ? "DotNetCore" : "DotNetFramework",
                 Url = context.Url,
                 Body = HttpHelper.GetRawBody(context.Body),
                 Route = context.Route,
