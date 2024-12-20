@@ -277,7 +277,7 @@ namespace Aikido.Zen.Core
                 Kind = kind.ToJsonName(),
                 Module = module, // the qualified assembly name
                 Path = path,
-                User = context.User ?? new User("unkown", "unkown"),
+                User = context.User,
                 Payload = payload,
                 Operation = operation, // the class + method where the attack was detected
                 Metadata = metadata,
