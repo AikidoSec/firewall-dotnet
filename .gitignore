@@ -428,4 +428,12 @@ nupkgs/
 ### VisualStudio Patch ###
 # Additional files built by Visual Studio
 
+# Ignore the ./Aikido.Zen.Core/libraries contents
+Aikido.Zen.Core/libraries/*.*
+
+### Cake ###
+tools/*
+!tools/packages.config
+
+
 # End of https://www.toptal.com/developers/gitignore/api/dotnetcore,visualstudio,visualstudiocode

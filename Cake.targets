@@ -1,0 +1,15 @@
+<Project>
+  <Target Name="Build" DependsOnTargets="RestoreTools">
+    <Exec Command="powershell -ExecutionPolicy Bypass -File &quot;$(MSBuildProjectDirectory)\..\build.ps1&quot; --target=Build" />
+  </Target>
+
+  <Target Name="Clean" DependsOnTargets="RestoreTools">
+    <Exec Command="powershell -ExecutionPolicy Bypass -File &quot;$(MSBuildProjectDirectory)\..\build.ps1&quot; --target=Clean" />
+  </Target>
+
+  <Target Name="Rebuild" DependsOnTargets="Clean;Build" />
+
+  <Target Name="RestoreTools">
+    <Exec Command="dotnet tool restore" WorkingDirectory="$(MSBuildProjectDirectory)\.." />
+  </Target>
+</Project>
