@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
+using System.Data.SQLite;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Web.Http;
 using Microsoft.Data.SqlClient;
-using Microsoft.Data.Sqlite;
 using MySql.Data.MySqlClient;
 
 namespace DotNetFramework.Sample.App.Controllers
@@ -30,7 +30,7 @@ namespace DotNetFramework.Sample.App.Controllers
 					SeedTableQuery = "IF NOT EXISTS (SELECT * FROM Users) INSERT INTO Users VALUES (1, 'Admin')",
 					DropTableQuery = "IF EXISTS (SELECT * FROM sys.tables WHERE name = 'Users') DROP TABLE Users"
 				})},
-				{ "Sqlite", (SqliteFactory.Instance, new DbSIConfig
+				{ "Sqlite", (SQLiteFactory.Instance, new DbSIConfig
 				{
 					Name = "Sqlite", 
 					ConnectionString = "Data Source=:memory:",

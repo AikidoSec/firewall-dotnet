@@ -54,55 +54,8 @@ namespace Aikido.Zen.DotNetCore.Patches
 
         private static bool OnCommandExecuting(object[] __args, MethodBase __originalMethod, DbCommand __instance)
         {
-            var command = __instance;
-            var methodInfo = __originalMethod as MethodInfo;
-            var context = Zen.GetContext();
-
-            if (context == null)
-            {
-                return true;
-            }
-            if (command != null && SqlCommandHelper.DetectSQLInjection(command.CommandText, GetDialect(command, out var type, out var assembly), context, assembly, $"{type}.{methodInfo.Name}"))
-            {
-                // keep going if dry mode
-                if (EnvironmentHelper.DryMode)
-                {
-                    return true;
-                }
-                throw AikidoException.SQLInjectionDetected(command.CommandText);
-            }
-            return true;
-        }
-
-        private static SQLDialect GetDialect(DbCommand dbCommand, out string type, out string assembly)
-        {
-            if (dbCommand is SqlCommand)
-            {
-                type = nameof(SqlCommand);
-                assembly = typeof(SqlCommand).Assembly.FullName?.Split(", Culture=")[0];
-                return SQLDialect.MicrosoftSQL;
-            }
-            else if (dbCommand is SqliteCommand)
-            {
-                type = nameof(SqliteCommand);
-                assembly = typeof(SqliteCommand).Assembly.FullName.Split(", Culture=")[0];
-                return SQLDialect.Generic;
-            }
-            else if (dbCommand is MySqlCommand)
-            {
-                type = nameof(MySqlCommand);
-                assembly = typeof(MySqlCommand).AssemblyQualifiedName;
-                return SQLDialect.MySQL;
-            }
-            else if (dbCommand is NpgsqlCommand)
-            {
-                type = nameof(NpgsqlCommand);
-                assembly = typeof(NpgsqlCommand).AssemblyQualifiedName;
-                return SQLDialect.PostgreSQL;
-            }
-            type = null;
-            assembly = null;
-            return SQLDialect.Generic;
+            var assembly = __instance.GetType().Assembly.FullName?.Split(", Culture=")[0];
+            return Aikido.Zen.Core.Patches.SqlClientPatcher.OnCommandExecuting(__args, __originalMethod, __instance, assembly, Zen.GetContext());
         }
     }
 }

@@ -9,12 +9,7 @@ namespace Aikido.Zen.DotNetFramework.Configuration
 	{
 		public static AikidoOptions Options  {
 			get {
-                if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AIKIDO_TOKEN"))) {
-                    Environment.SetEnvironmentVariable("AIKIDO_TOKEN", ConfigurationManager.AppSettings["Aikido:AikidoToken"]);
-                }
-                if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AIKIDO_URL"))) {
-                    Environment.SetEnvironmentVariable("AIKIDO_URL", ConfigurationManager.AppSettings["Aikido:AikidoUrl"]);
-                }
+                Init();
                 return
                 new AikidoOptions {
                     AikidoToken = ConfigurationManager.AppSettings["Aikido:AikidoToken"]
@@ -24,5 +19,16 @@ namespace Aikido.Zen.DotNetFramework.Configuration
                 };
             }
 		}
+
+        internal static void Init() {
+            if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AIKIDO_TOKEN")))
+            {
+                Environment.SetEnvironmentVariable("AIKIDO_TOKEN", ConfigurationManager.AppSettings["Aikido:AikidoToken"]);
+            }
+            if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AIKIDO_URL")))
+            {
+                Environment.SetEnvironmentVariable("AIKIDO_URL", ConfigurationManager.AppSettings["Aikido:AikidoUrl"]);
+            }
+        }
 	}
 }

@@ -68,7 +68,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 User = (User)httpContext.Items["Aikido.Zen.CurrentUser"],
                 UserAgent = httpContext.Request.UserAgent,
                 Source = httpContext.Request.Path.ToString(),
-                Route = GetRoute(httpContext)
+                Route = GetRoute(httpContext),
             };
 
             string clientIp = GetClientIp(httpContext);
@@ -89,10 +89,14 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                     contentLength: request.ContentLength
                 );
                 context.ParsedUserInput = parsedUserInput;
+                context.Body = request.InputStream;
 
             }
-            catch (Exception)
+            catch
             {
+                // pass through
+            }
+            finally {
                 httpContext.Request.InputStream.Position = 0;
             }
 

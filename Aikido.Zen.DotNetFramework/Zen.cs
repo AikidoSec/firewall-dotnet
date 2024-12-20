@@ -1,10 +1,10 @@
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Api;
 using System;
-using Aikido.Zen.DotNetFramework.Configuration;
 using Aikido.Zen.DotNetFramework.Patches;
 using System.Web;
 using Aikido.Zen.Core.Models;
+using Aikido.Zen.DotNetFramework.Configuration;
 
 namespace Aikido.Zen.DotNetFramework
 {
@@ -14,6 +14,8 @@ namespace Aikido.Zen.DotNetFramework
         private static HarmonyLib.Harmony harmony = new HarmonyLib.Harmony("reference");
         public static void Start()
         {
+            // initialize the options, this will ensure the environment variables are set
+            AikidoConfiguration.Init();
             if (Environment.GetEnvironmentVariable("AIKIDO_DISABLE") == "true")
             {
                 return;
@@ -31,7 +33,7 @@ namespace Aikido.Zen.DotNetFramework
             Agent.Instance.Start();
         }
 
-        internal static Func<HttpContext, User> SetUserAction { get; set; } = (context) => new User(context.User.Identity?.Name ?? context.Session.SessionID, context.User.Identity?.Name ?? "Anonymous");
+        internal static Func<HttpContext, User> SetUserAction { get; set; } = (context) => !string.IsNullOrEmpty(context.User.Identity?.Name) ? new User(context.User.Identity?.Name ?? context.Session.SessionID, context.User.Identity?.Name ?? "Anonymous") : null;
 
         public static void SetUser(Func<HttpContext, User> setUser)
         {
