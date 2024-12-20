@@ -281,7 +281,7 @@ namespace Aikido.Zen.Core
                 Payload = payload,
                 Operation = operation, // the class + method where the attack was detected
                 Metadata = metadata,
-                Stack = "stack",//new StackTrace().ToString().Substring(0, 4096),
+                Stack = new StackTrace().ToString().Substring(0, 4096),
                 Source = source.ToJsonName()
             };
 
