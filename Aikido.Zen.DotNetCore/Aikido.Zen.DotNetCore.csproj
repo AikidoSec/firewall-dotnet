@@ -24,5 +24,4 @@
 		<Message Text="Creating NuGet packages..." Importance="high" />
 		<Exec Command="powershell -ExecutionPolicy Bypass -File ..\\pack-dotnetcore.ps1 -buildConfiguration $(Configuration)" />
 	</Target>
-
 </Project>

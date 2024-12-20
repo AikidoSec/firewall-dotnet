@@ -5,6 +5,8 @@
     <TargetFrameworks>net8;net48</TargetFrameworks>
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>disable</Nullable>
+    <RuntimeIdentifier>win-x86</RuntimeIdentifier>
+   <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
 
   <ItemGroup>
