@@ -53,6 +53,8 @@ namespace Aikido.Zen.Core.Models
         }
 
         public void AddUser(User user, string ipAddress) {
+            if (user == null)
+                return;
             if (!_users.TryGetValue(user.Id, out UserExtended userExtended)) {
                 userExtended = new UserExtended(user.Id, user.Name)
                 {

@@ -25,13 +25,13 @@ namespace Aikido.Zen.Core.Api
 		{
 			using (var cts = new CancellationTokenSource(timeoutInMS))
 			{
-                // make sure the json string does not use unicode the escape characters
-                var eventAsJson = JsonSerializer.Serialize(@event, options: new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
-				var requestContent = new StringContent(eventAsJson, Encoding.UTF8, "application/json");
-				var request = APIHelper.CreateRequest(token, new Uri(EnvironmentHelper.AikidoUrl), "api/runtime/events", HttpMethod.Post, requestContent);
-
 				try
 				{
+                    // make sure the json string does not use unicode the escape characters
+                    var eventAsJson = JsonSerializer.Serialize(@event, options: new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
+				    var requestContent = new StringContent(eventAsJson, Encoding.UTF8, "application/json");
+				    var request = APIHelper.CreateRequest(token, new Uri(EnvironmentHelper.AikidoUrl), "api/runtime/events", HttpMethod.Post, requestContent);
+
 					var response = await _httpClient.SendAsync(request, cts.Token);
 					return APIHelper.ToAPIResponse<ReportingAPIResponse>(response);
 				}

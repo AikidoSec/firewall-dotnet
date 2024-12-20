@@ -1,14 +1,11 @@
 using Aikido.Zen.Core.Helpers;
 using HarmonyLib;
 using Microsoft.Data.SqlClient;
-using Microsoft.Data.Sqlite;
 using MySql.Data.MySqlClient;
 using System.Data.Common;
 using Npgsql;
-using Aikido.Zen.Core.Models;
 using MySqlX.XDevAPI.Relational;
 using System.Reflection;
-using Aikido.Zen.Core.Exceptions;
 using System;
 
 namespace Aikido.Zen.DotNetFramework.Patches
@@ -23,9 +20,15 @@ namespace Aikido.Zen.DotNetFramework.Patches
             PatchMethod(harmony, typeof(SqlCommand), "ExecuteReader", typeof(System.Data.CommandBehavior));
 
             // SQLite
-            PatchMethod(harmony, typeof(SqliteCommand), "ExecuteNonQuery");
-            PatchMethod(harmony, typeof(SqliteCommand), "ExecuteScalar");
-            PatchMethod(harmony, typeof(SqliteCommand), "ExecuteReader", typeof(System.Data.CommandBehavior));
+
+            // microsoft.data.sqlite
+            PatchMethod(harmony, typeof(Microsoft.Data.Sqlite.SqliteCommand), "ExecuteNonQuery");
+            PatchMethod(harmony, typeof(Microsoft.Data.Sqlite.SqliteCommand), "ExecuteScalar");
+            PatchMethod(harmony, typeof(Microsoft.Data.Sqlite.SqliteCommand), "ExecuteReader", typeof(System.Data.CommandBehavior));
+            // system.data.sqlite
+            PatchMethod(harmony, typeof(System.Data.SQLite.SQLiteCommand), "ExecuteNonQuery");
+            PatchMethod(harmony, typeof(System.Data.SQLite.SQLiteCommand), "ExecuteScalar");
+            PatchMethod(harmony, typeof(System.Data.SQLite.SQLiteCommand), "ExecuteReader", typeof(System.Data.CommandBehavior));
 
             // MySql, MariaDB
             PatchMethod(harmony, typeof(MySqlCommand), "ExecuteNonQuery");
@@ -55,55 +58,8 @@ namespace Aikido.Zen.DotNetFramework.Patches
 
         private static bool OnCommandExecuting(object[] __args, MethodBase __originalMethod, DbCommand __instance)
         {
-            var command = __instance;
-            var methodInfo = __originalMethod as MethodInfo;
-            var context = Zen.GetContext();
-
-            if (context == null)
-            {
-                return true;
-            }
-            if (command != null && SqlCommandHelper.DetectSQLInjection(command.CommandText, GetDialect(command, out var type, out var assembly), context, assembly, $"{type}.{methodInfo.Name}"))
-            {
-                // keep going if dry mode
-                if (EnvironmentHelper.DryMode)
-                {
-                    return true;
-                }
-                throw AikidoException.SQLInjectionDetected(command.CommandText);
-            }
-            return true;
-        }
-
-        private static SQLDialect GetDialect(DbCommand dbCommand, out string type, out string assembly)
-        {
-            if (dbCommand is SqlCommand)
-            {
-                type = nameof(SqlCommand);
-                assembly = typeof(SqlCommand).Assembly.FullName?.Split(new string[] { ", Culture=" }, StringSplitOptions.None)[0];
-                return SQLDialect.MicrosoftSQL;
-            }
-            else if (dbCommand is SqliteCommand)
-            {
-                type = nameof(SqliteCommand);
-                assembly = typeof(SqliteCommand).Assembly.FullName.Split(new string[] { ", Culture=" }, StringSplitOptions.None)[0];
-                return SQLDialect.Generic;
-            }
-            else if (dbCommand is MySqlCommand)
-            {
-                type = nameof(MySqlCommand);
-                assembly = typeof(MySqlCommand).AssemblyQualifiedName;
-                return SQLDialect.MySQL;
-            }
-            else if (dbCommand is NpgsqlCommand)
-            {
-                type = nameof(NpgsqlCommand);
-                assembly = typeof(NpgsqlCommand).AssemblyQualifiedName;
-                return SQLDialect.PostgreSQL;
-            }
-            type = null;
-            assembly = null;
-            return SQLDialect.Generic;
+            var assembly = __instance.GetType().Assembly.FullName?.Split(new[] { ", Culture=" }, StringSplitOptions.None)[0];
+            return Aikido.Zen.Core.Patches.SqlClientPatcher.OnCommandExecuting(__args, __originalMethod, __instance, assembly, Zen.GetContext());
         }
     }
 }
