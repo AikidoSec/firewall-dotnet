@@ -43,6 +43,7 @@ jobs:
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         vs-version: '[17.2,19.0)'
 =======
         vs-version: '[17.0,18.0)'
@@ -53,6 +54,9 @@ jobs:
 =======
         vs-version: '[19.0,17.0)'
 >>>>>>> 82e0150 (Update unit-test.yml)
+=======
+        vs-version: '[15.0,19.0)'
+>>>>>>> 3559fbb (Update unit-test.yml)
         
     - name: Install dependencies
       run: |
