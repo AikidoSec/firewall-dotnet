@@ -29,19 +29,14 @@ jobs:
         key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/*.props', '**/*.targets') }}
         restore-keys: |
           ${{ runner.os }}-nuget-
-    
-    - name: Setup .NET Framework
-      uses: microsoft/setup-netfx@v1
+
+    - name: Setup .NET
+      uses: xt0rted/setup-dotnet@v1.0.0
       with:
-        version: |
+        dotnet-version: |
           4.6.1
           4.7.2
           4.8.2
-
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: |
           6.0.x
           7.0.x
           8.0.x
