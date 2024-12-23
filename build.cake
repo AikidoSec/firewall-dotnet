@@ -78,7 +78,7 @@ Task("Build")
             var msBuildSettings = new MSBuildSettings
             {
                 Configuration = configuration,
-                ToolVersion = MSBuildToolVersion.VS2022,
+                ToolVersion = MSBuildToolVersion.VS2019,
                 Verbosity = Verbosity.Quiet,
                 PlatformTarget = PlatformTarget.MSIL,
                 MaxCpuCount = 1,
