@@ -1,4 +1,4 @@
-name: Unit tests
+2019name: Unit tests
 
 on:
   push: { }
@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-and-test:
-    runs-on: windows-latest # needs to be windows because we support .NET framework
+    runs-on: windows-2019 # needs to be windows because we support .NET framework
     timeout-minutes: 30
     strategy:
       matrix:
@@ -34,9 +34,6 @@ jobs:
       uses: xt0rted/setup-dotnet@v1.0.0
       with:
         dotnet-version: |
-          4.6.1
-          4.7.2
-          4.8.2
           6.0.x
           7.0.x
           8.0.x
