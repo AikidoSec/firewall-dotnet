@@ -17,7 +17,7 @@ namespace Aikido.Zen.Test
         {
             Environment.SetEnvironmentVariable("AIKIDO_TOKEN", "test");
             // mock zen api
-            var agentMock = AgentMock.CreateMock();
+            var agentMock = new Agent(ZenApiMock.CreateMock().Object);
 
             // Setup context with some parsed user input
             _context = new Context

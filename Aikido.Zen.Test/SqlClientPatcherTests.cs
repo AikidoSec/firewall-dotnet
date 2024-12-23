@@ -34,7 +34,7 @@ namespace Aikido.Zen.Test
                 .ReturnsAsync(new ReportingAPIResponse { Success = true });
             var zenApiMock = new ZenApi(reportingMock.Object, runtimeMock.Object);
                 
-            Agent.GetInstance(zenApiMock);
+            Agent.NewInstance(zenApiMock);
         }
 
         [TestCase("System.Data.SqlClient", SQLDialect.MicrosoftSQL)]
