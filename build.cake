@@ -78,7 +78,7 @@ Task("Build")
             var msBuildSettings = new MSBuildSettings
             {
                 Configuration = configuration,
-                ToolVersion = MSBuildToolVersion.VS2019,
+                ToolVersion = MSBuildToolVersion.VS2022,
                 Verbosity = Verbosity.Quiet,
                 PlatformTarget = PlatformTarget.MSIL,
                 MaxCpuCount = 1,
@@ -86,7 +86,14 @@ Task("Build")
                 DetailedSummary = false
             }
             .WithTarget("Build");
-            MSBuild(solution, msBuildSettings);
+
+            var projects = GetFiles("./**/*.csproj")
+                .Where(p => !p.FullPath.Contains("sample-apps") && !p.FullPath.Contains("Aikido.Zen.Benchmarks"));
+
+            foreach(var project in projects)
+            {
+                MSBuild(project, msBuildSettings);
+            }
             Information("Build task completed successfully.");
         }
         catch (Exception ex)
