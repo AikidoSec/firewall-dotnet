@@ -1,0 +1,53 @@
+name: Unit tests
+
+on:
+  push: {}
+  workflow_call: {}
+
+jobs:
+  build-and-test:
+    runs-on: windows-latest # needs to be windows because we support .NET framework
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        framework: 
+          - 'net461'
+          - 'net472'
+          - 'net482'
+          - 'net6.0'
+          - 'net7.0'
+          - 'net8.0'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: |
+          4.6.1
+          4.7.2
+          4.8.2
+          6.0.x
+          7.0.x
+          8.0.x
+    
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v1.3
+        
+    - name: Install dependencies
+      run: |
+        dotnet tool restore
+        dotnet restore
+        
+    - name: Build and Test
+      run: ./build.ps1 --target=Test
+      
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: ./coverage/coverage.opencover.xml
+        fail_ci_if_error: true
+        slug: AikidoSec/firewall-dotnet

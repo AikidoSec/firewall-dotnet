@@ -1,6 +1,7 @@
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Models.Ip;
 using NetTools;
+using System.Threading.Tasks;
 
 namespace Aikido.Zen.Test
 {
@@ -157,5 +158,59 @@ namespace Aikido.Zen.Test
             Assert.IsFalse(_blockList.IsBlocked("invalid.ip", url)); // Invalid IP should not be blocked
             Assert.IsFalse(_blockList.IsBlocked("10.0.0.1", url)); // Non-blocked user in allowed subnet
         }
+
+        [Test]
+        public void ConcurrentAccess_ShouldHandleConcurrentUpdates()
+        {
+            // Arrange
+            var tasks = new List<Task>();
+            var ip = "192.168.1.100";
+
+            // Act
+            for (int i = 0; i < 100; i++)
+            {
+                tasks.Add(Task.Run(() => _blockList.AddIpAddressToBlocklist(ip)));
+                tasks.Add(Task.Run(() => _blockList.UpdateBlockedSubnets(new[] { IPAddressRange.Parse("10.0.0.0/8") })));
+            }
+
+            Task.WaitAll(tasks.ToArray());
+
+            // Assert
+            Assert.IsTrue(_blockList.IsIPBlocked(ip));
+        }
+
+        [Test]
+        public void LargeBlocklistHandling_ShouldHandleLargeNumberOfIPs()
+        {
+            // Arrange
+            for (int i = 0; i < 10000; i++)
+            {
+                _blockList.AddIpAddressToBlocklist($"192.168.1.{i}");
+            }
+
+            // Act & Assert
+            Assert.IsTrue(_blockList.IsIPBlocked("192.168.1.9999"));
+            Assert.IsFalse(_blockList.IsIPBlocked("192.168.2.1"));
+        }
+
+        [Test]
+        public void PerformanceWithDifferentSizes_ShouldPerformEfficiently()
+        {
+            // Arrange
+            var stopwatch = new System.Diagnostics.Stopwatch();
+            var ip = "192.168.1.100";
+
+            // Act
+            stopwatch.Start();
+            for (int i = 0; i < 10000; i++)
+            {
+                _blockList.AddIpAddressToBlocklist($"192.168.1.{i}");
+            }
+            stopwatch.Stop();
+
+            // Assert
+            Assert.Less(stopwatch.ElapsedMilliseconds, 1000); // Ensure it completes within 1 second
+        }
+
     }
 }
