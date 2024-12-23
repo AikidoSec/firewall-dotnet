@@ -40,6 +40,8 @@ jobs:
     
     - name: Add msbuild to PATH
       uses: microsoft/setup-msbuild@v2
+      with:
+        vs-version: '[17.0,18.0)'
         
     - name: Install dependencies
       run: |
