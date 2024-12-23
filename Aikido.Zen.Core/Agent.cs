@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -56,6 +57,12 @@ namespace Aikido.Zen.Core
         /// <param name="batchTimeoutMs">Timeout in milliseconds for batch operations</param>
         public Agent(IZenApi api, int batchTimeoutMs = 5000)
         {
+            // batchTimeout should be at least 1 second
+            if (batchTimeoutMs < 1000)
+            {
+                throw new ArgumentException("Batch timeout must be at least 1000 ms", nameof(batchTimeoutMs));
+            }
+
             _api = api ?? throw new ArgumentNullException(nameof(api));
             _eventQueue = new ConcurrentQueue<QueuedItem>();
             _scheduledEvents = new ConcurrentDictionary<string, ScheduledItem>();
@@ -115,13 +122,14 @@ namespace Aikido.Zen.Core
         /// <param name="callback">Optional callback to execute when the event is processed</param>
         public void QueueEvent(string token, IEvent evt, Action<IEvent, APIResponse> callback = null)
         {
+            if (string.IsNullOrEmpty(token)) throw new ArgumentNullException(nameof(token));
+            if (evt == null) throw new ArgumentNullException(nameof(evt));
+
             var queuedItem = new QueuedItem {
                 Token = token,
                 Event = evt,
                 Callback = callback,
             };
-            if (string.IsNullOrEmpty(token)) throw new ArgumentNullException(nameof(token));
-            if (evt == null) throw new ArgumentNullException(nameof(evt));
 
             _eventQueue.Enqueue(queuedItem);
         }
@@ -133,7 +141,7 @@ namespace Aikido.Zen.Core
         /// <param name="item">The item to schedule</param>
         public void ScheduleEvent(string scheduleId, ScheduledItem item)
         {
-            if (string.IsNullOrEmpty(item.Token)) throw new ArgumentNullException(nameof(item.Token));
+            if (string.IsNullOrEmpty(item.Token)) throw new ArgumentNullException($"{nameof(item)}.{nameof(item.Token)}");
             if (string.IsNullOrEmpty(scheduleId)) throw new ArgumentNullException(nameof(scheduleId));
             if (item.Interval <= TimeSpan.Zero) throw new ArgumentException("Interval must be positive", nameof(item.Interval));
 
@@ -189,8 +197,21 @@ namespace Aikido.Zen.Core
         /// <summary>
         /// Disposes the agent, canceling any pending operations and waiting for graceful shutdown.
         /// </summary>
-        public void Dispose()
+        public async void Dispose()
         {
+            // Process any remaining events in the queue
+            while (!_eventQueue.IsEmpty && !_cancellationSource.Token.IsCancellationRequested)
+            {
+                if (_eventQueue.TryDequeue(out var eventItem))
+                {
+                    // Synchronously process remaining events
+                    var response = await _api.Reporting.ReportAsync(eventItem.Token, eventItem.Event, _batchTimeoutMs)
+                        .ConfigureAwait(false);
+                    eventItem.Callback?.Invoke(eventItem.Event, response);
+                }
+                await Task.Delay(100, _cancellationSource.Token);
+            }
+
             _cancellationSource.Cancel();
             try
             {
@@ -248,6 +269,8 @@ namespace Aikido.Zen.Core
         /// <param name="host"></param>
         /// <param name="port"></param>
         public void CaptureOutboundRequest(string host, int? port) {
+            if (string.IsNullOrEmpty(host))
+                return;
             _context.AddHostname(host + (port.HasValue ? $":{port}" : ""));
         }
 
@@ -265,11 +288,19 @@ namespace Aikido.Zen.Core
         /// <returns></returns>
         public virtual void SendAttackEvent(AttackKind kind, Source source, string payload, string operation, Context context, string module, IDictionary<string, object> metadata, bool blocked)
         {
+            // if the context is null, throw an argument null exception
+            if (context == null)
+                throw new ArgumentNullException(nameof(context));
+            // in case the body is null, create an empty stream
+            if (context.Body == null)
+                context.Body = new MemoryStream();
+
             var path = "";
             if (Uri.TryCreate(context.Url, UriKind.Absolute, out var uri))
                 path = uri.AbsolutePath;
             else
                 path = context.Url;
+
 
             var attack = new Attack
             {
@@ -510,7 +541,7 @@ namespace Aikido.Zen.Core
             var blockedIPsResponse = await _api.Reporting.GetBlockedIps(EnvironmentHelper.Token);
             if (blockedIPsResponse.Success && blockedIPsResponse.BlockedIPAddresses != null)
             {
-                var blockedIPs = blockedIPsResponse.Ips();
+                var blockedIPs = blockedIPsResponse.Ips;
                 var ranges = new List<IPAddressRange>();
                 foreach (var ip in blockedIPs)
                 {
