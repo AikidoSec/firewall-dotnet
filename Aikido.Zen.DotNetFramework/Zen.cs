@@ -28,7 +28,7 @@ namespace Aikido.Zen.DotNetFramework
                 var reportingApiClient = new ReportingAPIClient();
                 var runtimeApiClient = new RuntimeAPIClient();
                 var zenApi = new ZenApi(reportingApiClient, runtimeApiClient);
-                Agent.GetInstance(zenApi);
+                Agent.NewInstance(zenApi);
             }
             Agent.Instance.Start();
         }

@@ -20,7 +20,7 @@ namespace Aikido.Zen.Test
             _requestMock.Setup(r => r.RequestUri).Returns(_testUri);
             Environment.SetEnvironmentVariable("AIKIDO_TOKEN", "test-token");
             var apiMock = ZenApiMock.CreateMock();
-            Agent.GetInstance(apiMock.Object);
+            Agent.NewInstance(apiMock.Object);
         }
 
         [Test]

@@ -43,12 +43,9 @@ namespace Aikido.Zen.Core
 
         public static Agent Instance => _instance;
 
-        public static Agent GetInstance(IZenApi api, int batchTimeoutMs = 5000)
+        public static Agent NewInstance(IZenApi api, int batchTimeoutMs = 5000)
         {
-            if (_instance == null)
-            {
-                _instance = new Agent(api, batchTimeoutMs);
-            }
+            _instance = new Agent(api, batchTimeoutMs);
             return _instance;
         }
 
