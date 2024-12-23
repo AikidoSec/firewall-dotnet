@@ -67,9 +67,6 @@ namespace Aikido.Zen.Core.Models.Ip
                 {
                     if (IPHelper.IsInSubnet(address, subnet))
                     {
-                        // we add this IP to the blocklist to avoid having to check it again
-                        // this is done for performance reasons
-                        AddIpAddressToBlocklist(ip);
                         return true;
                     }
                 }
