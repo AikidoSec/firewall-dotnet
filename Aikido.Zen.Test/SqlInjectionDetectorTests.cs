@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Vulnerabilities;
+using NUnit.Framework;
 
 namespace Aikido.Zen.Test
 {
@@ -14,6 +15,46 @@ namespace Aikido.Zen.Test
 
             // Assert
             Assert.That(result, Is.EqualTo(expectedResult), description);
+        }
+
+        [Test]
+        public void IsSQLInjection_WithNullQuery_ReturnsFalse()
+        {
+            // Act
+            var result = SQLInjectionDetector.IsSQLInjection(null, "input", SQLDialect.MySQL);
+
+            // Assert
+            Assert.That(result, Is.False);
+        }
+
+        [Test]
+        public void IsSQLInjection_WithNullUserInput_ReturnsFalse()
+        {
+            // Act
+            var result = SQLInjectionDetector.IsSQLInjection("SELECT * FROM users", null, SQLDialect.MySQL);
+
+            // Assert
+            Assert.That(result, Is.False);
+        }
+
+        [Test]
+        public void IsSQLInjection_WithEmptyQuery_ReturnsFalse()
+        {
+            // Act
+            var result = SQLInjectionDetector.IsSQLInjection("", "input", SQLDialect.MySQL);
+
+            // Assert
+            Assert.That(result, Is.False);
+        }
+
+        [Test]
+        public void IsSQLInjection_WithEmptyUserInput_ReturnsFalse()
+        {
+            // Act
+            var result = SQLInjectionDetector.IsSQLInjection("SELECT * FROM users", "", SQLDialect.MySQL);
+
+            // Assert
+            Assert.That(result, Is.False);
         }
 
         public static IEnumerable<TestCaseData> GetTestData()

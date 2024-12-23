@@ -6,7 +6,7 @@ namespace Aikido.Zen.Core.Patches
 {
     [HarmonyPatch(typeof(HttpWebRequest), "GetResponse")]
     [HarmonyPatch(typeof(WebRequest), "GetResponseAsync")]
-    internal class HttpWebRequestPatch
+    public class HttpWebRequestPatch
     {
         [HarmonyPrefix]
         public static bool CaptureRequest(WebRequest __instance)

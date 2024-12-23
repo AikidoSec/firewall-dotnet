@@ -1,12 +1,13 @@
 using Aikido.Zen.Core.Models;
 using System;
-
+using System.Runtime.CompilerServices;
+[assembly: InternalsVisibleTo("Aikido.Zen.Tests")]
 namespace Aikido.Zen.Core.Helpers
 {
 	/// <summary>
 	/// Helper class for retrieving agent information about the current runtime environment.
 	/// </summary>
-	public class AgentInfoHelper
+	internal class AgentInfoHelper
 	{
 		/// <summary>
 		/// Gets information about the current runtime environment including OS, platform, and configuration details.
