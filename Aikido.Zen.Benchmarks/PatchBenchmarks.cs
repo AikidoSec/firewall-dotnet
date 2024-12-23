@@ -26,7 +26,7 @@ namespace Aikido.Zen.Benchmarks
             _httpClient = new HttpClient();
             var reportingAPIClient = new ReportingAPIClient();
             var runtimeAPIClient = new RuntimeAPIClient();
-            Agent.GetInstance(new ZenApi(reportingAPIClient, runtimeAPIClient));
+            Agent.NewInstance(new ZenApi(reportingAPIClient, runtimeAPIClient));
 
             Patcher.Unpatch();
         }
@@ -37,7 +37,7 @@ namespace Aikido.Zen.Benchmarks
             _httpClient = new HttpClient();
             var reportingAPIClient = new ReportingAPIClient();
             var runtimeAPIClient = new RuntimeAPIClient();
-            Agent.GetInstance(new ZenApi(reportingAPIClient, runtimeAPIClient));
+            Agent.NewInstance(new ZenApi(reportingAPIClient, runtimeAPIClient));
 
             Patcher.Patch();
         }

@@ -1,38 +1,31 @@
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Patches;
-using NUnit.Framework;
-using System;
-using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
+using Aikido.Zen.Test.Mocks;
 
 namespace Aikido.Zen.Test
 {
     public class HttpClientPatchTests
     {
         private HttpClient _httpClient;
-        private Agent _originalAgent;
 
         [SetUp]
         public void Setup()
         {
             _httpClient = new HttpClient();
-            _originalAgent = Agent.Instance;
         }
 
         [TearDown]
         public void TearDown()
         {
             _httpClient.Dispose();
-            Agent.Instance = _originalAgent;
         }
 
         [Test]
         public void CaptureRequest_WithNullBaseAddress_UsesRequestUri()
         {
             // Arrange
-            var agentMock = new Agent(new Mock<IZenApi>().Object);
-            Agent.Instance = agentMock;
+            Agent.NewInstance(ZenApiMock.CreateMock().Object);
+            Agent.Instance.ClearContext();
             var request = new HttpRequestMessage(HttpMethod.Get, "http://test.com:8080/path");
 
             // Act
@@ -40,8 +33,8 @@ namespace Aikido.Zen.Test
 
             // Assert
             Assert.That(result, Is.True);
-            Assert.That(agentMock.Context.Hostnames.Count, Is.EqualTo(1));
-            var hostname = agentMock.Context.Hostnames[0];
+            Assert.That(Agent.Instance.Context.Hostnames.Count, Is.EqualTo(1));
+            var hostname = Agent.Instance.Context.Hostnames.FirstOrDefault();
             Assert.Multiple(() =>
             {
                 Assert.That(hostname.Hostname, Is.EqualTo("test.com"));
@@ -50,21 +43,21 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void CaptureRequest_WithBaseAddressAndNullRequestUri_UsesBaseAddress()
+        public async Task CaptureRequest_WithBaseAddressAndNullRequestUri_UsesBaseAddress()
         {
             // Arrange
-            var agentMock = new Agent(new Mock<IZenApi>().Object);
-            Agent.Instance = agentMock;
+            Agent.NewInstance(ZenApiMock.CreateMock().Object);
             _httpClient.BaseAddress = new Uri("http://example.com:9090/");
             var request = new HttpRequestMessage();
 
             // Act
             var result = HttpClientPatch.CaptureRequest(request, CancellationToken.None, _httpClient);
+            await Task.Delay(100);
 
             // Assert
             Assert.That(result, Is.True);
-            Assert.That(agentMock.Context.Hostnames.Count, Is.EqualTo(1));
-            var hostname = agentMock.Context.Hostnames[0];
+            Assert.That(Agent.Instance.Context.Hostnames.Count, Is.EqualTo(1));
+            var hostname = Agent.Instance.Context.Hostnames.FirstOrDefault();
             Assert.Multiple(() =>
             {
                 Assert.That(hostname.Hostname, Is.EqualTo("example.com"));
@@ -73,21 +66,22 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void CaptureRequest_WithBaseAddressAndRequestUri_CombinesUris()
+        public async Task CaptureRequest_WithBaseAddressAndRequestUri_CombinesUris()
         {
             // Arrange
-            var agentMock = new Agent(new Mock<IZenApi>().Object);
-            Agent.Instance = agentMock;
+            Agent.NewInstance(ZenApiMock.CreateMock().Object);
+            Agent.Instance.ClearContext();
             _httpClient.BaseAddress = new Uri("http://base.com:8080/");
             var request = new HttpRequestMessage(HttpMethod.Get, "api/endpoint");
 
             // Act
             var result = HttpClientPatch.CaptureRequest(request, CancellationToken.None, _httpClient);
+            await Task.Delay(100);
 
             // Assert
             Assert.That(result, Is.True);
-            Assert.That(agentMock.Context.Hostnames.Count, Is.EqualTo(1));
-            var hostname = agentMock.Context.Hostnames[0];
+            Assert.That(Agent.Instance.Context.Hostnames.Count, Is.EqualTo(1));
+            var hostname = Agent.Instance.Context.Hostnames.FirstOrDefault();
             Assert.Multiple(() =>
             {
                 Assert.That(hostname.Hostname, Is.EqualTo("base.com"));
@@ -99,8 +93,7 @@ namespace Aikido.Zen.Test
         public void CaptureRequest_WithAikidoDevHostname_SkipsCapture()
         {
             // Arrange
-            var agentMock = new Agent(new Mock<IZenApi>().Object);
-            Agent.Instance = agentMock;
+            Agent.NewInstance(ZenApiMock.CreateMock().Object);
             var request = new HttpRequestMessage(HttpMethod.Get, "https://api.aikido.dev/endpoint");
 
             // Act
@@ -108,7 +101,7 @@ namespace Aikido.Zen.Test
 
             // Assert
             Assert.That(result, Is.True);
-            Assert.That(agentMock.Context.Hostnames.Count, Is.EqualTo(0));
+            Assert.That(Agent.Instance.Context.Hostnames.Count, Is.EqualTo(0));
         }
     }
 }

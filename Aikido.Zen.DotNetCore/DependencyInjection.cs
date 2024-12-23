@@ -57,7 +57,7 @@ namespace Aikido.Zen.DotNetCore
             Zen.Initialize(app.ApplicationServices);
 			var options = app.ApplicationServices.GetRequiredService<IOptions<AikidoOptions>>();
 			if (options?.Value?.AikidoToken != null) {
-                var agent = Agent.GetInstance(app.ApplicationServices.GetRequiredService<IZenApi>());
+                var agent = Agent.NewInstance(app.ApplicationServices.GetRequiredService<IZenApi>());
 				agent.Start();
 			}
 			Patcher.Patch();
