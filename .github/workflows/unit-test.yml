@@ -41,10 +41,14 @@ jobs:
       uses: microsoft/setup-msbuild@v2
       with:
 <<<<<<< HEAD
+<<<<<<< HEAD
         vs-version: '[17.2,19.0)'
 =======
         vs-version: '[17.0,18.0)'
 >>>>>>> 45362b2 (Trying to fix the MsBuild step)
+=======
+        vs-version: '[15.0,16.0)'
+>>>>>>> 10ca31c (trying lower versions of msbuild)
         
     - name: Install dependencies
       run: |
