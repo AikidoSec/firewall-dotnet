@@ -1,11 +1,13 @@
 #addin nuget:?package=Cake.FileHelpers&version=6.0.0
 
+
 var target = Argument("target", "Default");
 var configuration = Argument("configuration", "Release");
 var solution = "./Aikido.Zen.sln";
 var projectName = "Aikido.Zen.Core";
+var version = "0.1.32";
 
-var baseUrl = "https://github.com/AikidoSec/zen-internals/releases/download/v0.1.32/";
+var baseUrl = $"https://github.com/AikidoSec/zen-internals/releases/download/v{version}/";
 var librariesDir = $"./{projectName}/libraries";
 
 var filesToDownload = new string[] {
@@ -34,6 +36,19 @@ Task("DownloadLibraries")
     .Does(() =>
     {
         EnsureDirectoryExists(librariesDir);
+        // check if the same version is already downloaded
+        var files = GetFiles($"{librariesDir}/**/*.sha256sum");
+        if (files.Count > 0)
+        {
+            FilePath file = files.First();
+            var currVersion = FileReadText(file).Split('-')[1];
+            if(currVersion == version)
+            {
+                Information("Libraries already downloaded. skipping download.");
+                return;
+            }
+        }
+
         foreach(var file in filesToDownload)
         {
             DownloadFile($"{baseUrl}{file}", $"{librariesDir}/{file}");
@@ -89,12 +104,32 @@ Task("Test")
     .IsDependentOn("Build")
     .Does(() =>
     {
-        DotNetTest(solution, new DotNetTestSettings
+        var coverageDir = MakeAbsolute(Directory("./coverage"));
+        EnsureDirectoryExists(coverageDir);
+        
+        var testProjects = GetFiles("./Aikido.Zen.Test/*.csproj");
+        foreach(var project in testProjects)
         {
-            Configuration = configuration,
-            NoBuild = true,
-        });
-        Information("Test task completed successfully.");
+            DotNetTest(project.FullPath, new DotNetTestSettings
+            {
+                Configuration = configuration,
+                NoBuild = true,
+                NoRestore = true,
+                ArgumentCustomization = args => args
+                    .Append("/p:CollectCoverage=true")
+                    .Append("/p:CoverletOutputFormat=opencover")
+                    .Append($"/p:CoverletOutput={coverageDir.FullPath}/coverage.xml")
+                    .Append("/p:Include=[Aikido.Zen.*]*")
+                    .Append("/p:Exclude=[Aikido.Zen.Test]*")
+                    .Append("--verbosity detailed")
+            });
+        }
+        Information($"Test task completed successfully. Coverage report at: {coverageDir.FullPath}");
+        
+        if (!FileExists($"{coverageDir.FullPath}/coverage.xml"))
+        {
+            Warning("Coverage file was not generated!");
+        }
     });
 
 Task("Pack")

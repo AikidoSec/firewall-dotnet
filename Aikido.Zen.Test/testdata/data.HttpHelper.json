@@ -148,5 +148,111 @@
             "body.key1": "value1",
             "body.key2": "value2"
         }
+    },
+    {
+        "queryParams": {
+            "param1": "value1",
+            "param2": "value2"
+        },
+        "headers": {
+            "header1": "value1",
+            "header2": "value2"
+        },
+        "cookies": {
+            "cookie1": "value1",
+            "cookie2": "value2"
+        },
+        "body": "{\"key\":\"value\"}",
+        "contentType": "application/json",
+        "expectedResult": {
+            "query.param1": "value1",
+            "query.param2": "value2",
+            "headers.header1": "value1",
+            "headers.header2": "value2",
+            "cookies.cookie1": "value1",
+            "cookies.cookie2": "value2",
+            "body.key": "value"
+        }
+    },
+    {
+        "queryParams": {
+            "param1": "value1"
+        },
+        "headers": {
+            "header1": "value1"
+        },
+        "cookies": {
+            "cookie1": "value1"
+        },
+        "body": "<html><body>Test</body></html>",
+        "contentType": "text/html",
+        "expectedResult": {
+            "query.param1": "value1",
+            "headers.header1": "value1",
+            "cookies.cookie1": "value1"
+        }
+    },
+    {
+        "queryParams": {
+            "param1": "value1"
+        },
+        "headers": {
+            "header1": "value1",
+            "header2": "value2"
+        },
+        "cookies": {
+            "cookie1": "value1"
+        },
+        "body": "{\"key\":\"value\"}",
+        "contentType": "application/json",
+        "expectedResult": {
+            "query.param1": "value1",
+            "headers.header1": "value1",
+            "headers.header2": "value2",
+            "cookies.cookie1": "value1",
+            "body.key": "value"
+        }
+    },
+    {
+        "queryParams": {
+            "param1": "value1"
+        },
+        "headers": {
+            "header1": "value1"
+        },
+        "cookies": {
+            "cookie1": "value1",
+            "cookie2": "value2"
+        },
+        "body": "plain text body",
+        "contentType": "text/plain",
+        "expectedResult": {
+            "query.param1": "value1",
+            "headers.header1": "value1",
+            "cookies.cookie1": "value1",
+            "cookies.cookie2": "value2"
+        }
+    },
+    {
+        "queryParams": {
+            "param1": "value1",
+            "param2": "value2"
+        },
+        "headers": {
+            "header1": "value1"
+        },
+        "cookies": {
+            "cookie1": "value1"
+        },
+        "body": "key1=value1&key2=value2",
+        "contentType": "application/x-www-form-urlencoded",
+        "expectedResult": {
+            "query.param1": "value1",
+            "query.param2": "value2",
+            "headers.header1": "value1",
+            "cookies.cookie1": "value1",
+            "body.key1": "value1",
+            "body.key2": "value2"
+        }
     }
 ]
