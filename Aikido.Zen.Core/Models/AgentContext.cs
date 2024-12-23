@@ -41,6 +41,8 @@ namespace Aikido.Zen.Core.Models
         }
 
         public void AddHostname(string hostname) {
+            if (string.IsNullOrWhiteSpace(hostname))
+                return;
             var hostParts = hostname.Split(':');
             var name = hostParts[0];
             var port = hostParts.Length > 1 ? hostParts[1] : "80";
@@ -67,6 +69,7 @@ namespace Aikido.Zen.Core.Models
         }
 
         public void AddRoute(string path, string method) {
+            if (path == null) return;
             _routes.TryGetValue(path, out Route route);
             if (route == null) {
                 route = new Route
