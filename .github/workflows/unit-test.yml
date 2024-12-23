@@ -30,6 +30,14 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-nuget-
     
+    - name: Setup .NET Framework
+      uses: microsoft/setup-netfx@v1
+      with:
+        version: |
+          4.6.1
+          4.7.2
+          4.8.2
+
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
