@@ -2,6 +2,7 @@ using Aikido.Zen.Core.Helpers;
 using System;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -19,6 +20,14 @@ namespace Aikido.Zen.Core.Api
             handler.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
 
             _httpClient = new HttpClient(handler);
+		}
+
+		// used for testing purposes
+		public ReportingAPIClient(HttpClient httpClient)
+		{
+			_httpClient = httpClient;
+			httpClient.DefaultRequestHeaders.AcceptEncoding.Add(new StringWithQualityHeaderValue("gzip"));
+			httpClient.DefaultRequestHeaders.AcceptEncoding.Add(new StringWithQualityHeaderValue("deflate"));
 		}
 
 		public async Task<ReportingAPIResponse> ReportAsync(string token, object @event, int timeoutInMS)

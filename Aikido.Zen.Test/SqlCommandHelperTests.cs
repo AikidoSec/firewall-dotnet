@@ -4,6 +4,7 @@ using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Models.Events;
 using Moq;
+using Aikido.Zen.Test.Mocks;
 
 namespace Aikido.Zen.Test
 {
@@ -16,14 +17,7 @@ namespace Aikido.Zen.Test
         {
             Environment.SetEnvironmentVariable("AIKIDO_TOKEN", "test");
             // mock zen api
-            var reportingApiClient = new Mock<IReportingAPIClient>();
-            reportingApiClient
-                .Setup(r => r.ReportAsync(It.IsAny<string>(), It.IsAny<object>(), 5000))
-                .ReturnsAsync(new ReportingAPIResponse());
-            var runtimeApiClient = new Mock<IRuntimeAPIClient>();
-            var zenApi = new Mock<IZenApi>();
-            zenApi.Setup(z => z.Reporting).Returns(reportingApiClient.Object);
-            zenApi.Setup(z => z.Runtime).Returns(runtimeApiClient.Object);
+            var zenApi = ZenApiMock.CreateMock();
             Agent.GetInstance(zenApi.Object);
             // mock the static GetInstance method
 
