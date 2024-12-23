@@ -1,46 +1,152 @@
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Api;
+using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Models.Events;
 using Moq;
-using NUnit.Framework;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+using Aikido.Zen.Test.Mocks;
 
 namespace Aikido.Zen.Test
 {
     public class AgentTests
     {
-        private Mock<IZenApi> _zenApiMock;
-        private Mock<IReportingAPIClient> _reportingApiClientMock;
-        private Mock<IRuntimeAPIClient> _runtimeApiClientMock;
-        private string _originalToken = Environment.GetEnvironmentVariable("AIKIDO_TOKEN");
+
         private Agent _agent;
+        private Mock<IZenApi> _zenApiMock;
         private const int BatchTimeoutMs = 5000;
 
         [SetUp]
         public void Setup()
         {
-            _reportingApiClientMock = new Mock<IReportingAPIClient>();
-            _runtimeApiClientMock = new Mock<IRuntimeAPIClient>();
-            _reportingApiClientMock.Setup(r => r.ReportAsync(It.IsAny<string>(), It.IsAny<IEvent>(), It.IsAny<int>()))
-                .ReturnsAsync(new ReportingAPIResponse { Success = true });
-            _runtimeApiClientMock.Setup(r => r.GetConfig(It.IsAny<string>()))
-                .ReturnsAsync(new ReportingAPIResponse {  Success = true });
-            _zenApiMock = new Mock<IZenApi>();
-            _zenApiMock.Setup(z => z.Reporting).Returns(_reportingApiClientMock.Object);
-            _zenApiMock.Setup(z => z.Runtime).Returns(_runtimeApiClientMock.Object);
-            _agent = new Agent(_zenApiMock.Object, BatchTimeoutMs);
             Environment.SetEnvironmentVariable("AIKIDO_TOKEN", "test-token");
+            _zenApiMock = ZenApiMock.CreateMock();
+            _agent = new Agent(_zenApiMock.Object, BatchTimeoutMs);
         }
 
-        [TearDown]
-        public void TearDown()
+        [Test]
+        public void ClearContext_ResetsAllContextValues()
         {
-            Environment.SetEnvironmentVariable("AIKIDO_TOKEN", _originalToken);
+            // Arrange
+            var user = new User("123", "testUser");
+            var path = "/test";
+            var method = "GET";
+            var ip = "127.0.0.1";
+            _agent.CaptureInboundRequest(user, path, method, ip);
+            _agent.CaptureOutboundRequest("test.com", 443);
+
+            // Act
+            _agent.ClearContext();
+
+            // Assert
+            Assert.That(_agent.Context.Users.Count, Is.EqualTo(0));
+            Assert.That(_agent.Context.Routes.Count, Is.EqualTo(0));
+            Assert.That(_agent.Context.Hostnames.Count, Is.EqualTo(0));
+            Assert.That(_agent.Context.Requests, Is.EqualTo(0));
         }
 
+        [Test]
+        public void CaptureUser_WithValidUser_AddsToContext()
+        {
+            // Arrange
+            var user = new User("123", "testUser");
+            var ip = "127.0.0.1";
+
+            // Act
+            _agent.CaptureUser(user, ip);
+
+            // Assert
+            Assert.That(_agent.Context.Users.Count, Is.EqualTo(1));
+            var capturedUser = _agent.Context.Users.First();
+            Assert.That(capturedUser.Id, Is.EqualTo("123"));
+            Assert.That(capturedUser.Name, Is.EqualTo("testUser"));
+            Assert.That(capturedUser.LastIpAddress, Is.EqualTo(ip));
+        }
+
+        [Test]
+        public void CaptureUser_WithNullUser_HandlesGracefully()
+        {
+            // Act
+            _agent.CaptureUser(null, "127.0.0.1");
+
+            // Assert
+            Assert.That(_agent.Context.Users.Count, Is.EqualTo(0));
+        }
+
+        [Test]
+        public async Task ScheduleEvent_OverloadWithEventAndInterval_AddsToScheduledEvents()
+        {
+            // Arrange
+            var token = "test-token";
+            var evt = new Started();
+            var interval = TimeSpan.FromMilliseconds(100);
+            var scheduleId = "test-schedule";
+            _zenApiMock = ZenApiMock.CreateMock();
+            _agent = new Agent(_zenApiMock.Object);
+
+            // Act
+            _agent.ScheduleEvent(token, evt, interval, scheduleId, null);
+
+            // Assert
+
+            // Wait for first scheduled execution
+            await Task.Delay(150);
+
+            _zenApiMock.Verify(
+                r => r.Reporting.ReportAsync(
+                    token,
+                    It.Is<Started>(e => e.GetType() == typeof(Started)),
+                    BatchTimeoutMs
+                ),
+                Times.AtLeastOnce()
+            );
+        }
+
+        [Test]
+        public void ScheduleEvent_OverloadWithEventAndInterval_ThrowsOnInvalidParams()
+        {
+            var evt = new Started();
+            var interval = TimeSpan.FromMilliseconds(100);
+            var scheduleId = "test-schedule";
+
+            // Test null token
+            Assert.Throws<ArgumentNullException>(() => 
+                _agent.ScheduleEvent(null, evt, interval, scheduleId, null));
+
+            // Test null event
+            Assert.Throws<ArgumentNullException>(() => 
+                _agent.ScheduleEvent("token", null, interval, scheduleId, null));
+
+            // Test null scheduleId
+            Assert.Throws<ArgumentNullException>(() => 
+                _agent.ScheduleEvent("token", evt, interval, null, null));
+
+            // Test non-positive interval
+            Assert.Throws<ArgumentException>(() => 
+                _agent.ScheduleEvent("token", evt, TimeSpan.Zero, scheduleId, null));
+        }
+
+        [Test]
+        public async Task ScheduleEvent_OverloadWithEventAndInterval_ExecutesCallback()
+        {
+            // Arrange
+            var token = "test-token";
+            var evt = new Started();
+            var interval = TimeSpan.FromMilliseconds(100);
+            var scheduleId = "test-schedule";
+            var callbackExecuted = false;
+
+            void callback(IEvent e, APIResponse r)
+            {
+                callbackExecuted = true;
+            }
+
+            // Act
+            _agent.ScheduleEvent(token, evt, interval, scheduleId, callback);
+            await Task.Delay(150); // Wait for execution
+
+            // Assert
+            Assert.That(callbackExecuted, Is.True);
+        }
 
         [Test]
         public void Constructor_WithNullApi_ThrowsArgumentNullException()
@@ -60,18 +166,16 @@ namespace Aikido.Zen.Test
         public async Task Start_QueuesStartedEventAndSchedulesHeartbeat()
         {
             // Arrange
-            var response = new ReportingAPIResponse { Success = true };
-            _reportingApiClientMock
-                .Setup(r => r.ReportAsync(It.IsAny<string>(), It.IsAny<Started>(), It.IsAny<int>()))
-                .ReturnsAsync(response);
+            _zenApiMock = ZenApiMock.CreateMock();
+            _agent = new Agent(_zenApiMock.Object);
 
             // Act
             _agent.Start();
             await Task.Delay(250); // Allow time for async operations
 
             // Assert - verify event was queued
-            _reportingApiClientMock.Verify(
-                r => r.ReportAsync(
+            _zenApiMock.Verify(
+                r => r.Reporting.ReportAsync(
                     It.IsAny<string>(), 
                     It.Is<Started>(s => s.GetType() == typeof(Started)),
                     BatchTimeoutMs
@@ -99,14 +203,16 @@ namespace Aikido.Zen.Test
         {
             // Arrange
             var testEvent = new Started();
+            _zenApiMock = ZenApiMock.CreateMock();
+            _agent = new Agent(_zenApiMock.Object);
 
             // Act
             _agent.QueueEvent("token", testEvent);
             await Task.Delay(100);
 
             // Assert
-            _reportingApiClientMock.Verify(
-                r => r.ReportAsync(
+            _zenApiMock.Verify(
+                r => r.Reporting.ReportAsync(
                     "token",
                     It.Is<Started>(e => e == testEvent),
                     BatchTimeoutMs
@@ -152,14 +258,16 @@ namespace Aikido.Zen.Test
                 Interval = TimeSpan.FromMilliseconds(100),
                 EventFactory = () => new Started()
             };
+            _zenApiMock = ZenApiMock.CreateMock();
+            _agent = new Agent(_zenApiMock.Object);
 
             // Act
             _agent.ScheduleEvent("test-schedule", item);
             await Task.Delay(250); // Wait for multiple intervals
 
             // Assert
-            _reportingApiClientMock.Verify(
-                r => r.ReportAsync(
+            _zenApiMock.Verify(
+                r => r.Reporting.ReportAsync(
                     "token",
                     It.IsAny<Started>(),
                     BatchTimeoutMs
@@ -188,14 +296,16 @@ namespace Aikido.Zen.Test
             };
             _agent.ScheduleEvent(scheduleId, item);
             await Task.Delay(150);
+            _zenApiMock = ZenApiMock.CreateMock();
+
 
             // Act
             _agent.RemoveScheduledEvent(scheduleId);
             await Task.Delay(150);
 
             // Assert - verify no more events after removal
-            _reportingApiClientMock.Verify(
-                r => r.ReportAsync(
+            _zenApiMock.Verify(
+                r => r.Reporting.ReportAsync(
                     "token",
                     It.IsAny<Started>(),
                     BatchTimeoutMs
@@ -290,14 +400,16 @@ namespace Aikido.Zen.Test
                 { "sql", payload }
             };
             var blocked = true;
+            _zenApiMock = ZenApiMock.CreateMock();
+            _agent = new Agent(_zenApiMock.Object);
 
             // Act
             _agent.SendAttackEvent(kind, source, payload, operation, context, module, metadata, blocked);
             await Task.Delay(150);
 
             // Assert
-            _reportingApiClientMock.Verify(
-                r => r.ReportAsync(
+            _zenApiMock.Verify(
+                r => r.Reporting.ReportAsync(
                     It.IsAny<string>(),
                     It.Is<DetectedAttack>(a =>
                         a.Attack.Kind == kind.ToJsonName() &&
@@ -323,6 +435,8 @@ namespace Aikido.Zen.Test
         {
             // Arrange
             var testEvent = new Started();
+            _zenApiMock = ZenApiMock.CreateMock();
+            _agent = new Agent(_zenApiMock.Object);
             _agent.QueueEvent("token", testEvent);
 
             // Act
@@ -330,10 +444,134 @@ namespace Aikido.Zen.Test
             _agent.QueueEvent("token", testEvent); // Try to queue after dispose
 
             // Assert - verify no more events processed after dispose
-            _reportingApiClientMock.Verify(
-                r => r.ReportAsync(It.IsAny<string>(), It.IsAny<IEvent>(), It.IsAny<int>()),
+            _zenApiMock.Verify(
+                r => r.Reporting.ReportAsync(It.IsAny<string>(), It.IsAny<IEvent>(), It.IsAny<int>()),
                 Times.Once // Only the first event before dispose
             );
+        }
+
+        [Test]
+        public void ConstructHeartbeat_ReturnsCorrectHeartbeatData()
+        {
+            // Arrange
+
+            _agent.Context.AddHostname("test.com");
+            _agent.Context.AddUser(new User ("123", "userName"), "1.2.3.4");
+            _agent.Context.AddRoute("/test", "GET");
+            _agent.Context.AddRequest();
+            _agent.Context.AddAttackBlocked();
+            _agent.Context.AddAttackDetected();
+
+            // Act
+            var heartbeat = _agent.ConstructHeartbeat();
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(heartbeat.Hostnames.FirstOrDefault()?.Hostname, Is.EqualTo("test.com"));
+                Assert.That(heartbeat.Users.Count, Is.EqualTo(1));
+                Assert.That(heartbeat.Routes.FirstOrDefault()?.Path ?? "", Is.EqualTo("/test"));
+                Assert.That(heartbeat.Stats.Requests.Total, Is.EqualTo(1));
+                Assert.That(heartbeat.Stats.Requests.AttacksDetected.Blocked, Is.EqualTo(1));
+                Assert.That(heartbeat.Stats.Requests.AttacksDetected.Total, Is.EqualTo(1));
+                Assert.That(heartbeat.Stats.StartedAt, Is.GreaterThan(0));
+                Assert.That(heartbeat.Stats.EndedAt, Is.GreaterThan(heartbeat.Stats.StartedAt));
+            });
+        }
+
+        [Test]
+        public async Task ConfigChanged_WhenConfigVersionDiffers_UpdatesConfig()
+        {
+            // Arrange
+            var configVersion = 123L;
+            var newConfigVersion = 124L;
+            var blockedUsers = new[] { "user1", "user2" };
+            var endpoints = new[]
+            {
+                new EndpointConfig
+                {
+                    Method = "GET",
+                    Route = "/test",
+                    AllowedIPAddresses = new[] { "192.168.1.0/24" }
+                }
+            };
+
+            _agent.Context.ConfigVersion = configVersion;
+
+            var configVersionResponse = new ReportingAPIResponse
+            {
+                Success = true,
+                ConfigUpdatedAt = newConfigVersion
+            };
+
+            var configResponse = new ReportingAPIResponse
+            {
+                Success = true,
+                BlockedUserIds = blockedUsers,
+                Endpoints = endpoints,
+                ConfigUpdatedAt = newConfigVersion
+            };
+
+            var runtimeApiClientMock = new Mock<IRuntimeAPIClient>();
+            runtimeApiClientMock.Setup(x => x.GetConfigVersion(It.IsAny<string>()))
+                .ReturnsAsync(configVersionResponse);
+            runtimeApiClientMock.Setup(x => x.GetConfig(It.IsAny<string>()))
+                .ReturnsAsync(configResponse);
+            _zenApiMock = ZenApiMock.CreateMock(runtime: runtimeApiClientMock.Object);
+            _agent = new Agent(_zenApiMock.Object);
+
+            // Act
+            var result = _agent.ConfigChanged(out var response);
+            await Task.Delay(100);
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(result, Is.True);
+                Assert.That(response.Success, Is.True);
+                Assert.That(response.ConfigUpdatedAt, Is.EqualTo(newConfigVersion));
+                Assert.That(response.BlockedUserIds, Is.EquivalentTo(blockedUsers));
+                Assert.That(response.Endpoints, Is.EquivalentTo(endpoints));
+            });
+
+            _zenApiMock.Verify(x => x.Runtime.GetConfigVersion(It.IsAny<string>()), Times.Once);
+            _zenApiMock.Verify(x => x.Runtime.GetConfig(It.IsAny<string>()), Times.Once);
+        }
+
+        [Test]
+        public async Task ConfigChanged_WhenConfigVersionSame_ReturnsFalse()
+        {
+            // Arrange
+            var configVersion = 123L;
+
+            var configVersionResponse = new ReportingAPIResponse
+            {
+                Success = true,
+                ConfigUpdatedAt = configVersion,
+            };
+            var runtimeApiClientMock = new Mock<IRuntimeAPIClient>();
+            runtimeApiClientMock.Setup(x => x.GetConfigVersion(It.IsAny<string>()))
+                .ReturnsAsync(configVersionResponse);
+            runtimeApiClientMock.Setup(x => x.GetConfig(It.IsAny<string>()))
+                .ReturnsAsync(configVersionResponse);
+            _zenApiMock = ZenApiMock.CreateMock(runtime: runtimeApiClientMock.Object);
+            _agent = new Agent(_zenApiMock.Object);
+            _agent.Context.ConfigVersion = configVersion;
+
+            // Act
+            var result = _agent.ConfigChanged(out var response);
+            await Task.Delay(100);
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(result, Is.False);
+                Assert.That(response.Success, Is.True);
+                Assert.That(response.ConfigUpdatedAt, Is.EqualTo(configVersion));
+            });
+
+            _zenApiMock.Verify(x => x.Runtime.GetConfigVersion(It.IsAny<string>()), Times.Once);
+            _zenApiMock.Verify(x => x.Runtime.GetConfig(It.IsAny<string>()), Times.Never);
         }
     }
 }

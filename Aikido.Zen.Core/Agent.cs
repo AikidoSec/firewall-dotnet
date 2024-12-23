@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Aikido.Zen.Core.Api;
@@ -12,6 +13,7 @@ using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Models.Events;
 using NetTools;
 
+[assembly: InternalsVisibleTo("Aikido.Zen.Tests")]
 namespace Aikido.Zen.Core
 {
     /// <summary>
@@ -174,7 +176,8 @@ namespace Aikido.Zen.Core
                 Token = token,
                 EventFactory = () => evt,
                 Interval = interval,
-                NextRun = DateTime.UtcNow + interval
+                NextRun = DateTime.UtcNow + interval,
+                Callback = callback
             };
 
             _scheduledEvents.AddOrUpdate(
@@ -492,7 +495,7 @@ namespace Aikido.Zen.Core
             }
         }
 
-        private Heartbeat ConstructHeartbeat() {
+        internal Heartbeat ConstructHeartbeat() {
             var heartbeat = new Heartbeat
             {
                 Agent = AgentInfoHelper.GetInfo(),
@@ -516,7 +519,7 @@ namespace Aikido.Zen.Core
             return heartbeat;
         }
 
-        private bool ConfigChanged(out ReportingAPIResponse response) {
+        internal bool ConfigChanged(out ReportingAPIResponse response) {
 
             response = _api.Runtime.GetConfigVersion(EnvironmentHelper.Token).Result;
             if (!response.Success) return false;
