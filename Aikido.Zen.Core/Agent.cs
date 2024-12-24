@@ -429,9 +429,9 @@ namespace Aikido.Zen.Core
 
         private bool ConfigChanged(out ReportingAPIResponse response) {
 
-            response = _api.Runtime.GetConfigVersion(EnvironmentHelper.Token).Result;
+            response = _api.Runtime.GetConfigLastUpdated(EnvironmentHelper.Token).Result;
             if (!response.Success) return false;
-            if (response.ConfigUpdatedAt != _context.ConfigVersion) {
+            if (response.ConfigUpdatedAt != _context.ConfigLastUpdated) {
                 response = _api.Runtime.GetConfig(EnvironmentHelper.Token).Result;
                 return true;
             }
@@ -442,7 +442,7 @@ namespace Aikido.Zen.Core
         
             _context.UpdateBlockedUsers(blockedUsers);
             _context.BlockList.UpdateAllowedSubnets(endpoints.ToDictionary(e => $"{e.Method}|{e.Route}", e => e.AllowedIPAddresses.Select(ip => IPAddressRange.Parse(ip))));
-            _context.ConfigVersion = configVersion; 
+            _context.ConfigLastUpdated = configVersion; 
             await UpdateBlockedIps();
         }
 

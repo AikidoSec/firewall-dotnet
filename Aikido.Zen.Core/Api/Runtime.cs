@@ -20,7 +20,7 @@ namespace Aikido.Zen.Core.Api
             _httpClient = new HttpClient(handler);
         }
 
-        public async Task<ReportingAPIResponse> GetConfigVersion(string token)
+        public async Task<ReportingAPIResponse> GetConfigLastUpdated(string token)
         {
             using (var cts = new CancellationTokenSource(5000))
             {
