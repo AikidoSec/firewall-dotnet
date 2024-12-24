@@ -445,7 +445,7 @@ namespace Aikido.Zen.Core
             }
         }
 
-        private Heartbeat ConstructHeartbeat() {
+        internal Heartbeat ConstructHeartbeat() {
             var heartbeat = Heartbeat.Create(_context);
             ClearContext();
             return heartbeat;
