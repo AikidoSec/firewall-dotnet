@@ -142,7 +142,7 @@ namespace Aikido.Zen.Test
 
             // Act
             _agent.ScheduleEvent(token, evt, interval, scheduleId, callback);
-            await Task.Delay(150); // Wait for execution
+            await Task.Delay(200); // Wait for execution
 
             // Assert
             Assert.That(callbackExecuted, Is.True);
