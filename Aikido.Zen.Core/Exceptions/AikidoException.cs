@@ -25,5 +25,10 @@ namespace Aikido.Zen.Core.Exceptions
         {
             return new AikidoException($"Request blocked from {ipAddress} to {route}");
         }
+
+        public static AikidoException PathTraversalDetected(string assemblyName, string operation)
+        {
+            return new AikidoException($"Path traversal detected in {assemblyName} during {operation}");
+        }
     }
 }

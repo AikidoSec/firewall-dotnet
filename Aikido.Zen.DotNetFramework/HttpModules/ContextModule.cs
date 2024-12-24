@@ -23,7 +23,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
         public void Init(HttpApplication context)
         {
             context.PostAuthenticateRequest += Context_PostAuthenticateRequest;
-            context.BeginRequest += (sender, e) => Task.Run(() => Context_BeginRequest(sender, e));
+            context.BeginRequest += (sender, e) => Task.Run(() => Context_BeginRequest(sender, e)).Wait();
             context.EndRequest += Context_EndRequest;
             context.Error += Context_Error;
         }

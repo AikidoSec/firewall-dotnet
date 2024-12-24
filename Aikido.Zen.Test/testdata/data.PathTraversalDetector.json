@@ -1,0 +1,188 @@
+[
+  {
+    "input": "../test.txt",
+    "path": "C:\\files\\test.txt", 
+    "description": "Simple directory traversal with ../",
+    "isTraversal": true
+  },
+  {
+    "input": "..\\test.txt",
+    "path": "C:\\files\\test.txt",
+    "description": "Simple directory traversal with backslash",
+    "isTraversal": true
+  },
+  {
+    "input": "../../test.txt",
+    "path": "C:\\files\\test.txt",
+    "description": "Double directory traversal with forward slash",
+    "isTraversal": true
+  },
+  {
+    "input": "..\\..\\test.txt",
+    "path": "C:\\files\\test.txt",
+    "description": "Double directory traversal with backslash",
+    "isTraversal": true
+  },
+  {
+    "input": "../../../../test.txt",
+    "path": "C:\\files\\test.txt",
+    "description": "Multiple directory traversal with forward slash",
+    "isTraversal": true
+  },
+  {
+    "input": "..\\..\\..\\..\\test.txt",
+    "path": "C:\\files\\test.txt",
+    "description": "Multiple directory traversal with backslash",
+    "isTraversal": true
+  },
+  {
+    "input": "./../test.txt",
+    "path": "C:\\files\\test.txt",
+    "description": "Current directory with traversal",
+    "isTraversal": true
+  },
+  {
+    "input": "",
+    "path": "test.txt",
+    "description": "Empty user input",
+    "isTraversal": false
+  },
+  {
+    "input": "test.txt",
+    "path": "",
+    "description": "Empty file path",
+    "isTraversal": false
+  },
+  {
+    "input": "",
+    "path": "",
+    "description": "Both empty",
+    "isTraversal": false
+  },
+  {
+    "input": "test.txt",
+    "path": "t",
+    "description": "Single character file path",
+    "isTraversal": false
+  },
+  {
+    "input": "t",
+    "path": "test.txt",
+    "description": "Single character user input",
+    "isTraversal": false
+  },
+  {
+    "input": "text.txt",
+    "path": "text.txt",
+    "description": "Identical paths",
+    "isTraversal": false
+  },
+  {
+    "input": "directory/text.txt",
+    "path": "text.txt",
+    "description": "Directory prefix in user input",
+    "isTraversal": false
+  },
+  {
+    "input": "directory/text.txt",
+    "path": "directory/text.txt",
+    "description": "Identical paths with directory",
+    "isTraversal": false
+  },
+  {
+    "input": "/etc/passwd",
+    "path": "/etc/passwd",
+    "description": "Absolute Linux path",
+    "isTraversal": true
+  },
+  {
+    "input": "/home/user/file.txt",
+    "path": "/home/user/",
+    "description": "Linux user directory",
+    "isTraversal": true
+  },
+  {
+    "input": "/./etc/passwd",
+    "path": "/./etc/passwd",
+    "description": "Path traversal bypass attempt with current directory",
+    "isTraversal": true
+  },
+  {
+    "input": "/./././root/test.txt",
+    "path": "/./././root/test.txt",
+    "description": "Multiple current directory bypass attempt",
+    "isTraversal": true
+  },
+  {
+    "input": "/appdata/storage/file.txt",
+    "path": "/storage/file.txt",
+    "description": "Valid nested path without traversal",
+    "isTraversal": false
+  },
+  {
+    "input": "/app/test.txt",
+    "path": "test",
+    "description": "Simple filename match",
+    "isTraversal": false
+  },
+  {
+    "input": "/app/data/example/test.txt",
+    "path": "example/test.txt",
+    "description": "Nested path match",
+    "isTraversal": false
+  },
+  {
+    "input": "C:\\file.txt",
+    "path": "C:\\",
+    "description": "Windows drive letter access",
+    "isTraversal": true
+  },
+  {
+    "input": "%USERPROFILE%\\Documents\\file.txt",
+    "path": "file.txt",
+    "description": "Windows environment variable path",
+    "isTraversal": true
+  },
+  {
+    "input": "%PROGRAMFILES%\\app\\config.ini",
+    "path": "config.ini",
+    "description": "Program Files environment variable",
+    "isTraversal": true
+  },
+  {
+    "input": "system32\\drivers\\etc\\hosts",
+    "path": "hosts",
+    "description": "System32 directory access",
+    "isTraversal": true
+  },
+  {
+    "input": "web.config:stream",
+    "path": "web.config",
+    "description": "Alternate data stream access",
+    "isTraversal": true
+  },
+  {
+    "input": "0x2e0x2e0x2f",
+    "path": "../",
+    "description": "Hex encoded traversal",
+    "isTraversal": true
+  },
+  {
+    "input": "~/.ssh/id_rsa",
+    "path": "id_rsa",
+    "description": "Linux home directory shorthand",
+    "isTraversal": true
+  },
+  {
+    "input": "@temp/file.txt",
+    "path": "file.txt", 
+    "description": "Special character prefix",
+    "isTraversal": true
+  },
+  {
+    "input": ";\\Windows\\win.ini",
+    "path": "win.ini",
+    "description": "Command injection attempt",
+    "isTraversal": true
+  }
+]

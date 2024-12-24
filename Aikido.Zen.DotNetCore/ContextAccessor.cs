@@ -13,7 +13,7 @@ namespace Aikido.Zen.DotNetCore
             _httpContextAccessor = httpContextAccessor;
         }
 
-        internal Context CurrentContext => (Context)_httpContextAccessor.HttpContext.Items["Aikido.Zen.Context"];
-        internal User CurrentUser => (User)_httpContextAccessor.HttpContext.Items["Aikido.Zen.CurrentUser"];
+        internal Context? CurrentContext => (Context?)_httpContextAccessor.HttpContext?.Items["Aikido.Zen.Context"];
+        internal User? CurrentUser => (User?)_httpContextAccessor.HttpContext?.Items["Aikido.Zen.CurrentUser"];
     }
 }

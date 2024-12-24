@@ -46,12 +46,12 @@ namespace Aikido.Zen.DotNetFramework
 
         public static Context GetContext()
         {
-            return (Context)HttpContext.Current.Items["Aikido.Zen.Context"];
+            return (Context)HttpContext.Current?.Items["Aikido.Zen.Context"];
         }
 
         public static User GetUser()
         {
-            return (User)HttpContext.Current.Items["Aikido.Zen.CurrentUser"];
+            return (User)HttpContext.Current?.Items["Aikido.Zen.CurrentUser"];
         }
     }
 }

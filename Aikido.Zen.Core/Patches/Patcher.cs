@@ -5,6 +5,7 @@ namespace Aikido.Zen.Core.Patches {
     public class Patcher {
         public static void Patch() {
            var harmony = new Harmony("aikido.zen");
+           WebRequestPatches.ApplyPatches(harmony);
            var executingAssembly = System.Reflection.Assembly.GetExecutingAssembly();
            harmony.PatchAll(executingAssembly);
         }
