@@ -146,4 +146,3 @@ namespace Aikido.Zen.Test
         }
     }
 }
-

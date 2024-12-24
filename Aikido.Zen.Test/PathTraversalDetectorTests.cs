@@ -66,6 +66,46 @@ namespace Aikido.Zen.Test
             Assert.That(result, Is.False);
         }
 
+        [Test]
+        public void DetectPathTraversal_WithUrlAndUnsafePath_DetectsTraversal()
+        {
+            // Act
+            var result = PathTraversalDetector.DetectPathTraversal("file:///etc/passwd", "/etc/passwd", isUrl: true);
+
+            // Assert
+            Assert.That(result, Is.True);
+        }
+
+        [Test]
+        public void DetectPathTraversal_WithUnsafePathParts_DetectsTraversal()
+        {
+            // Act
+            var result = PathTraversalDetector.DetectPathTraversal("safe.txt", "../unsafe.txt");
+
+            // Assert
+            Assert.That(result, Is.True);
+        }
+
+        [Test]
+        public void DetectPathTraversal_WithFileUrl_ParsesCorrectly()
+        {
+            // Act
+            var result = PathTraversalDetector.DetectPathTraversal("file:///test.txt", "test.txt", isUrl: true);
+
+            // Assert
+            Assert.That(result, Is.True);
+        }
+
+        [Test]
+        public void DetectPathTraversal_WithRelativeFileUrl_ParsesCorrectly()
+        {
+            // Act
+            var result = PathTraversalDetector.DetectPathTraversal("test.txt", "test.txt", isUrl: true);
+
+            // Assert
+            Assert.That(result, Is.False);
+        }
+
         public static IEnumerable<TestCaseData> GetTestData()
         {
             var jsonData = File.ReadAllText("testdata/data.PathTraversalDetector.json");
