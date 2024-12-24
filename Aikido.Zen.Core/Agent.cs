@@ -14,6 +14,7 @@ using Aikido.Zen.Core.Models.Events;
 using NetTools;
 
 [assembly: InternalsVisibleTo("Aikido.Zen.Tests")]
+
 namespace Aikido.Zen.Core
 {
     /// <summary>
@@ -445,7 +446,7 @@ namespace Aikido.Zen.Core
             }
         }
 
-        private Heartbeat ConstructHeartbeat() {
+        internal Heartbeat ConstructHeartbeat() {
             var heartbeat = Heartbeat.Create(_context);
             ClearContext();
             return heartbeat;
