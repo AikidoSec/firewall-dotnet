@@ -8,5 +8,12 @@ namespace Aikido.Zen.Core.Models.Events
         public string Type => "started";
         public AgentInfo Agent { get; set; }
         public long Time => DateTimeHelper.UTCNowUnixMilliseconds();
+
+        public static Started Create() {
+            return new Started
+            {
+                Agent = AgentInfoHelper.GetInfo()
+            };
+        }
     }
 }

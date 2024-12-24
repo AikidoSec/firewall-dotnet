@@ -71,9 +71,7 @@ namespace Aikido.Zen.Core
         /// <param name="token">The authentication token for the Zen API</param>
         public void Start() {
             // send started event
-            QueueEvent(EnvironmentHelper.Token, new Started {
-                Agent = AgentInfoHelper.GetInfo()
-            },
+            QueueEvent(EnvironmentHelper.Token, Started.Create(),
             (evt, response) =>
             {
                 if (response.Success)
@@ -265,45 +263,8 @@ namespace Aikido.Zen.Core
         /// <returns></returns>
         public virtual void SendAttackEvent(AttackKind kind, Source source, string payload, string operation, Context context, string module, IDictionary<string, object> metadata, bool blocked)
         {
-            var path = "";
-            if (Uri.TryCreate(context.Url, UriKind.Absolute, out var uri))
-                path = uri.AbsolutePath;
-            else
-                path = context.Url;
-
-            var stackTrace = new StackTrace().ToString();
-            stackTrace = stackTrace.Substring(0, Math.Min(stackTrace.Length, 4096));
-            var attack = new Attack
-            {
-                Blocked = blocked,
-                Kind = kind.ToJsonName(),
-                Module = module, // the qualified assembly name
-                Path = path,
-                User = context.User,
-                Payload = payload,
-                Operation = operation, // the class + method where the attack was detected
-                Metadata = metadata,
-                Stack = stackTrace,
-                Source = source.ToJsonName()
-            };
-
-            var request = new RequestInfo
-            {
-                Headers = context.Headers.ToDictionary(h => h.Key, h => string.Join(",", h.Value)),
-                Method = context.Method,
-                Source = Environment.Version.Major >= 5 ? "DotNetCore" : "DotNetFramework",
-                Url = context.Url,
-                Body = HttpHelper.GetRawBody(context.Body),
-                Route = context.Route,
-                IpAddress = context.RemoteAddress,
-                UserAgent = context.UserAgent
-            };
-
-            QueueEvent(EnvironmentHelper.Token, new DetectedAttack { 
-                Attack = attack,
-                Agent = AgentInfoHelper.GetInfo(),
-                Request = request
-            });
+            
+            QueueEvent(EnvironmentHelper.Token, DetectedAttack.Create(kind, source, payload, operation, context, module, metadata, blocked));
         }
 
 
@@ -462,25 +423,7 @@ namespace Aikido.Zen.Core
         }
 
         private Heartbeat ConstructHeartbeat() {
-            var heartbeat = new Heartbeat
-            {
-                Agent = AgentInfoHelper.GetInfo(),
-                Hostnames = _context.Hostnames
-                    .ToList(),
-                Users = _context.Users
-                    .ToList(),
-                Routes = _context.Routes
-                    .ToList()
-            };
-            heartbeat.Stats.Requests.Total = _context.Requests;
-            heartbeat.Stats.Requests.Aborted = _context.RequestsAborted;
-            heartbeat.Stats.Requests.AttacksDetected = new AttacksDetected
-            {
-                Blocked = _context.AttacksBlocked,
-                Total = _context.AttacksDetected
-            };
-            heartbeat.Stats.StartedAt = _context.Started;
-            heartbeat.Stats.EndedAt = DateTimeHelper.UTCNowUnixMilliseconds();
+            var heartbeat = Heartbeat.Create(_context);
             ClearContext();
             return heartbeat;
         }
