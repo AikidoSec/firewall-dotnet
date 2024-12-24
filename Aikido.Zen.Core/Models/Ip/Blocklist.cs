@@ -12,6 +12,7 @@ namespace Aikido.Zen.Core.Models.Ip
     /// </summary>
     public class BlockList
     {
+        // the state of our blocklist need to be thread safe, because incoming ASP requests can be multithreaded, and the agent, which runs on a background thread can also update / access the state
         private readonly ConcurrentDictionary<string, byte> _blockedAddresses = new ConcurrentDictionary<string, byte>();
         private readonly ConcurrentBag<IPAddressRange> _blockedSubnets = new ConcurrentBag<IPAddressRange>();
         private readonly ConcurrentDictionary<string, IEnumerable<IPAddressRange>> _allowedSubnets = new ConcurrentDictionary<string, IEnumerable<IPAddressRange>>();
