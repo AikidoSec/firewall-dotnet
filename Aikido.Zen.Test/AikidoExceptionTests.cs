@@ -1,4 +1,5 @@
 using Aikido.Zen.Core.Exceptions;
+using Aikido.Zen.Core.Models;
 using NUnit.Framework;
 using System;
 
@@ -38,11 +39,11 @@ namespace Aikido.Zen.Test
         public void SQLInjectionDetected_ShouldReturnCorrectMessage()
         {
             // Arrange
-            string query = "SELECT * FROM users WHERE id = 1";
-            string expectedMessage = $"SQL injection detected in query: {query}";
+            string dialect = SQLDialect.MicrosoftSQL.ToHumanName();
+            string expectedMessage = $"{SQLDialect.MicrosoftSQL.ToHumanName()}: SQL injection detected";
 
             // Act
-            var exception = AikidoException.SQLInjectionDetected(query);
+            var exception = AikidoException.SQLInjectionDetected(dialect);
 
             // Assert
             Assert.That(exception.Message, Is.EqualTo(expectedMessage));
@@ -52,11 +53,10 @@ namespace Aikido.Zen.Test
         public void ShellInjectionDetected_ShouldReturnCorrectMessage()
         {
             // Arrange
-            string command = "rm -rf /";
-            string expectedMessage = $"Shell injection detected in command: {command}";
+            string expectedMessage = $"Shell injection detected";
 
             // Act
-            var exception = AikidoException.ShellInjectionDetected(command);
+            var exception = AikidoException.ShellInjectionDetected();
 
             // Assert
             Assert.That(exception.Message, Is.EqualTo(expectedMessage));

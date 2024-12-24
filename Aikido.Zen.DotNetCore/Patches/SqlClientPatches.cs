@@ -8,12 +8,12 @@ using Npgsql;
 using Aikido.Zen.Core.Models;
 using MySqlX.XDevAPI.Relational;
 using System.Reflection;
-using Aikido.Zen.Core.Exceptions;
 
 namespace Aikido.Zen.DotNetCore.Patches
 {
     internal static class SqlClientPatches
     {
+        // we need to patch from inside the framework, because we have to pass the context, which is constructed in a framework specific manner
         public static void ApplyPatches(Harmony harmony)
         {
             // SQL Server

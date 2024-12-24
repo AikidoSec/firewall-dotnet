@@ -7,6 +7,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Net.Http.Headers;
 using Aikido.Zen.Core.Models;
+using Microsoft.Extensions.Logging;
 
 namespace Aikido.Zen.Core.Helpers
 {
@@ -15,6 +16,7 @@ namespace Aikido.Zen.Core.Helpers
     /// </summary>
     public class HttpHelper
     {
+
         /// <summary>
         /// Reads and flattens HTTP request data into a dictionary with dot-notation keys.
         /// </summary>
@@ -31,7 +33,8 @@ namespace Aikido.Zen.Core.Helpers
             IDictionary<string, string> cookies,
             Stream body,
             string contentType,
-            long contentLength)
+            long contentLength,
+            ILogger logger = null)
         {
             var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
@@ -45,9 +48,16 @@ namespace Aikido.Zen.Core.Helpers
             ProcessCookies(cookies, result);
 
             // Process Body
-            if (contentLength > 0)
+            try
             {
-                await ProcessRequestBodyAsync(body, contentType, result);
+                if (contentLength > 0)
+                {
+                    await ProcessRequestBodyAsync(body, contentType, result);
+                }
+            }
+            catch (Exception e)
+            {
+                logger?.LogError($"Aikido: caught error while parsing body: {e.Message}");
             }
 
             return result;
@@ -75,19 +85,19 @@ namespace Aikido.Zen.Core.Helpers
         {
             path = path.ToLower();
 
-            if (path.Contains("query"))
+            if (path.StartsWith("query"))
             {
                 return Source.Query;
             }
-            else if (path.Contains("headers"))
+            else if (path.StartsWith("headers"))
             {
                 return Source.Headers;
             }
-            else if (path.Contains("cookies"))
+            else if (path.StartsWith("cookies"))
             {
                 return Source.Cookies;
             }
-            else if (path.Contains("route"))
+            else if (path.StartsWith("route"))
             {
                 return Source.RouteParams;
             }
@@ -160,10 +170,6 @@ namespace Aikido.Zen.Core.Helpers
                         }
                     }
                 }
-            }
-            catch (Exception e)
-            {
-                // log error
             }
             finally
             {

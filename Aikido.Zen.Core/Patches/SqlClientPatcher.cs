@@ -25,7 +25,7 @@ namespace Aikido.Zen.Core.Patches
                 {
                     return true;
                 }
-                throw AikidoException.SQLInjectionDetected(command.CommandText);
+                throw AikidoException.SQLInjectionDetected(GetDialect(assembly).ToHumanName());
             }
             return true;
         }

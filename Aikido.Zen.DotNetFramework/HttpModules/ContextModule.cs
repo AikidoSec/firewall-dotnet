@@ -41,15 +41,9 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             if (Agent.Instance.Context.IsBlocked(user, clientIp, $"{httpContext.Request.HttpMethod}|{httpContext.Request.Path}"))
             {
                 Agent.Instance.Context.AddAbortedRequest();
-                // don't actually block the request if we are in dry mode
-                if (EnvironmentHelper.DryMode)
-                {
-                    return;
-                }
                 httpContext.Response.StatusCode = 403;
                 // stop the request from being processed
                 httpContext.Response.End();
-                throw AikidoException.RequestBlocked($"{httpContext.Request.HttpMethod}|{httpContext.Request.Path}", clientIp);
             }
         }
 

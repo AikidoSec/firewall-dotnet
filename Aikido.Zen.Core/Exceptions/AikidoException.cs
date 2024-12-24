@@ -11,14 +11,14 @@ namespace Aikido.Zen.Core.Exceptions
 
         }
 
-        public static AikidoException SQLInjectionDetected(string query)
+        public static AikidoException SQLInjectionDetected(string dialect)
         {
-            return new AikidoException($"SQL injection detected in query: {query}");
+            return new AikidoException($"{dialect}: SQL injection detected");
         }
 
-        public static AikidoException ShellInjectionDetected(string command)
+        public static AikidoException ShellInjectionDetected()
         {
-            return new AikidoException($"Shell injection detected in command: {command}");
+            return new AikidoException($"Shell injection detected");
         }
 
         public static AikidoException RequestBlocked(string route, string ipAddress)

@@ -12,6 +12,7 @@ namespace Aikido.Zen.DotNetFramework.Patches
 {
     internal static class SqlClientPatches
     {
+        // we need to patch from inside the framework, because we have to pass the context, which is constructed in a framework specific manner
         public static void ApplyPatches(Harmony harmony)
         {
             // SQL Server
@@ -20,12 +21,11 @@ namespace Aikido.Zen.DotNetFramework.Patches
             PatchMethod(harmony, typeof(SqlCommand), "ExecuteReader", typeof(System.Data.CommandBehavior));
 
             // SQLite
-
-            // microsoft.data.sqlite
+            // - microsoft.data.sqlite
             PatchMethod(harmony, typeof(Microsoft.Data.Sqlite.SqliteCommand), "ExecuteNonQuery");
             PatchMethod(harmony, typeof(Microsoft.Data.Sqlite.SqliteCommand), "ExecuteScalar");
             PatchMethod(harmony, typeof(Microsoft.Data.Sqlite.SqliteCommand), "ExecuteReader", typeof(System.Data.CommandBehavior));
-            // system.data.sqlite
+            // - system.data.sqlite
             PatchMethod(harmony, typeof(System.Data.SQLite.SQLiteCommand), "ExecuteNonQuery");
             PatchMethod(harmony, typeof(System.Data.SQLite.SQLiteCommand), "ExecuteScalar");
             PatchMethod(harmony, typeof(System.Data.SQLite.SQLiteCommand), "ExecuteReader", typeof(System.Data.CommandBehavior));

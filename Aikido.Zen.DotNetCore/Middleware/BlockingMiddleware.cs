@@ -19,12 +19,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
             if (Agent.Instance.Context.IsBlocked(user, context.Connection.RemoteIpAddress?.ToString(), $"{context.Request.Method}|{context.Request.Path}"))
             {
                 Agent.Instance.Context.AddAbortedRequest();
-                // don't actually block the request if we are in dry mode
-                if (!EnvironmentHelper.DryMode)
-                {
-                    context.Response.StatusCode = 403;
-                    throw AikidoException.RequestBlocked($"{context.Request.Method}|{context.Request.Path}", context.Connection.RemoteIpAddress?.ToString());
-                }
+                context.Response.StatusCode = 403;
             }
 
             return next(context);

@@ -33,7 +33,11 @@ namespace Aikido.Zen.DotNetFramework
             Agent.Instance.Start();
         }
 
-        internal static Func<HttpContext, User> SetUserAction { get; set; } = (context) => !string.IsNullOrEmpty(context.User.Identity?.Name) ? new User(context.User.Identity?.Name ?? context.Session.SessionID, context.User.Identity?.Name ?? "Anonymous") : null;
+        internal static Func<HttpContext, User> SetUserAction { get; set; } = (context) => !string.IsNullOrEmpty(context.User.Identity?.Name)
+            // if we have an identity, set the user to that identity automatically
+            ? new User(context.User.Identity.Name, context.User.Identity.Name)
+            // otherwise, return null
+            : null;
 
         public static void SetUser(Func<HttpContext, User> setUser)
         {
