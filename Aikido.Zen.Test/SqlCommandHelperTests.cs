@@ -4,6 +4,7 @@ using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Models.Events;
 using Moq;
+using Aikido.Zen.Test.Mocks;
 
 namespace Aikido.Zen.Test
 {
@@ -16,16 +17,7 @@ namespace Aikido.Zen.Test
         {
             Environment.SetEnvironmentVariable("AIKIDO_TOKEN", "test");
             // mock zen api
-            var reportingApiClient = new Mock<IReportingAPIClient>();
-            reportingApiClient
-                .Setup(r => r.ReportAsync(It.IsAny<string>(), It.IsAny<object>(), 5000))
-                .ReturnsAsync(new ReportingAPIResponse());
-            var runtimeApiClient = new Mock<IRuntimeAPIClient>();
-            var zenApi = new Mock<IZenApi>();
-            zenApi.Setup(z => z.Reporting).Returns(reportingApiClient.Object);
-            zenApi.Setup(z => z.Runtime).Returns(runtimeApiClient.Object);
-            Agent.GetInstance(zenApi.Object);
-            // mock the static GetInstance method
+            var agentMock = new Agent(ZenApiMock.CreateMock().Object);
 
             // Setup context with some parsed user input
             _context = new Context
@@ -144,6 +136,125 @@ namespace Aikido.Zen.Test
                 moduleName,
                 operation
             ));
+        }
+
+        [Test]
+        public void DetectSQLInjection_WithDifferentSQLCommandTypes_ShouldHandleCorrectly()
+        {
+            // Arrange
+            string[] sqlCommands = {
+                "INSERT INTO Users (Name) VALUES ('John')",
+                "UPDATE Users SET Name = 'Jane' WHERE Id = 1",
+                "DELETE FROM Users WHERE Id = 1"
+            };
+            string moduleName = "TestModule";
+            string operation = "MODIFY";
+
+            foreach (var sqlCommand in sqlCommands)
+            {
+                // Act
+                bool result = SqlCommandHelper.DetectSQLInjection(
+                    sqlCommand,
+                    SQLDialect.MicrosoftSQL,
+                    _context,
+                    moduleName,
+                    operation
+                );
+
+                // Assert
+                Assert.That(result, Is.False);
+                Assert.That(_context.AttackDetected, Is.False);
+            }
+        }
+
+        [Test]
+        public void DetectSQLInjection_WithParameterHandling_ShouldNotSendAttackEvent()
+        {
+            // Arrange
+            string sqlCommand = "SELECT * FROM Users WHERE Id = @Id AND Name = @Name";
+            string moduleName = "TestModule";
+            string operation = "SELECT";
+
+            _context.ParsedUserInput = new Dictionary<string, string>
+            {
+                { "query.id", "123" },
+                { "query.name", "John" }
+            };
+
+            // Act
+            bool result = SqlCommandHelper.DetectSQLInjection(
+                sqlCommand,
+                SQLDialect.MicrosoftSQL,
+                _context,
+                moduleName,
+                operation
+            );
+
+            // Assert
+            Assert.That(result, Is.False);
+            Assert.That(_context.AttackDetected, Is.False);
+        }
+
+        [Test]
+        public void DetectSQLInjection_WithErrorScenarios_ShouldHandleGracefully()
+        {
+            // Arrange
+            string sqlCommand = "SELECT * FROM NonExistentTable";
+            string moduleName = "TestModule";
+            string operation = "SELECT";
+
+            // Act & Assert
+            Assert.DoesNotThrow(() => SqlCommandHelper.DetectSQLInjection(
+                sqlCommand,
+                SQLDialect.MicrosoftSQL,
+                _context,
+                moduleName,
+                operation
+            ));
+        }
+
+        [Test]
+        public void DetectSQLInjection_WithTransactionHandling_ShouldNotSendAttackEvent()
+        {
+            // Arrange
+            string sqlCommand = "BEGIN TRANSACTION; SELECT * FROM Users; COMMIT;";
+            string moduleName = "TestModule";
+            string operation = "TRANSACTION";
+
+            // Act
+            bool result = SqlCommandHelper.DetectSQLInjection(
+                sqlCommand,
+                SQLDialect.MicrosoftSQL,
+                _context,
+                moduleName,
+                operation
+            );
+
+            // Assert
+            Assert.That(result, Is.False);
+            Assert.That(_context.AttackDetected, Is.False);
+        }
+
+        [Test]
+        public void DetectSQLInjection_WithConnectionManagement_ShouldNotSendAttackEvent()
+        {
+            // Arrange
+            string sqlCommand = "SELECT * FROM Users; -- Connection management test";
+            string moduleName = "TestModule";
+            string operation = "SELECT";
+
+            // Act
+            bool result = SqlCommandHelper.DetectSQLInjection(
+                sqlCommand,
+                SQLDialect.MicrosoftSQL,
+                _context,
+                moduleName,
+                operation
+            );
+
+            // Assert
+            Assert.That(result, Is.False);
+            Assert.That(_context.AttackDetected, Is.False);
         }
     }
 }

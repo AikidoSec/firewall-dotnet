@@ -1,4 +1,6 @@
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using Aikido.Zen.Core.Helpers;
 using NetTools;
@@ -10,9 +12,10 @@ namespace Aikido.Zen.Core.Models.Ip
     /// </summary>
     public class BlockList
     {
-        private readonly HashSet<string> _blockedAddresses = new HashSet<string>();
-        private readonly List<IPAddressRange> _blockedSubnets = new List<IPAddressRange>();
-        private readonly IDictionary<string, IEnumerable<IPAddressRange>> _allowedSubnets = new Dictionary<string, IEnumerable<IPAddressRange>>();
+        // the state of our blocklist need to be thread safe, because incoming ASP requests can be multithreaded, and the agent, which runs on a background thread can also update / access the state
+        private readonly ConcurrentDictionary<string, byte> _blockedAddresses = new ConcurrentDictionary<string, byte>();
+        private readonly ConcurrentBag<IPAddressRange> _blockedSubnets = new ConcurrentBag<IPAddressRange>();
+        private readonly ConcurrentDictionary<string, IEnumerable<IPAddressRange>> _allowedSubnets = new ConcurrentDictionary<string, IEnumerable<IPAddressRange>>();
 
         /// <summary>
         /// Updates the allowed subnet ranges per URL
@@ -23,7 +26,7 @@ namespace Aikido.Zen.Core.Models.Ip
             _allowedSubnets.Clear();
             foreach (var subnet in subnets)
             {
-                _allowedSubnets.Add(subnet.Key, subnet.Value);
+                _allowedSubnets.TryAdd(subnet.Key, subnet.Value);
             }
         }
 
@@ -33,8 +36,14 @@ namespace Aikido.Zen.Core.Models.Ip
         /// </summary>
         public void UpdateBlockedSubnets(IEnumerable<IPAddressRange> subnets)
         {
-            _blockedSubnets.Clear();
-            _blockedSubnets.AddRange(subnets);
+            while (!_blockedSubnets.IsEmpty)
+            {
+                _blockedSubnets.TryTake(out _);
+            }
+            foreach (var subnet in subnets)
+            {
+                _blockedSubnets.Add(subnet);
+            }
         }
 
         /// <summary>
@@ -43,10 +52,7 @@ namespace Aikido.Zen.Core.Models.Ip
         /// </summary>
         public void AddIpAddressToBlocklist(string ip)
         {
-            if (!_blockedAddresses.Contains(ip))
-            {
-                _blockedAddresses.Add(ip);
-            }
+            _blockedAddresses.TryAdd(ip, 0);
         }
 
         /// <summary>
@@ -56,23 +62,14 @@ namespace Aikido.Zen.Core.Models.Ip
         /// </summary>
         public bool IsIPBlocked(string ip)
         {
-            if (_blockedAddresses.Contains(ip))
+            if (_blockedAddresses.ContainsKey(ip))
             {
                 return true;
             }
 
             if (IPAddress.TryParse(ip, out var address))
             {
-                foreach (var subnet in _blockedSubnets)
-                {
-                    if (IPHelper.IsInSubnet(address, subnet))
-                    {
-                        // we add this IP to the blocklist to avoid having to check it again
-                        // this is done for performance reasons
-                        AddIpAddressToBlocklist(ip);
-                        return true;
-                    }
-                }
+                return _blockedSubnets.Any(subnet => IPHelper.IsInSubnet(address, subnet));
             }
 
             return false;
@@ -92,12 +89,7 @@ namespace Aikido.Zen.Core.Models.Ip
                 return true;
             }
 
-            foreach (var subnet in subnets) {
-                if (IPHelper.IsInSubnet(address, subnet)) {
-                    return true;
-                }
-            }
-            return false;
+            return subnets.Any(subnet => IPHelper.IsInSubnet(address, subnet));
         }
 
         /// <summary>
