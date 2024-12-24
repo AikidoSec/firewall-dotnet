@@ -271,6 +271,8 @@ namespace Aikido.Zen.Core
             else
                 path = context.Url;
 
+            var stackTrace = new StackTrace().ToString();
+            stackTrace = stackTrace.Substring(0, Math.Min(stackTrace.Length, 4096));
             var attack = new Attack
             {
                 Blocked = blocked,
@@ -281,7 +283,7 @@ namespace Aikido.Zen.Core
                 Payload = payload,
                 Operation = operation, // the class + method where the attack was detected
                 Metadata = metadata,
-                Stack = new StackTrace().ToString().Substring(0, 4096),
+                Stack = stackTrace,
                 Source = source.ToJsonName()
             };
 
