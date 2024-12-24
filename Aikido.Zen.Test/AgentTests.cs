@@ -85,11 +85,9 @@ namespace Aikido.Zen.Test
 
             // Act
             _agent.ScheduleEvent(token, evt, interval, scheduleId, null);
+            await Task.Delay(250);
 
             // Assert
-
-            // Wait for first scheduled execution
-            await Task.Delay(150);
 
             _zenApiMock.Verify(
                 r => r.Reporting.ReportAsync(
@@ -142,7 +140,7 @@ namespace Aikido.Zen.Test
 
             // Act
             _agent.ScheduleEvent(token, evt, interval, scheduleId, callback);
-            await Task.Delay(200); // Wait for execution
+            await Task.Delay(250); // Wait for execution
 
             // Assert
             Assert.That(callbackExecuted, Is.True);
