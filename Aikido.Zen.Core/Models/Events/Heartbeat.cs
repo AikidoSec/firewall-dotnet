@@ -24,7 +24,7 @@ namespace Aikido.Zen.Core.Models.Events
         public static TimeSpan Interval => TimeSpan.FromMinutes(10);
 #endif
 
-        public Heartbeat Create(AgentContext context) {
+        public static Heartbeat Create(AgentContext context) {
             var heartbeat = new Heartbeat
             {
                 Agent = AgentInfoHelper.GetInfo(),
