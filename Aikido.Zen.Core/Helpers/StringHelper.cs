@@ -30,16 +30,33 @@ namespace Aikido.Zen.Core.Helpers
         }
 
 
+        /// <summary>
+        /// Gets the next segment from a URL path by splitting on forward slashes.
+        /// </summary>
+        /// <param name="span">The URL path span to get the next segment from</param>
+        /// <param name="remainder">The remaining path after extracting the segment</param>
+        /// <returns>The next segment of the path before the first forward slash, or the entire path if no slash is found</returns>
+        /// <example>
+        /// For path "api/users/123":
+        /// First call returns "api" with remainder "users/123"
+        /// Second call returns "users" with remainder "123" 
+        /// Third call returns "123" with remainder empty
+        /// </example>
         public static ReadOnlySpan<char> GetNextSegment(this ReadOnlySpan<char> span, out ReadOnlySpan<char> remainder)
         {
+            // Find the index of the first forward slash
             int slashIndex = span.IndexOf('/');
+
+            // If no slash is found, return the entire span and set remainder to empty
             if (slashIndex == -1)
             {
                 remainder = ReadOnlySpan<char>.Empty;
                 return span;
             }
 
+            // Set the remainder to everything after the slash
             remainder = span.Slice(slashIndex + 1);
+            // Return everything before the slash
             return span.Slice(0, slashIndex);
         }
     }
