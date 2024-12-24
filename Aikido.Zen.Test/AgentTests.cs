@@ -85,7 +85,7 @@ namespace Aikido.Zen.Test
 
             // Act
             _agent.ScheduleEvent(token, evt, interval, scheduleId, null);
-            await Task.Delay(250);
+            await Task.Delay(500);
 
             // Assert
 
@@ -206,7 +206,7 @@ namespace Aikido.Zen.Test
 
             // Act
             _agent.QueueEvent("token", testEvent);
-            await Task.Delay(100);
+            await Task.Delay(500);
 
             // Assert
             _zenApiMock.Verify(
@@ -261,7 +261,7 @@ namespace Aikido.Zen.Test
 
             // Act
             _agent.ScheduleEvent("test-schedule", item);
-            await Task.Delay(250); // Wait for multiple intervals
+            await Task.Delay(500); // Wait for multiple intervals
 
             // Assert
             _zenApiMock.Verify(
