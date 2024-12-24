@@ -483,8 +483,8 @@ namespace Aikido.Zen.Test
         public async Task ConfigChanged_WhenConfigVersionDiffers_UpdatesConfig()
         {
             // Arrange
-            var configVersion = 123L;
-            var newConfigVersion = 124L;
+            var configLastUpdated = 123L;
+            var newConfigLastUpdated = 124L;
             var blockedUsers = new[] { "user1", "user2" };
             var endpoints = new[]
             {
@@ -496,12 +496,12 @@ namespace Aikido.Zen.Test
                 }
             };
 
-            _agent.Context.ConfigVersion = configVersion;
+            _agent.Context.ConfigLastUpdated = configLastUpdated;
 
             var configVersionResponse = new ReportingAPIResponse
             {
                 Success = true,
-                ConfigUpdatedAt = newConfigVersion
+                ConfigUpdatedAt = newConfigLastUpdated
             };
 
             var configResponse = new ReportingAPIResponse
@@ -509,11 +509,11 @@ namespace Aikido.Zen.Test
                 Success = true,
                 BlockedUserIds = blockedUsers,
                 Endpoints = endpoints,
-                ConfigUpdatedAt = newConfigVersion
+                ConfigUpdatedAt = newConfigLastUpdated
             };
 
             var runtimeApiClientMock = new Mock<IRuntimeAPIClient>();
-            runtimeApiClientMock.Setup(x => x.GetConfigVersion(It.IsAny<string>()))
+            runtimeApiClientMock.Setup(x => x.GetConfigLastUpdated(It.IsAny<string>()))
                 .ReturnsAsync(configVersionResponse);
             runtimeApiClientMock.Setup(x => x.GetConfig(It.IsAny<string>()))
                 .ReturnsAsync(configResponse);
@@ -529,12 +529,12 @@ namespace Aikido.Zen.Test
             {
                 Assert.That(result, Is.True);
                 Assert.That(response.Success, Is.True);
-                Assert.That(response.ConfigUpdatedAt, Is.EqualTo(newConfigVersion));
+                Assert.That(response.ConfigUpdatedAt, Is.EqualTo(newConfigLastUpdated));
                 Assert.That(response.BlockedUserIds, Is.EquivalentTo(blockedUsers));
                 Assert.That(response.Endpoints, Is.EquivalentTo(endpoints));
             });
 
-            _zenApiMock.Verify(x => x.Runtime.GetConfigVersion(It.IsAny<string>()), Times.Once);
+            _zenApiMock.Verify(x => x.Runtime.GetConfigLastUpdated(It.IsAny<string>()), Times.Once);
             _zenApiMock.Verify(x => x.Runtime.GetConfig(It.IsAny<string>()), Times.Once);
         }
 
@@ -542,21 +542,21 @@ namespace Aikido.Zen.Test
         public async Task ConfigChanged_WhenConfigVersionSame_ReturnsFalse()
         {
             // Arrange
-            var configVersion = 123L;
+            var configLastUpdated = 123L;
 
             var configVersionResponse = new ReportingAPIResponse
             {
                 Success = true,
-                ConfigUpdatedAt = configVersion,
+                ConfigUpdatedAt = configLastUpdated,
             };
             var runtimeApiClientMock = new Mock<IRuntimeAPIClient>();
-            runtimeApiClientMock.Setup(x => x.GetConfigVersion(It.IsAny<string>()))
+            runtimeApiClientMock.Setup(x => x.GetConfigLastUpdated(It.IsAny<string>()))
                 .ReturnsAsync(configVersionResponse);
             runtimeApiClientMock.Setup(x => x.GetConfig(It.IsAny<string>()))
                 .ReturnsAsync(configVersionResponse);
             _zenApiMock = ZenApiMock.CreateMock(runtime: runtimeApiClientMock.Object);
             _agent = new Agent(_zenApiMock.Object);
-            _agent.Context.ConfigVersion = configVersion;
+            _agent.Context.ConfigLastUpdated = configLastUpdated;
 
             // Act
             var result = _agent.ConfigChanged(out var response);
@@ -567,10 +567,10 @@ namespace Aikido.Zen.Test
             {
                 Assert.That(result, Is.False);
                 Assert.That(response.Success, Is.True);
-                Assert.That(response.ConfigUpdatedAt, Is.EqualTo(configVersion));
+                Assert.That(response.ConfigUpdatedAt, Is.EqualTo(configLastUpdated));
             });
 
-            _zenApiMock.Verify(x => x.Runtime.GetConfigVersion(It.IsAny<string>()), Times.Once);
+            _zenApiMock.Verify(x => x.Runtime.GetConfigLastUpdated(It.IsAny<string>()), Times.Once);
             _zenApiMock.Verify(x => x.Runtime.GetConfig(It.IsAny<string>()), Times.Never);
         }
     }

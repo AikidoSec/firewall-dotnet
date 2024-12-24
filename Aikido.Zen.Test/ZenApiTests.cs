@@ -38,7 +38,7 @@ namespace Aikido.Zen.Test
             _zenApi = ZenApiMock.CreateMock().Object;
 
             // Act
-            var result = await _zenApi.Runtime.GetConfigVersion("token");
+            var result = await _zenApi.Runtime.GetConfigLastUpdated("token");
 
             // Assert
             Assert.That(result.Success);
@@ -51,7 +51,7 @@ namespace Aikido.Zen.Test
             _zenApi = ZenApiMock.CreateMockWithExceptions().Object;
 
             // Act & Assert
-            Assert.ThrowsAsync<Exception>(async () => await _zenApi.Runtime.GetConfigVersion("token"));
+            Assert.ThrowsAsync<Exception>(async () => await _zenApi.Runtime.GetConfigLastUpdated("token"));
         }
 
         [Test]

@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
 
 namespace Aikido.Zen.Core.Models.Events {
     public class DetectedAttack : IEvent
@@ -14,6 +15,14 @@ namespace Aikido.Zen.Core.Models.Events {
         public long Time => DateTimeHelper.UTCNowUnixMilliseconds();
 
         public static DetectedAttack Create(AttackKind kind, Source source, string payload, string operation, Context context, string module, IDictionary<string, object> metadata, bool blocked) {
+
+            // if the context is null, throw an argument null exception
+            if (context == null)
+                throw new ArgumentNullException(nameof(context));
+            // in case the body is null, create an empty stream
+            if (context.Body == null)
+                context.Body = new MemoryStream();
+
             var path = "";
             if (Uri.TryCreate(context.Url, UriKind.Absolute, out var uri))
                 path = uri.AbsolutePath;
