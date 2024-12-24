@@ -21,7 +21,7 @@ namespace Aikido.Zen.Core.Models
         private int _attacksBlocked = 0;
         private int _requestsAborted = 0;
         private long _started = DateTimeHelper.UTCNowUnixMilliseconds();
-        public long ConfigVersion { get; set; } = 0;
+        public long ConfigLastUpdated { get; set; } = 0;
 
 
         public void AddRequest() {
@@ -53,6 +53,8 @@ namespace Aikido.Zen.Core.Models
         }
 
         public void AddUser(User user, string ipAddress) {
+            if (user == null)
+                return;
             if (!_users.TryGetValue(user.Id, out UserExtended userExtended)) {
                 userExtended = new UserExtended(user.Id, user.Name)
                 {

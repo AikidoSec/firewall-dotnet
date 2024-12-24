@@ -4,5 +4,6 @@ namespace Aikido.Zen.Core
 	{
 		public static string SectionName = "Aikido";
 		public string AikidoToken { get; set; }
+        public string AikidoUrl { get; set; }
 	}
 }

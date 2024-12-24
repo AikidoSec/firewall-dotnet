@@ -126,8 +126,7 @@
         "expectedResult": {
             "query.param1": "value1",
             "headers.header1": "value1",
-            "cookies.cookie1": "value1",
-            "body.text": "plain text body"
+            "cookies.cookie1": "value1"
         }
     },
     {

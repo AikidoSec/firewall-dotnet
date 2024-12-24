@@ -10,25 +10,21 @@ namespace Aikido.Zen.Core.Api
 {
     public class RuntimeAPIClient : IRuntimeAPIClient
     {
-        private readonly Uri _runtimeUrl;
-        private readonly Uri _aikidoUrl;
         private readonly HttpClient _httpClient;
 
-        public RuntimeAPIClient(Uri runtimeUrl, Uri aikidoUrl)
+        public RuntimeAPIClient()
         {
             var handler = new HttpClientHandler();
             handler.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
 
             _httpClient = new HttpClient(handler);
-            _runtimeUrl = runtimeUrl;
-            _aikidoUrl = aikidoUrl;
         }
 
-        public async Task<ReportingAPIResponse> GetConfigVersion(string token)
+        public async Task<ReportingAPIResponse> GetConfigLastUpdated(string token)
         {
             using (var cts = new CancellationTokenSource(5000))
             {
-                var request = APIHelper.CreateRequest(token, _runtimeUrl, "config", HttpMethod.Get);
+                var request = APIHelper.CreateRequest(token, new Uri(EnvironmentHelper.AikidoRealtimeUrl), "config", HttpMethod.Get);
 
                 try
                 {
@@ -53,7 +49,7 @@ namespace Aikido.Zen.Core.Api
         {
             using (var cts = new CancellationTokenSource(5000))
             {
-                var request = APIHelper.CreateRequest(token, _aikidoUrl, "/api/runtime/config", HttpMethod.Get);
+                var request = APIHelper.CreateRequest(token, new Uri(EnvironmentHelper.AikidoUrl), "/api/runtime/config", HttpMethod.Get);
 
                 try
                 {

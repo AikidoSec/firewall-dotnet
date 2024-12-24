@@ -1,7 +1,5 @@
 using Aikido.Zen.Core.Helpers;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
@@ -14,27 +12,26 @@ namespace Aikido.Zen.Core.Api
 	public class ReportingAPIClient : IReportingAPIClient
 	{
 		private readonly HttpClient _httpClient;
-		private readonly Uri _reportingUrl;
 
-		public ReportingAPIClient(Uri reportingUrl)
+		public ReportingAPIClient()
 		{
             var handler = new HttpClientHandler();
             handler.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
 
             _httpClient = new HttpClient(handler);
-			_reportingUrl = reportingUrl;
 		}
 
 		public async Task<ReportingAPIResponse> ReportAsync(string token, object @event, int timeoutInMS)
 		{
 			using (var cts = new CancellationTokenSource(timeoutInMS))
 			{
-                var eventAsJson = JsonSerializer.Serialize(@event, options: new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
-				var requestContent = new StringContent(eventAsJson, Encoding.UTF8, "application/json");
-				var request = APIHelper.CreateRequest(token, _reportingUrl, "api/runtime/events", HttpMethod.Post, requestContent);
-
 				try
 				{
+                    // make sure the json string does not use unicode the escape characters
+                    var eventAsJson = JsonSerializer.Serialize(@event, options: new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
+				    var requestContent = new StringContent(eventAsJson, Encoding.UTF8, "application/json");
+				    var request = APIHelper.CreateRequest(token, new Uri(EnvironmentHelper.AikidoUrl), "api/runtime/events", HttpMethod.Post, requestContent);
+
 					var response = await _httpClient.SendAsync(request, cts.Token);
 					return APIHelper.ToAPIResponse<ReportingAPIResponse>(response);
 				}
@@ -56,7 +53,7 @@ namespace Aikido.Zen.Core.Api
         {
             using (var cts = new CancellationTokenSource(5000))
             {
-                var request = APIHelper.CreateRequest(token, _reportingUrl, "api/runtime/firewall/lists", HttpMethod.Get);
+                var request = APIHelper.CreateRequest(token, new Uri(EnvironmentHelper.AikidoUrl), "api/runtime/firewall/lists", HttpMethod.Get);
                 try
                 {
                     var response = await _httpClient.SendAsync(request, cts.Token);

@@ -26,8 +26,6 @@ namespace Aikido.Zen.Core
         private readonly ConcurrentDictionary<string, ScheduledItem> _scheduledEvents;
         private long _lastConfigCheck = DateTime.UtcNow.Ticks;
 
-        private string _token;
-
         // Rate limiting and timing constants for the event processing loop
         private const int RateLimitPerSecond = 10;
         private const int RetryDelayMs = 250;
@@ -70,13 +68,9 @@ namespace Aikido.Zen.Core
         /// Starts the agent and schedules heartbeat events.
         /// </summary>
         /// <param name="token">The authentication token for the Zen API</param>
-        public void Start(string token) {
-            // store token
-            _token = token;
+        public void Start() {
             // send started event
-            QueueEvent(token, new Started {
-                Agent = AgentInfoHelper.GetInfo()
-            },
+            QueueEvent(EnvironmentHelper.Token, Started.Create(),
             (evt, response) =>
             {
                 if (response.Success)
@@ -92,7 +86,7 @@ namespace Aikido.Zen.Core
             // Schedule heartbeat event every x minutes
             var scheduledHeartBeat = new ScheduledItem
             {
-                Token = token,
+                Token = EnvironmentHelper.Token,
                 EventFactory = ConstructHeartbeat,
                 Interval = Heartbeat.Interval,
                 Callback = (evt, response) =>
@@ -254,6 +248,24 @@ namespace Aikido.Zen.Core
             _context.AddHostname(host + (port.HasValue ? $":{port}" : ""));
         }
 
+        /// <summary>
+        /// Sends out an attack event
+        /// </summary>
+        /// <param name="kind">The attack kind</param>
+        /// <param name="source">The source of the attack</param>
+        /// <param name="payload">The attack payload</param>
+        /// <param name="operation">The operation where the attack was detected</param>
+        /// <param name="context">The context of the attack</param>
+        /// <param name="module">The module where the attack was detected</param>
+        /// <param name="metadata">Additional metadata for the attack</param>
+        /// <param name="blocked">Whether the attack was blocked</param>
+        /// <returns></returns>
+        public virtual void SendAttackEvent(AttackKind kind, Source source, string payload, string operation, Context context, string module, IDictionary<string, object> metadata, bool blocked)
+        {
+            
+            QueueEvent(EnvironmentHelper.Token, DetectedAttack.Create(kind, source, payload, operation, context, module, metadata, blocked));
+        }
+
 
         // Main event processing loop that handles config checks, scheduled events and queued events
         private async Task ProcessRecurringTasksAsync()
@@ -410,35 +422,17 @@ namespace Aikido.Zen.Core
         }
 
         private Heartbeat ConstructHeartbeat() {
-            var heartbeat = new Heartbeat
-            {
-                Agent = AgentInfoHelper.GetInfo(),
-                Hostnames = _context.Hostnames
-                    .ToList(),
-                Users = _context.Users
-                    .ToList(),
-                Routes = _context.Routes
-                    .ToList()
-            };
-            heartbeat.Stats.Requests.Total = _context.Requests;
-            heartbeat.Stats.Requests.Aborted = _context.RequestsAborted;
-            heartbeat.Stats.Requests.AttacksDetected = new AttacksDetected
-            {
-                Blocked = _context.AttacksBlocked,
-                Total = _context.AttacksDetected
-            };
-            heartbeat.Stats.StartedAt = _context.Started;
-            heartbeat.Stats.EndedAt = DateTimeHelper.UTCNowUnixMilliseconds();
+            var heartbeat = Heartbeat.Create(_context);
             ClearContext();
             return heartbeat;
         }
 
         private bool ConfigChanged(out ReportingAPIResponse response) {
 
-            response = _api.Runtime.GetConfigVersion(_token).Result;
+            response = _api.Runtime.GetConfigLastUpdated(EnvironmentHelper.Token).Result;
             if (!response.Success) return false;
-            if (response.ConfigUpdatedAt != _context.ConfigVersion) {
-                response = _api.Runtime.GetConfig(_token).Result;
+            if (response.ConfigUpdatedAt != _context.ConfigLastUpdated) {
+                response = _api.Runtime.GetConfig(EnvironmentHelper.Token).Result;
                 return true;
             }
             return false;
@@ -448,14 +442,14 @@ namespace Aikido.Zen.Core
         
             _context.UpdateBlockedUsers(blockedUsers);
             _context.BlockList.UpdateAllowedSubnets(endpoints.ToDictionary(e => $"{e.Method}|{e.Route}", e => e.AllowedIPAddresses.Select(ip => IPAddressRange.Parse(ip))));
-            _context.ConfigVersion = configVersion; 
+            _context.ConfigLastUpdated = configVersion; 
             await UpdateBlockedIps();
         }
 
         private async Task UpdateBlockedIps() {
-            if (string.IsNullOrEmpty(_token))
+            if (string.IsNullOrEmpty(EnvironmentHelper.Token))
                 return;
-            var blockedIPsResponse = await _api.Reporting.GetBlockedIps(_token);
+            var blockedIPsResponse = await _api.Reporting.GetBlockedIps(EnvironmentHelper.Token);
             if (blockedIPsResponse.Success && blockedIPsResponse.BlockedIPAddresses != null)
             {
                 var blockedIPs = blockedIPsResponse.Ips();

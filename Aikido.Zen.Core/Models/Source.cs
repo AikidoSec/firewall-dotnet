@@ -27,7 +27,6 @@ namespace Aikido.Zen.Core.Models
                 case Source.Headers:
                     return "HTTP headers";
                 case Source.Cookies:
-                
                     return "cookies";
                 case Source.RouteParams:
                     return "route parameters";
@@ -35,6 +34,31 @@ namespace Aikido.Zen.Core.Models
                     return "GraphQL query";
                 case Source.Xml:
                     return "XML content";
+                case Source.Subdomains:
+                    return "subdomains";
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(source));
+            }
+        }
+
+        public static string ToJsonName(this Source source)
+        {
+            switch (source)
+            {
+                case Source.Query:
+                    return "query";
+                case Source.Body:
+                    return "body";
+                case Source.Headers:
+                    return "headers";
+                case Source.Cookies:
+                    return "cookies";
+                case Source.RouteParams:
+                    return "routeParams";
+                case Source.Graphql:
+                    return "graphql";
+                case Source.Xml:
+                    return "xml";
                 case Source.Subdomains:
                     return "subdomains";
                 default:

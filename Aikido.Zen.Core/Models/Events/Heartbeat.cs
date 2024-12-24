@@ -1,6 +1,7 @@
 using Aikido.Zen.Core.Helpers;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Aikido.Zen.Core.Models.Events
 {
@@ -22,5 +23,29 @@ namespace Aikido.Zen.Core.Models.Events
 #else
         public static TimeSpan Interval => TimeSpan.FromMinutes(10);
 #endif
+
+        public static Heartbeat Create(AgentContext context) {
+            var heartbeat = new Heartbeat
+            {
+                Agent = AgentInfoHelper.GetInfo(),
+                Hostnames = context.Hostnames
+                    .ToList(),
+                Users = context.Users
+                    .ToList(),
+                Routes = context.Routes
+                    .ToList()
+            };
+            heartbeat.Stats.Requests.Total = context.Requests;
+            heartbeat.Stats.Requests.Aborted = context.RequestsAborted;
+            heartbeat.Stats.Requests.AttacksDetected = new AttacksDetected
+            {
+                Blocked = context.AttacksBlocked,
+                Total = context.AttacksDetected
+            };
+            heartbeat.Stats.StartedAt = context.Started;
+            heartbeat.Stats.EndedAt = DateTimeHelper.UTCNowUnixMilliseconds();
+
+            return heartbeat;
+        }
     }
 }

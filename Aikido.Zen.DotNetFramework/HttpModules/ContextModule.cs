@@ -4,9 +4,11 @@ using System.Web;
 using System.Linq;
 using Aikido.Zen.Core.Helpers;
 using System.Threading.Tasks;
-using Aikido.Zen.Core.Models;
-using System.Runtime.Remoting.Contexts;
 using Context = Aikido.Zen.Core.Context;
+using Aikido.Zen.Core.Exceptions;
+using Aikido.Zen.Core.Models;
+using System.Web.Routing;
+using System.Net;
 
 namespace Aikido.Zen.DotNetFramework.HttpModules
 {
@@ -56,7 +58,11 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 Query = httpContext.Request.QueryString.AllKeys.ToDictionary(k => k, k => httpContext.Request.QueryString.GetValues(k)),
                 Headers = httpContext.Request.Headers.AllKeys.ToDictionary(k => k, k => httpContext.Request.Headers.GetValues(k)),
                 RemoteAddress = httpContext.Request.UserHostAddress ?? string.Empty,
-                Cookies = httpContext.Request.Cookies.AllKeys.ToDictionary(k => k, k => httpContext.Request.Cookies[k].Value)
+                Cookies = httpContext.Request.Cookies.AllKeys.ToDictionary(k => k, k => httpContext.Request.Cookies[k].Value),
+                User = (User)httpContext.Items["Aikido.Zen.CurrentUser"],
+                UserAgent = httpContext.Request.UserAgent,
+                Source = "DotNetFramework",
+                Route = GetRoute(httpContext),
             };
 
             string clientIp = GetClientIp(httpContext);
@@ -77,10 +83,14 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                     contentLength: request.ContentLength
                 );
                 context.ParsedUserInput = parsedUserInput;
+                context.Body = request.InputStream;
 
             }
-            catch (Exception)
+            catch
             {
+                // pass through
+            }
+            finally {
                 httpContext.Request.InputStream.Position = 0;
             }
 
@@ -106,6 +116,27 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             var httpContext = ((HttpApplication)sender).Context;
             var context = (Context)httpContext.Items["Aikido.Zen.Context"];
             var exception = httpContext.Server.GetLastError();
+        }
+
+        private string GetRoute(HttpContext context) {
+            string routePattern = null;
+            // we use the .NET framework route collection to match against the request path,
+            // this way, the routes found by Zen match the routes found by the .NET framework
+            foreach (var route in RouteTable.Routes) {
+                routePattern = GetRoutePattern(route);
+                if (RouteHelper.MatchRoute(routePattern, context.Request.Path))
+                    break;
+            }
+            return routePattern;
+        }
+
+        private string GetRoutePattern(RouteBase route) {
+            string routePattern = null;
+            if (route is System.Web.Routing.Route)
+            {
+                routePattern = (route as System.Web.Routing.Route).Url;
+            }
+            return routePattern;
         }
     }
 }

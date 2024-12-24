@@ -1,4 +1,6 @@
 using Aikido.Zen.Core;
+using Aikido.Zen.Core.Exceptions;
+using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 using Microsoft.AspNetCore.Http;
 
@@ -18,7 +20,6 @@ namespace Aikido.Zen.DotNetCore.Middleware
             {
                 Agent.Instance.Context.AddAbortedRequest();
                 context.Response.StatusCode = 403;
-                return Task.CompletedTask;
             }
 
             return next(context);

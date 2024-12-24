@@ -1,5 +1,5 @@
 using Aikido.Zen.DotNetCore;
-using Aikido.Zen.DotNetCore.Middleware;
+using SQLitePCL;
 
 
 /// <summary>

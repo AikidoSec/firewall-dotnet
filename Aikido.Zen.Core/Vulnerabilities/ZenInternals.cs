@@ -214,7 +214,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
         {
             // user_input is <= 1 char or user input larger than query
             // e.g. user_input = "" and query = "SELECT * FROM users"
-            if (userInput.Length <= 1 || query.Length < userInput.Length)
+            if (query == null || userInput == null || userInput.Length <= 1 || query.Length < userInput.Length)
             {
                 return true;
             }

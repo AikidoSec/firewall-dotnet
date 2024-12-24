@@ -6,6 +6,8 @@ using System.Xml;
 using System.Text.Json;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Net.Http.Headers;
+using Aikido.Zen.Core.Models;
+using Microsoft.Extensions.Logging;
 
 namespace Aikido.Zen.Core.Helpers
 {
@@ -14,6 +16,7 @@ namespace Aikido.Zen.Core.Helpers
     /// </summary>
     public class HttpHelper
     {
+
         /// <summary>
         /// Reads and flattens HTTP request data into a dictionary with dot-notation keys.
         /// </summary>
@@ -30,7 +33,8 @@ namespace Aikido.Zen.Core.Helpers
             IDictionary<string, string> cookies,
             Stream body,
             string contentType,
-            long contentLength)
+            long contentLength,
+            ILogger logger = null)
         {
             var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
@@ -44,12 +48,62 @@ namespace Aikido.Zen.Core.Helpers
             ProcessCookies(cookies, result);
 
             // Process Body
-            if (contentLength > 0)
+            try
             {
-                await ProcessRequestBodyAsync(body, contentType, result);
+                if (contentLength > 0)
+                {
+                    await ProcessRequestBodyAsync(body, contentType, result);
+                }
+            }
+            catch (Exception e)
+            {
+                logger?.LogError($"Aikido: caught error while parsing body: {e.Message}");
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Reads the raw body content from a stream.
+        /// </summary>
+        /// <param name="body"></param>
+        /// <returns></returns>
+        public static string GetRawBody(Stream body)
+        {
+            // we read the stream, but leave it open so it can be read out later by http modules or middleware.
+            // we try to detect the encdoding by looking for byte order marks at the beginning of the file, and use UTF-8 as a fallback.
+            using (var reader = new StreamReader(body, detectEncodingFromByteOrderMarks: true, bufferSize: 4096, leaveOpen: true, encoding: System.Text.Encoding.UTF8))
+            {
+                return reader.ReadToEndAsync().Result;
+            }
+        }
+
+        /// <summary>
+        /// Extracts the source of the user input from the path.
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        public static Source GetSourceFromUserInputPath(string path)
+        {
+            path = path.ToLower();
+
+            if (path.StartsWith("query"))
+            {
+                return Source.Query;
+            }
+            else if (path.StartsWith("headers"))
+            {
+                return Source.Headers;
+            }
+            else if (path.StartsWith("cookies"))
+            {
+                return Source.Cookies;
+            }
+            else if (path.StartsWith("route"))
+            {
+                return Source.RouteParams;
+            }
+            return Source.Body;
         }
 
         // Processes query parameters and adds them to the result dictionary.
@@ -80,54 +134,51 @@ namespace Aikido.Zen.Core.Helpers
 
         private static async Task ProcessRequestBodyAsync(Stream body, string contentType, IDictionary<string, string> result)
         {
-            if (IsMultipart(contentType, out var boundary))
+            try
             {
-                await ProcessMultipartFormDataAsync(body, boundary, result);
-            }
-            else
-            {
-                body.Seek(0, SeekOrigin.Begin);
-                using (var reader = new StreamReader(body, detectEncodingFromByteOrderMarks: true, bufferSize: 4096, leaveOpen: true, encoding: System.Text.Encoding.UTF8))
+                if (IsMultipart(contentType, out var boundary))
                 {
-                    if (contentType.Contains("application/json"))
+                    await ProcessMultipartFormDataAsync(body, boundary, result);
+                }
+                else
+                {
+                    // we read the stream, but leave it open so it can be read out later by http modules or middleware.
+                    // we try to detect the encdoding by looking for byte order marks at the beginning of the file, and use UTF-8 as a fallback.
+                    using (var reader = new StreamReader(body, detectEncodingFromByteOrderMarks: true, bufferSize: 4096, leaveOpen: true, encoding: System.Text.Encoding.UTF8))
                     {
-                        try
+                        if (contentType.Contains("application/json"))
                         {
                             using (JsonDocument document = await JsonDocument.ParseAsync(body))
                             {
                                 FlattenJson(result, document.RootElement, "body");
                             }
-                        }
-                        catch (Exception)
-                        {
-                            result["body.text"] = await reader.ReadToEndAsync();
-                        }
 
-                    }
-                    else if (contentType.Contains("application/xml") || contentType.Contains("text/xml"))
-                    {
-                        using (var xmlReader = XmlReader.Create(body, new XmlReaderSettings { Async = true }))
-                        {
-                            var xmlDoc = new XmlDocument();
-                            xmlDoc.Load(xmlReader);
-                            FlattenXml(result, xmlDoc.DocumentElement, "body");
                         }
-                    }
-                    else if (contentType.Contains("application/x-www-form-urlencoded"))
-                    {
-                        string formString = await reader.ReadToEndAsync();
-                        var formPairs = QueryHelpers.ParseQuery(formString);
-                        foreach (var pair in formPairs)
+                        else if (contentType.Contains("application/xml") || contentType.Contains("text/xml"))
                         {
-                            result[$"body.{pair.Key}"] = pair.Value;
+                            using (var xmlReader = XmlReader.Create(body, new XmlReaderSettings { Async = true }))
+                            {
+                                var xmlDoc = new XmlDocument();
+                                xmlDoc.Load(xmlReader);
+                                FlattenXml(result, xmlDoc.DocumentElement, "body");
+                            }
                         }
-                    }
-                    else
-                    {
-                        string text = await reader.ReadToEndAsync();
-                        result["body.text"] = text;
+                        else if (contentType.Contains("application/x-www-form-urlencoded"))
+                        {
+                            string formString = await reader.ReadToEndAsync();
+                            var formPairs = QueryHelpers.ParseQuery(formString);
+                            foreach (var pair in formPairs)
+                            {
+                                result[$"body.{pair.Key}"] = pair.Value;
+                            }
+                        }
                     }
                 }
+            }
+            finally
+            {
+                // reset the stream position
+                body.Seek(0, SeekOrigin.Begin);
             }
         }
 
