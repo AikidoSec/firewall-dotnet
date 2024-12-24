@@ -40,7 +40,7 @@ namespace Aikido.Zen.Core.Models.Events {
             {
                 Headers = context.Headers.ToDictionary(h => h.Key, h => string.Join(",", h.Value)),
                 Method = context.Method,
-                Source = Environment.Version.Major >= 5 ? "DotNetCore" : "DotNetFramework",
+                Source = context.Source,
                 Url = context.Url,
                 Body = HttpHelper.GetRawBody(context.Body),
                 Route = context.Route,

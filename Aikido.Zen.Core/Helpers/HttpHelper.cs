@@ -70,6 +70,8 @@ namespace Aikido.Zen.Core.Helpers
         /// <returns></returns>
         public static string GetRawBody(Stream body)
         {
+            // we read the stream, but leave it open so it can be read out later by http modules or middleware.
+            // we try to detect the encdoding by looking for byte order marks at the beginning of the file, and use UTF-8 as a fallback.
             using (var reader = new StreamReader(body, detectEncodingFromByteOrderMarks: true, bufferSize: 4096, leaveOpen: true, encoding: System.Text.Encoding.UTF8))
             {
                 return reader.ReadToEndAsync().Result;
@@ -140,6 +142,8 @@ namespace Aikido.Zen.Core.Helpers
                 }
                 else
                 {
+                    // we read the stream, but leave it open so it can be read out later by http modules or middleware.
+                    // we try to detect the encdoding by looking for byte order marks at the beginning of the file, and use UTF-8 as a fallback.
                     using (var reader = new StreamReader(body, detectEncodingFromByteOrderMarks: true, bufferSize: 4096, leaveOpen: true, encoding: System.Text.Encoding.UTF8))
                     {
                         if (contentType.Contains("application/json"))

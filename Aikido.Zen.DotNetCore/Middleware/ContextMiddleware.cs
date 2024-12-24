@@ -29,7 +29,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 RemoteAddress = httpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty,
                 Cookies = httpContext.Request.Cookies.ToDictionary(c => c.Key, c => c.Value),
                 UserAgent = httpContext.Request.Headers["User-Agent"].ToString(),
-                Source = httpContext.Request.Path.ToString(),
+                Source = Environment.Version.Major >= 5 ? "DotNetCore" : "DotNetFramework",
                 Route = GetRoute(httpContext),
             };
 

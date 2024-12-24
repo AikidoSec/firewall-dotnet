@@ -61,7 +61,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 Cookies = httpContext.Request.Cookies.AllKeys.ToDictionary(k => k, k => httpContext.Request.Cookies[k].Value),
                 User = (User)httpContext.Items["Aikido.Zen.CurrentUser"],
                 UserAgent = httpContext.Request.UserAgent,
-                Source = httpContext.Request.Path.ToString(),
+                Source = "DotNetFramework",
                 Route = GetRoute(httpContext),
             };
 
