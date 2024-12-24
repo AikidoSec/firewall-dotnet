@@ -43,7 +43,7 @@ namespace Aikido.Zen.Test
                 .ReturnsAsync(response);
 
             // Act
-            var result = await _runtimeApiClient.GetConfigVersion("token");
+            var result = await _runtimeApiClient.GetConfigLastUpdated("token");
             Task.Delay(100);
 
             // Assert
@@ -72,7 +72,7 @@ namespace Aikido.Zen.Test
                 .ThrowsAsync(new Exception("An error occurred while getting config version"));
 
             // Act & Assert
-            Assert.ThrowsAsync<Exception>(async () => await _runtimeApiClient.GetConfigVersion("token"));
+            Assert.ThrowsAsync<Exception>(async () => await _runtimeApiClient.GetConfigLastUpdated("token"));
         }
 
         [Test]
