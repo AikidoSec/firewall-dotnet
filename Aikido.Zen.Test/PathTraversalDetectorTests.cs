@@ -106,6 +106,51 @@ namespace Aikido.Zen.Test
             Assert.That(result, Is.False);
         }
 
+        [Test]
+        public void DetectPathTraversal_WithMalformedFileUrl_HandlesException()
+        {
+            // This tests the catch block in ParseAsFileUrl
+            // Act
+            var result = PathTraversalDetector.DetectPathTraversal(
+                "file:////invalid:url", 
+                "/some/path", 
+                isUrl: true
+            );
+
+            // Assert
+            Assert.That(result, Is.True);
+        }
+
+        [Test]
+        public void DetectPathTraversal_WithRelativePathNoLeadingSlash_ParsesCorrectly()
+        {
+            // Tests the path.StartsWith("/") branch
+            // Act
+            var result = PathTraversalDetector.DetectPathTraversal(
+                "relative/path/file.txt", 
+                "/relative/path/file.txt", 
+                isUrl: true
+            );
+
+            // Assert
+            Assert.That(result, Is.False);
+        }
+
+        [Test]
+        public void DetectPathTraversal_WithAbsolutePathNoFileScheme_ParsesCorrectly()
+        {
+            // Tests the file:// prefix addition branch
+            // Act
+            var result = PathTraversalDetector.DetectPathTraversal(
+                "/absolute/path/file.txt", 
+                "/absolute/path/file.txt", 
+                isUrl: true
+            );
+
+            // Assert
+            Assert.That(result, Is.False);
+        }
+
         public static IEnumerable<TestCaseData> GetTestData()
         {
             var jsonData = File.ReadAllText("testdata/data.PathTraversalDetector.json");

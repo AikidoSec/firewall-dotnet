@@ -19,9 +19,9 @@ namespace Aikido.Zen.Test
         public void Setup()
         {
             _context = new Context {
-            AttackDetected = false,
-            ParsedUserInput = new System.Collections.Generic.Dictionary<string, string>(),
-            Body = new MemoryStream()
+                AttackDetected = false,
+                ParsedUserInput = new System.Collections.Generic.Dictionary<string, string>(),
+                Body = new MemoryStream()
             };
             Environment.SetEnvironmentVariable("AIKIDO_TOKEN", "test-token");
             Agent.NewInstance(Mocks.ZenApiMock.CreateMock().Object);
@@ -54,50 +54,21 @@ namespace Aikido.Zen.Test
             Assert.That(result, Is.True);
         }
 
-        [Test]
-        public void DetectPathTraversal_WithSinglePath_DetectsTraversal()
+        [TestCase("../test.txt", true, Description = "Detects traversal in single path")]
+        [TestCase("safe.txt", false, Description = "Passes safe single path")]
+        public void DetectPathTraversal_WithSinglePath(string path, bool expectedAttack)
         {
             // Arrange
-            _context.ParsedUserInput.Add("test", "../test.txt");
-            string path = "/var/www/test.txt";
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCKING", "false");
+            _context.ParsedUserInput.Add("test", path);
+            object[] args = new object[] { path };
 
             // Act
-            bool result = PathTraversalHelper.DetectPathTraversal(path, _context, ModuleName, Operation);
+            bool result = PathTraversalHelper.DetectPathTraversal(args, ModuleName, _context, Operation);
 
             // Assert
-            Assert.That(result, Is.True);
-            Assert.That(_context.AttackDetected, Is.True);
-        }
-
-        [Test]
-        public void DetectPathTraversal_WithMultiplePaths_DetectsTraversal()
-        {
-            // Arrange
-            _context.ParsedUserInput.Add("test", "../test.txt");
-            string[] paths = new[] { "/var/www/test1.txt", "/var/www/test2.txt" };
-
-            // Act
-            bool result = PathTraversalHelper.DetectPathTraversal(paths, _context, ModuleName, Operation);
-
-            // Assert
-            Assert.That(result, Is.True);
-            Assert.That(_context.AttackDetected, Is.True);
-        }
-
-        [Test]
-        public void DetectPathTraversal_WithSafePath_ReturnsFalse()
-        {
-            // Arrange
-            Environment.SetEnvironmentVariable("AIKIDO_BLOCKING", "true");
-            _context.ParsedUserInput.Add("test", "test.txt");
-            string path = "/var/www/test.txt";
-
-            // Act
-            bool result = PathTraversalHelper.DetectPathTraversal(path, _context, ModuleName, Operation);
-
-            // Assert
-            Assert.That(result, Is.False);
-            Assert.That(_context.AttackDetected, Is.False);
+            Assert.That(result, Is.True);  // Always true as validation completed
+            Assert.That(_context.AttackDetected, Is.EqualTo(expectedAttack));
         }
 
         [Test]
@@ -114,22 +85,6 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void DetectPathTraversal_WithStringArrayArg_DetectsTraversal()
-        {
-            // Arrange
-            Environment.SetEnvironmentVariable("AIKIDO_BLOCKING", "false");
-            _context.ParsedUserInput.Add("test", "../test.txt");
-            object[] args = new object[] { new string[] { "/var/www/test1.txt", "/var/www/test2.txt" } };
-
-            // Act
-            bool result = PathTraversalHelper.DetectPathTraversal(args, ModuleName, _context, Operation);
-
-            // Assert
-            Assert.That(result, Is.True);
-            Assert.That(_context.AttackDetected, Is.True);
-        }
-
-        [Test]
         public void DetectPathTraversal_WithNonStringArg_IgnoresArg()
         {
             // Arrange
@@ -143,6 +98,54 @@ namespace Aikido.Zen.Test
             // Assert
             Assert.That(result, Is.True);
             Assert.That(_context.AttackDetected, Is.False);
+        }
+
+        [Test]
+        public void DetectPathTraversal_WithEmptyArray_ReturnsFalse()
+        {
+            // Arrange
+            object[] args = new object[] { new string[0] };
+
+            // Act
+            bool result = PathTraversalHelper.DetectPathTraversal(args, ModuleName, _context, Operation);
+
+            // Assert
+            Assert.That(result, Is.True);  // Validation passes for empty array
+            Assert.That(_context.AttackDetected, Is.False);
+        }
+
+        [Test]
+        public void DetectPathTraversal_WithNullArrayElement_SkipsNullElement()
+        {
+            // Arrange
+            string[] paths = new string[] { null, "safe.txt" };
+            object[] args = new object[] { paths };
+
+            // Act
+            bool result = PathTraversalHelper.DetectPathTraversal(args, ModuleName, _context, Operation);
+
+            // Assert
+            Assert.That(result, Is.True);
+            Assert.That(_context.AttackDetected, Is.False);
+        }
+
+        [Test]
+        public void DetectPathTraversal_WithMixedArrayContent_DetectsTraversal()
+        {
+            // Arrange
+            _context.ParsedUserInput.Add("test", "../test.txt");
+            object[] args = new object[] { 
+                "safe.txt",
+                new string[] { "safe1.txt", "../unsafe.txt" },
+                42
+            };
+
+            // Act
+            bool result = PathTraversalHelper.DetectPathTraversal(args, ModuleName, _context, Operation);
+
+            // Assert
+            Assert.That(result, Is.True);
+            Assert.That(_context.AttackDetected, Is.True);
         }
     }
 }
