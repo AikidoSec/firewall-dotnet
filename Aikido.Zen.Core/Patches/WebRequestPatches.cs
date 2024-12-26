@@ -5,6 +5,7 @@ using System.Net;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
+// we don't want to expose this to the consumer, yet it should be testable, hence the internal visibility and the assembly attribute
 [assembly: InternalsVisibleTo("Aikido.Zen.Tests")]
 namespace Aikido.Zen.Core.Patches
 {
