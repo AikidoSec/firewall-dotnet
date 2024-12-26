@@ -68,23 +68,6 @@ namespace Aikido.Zen.Core.Helpers
             if (context == null)
                 return true;
 
-            // we use one of our patched methods in our path traversal detection, so we need to avoid stack overflow
-            if (operation == nameof(HttpUtility.UrlDecode))
-            {
-                // check if the caller is DetectPathTraversal, if so, skip
-                var stackTrace = new StackTrace();
-                var frames = stackTrace.GetFrames();
-                if (frames != null)
-                {
-                    foreach (var frame in frames)
-                    {
-                        var method = frame.GetMethod();
-                        if (method.Name == "DetectPathTraversal")
-                            return true;
-                    }
-                }
-            }
-
             // Helper function to handle path traversal detection and response
             bool HandlePathTraversal(string path)
             {
