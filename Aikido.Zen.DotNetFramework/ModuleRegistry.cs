@@ -6,7 +6,9 @@ public static class ModuleRegistration
 {
 	public static void RegisterModules()
 	{
-        if (Environment.GetEnvironmentVariable("AIKIDO_DISABLE") != "true")
-		    Microsoft.Web.Infrastructure.DynamicModuleHelper.DynamicModuleUtility.RegisterModule(typeof(Aikido.Zen.DotNetFramework.HttpModules.ContextModule));
+        if (Environment.GetEnvironmentVariable("AIKIDO_DISABLE") != "true") {
+            Microsoft.Web.Infrastructure.DynamicModuleHelper.DynamicModuleUtility.RegisterModule(typeof(Aikido.Zen.DotNetFramework.HttpModules.ContextModule));
+            Microsoft.Web.Infrastructure.DynamicModuleHelper.DynamicModuleUtility.RegisterModule(typeof(Aikido.Zen.DotNetFramework.HttpModules.BlockingModule));
+        }
 	}
 }

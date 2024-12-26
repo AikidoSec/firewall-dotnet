@@ -5,16 +5,16 @@ using System.Linq;
 using Aikido.Zen.Core.Helpers;
 using System.Threading.Tasks;
 using Context = Aikido.Zen.Core.Context;
-using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.Core.Models;
 using System.Web.Routing;
-using System.Net;
 
 namespace Aikido.Zen.DotNetFramework.HttpModules
 {
+    /// <summary>
+    /// This Http module is used to capture the context of incoming requests.
+    /// </summary>
     internal class ContextModule : IHttpModule
     {
-
         public void Dispose()
         {
             // nothing to dispose
@@ -34,18 +34,13 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             var httpContext = ((HttpApplication)sender).Context;
             var user = Zen.SetUserAction(httpContext);
             httpContext.Items["Aikido.Zen.CurrentUser"] = user;
-            var clientIp = !string.IsNullOrEmpty(httpContext.Request.ServerVariables["HTTP_X_FORWARDED_FOR"])
-                ? httpContext.Request.ServerVariables["HTTP_X_FORWARDED_FOR"]
-                : httpContext.Request.ServerVariables["REMOTE_ADDR"];
-            Agent.Instance.CaptureUser(user, clientIp);
-            // block the request if the user is blocked
-            if (Agent.Instance.Context.IsBlocked(user, clientIp, $"{httpContext.Request.HttpMethod}|{httpContext.Request.Path}"))
+            var aikidoContext = (Context)httpContext.Items["Aikido.Zen.Context"];
+            if (aikidoContext == null)
             {
-                Agent.Instance.Context.AddAbortedRequest();
-                httpContext.Response.StatusCode = 403;
-                // stop the request from being processed
-                httpContext.Response.End();
+                return;
             }
+            var clientIp = GetClientIp(httpContext);
+            Agent.Instance.CaptureUser(user, clientIp);
         }
 
         private async Task Context_BeginRequest(object sender, EventArgs e)
@@ -67,14 +62,11 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             };
 
             string clientIp = GetClientIp(httpContext);
-            // Add request information to the agent, which will collect routes, users and stats
-            // every x minutes, this information will be sent to the Zen server as a heartbeat event, and the collected info will be cleared
             Agent.Instance.CaptureInboundRequest(context.User, httpContext.Request.Url.AbsolutePath, context.Method, clientIp);
 
             try
             {
                 var request = httpContext.Request;
-                // take all the user input and flatten it into a dictionary for easier processing
                 var parsedUserInput = await HttpHelper.ReadAndFlattenHttpDataAsync(
                     queryParams: request.QueryString.AllKeys.ToDictionary(k => k, k => request.QueryString.Get(k)),
                     headers: request.Headers.AllKeys.ToDictionary(k => k, k => request.Headers.Get(k)),
@@ -85,16 +77,15 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 );
                 context.ParsedUserInput = parsedUserInput;
                 context.Body = request.InputStream;
-
             }
             catch
             {
                 // pass through
             }
-            finally {
+            finally
+            {
                 httpContext.Request.InputStream.Position = 0;
             }
-
 
             httpContext.Items["Aikido.Zen.Context"] = context;
         }
@@ -119,11 +110,13 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             var exception = httpContext.Server.GetLastError();
         }
 
-        private string GetRoute(HttpContext context) {
+        private string GetRoute(HttpContext context)
+        {
             string routePattern = null;
             // we use the .NET framework route collection to match against the request path,
             // this way, the routes found by Zen match the routes found by the .NET framework
-            foreach (var route in RouteTable.Routes) {
+            foreach (var route in RouteTable.Routes)
+            {
                 routePattern = GetRoutePattern(route);
                 if (RouteHelper.MatchRoute(routePattern, context.Request.Path))
                     break;
@@ -131,13 +124,14 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             return routePattern;
         }
 
-        private string GetRoutePattern(RouteBase route) {
+        private string GetRoutePattern(RouteBase route)
+        {
             string routePattern = null;
             if (route is System.Web.Routing.Route)
             {
                 routePattern = (route as System.Web.Routing.Route).Url;
             }
-            return routePattern;
+            return routePattern?.TrimStart('/');
         }
     }
 }
