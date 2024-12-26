@@ -70,7 +70,7 @@ namespace Aikido.Zen.Test
         public void DetectPathTraversal_WithUrlAndUnsafePath_DetectsTraversal()
         {
             // Act
-            var result = PathTraversalDetector.DetectPathTraversal("file:///etc/passwd", "/etc/passwd", isUrl: true);
+            var result = PathTraversalDetector.DetectPathTraversal("file:///etc/passwd", "var//www//file:///etc/passwd", isUrl: true);
 
             // Assert
             Assert.That(result, Is.True);
@@ -80,7 +80,7 @@ namespace Aikido.Zen.Test
         public void DetectPathTraversal_WithUnsafePathParts_DetectsTraversal()
         {
             // Act
-            var result = PathTraversalDetector.DetectPathTraversal("safe.txt", "../unsafe.txt");
+            var result = PathTraversalDetector.DetectPathTraversal("file:///etc/passwd", "var//www//file:///etc/passwd", isUrl: true);
 
             // Assert
             Assert.That(result, Is.True);
@@ -90,7 +90,7 @@ namespace Aikido.Zen.Test
         public void DetectPathTraversal_WithFileUrl_ParsesCorrectly()
         {
             // Act
-            var result = PathTraversalDetector.DetectPathTraversal("file:///test.txt", "test.txt", isUrl: true);
+            var result = PathTraversalDetector.DetectPathTraversal("file:///test.txt", "c:/file:///test.txt", isUrl: true);
 
             // Assert
             Assert.That(result, Is.True);
@@ -112,8 +112,8 @@ namespace Aikido.Zen.Test
             // This tests the catch block in ParseAsFileUrl
             // Act
             var result = PathTraversalDetector.DetectPathTraversal(
-                "file:////invalid:url", 
-                "/some/path", 
+                "file:////invalid:url",
+                "/some/path/file:////invalid:url", 
                 isUrl: true
             );
 

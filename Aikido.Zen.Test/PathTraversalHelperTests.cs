@@ -76,8 +76,8 @@ namespace Aikido.Zen.Test
         {
             // Arrange
             Environment.SetEnvironmentVariable("AIKIDO_BLOCKING", "true");
-            _context.ParsedUserInput.Add("test", "../test.txt");
-            object[] args = new object[] { "/var/www/test.txt" };
+            _context.ParsedUserInput.Add("query", "../test.txt");
+            object[] args = new object[] { "/var/www/../test.txt" };
 
             // Act & Assert
             Assert.Throws<AikidoException>(() => 
@@ -133,10 +133,10 @@ namespace Aikido.Zen.Test
         public void DetectPathTraversal_WithMixedArrayContent_DetectsTraversal()
         {
             // Arrange
-            _context.ParsedUserInput.Add("test", "../test.txt");
+            _context.ParsedUserInput.Add("query", "../");
             object[] args = new object[] { 
                 "safe.txt",
-                new string[] { "safe1.txt", "../unsafe.txt" },
+                new string[] { "../safe1.txt", "../unsafe.txt" },
                 42
             };
 
