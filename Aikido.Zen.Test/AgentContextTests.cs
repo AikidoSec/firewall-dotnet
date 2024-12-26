@@ -49,13 +49,17 @@ namespace Aikido.Zen.Test
             var user = new User("user1", "blocked");
             var ip = "192.168.1.100";
             var url = "GET|testurl";
+            var endpoints = new List<EndpointConfig> {
+                new EndpointConfig {
+                    Method = "GET",
+                    Route = "testurl",
+                    AllowedIPAddresses = new[] { "10.0.0.0/8" }
+                }
+            };
 
             _agentContext.UpdateBlockedUsers(new[] { "user1" });
             _agentContext.BlockList.AddIpAddressToBlocklist("192.168.1.101");
-            _agentContext.BlockList.UpdateAllowedSubnets(new Dictionary<string, IEnumerable<IPAddressRange>>
-            {
-                { url, new[] { IPAddressRange.Parse("10.0.0.0/8") } }
-            });
+            _agentContext.BlockList.UpdateAllowedSubnets(endpoints);
 
             // Act & Assert
             Assert.IsTrue(_agentContext.IsBlocked(user, "192.168.1.102", url)); // Blocked user
