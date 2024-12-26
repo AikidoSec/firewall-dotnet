@@ -286,7 +286,6 @@ namespace Aikido.Zen.Core
         /// <returns></returns>
         public virtual void SendAttackEvent(AttackKind kind, Source source, string payload, string operation, Context context, string module, IDictionary<string, object> metadata, bool blocked)
         {
-            
             QueueEvent(EnvironmentHelper.Token, DetectedAttack.Create(kind, source, payload, operation, context, module, metadata, blocked));
         }
 
