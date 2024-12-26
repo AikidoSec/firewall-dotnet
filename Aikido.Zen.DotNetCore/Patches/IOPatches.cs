@@ -19,7 +19,7 @@ namespace Aikido.Zen.DotNetCore.Patches
             PatchMethod(harmony, typeof(File), "Create", new[] { typeof(string), typeof(int), typeof(FileOptions), typeof(FileSystemSecurity) });
             PatchMethod(harmony, typeof(File), "Delete");
             PatchMethod(harmony, typeof(File), "Copy", new[] { typeof(string), typeof(string), typeof(bool) });
-            PatchMethod(harmony, typeof(File), "Move");
+            PatchMethod(harmony, typeof(File), "Move", new[] { typeof(string), typeof(string), typeof(bool) });
 
             // Directory operations
             PatchMethod(harmony, typeof(Directory), "CreateDirectory", new[] { typeof(string), typeof(DirectorySecurity) });
@@ -36,7 +36,7 @@ namespace Aikido.Zen.DotNetCore.Patches
             PatchMethod(harmony, typeof(Path), "Combine", new[] { typeof(string), typeof(string) });
             PatchMethod(harmony, typeof(Path), "Combine", new[] { typeof(string), typeof(string), typeof(string) });
             PatchMethod(harmony, typeof(Path), "Combine", new[] { typeof(string), typeof(string), typeof(string), typeof(string) });
-            PatchMethod(harmony, typeof(Path), "GetFullPath");
+            PatchMethod(harmony, typeof(Path), "GetFullPath", new[] { typeof(string), typeof(string) });
 
             // HttpUtility UrlDecode
             PatchMethod(harmony, typeof(HttpUtility), "UrlDecode", new[] { typeof(string), typeof(System.Text.Encoding) });
