@@ -21,8 +21,9 @@ namespace Aikido.Zen.Core.Models.Ip
         /// Updates the allowed subnet ranges per URL
         /// <param name="subnets">The subnet ranges</param>
         /// </summary>
-        public void UpdateAllowedSubnets(IDictionary<string, IEnumerable<IPAddressRange>> subnets)
+        public void UpdateAllowedSubnets(IEnumerable<EndpointConfig> endpoints)
         {
+            var subnets = endpoints.ToDictionary(e => $"{e.Method}|{e.Route.TrimStart('/')}", e => e.AllowedIPAddresses.Select(ip => IPAddressRange.Parse(ip)));
             _allowedSubnets.Clear();
             foreach (var subnet in subnets)
             {

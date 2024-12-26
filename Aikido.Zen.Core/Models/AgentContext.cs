@@ -12,6 +12,7 @@ namespace Aikido.Zen.Core.Models
         private IDictionary<string, Host> _hostnames = new Dictionary<string, Host>();
         private IDictionary<string, Route> _routes = new Dictionary<string, Route>();
         private IDictionary<string, UserExtended> _users = new Dictionary<string, UserExtended>();
+        private IDictionary<string, RateLimitingConfig> _rateLimitedRoutes = new Dictionary<string, RateLimitingConfig>();
 
         private BlockList _blockList = new BlockList();
         private HashSet<string> _blockedUsers = new HashSet<string>();
@@ -38,6 +39,12 @@ namespace Aikido.Zen.Core.Models
 
         public void AddAttackBlocked() {
             _attacksBlocked++;
+        }
+
+        public void AddRateLimitedEndpoint(string path, RateLimitingConfig config) {
+            if (string.IsNullOrWhiteSpace(path) || config == null)
+                return;
+            _rateLimitedRoutes[path] = config;
         }
 
         public void AddHostname(string hostname) {
@@ -107,9 +114,17 @@ namespace Aikido.Zen.Core.Models
             _blockedUsers.UnionWith(users);
         }
 
+        public void UpdateRatelimitedRoutes(IEnumerable<EndpointConfig> endpoints) {
+            _rateLimitedRoutes.Clear();
+            foreach (var endpoint in endpoints) {
+                _rateLimitedRoutes[$"{endpoint.Method}|{endpoint.Route}"] = endpoint.RateLimiting;
+            }
+        }
+
         public IEnumerable<Host> Hostnames => _hostnames.Select(x => x.Value);
         public IEnumerable<UserExtended> Users => _users.Select(x => x.Value);
         public IEnumerable<Route> Routes => _routes.Select(x => x.Value);
+        public IDictionary<string, RateLimitingConfig> RateLimitedRoutes => _rateLimitedRoutes;
         public int Requests => _requests;
         public int RequestsAborted => _requestsAborted;
         public int AttacksDetected => _attacksDetected;
