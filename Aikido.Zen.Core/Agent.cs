@@ -465,7 +465,8 @@ namespace Aikido.Zen.Core
         private async Task UpdateConfig(IEnumerable<string> blockedUsers, IEnumerable<EndpointConfig> endpoints, long configVersion) {
         
             _context.UpdateBlockedUsers(blockedUsers);
-            _context.BlockList.UpdateAllowedSubnets(endpoints.ToDictionary(e => $"{e.Method}|{e.Route}", e => e.AllowedIPAddresses.Select(ip => IPAddressRange.Parse(ip))));
+            _context.BlockList.UpdateAllowedSubnets(endpoints);
+            _context.UpdateRatelimitedRoutes(endpoints);
             _context.ConfigLastUpdated = configVersion; 
             await UpdateBlockedIps();
         }
