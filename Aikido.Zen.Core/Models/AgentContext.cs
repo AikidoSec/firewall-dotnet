@@ -1,9 +1,11 @@
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models.Ip;
 using Microsoft.AspNetCore.Http;
+using NetTools;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 
 namespace Aikido.Zen.Core.Models
 {
@@ -119,6 +121,29 @@ namespace Aikido.Zen.Core.Models
             foreach (var endpoint in endpoints) {
                 _rateLimitedRoutes[$"{endpoint.Method}|{endpoint.Route.TrimStart('/')}"] = endpoint.RateLimiting;
             }
+        }
+
+        public void UpdateConfig(bool block, IEnumerable<string> blockedUsers, IEnumerable<EndpointConfig> endpoints, long configVersion) {
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCKING", block ? "true" : "false");
+            UpdateBlockedUsers(blockedUsers);
+            BlockList.UpdateAllowedSubnets(endpoints);
+            UpdateRatelimitedRoutes(endpoints);
+            ConfigLastUpdated = configVersion;
+        }
+
+        public void UpdateBlockedIps(IEnumerable<string> blockedIPs) {
+            if (blockedIPs == null) {
+                BlockList.UpdateBlockedSubnets(new List<IPAddressRange>());
+                return;
+            }
+            
+            var ranges = new List<IPAddressRange>();
+            foreach (var ip in blockedIPs) {
+                if (IPAddressRange.TryParse(ip, out var range)) {
+                    ranges.Add(range);
+                }
+            }
+            BlockList.UpdateBlockedSubnets(ranges);
         }
 
         public IEnumerable<Host> Hostnames => _hostnames.Select(x => x.Value);

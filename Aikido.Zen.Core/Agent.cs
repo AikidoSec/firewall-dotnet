@@ -462,11 +462,7 @@ namespace Aikido.Zen.Core
         }
 
         private async Task UpdateConfig(bool block, IEnumerable<string> blockedUsers, IEnumerable<EndpointConfig> endpoints, long configVersion) {
-            Environment.SetEnvironmentVariable("AIKIDO_BLOCKING", block ? "true" : "false");
-            _context.UpdateBlockedUsers(blockedUsers);
-            _context.BlockList.UpdateAllowedSubnets(endpoints);
-            _context.UpdateRatelimitedRoutes(endpoints);
-            _context.ConfigLastUpdated = configVersion;
+            _context.UpdateConfig(block, blockedUsers, endpoints, configVersion);
             await UpdateBlockedIps();
         }
 
@@ -476,16 +472,7 @@ namespace Aikido.Zen.Core
             var blockedIPsResponse = await _api.Reporting.GetBlockedIps(EnvironmentHelper.Token);
             if (blockedIPsResponse.Success && blockedIPsResponse.BlockedIPAddresses != null)
             {
-                var blockedIPs = blockedIPsResponse.Ips;
-                var ranges = new List<IPAddressRange>();
-                foreach (var ip in blockedIPs)
-                {
-                    if (IPAddressRange.TryParse(ip, out var range))
-                    {
-                        ranges.Add(range);
-                    }
-                }
-                _context.BlockList.UpdateBlockedSubnets(ranges);
+                _context.UpdateBlockedIps(blockedIPsResponse.Ips);
             }
         }
 
