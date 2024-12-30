@@ -30,7 +30,6 @@ namespace Aikido.Zen.DotNetCore.Patches
             PatchMethod(harmony, typeof(Directory), "CreateDirectory", new[] { typeof(string), typeof(DirectorySecurity) });
             PatchMethod(harmony, typeof(Directory), "Delete", new[] { typeof(string), typeof(bool) });
             PatchMethod(harmony, typeof(Directory), "GetFiles", new[] { typeof(string)  });
-            PatchMethod(harmony, typeof(Directory), "Exists", new[] { typeof(string) });
             PatchMethod(harmony, typeof(Directory), "GetFiles", new[] { typeof(string), typeof(string) });
             PatchMethod(harmony, typeof(Directory), "GetFiles", new[] { typeof(string), typeof(string), typeof(SearchOption) });
             PatchMethod(harmony, typeof(Directory), "GetDirectories", new[] { typeof(string) });

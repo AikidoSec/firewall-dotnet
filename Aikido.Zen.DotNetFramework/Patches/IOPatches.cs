@@ -27,7 +27,6 @@ namespace Aikido.Zen.DotNetFramework.Patches
             PatchMethod(harmony, typeof(File), "WriteAllText", new[] { typeof(string), typeof(string) });
             PatchMethod(harmony, typeof(File), "WriteAllBytes", new[] { typeof(string), typeof(byte[]) });
             PatchMethod(harmony, typeof(File), "AppendAllText", new[] { typeof(string), typeof(string) });
-            PatchMethod(harmony, typeof(File), "Exists", new[] { typeof(string) });
 
             // Directory operations
             PatchMethod(harmony, typeof(Directory), "CreateDirectory", new[] { typeof(string), typeof(DirectorySecurity) });
