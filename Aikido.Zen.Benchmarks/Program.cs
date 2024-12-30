@@ -3,6 +3,7 @@ using BenchmarkDotNet.Reports;
 using BenchmarkDotNet.Running;
 using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace Aikido.Zen.Benchmarks
 {
@@ -23,8 +24,16 @@ namespace Aikido.Zen.Benchmarks
             Console.WriteLine("Running shell detection benchmarks...");
             summaries.Add(BenchmarkRunner.Run<ShellInjectionDetectionBenchmarks>());
 
+            Console.WriteLine("Running rate limiting helper benchmarks...");
+            summaries.Add(BenchmarkRunner.Run<RateLimitingHelperBenchmarks>());
+
+            Console.WriteLine("Running lru cache benchmarks...");
+            summaries.Add(BenchmarkRunner.Run<LRUCacheBenchmarks>());
+
             foreach (var summary in summaries)
             {
+                Console.WriteLine("Saving summary at " + summary.ResultsDirectoryPath);
+                Directory.CreateDirectory(summary.ResultsDirectoryPath);
                 // Export the results to a markdown file
                 MarkdownExporter.Console.ExportToFiles(summary, BenchmarkDotNet.Loggers.ConsoleLogger.Default);
             }
