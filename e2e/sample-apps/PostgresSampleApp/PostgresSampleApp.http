@@ -1,0 +1,6 @@
+@PostgresSampleApp_HostAddress = http://localhost:5204
+
+GET {{PostgresSampleApp_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
