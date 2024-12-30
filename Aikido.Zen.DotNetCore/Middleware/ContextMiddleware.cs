@@ -73,6 +73,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
             // this way, the routes found by Zen match the routes found by the .NET core
             var path = context.Request.Path.Value;
             var endpoint = _endpoints.FirstOrDefault(e => (e as RouteEndpoint) != null && RouteHelper.MatchRoute((e as RouteEndpoint)!.RoutePattern.RawText, path));
+            // remove the leading slash from the route pattern, to ensure we don't distinguish for example between api/users and /api/users
             return (endpoint as RouteEndpoint)?.RoutePattern.RawText.TrimStart('/');
         }
     }
