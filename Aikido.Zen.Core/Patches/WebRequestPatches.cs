@@ -13,8 +13,6 @@ namespace Aikido.Zen.Core.Patches
     {
         public static void ApplyPatches(Harmony harmony)
         {
-            PatchMethod(harmony, typeof(HttpWebRequest), "GetResponse", nameof(CaptureRequest));
-            PatchMethod(harmony, typeof(HttpWebRequest), "GetResponseAsync", nameof(CaptureRequest));
             PatchMethod(harmony, typeof(WebRequest), "GetResponse", nameof(CaptureRequest));
             PatchMethod(harmony, typeof(WebRequest), "GetResponseAsync", nameof(CaptureRequest));
         }
