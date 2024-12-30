@@ -48,7 +48,8 @@ namespace Aikido.Zen.DotNetCore.Middleware
             if (agentContext.RateLimitedRoutes.TryGetValue(routeKey, out var rateLimitConfig) && rateLimitConfig.Enabled)
             {
                 // should we rate limit this request?
-                if (!RateLimitingHelper.IsAllowed(user?.Id ?? aikidoContext.RemoteAddress, rateLimitConfig.WindowSizeInMS, rateLimitConfig.MaxRequests))
+                var key = $"{routeKey}:user-or-ip:{user?.Id ?? aikidoContext.RemoteAddress}";
+                if (!RateLimitingHelper.IsAllowed(key, rateLimitConfig.WindowSizeInMS, rateLimitConfig.MaxRequests))
                 {
                     Agent.Instance.Context.AddAbortedRequest();
                     context.Response.StatusCode = 429;
