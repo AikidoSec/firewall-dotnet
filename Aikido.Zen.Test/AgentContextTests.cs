@@ -224,5 +224,180 @@ namespace Aikido.Zen.Test
             // Assert
             Assert.IsFalse(isBlocked);
         }
+
+        [Test]
+        public void AddRateLimitedEndpoint_ShouldAddConfigToDictionary()
+        {
+            // Arrange
+            var path = "GET|api/test";
+            var config = new RateLimitingConfig { Enabled = true, MaxRequests = 10, WindowSizeInMS = 1000 };
+
+            // Act
+            _agentContext.AddRateLimitedEndpoint(path, config);
+
+            // Assert
+            Assert.That(_agentContext.RateLimitedRoutes.ContainsKey(path), Is.True);
+            Assert.That(_agentContext.RateLimitedRoutes[path].MaxRequests, Is.EqualTo(10));
+            Assert.That(_agentContext.RateLimitedRoutes[path].Enabled, Is.True);
+            Assert.That(_agentContext.RateLimitedRoutes[path].WindowSizeInMS, Is.EqualTo(1000));
+        }
+
+        [Test]
+        public void AddRateLimitedEndpoint_WithNullPath_ShouldNotAddToRoutes()
+        {
+            // Arrange
+            string path = null;
+            var config = new RateLimitingConfig { MaxRequests = 60 };
+
+            // Act
+            _agentContext.AddRateLimitedEndpoint(path, config);
+
+            // Assert
+            Assert.That(_agentContext.RateLimitedRoutes, Is.Empty);
+        }
+
+        [Test]
+        public void AddRateLimitedEndpoint_WithNullConfig_ShouldNotAddToRoutes()
+        {
+            // Arrange
+            var path = "GET|/api/test";
+            RateLimitingConfig config = null;
+
+            // Act
+            _agentContext.AddRateLimitedEndpoint(path, config);
+
+            // Assert
+            Assert.That(_agentContext.RateLimitedRoutes, Is.Empty);
+        }
+
+        [Test]
+        public void UpdateRatelimitedRoutes_ShouldUpdateRoutesFromEndpoints()
+        {
+            // Arrange
+            var endpoints = new List<EndpointConfig> {
+                new EndpointConfig {
+                    Method = "GET",
+                    Route = "/api/test1",
+                    RateLimiting = new RateLimitingConfig { MaxRequests = 30, WindowSizeInMS = 2000 }
+                },
+                new EndpointConfig {
+                    Method = "POST",
+                    Route = "/api/test2",
+                    RateLimiting = new RateLimitingConfig { MaxRequests = 60 }
+                }
+            };
+
+            // Act
+            _agentContext.UpdateRatelimitedRoutes(endpoints);
+
+            // Assert
+            Assert.That(_agentContext.RateLimitedRoutes.Count, Is.EqualTo(2));
+            Assert.That(_agentContext.RateLimitedRoutes["GET|api/test1"].MaxRequests, Is.EqualTo(30));
+            Assert.That(_agentContext.RateLimitedRoutes["GET|api/test1"].WindowSizeInMS, Is.EqualTo(2000));
+            Assert.That(_agentContext.RateLimitedRoutes["POST|api/test2"].MaxRequests, Is.EqualTo(60));
+        }
+
+        [Test]
+        public void UpdateRatelimitedRoutes_ShouldClearExistingRoutes()
+        {
+            // Arrange
+            _agentContext.AddRateLimitedEndpoint("GET|/api/old", new RateLimitingConfig { MaxRequests = 100 });
+            var endpoints = new List<EndpointConfig> {
+                new EndpointConfig {
+                    Method = "GET",
+                    Route = "/api/new",
+                    RateLimiting = new RateLimitingConfig { MaxRequests = 30 }
+                }
+            };
+
+            // Act
+            _agentContext.UpdateRatelimitedRoutes(endpoints);
+
+            // Assert
+            Assert.That(_agentContext.RateLimitedRoutes.Count, Is.EqualTo(1));
+            Assert.That(_agentContext.RateLimitedRoutes.ContainsKey("GET|api/new"), Is.True);
+            Assert.That(_agentContext.RateLimitedRoutes.ContainsKey("GET|/api/old"), Is.False);
+        }
+
+        [Test]
+        public void UpdateConfig_ShouldUpdateAllConfigurationAspects()
+        {
+            // Arrange
+            var block = true;
+            var blockedUsers = new[] { "user1", "user2" };
+            var endpoints = new[]
+            {
+                new EndpointConfig
+                {
+                    Method = "GET",
+                    Route = "/test",
+                    AllowedIPAddresses = new[] { "192.168.1.0/24" },
+                    RateLimiting = new RateLimitingConfig { MaxRequests = 60 }
+                }
+            };
+            var configVersion = 123L;
+
+            // Act
+            _agentContext.UpdateConfig(block, blockedUsers, endpoints, configVersion);
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(Environment.GetEnvironmentVariable("AIKIDO_BLOCKING"), Is.EqualTo("true"));
+                Assert.That(_agentContext.IsUserBlocked("user1"), Is.True);
+                Assert.That(_agentContext.IsUserBlocked("user2"), Is.True);
+                Assert.That(_agentContext.RateLimitedRoutes["GET|test"].MaxRequests, Is.EqualTo(60));
+                Assert.That(_agentContext.ConfigLastUpdated, Is.EqualTo(configVersion));
+            });
+        }
+
+        [Test]
+        public void UpdateBlockedIps_ShouldUpdateBlockedSubnets()
+        {
+            // Arrange
+            var blockedIPs = new[] { "192.168.1.0/24", "10.0.0.1" };
+
+            // Act
+            _agentContext.UpdateBlockedIps(blockedIPs);
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(_agentContext.BlockList.IsIPBlocked("192.168.1.100"), Is.True);
+                Assert.That(_agentContext.BlockList.IsIPBlocked("10.0.0.1"), Is.True);
+                Assert.That(_agentContext.BlockList.IsIPBlocked("172.16.0.1"), Is.False);
+            });
+        }
+
+        [Test]
+        public void UpdateBlockedIps_WithNullInput_ShouldHandleGracefully()
+        {
+            // Arrange
+            _agentContext.UpdateBlockedIps(new[] { "192.168.1.1" });
+
+            // Act
+            _agentContext.UpdateBlockedIps(null);
+
+            // Assert
+            Assert.That(_agentContext.BlockList.IsIPBlocked("192.168.1.1"), Is.False);
+        }
+
+        [Test]
+        public void UpdateBlockedIps_WithInvalidIPs_ShouldSkipInvalidOnes()
+        {
+            // Arrange
+            var blockedIPs = new[] { "invalid-ip", "192.168.1.1", "not-an-ip" };
+
+            // Act
+            _agentContext.UpdateBlockedIps(blockedIPs);
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(_agentContext.BlockList.IsIPBlocked("192.168.1.1"), Is.True);
+                Assert.That(_agentContext.BlockList.IsIPBlocked("invalid-ip"), Is.False);
+                Assert.That(_agentContext.BlockList.IsIPBlocked("not-an-ip"), Is.False);
+            });
+        }
     }
 }
