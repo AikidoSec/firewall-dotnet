@@ -117,7 +117,7 @@ namespace Aikido.Zen.Core.Models
         public void UpdateRatelimitedRoutes(IEnumerable<EndpointConfig> endpoints) {
             _rateLimitedRoutes.Clear();
             foreach (var endpoint in endpoints) {
-                _rateLimitedRoutes[$"{endpoint.Method}|{endpoint.Route}"] = endpoint.RateLimiting;
+                _rateLimitedRoutes[$"{endpoint.Method}|{endpoint.Route.TrimStart('/')}"] = endpoint.RateLimiting;
             }
         }
 

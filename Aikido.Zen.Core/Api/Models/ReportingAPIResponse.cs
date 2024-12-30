@@ -11,5 +11,6 @@ namespace Aikido.Zen.Core.Api
         public IEnumerable<string> BlockedUserIds { get; set; }
         public IEnumerable<string> AllowedIPAddresses { get; set; }
         public bool ReceivedAnyStats { get; set; }
+        public bool Block { get; set; }
     }
 }

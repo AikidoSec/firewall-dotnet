@@ -25,8 +25,6 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             context.PostAuthenticateRequest += Context_PostAuthenticateRequest;
             // we add the .Wait(), because we want our module to handle exceptions properly
             context.BeginRequest += (sender, e) => Task.Run(() => Context_BeginRequest(sender, e)).Wait();
-            context.EndRequest += Context_EndRequest;
-            context.Error += Context_Error;
         }
 
         private void Context_PostAuthenticateRequest(object sender, EventArgs e)
@@ -95,19 +93,6 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             return !string.IsNullOrEmpty(httpContext.Request.ServerVariables["HTTP_X_FORWARDED_FOR"])
                 ? httpContext.Request.ServerVariables["HTTP_X_FORWARDED_FOR"]
                 : httpContext.Request.ServerVariables["REMOTE_ADDR"];
-        }
-
-        private void Context_EndRequest(object sender, EventArgs e)
-        {
-            var httpContext = ((HttpApplication)sender).Context;
-            var context = (Context)httpContext.Items["Aikido.Zen.Context"];
-        }
-
-        private void Context_Error(object sender, EventArgs e)
-        {
-            var httpContext = ((HttpApplication)sender).Context;
-            var context = (Context)httpContext.Items["Aikido.Zen.Context"];
-            var exception = httpContext.Server.GetLastError();
         }
 
         private string GetRoute(HttpContext context)

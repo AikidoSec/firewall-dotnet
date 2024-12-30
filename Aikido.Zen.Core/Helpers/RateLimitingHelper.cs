@@ -40,7 +40,6 @@ namespace Aikido.Zen.Core.Helpers
                 RateLimitedItems.Set(key, requestInfo); // Update the value in cache
                 return true;
             }
-
             // Deny the request if the maxRequests is reached within windowSizeInMS
             return false;
         }

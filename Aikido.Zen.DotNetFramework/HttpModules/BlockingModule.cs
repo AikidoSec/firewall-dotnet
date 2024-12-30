@@ -41,26 +41,28 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 Agent.Instance.Context.AddUser(user, aikidoContext.RemoteAddress);
             }
 
-            // Is rate limiting enabled for this route?
-            if (agentContext.RateLimitedRoutes.TryGetValue(routeKey, out var rateLimitConfig) && rateLimitConfig.Enabled)
+            // if Zen running in dry mode, we do not block any requests
+            if (EnvironmentHelper.DryMode)
             {
-                // should we rate limit this request?
-                if (RateLimitingHelper.IsAllowed(user?.Id ?? aikidoContext.RemoteAddress, rateLimitConfig.WindowSizeInMS, rateLimitConfig.MaxRequests))
-                {
-                    Agent.Instance.Context.AddAbortedRequest();
-                    httpContext.Response.StatusCode = 429;
-                    // stop the request from being processed
-                    httpContext.Response.End();
-                }
+                return;
             }
 
             // block the request if the user is blocked
             if (Agent.Instance.Context.IsBlocked(user, aikidoContext.RemoteAddress, routeKey))
             {
                 Agent.Instance.Context.AddAbortedRequest();
-                httpContext.Response.StatusCode = 403;
-                // stop the request from being processed
-                httpContext.Response.End();
+                throw new HttpException(403, "Request blocked");
+            }
+
+            // Is rate limiting enabled for this route?
+            if (agentContext.RateLimitedRoutes.TryGetValue(routeKey, out var rateLimitConfig) && rateLimitConfig.Enabled)
+            {
+                // should we rate limit this request?
+                if (!RateLimitingHelper.IsAllowed(user?.Id ?? aikidoContext.RemoteAddress, rateLimitConfig.WindowSizeInMS, rateLimitConfig.MaxRequests))
+                {
+                    Agent.Instance.Context.AddAbortedRequest();
+                    throw new HttpException(429, "Too many requests");
+                }
             }
         }
     }

@@ -21,9 +21,14 @@ namespace Aikido.Zen.Core.Exceptions
             return new AikidoException($"Shell injection detected");
         }
 
-        public static AikidoException RequestBlocked(string route, string ipAddress)
+        public static AikidoException RequestBlocked(string route)
         {
-            return new AikidoException($"Request blocked from {ipAddress} to {route}");
+            return new AikidoException($"Request blocked: {route}");
+        }
+
+        public static AikidoException RateLimited(string route)
+        {
+            return new AikidoException($"Ratelimited: {route}");
         }
 
         public static AikidoException PathTraversalDetected(string assemblyName, string operation)
