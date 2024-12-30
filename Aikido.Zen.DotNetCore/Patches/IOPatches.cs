@@ -25,7 +25,6 @@ namespace Aikido.Zen.DotNetCore.Patches
             PatchMethod(harmony, typeof(File), "WriteAllText", new[] { typeof(string), typeof(string) });
             PatchMethod(harmony, typeof(File), "WriteAllBytes", new[] { typeof(string), typeof(byte[]) });
             PatchMethod(harmony, typeof(File), "AppendAllText", new[] { typeof(string), typeof(string) });
-            PatchMethod(harmony, typeof(File), "Exists", new[] { typeof(string) });
 
             // Directory operations
             PatchMethod(harmony, typeof(Directory), "CreateDirectory", new[] { typeof(string), typeof(DirectorySecurity) });
@@ -37,9 +36,6 @@ namespace Aikido.Zen.DotNetCore.Patches
             PatchMethod(harmony, typeof(Directory), "GetDirectories", new[] { typeof(string) });
             PatchMethod(harmony, typeof(Directory), "GetDirectories", new[] { typeof(string), typeof(string) });
             PatchMethod(harmony, typeof(Directory), "GetDirectories", new[] { typeof(string), typeof(string), typeof(SearchOption) });
-
-            // Path operations
-            PatchMethod(harmony, typeof(Path), "GetFullPath", new[] { typeof(string), typeof(string) });
 
         }
 

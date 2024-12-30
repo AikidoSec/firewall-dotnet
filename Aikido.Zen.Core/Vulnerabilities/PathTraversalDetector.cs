@@ -20,8 +20,6 @@ namespace Aikido.Zen.Core.Vulnerabilities
             "..\\",
             ";\\",
             ":\\",
-            "system32",
-            "system",
             "~",
             "web.config",
             "web.config:stream"
@@ -56,8 +54,6 @@ namespace Aikido.Zen.Core.Vulnerabilities
             "d:\\",
             "e:/",
             "e:\\",
-            "\\\\",
-            "//",
             "windows/",
             "windows\\",
             "%windir%",
