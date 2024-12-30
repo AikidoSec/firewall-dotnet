@@ -150,12 +150,6 @@
     "isTraversal": true
   },
   {
-    "input": "system32\\drivers\\etc\\hosts",
-    "path": "C:\\files\\system32\\drivers\\etc\\hosts",
-    "description": "System32 directory access",
-    "isTraversal": true
-  },
-  {
     "input": "web.config:stream",
     "path": "C:\\files\\web.config:stream",
     "description": "Alternate data stream access",

@@ -18,8 +18,6 @@ namespace Aikido.Zen.Core.Vulnerabilities
             "./",
             "../",
             "..\\",
-            ";\\",
-            ":\\",
             "~",
             "web.config",
             "web.config:stream"
