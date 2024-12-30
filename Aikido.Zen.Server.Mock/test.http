@@ -1,0 +1,80 @@
+### Variables
+@baseUrl = http://localhost:3000
+@token = {{createApp.response.body.token}}
+
+### Create a new app
+# @name createApp
+POST {{baseUrl}}/api/runtime/apps
+Content-Type: application/json
+
+### Get config
+GET {{baseUrl}}/api/runtime/config
+Authorization: {{token}}
+
+### Update config
+POST {{baseUrl}}/api/runtime/config
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+    "endpoints": [
+        {
+            "method": "GET",
+            "route": "/api/test",
+            "forceProtectionOff": false,
+            "allowedIPAddresses": ["192.168.1.1"]
+        }
+    ],
+    "blockedUserIds": ["user123"],
+    "allowedIPAddresses": ["10.0.0.1"]
+}
+
+### List events
+GET {{baseUrl}}/api/runtime/events
+Authorization: {{token}}
+
+### Capture event (heartbeat)
+POST {{baseUrl}}/api/runtime/events
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+    "type": "heartbeat",
+    "timestamp": 1234567890
+}
+
+### Capture event (attack)
+POST {{baseUrl}}/api/runtime/events
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+    "type": "detected_attack",
+    "kind": "sql_injection",
+    "operation": "query",
+    "module": "database",
+    "blocked": true,
+    "source": "query",
+    "path": "/api/users",
+    "payload": "'; DROP TABLE users; --",
+    "metadata": {
+        "query": "SELECT * FROM users WHERE id = ''; DROP TABLE users; --'"
+    }
+}
+
+### Get firewall lists
+GET {{baseUrl}}/api/runtime/firewall/lists
+Authorization: {{token}}
+
+### Update firewall lists
+POST {{baseUrl}}/api/runtime/firewall/lists
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+    "blockedIPAddresses": [
+        "192.168.1.100",
+        "10.0.0.50"
+    ],
+    "blockedUserAgents": "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0)\nMozilla/5.0 (compatible; Googlebot/2.1)"
+} 
