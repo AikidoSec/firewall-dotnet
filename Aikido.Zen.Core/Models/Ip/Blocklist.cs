@@ -23,6 +23,7 @@ namespace Aikido.Zen.Core.Models.Ip
         /// </summary>
         public void UpdateAllowedSubnets(IEnumerable<EndpointConfig> endpoints)
         {
+            // remove the leading slash from the route pattern, to ensure we don't distinguish for example between api/users and /api/users
             var subnets = endpoints.ToDictionary(e => $"{e.Method}|{e.Route.TrimStart('/')}", e => e.AllowedIPAddresses.Select(ip => IPAddressRange.Parse(ip)));
             _allowedSubnets.Clear();
             foreach (var subnet in subnets)
