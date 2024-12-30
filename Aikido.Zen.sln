@@ -17,15 +17,15 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Aikido.Zen.Benchmarks", "Aikido.Zen.Benchmarks\Aikido.Zen.Benchmarks.csproj", "{5979ED36-9260-43A3-95B9-7B7E859F7DDC}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "e2e", "e2e", "{A8EE02FE-24BE-473C-A53F-29E4DF043105}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aikido.Zen.Server.Mock", "e2e\Aikido.Zen.Server.Mock\Aikido.Zen.Server.Mock.csproj", "{350D51A8-1EDA-4CA0-A289-545EC378A2CF}"
+EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "sample-apps", "sample-apps", "{91FD0F83-6712-4285-B507-045BCE460908}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DotNetCore.Sample.App", "sample-apps\DotNetCore.Sample.App\DotNetCore.Sample.App.csproj", "{4624A4BD-6482-454A-B311-F44B801C97B3}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotNetFramework.Sample.App", "sample-apps\DotNetFramework.Sample.App\DotNetFramework.Sample.App.csproj", "{2FECB1FE-D637-4E3B-806D-568CEAE234E7}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "e2e", "e2e", "{A8EE02FE-24BE-473C-A53F-29E4DF043105}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aikido.Zen.Server.Mock", "Aikido.Zen.Server.Mock\Aikido.Zen.Server.Mock.csproj", "{350D51A8-1EDA-4CA0-A289-545EC378A2CF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
