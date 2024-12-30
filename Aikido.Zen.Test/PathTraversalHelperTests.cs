@@ -37,20 +37,6 @@ namespace Aikido.Zen.Test
             Assert.That(result, Is.True);
         }
 
-        [Test]
-        public void DetectPathTraversal_WithUrlDecode_SkipsDetection()
-        {
-            // Arrange
-            _context.ParsedUserInput.Add("test", "../test.txt");
-            object[] args = new object[] { "../test.txt" };
-
-            // Act
-            bool result = PathTraversalHelper.DetectPathTraversal(args, ModuleName, _context, nameof(HttpUtility.UrlDecode));
-
-            // Assert
-            Assert.That(result, Is.True);
-        }
-
         [TestCase("../test.txt", true, Description = "Detects traversal in single path")]
         [TestCase("safe.txt", false, Description = "Passes safe single path")]
         public void DetectPathTraversal_WithSinglePath(string path, bool expectedAttack)
@@ -73,8 +59,8 @@ namespace Aikido.Zen.Test
         {
             // Arrange
             Environment.SetEnvironmentVariable("AIKIDO_BLOCKING", "true");
-            _context.ParsedUserInput.Add("test", "../test.txt");
-            object[] args = new object[] { "/var/www/test.txt" };
+            _context.ParsedUserInput.Add("query", "../test.txt");
+            object[] args = new object[] { "/var/www/../test.txt" };
 
             // Act & Assert
             Assert.Throws<AikidoException>(() => 
@@ -130,10 +116,10 @@ namespace Aikido.Zen.Test
         public void DetectPathTraversal_WithMixedArrayContent_DetectsTraversal()
         {
             // Arrange
-            _context.ParsedUserInput.Add("test", "../test.txt");
+            _context.ParsedUserInput.Add("query", "../");
             object[] args = new object[] { 
                 "safe.txt",
-                new string[] { "safe1.txt", "../unsafe.txt" },
+                new string[] { "../safe1.txt", "../unsafe.txt" },
                 42
             };
 

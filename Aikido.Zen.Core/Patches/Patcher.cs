@@ -5,9 +5,10 @@ namespace Aikido.Zen.Core.Patches {
     public class Patcher {
         public static void Patch() {
            var harmony = new Harmony("aikido.zen");
+           // patch the web request class
            WebRequestPatches.ApplyPatches(harmony);
-           var executingAssembly = System.Reflection.Assembly.GetExecutingAssembly();
-           harmony.PatchAll(executingAssembly);
+           // patch the file httpclient class
+           HttpClientPatches.ApplyPatches(harmony);
         }
 
         public static void Unpatch() {

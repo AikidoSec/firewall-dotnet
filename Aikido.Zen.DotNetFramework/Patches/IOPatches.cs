@@ -21,12 +21,19 @@ namespace Aikido.Zen.DotNetFramework.Patches
             PatchMethod(harmony, typeof(File), "Create", new[] { typeof(string), typeof(int), typeof(FileOptions), typeof(FileSystemSecurity) });
             PatchMethod(harmony, typeof(File), "Delete");
             PatchMethod(harmony, typeof(File), "Copy", new[] { typeof(string), typeof(string), typeof(bool) });
-            PatchMethod(harmony, typeof(File), "Move");
+            PatchMethod(harmony, typeof(File), "Move", new[] { typeof(string), typeof(string), typeof(bool) });
+            PatchMethod(harmony, typeof(File), "ReadAllText", new[] { typeof(string) });
+            PatchMethod(harmony, typeof(File), "ReadAllBytes", new[] { typeof(string) });
+            PatchMethod(harmony, typeof(File), "WriteAllText", new[] { typeof(string), typeof(string) });
+            PatchMethod(harmony, typeof(File), "WriteAllBytes", new[] { typeof(string), typeof(byte[]) });
+            PatchMethod(harmony, typeof(File), "AppendAllText", new[] { typeof(string), typeof(string) });
+            PatchMethod(harmony, typeof(File), "Exists", new[] { typeof(string) });
 
             // Directory operations
             PatchMethod(harmony, typeof(Directory), "CreateDirectory", new[] { typeof(string), typeof(DirectorySecurity) });
             PatchMethod(harmony, typeof(Directory), "Delete", new[] { typeof(string), typeof(bool) });
-            PatchMethod(harmony, typeof(Directory), "GetFiles", new[] { typeof(string), });
+            PatchMethod(harmony, typeof(Directory), "GetFiles", new[] { typeof(string)  });
+            PatchMethod(harmony, typeof(Directory), "Exists", new[] { typeof(string) });
             PatchMethod(harmony, typeof(Directory), "GetFiles", new[] { typeof(string), typeof(string) });
             PatchMethod(harmony, typeof(Directory), "GetFiles", new[] { typeof(string), typeof(string), typeof(SearchOption) });
             PatchMethod(harmony, typeof(Directory), "GetDirectories", new[] { typeof(string) });
@@ -34,26 +41,10 @@ namespace Aikido.Zen.DotNetFramework.Patches
             PatchMethod(harmony, typeof(Directory), "GetDirectories", new[] { typeof(string), typeof(string), typeof(SearchOption) });
 
             // Path operations
-            PatchMethod(harmony, typeof(Path), "Combine", new[] { typeof(string[]) });
-            PatchMethod(harmony, typeof(Path), "Combine", new[] { typeof(string), typeof(string) });
-            PatchMethod(harmony, typeof(Path), "Combine", new[] { typeof(string), typeof(string), typeof(string) });
-            PatchMethod(harmony, typeof(Path), "Combine", new[] { typeof(string), typeof(string), typeof(string), typeof(string) });
-            PatchMethod(harmony, typeof(Path), "GetFullPath");
+            PatchMethod(harmony, typeof(Path), "GetFullPath", new[] { typeof(string), typeof(string) });
 
             // HttpServerUtility MapPath
             PatchMethod(harmony, typeof(HttpServerUtility), "MapPath");
-
-            // HttpUtility UrlDecode
-            PatchMethod(harmony, typeof(HttpUtility), "UrlDecode", new [] { typeof(string), typeof(System.Text.Encoding) });
-
-            // WebUtility UrlDecode
-            PatchMethod(harmony, typeof(WebUtility), "UrlDecode");
-
-            // HttpUtility UrlEncode
-            PatchMethod(harmony, typeof(HttpUtility), "UrlEncode", new[] { typeof(string), typeof(System.Text.Encoding) });
-
-            // WebUtility UrlEncode
-            PatchMethod(harmony, typeof(WebUtility), "UrlEncode", new[] { typeof(string) });
         }
 
         private static void PatchMethod(Harmony harmony, Type type, string methodName, Type[] parameters = null)

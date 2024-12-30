@@ -29,7 +29,7 @@ namespace Aikido.Zen.Test
             var request = new HttpRequestMessage(HttpMethod.Get, "http://test.com:8080/path");
 
             // Act
-            var result = HttpClientPatch.CaptureRequest(request, CancellationToken.None, _httpClient);
+            var result = HttpClientPatches.CaptureRequest(request, CancellationToken.None, _httpClient);
 
             // Assert
             Assert.That(result, Is.True);
@@ -51,7 +51,7 @@ namespace Aikido.Zen.Test
             var request = new HttpRequestMessage();
 
             // Act
-            var result = HttpClientPatch.CaptureRequest(request, CancellationToken.None, _httpClient);
+            var result = HttpClientPatches.CaptureRequest(request, CancellationToken.None, _httpClient);
             await Task.Delay(100);
 
             // Assert
@@ -75,7 +75,7 @@ namespace Aikido.Zen.Test
             var request = new HttpRequestMessage(HttpMethod.Get, "api/endpoint");
 
             // Act
-            var result = HttpClientPatch.CaptureRequest(request, CancellationToken.None, _httpClient);
+            var result = HttpClientPatches.CaptureRequest(request, CancellationToken.None, _httpClient);
             await Task.Delay(100);
 
             // Assert
@@ -97,7 +97,7 @@ namespace Aikido.Zen.Test
             var request = new HttpRequestMessage(HttpMethod.Get, "https://api.aikido.dev/endpoint");
 
             // Act
-            var result = HttpClientPatch.CaptureRequest(request, CancellationToken.None, _httpClient);
+            var result = HttpClientPatches.CaptureRequest(request, CancellationToken.None, _httpClient);
 
             // Assert
             Assert.That(result, Is.True);
