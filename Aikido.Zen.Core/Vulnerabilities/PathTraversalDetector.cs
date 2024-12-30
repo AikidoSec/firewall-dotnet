@@ -18,8 +18,6 @@ namespace Aikido.Zen.Core.Vulnerabilities
             "./",
             "../",
             "..\\",
-            ";\\",
-            ":\\",
             "system32",
             "system",
             "~",
