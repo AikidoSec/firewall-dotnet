@@ -1,7 +1,4 @@
 using Aikido.Zen.Core.Helpers;
-using NUnit.Framework;
-using System.Threading.Tasks;
-using System.Collections.Generic;
 
 namespace Aikido.Zen.Test
 {
