@@ -3,6 +3,7 @@ using Aikido.Zen.Core.Models;
 using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("Aikido.Zen.Test")]
+[assembly: InternalsVisibleTo("Aikido.Zen.Benchmarks")]
 namespace Aikido.Zen.Core.Helpers
 {
     public static class RateLimitingHelper

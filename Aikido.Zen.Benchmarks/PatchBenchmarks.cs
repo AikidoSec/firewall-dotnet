@@ -4,16 +4,14 @@ using BenchmarkDotNet.Jobs;
 using Aikido.Zen.Core.Patches;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Api;
-using System;
 using System.Threading.Tasks;
 using System.Net.Http;
 using BenchmarkDotNet.Columns;
-using Aikido.Zen.Core.Helpers;
 
 namespace Aikido.Zen.Benchmarks
 {
-    [SimpleJob(RuntimeMoniker.Net48, baseline: false, warmupCount: 1, iterationCount: 5)]
-    [SimpleJob(RuntimeMoniker.Net80, baseline: true, warmupCount: 1, iterationCount: 5)]
+    [SimpleJob(RuntimeMoniker.Net48, baseline: false, warmupCount: 1, iterationCount: 2)]
+    [SimpleJob(RuntimeMoniker.Net80, baseline: true, warmupCount: 1, iterationCount: 2)]
     [HideColumns(Column.StdErr, Column.StdDev, Column.Error, Column.Min, Column.Max, Column.RatioSD)]
     public class PatchBenchmarks
     {
