@@ -137,6 +137,23 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void IsIPAllowed_WithEmptyAllowedIpAddresses_ShouldAllowIP()
+        {
+            // Arrange
+            var endpoints = new List<EndpointConfig> {
+                new EndpointConfig {
+                    Method = "GET", 
+                    Route = "testUrl",
+                    AllowedIPAddresses = new string[] { } // Empty allowed IPs
+                }
+            };
+            _blockList.UpdateAllowedSubnets(endpoints);
+
+            // Act & Assert
+            Assert.IsTrue(_blockList.IsIPAllowed("192.168.1.100", "GET|testUrl")); // Should allow when no IP restrictions
+        }
+
+        [Test]
         public void IsIPAllowed_WithInvalidIP_ShouldReturnTrue()
         {
             // Arrange

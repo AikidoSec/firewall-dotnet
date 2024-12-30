@@ -83,7 +83,7 @@ namespace Aikido.Zen.Core
                 if (response.Success)
                 {
                     var reportingResponse = response as ReportingAPIResponse;
-                    Task.Run(() => UpdateConfig(reportingResponse.BlockedUserIds, reportingResponse.Endpoints, reportingResponse.ConfigUpdatedAt));
+                    Task.Run(() => UpdateConfig(reportingResponse.Block, reportingResponse.BlockedUserIds, reportingResponse.Endpoints, reportingResponse.ConfigUpdatedAt));
                 }
             });
 
@@ -305,7 +305,7 @@ namespace Aikido.Zen.Core
                     {
                         if (ConfigChanged(out var response))
                         {
-                            await UpdateConfig(response.BlockedUserIds, response.Endpoints, response.ConfigUpdatedAt);
+                            await UpdateConfig(response.Block, response.BlockedUserIds, response.Endpoints, response.ConfigUpdatedAt);
                         }
                         _lastConfigCheck = DateTime.UtcNow.Ticks;
                     }
@@ -461,12 +461,12 @@ namespace Aikido.Zen.Core
             return false;
         }
 
-        private async Task UpdateConfig(IEnumerable<string> blockedUsers, IEnumerable<EndpointConfig> endpoints, long configVersion) {
-        
+        private async Task UpdateConfig(bool block, IEnumerable<string> blockedUsers, IEnumerable<EndpointConfig> endpoints, long configVersion) {
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCKING", block ? "true" : "false");
             _context.UpdateBlockedUsers(blockedUsers);
             _context.BlockList.UpdateAllowedSubnets(endpoints);
             _context.UpdateRatelimitedRoutes(endpoints);
-            _context.ConfigLastUpdated = configVersion; 
+            _context.ConfigLastUpdated = configVersion;
             await UpdateBlockedIps();
         }
 

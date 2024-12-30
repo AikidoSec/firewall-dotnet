@@ -90,7 +90,7 @@ namespace Aikido.Zen.Core.Models.Ip
                 return true;
             }
 
-            return subnets.Any(subnet => IPHelper.IsInSubnet(address, subnet));
+            return  !subnets.Any() || subnets.Any(subnet => IPHelper.IsInSubnet(address, subnet));
         }
 
         /// <summary>
