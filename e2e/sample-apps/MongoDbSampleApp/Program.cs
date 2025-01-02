@@ -1,18 +1,47 @@
+using MongoDB.Driver;
+using MongoDB.Bson;
+using Aikido.Zen.DotNetCore;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+builder.Services.AddZenFireWall();
+builder.Services.AddSingleton<IMongoClient>(new MongoClient("mongodb://localhost:27017"));
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
+app.UseZenFireWall();
 
 app.UseHttpsRedirection();
+
+// MongoDB endpoints for testing
+app.MapGet("/", async (HttpContext context, IMongoClient client) =>
+{
+    var search = context.Request.Query["search"].ToString();
+    var database = client.GetDatabase("test");
+    var collection = database.GetCollection<BsonDocument>("items");
+
+    // This will be vulnerable to NoSQL injection when search[$ne]=null
+    var filter = BsonDocument.Parse($"{{ title: {search} }}");
+    var result = await collection.Find(filter).ToListAsync();
+    
+    return Results.Ok(result);
+});
+
+app.MapGet("/where", async (HttpContext context, IMongoClient client) =>
+{
+    var title = context.Request.Query["title"].ToString();
+    var database = client.GetDatabase("test");
+    var collection = database.GetCollection<BsonDocument>("items");
+
+    // This will be vulnerable to NoSQL injection
+    var filter = BsonDocument.Parse($"{{ title: '{title}' }}");
+    var result = await collection.Find(filter).ToListAsync();
+    
+    return Results.Ok(result);
+});
+
+app.Run();
 
 var summaries = new[]
 {
@@ -32,8 +61,6 @@ app.MapGet("/weatherforecast", () =>
     return forecast;
 })
 .WithName("GetWeatherForecast");
-
-app.Run();
 
 record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
 {

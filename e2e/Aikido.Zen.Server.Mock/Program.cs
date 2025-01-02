@@ -84,4 +84,6 @@ app.MapPost("/api/runtime/apps", async (AppService appService) =>
     return Results.Json(new { token });
 });
 
-app.Run("http://localhost:3000");
+app.MapGet("/health", () => Results.Ok());
+
+app.Run();
