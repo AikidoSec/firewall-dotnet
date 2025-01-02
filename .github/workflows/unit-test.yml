@@ -44,13 +44,6 @@ jobs:
               with:
                   vs-version: "[17.2,19.0)"
 
-            - name: Install Docker
-              if: runner.os == 'Windows'
-              run: |
-                  choco install docker-cli
-                  choco install docker-compose
-              shell: powershell
-
             - name: Install dependencies
               run: |
                   dotnet tool restore
