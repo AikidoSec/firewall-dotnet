@@ -1,18 +1,43 @@
+using Microsoft.Data.SqlClient;
+using System.Text.Json;
+using Aikido.Zen.DotNetCore;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+builder.Services.AddZenFireWall();
+
+// Add SQL Server connection
+var connectionString = "Server=localhost,27014;Database=test;User Id=sa;Password=Strong@Password123!;TrustServerCertificate=True;";
+builder.Services.AddScoped<SqlConnection>(_ => new SqlConnection(connectionString));
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
+app.UseZenFireWall();
 
 app.UseHttpsRedirection();
+
+// SQL Server endpoints for testing
+app.MapPost("/add", async (HttpContext context, SqlConnection connection) =>
+{
+    using var reader = new StreamReader(context.Request.Body);
+    var body = await reader.ReadToEndAsync();
+    var data = JsonSerializer.Deserialize<Dictionary<string, string>>(body);
+    var name = "";
+    
+    if (!data?.TryGetValue("name", out name) ?? true || string.IsNullOrEmpty(name))
+    {
+        return Results.BadRequest("Name is required");
+    }
+
+    await connection.OpenAsync();
+
+    // Intentionally vulnerable to SQL injection
+    var command = new SqlCommand($"INSERT INTO Users (Name) VALUES ('{name}')", connection);
+    await command.ExecuteNonQueryAsync();
+
+    return Results.Ok();
+});
 
 var summaries = new[]
 {
@@ -32,6 +57,9 @@ app.MapGet("/weatherforecast", () =>
     return forecast;
 })
 .WithName("GetWeatherForecast");
+
+app.MapGet("/health", () => Results.Ok());
+
 
 app.Run();
 
