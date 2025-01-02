@@ -1,4 +1,5 @@
 #addin nuget:?package=Cake.FileHelpers&version=6.0.0
+#addin nuget:?package=Cake.Docker&version=0.10.0
 
 
 var target = Argument("target", "Default");
@@ -42,14 +43,14 @@ Task("DownloadLibraries")
         {
             FilePath file = files.First();
             var currVersion = FileReadText(file).Split('-')[1];
-            if(currVersion == version)
+            if (currVersion == version)
             {
                 Information("Libraries already downloaded. skipping download.");
                 return;
             }
         }
 
-        foreach(var file in filesToDownload)
+        foreach (var file in filesToDownload)
         {
             DownloadFile($"{baseUrl}{file}", $"{librariesDir}/{file}");
         }
@@ -60,7 +61,7 @@ Task("Restore")
     .Does(() =>
     {
         NuGetRestore(solution);
-        DotNetRestore(solution, new DotNetRestoreSettings 
+        DotNetRestore(solution, new DotNetRestoreSettings
         {
             Verbosity = DotNetVerbosity.Quiet
         });
@@ -73,7 +74,7 @@ Task("Build")
     .IsDependentOn("Restore")
     .Does(() =>
     {
-        try 
+        try
         {
             var msBuildSettings = new MSBuildSettings
             {
@@ -90,7 +91,7 @@ Task("Build")
             var projects = GetFiles("./**/*.csproj")
                 .Where(p => !p.FullPath.Contains("sample-apps") && !p.FullPath.Contains("Aikido.Zen.Benchmarks"));
 
-            foreach(var project in projects)
+            foreach (var project in projects)
             {
                 MSBuild(project, msBuildSettings);
             }
@@ -113,9 +114,18 @@ Task("Test")
     {
         var coverageDir = MakeAbsolute(Directory("./coverage"));
         EnsureDirectoryExists(coverageDir);
-        
+
+        //run the docker compose file to run the test databases
+        DockerComposeUp("./sample-apps/docker-compose.yaml");
+
+        // Get test projects from both Aikido.Zen.Test and Aikido.Zen.Test.End2End directories
         var testProjects = GetFiles("./Aikido.Zen.Test/*.csproj");
-        foreach(var project in testProjects)
+        // concat the e2e tests if the framework is core
+        if (!DotNetBuildSettings.TargetFramework.StartsWith("net4"))
+        {
+            testProjects = testProjects.Concat(GetFiles("./Aikido.Zen.Test.End2End/*.csproj"));
+        }
+        foreach (var project in testProjects)
         {
             DotNetTest(project.FullPath, new DotNetTestSettings
             {
@@ -128,21 +138,25 @@ Task("Test")
                     .Append($"/p:CoverletOutput={coverageDir.FullPath}/coverage.xml")
                     .Append("/p:Include=[Aikido.Zen.*]*")
                     .Append("/p:Exclude=[Aikido.Zen.Test]*")
+                    .Append("/p:Exclude=[Aikido.Zen.Test.End2End]*")
                     .Append("--verbosity detailed")
             });
         }
         Information($"Test task completed successfully. Coverage report at: {coverageDir.FullPath}");
-        
+
         if (!FileExists($"{coverageDir.FullPath}/coverage.xml"))
         {
             Warning("Coverage file was not generated!");
         }
+
+        //stop the docker compose file
+        DockerComposeDown("./sample-apps/docker-compose.yaml");
     });
 
 Task("Pack")
     .Does(() =>
     {
-        if(configuration == "Release")
+        if (configuration == "Release")
         {
             var projects = new[] {
                 "./Aikido.Zen.Core/Aikido.Zen.Core.csproj",
@@ -150,7 +164,7 @@ Task("Pack")
                 "./Aikido.Zen.DotNetCore/Aikido.Zen.DotNetCore.csproj"
             };
 
-            foreach(var project in projects)
+            foreach (var project in projects)
             {
                 DotNetPack(project, new DotNetPackSettings
                 {

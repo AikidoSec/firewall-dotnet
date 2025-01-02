@@ -1,9 +1,9 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFrameworks>net6.0;net7.0;net8.0;net9.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
+      <Nullable>disable</Nullable>
     <PackageOutputPath>..\nupkgs</PackageOutputPath>
     <AssemblyVersion></AssemblyVersion>
     <FileVersion></FileVersion>
@@ -16,9 +16,18 @@
     <PackageReference Include="Microsoft.AspNetCore.Routing" Version="2.2.2" />
     <PackageReference Include="Microsoft.AspNetCore.Routing.Abstractions" Version="2.2.0" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
-    <PackageReference Include="Microsoft.Data.Sqlite.Core" Version="9.0.0" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Data.Sqlite.Core" Version="6.0.0" Condition="'$(TargetFramework)' == 'net6.0'" />
+    <PackageReference Include="Microsoft.Data.Sqlite.Core" Version="7.0.0" Condition="'$(TargetFramework)' == 'net7.0'" />
+    <PackageReference Include="Microsoft.Data.Sqlite.Core" Version="8.0.0" Condition="'$(TargetFramework)' == 'net8.0'" />
+    <PackageReference Include="Microsoft.Data.Sqlite.Core" Version="9.0.0" Condition="'$(TargetFramework)' == 'net9.0'" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" Condition="'$(TargetFramework)' == 'net6.0'" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" Condition="'$(TargetFramework)' == 'net7.0'" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" Condition="'$(TargetFramework)' == 'net8.0'" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" Condition="'$(TargetFramework)' == 'net9.0'" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.0" Condition="'$(TargetFramework)' == 'net6.0'" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.0" Condition="'$(TargetFramework)' == 'net7.0'" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.0" Condition="'$(TargetFramework)' == 'net8.0'" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.0" Condition="'$(TargetFramework)' == 'net9.0'" />
     <PackageReference Include="MySql.Data" Version="9.1.0" />
     <PackageReference Include="MySqlConnector" Version="2.4.0" />
     <PackageReference Include="Npgsql" Version="9.0.2" />
@@ -28,9 +37,4 @@
   <ItemGroup>
     <ProjectReference Include="..\Aikido.Zen.Core\Aikido.Zen.Core.csproj" />
   </ItemGroup>
-
-	<Target Name="PostBuild" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug'">
-		<Message Text="Creating NuGet packages..." Importance="high" />
-		<Exec Command="powershell -ExecutionPolicy Bypass -File ..\\pack-dotnetcore.ps1 -buildConfiguration $(Configuration)" />
-	</Target>
 </Project>

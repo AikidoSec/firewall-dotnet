@@ -1,6 +1,7 @@
 using Microsoft.Data.SqlClient;
 using System.Text.Json;
 using Aikido.Zen.DotNetCore;
+using SqlServerSampleApp; // Assuming DatabaseService is in this namespace
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,62 +9,67 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddZenFireWall();
 
 // Add SQL Server connection
-var connectionString = "Server=localhost,27014;Database=test;User Id=sa;Password=Strong@Password123!;TrustServerCertificate=True;";
-builder.Services.AddScoped<SqlConnection>(_ => new SqlConnection(connectionString));
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+DatabaseService.ConnectionString = connectionString;
+builder.Services.AddZenFireWall();
 
 var app = builder.Build();
 
+// Then other middleware
+app.UseDeveloperExceptionPage();
 app.UseZenFireWall();
-
 app.UseHttpsRedirection();
 
-// SQL Server endpoints for testing
-app.MapPost("/add", async (HttpContext context, SqlConnection connection) =>
+// Pets endpoints
+app.MapGet("/api/pets", async () =>
+{
+    // Retrieve all pets from the database
+    var pets = DatabaseService.GetAllPets();
+    return Results.Ok(pets);
+});
+
+app.MapGet("/api/pets/{id:int}", async (int id) =>
+{
+    // Retrieve a pet by its ID
+    var pet = DatabaseService.GetPetById(id);
+    return pet != null ? Results.Ok(pet) : Results.NotFound();
+});
+
+app.MapPost("/api/pets/create", async (HttpContext context) =>
 {
     using var reader = new StreamReader(context.Request.Body);
     var body = await reader.ReadToEndAsync();
-    var data = JsonSerializer.Deserialize<Dictionary<string, string>>(body);
-    var name = "";
-    
-    if (!data?.TryGetValue("name", out name) ?? true || string.IsNullOrEmpty(name))
+    var petData = JsonSerializer.Deserialize<PetCreate>(body);
+
+    if (petData == null || string.IsNullOrEmpty(petData.Name))
     {
-        return Results.BadRequest("Name is required");
+        return Results.BadRequest("Pet name is required, " + body);
     }
 
-    await connection.OpenAsync();
-
-    // Intentionally vulnerable to SQL injection
-    var command = new SqlCommand($"INSERT INTO Users (Name) VALUES ('{name}')", connection);
-    await command.ExecuteNonQueryAsync();
-
-    return Results.Ok();
+    // Create a new pet in the database
+    var rowsCreated = DatabaseService.CreatePetByName(petData.Name);
+    return Results.Ok(new { Rows = rowsCreated });
 });
 
-var summaries = new[]
+
+// Health endpoint
+app.MapGet("/health", async () =>
 {
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
+    try
+    {
+        var env = Environment.GetEnvironmentVariables();
+        return Results.Ok(JsonSerializer.Serialize(env));
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Error in /health endpoint: {ex}");
+        throw;
+    }
+});
 
-app.MapGet("/weatherforecast", () =>
+app.Lifetime.ApplicationStarted.Register(async () =>
 {
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
-
-app.MapGet("/health", () => Results.Ok());
-
+    await DatabaseService.EnsureDatabaseSetupAsync();
+});
 
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}

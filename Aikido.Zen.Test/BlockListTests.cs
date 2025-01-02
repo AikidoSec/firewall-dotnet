@@ -27,9 +27,9 @@ namespace Aikido.Zen.Test
             _blockList.UpdateBlockedSubnets(subnets);
 
             // Assert
-            Assert.IsTrue(_blockList.IsIPBlocked("192.168.1.100"));
-            Assert.IsTrue(_blockList.IsIPBlocked("10.10.10.10"));
-            Assert.IsFalse(_blockList.IsIPBlocked("172.16.1.1"));
+            Assert.That(_blockList.IsIPBlocked("192.168.1.100"));
+            Assert.That(_blockList.IsIPBlocked("10.10.10.10"));
+            Assert.That(_blockList.IsIPBlocked("172.16.1.1"), Is.False);
         }
 
         [Test]
@@ -43,7 +43,7 @@ namespace Aikido.Zen.Test
             _blockList.UpdateBlockedSubnets(Array.Empty<IPAddressRange>());
 
             // Assert
-            Assert.IsFalse(_blockList.IsIPBlocked("192.168.1.100"));
+            Assert.That(_blockList.IsIPBlocked("192.168.1.100"), Is.False);
         }
 
         [Test]
@@ -72,11 +72,11 @@ namespace Aikido.Zen.Test
             _blockList.UpdateAllowedSubnets(endpoints);
 
             // Assert
-            Assert.IsTrue(_blockList.IsIPAllowed("192.168.1.100", "GET|url1"));
-            Assert.IsFalse(_blockList.IsIPAllowed("192.168.1.100", "POST|url1"));
-            Assert.IsTrue(_blockList.IsIPAllowed("10.10.10.10", "POST|url2"));
-            Assert.IsFalse(_blockList.IsIPAllowed("10.10.10.10", "GET|url1"));
-            Assert.IsTrue(_blockList.IsIPAllowed("172.16.1.1", "GET|url3")); // No restrictions for url3
+            Assert.That(_blockList.IsIPAllowed("192.168.1.100", "GET|url1"));
+            Assert.That(_blockList.IsIPAllowed("192.168.1.100", "POST|url1"), Is.False);
+            Assert.That(_blockList.IsIPAllowed("10.10.10.10", "POST|url2"));
+            Assert.That(_blockList.IsIPAllowed("10.10.10.10", "GET|url1"), Is.False);
+            Assert.That(_blockList.IsIPAllowed("172.16.1.1", "GET|url3")); // No restrictions for url3
         }
 
         [Test]
@@ -96,7 +96,7 @@ namespace Aikido.Zen.Test
             _blockList.UpdateAllowedSubnets(new List<EndpointConfig>());
 
             // Assert
-            Assert.IsTrue(_blockList.IsIPAllowed("192.168.1.100", "GET|url1")); // Should allow when no restrictions
+            Assert.That(_blockList.IsIPAllowed("192.168.1.100", "GET|url1")); // Should allow when no restrictions
         }
 
         [Test]
@@ -109,8 +109,8 @@ namespace Aikido.Zen.Test
             _blockList.AddIpAddressToBlocklist(ip);
 
             // Assert
-            Assert.IsTrue(_blockList.IsIPBlocked(ip));
-            Assert.IsFalse(_blockList.IsIPBlocked("192.168.1.101"));
+            Assert.That(_blockList.IsIPBlocked(ip));
+            Assert.That(_blockList.IsIPBlocked("192.168.1.101"), Is.False);
         }
 
         [Test]
@@ -123,7 +123,7 @@ namespace Aikido.Zen.Test
             _blockList.AddIpAddressToBlocklist(invalidIp);
 
             // Assert
-            Assert.IsTrue(_blockList.IsIPBlocked(invalidIp));
+            Assert.That(_blockList.IsIPBlocked(invalidIp));
         }
 
         [Test]
@@ -133,7 +133,7 @@ namespace Aikido.Zen.Test
             var invalidIp = "invalid.ip.address";
 
             // Act & Assert
-            Assert.IsFalse(_blockList.IsIPBlocked(invalidIp));
+            Assert.That(_blockList.IsIPBlocked(invalidIp), Is.False);
         }
 
         [Test]
@@ -150,7 +150,7 @@ namespace Aikido.Zen.Test
             _blockList.UpdateAllowedSubnets(endpoints);
 
             // Act & Assert
-            Assert.IsTrue(_blockList.IsIPAllowed("192.168.1.100", "GET|testUrl")); // Should allow when no IP restrictions
+            Assert.That(_blockList.IsIPAllowed("192.168.1.100", "GET|testUrl")); // Should allow when no IP restrictions
         }
 
         [Test]
@@ -168,7 +168,7 @@ namespace Aikido.Zen.Test
             _blockList.UpdateAllowedSubnets(endpoints);
 
             // Act & Assert
-            Assert.IsTrue(_blockList.IsIPAllowed("invalid.ip", "GET|testUrl"));
+            Assert.That(_blockList.IsIPAllowed("invalid.ip", "GET|testUrl"));
         }
 
         [Test]
@@ -189,11 +189,11 @@ namespace Aikido.Zen.Test
             _blockList.UpdateAllowedSubnets(endpoints);
 
             // Act & Assert
-            Assert.IsTrue(_blockList.IsBlocked("192.168.1.101", url)); // Blocked IP
-            Assert.IsTrue(_blockList.IsBlocked(ip, url)); // Not in allowed subnet
-            Assert.IsFalse(_blockList.IsBlocked("10.0.0.1", url)); // In allowed subnet
-            Assert.IsFalse(_blockList.IsBlocked("invalid.ip", url)); // Invalid IP should not be blocked
-            Assert.IsFalse(_blockList.IsBlocked("10.0.0.1", url)); // Non-blocked user in allowed subnet
+            Assert.That(_blockList.IsBlocked("192.168.1.101", url)); // Blocked IP
+            Assert.That(_blockList.IsBlocked(ip, url)); // Not in allowed subnet
+            Assert.That(_blockList.IsBlocked("10.0.0.1", url), Is.False); // In allowed subnet
+            Assert.That(_blockList.IsBlocked("invalid.ip", url), Is.False); // Invalid IP should not be blocked
+            Assert.That(_blockList.IsBlocked("10.0.0.1", url), Is.False); // Non-blocked user in allowed subnet
         }
 
         [Test]
@@ -213,7 +213,7 @@ namespace Aikido.Zen.Test
             Task.WaitAll(tasks.ToArray());
 
             // Assert
-            Assert.IsTrue(_blockList.IsIPBlocked(ip));
+            Assert.That(_blockList.IsIPBlocked(ip));
         }
 
         [Test]
@@ -226,8 +226,8 @@ namespace Aikido.Zen.Test
             }
 
             // Act & Assert
-            Assert.IsTrue(_blockList.IsIPBlocked("192.168.1.9999"));
-            Assert.IsFalse(_blockList.IsIPBlocked("192.168.2.1"));
+            Assert.That(_blockList.IsIPBlocked("192.168.1.9999"));
+            Assert.That(_blockList.IsIPBlocked("192.168.2.1"), Is.False);
         }
 
         [Test]
@@ -246,7 +246,7 @@ namespace Aikido.Zen.Test
             stopwatch.Stop();
 
             // Assert
-            Assert.Less(stopwatch.ElapsedMilliseconds, 1000); // Ensure it completes within 1 second
+            Assert.That(stopwatch.ElapsedMilliseconds < 1000); // Ensure it completes within 1 second
         }
 
     }

@@ -31,9 +31,9 @@ namespace Aikido.Zen.Test
             bool result3 = IPHelper.IsInSubnet(address3, subnet3);
 
             // Assert
-            Assert.IsTrue(result1);
-            Assert.IsTrue(result2);
-            Assert.IsTrue(result3);
+            Assert.That(result1);
+            Assert.That(result2);
+            Assert.That(result3);
         }
 
         [Test]
@@ -59,9 +59,9 @@ namespace Aikido.Zen.Test
             bool result3 = IPHelper.IsInSubnet(address3, subnet3);
 
             // Assert
-            Assert.IsFalse(result1);
-            Assert.IsFalse(result2);
-            Assert.IsFalse(result3);
+            Assert.That(result1, Is.False);
+            Assert.That(result2, Is.False);
+            Assert.That(result3, Is.False);
         }
 
         [Test]
@@ -76,8 +76,8 @@ namespace Aikido.Zen.Test
             bool result2 = IPHelper.IsSubnet(validCidr2);
 
             // Assert
-            Assert.IsTrue(result1);
-            Assert.IsTrue(result2);
+            Assert.That(result1);
+            Assert.That(result2);
         }
 
         [Test]
@@ -92,8 +92,8 @@ namespace Aikido.Zen.Test
             bool result2 = IPHelper.IsSubnet(invalidCidr2);
 
             // Assert
-            Assert.IsFalse(result1);
-            Assert.IsFalse(result2);
+            Assert.That(result1, Is.False);
+            Assert.That(result2, Is.False);
         }
 
         [Test]
@@ -118,7 +118,7 @@ namespace Aikido.Zen.Test
             bool result = IPHelper.IsInSubnet(address, subnet);
 
             // Assert
-            Assert.IsTrue(result);
+            Assert.That(result);
         }
 
         [Test]
@@ -133,8 +133,8 @@ namespace Aikido.Zen.Test
             bool result2 = IPAddress.TryParse(validIp2, out _);
 
             // Assert
-            Assert.IsTrue(result1);
-            Assert.IsTrue(result2);
+            Assert.That(result1, Is.False);
+            Assert.That(result2);
         }
 
         [Test]
@@ -149,8 +149,8 @@ namespace Aikido.Zen.Test
             bool result2 = IPAddress.TryParse(invalidIp2, out _);
 
             // Assert
-            Assert.IsFalse(result1);
-            Assert.IsFalse(result2);
+            Assert.That(result1, Is.False);
+            Assert.That(result2, Is.False);
         }
     }
 }

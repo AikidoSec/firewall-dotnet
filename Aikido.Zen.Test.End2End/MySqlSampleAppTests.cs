@@ -5,9 +5,9 @@ using System.Net;
 
 namespace Aikido.Zen.Test.End2End;
 
-public class SqlServerSampleAppTests : BaseAppTests
+public class MySqlSampleAppTests : BaseAppTests
 {
-    private const string ProjectDirectory = "e2e/sample-apps/SqlServerSampleApp";
+    private const string ProjectDirectory = "e2e/sample-apps/MySqlSampleApp";
     private readonly Dictionary<string, string> _environmentVariables = new Dictionary<string, string>
     {
     };

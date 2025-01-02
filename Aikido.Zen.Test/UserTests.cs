@@ -17,8 +17,8 @@ namespace Aikido.Zen.Test
             var user = new User(id, name);
 
             // Assert
-            Assert.AreEqual(id, user.Id);
-            Assert.AreEqual(name, user.Name);
+            Assert.That(id, Is.EqualTo(user.Id));
+            Assert.That(name, Is.EqualTo(user.Name));
         }
 
         [Test]
@@ -30,7 +30,7 @@ namespace Aikido.Zen.Test
 
             // Act & Assert
             var ex = Assert.Throws<ArgumentException>(() => new User(id, name));
-            Assert.AreEqual("User ID or name cannot be null or empty", ex.Message);
+            Assert.That("User ID or name cannot be null or empty", Is.EqualTo(ex.Message));
         }
 
         [Test]
@@ -42,7 +42,7 @@ namespace Aikido.Zen.Test
 
             // Act & Assert
             var ex = Assert.Throws<ArgumentException>(() => new User(id, name));
-            Assert.AreEqual("User ID or name cannot be null or empty", ex.Message);
+            Assert.That("User ID or name cannot be null or empty", Is.EqualTo(ex.Message));
         }
 
         [Test]
@@ -54,7 +54,7 @@ namespace Aikido.Zen.Test
 
             // Act & Assert
             var ex = Assert.Throws<ArgumentException>(() => new User(id, name));
-            Assert.AreEqual("User ID or name cannot be null or empty", ex.Message);
+            Assert.That(ex.Message, Is.EqualTo("User ID or name cannot be null or empty"));
         }
 
         [Test]
@@ -66,7 +66,7 @@ namespace Aikido.Zen.Test
 
             // Act & Assert
             var ex = Assert.Throws<ArgumentException>(() => new User(id, name));
-            Assert.AreEqual("User ID or name cannot be null or empty", ex.Message);
+            Assert.That(ex.Message, Is.EqualTo("User ID or name cannot be null or empty"));
         }
 
         [Test]
@@ -78,7 +78,7 @@ namespace Aikido.Zen.Test
 
             // Act & Assert
             var ex = Assert.Throws<ArgumentException>(() => new User(id, name));
-            Assert.AreEqual("User ID or name cannot be null or empty", ex.Message);
+            Assert.That(ex.Message, Is.EqualTo("User ID or name cannot be null or empty"));
         }
 
         [Test]
@@ -90,7 +90,7 @@ namespace Aikido.Zen.Test
 
             // Act & Assert
             var ex = Assert.Throws<ArgumentException>(() => new User(id, name));
-            Assert.AreEqual("User ID or name cannot be null or empty", ex.Message);
+            Assert.That("User ID or name cannot be null or empty", Is.EqualTo(ex.Message));
         }
     }
 }

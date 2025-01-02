@@ -23,6 +23,10 @@ namespace Aikido.Zen.Test
             _agent = new Agent(_zenApiMock.Object, BatchTimeoutMs);
         }
 
+        [TearDown] public void TearDown() {
+            _agent.Dispose();
+        }
+
         [Test]
         public void ClearContext_ResetsAllContextValues()
         {

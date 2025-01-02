@@ -35,6 +35,13 @@
         "isInjection": true
     },
     {
+        "command": "INSERT INTO Users (Name) VALUES ('Test'), ('Test2');--",
+        "dialect": 0,
+        "userInput": "Test'), ('Test2');--",
+        "description": "ATTACK: SQL injection with comment",
+        "isInjection": true
+    },
+    {
         "command": "SELECT * FROM users WHERE id = 'users\\\\'",
         "dialect": 0,
         "userInput": "users\\\\",

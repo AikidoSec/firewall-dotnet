@@ -1,6 +1,7 @@
 using Npgsql;
 using System.Text.Json;
 using Aikido.Zen.DotNetCore;
+using PostgresSampleApp;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,34 +9,61 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddZenFireWall();
 
 // Add Postgres connection
-var connectionString = "Host=localhost;Database=test;Username=postgres;Password=test;";
-builder.Services.AddScoped<NpgsqlConnection>(_ => new NpgsqlConnection(connectionString));
+var connectionString = builder.Configuration.GetConnectionString("PostgresConnection");
+DatabaseService.ConnectionString = connectionString;
 
 var app = builder.Build();
 
+app.UseDeveloperExceptionPage();
 app.UseZenFireWall();
-
 app.UseHttpsRedirection();
 
-// Postgres endpoints for testing
-app.MapPost("/add", async (HttpContext context, NpgsqlConnection connection) =>
+// Pets endpoints
+app.MapGet("/api/pets", async () =>
+{
+    var pets = DatabaseService.GetAllPets();
+    return Results.Ok(pets);
+});
+
+app.MapGet("/api/pets/{id:int}", async (int id) =>
+{
+    var pet = DatabaseService.GetPetById(id);
+    return pet != null ? Results.Ok(pet) : Results.NotFound();
+});
+
+app.MapPost("/api/pets/create", async (HttpContext context) =>
 {
     using var reader = new StreamReader(context.Request.Body);
     var body = await reader.ReadToEndAsync();
-    var data = JsonSerializer.Deserialize<Dictionary<string, string>>(body);
-    
-    if (!data?.TryGetValue("name", out var name) ?? true)
+    var petData = JsonSerializer.Deserialize<PetCreate>(body);
+
+    if (petData == null || string.IsNullOrEmpty(petData.Name))
     {
-        return Results.BadRequest("Name is required");
+        return Results.BadRequest("Pet name is required, " + body);
     }
 
-    await connection.OpenAsync();
+    var rowsCreated = DatabaseService.CreatePetByName(petData.Name);
+    return Results.Ok(new { Rows = rowsCreated });
+});
 
-    // Intentionally vulnerable to SQL injection
-    var command = new NpgsqlCommand($"INSERT INTO Users (Name) VALUES ('{name}')", connection);
-    await command.ExecuteNonQueryAsync();
+// Health endpoint
+app.MapGet("/health", async () =>
+{
+    try
+    {
+        var env = Environment.GetEnvironmentVariables();
+        return Results.Ok(JsonSerializer.Serialize(env));
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Error in /health endpoint: {ex}");
+        throw;
+    }
+});
 
-    return Results.Ok();
+app.Lifetime.ApplicationStarted.Register(async () =>
+{
+    await DatabaseService.EnsureDatabaseSetupAsync();
 });
 
 app.Run();

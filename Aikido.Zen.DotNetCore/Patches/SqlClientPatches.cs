@@ -16,10 +16,19 @@ namespace Aikido.Zen.DotNetCore.Patches
         // we need to patch from inside the framework, because we have to pass the context, which is constructed in a framework specific manner
         public static void ApplyPatches(Harmony harmony)
         {
+
+            // Generic
+            PatchMethod(harmony, typeof(DbCommand), "ExecuteNonQueryAsync");
+            PatchMethod(harmony, typeof(DbCommand), "ExecuteReaderAsync", typeof(System.Data.CommandBehavior));
+            PatchMethod(harmony, typeof(DbCommand), "ExecuteScalarAsync");
+
             // SQL Server
             PatchMethod(harmony, typeof(SqlCommand), "ExecuteNonQuery");
             PatchMethod(harmony, typeof(SqlCommand), "ExecuteScalar");
             PatchMethod(harmony, typeof(SqlCommand), "ExecuteReader", typeof(System.Data.CommandBehavior));
+            PatchMethod(harmony, typeof(System.Data.SqlClient.SqlCommand), "ExecuteNonQuery");
+            PatchMethod(harmony, typeof(System.Data.SqlClient.SqlCommand), "ExecuteScalar");
+            PatchMethod(harmony, typeof(System.Data.SqlClient.SqlCommand), "ExecuteReader", typeof(System.Data.CommandBehavior));
 
             // SQLite
             PatchMethod(harmony, typeof(SqliteCommand), "ExecuteNonQuery");
@@ -30,6 +39,9 @@ namespace Aikido.Zen.DotNetCore.Patches
             PatchMethod(harmony, typeof(MySqlCommand), "ExecuteNonQuery");
             PatchMethod(harmony, typeof(MySqlCommand), "ExecuteScalar");
             PatchMethod(harmony, typeof(MySqlCommand), "ExecuteReader", typeof(System.Data.CommandBehavior));
+            PatchMethod(harmony, typeof(MySqlConnector.MySqlCommand), "ExecuteNonQuery");
+            PatchMethod(harmony, typeof(MySqlConnector.MySqlCommand), "ExecuteScalar");
+            PatchMethod(harmony, typeof(MySqlConnector.MySqlCommand), "ExecuteReader", typeof(System.Data.CommandBehavior));
 
             // PostgreSQL
             PatchMethod(harmony, typeof(NpgsqlCommand), "ExecuteNonQuery");
