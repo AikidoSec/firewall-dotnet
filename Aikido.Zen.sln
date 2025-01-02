@@ -41,6 +41,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UmbracoSampleApp", "e2e\sam
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Aikido.Zen.Test.End2End", "Aikido.Zen.Test.End2End\Aikido.Zen.Test.End2End.csproj", "{9CC15A52-EB3D-4650-BEC0-F9581EF22849}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SqliteSampleApp", "e2e\sample-apps\SQLiteSampleApp\SqliteSampleApp.csproj", "{4891B10D-E986-487B-A1B4-277F18EAB185}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -103,6 +105,10 @@ Global
 		{9CC15A52-EB3D-4650-BEC0-F9581EF22849}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9CC15A52-EB3D-4650-BEC0-F9581EF22849}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9CC15A52-EB3D-4650-BEC0-F9581EF22849}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4891B10D-E986-487B-A1B4-277F18EAB185}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4891B10D-E986-487B-A1B4-277F18EAB185}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4891B10D-E986-487B-A1B4-277F18EAB185}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4891B10D-E986-487B-A1B4-277F18EAB185}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -118,6 +124,7 @@ Global
 		{910A4A73-9D51-4963-B581-505496B2D22E} = {2F12D7E2-3F23-469E-B94D-B36C13AC4466}
 		{5B10E7BD-9520-485B-9099-AD9CBB83E65D} = {2F12D7E2-3F23-469E-B94D-B36C13AC4466}
 		{9CC15A52-EB3D-4650-BEC0-F9581EF22849} = {A8EE02FE-24BE-473C-A53F-29E4DF043105}
+		{4891B10D-E986-487B-A1B4-277F18EAB185} = {2F12D7E2-3F23-469E-B94D-B36C13AC4466}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {2385A88D-D5F5-407D-A38E-309EAE8715FB}

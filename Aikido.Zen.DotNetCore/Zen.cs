@@ -20,7 +20,7 @@ namespace Aikido.Zen.DotNetCore
             context.Items["Aikido.Zen.CurrentUser"] = user;
         }
 
-        public static Context? GetContext()
+        public static Context GetContext()
         {
             if (_serviceProvider == null)
             {

@@ -5,9 +5,9 @@ using System.Net;
 
 namespace Aikido.Zen.Test.End2End;
 
-public class SqlServerSampleAppTests : BaseAppTests
+public class SqliteSampleAppTests : BaseAppTests
 {
-    private const string ProjectDirectory = "e2e/sample-apps/SqlServerSampleApp";
+    private const string ProjectDirectory = "e2e/sample-apps/SQLiteSampleApp";
     private readonly Dictionary<string, string> _environmentVariables = new Dictionary<string, string>
     {
     };
@@ -25,6 +25,9 @@ public class SqlServerSampleAppTests : BaseAppTests
         await base.TearDown();
     }
 
+    /// <summary>
+    /// Test the SQLite sample app with Zen enabled.
+    /// </summary>
     [Test]
     [CancelAfter(30000)]
     public async Task TestWithZen()
@@ -54,6 +57,9 @@ public class SqlServerSampleAppTests : BaseAppTests
         Assert.That(unsafeResponse.StatusCode, Is.EqualTo(HttpStatusCode.InternalServerError));
     }
 
+    /// <summary>
+    /// Test the SQLite sample app without Zen enabled.
+    /// </summary>
     [Test]
     [CancelAfter(30000)]
     public async Task TestWithoutZen()

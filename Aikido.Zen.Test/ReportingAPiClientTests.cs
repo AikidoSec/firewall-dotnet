@@ -48,7 +48,7 @@ namespace Aikido.Zen.Test
             var result = await _reportingApiClient.ReportAsync("token", new { }, 5000);
 
             // Assert
-            Assert.IsTrue(result.Success);
+            Assert.That(result.Success);
             _handlerMock.Protected().Verify(
                 "SendAsync",
                 Times.Once(),
@@ -100,7 +100,7 @@ namespace Aikido.Zen.Test
             await Task.Delay(100);
 
             // Assert
-            Assert.IsTrue(result.Success);
+            Assert.That(result.Success);
             _handlerMock.Protected().Verify(
                 "SendAsync",
                 Times.Once(),

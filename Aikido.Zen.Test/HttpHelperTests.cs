@@ -27,7 +27,7 @@ namespace Aikido.Zen.Test
 			// Assert
 			foreach (var expected in expectedResult)
 			{
-				Assert.AreEqual(expected.Value, result[expected.Key]);
+				Assert.That(expected.Value, Is.EqualTo(result[expected.Key]));
 			}
 		}
 

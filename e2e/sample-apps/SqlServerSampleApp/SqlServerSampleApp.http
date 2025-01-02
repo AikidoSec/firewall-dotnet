@@ -1,6 +1,21 @@
 @SqlServerSampleApp_HostAddress = http://localhost:5214
 
-GET {{SqlServerSampleApp_HostAddress}}/weatherforecast/
-Accept: application/json
+### Test SQL injection
 
-###
+POST {{SqlServerSampleApp_HostAddress}}/add
+Content-Type: application/json
+
+{
+    "name": "Test'), ('Test2');--"
+}
+
+### Test normal add
+
+POST {{SqlServerSampleApp_HostAddress}}/add
+Content-Type: application/json
+
+{
+    "name": "Miau"
+}
+
+

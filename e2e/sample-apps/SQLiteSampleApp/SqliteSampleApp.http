@@ -1,0 +1,6 @@
+@SqliteSampleApp_HostAddress = http://localhost:5097
+
+GET {{SqliteSampleApp_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
