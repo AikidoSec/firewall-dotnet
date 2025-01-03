@@ -156,7 +156,7 @@ namespace Aikido.Zen.Core.Helpers
                         }
                         else if (contentType.Contains("application/xml") || contentType.Contains("text/xml"))
                         {
-                            using (var xmlReader = XmlReader.Create(body, new XmlReaderSettings { Async = true }))
+                            using (var xmlReader = XmlReader.Create(body, new XmlReaderSettings { Async = true, DtdProcessing = DtdProcessing.Ignore }))
                             {
                                 var xmlDoc = new XmlDocument();
                                 xmlDoc.Load(xmlReader);
