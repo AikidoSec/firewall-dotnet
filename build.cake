@@ -1,9 +1,11 @@
 #addin nuget:?package=Cake.FileHelpers&version=6.0.0
 #addin nuget:?package=Cake.Docker&version=1.3.0
+#addin nuget:?package=Cake.Docker&version=1.3.0
 
 
 var target = Argument("target", "Default");
 var configuration = Argument("configuration", "Release");
+var framework = Argument("framework", "");
 var framework = Argument("framework", "");
 var solution = "./Aikido.Zen.sln";
 var projectName = "Aikido.Zen.Core";
