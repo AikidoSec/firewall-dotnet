@@ -83,7 +83,8 @@ namespace Aikido.Zen.Core
         /// Starts the agent and schedules heartbeat events.
         /// </summary>
         /// <param name="token">The authentication token for the Zen API</param>
-        public void Start() {
+        public void Start()
+        {
             // send started event
             QueueEvent(EnvironmentHelper.Token, Started.Create(),
             (evt, response) =>
@@ -130,7 +131,8 @@ namespace Aikido.Zen.Core
             if (string.IsNullOrEmpty(token)) throw new ArgumentNullException(nameof(token));
             if (evt == null) throw new ArgumentNullException(nameof(evt));
 
-            var queuedItem = new QueuedItem {
+            var queuedItem = new QueuedItem
+            {
                 Token = token,
                 Event = evt,
                 Callback = callback,
@@ -155,7 +157,7 @@ namespace Aikido.Zen.Core
             _scheduledEvents.AddOrUpdate(
                 scheduleId,
                 item,
-                (_,__) => item
+                (_, __) => item
             );
         }
 
@@ -203,31 +205,43 @@ namespace Aikido.Zen.Core
         /// <summary>
         /// Disposes the agent, canceling any pending operations and waiting for graceful shutdown.
         /// </summary>
-        public async void Dispose()
+        public void Dispose()
         {
-            // Process any remaining events in the queue
-            while (!_eventQueue.IsEmpty && !_cancellationSource.Token.IsCancellationRequested)
-            {
-                if (_eventQueue.TryDequeue(out var eventItem))
-                {
-                    // Synchronously process remaining events
-                    var response = await _api.Reporting.ReportAsync(eventItem.Token, eventItem.Event, _batchTimeoutMs)
-                        .ConfigureAwait(false);
-                    eventItem.Callback?.Invoke(eventItem.Event, response);
-                }
-                await Task.Delay(100, _cancellationSource.Token);
-            }
-
-            _cancellationSource.Cancel();
             try
             {
+                // Cancel any pending operations
+                _cancellationSource.Cancel();
+
+                // Process any remaining events in the queue synchronously
+                while (!_eventQueue.IsEmpty)
+                {
+                    if (_eventQueue.TryDequeue(out var eventItem))
+                    {
+                        try
+                        {
+                            var response = _api.Reporting.ReportAsync(eventItem.Token, eventItem.Event, _batchTimeoutMs)
+                                .ConfigureAwait(false)
+                                .GetAwaiter()
+                                .GetResult();
+                            eventItem.Callback?.Invoke(eventItem.Event, response);
+                        }
+                        catch (Exception)
+                        {
+                            // pass through
+                        }
+                    }
+                }
+
                 // Wait for background task to complete gracefully
                 if (!_backgroundTask.Wait(TimeSpan.FromSeconds(30)))
                 {
-                    // Log warning that not all events were processed
+                    // pass through
                 }
             }
-            catch (TaskCanceledException) { }
+            catch (Exception)
+            {
+                // pass through
+            }
             finally
             {
                 _cancellationSource.Dispose();
@@ -242,7 +256,8 @@ namespace Aikido.Zen.Core
         /// <summary>
         /// Clears all monitoring data from the current context.
         /// </summary>
-        public void ClearContext() {
+        public void ClearContext()
+        {
             _context.Clear();
         }
 
@@ -253,7 +268,8 @@ namespace Aikido.Zen.Core
         /// <param name="path">The request path</param>
         /// <param name="method">The HTTP method</param>
         /// <param name="ipAddress">The IP address of the requester</param>
-        public void CaptureInboundRequest(User user, string path, string method, string ipAddress) {
+        public void CaptureInboundRequest(User user, string path, string method, string ipAddress)
+        {
             if (user != null)
                 _context.AddUser(user, ipAddress);
             _context.AddRoute(path, method);
@@ -265,7 +281,8 @@ namespace Aikido.Zen.Core
         /// </summary>
         /// <param name="user"></param>
         /// <param name="ipAddress"></param>
-        public void CaptureUser(User user, string ipAddress) {
+        public void CaptureUser(User user, string ipAddress)
+        {
             _context.AddUser(user, ipAddress);
         }
 
@@ -274,7 +291,8 @@ namespace Aikido.Zen.Core
         /// </summary>
         /// <param name="host"></param>
         /// <param name="port"></param>
-        public void CaptureOutboundRequest(string host, int? port) {
+        public void CaptureOutboundRequest(string host, int? port)
+        {
             if (string.IsNullOrEmpty(host))
                 return;
             _context.AddHostname(host + (port.HasValue ? $":{port}" : ""));
@@ -317,7 +335,7 @@ namespace Aikido.Zen.Core
                         }
                         _lastConfigCheck = DateTime.UtcNow.Ticks;
                     }
-                    
+
                     await ProcessScheduledEvents();
                     // we rate limit ourselves to 10 requests per second to the Zen API
                     var (shouldContinue, newCurrentSecond, newRequestCount) = await HandleRateLimit(currentSecond, requestsThisSecond);
@@ -452,29 +470,34 @@ namespace Aikido.Zen.Core
             }
         }
 
-        internal Heartbeat ConstructHeartbeat() {
+        internal Heartbeat ConstructHeartbeat()
+        {
             var heartbeat = Heartbeat.Create(_context);
             ClearContext();
             return heartbeat;
         }
 
-        internal bool ConfigChanged(out ReportingAPIResponse response) {
+        internal bool ConfigChanged(out ReportingAPIResponse response)
+        {
 
             response = _api.Runtime.GetConfigLastUpdated(EnvironmentHelper.Token).Result;
             if (!response.Success) return false;
-            if (response.ConfigUpdatedAt != _context.ConfigLastUpdated) {
+            if (response.ConfigUpdatedAt != _context.ConfigLastUpdated)
+            {
                 response = _api.Runtime.GetConfig(EnvironmentHelper.Token).Result;
                 return true;
             }
             return false;
         }
 
-        private async Task UpdateConfig(bool block, IEnumerable<string> blockedUsers, IEnumerable<EndpointConfig> endpoints, long configVersion) {
+        private async Task UpdateConfig(bool block, IEnumerable<string> blockedUsers, IEnumerable<EndpointConfig> endpoints, long configVersion)
+        {
             _context.UpdateConfig(block, blockedUsers, endpoints, configVersion);
             await UpdateBlockedIps();
         }
 
-        private async Task UpdateBlockedIps() {
+        private async Task UpdateBlockedIps()
+        {
             if (string.IsNullOrEmpty(EnvironmentHelper.Token))
                 return;
             var blockedIPsResponse = await _api.Reporting.GetBlockedIps(EnvironmentHelper.Token);
@@ -484,13 +507,15 @@ namespace Aikido.Zen.Core
             }
         }
 
-        public class QueuedItem {
+        public class QueuedItem
+        {
             public string Token { get; set; }
             public IEvent Event { get; set; }
             public Action<IEvent, APIResponse> Callback { get; set; }
         }
 
-        public class ScheduledItem  {
+        public class ScheduledItem
+        {
             public string Token { get; set; }
             public Func<IEvent> EventFactory { get; set; }
             public TimeSpan Interval { get; set; }
@@ -498,5 +523,5 @@ namespace Aikido.Zen.Core
             public Action<IEvent, APIResponse> Callback { get; set; }
         }
 
-	}
+    }
 }

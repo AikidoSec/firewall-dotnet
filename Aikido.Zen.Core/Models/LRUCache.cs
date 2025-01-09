@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Diagnostics;
+using System.Collections.Concurrent;
 
 namespace Aikido.Zen.Core.Models
 {
@@ -14,7 +15,7 @@ namespace Aikido.Zen.Core.Models
     {
         private readonly int maxCapacity;
         private readonly int ttlInMs;
-        private readonly Dictionary<K, LinkedListNode<CacheItem>> cacheMap;
+        private readonly ConcurrentDictionary<K, LinkedListNode<CacheItem>> cacheMap;
         private readonly LinkedList<CacheItem> lruList;
         private readonly ReaderWriterLockSlim cacheLock = new ReaderWriterLockSlim();
 
@@ -39,7 +40,7 @@ namespace Aikido.Zen.Core.Models
 
             maxCapacity = capacity;
             this.ttlInMs = ttlInMs;
-            cacheMap = new Dictionary<K, LinkedListNode<CacheItem>>(capacity);
+            cacheMap = new ConcurrentDictionary<K, LinkedListNode<CacheItem>>(Environment.ProcessorCount, capacity);
             lruList = new LinkedList<CacheItem>();
         }
 
@@ -128,7 +129,7 @@ namespace Aikido.Zen.Core.Models
                     var newItem = new CacheItem(key, value, ttlInMs);
                     var newNode = new LinkedListNode<CacheItem>(newItem);
                     lruList.AddLast(newNode);
-                    cacheMap[key] = newNode;
+                    cacheMap.TryAdd(key, newNode);
                 }
             }
             finally
@@ -141,15 +142,18 @@ namespace Aikido.Zen.Core.Models
         /// Removes the item with the specified key from the cache.
         /// </summary>
         /// <param name="key"></param>
-        public void Delete(K key) {
+        public void Delete(K key)
+        {
             cacheLock.EnterWriteLock();
-            try {
-                RemoveNode(cacheMap[key]);
+            try
+            {
+                if (cacheMap.TryRemove(key, out LinkedListNode<CacheItem> node))
+                {
+                    RemoveNode(node);
+                }
             }
-            catch {
-                // Ignore if key not found
-            }
-            finally {
+            finally
+            {
                 cacheLock.ExitWriteLock();
             }
         }
@@ -175,7 +179,7 @@ namespace Aikido.Zen.Core.Models
         private void RemoveNode(LinkedListNode<CacheItem> node)
         {
             lruList.Remove(node);
-            cacheMap.Remove(node.Value.Key);
+            cacheMap.TryRemove(node.Value.Key, out _);
         }
 
 
