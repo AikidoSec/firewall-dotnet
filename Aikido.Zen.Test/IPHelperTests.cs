@@ -133,7 +133,7 @@ namespace Aikido.Zen.Test
             bool result2 = IPAddress.TryParse(validIp2, out _);
 
             // Assert
-            Assert.That(result1, Is.False);
+            Assert.That(result1);
             Assert.That(result2);
         }
 
