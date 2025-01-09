@@ -120,8 +120,8 @@ public abstract class BaseAppTests
         {
             var startInfo = new ProcessStartInfo
             {
-                FileName = "docker-compose",
-                Arguments = "-f sample-apps/docker-compose.yaml up -d",
+                FileName = "docker", // Use docker compose v2 command
+                Arguments = "compose -f sample-apps/docker-compose.yaml up -d",
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
@@ -139,8 +139,8 @@ public abstract class BaseAppTests
     {
         var stopInfo = new ProcessStartInfo
         {
-            FileName = "docker-compose",
-            Arguments = "-f sample-apps/docker-compose.yaml down",
+            FileName = "docker",
+            Arguments = "compose -f sample-apps/docker-compose.yaml down",
             UseShellExecute = false,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
