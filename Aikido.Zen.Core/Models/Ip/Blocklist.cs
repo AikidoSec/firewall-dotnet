@@ -24,7 +24,17 @@ namespace Aikido.Zen.Core.Models.Ip
         public void UpdateAllowedSubnets(IEnumerable<EndpointConfig> endpoints)
         {
             // remove the leading slash from the route pattern, to ensure we don't distinguish for example between api/users and /api/users
-            var subnets = endpoints.ToDictionary(e => $"{e.Method}|{e.Route.TrimStart('/')}", e => e.AllowedIPAddresses.Select(ip => IPAddressRange.Parse(ip)));
+            var parsedSubnets = endpoints.Select(e => new
+            {
+                Method = e.Method,
+                Route = e.Route,
+                Ranges = e.AllowedIPAddresses.Select(ip => IPAddressRange.Parse(ip))
+            });
+
+            var subnets = parsedSubnets.ToDictionary(
+                x => $"{x.Method}|{x.Route.TrimStart('/')}",
+                x => x.Ranges
+            );
             _allowedSubnets.Clear();
             foreach (var subnet in subnets)
             {
@@ -82,16 +92,19 @@ namespace Aikido.Zen.Core.Models.Ip
         /// <param name="ip">The IP address</param>
         /// <param name="endpoint">The endpoint e.g. GET|the/path</param>
         /// </summary>
-        public bool IsIPAllowed(string ip, string endpoint) {
-            if (!_allowedSubnets.TryGetValue(endpoint, out var subnets)) {
+        public bool IsIPAllowed(string ip, string endpoint)
+        {
+            if (!_allowedSubnets.TryGetValue(endpoint, out var subnets))
+            {
                 return true;
             }
 
-            if (!IPAddress.TryParse(ip, out var address)) {
+            if (!IPAddress.TryParse(ip, out var address))
+            {
                 return true;
             }
 
-            return  !subnets.Any() || subnets.Any(subnet => IPHelper.IsInSubnet(address, subnet));
+            return !subnets.Any() || subnets.Any(subnet => IPHelper.IsInSubnet(address, subnet));
         }
 
         /// <summary>
@@ -100,7 +113,8 @@ namespace Aikido.Zen.Core.Models.Ip
         /// <param name="ip">The IP address</param>
         /// <param name="endpoint">The endpoint. e.g. GET|the/path</param>
         /// </summary>
-        public bool IsBlocked(string ip, string endpoint) {
+        public bool IsBlocked(string ip, string endpoint)
+        {
             return IsIPBlocked(ip) || !IsIPAllowed(ip, endpoint);
         }
     }

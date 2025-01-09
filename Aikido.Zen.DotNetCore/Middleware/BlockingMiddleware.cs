@@ -28,15 +28,9 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 Agent.Instance.Context.AddUser(user, ipAddress: context.Connection.RemoteIpAddress?.ToString());
             }
 
-            // if Zen running in dry mode, we do not block any requests
-            if (EnvironmentHelper.DryMode)
-            {
-                await next(context);
-                return;
-            }
 
             // block the request if the user is blocked
-            if (Agent.Instance.Context.IsBlocked(user, context.Connection.RemoteIpAddress?.ToString(), routeKey))
+            if (!EnvironmentHelper.DryMode && Agent.Instance.Context.IsBlocked(user, context.Connection.RemoteIpAddress?.ToString(), routeKey))
             {
                 Agent.Instance.Context.AddAbortedRequest();
                 context.Response.StatusCode = 403;

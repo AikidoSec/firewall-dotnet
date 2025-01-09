@@ -41,14 +41,8 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 Agent.Instance.Context.AddUser(user, aikidoContext.RemoteAddress);
             }
 
-            // if Zen running in dry mode, we do not block any requests
-            if (EnvironmentHelper.DryMode)
-            {
-                return;
-            }
-
             // block the request if the user is blocked
-            if (Agent.Instance.Context.IsBlocked(user, aikidoContext.RemoteAddress, routeKey))
+            if (!EnvironmentHelper.DryMode && Agent.Instance.Context.IsBlocked(user, aikidoContext.RemoteAddress, routeKey))
             {
                 Agent.Instance.Context.AddAbortedRequest();
                 throw new HttpException(403, "Request blocked");
