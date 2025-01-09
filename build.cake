@@ -115,13 +115,13 @@ Task("Test")
         var coverageDir = MakeAbsolute(Directory("./coverage"));
         EnsureDirectoryExists(coverageDir);
 
-        //run the docker compose file to run the test databases
+        // Run the docker compose file to run the test databases
         DockerComposeUp("./sample-apps/docker-compose.yaml");
 
         // Get test projects from both Aikido.Zen.Test and Aikido.Zen.Test.End2End directories
-        var testProjects = GetFiles("./Aikido.Zen.Test/*.csproj");
+        var testProjects = GetFiles("./Aikido.Zen.Test/*.csproj") as IEnumerable<FilePath>;
         // concat the e2e tests if the framework is core
-        if (!DotNetBuildSettings.TargetFramework.StartsWith("net4"))
+        if (!target.StartsWith("net4"))
         {
             testProjects = testProjects.Concat(GetFiles("./Aikido.Zen.Test.End2End/*.csproj"));
         }
@@ -149,8 +149,11 @@ Task("Test")
             Warning("Coverage file was not generated!");
         }
 
-        //stop the docker compose file
-        DockerComposeDown("./sample-apps/docker-compose.yaml");
+        // Stop the docker compose file
+        DockerComposeDown(new DockerComposeDownSettings
+        {
+            Files = new[] { "./sample-apps/docker-compose.yaml" }
+        });
     });
 
 Task("Pack")
