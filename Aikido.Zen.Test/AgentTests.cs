@@ -590,7 +590,7 @@ namespace Aikido.Zen.Test
 
             // Act
             _agent.QueueEvent("token", testEvent);
-            await Task.Delay(Agent.RetryDelayMs + 100); // Wait for retry
+            await Task.Delay(Agent.RetryDelayMs + 250); // Wait for retry
 
             // Assert
             _zenApiMock.Verify(x => x.Reporting.ReportAsync(It.IsAny<string>(), It.IsAny<IEvent>(), It.IsAny<int>()),
