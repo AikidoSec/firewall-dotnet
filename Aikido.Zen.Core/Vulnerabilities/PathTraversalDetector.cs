@@ -15,12 +15,8 @@ namespace Aikido.Zen.Core.Vulnerabilities
     {
         private static readonly string[] DangerousPatterns = new[]
         {
-            "./",
             "../",
             "..\\",
-            "~",
-            "web.config",
-            "web.config:stream"
         };
 
         private static readonly string[] DangerousPathStarts = new[]
@@ -91,7 +87,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 return false;
             // Ignore single characters since they don't pose a big threat
             if (input.Length <= 1)
-                return false; 
+                return false;
 
             // URL decode the input first to catch encoded attacks
             try

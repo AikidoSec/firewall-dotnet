@@ -153,7 +153,7 @@
     "input": "web.config:stream",
     "path": "C:\\files\\web.config:stream",
     "description": "Alternate data stream access",
-    "isTraversal": true
+    "isTraversal": false
   },
   {
     "input": "%2e%2e%2f",
@@ -165,7 +165,7 @@
     "input": "~/.ssh/id_rsa",
     "path": "C:\\files\\~/.ssh/id_rsa",
     "description": "Linux home directory shorthand",
-    "isTraversal": true
+    "isTraversal": false
   },
   {
     "input": "file:///etc/passwd",
