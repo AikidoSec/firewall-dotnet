@@ -52,7 +52,7 @@ jobs:
             - name: Build and Test
               run: |
                   dotnet tool install --global Cake.Tool
-                  dotnet cake --target=Test --configuration=Release
+                  dotnet cake --target=Test --configuration=Release --framework=${{ matrix.dotnet-version }}
 
             - name: Upload coverage to Codecov
               uses: codecov/codecov-action@v4
