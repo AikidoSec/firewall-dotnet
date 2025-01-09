@@ -1,9 +1,10 @@
 #addin nuget:?package=Cake.FileHelpers&version=6.0.0
-#addin nuget:?package=Cake.Docker&version=0.10.0
+#addin nuget:?package=Cake.Docker&version=1.3.0
 
 
 var target = Argument("target", "Default");
 var configuration = Argument("configuration", "Release");
+var framework = Argument("framework", "");
 var solution = "./Aikido.Zen.sln";
 var projectName = "Aikido.Zen.Core";
 var version = "0.1.34";
@@ -116,12 +117,16 @@ Task("Test")
         EnsureDirectoryExists(coverageDir);
 
         // Run the docker compose file to run the test databases
-        DockerComposeUp("./sample-apps/docker-compose.yaml");
+        DockerComposeUp(new DockerComposeUpSettings
+        {
+            Files = new[] { "./sample-apps/docker-compose.yaml" },
+            Detach = true
+        });
 
         // Get test projects from both Aikido.Zen.Test and Aikido.Zen.Test.End2End directories
         var testProjects = GetFiles("./Aikido.Zen.Test/*.csproj") as IEnumerable<FilePath>;
-        // concat the e2e tests if the framework is core
-        if (!target.StartsWith("net4"))
+        // concat the e2e tests if the environment framework is core
+        if (!framework.StartsWith("4."))
         {
             testProjects = testProjects.Concat(GetFiles("./Aikido.Zen.Test.End2End/*.csproj"));
         }
