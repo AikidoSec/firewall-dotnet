@@ -117,11 +117,10 @@ Task("Test")
         var coverageDir = MakeAbsolute(Directory("./coverage"));
         EnsureDirectoryExists(coverageDir);
 
-        // Run the docker compose file to run the test databases
-        DockerComposeUp(new DockerComposeUpSettings
+        // Use docker compose command directly instead of the Cake.Docker addin
+        StartProcess("docker", new ProcessSettings
         {
-            Files = new[] { "./sample-apps/docker-compose.yaml" },
-            Detach = true
+            Arguments = "compose -f ./sample-apps/docker-compose.yaml up -d"
         });
 
         // Get test projects from both Aikido.Zen.Test and Aikido.Zen.Test.End2End directories
@@ -155,10 +154,10 @@ Task("Test")
             Warning("Coverage file was not generated!");
         }
 
-        // Stop the docker compose file
-        DockerComposeDown(new DockerComposeDownSettings
+        // Stop containers using direct command
+        StartProcess("docker", new ProcessSettings
         {
-            Files = new[] { "./sample-apps/docker-compose.yaml" }
+            Arguments = "compose -f ./sample-apps/docker-compose.yaml down"
         });
     });
 
