@@ -10,6 +10,7 @@ using Aikido.Zen.DotNetCore.Middleware;
 using Aikido.Zen.DotNetCore.Patches;
 using Microsoft.AspNetCore.Http;
 using Aikido.Zen.Core.Exceptions;
+using Microsoft.Extensions.Logging;
 
 namespace Aikido.Zen.DotNetCore
 {
@@ -66,7 +67,7 @@ namespace Aikido.Zen.DotNetCore
                 var agentLogger = app.ApplicationServices.GetService<ILogger<Agent>>();
                 if (agentLogger != null)
                 {
-                    agent.ConfigureLogger(logger);
+                    Agent.ConfigureLogger(agentLogger);
 
                 }
                 agent.Start();
