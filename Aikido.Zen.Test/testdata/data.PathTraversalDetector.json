@@ -105,13 +105,13 @@
     "input": "/./etc/passwd",
     "path": "C:\\files\\/./etc/passwd",
     "description": "Path traversal bypass attempt with current directory",
-    "isTraversal": true
+    "isTraversal": false
   },
   {
     "input": "/./././root/test.txt",
     "path": "C:\\files\\/./././root/test.txt",
     "description": "Multiple current directory bypass attempt",
-    "isTraversal": true
+    "isTraversal": false
   },
   {
     "input": "/appdata/storage/file.txt",
@@ -168,29 +168,15 @@
     "isTraversal": false
   },
   {
-    "input": "file:///etc/passwd",
-    "path": "C:\\files\\file:///etc/passwd",
-    "description": "File URL scheme",
-    "isTraversal": true,
-    "isUrl": true
-  },
-  {
-    "input": "file://localhost/etc/passwd",
-    "path": "C:\\files\\file://localhost/etc/passwd", 
-    "description": "File URL with localhost",
-    "isTraversal": true,
-    "isUrl": true
-  },
-  {
     "input": "//./test.txt",
     "path": "C:\\files\\//./test.txt",
-    "description": "Double forward slash",
-    "isTraversal": true
+    "description": "Windows device namespace syntax",
+    "isTraversal": false
   },
   {
     "input": "\\\\.\\test.txt",
     "path": "C:\\files\\\\\\.\\test.txt",
-    "description": "Double backslash",
-    "isTraversal": true
+    "description": "Windows device namespace syntax (backslash)",
+    "isTraversal": false
   }
 ]

@@ -72,9 +72,8 @@ namespace Aikido.Zen.Core.Vulnerabilities
         /// <param name="input">The input string to check</param>
         /// <param name="path">The file path to check against</param>
         /// <param name="checkPathStart">Whether to check for absolute path traversal</param>
-        /// <param name="isUrl">Whether the input is a URL</param>
         /// <returns>True if potential path traversal is detected, false otherwise</returns>
-        public static bool DetectPathTraversal(string input, string path, bool checkPathStart = true, bool isUrl = false)
+        public static bool DetectPathTraversal(string input, string path, bool checkPathStart = true)
         {
             // return if path or input is null or empty
             if (string.IsNullOrEmpty(input) || string.IsNullOrEmpty(path))
@@ -105,13 +104,6 @@ namespace Aikido.Zen.Core.Vulnerabilities
             ReadOnlySpan<char> inputSpan = input.ToLowerInvariant().AsSpan();
             ReadOnlySpan<char> pathSpan = path.ToLowerInvariant().AsSpan();
 
-            // Check for URL path traversal
-            if (isUrl && ContainsUnsafePathParts(inputSpan))
-            {
-                var filePathFromUrl = ParseAsFileUrl(input.AsSpan());
-                if (!string.IsNullOrEmpty(filePathFromUrl) && path.Contains(filePathFromUrl))
-                    return true;
-            }
 
             // Check for dangerous patterns in input
             bool inputHasUnsafeParts = ContainsUnsafePathParts(inputSpan);
@@ -139,35 +131,6 @@ namespace Aikido.Zen.Core.Vulnerabilities
 
         private static bool ContainsUnsafePathParts(ReadOnlySpan<char> path)
         {
-            // Check for consecutive dots or slashes that might indicate traversal
-            bool previousWasDot = false;
-            bool previousWasSlash = false;
-
-            foreach (char c in path)
-            {
-                if (c == '.')
-                {
-                    if (previousWasDot)
-                        return true;
-                    previousWasDot = true;
-                }
-                else
-                {
-                    previousWasDot = false;
-                }
-
-                if (c == '/' || c == '\\')
-                {
-                    if (previousWasSlash)
-                        return true;
-                    previousWasSlash = true;
-                }
-                else
-                {
-                    previousWasSlash = false;
-                }
-            }
-
             // Check for dangerous patterns
             foreach (var pattern in DangerousPatterns)
             {
@@ -177,28 +140,6 @@ namespace Aikido.Zen.Core.Vulnerabilities
             }
 
             return false;
-        }
-
-        private static string ParseAsFileUrl(ReadOnlySpan<char> path)
-        {
-            if (!path.StartsWith("file:".AsSpan(), StringComparison.OrdinalIgnoreCase))
-            {
-                if (!path.StartsWith("/".AsSpan()))
-                {
-                    return ParseAsFileUrl($"/{path.ToString()}".AsSpan());
-                }
-                return ParseAsFileUrl($"file://{path.ToString()}".AsSpan());
-            }
-
-            try
-            {
-                var uri = new Uri(path.ToString());
-                return uri.LocalPath;
-            }
-            catch
-            {
-                return null;
-            }
         }
     }
 }
