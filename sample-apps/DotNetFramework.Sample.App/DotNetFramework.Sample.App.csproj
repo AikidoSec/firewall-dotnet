@@ -148,14 +148,14 @@
     <Reference Include="Microsoft.Extensions.Configuration.Binder, Version=2.1.1.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.Extensions.Configuration.Binder.2.1.1\lib\netstandard2.0\Microsoft.Extensions.Configuration.Binder.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions, Version=2.1.1.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.Extensions.DependencyInjection.Abstractions.2.1.1\lib\netstandard2.0\Microsoft.Extensions.DependencyInjection.Abstractions.dll</HintPath>
+    <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions, Version=8.0.0.2, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Microsoft.Extensions.DependencyInjection.Abstractions.8.0.2\lib\net462\Microsoft.Extensions.DependencyInjection.Abstractions.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Extensions.Logging, Version=2.1.1.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.Extensions.Logging.2.1.1\lib\netstandard2.0\Microsoft.Extensions.Logging.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.Extensions.Logging.Abstractions, Version=2.1.1.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.Extensions.Logging.Abstractions.2.1.1\lib\netstandard2.0\Microsoft.Extensions.Logging.Abstractions.dll</HintPath>
+    <Reference Include="Microsoft.Extensions.Logging.Abstractions, Version=8.0.0.2, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Microsoft.Extensions.Logging.Abstractions.8.0.2\lib\net462\Microsoft.Extensions.Logging.Abstractions.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Extensions.Options, Version=2.1.1.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.Extensions.Options.2.1.1\lib\netstandard2.0\Microsoft.Extensions.Options.dll</HintPath>
@@ -382,6 +382,7 @@
     <Compile Include="Controllers\BenchmarkController.cs" />
     <Compile Include="Controllers\ContentTypeController.cs" />
     <Compile Include="Controllers\OutboundController.cs" />
+    <Compile Include="Controllers\PathTraversalController.cs" />
     <Compile Include="Controllers\SIController.cs" />
     <Compile Include="DbSIConfig.cs" />
     <Compile Include="Global.asax.cs">

@@ -17,13 +17,14 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
 
         public void Dispose()
         {
-            throw new NotImplementedException();
+            // nothing to dispose
         }
 
         public void Init(HttpApplication context)
         {
             context.PostAuthenticateRequest += Context_PostAuthenticateRequest;
-            context.BeginRequest += (sender, e) => Task.Run(() => Context_BeginRequest(sender, e));
+            // we add the .Wait(), because we want our module to handle exceptions properly
+            context.BeginRequest += (sender, e) => Task.Run(() => Context_BeginRequest(sender, e)).Wait();
             context.EndRequest += Context_EndRequest;
             context.Error += Context_Error;
         }

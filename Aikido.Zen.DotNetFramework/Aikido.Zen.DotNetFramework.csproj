@@ -225,6 +225,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Configuration\AikidoConfiguration.cs" />
+    <Compile Include="Patches\IOPatches.cs" />
     <Compile Include="Patches\Patcher.cs" />
     <Compile Include="Patches\SqlClientPatches.cs" />
     <Compile Include="Zen.cs" />

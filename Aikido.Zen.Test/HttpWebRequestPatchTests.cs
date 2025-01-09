@@ -27,7 +27,7 @@ namespace Aikido.Zen.Test
         public void CaptureRequest_ExtractsHostAndPort_ReturnsTrue()
         {
             // Act
-            var result = HttpWebRequestPatch.CaptureRequest(_requestMock.Object);
+            var result = WebRequestPatches.CaptureRequest(_requestMock.Object);
 
             // Assert
             Assert.That(result, Is.True);
@@ -41,7 +41,7 @@ namespace Aikido.Zen.Test
             _requestMock.Setup(r => r.RequestUri).Returns(httpsUri);
 
             // Act
-            var result = HttpWebRequestPatch.CaptureRequest(_requestMock.Object);
+            var result = WebRequestPatches.CaptureRequest(_requestMock.Object);
 
             // Assert
             Assert.That(result, Is.True);
@@ -55,7 +55,7 @@ namespace Aikido.Zen.Test
             _requestMock.Setup(r => r.RequestUri).Returns(defaultPortUri);
 
             // Act
-            var result = HttpWebRequestPatch.CaptureRequest(_requestMock.Object);
+            var result = WebRequestPatches.CaptureRequest(_requestMock.Object);
 
             // Assert
             Assert.That(result, Is.True);
@@ -69,7 +69,7 @@ namespace Aikido.Zen.Test
 
             // Act & Assert
             Assert.Throws<NullReferenceException>(() => 
-                HttpWebRequestPatch.CaptureRequest(_requestMock.Object)
+                WebRequestPatches.CaptureRequest(_requestMock.Object)
             );
         }
     }
