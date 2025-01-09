@@ -11,6 +11,8 @@ using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Models.Events;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using NetTools;
 
 [assembly: InternalsVisibleTo("Aikido.Zen.Tests")]
@@ -29,10 +31,11 @@ namespace Aikido.Zen.Core
         private readonly int _batchTimeoutMs;
         private readonly ConcurrentDictionary<string, ScheduledItem> _scheduledEvents;
         private long _lastConfigCheck = DateTime.UtcNow.Ticks;
+        private static ILogger _logger = NullLogger.Instance;
 
         // Rate limiting and timing constants for the event processing loop
         private const int RateLimitPerSecond = 10;
-        private const int RetryDelayMs = 250;
+        internal const int RetryDelayMs = 250;
         private const int EmptyQueueDelayMs = 100;
         private const int ErrorRetryDelayMs = 1000;
 
@@ -40,6 +43,16 @@ namespace Aikido.Zen.Core
 
         // instance
         private static Agent _instance;
+
+        /// <summary>
+        /// Configures a static logger for Agent.
+        /// If not configured, uses NullLogger which safely does nothing.
+        /// </summary>
+        /// <param name="logger">The logger instance to use</param>
+        public static void ConfigureLogger(ILogger logger)
+        {
+            _logger = logger ?? NullLogger.Instance;
+        }
 
         public static Agent Instance
         {
@@ -312,6 +325,8 @@ namespace Aikido.Zen.Core
         /// <returns></returns>
         public virtual void SendAttackEvent(AttackKind kind, Source source, string payload, string operation, Context context, string module, IDictionary<string, object> metadata, bool blocked)
         {
+            _logger.LogInformation("AikidoZen: Attack detected: {kind} {source} {payload} {operation} {context} {module} {metadata} {blocked}",
+                kind, source, payload, operation, context, module, metadata, blocked);
             QueueEvent(EnvironmentHelper.Token, DetectedAttack.Create(kind, source, payload, operation, context, module, metadata, blocked));
         }
 
@@ -496,7 +511,7 @@ namespace Aikido.Zen.Core
             await UpdateBlockedIps();
         }
 
-        private async Task UpdateBlockedIps()
+        internal async Task UpdateBlockedIps()
         {
             if (string.IsNullOrEmpty(EnvironmentHelper.Token))
                 return;

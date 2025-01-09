@@ -2,11 +2,28 @@ using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.Core.Models;
 using NUnit.Framework;
 using System;
+using Microsoft.Extensions.Logging;
+using Moq;
 
 namespace Aikido.Zen.Test
 {
     public class AikidoExceptionTests
     {
+        private Mock<ILogger> _mockLogger;
+
+        [SetUp]
+        public void Setup()
+        {
+            _mockLogger = new Mock<ILogger>();
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            // Reset to NullLogger after each test to avoid affecting other tests
+            AikidoException.ConfigureLogger(null);
+        }
+
         [Test]
         public void Constructor_WithMessage_ShouldSetMessage()
         {
@@ -112,6 +129,48 @@ namespace Aikido.Zen.Test
         private void ThrowAikidoException()
         {
             throw new AikidoException("Test exception");
+        }
+
+        [Test]
+        public void ConfigureLogger_WithNullLogger_ShouldUseNullLogger()
+        {
+            // Act
+            AikidoException.ConfigureLogger(null);
+            var exception = new AikidoException("Test message");
+
+            // Assert - should not throw any exceptions
+            Assert.That(exception.Message, Is.EqualTo("Test message"));
+        }
+
+        [Test]
+        public void Constructor_WithLogger_ShouldLogError()
+        {
+            // Arrange
+            AikidoException.ConfigureLogger(_mockLogger.Object);
+            var message = "Test exception message";
+
+            // Act
+            var exception = new AikidoException(message);
+
+            // Assert
+            _mockLogger.Verify(
+                x => x.Log(
+                    LogLevel.Error,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((v, t) => true),
+                    It.IsAny<Exception>(),
+                    It.Is<Func<It.IsAnyType, Exception, string>>((v, t) => true)),
+                Times.Once);
+        }
+
+        [Test]
+        public void Constructor_WithoutLogger_ShouldNotThrowException()
+        {
+            // Arrange
+            AikidoException.ConfigureLogger(null);
+
+            // Act & Assert
+            Assert.DoesNotThrow(() => new AikidoException("Test message"));
         }
     }
 }

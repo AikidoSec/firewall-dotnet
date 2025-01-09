@@ -2,20 +2,20 @@
 
 ### Test SQL injection
 
-POST {{SqlServerSampleApp_HostAddress}}/add
+POST {{SqlServerSampleApp_HostAddress}}/api/pets/create
 Content-Type: application/json
 
 {
-    "name": "Test'), ('Test2');--"
+    "Name": "Malicious Pet', 'Gru from the Minions'); -- "
 }
 
 ### Test normal add
 
-POST {{SqlServerSampleApp_HostAddress}}/add
+POST {{SqlServerSampleApp_HostAddress}}/api/pets/create
 Content-Type: application/json
 
 {
-    "name": "Miau"
+    "Name": "Miau"
 }
 
 

@@ -23,7 +23,9 @@ namespace Aikido.Zen.Test
             _agent = new Agent(_zenApiMock.Object, BatchTimeoutMs);
         }
 
-        [TearDown] public void TearDown() {
+        [TearDown]
+        public void TearDown()
+        {
             _agent.Dispose();
         }
 
@@ -111,19 +113,19 @@ namespace Aikido.Zen.Test
             var scheduleId = "test-schedule";
 
             // Test null token
-            Assert.Throws<ArgumentNullException>(() => 
+            Assert.Throws<ArgumentNullException>(() =>
                 _agent.ScheduleEvent(null, evt, interval, scheduleId, null));
 
             // Test null event
-            Assert.Throws<ArgumentNullException>(() => 
+            Assert.Throws<ArgumentNullException>(() =>
                 _agent.ScheduleEvent("token", null, interval, scheduleId, null));
 
             // Test null scheduleId
-            Assert.Throws<ArgumentNullException>(() => 
+            Assert.Throws<ArgumentNullException>(() =>
                 _agent.ScheduleEvent("token", evt, interval, null, null));
 
             // Test non-positive interval
-            Assert.Throws<ArgumentException>(() => 
+            Assert.Throws<ArgumentException>(() =>
                 _agent.ScheduleEvent("token", evt, TimeSpan.Zero, scheduleId, null));
         }
 
@@ -178,7 +180,7 @@ namespace Aikido.Zen.Test
             // Assert - verify event was queued
             _zenApiMock.Verify(
                 r => r.Reporting.ReportAsync(
-                    It.IsAny<string>(), 
+                    It.IsAny<string>(),
                     It.Is<Started>(s => s.GetType() == typeof(Started)),
                     BatchTimeoutMs
                 ),
@@ -194,7 +196,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void QueueEvent_WithNullEvent_ThrowsArgumentNullException() 
+        public void QueueEvent_WithNullEvent_ThrowsArgumentNullException()
         {
             var ex = Assert.Throws<ArgumentNullException>(() => _agent.QueueEvent("token", null));
             Assert.That(ex.ParamName, Is.EqualTo("evt"));
@@ -242,7 +244,8 @@ namespace Aikido.Zen.Test
         [Test]
         public void ScheduleEvent_WithNonPositiveInterval_ThrowsArgumentException()
         {
-            var item = new Agent.ScheduledItem { 
+            var item = new Agent.ScheduledItem
+            {
                 Token = "token",
                 Interval = TimeSpan.Zero
             };
@@ -376,7 +379,7 @@ namespace Aikido.Zen.Test
         [Test]
         public void SendAttackEvent_WithNullContext_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>(() => 
+            Assert.Throws<ArgumentNullException>(() =>
                 _agent.SendAttackEvent(AttackKind.SqlInjection, Source.Query, "payload", "operation", null, "module", null, true));
         }
 
@@ -388,7 +391,8 @@ namespace Aikido.Zen.Test
             var source = Source.Body;
             var payload = "malicious-input";
             var operation = "login";
-            var context = new Context { 
+            var context = new Context
+            {
                 Url = "http://test.com/login",
                 Method = "POST",
                 Headers = new Dictionary<string, string[]>
@@ -458,7 +462,7 @@ namespace Aikido.Zen.Test
             // Arrange
 
             _agent.Context.AddHostname("test.com");
-            _agent.Context.AddUser(new User ("123", "userName"), "1.2.3.4");
+            _agent.Context.AddUser(new User("123", "userName"), "1.2.3.4");
             _agent.Context.AddRoute("/test", "GET");
             _agent.Context.AddRequest();
             _agent.Context.AddAttackBlocked();
@@ -574,6 +578,36 @@ namespace Aikido.Zen.Test
 
             _zenApiMock.Verify(x => x.Runtime.GetConfigLastUpdated(It.IsAny<string>()), Times.Once);
             _zenApiMock.Verify(x => x.Runtime.GetConfig(It.IsAny<string>()), Times.Never);
+        }
+
+        [Test]
+        public async Task ProcessSingleEvent_OnException_RequeuesEventAndDelays()
+        {
+            // Arrange
+            var testEvent = new Started();
+            _zenApiMock.Setup(x => x.Reporting.ReportAsync(It.IsAny<string>(), It.IsAny<IEvent>(), It.IsAny<int>()))
+                .ThrowsAsync(new Exception("Test exception"));
+
+            // Act
+            _agent.QueueEvent("token", testEvent);
+            await Task.Delay(Agent.RetryDelayMs + 100); // Wait for retry
+
+            // Assert
+            _zenApiMock.Verify(x => x.Reporting.ReportAsync(It.IsAny<string>(), It.IsAny<IEvent>(), It.IsAny<int>()),
+                Times.AtLeast(2)); // Should try at least twice
+        }
+
+        [Test]
+        public async Task UpdateBlockedIps_WithEmptyToken_ReturnsWithoutUpdating()
+        {
+            // Arrange
+            Environment.SetEnvironmentVariable("AIKIDO_TOKEN", "");
+
+            // Act
+            await _agent.UpdateBlockedIps();
+
+            // Assert
+            _zenApiMock.Verify(x => x.Reporting.GetBlockedIps(It.IsAny<string>()), Times.Never);
         }
     }
 }
