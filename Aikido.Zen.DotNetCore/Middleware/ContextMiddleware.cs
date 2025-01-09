@@ -2,12 +2,12 @@ using Aikido.Zen.Core;
 using Aikido.Zen.Core.Helpers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
-using Microsoft.AspNetCore.Routing.Patterns;
-using Microsoft.AspNetCore.Routing.Template;
-using System;
 
 namespace Aikido.Zen.DotNetCore.Middleware
 {
+    /// <summary>
+    /// This middleware is used to capture the context of incoming requests.
+    /// </summary>
     public class ContextMiddleware : IMiddleware
     {
         private readonly IEnumerable<Endpoint> _endpoints;
@@ -73,7 +73,8 @@ namespace Aikido.Zen.DotNetCore.Middleware
             // this way, the routes found by Zen match the routes found by the .NET core
             var path = context.Request.Path.Value;
             var endpoint = _endpoints.FirstOrDefault(e => (e as RouteEndpoint) != null && RouteHelper.MatchRoute((e as RouteEndpoint)!.RoutePattern.RawText, path));
-            return (endpoint as RouteEndpoint)?.RoutePattern.RawText;
+            // remove the leading slash from the route pattern, to ensure we don't distinguish for example between api/users and /api/users
+            return (endpoint as RouteEndpoint)?.RoutePattern.RawText.TrimStart('/');
         }
     }
 }

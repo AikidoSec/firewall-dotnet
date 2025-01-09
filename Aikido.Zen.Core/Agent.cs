@@ -83,7 +83,7 @@ namespace Aikido.Zen.Core
                 if (response.Success)
                 {
                     var reportingResponse = response as ReportingAPIResponse;
-                    Task.Run(() => UpdateConfig(reportingResponse.BlockedUserIds, reportingResponse.Endpoints, reportingResponse.ConfigUpdatedAt));
+                    Task.Run(() => UpdateConfig(reportingResponse.Block, reportingResponse.BlockedUserIds, reportingResponse.Endpoints, reportingResponse.ConfigUpdatedAt));
                 }
             });
 
@@ -286,7 +286,6 @@ namespace Aikido.Zen.Core
         /// <returns></returns>
         public virtual void SendAttackEvent(AttackKind kind, Source source, string payload, string operation, Context context, string module, IDictionary<string, object> metadata, bool blocked)
         {
-            
             QueueEvent(EnvironmentHelper.Token, DetectedAttack.Create(kind, source, payload, operation, context, module, metadata, blocked));
         }
 
@@ -306,7 +305,7 @@ namespace Aikido.Zen.Core
                     {
                         if (ConfigChanged(out var response))
                         {
-                            await UpdateConfig(response.BlockedUserIds, response.Endpoints, response.ConfigUpdatedAt);
+                            await UpdateConfig(response.Block, response.BlockedUserIds, response.Endpoints, response.ConfigUpdatedAt);
                         }
                         _lastConfigCheck = DateTime.UtcNow.Ticks;
                     }
@@ -462,11 +461,8 @@ namespace Aikido.Zen.Core
             return false;
         }
 
-        private async Task UpdateConfig(IEnumerable<string> blockedUsers, IEnumerable<EndpointConfig> endpoints, long configVersion) {
-        
-            _context.UpdateBlockedUsers(blockedUsers);
-            _context.BlockList.UpdateAllowedSubnets(endpoints.ToDictionary(e => $"{e.Method}|{e.Route}", e => e.AllowedIPAddresses.Select(ip => IPAddressRange.Parse(ip))));
-            _context.ConfigLastUpdated = configVersion; 
+        private async Task UpdateConfig(bool block, IEnumerable<string> blockedUsers, IEnumerable<EndpointConfig> endpoints, long configVersion) {
+            _context.UpdateConfig(block, blockedUsers, endpoints, configVersion);
             await UpdateBlockedIps();
         }
 
@@ -476,16 +472,7 @@ namespace Aikido.Zen.Core
             var blockedIPsResponse = await _api.Reporting.GetBlockedIps(EnvironmentHelper.Token);
             if (blockedIPsResponse.Success && blockedIPsResponse.BlockedIPAddresses != null)
             {
-                var blockedIPs = blockedIPsResponse.Ips;
-                var ranges = new List<IPAddressRange>();
-                foreach (var ip in blockedIPs)
-                {
-                    if (IPAddressRange.TryParse(ip, out var range))
-                    {
-                        ranges.Add(range);
-                    }
-                }
-                _context.BlockList.UpdateBlockedSubnets(ranges);
+                _context.UpdateBlockedIps(blockedIPsResponse.Ips);
             }
         }
 

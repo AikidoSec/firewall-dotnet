@@ -67,11 +67,24 @@ namespace Aikido.Zen.Test
         {
             // Arrange
             string route = "/api/data";
-            string ipAddress = "192.168.1.1";
-            string expectedMessage = $"Request blocked from {ipAddress} to {route}";
+            string expectedMessage = $"Request blocked: {route}";
 
             // Act
-            var exception = AikidoException.RequestBlocked(route, ipAddress);
+            var exception = AikidoException.RequestBlocked(route);
+
+            // Assert
+            Assert.That(exception.Message, Is.EqualTo(expectedMessage));
+        }
+
+        [Test]
+        public void Ratelimited_ShouldReturnCorrectMessage()
+        {
+            // Arrange
+            string route = "/api/data";
+            string expectedMessage = $"Ratelimited: {route}";
+
+            // Act
+            var exception = AikidoException.RateLimited(route);
 
             // Assert
             Assert.That(exception.Message, Is.EqualTo(expectedMessage));

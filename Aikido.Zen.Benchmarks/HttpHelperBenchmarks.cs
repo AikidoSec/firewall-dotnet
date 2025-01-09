@@ -1,4 +1,3 @@
-using System.Net;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Jobs;
 using Aikido.Zen.Core.Helpers;
@@ -12,8 +11,8 @@ using BenchmarkDotNet.Columns;
 
 namespace Aikido.Zen.Benchmarks
 {
-    [SimpleJob(RuntimeMoniker.Net48, baseline: false, warmupCount: 1, iterationCount: 5)]
-    [SimpleJob(RuntimeMoniker.Net80, baseline: true, warmupCount: 1, iterationCount: 5)]
+    [SimpleJob(RuntimeMoniker.Net48, baseline: false, warmupCount: 1, iterationCount: 2)]
+    [SimpleJob(RuntimeMoniker.Net80, baseline: true, warmupCount: 1, iterationCount: 2)]
     [HideColumns(Column.StdErr, Column.StdDev, Column.Error, Column.Min, Column.Max, Column.RatioSD)]
     public class HttpHelperBenchmarks
     {

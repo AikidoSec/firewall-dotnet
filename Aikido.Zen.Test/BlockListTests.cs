@@ -50,17 +50,26 @@ namespace Aikido.Zen.Test
         public void UpdateAllowedSubnets_ShouldUpdateAllowedSubnetsPerUrl()
         {
             // Arrange
-            var subnet1 = IPAddressRange.Parse("192.168.1.0/24");
-            var subnet2 = IPAddressRange.Parse("10.0.0.0/8");
-            var allowedSubnets = new Dictionary<string, IEnumerable<IPAddressRange>>
-            {
-                { "GET|url1", new[] { subnet1 } },
-                { "POST|url2", new[] { subnet2 } },
-                { "POST|url1", new [] { subnet2 } },
+            var endpoints = new List<EndpointConfig> {
+                new EndpointConfig {
+                    Method = "GET",
+                    Route = "url1",
+                    AllowedIPAddresses = new[] { "192.168.1.0/24" }
+                },
+                new EndpointConfig {
+                    Method = "POST", 
+                    Route = "url2",
+                    AllowedIPAddresses = new[] { "10.0.0.0/8" }
+                },
+                new EndpointConfig {
+                    Method = "POST",
+                    Route = "url1", 
+                    AllowedIPAddresses = new[] { "10.0.0.0/8" }
+                }
             };
 
             // Act
-            _blockList.UpdateAllowedSubnets(allowedSubnets);
+            _blockList.UpdateAllowedSubnets(endpoints);
 
             // Assert
             Assert.IsTrue(_blockList.IsIPAllowed("192.168.1.100", "GET|url1"));
@@ -71,17 +80,20 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void UpdateAllowedSubnets_WithEmptyDictionary_ShouldClearAllowedSubnets()
+        public void UpdateAllowedSubnets_WithEmptyList_ShouldClearAllowedSubnets()
         {
             // Arrange
-            var subnet = IPAddressRange.Parse("192.168.1.0/24");
-            _blockList.UpdateAllowedSubnets(new Dictionary<string, IEnumerable<IPAddressRange>>
-            {
-                { "GET|url1", new[] { subnet } }
-            });
+            var endpoints = new List<EndpointConfig> {
+                new EndpointConfig {
+                    Method = "GET",
+                    Route = "url1",
+                    AllowedIPAddresses = new[] { "192.168.1.0/24" }
+                }
+            };
+            _blockList.UpdateAllowedSubnets(endpoints);
 
             // Act
-            _blockList.UpdateAllowedSubnets(new Dictionary<string, IEnumerable<IPAddressRange>>());
+            _blockList.UpdateAllowedSubnets(new List<EndpointConfig>());
 
             // Assert
             Assert.IsTrue(_blockList.IsIPAllowed("192.168.1.100", "GET|url1")); // Should allow when no restrictions
@@ -125,17 +137,38 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void IsIPAllowed_WithEmptyAllowedIpAddresses_ShouldAllowIP()
+        {
+            // Arrange
+            var endpoints = new List<EndpointConfig> {
+                new EndpointConfig {
+                    Method = "GET", 
+                    Route = "testUrl",
+                    AllowedIPAddresses = new string[] { } // Empty allowed IPs
+                }
+            };
+            _blockList.UpdateAllowedSubnets(endpoints);
+
+            // Act & Assert
+            Assert.IsTrue(_blockList.IsIPAllowed("192.168.1.100", "GET|testUrl")); // Should allow when no IP restrictions
+        }
+
+        [Test]
         public void IsIPAllowed_WithInvalidIP_ShouldReturnTrue()
         {
             // Arrange
             var subnet = IPAddressRange.Parse("192.168.1.0/24");
-            _blockList.UpdateAllowedSubnets(new Dictionary<string, IEnumerable<IPAddressRange>>
-            {
-                { "GET|url1", new[] { subnet } }
-            });
+            var endpoints = new List<EndpointConfig> {
+                new EndpointConfig {
+                    Method = "GET",
+                    Route = "testUrl",
+                    AllowedIPAddresses = new[] { "192.168.1.0/24" }
+                }
+            };
+            _blockList.UpdateAllowedSubnets(endpoints);
 
             // Act & Assert
-            Assert.IsTrue(_blockList.IsIPAllowed("invalid.ip", "GET|url1"));
+            Assert.IsTrue(_blockList.IsIPAllowed("invalid.ip", "GET|testUrl"));
         }
 
         [Test]
@@ -143,13 +176,17 @@ namespace Aikido.Zen.Test
         {
             // Arrange
             var ip = "192.168.1.100";
-            var url = "GET|testurl";
+            var url = "GET|testUrl";
+            var endpoints = new List<EndpointConfig> {
+                new EndpointConfig {
+                    Method = "GET",
+                    Route = "testUrl",
+                    AllowedIPAddresses = new[] { "10.0.0.0/8" }
+                }
+            };
 
             _blockList.AddIpAddressToBlocklist("192.168.1.101");
-            _blockList.UpdateAllowedSubnets(new Dictionary<string, IEnumerable<IPAddressRange>>
-            {
-                { url, new[] { IPAddressRange.Parse("10.0.0.0/8") } }
-            });
+            _blockList.UpdateAllowedSubnets(endpoints);
 
             // Act & Assert
             Assert.IsTrue(_blockList.IsBlocked("192.168.1.101", url)); // Blocked IP
