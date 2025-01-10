@@ -139,7 +139,7 @@ public abstract class BaseAppTests
         _ = dbType switch
         {
             "sqlite" => containerEnvVars["ConnectionStrings__Sqlite"] = ":memory:",
-            "sqlserver" => containerEnvVars["ConnectionStrings__DefaultConnection"] = $"Server=sql-server-test-server,1433;Database=test;User=sa;Password=Strong@Password123!;TrustServerCertificate=true",
+            "sqlserver" => containerEnvVars["ConnectionStrings__DefaultConnection"] = $"Server=sql-server-test-server,1433;Database=master;User=sa;Password=Strong@Password123!;TrustServerCertificate=true",
             "mongodb" => containerEnvVars["ConnectionStrings__MongoDB"] = $"mongodb://root:password@mongodb-test-server:27017",
             "postgres" => containerEnvVars["ConnectionStrings__PostgresConnection"] = $"Host=postgres-test-server;Port=5432;Database=main_db;Username=root;Password=password",
             "mysql" => containerEnvVars["ConnectionStrings__MySqlConnection"] = "Server=mysql-test-server;Port=3306;Database=catsdb;User=root;Password=mypassword;Allow User Variables=true",

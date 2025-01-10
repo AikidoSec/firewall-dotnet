@@ -42,6 +42,34 @@
         "isInjection": true
     },
     {
+        "command": "INSERT INTO Pets (Name) VALUES ('Malicious Pet'), ('Gru from the Minions'); -- '",
+        "dialect": 0,
+        "userInput": "Malicious Pet', 'Gru from the Minions'); -- ",
+        "description": "ATTACK: Generic SQL injection with multiple values",
+        "isInjection": true
+    },
+    {
+        "command": "INSERT INTO dbo.Pets (Name) VALUES ('Malicious Pet'), ('Gru from the Minions'); -- '",
+        "dialect": 7,
+        "userInput": "Malicious Pet', 'Gru from the Minions'); -- ",
+        "description": "ATTACK: Microsoft SQL injection with multiple values",
+        "isInjection": true
+    },
+    {
+        "command": "INSERT INTO Pets (Name) VALUES ('Malicious Pet'), ('Gru from the Minions'); -- '",
+        "dialect": 8,
+        "userInput": "Malicious Pet', 'Gru from the Minions'); -- ",
+        "description": "ATTACK: MySQL injection with multiple values",
+        "isInjection": true
+    },
+    {
+        "command": "INSERT INTO Pets (Name) VALUES ('Malicious Pet'), ('Gru from the Minions'); -- '",
+        "dialect": 9,
+        "userInput": "Malicious Pet', 'Gru from the Minions'); -- ",
+        "description": "ATTACK: PostgreSQL injection with multiple values",
+        "isInjection": true
+    },
+    {
         "command": "SELECT * FROM users WHERE id = 'users\\\\'",
         "dialect": 0,
         "userInput": "users\\\\",

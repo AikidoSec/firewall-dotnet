@@ -8,8 +8,9 @@ namespace Aikido.Zen.DotNetCore
     {
 
         private static IServiceProvider _serviceProvider;
+        private static IHttpContextAccessor _httpContextAccessor;
 
-        public static void Initialize(IServiceProvider serviceProvider)
+        public static void Initialize(IServiceProvider serviceProvider, IHttpContextAccessor httpContextAccessor)
         {
             _serviceProvider = serviceProvider;
         }
@@ -22,12 +23,12 @@ namespace Aikido.Zen.DotNetCore
 
         public static Context GetContext()
         {
-            if (_serviceProvider == null)
+            if (_serviceProvider != null)
             {
-                return null;
+                var contextAccessor = _serviceProvider.GetService(typeof(ContextAccessor)) as ContextAccessor;
+                return contextAccessor?.CurrentContext;
             }
-            var contextAccessor = _serviceProvider.GetService(typeof(ContextAccessor)) as ContextAccessor;
-            return contextAccessor?.CurrentContext;
+            return _httpContextAccessor?.HttpContext?.Items["Aikido.Zen.Context"] as Context;
         }
 
         public static User GetUser()

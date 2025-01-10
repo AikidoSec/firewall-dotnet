@@ -1,6 +1,5 @@
 using Aikido.Zen.Core.Helpers;
 using HarmonyLib;
-using Microsoft.Data.SqlClient;
 using Microsoft.Data.Sqlite;
 using MySql.Data.MySqlClient;
 using System.Data.Common;
@@ -23,9 +22,9 @@ namespace Aikido.Zen.DotNetCore.Patches
             PatchMethod(harmony, typeof(DbCommand), "ExecuteScalarAsync");
 
             // SQL Server
-            PatchMethod(harmony, typeof(SqlCommand), "ExecuteNonQuery");
-            PatchMethod(harmony, typeof(SqlCommand), "ExecuteScalar");
-            PatchMethod(harmony, typeof(SqlCommand), "ExecuteReader", typeof(System.Data.CommandBehavior));
+            PatchMethod(harmony, typeof(Microsoft.Data.SqlClient.SqlCommand), "ExecuteNonQuery");
+            PatchMethod(harmony, typeof(Microsoft.Data.SqlClient.SqlCommand), "ExecuteScalar");
+            PatchMethod(harmony, typeof(Microsoft.Data.SqlClient.SqlCommand), "ExecuteReader", typeof(System.Data.CommandBehavior));
             PatchMethod(harmony, typeof(System.Data.SqlClient.SqlCommand), "ExecuteNonQuery");
             PatchMethod(harmony, typeof(System.Data.SqlClient.SqlCommand), "ExecuteScalar");
             PatchMethod(harmony, typeof(System.Data.SqlClient.SqlCommand), "ExecuteReader", typeof(System.Data.CommandBehavior));

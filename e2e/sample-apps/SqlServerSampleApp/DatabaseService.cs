@@ -74,7 +74,7 @@ namespace SqlServerSampleApp
                 using (var conn = CreateDataConn())
                 {
                     conn.Open();
-                    using (var cmd = new SqlCommand($"SELECT * FROM pets WHERE pet_id=" + id, conn))
+                    using (var cmd = new SqlCommand($"SELECT * FROM dbo.pets WHERE pet_id={id}", conn))
                     {
                         using (var reader = cmd.ExecuteReader())
                         {
@@ -103,7 +103,7 @@ namespace SqlServerSampleApp
         /// <returns>The number of rows affected</returns>
         public static int CreatePetByName(string petName)
         {
-            string sql = "INSERT INTO pets (pet_name, owner) VALUES ('" + petName + "', 'Aikido Security')";
+            string sql = $"INSERT INTO dbo.pets (pet_name, owner) VALUES ('{petName}', 'Aikido Security')";
             try
             {
                 using (var conn = CreateDataConn())
@@ -127,35 +127,31 @@ namespace SqlServerSampleApp
         /// </summary>
         public static async Task EnsureDatabaseSetupAsync()
         {
-            // First create database if it doesn't exist - need to connect to master
-            var masterConnection = new SqlConnection(
-                "Server=localhost,27014;Database=master;User Id=sa;Password=Strong@Password123!;TrustServerCertificate=True;");
-
-            await masterConnection.OpenAsync();
-            var createDbCommand = new SqlCommand(
-                @"IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'test')
-                CREATE DATABASE test;", masterConnection);
-            await createDbCommand.ExecuteNonQueryAsync();
-            await masterConnection.CloseAsync();
-
-            // Now handle the table in the test database
             using var connection = CreateDataConn();
             await connection.OpenAsync();
-            // Create the Pets database and table if they don't exist
-            var createPetsDbCommand = new SqlCommand(
-                @"IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'pets')
-                CREATE DATABASE pets;", connection);
-            await createPetsDbCommand.ExecuteNonQueryAsync();
 
-            var setupPetsTableCommand = new SqlCommand(
-                @"USE pets;
-                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'pets')
-                CREATE TABLE pets (
-                    pet_id INT IDENTITY(1,1) PRIMARY KEY,
-                    pet_name NVARCHAR(100) NOT NULL,
-                    owner NVARCHAR(100) NOT NULL
-                );", connection);
-            await setupPetsTableCommand.ExecuteNonQueryAsync();
+            // Create database if it doesn't exist
+            var createDbCommand = new SqlCommand(
+                @"IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'test')
+                BEGIN
+                    CREATE DATABASE test;
+                END", connection);
+            await createDbCommand.ExecuteNonQueryAsync();
+
+            // Switch to test database
+            await connection.ChangeDatabaseAsync("test");
+
+            // Create table if it doesn't exist
+            var setupTableCommand = new SqlCommand(
+                @"IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'pets' AND schema_id = SCHEMA_ID('dbo'))
+                BEGIN
+                    CREATE TABLE pets (
+                        pet_id INT IDENTITY(1,1) PRIMARY KEY,
+                        pet_name NVARCHAR(100) NOT NULL,
+                        owner NVARCHAR(100) NOT NULL
+                    );
+                END", connection);
+            await setupTableCommand.ExecuteNonQueryAsync();
         }
     }
 

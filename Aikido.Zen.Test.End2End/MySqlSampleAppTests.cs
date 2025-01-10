@@ -37,6 +37,7 @@ public class MySqlSampleAppTests : BaseAppTests
         var safeResponse = await Client.PostAsync("/api/pets/create", safePayload);
         var body = await safeResponse.Content.ReadAsStringAsync();
         var unsafeResponse = await Client.PostAsync("/api/pets/create", unsafePayload);
+        var unsafeBody = await unsafeResponse.Content.ReadAsStringAsync();
 
         // Assert
         Assert.That(safeResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));

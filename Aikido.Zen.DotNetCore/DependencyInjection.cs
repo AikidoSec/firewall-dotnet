@@ -59,7 +59,8 @@ namespace Aikido.Zen.DotNetCore
             {
                 return app;
             }
-            Zen.Initialize(app.ApplicationServices);
+            var contextAccessor = app.ApplicationServices.GetRequiredService<IHttpContextAccessor>();
+            Zen.Initialize(app.ApplicationServices, contextAccessor);
             var options = app.ApplicationServices.GetRequiredService<IOptions<AikidoOptions>>();
             if (options?.Value?.AikidoToken != null)
             {
