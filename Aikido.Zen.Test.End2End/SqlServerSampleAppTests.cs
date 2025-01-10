@@ -9,13 +9,13 @@ public class SqlServerSampleAppTests : BaseAppTests
 {
     protected override string ProjectDirectory => "e2e/sample-apps/SqlServerSampleApp";
 
-    [SetUp]
+    [OneTimeSetUp]
     public async Task InitializeAsync()
     {
         await base.InitializeAsync();
     }
 
-    [TearDown]
+    [OneTimeTearDown]
     public async Task DisposeAsync()
     {
         await base.DisposeAsync();

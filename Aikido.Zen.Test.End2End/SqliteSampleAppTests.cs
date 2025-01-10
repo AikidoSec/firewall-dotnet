@@ -9,13 +9,13 @@ public class SqliteSampleAppTests : BaseAppTests
 {
     protected override string ProjectDirectory => "e2e/sample-apps/SQLiteSampleApp";
 
-    [SetUp]
+    [OneTimeSetUp]
     public async Task InitializeAsync()
     {
         await base.InitializeAsync();
     }
 
-    [TearDown]
+    [OneTimeTearDown]
     public async Task DisposeAsync()
     {
         await base.DisposeAsync();

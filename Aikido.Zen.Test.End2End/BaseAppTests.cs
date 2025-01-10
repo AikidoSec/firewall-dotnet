@@ -139,9 +139,9 @@ public abstract class BaseAppTests
         _ = dbType switch
         {
             "sqlite" => containerEnvVars["ConnectionStrings__Sqlite"] = ":memory:",
-            "sqlserver" => containerEnvVars["ConnectionStrings__Default"] = $"Server=localhost,1433;Database=test;User=sa;Password=Strong@Password123!;TrustServerCertificate=true",
-            "mongodb" => containerEnvVars["ConnectionStrings__MongoDB"] = $"mongodb://root:password@localhost:27017",
-            "postgres" => containerEnvVars["ConnectionStrings__PostgresConnection"] = $"Host=localhost;Port=5432;Database=main_db;Username=root;Password=password",
+            "sqlserver" => containerEnvVars["ConnectionStrings__DefaultConnection"] = $"Server=sql-server-test-server,1433;Database=test;User=sa;Password=Strong@Password123!;TrustServerCertificate=true",
+            "mongodb" => containerEnvVars["ConnectionStrings__MongoDB"] = $"mongodb://root:password@mongodb-test-server:27017",
+            "postgres" => containerEnvVars["ConnectionStrings__PostgresConnection"] = $"Host=postgres-test-server;Port=5432;Database=main_db;Username=root;Password=password",
             "mysql" => containerEnvVars["ConnectionStrings__MySqlConnection"] = "Server=mysql-test-server;Port=3306;Database=catsdb;User=root;Password=mypassword;Allow User Variables=true",
             _ => ""
         };
@@ -160,7 +160,7 @@ public abstract class BaseAppTests
             .WithImage($"mcr.microsoft.com/dotnet/sdk:{dotnetVersion}")
             .WithBindMount(Path.GetFullPath("..\\..\\..\\..\\"), "/app")
             .WithWorkingDirectory("/app")
-            .WithCommand("dotnet", "run", "--project", ProjectDirectory, "--urls", $"http://+:{AppPort}")
+            .WithCommand("dotnet", "run", "--project", ProjectDirectory, "--urls", $"http://+:{AppPort}", "--framework", $"net{dotnetVersion}")
             .WithExposedPort(AppPort)
             .WithPortBinding(AppPort, true)
             .WithEnvironment(containerEnvVars)

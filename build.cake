@@ -1,6 +1,4 @@
 #addin nuget:?package=Cake.FileHelpers&version=6.0.0
-#addin nuget:?package=Cake.Docker&version=1.3.0
-#addin nuget:?package=Cake.Docker&version=1.3.0
 
 
 var target = Argument("target", "Default");
@@ -117,12 +115,6 @@ Task("Test")
         var coverageDir = MakeAbsolute(Directory("./coverage"));
         EnsureDirectoryExists(coverageDir);
 
-        // Use docker compose command directly instead of the Cake.Docker addin
-        StartProcess("docker", new ProcessSettings
-        {
-            Arguments = "compose -f ./sample-apps/docker-compose.yaml up -d"
-        });
-
         // Get test projects from both Aikido.Zen.Test and Aikido.Zen.Test.End2End directories
         var testProjects = GetFiles("./Aikido.Zen.Test/*.csproj") as IEnumerable<FilePath>;
         // concat the e2e tests if the environment framework is core
@@ -153,12 +145,6 @@ Task("Test")
         {
             Warning("Coverage file was not generated!");
         }
-
-        // Stop containers using direct command
-        StartProcess("docker", new ProcessSettings
-        {
-            Arguments = "compose -f ./sample-apps/docker-compose.yaml down"
-        });
     });
 
 Task("Pack")

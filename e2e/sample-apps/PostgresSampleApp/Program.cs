@@ -10,13 +10,23 @@ builder.Services.AddZenFireWall();
 
 // Add Postgres connection
 var connectionString = builder.Configuration.GetConnectionString("PostgresConnection");
+if (string.IsNullOrEmpty(connectionString))
+{
+    throw new InvalidOperationException("Postgres connection string not found in configuration");
+}
 DatabaseService.ConnectionString = connectionString;
+builder.Logging.AddConsole();
 
 var app = builder.Build();
+
+app.Logger.LogInformation("Starting application");
 
 app.UseDeveloperExceptionPage();
 app.UseZenFireWall();
 app.UseHttpsRedirection();
+
+// log the connection string
+app.Logger.LogInformation($"Connection string: {connectionString}");
 
 // Pets endpoints
 app.MapGet("/api/pets", async () =>
@@ -63,7 +73,19 @@ app.MapGet("/health", async () =>
 
 app.Lifetime.ApplicationStarted.Register(async () =>
 {
-    await DatabaseService.EnsureDatabaseSetupAsync();
+    try
+    {
+        app.Logger.LogInformation("Initializing database connection...");
+        await DatabaseService.EnsureDatabaseSetupAsync();
+        app.Logger.LogInformation("Database connection established successfully");
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogError(ex, "Failed to initialize database connection");
+        app.Logger.LogError($"Connection string: {connectionString}");
+        // Optionally terminate the application
+        Environment.Exit(1);
+    }
 });
 
 app.Run();

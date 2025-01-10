@@ -9,13 +9,13 @@ public class PostgresSampleAppTests : BaseAppTests
 {
     protected override string ProjectDirectory => "e2e/sample-apps/PostgresSampleApp";
 
-    [SetUp]
+    [OneTimeSetUp]
     public async Task InitializeAsync()
     {
         await base.InitializeAsync();
     }
 
-    [TearDown]
+    [OneTimeTearDown]
     public async Task DisposeAsync()
     {
         await base.DisposeAsync();
