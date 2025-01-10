@@ -7,47 +7,36 @@ namespace Aikido.Zen.Test.End2End;
 
 public class PostgresSampleAppTests : BaseAppTests
 {
-    private const string ProjectDirectory = "e2e/sample-apps/PostgresSampleApp";
-    private readonly Dictionary<string, string> _environmentVariables = new Dictionary<string, string>
-    {
-    };
+    protected override string ProjectDirectory => "e2e/sample-apps/PostgresSampleApp";
 
-    [SetUp]
-    public override async Task Setup()
+    [OneTimeSetUp]
+    public async Task InitializeAsync()
     {
-        await base.Setup();
-        await EnsureDatabaseContainersAreUp();
+        await base.InitializeAsync();
     }
 
-    [TearDown]
-    public override async Task TearDown()
+    [OneTimeTearDown]
+    public async Task DisposeAsync()
     {
-        await base.TearDown();
+        await base.DisposeAsync();
     }
 
     [Test]
     [CancelAfter(30000)]
     public async Task TestWithZen()
     {
-        _environmentVariables["AIKIDO_BLOCKING"] = "true";
-        await StartSampleApp(ProjectDirectory, _environmentVariables);
+        await StartSampleApp(new Dictionary<string, string>
+        {
+            ["AIKIDO_BLOCKING"] = "true"
+        }, "postgres");
 
-        var safePayload = new StringContent(
-            JsonSerializer.Serialize(new { Name = "Bobby" }),
-            Encoding.UTF8,
-            "application/json"
-        );
-
-        var unsafePayload = new StringContent(
-            JsonSerializer.Serialize(new { Name = "Malicious Pet', 'Gru from the Minions'); -- " }),
-            Encoding.UTF8,
-            "application/json"
-        );
+        var safePayload = CreateJsonContent(new { Name = "Bobby" });
+        var unsafePayload = CreateJsonContent(new { Name = "Malicious Pet', 'Gru from the Minions'); -- " });
 
         // Act
-        var safeResponse = await _client.PostAsync($"http://localhost:{SampleAppPort}/api/pets/create", safePayload);
+        var safeResponse = await Client.PostAsync("/api/pets/create", safePayload);
         var body = await safeResponse.Content.ReadAsStringAsync();
-        var unsafeResponse = await _client.PostAsync($"http://localhost:{SampleAppPort}/api/pets/create", unsafePayload);
+        var unsafeResponse = await Client.PostAsync("/api/pets/create", unsafePayload);
 
         // Assert
         Assert.That(safeResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
@@ -58,25 +47,18 @@ public class PostgresSampleAppTests : BaseAppTests
     [CancelAfter(30000)]
     public async Task TestWithoutZen()
     {
-        _environmentVariables["AIKIDO_BLOCKING"] = "false";
-        await StartSampleApp(ProjectDirectory, _environmentVariables);
+        await StartSampleApp(new Dictionary<string, string>
+        {
+            ["AIKIDO_BLOCKING"] = "false"
+        }, "postgres");
 
-        var safePayload = new StringContent(
-            JsonSerializer.Serialize(new { Name = "Bobby" }),
-            Encoding.UTF8,
-            "application/json"
-        );
-
-        var unsafePayload = new StringContent(
-            JsonSerializer.Serialize(new { Name = "Malicious Pet', 'Gru from the Minions'); -- " }),
-            Encoding.UTF8,
-            "application/json"
-        );
+        var safePayload = CreateJsonContent(new { Name = "Bobby" });
+        var unsafePayload = CreateJsonContent(new { Name = "Malicious Pet', 'Gru from the Minions'); -- " });
 
         // Act
-        var safeResponse = await _client.PostAsync($"http://localhost:{SampleAppPort}/api/pets/create", safePayload);
+        var safeResponse = await Client.PostAsync("/api/pets/create", safePayload);
         var body = await safeResponse.Content.ReadAsStringAsync();
-        var unsafeResponse = await _client.PostAsync($"http://localhost:{SampleAppPort}/api/pets/create", unsafePayload);
+        var unsafeResponse = await Client.PostAsync("/api/pets/create", unsafePayload);
 
         // Assert
         Assert.That(safeResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));

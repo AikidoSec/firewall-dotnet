@@ -24,7 +24,7 @@ namespace Aikido.Zen.Core.Patches
             try
             {
                 var method = AccessTools.Method(type, methodName);
-                if (method != null)
+                if (method != null && !method.IsAbstract)
                 {
                     harmony.Patch(method, new HarmonyMethod(typeof(WebRequestPatches).GetMethod(nameof(CaptureRequest), BindingFlags.Static | BindingFlags.NonPublic)));
                 }

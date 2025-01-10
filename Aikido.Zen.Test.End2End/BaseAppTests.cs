@@ -1,177 +1,219 @@
 using System.Diagnostics;
 using System.Net.Http.Json;
+using System.Text;
+using System.Text.Json;
+using Docker.DotNet.Models;
+using DotNet.Testcontainers.Builders;
+using DotNet.Testcontainers.Containers;
+using DotNet.Testcontainers.Networks;
 using NUnit.Framework;
 using Polly;
 
 namespace Aikido.Zen.Test.End2End;
 
+/// <summary>
+/// Base class for end-to-end tests that require containerized database and application services
+/// </summary>
 public abstract class BaseAppTests
 {
-    protected readonly HttpClient _client = new() { Timeout = TimeSpan.FromSeconds(30) };
-    private const int MockServerPort = 5001;
-    protected const int SampleAppPort = 5002;
-    private readonly string _currentDirectory = Directory.GetCurrentDirectory();
-    private string _root => Path.GetFullPath(Path.Combine(_currentDirectory, "..\\..\\..\\..\\"));
-    private List<Process> _processes = new();
+    protected readonly HttpClient Client = new();
+    protected IContainer? AppContainer;
+    protected IContainer? MockServerContainer;
+    private readonly List<IContainer> _dbContainers = new();
+    private const int MockServerPort = 5003;
+    private const int AppPort = 5002;
+    private const string NetworkName = "test-network";
+    private readonly INetwork Network;
 
-    protected async Task<Process> StartMockServer()
+    protected abstract string ProjectDirectory { get; }
+    protected virtual Dictionary<string, string> DefaultEnvironmentVariables => new()
     {
-        // Start the Mock Server project directly using dotnet run
-        var startInfo = new ProcessStartInfo
-        {
-            FileName = "dotnet",
-            Arguments = $"run --project e2e/Aikido.Zen.Server.Mock --urls http://localhost:{MockServerPort}",
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            CreateNoWindow = true,
-            WorkingDirectory = _root,
-        };
+        ["ASPNETCORE_ENVIRONMENT"] = "Development",
+        ["DOTNET_ENVIRONMENT"] = "Development",
+        ["AIKIDO_DISABLED"] = "false",
+        ["AIKIDO_DEBUG"] = "true",
+        ["AIKIDO_BLOCKING"] = "true",
+        ["AIKIDO_REALTIME_URL"] = $"http://localhost:{MockServerPort}",
+        ["AIKIDO_URL"] = $"http://localhost:{MockServerPort}",
+        ["AIKIDO_TOKEN"] = "test",
+        ["ASPNETCORE_URLS"] = $"http://+:{AppPort}"
+    };
 
-        var process = Process.Start(startInfo);
-        _processes.Add(process);
-        await WaitForServiceToBeReady(MockServerPort);
-        return process;
+    protected BaseAppTests()
+    {
+        // Create network first
+        Network = new NetworkBuilder()
+            .WithName(NetworkName)
+            .Build();
+        Network.CreateAsync().Wait();
+        InitializeDatabaseContainers();
     }
 
-    protected async Task<Process> StartSampleApp(string projectDirectory, Dictionary<string, string>? envVars = null)
+    private void InitializeDatabaseContainers()
     {
 
-        // Set environment variables in the process
-        if (!envVars.ContainsKey("AIKIDO_DISABLED"))
-            envVars["AIKIDO_DISABLED"] = "false";
-        if (!envVars.ContainsKey("AIKIDO_DEBUG"))
-            envVars["AIKIDO_DEBUG"] = "true";
-        if (!envVars.ContainsKey("AIKIDO_BLOCKING"))
-            envVars["AIKIDO_BLOCKING"] = "true";
-        if (!envVars.ContainsKey("AIKIDO_REALTIME_URL"))
-            envVars["AIKIDO_REALTIME_URL"] = $"http://localhost:{MockServerPort}";
-        if (!envVars.ContainsKey("AIKIDO_URL"))
-            envVars["AIKIDO_URL"] = $"http://localhost:{MockServerPort}";
-        if (!envVars.ContainsKey("AIKIDO_TOKEN"))
-            envVars["AIKIDO_TOKEN"] = "test";
 
-        var startInfo = new ProcessStartInfo
+        // SQL Server
+        var sqlServer = new ContainerBuilder()
+            .WithNetwork(Network)
+            .WithImage("mcr.microsoft.com/mssql/server:2022-latest")
+            .WithEnvironment("ACCEPT_EULA", "Y")
+            .WithEnvironment("SA_PASSWORD", "Strong@Password123!")
+            .WithEnvironment("MSSQL_PID", "Express")
+            .WithExposedPort(1433)
+            .WithPortBinding(1433, true)
+            .WithWaitStrategy(Wait.ForUnixContainer()
+                .UntilPortIsAvailable(1433))
+            .WithName("sql-server-test-server")
+            .Build();
+        _dbContainers.Add(sqlServer);
+
+        // MongoDB
+        var mongodb = new ContainerBuilder()
+            .WithNetwork(Network)
+            .WithImage("mongo:5")
+            .WithEnvironment("MONGO_INITDB_ROOT_USERNAME", "root")
+            .WithEnvironment("MONGO_INITDB_ROOT_PASSWORD", "password")
+            .WithExposedPort(27017)
+            .WithPortBinding(27017, true)
+            .WithWaitStrategy(Wait.ForUnixContainer()
+                .UntilPortIsAvailable(27017))
+            .WithName("mongodb-test-server")
+            .Build();
+        _dbContainers.Add(mongodb);
+
+        // PostgreSQL
+        var postgres = new ContainerBuilder()
+            .WithNetwork(Network)
+            .WithImage("postgres:14-alpine")
+            .WithEnvironment("POSTGRES_PASSWORD", "password")
+            .WithEnvironment("POSTGRES_USER", "root")
+            .WithEnvironment("POSTGRES_DB", "main_db")
+            .WithExposedPort(5432)
+            .WithPortBinding(5432, true)
+            .WithWaitStrategy(Wait.ForUnixContainer()
+                .UntilPortIsAvailable(5432))
+            .WithName("postgres-test-server")
+            .Build();
+        _dbContainers.Add(postgres);
+
+        // MySQL
+        var mysql = new ContainerBuilder()
+            .WithNetwork(Network)
+            .WithImage("mysql:8.0")
+            .WithEnvironment("MYSQL_ROOT_PASSWORD", "mypassword")
+            .WithEnvironment("MYSQL_DATABASE", "catsdb")
+            .WithCommand("--default-authentication-plugin=mysql_native_password")
+            .WithExposedPort(3306)
+            .WithPortBinding(3306, true)
+            .WithWaitStrategy(Wait.ForUnixContainer()
+                .UntilPortIsAvailable(3306))
+            .WithName("mysql-test-server")
+            .Build();
+        _dbContainers.Add(mysql);
+    }
+
+    protected async Task StartMockServer()
+    {
+        MockServerContainer = new ContainerBuilder()
+            .WithNetwork(Network)
+            .WithImage("mcr.microsoft.com/dotnet/sdk:8.0")
+            .WithBindMount(Path.GetFullPath("..\\..\\..\\..\\"), "/app")
+            .WithWorkingDirectory("/app")
+            .WithCommand("dotnet", "run", "--project", "e2e/Aikido.Zen.Server.Mock", "--urls", $"http://+:{MockServerPort}")
+            .WithExposedPort(MockServerPort)
+            .WithPortBinding(MockServerPort, true)
+            .WithWaitStrategy(Wait.ForUnixContainer()
+                .UntilHttpRequestIsSucceeded(r => r
+                    .ForPath("/health")
+                    .ForPort(MockServerPort)))
+            .WithName("mock-server")
+            .Build();
+
+        await MockServerContainer.StartAsync();
+    }
+
+    protected async Task StartSampleApp(Dictionary<string, string>? additionalEnvVars = null, string dbType = "sqlite", string dotnetVersion = "8.0")
+    {
+        // Get mapped ports for all services
+        var containerEnvVars = new Dictionary<string, string>(DefaultEnvironmentVariables);
+
+        _ = dbType switch
         {
-            FileName = "dotnet",
-            Arguments = $"run --project {projectDirectory} --urls http://localhost:{SampleAppPort} {string.Join(" ", envVars.Select(kv => $"{kv.Key}={kv.Value}"))}",
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            CreateNoWindow = true,
-            WorkingDirectory = _root,
+            "sqlite" => containerEnvVars["ConnectionStrings__Sqlite"] = ":memory:",
+            "sqlserver" => containerEnvVars["ConnectionStrings__Default"] = $"Server=localhost,1433;Database=test;User=sa;Password=Strong@Password123!;TrustServerCertificate=true",
+            "mongodb" => containerEnvVars["ConnectionStrings__MongoDB"] = $"mongodb://root:password@localhost:27017",
+            "postgres" => containerEnvVars["ConnectionStrings__PostgresConnection"] = $"Host=localhost;Port=5432;Database=main_db;Username=root;Password=password",
+            "mysql" => containerEnvVars["ConnectionStrings__MySqlConnection"] = "Server=mysql-test-server;Port=3306;Database=catsdb;User=root;Password=mypassword;Allow User Variables=true",
+            _ => ""
         };
 
-        if (envVars != null)
+        // Add additional environment variables
+        if (additionalEnvVars != null)
         {
-            foreach (var (key, value) in envVars)
+            foreach (var (key, value) in additionalEnvVars)
             {
-                startInfo.EnvironmentVariables[key] = value;
-                startInfo.Environment[key] = value;
+                containerEnvVars[key] = value;
             }
         }
 
-        var process = Process.Start(startInfo);
-        _processes.Add(process);
+        AppContainer = new ContainerBuilder()
+            .WithNetwork(Network)
+            .WithImage($"mcr.microsoft.com/dotnet/sdk:{dotnetVersion}")
+            .WithBindMount(Path.GetFullPath("..\\..\\..\\..\\"), "/app")
+            .WithWorkingDirectory("/app")
+            .WithCommand("dotnet", "run", "--project", ProjectDirectory, "--urls", $"http://+:{AppPort}")
+            .WithExposedPort(AppPort)
+            .WithPortBinding(AppPort, true)
+            .WithEnvironment(containerEnvVars)
+            .WithName($"sample-app-{dbType ?? "unknown"}")
+            .WithWaitStrategy(Wait.ForUnixContainer()
+                .UntilHttpRequestIsSucceeded(r => r
+                    .ForPath("/health")
+                    .ForPort(AppPort)
+                    ))
+            .Build();
 
-        await WaitForServiceToBeReady(SampleAppPort);
-        return process;
+        await AppContainer.StartAsync();
+
+        var mappedPort = AppContainer.GetMappedPublicPort(AppPort);
+        Client.BaseAddress = new Uri($"http://localhost:{mappedPort}");
     }
 
-    private async Task WaitForServiceToBeReady(int port)
+    public async Task InitializeAsync()
     {
-        var policy = Policy
-            .Handle<HttpRequestException>()
-            .WaitAndRetryAsync(30,
-                retryAttempt => TimeSpan.FromSeconds(2),
-                onRetry: (exception, timeSpan, retryCount, context) =>
-                {
-                    Console.WriteLine($"Attempt {retryCount}: Waiting for service to be ready...");
-                });
-
-        await policy.ExecuteAsync(async () =>
-        {
-            using var response = await _client.GetAsync($"http://localhost:{port}/health");
-            response.EnsureSuccessStatusCode();
-            var body = await response.Content.ReadAsStringAsync();
-            return response;
-        });
-    }
-
-    protected async Task EnsureDatabaseContainersAreUp()
-    {
-        // Check if docker-compose is running
-        var checkInfo = new ProcessStartInfo
-        {
-            FileName = "docker",
-            Arguments = "ps --filter name=sample-apps-sqlserver-1",
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            CreateNoWindow = true
-        };
-
-        var checkProcess = Process.Start(checkInfo);
-        _processes.Add(checkProcess);
-        var output = await checkProcess!.StandardOutput.ReadToEndAsync();
-        checkProcess.WaitForExit(1000 * 10);
-
-        // Start docker-compose if SQL Server is not running
-        if (!output.Contains("sample-apps-sqlserver-1"))
-        {
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = "docker", // Use docker compose v2 command
-                Arguments = "compose -f sample-apps/docker-compose.yaml up -d",
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                CreateNoWindow = true,
-                WorkingDirectory = _root
-            };
-
-            var process = Process.Start(startInfo);
-            _processes.Add(process);
-            process?.WaitForExit(1000 * 60);
-        }
-    }
-
-    protected async Task StopDatabaseContainers()
-    {
-        var stopInfo = new ProcessStartInfo
-        {
-            FileName = "docker",
-            Arguments = "compose -f sample-apps/docker-compose.yaml down",
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            CreateNoWindow = true
-        };
-
-        var process = Process.Start(stopInfo);
-        process?.WaitForExit();
-    }
-
-    public virtual async Task Setup()
-    {
+        // Start mock server first
         await StartMockServer();
+
+        // Start all database containers in parallel
+        await Task.WhenAll(_dbContainers.Select(c => c.StartAsync()));
     }
 
-    public virtual async Task TearDown()
+    public async Task DisposeAsync()
     {
-        // Clean up environment variables
-        Environment.SetEnvironmentVariable("AIKIDO_DEBUG", null);
-        Environment.SetEnvironmentVariable("AIKIDO_BLOCKING", null);
-        Environment.SetEnvironmentVariable("AIKIDO_REALTIME_URL", null);
-        Environment.SetEnvironmentVariable("AIKIDO_URL", null);
-        // kill all processes
-        foreach (var process in _processes)
-        {
-            if (!process.HasExited)
-            {
-                process.Kill();
-            }
-        }
-        // clear the process list
-        _processes.Clear();
+        if (AppContainer != null)
+            await AppContainer.DisposeAsync();
+
+        if (MockServerContainer != null)
+            await MockServerContainer.DisposeAsync();
+
+        // Dispose all database containers in parallel
+        await Task.WhenAll(_dbContainers.Select(c => c.DisposeAsync().AsTask()));
+
+        
+
+        Client.Dispose();
+
+        // Clean up network
+        await Network.DisposeAsync();
+    }
+
+    protected static StringContent CreateJsonContent(object data)
+    {
+        return new StringContent(
+            JsonSerializer.Serialize(data),
+            Encoding.UTF8,
+            "application/json"
+        );
     }
 }

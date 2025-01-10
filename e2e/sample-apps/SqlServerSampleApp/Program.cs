@@ -48,7 +48,7 @@ app.MapPost("/api/pets/create", async (HttpContext context) =>
 
     // Create a new pet in the database
     var rowsCreated = DatabaseService.CreatePetByName(petData.Name);
-    return Results.Ok(new { Rows = rowsCreated });
+    return Results.Ok(new { Rows = rowsCreated, Blocking = Environment.GetEnvironmentVariable("AIKIDO_BLOCKING"), Name = petData.Name });
 });
 
 

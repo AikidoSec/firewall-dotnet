@@ -16,6 +16,7 @@
     <PackageReference Include="NUnit.Analyzers" Version="4.0.1" />
     <PackageReference Include="coverlet.collector" Version="6.0.0" />
     <PackageReference Include="Polly" Version="8.2.1" />
+    <PackageReference Include="TestContainers" Version="4.1.0" />
   </ItemGroup>
 
   <ItemGroup>

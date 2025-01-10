@@ -9,17 +9,19 @@ namespace MySqlSampleApp
     {
         public static string ConnectionString;
 
+        /// <summary>
+        /// Creates and validates a new MySQL connection
+        /// </summary>
+        /// <returns>A validated MySQL connection</returns>
+        /// <exception cref="InvalidOperationException">Thrown when connection string is invalid or connection fails</exception>
         private static MySqlConnection CreateDataConn()
         {
-            try
+            if (string.IsNullOrEmpty(ConnectionString))
             {
-                return new MySqlConnection(ConnectionString);
+                throw new InvalidOperationException("Connection string not configured");
             }
-            catch (MySqlException e)
-            {
-                Console.WriteLine("Exception in CreateDataConn(): " + e);
-            }
-            return null;
+
+            return new MySqlConnection(ConnectionString);
         }
 
         public static List<Pet> GetAllPets()
@@ -104,15 +106,27 @@ namespace MySqlSampleApp
 
         public static async Task EnsureDatabaseSetupAsync()
         {
-            using var connection = CreateDataConn();
-            await connection.OpenAsync();
-            var setupPetsTableCommand = new MySqlCommand(
-                @"CREATE TABLE IF NOT EXISTS pets (
-                    pet_id INT AUTO_INCREMENT PRIMARY KEY,
-                    pet_name VARCHAR(100) NOT NULL,
-                    owner VARCHAR(100) NOT NULL
-                );", connection);
-            await setupPetsTableCommand.ExecuteNonQueryAsync();
+            try
+            {
+                using var connection = CreateDataConn();
+                await connection.OpenAsync();
+
+                // Verify connection is working
+                using var testCmd = new MySqlCommand("SELECT 1;", connection);
+                await testCmd.ExecuteScalarAsync();
+
+                var setupPetsTableCommand = new MySqlCommand(
+                    @"CREATE TABLE IF NOT EXISTS pets (
+                        pet_id INT AUTO_INCREMENT PRIMARY KEY,
+                        pet_name VARCHAR(100) NOT NULL,
+                        owner VARCHAR(100) NOT NULL
+                    );", connection);
+                await setupPetsTableCommand.ExecuteNonQueryAsync();
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Failed to initialize database: {ex.Message}", ex);
+            }
         }
     }
 
