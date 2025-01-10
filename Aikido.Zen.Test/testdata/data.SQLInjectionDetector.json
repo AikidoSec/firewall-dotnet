@@ -42,30 +42,30 @@
         "isInjection": true
     },
     {
-        "command": "INSERT INTO Pets (Name) VALUES ('Malicious Pet'), ('Gru from the Minions'); -- '",
+        "command": "INSERT INTO pets (pet_name, owner) VALUES ('Malicious Pet', 'Aikido Security'), ('Gru from the Minions', 'Evil Corp'); -- '",
         "dialect": 0,
-        "userInput": "Malicious Pet', 'Gru from the Minions'); -- ",
+        "userInput": "Malicious Pet', 'Aikido Security'), ('Gru from the Minions', 'Evil Corp'); -- ",
         "description": "ATTACK: Generic SQL injection with multiple values",
         "isInjection": true
     },
     {
-        "command": "INSERT INTO dbo.Pets (Name) VALUES ('Malicious Pet'), ('Gru from the Minions'); -- '",
+        "command": "INSERT INTO dbo.pets (pet_name, owner) VALUES ('Malicious Pet', 'Aikido Security'), ('Gru from the Minions', 'Evil Corp'); -- '",
         "dialect": 7,
-        "userInput": "Malicious Pet', 'Gru from the Minions'); -- ",
-        "description": "ATTACK: Microsoft SQL injection with multiple values",
+        "userInput": "Malicious Pet', 'Aikido Security'), ('Gru from the Minions', 'Evil Corp'); -- ",
+        "description": "ATTACK: Microsoft SQL injection with multiple values", 
         "isInjection": true
     },
     {
-        "command": "INSERT INTO Pets (Name) VALUES ('Malicious Pet'), ('Gru from the Minions'); -- '",
+        "command": "INSERT INTO pets (pet_name, owner) VALUES ('Malicious Pet', 'Aikido Security'), ('Gru from the Minions', 'Evil Corp'); -- '",
         "dialect": 8,
-        "userInput": "Malicious Pet', 'Gru from the Minions'); -- ",
+        "userInput": "Malicious Pet', 'Aikido Security'), ('Gru from the Minions', 'Evil Corp'); -- ",
         "description": "ATTACK: MySQL injection with multiple values",
         "isInjection": true
     },
     {
-        "command": "INSERT INTO Pets (Name) VALUES ('Malicious Pet'), ('Gru from the Minions'); -- '",
+        "command": "INSERT INTO pets (pet_name, owner) VALUES ('Malicious Pet', 'Aikido Security'), ('Gru from the Minions', 'Evil Corp'); -- '",
         "dialect": 9,
-        "userInput": "Malicious Pet', 'Gru from the Minions'); -- ",
+        "userInput": "Malicious Pet', 'Aikido Security'), ('Gru from the Minions', 'Evil Corp'); -- ",
         "description": "ATTACK: PostgreSQL injection with multiple values",
         "isInjection": true
     },
