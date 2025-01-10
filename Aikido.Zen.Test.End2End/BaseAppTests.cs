@@ -16,7 +16,7 @@ namespace Aikido.Zen.Test.End2End;
 /// </summary>
 public abstract class BaseAppTests
 {
-    protected readonly HttpClient Client = new();
+    protected HttpClient Client = new();
     protected IContainer? AppContainer;
     protected IContainer? MockServerContainer;
     private readonly List<IContainer> _dbContainers = new();
@@ -51,8 +51,6 @@ public abstract class BaseAppTests
 
     private void InitializeDatabaseContainers()
     {
-
-
         // SQL Server
         var sqlServer = new ContainerBuilder()
             .WithNetwork(Network)
@@ -177,6 +175,7 @@ public abstract class BaseAppTests
         await AppContainer.StartAsync();
 
         var mappedPort = AppContainer.GetMappedPublicPort(AppPort);
+        Client = new();
         Client.BaseAddress = new Uri($"http://localhost:{mappedPort}");
     }
 
@@ -200,7 +199,7 @@ public abstract class BaseAppTests
         // Dispose all database containers in parallel
         await Task.WhenAll(_dbContainers.Select(c => c.DisposeAsync().AsTask()));
 
-        
+
 
         Client.Dispose();
 

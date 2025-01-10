@@ -41,6 +41,8 @@ public class MySqlSampleAppTests : BaseAppTests
         // Assert
         Assert.That(safeResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
         Assert.That(unsafeResponse.StatusCode, Is.EqualTo(HttpStatusCode.InternalServerError));
+
+        await AppContainer!.DisposeAsync();
     }
 
     [Test]
@@ -63,5 +65,7 @@ public class MySqlSampleAppTests : BaseAppTests
         // Assert
         Assert.That(safeResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
         Assert.That(unsafeResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+
+        await AppContainer!.DisposeAsync();
     }
 }

@@ -9,13 +9,13 @@ public class SqlServerSampleAppTests : BaseAppTests
 {
     protected override string ProjectDirectory => "e2e/sample-apps/SqlServerSampleApp";
 
-    [OneTimeSetUp]
+    [SetUp]
     public async Task InitializeAsync()
     {
         await base.InitializeAsync();
     }
 
-    [OneTimeTearDown]
+    [TearDown]
     public async Task DisposeAsync()
     {
         await base.DisposeAsync();
@@ -42,6 +42,7 @@ public class SqlServerSampleAppTests : BaseAppTests
         // Assert
         Assert.That(safeResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
         Assert.That(unsafeResponse.StatusCode, Is.EqualTo(HttpStatusCode.InternalServerError));
+        await AppContainer!.DisposeAsync();
     }
 
     [Test]
@@ -64,5 +65,6 @@ public class SqlServerSampleAppTests : BaseAppTests
         // Assert
         Assert.That(safeResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
         Assert.That(unsafeResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        await AppContainer!.DisposeAsync();
     }
 }
