@@ -46,6 +46,7 @@ public abstract class BaseAppTests
     {
         // Create network first
         Network = new NetworkBuilder()
+            .WithDriver(NetworkDriver.Bridge)
             .WithName(NetworkName)
             .Build();
         Network.CreateAsync().Wait();
