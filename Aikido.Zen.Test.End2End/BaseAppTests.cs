@@ -44,9 +44,12 @@ public abstract class BaseAppTests
 
     protected BaseAppTests()
     {
-        // Create network first
+        // Determine if running on GitHub Actions
+        var isGitHubActions = Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true";
+
+        // Set network driver based on environment
         Network = new NetworkBuilder()
-            .WithCreateParameterModifier(parameter => parameter.Driver = "nat")
+            .WithCreateParameterModifier(parameter => parameter.Driver = isGitHubActions ? "nat" : "bridge")
             .WithName(NetworkName)
             .Build();
         Network.CreateAsync().Wait();
@@ -117,10 +120,15 @@ public abstract class BaseAppTests
 
     protected async Task StartMockServer()
     {
+        // Adjust mount path for GitHub Actions
+        var mountPath = Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true"
+            ? Environment.GetEnvironmentVariable("GITHUB_PATH") + "\\Aikido.Zen.Server.Mock"
+            : MountDirectory;
+
         MockServerContainer = new ContainerBuilder()
             .WithNetwork(Network)
             .WithImage("mcr.microsoft.com/dotnet/sdk:8.0")
-            .WithBindMount(MountDirectory, "/app")
+            .WithBindMount(mountPath, "/app")
             .WithWorkingDirectory("/app")
             .WithCommand("dotnet", "run", "--project", "e2e/Aikido.Zen.Server.Mock", "--urls", $"http://+:{MockServerPort}")
             .WithExposedPort(MockServerPort)
@@ -159,10 +167,15 @@ public abstract class BaseAppTests
             }
         }
 
+        // Adjust mount path for GitHub Actions
+        var mountPath = Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true"
+            ? Environment.GetEnvironmentVariable("GITHUB_PATH") + "\\Aikido.Zen.Server.Mock"
+            : MountDirectory;
+
         AppContainer = new ContainerBuilder()
             .WithNetwork(Network)
             .WithImage($"mcr.microsoft.com/dotnet/sdk:{dotnetVersion}")
-            .WithBindMount(MountDirectory, "/app")
+            .WithBindMount(mountPath, "/app")
             .WithWorkingDirectory("/app")
             .WithCommand("dotnet", "run", "--project", ProjectDirectory, "--urls", $"http://+:{AppPort}", "--framework", $"net{dotnetVersion}")
             .WithExposedPort(AppPort)
