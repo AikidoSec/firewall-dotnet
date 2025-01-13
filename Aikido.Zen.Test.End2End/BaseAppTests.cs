@@ -28,7 +28,9 @@ public abstract class BaseAppTests
 
     private bool IsGitHubActions => Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true";
 
-    private string MountDirectory => Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..", "..");
+    private string MountDirectory => IsGitHubActions
+    ? Environment.GetEnvironmentVariable("GITHUB_PATH")
+    : Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..", "..");
 
     protected abstract string ProjectDirectory { get; }
     protected virtual Dictionary<string, string> DefaultEnvironmentVariables => new()
@@ -119,6 +121,9 @@ public abstract class BaseAppTests
 
     protected async Task StartMockServer()
     {
+        var mountSource = IsGitHubActions
+        ? Path.Combine(MountDirectory, "\\Aikido.Zen.Server.Mock")
+        : MountDirectory;
         var mountDestination = IsGitHubActions ? "/app:z" : "/app";
 
         // Log information to ensure it is visible in GitHub Actions
@@ -132,8 +137,8 @@ public abstract class BaseAppTests
         MockServerContainer = new ContainerBuilder()
             .WithNetwork(Network)
             .WithImage("mcr.microsoft.com/dotnet/sdk:8.0")
-            .WithBindMount(MountDirectory, mountDestination)
-            .WithWorkingDirectory(Path.Combine(MountDirectory, mountDestination))
+            .WithBindMount(mountSource, mountDestination)
+            .WithWorkingDirectory(Path.Combine(mountSource, mountDestination))
             .WithCommand("dotnet", "run", "--project", "e2e/Aikido.Zen.Server.Mock", "--urls", $"http://+:{MockServerPort}")
             .WithExposedPort(MockServerPort)
             .WithPortBinding(MockServerPort, true)
@@ -172,6 +177,9 @@ public abstract class BaseAppTests
         }
 
         var mountDestination = IsGitHubActions ? "/app:z" : "/app";
+        var mountSource = IsGitHubActions
+        ? Path.Combine(MountDirectory, ProjectDirectory)
+        : MountDirectory;
 
         AppContainer = new ContainerBuilder()
             .WithNetwork(Network)
