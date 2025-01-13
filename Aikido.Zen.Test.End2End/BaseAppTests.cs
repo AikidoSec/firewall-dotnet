@@ -46,6 +46,7 @@ public abstract class BaseAppTests
     {
         // Create network first
         Network = new NetworkBuilder()
+            .WithCreateParameterModifier(parameter => parameter.Driver = "nat")
             .WithName(NetworkName)
             .Build();
         Network.CreateAsync().Wait();
