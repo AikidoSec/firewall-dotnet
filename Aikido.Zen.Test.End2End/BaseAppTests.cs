@@ -28,9 +28,7 @@ public abstract class BaseAppTests
 
     private bool IsGitHubActions => Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true";
 
-    private string MountDirectory => IsGitHubActions
-        ? Path.Combine(Environment.GetEnvironmentVariable("GITHUB_PATH"), "..", "..", "..", "..")
-        : Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..", "..");
+    private string MountDirectory => Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..", "..");
 
     protected abstract string ProjectDirectory { get; }
     protected virtual Dictionary<string, string> DefaultEnvironmentVariables => new()
@@ -123,12 +121,13 @@ public abstract class BaseAppTests
     {
         var mountDestination = IsGitHubActions ? "/app:z" : "/app";
 
-        Console.WriteLine("MountDirectory: " + MountDirectory);
-        Console.WriteLine("mountDestination: " + mountDestination);
-        Console.WriteLine("Path.Combine(MountDirectory, mountDestination): " + Path.Combine(MountDirectory, mountDestination));
-        Console.WriteLine("Directory.GetCurrentDirectory(): " + Directory.GetCurrentDirectory());
-        Console.WriteLine("ProjectDirectory: " + ProjectDirectory);
-        Console.WriteLine("Path.GetFullPath(mountDestination): " + Path.GetFullPath(mountDestination));
+        // Log information to ensure it is visible in GitHub Actions
+        Console.WriteLine($"::notice::MountDirectory: {MountDirectory}");
+        Console.WriteLine($"::notice::mountDestination: {mountDestination}");
+        Console.WriteLine($"::notice::Path.Combine(MountDirectory, mountDestination): {Path.Combine(MountDirectory, mountDestination)}");
+        Console.WriteLine($"::notice::Directory.GetCurrentDirectory(): {Directory.GetCurrentDirectory()}");
+        Console.WriteLine($"::notice::ProjectDirectory: {ProjectDirectory}");
+        Console.WriteLine($"::notice::Path.GetFullPath(mountDestination): {Path.GetFullPath(mountDestination)}");
 
         MockServerContainer = new ContainerBuilder()
             .WithNetwork(Network)
