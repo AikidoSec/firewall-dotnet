@@ -26,6 +26,8 @@ public abstract class BaseAppTests
     private const string NetworkName = "test-network";
     private readonly INetwork Network;
 
+    private readonly string MountDirectory = Path.Combine(Directory.GetCurrentDirectory(), "..\\..\\..\\..\\");
+
     protected abstract string ProjectDirectory { get; }
     protected virtual Dictionary<string, string> DefaultEnvironmentVariables => new()
     {
@@ -44,7 +46,6 @@ public abstract class BaseAppTests
     {
         // Create network first
         Network = new NetworkBuilder()
-            .WithCreateParameterModifier(parameterModifier => parameterModifier.Driver = "nat") // Use nat driver for Windows
             .WithName(NetworkName)
             .Build();
         Network.CreateAsync().Wait();
@@ -118,7 +119,7 @@ public abstract class BaseAppTests
         MockServerContainer = new ContainerBuilder()
             .WithNetwork(Network)
             .WithImage("mcr.microsoft.com/dotnet/sdk:8.0")
-            .WithBindMount(Path.GetFullPath("..\\..\\..\\..\\"), "/app")
+            .WithBindMount(MountDirectory, "/app")
             .WithWorkingDirectory("/app")
             .WithCommand("dotnet", "run", "--project", "e2e/Aikido.Zen.Server.Mock", "--urls", $"http://+:{MockServerPort}")
             .WithExposedPort(MockServerPort)
@@ -160,7 +161,7 @@ public abstract class BaseAppTests
         AppContainer = new ContainerBuilder()
             .WithNetwork(Network)
             .WithImage($"mcr.microsoft.com/dotnet/sdk:{dotnetVersion}")
-            .WithBindMount(Path.GetFullPath("..\\..\\..\\..\\"), "/app")
+            .WithBindMount(MountDirectory, "/app")
             .WithWorkingDirectory("/app")
             .WithCommand("dotnet", "run", "--project", ProjectDirectory, "--urls", $"http://+:{AppPort}", "--framework", $"net{dotnetVersion}")
             .WithExposedPort(AppPort)

@@ -19,6 +19,14 @@ jobs:
             DOTNET_CLI_TELEMETRY_OPTOUT: true
 
         steps:
+            - name: Update Docker
+              run: |
+                  Start-Process -FilePath "powershell" -ArgumentList "choco upgrade docker-desktop -y" -Wait
+
+            - name: Update Docker Compose
+              run: |
+                  Start-Process -FilePath "powershell" -ArgumentList "choco upgrade docker-compose -y" -Wait
+
             - uses: actions/checkout@v4
 
             - uses: actions/cache@v3

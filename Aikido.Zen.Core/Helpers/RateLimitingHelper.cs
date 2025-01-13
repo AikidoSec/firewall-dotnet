@@ -12,6 +12,7 @@ namespace Aikido.Zen.Core.Helpers
     public static class RateLimitingHelper
     {
         private static LRUCache<string, RequestInfo> RateLimitedItems = new LRUCache<string, RequestInfo>(10000, 120 * 60 * 1000); // 10000 items, 120 minutes TTL
+        private static readonly object _lock = new object();
 
         /// <summary>
         /// Determines if a request should be allowed based on rate limiting rules
@@ -28,27 +29,30 @@ namespace Aikido.Zen.Core.Helpers
             var currentTime = GetCurrentTimestamp();
             RequestInfo requestInfo;
 
-            if (!RateLimitedItems.TryGetValue(key, out requestInfo))
+            lock (_lock)
             {
-                RateLimitedItems.Set(key, new RequestInfo(1, currentTime));
-                return true;
-            }
+                if (!RateLimitedItems.TryGetValue(key, out requestInfo))
+                {
+                    RateLimitedItems.Set(key, new RequestInfo(1, currentTime));
+                    return true;
+                }
 
-            var elapsedTime = currentTime - requestInfo.StartTime;
+                var elapsedTime = currentTime - requestInfo.StartTime;
 
-            if (elapsedTime >= windowSizeInMS)
-            {
-                // Reset the counter and timestamp if windowSizeInMS has expired
-                RateLimitedItems.Set(key, new RequestInfo(1, currentTime));
-                return true;
-            }
+                if (elapsedTime >= windowSizeInMS)
+                {
+                    // Reset the counter and timestamp if windowSizeInMS has expired
+                    RateLimitedItems.Set(key, new RequestInfo(1, currentTime));
+                    return true;
+                }
 
-            if (requestInfo.Count < maxRequests)
-            {
-                // Increment the counter if it is within the windowSizeInMS and maxRequests
-                requestInfo.Count++;
-                RateLimitedItems.Set(key, requestInfo); // Update the value in cache
-                return true;
+                if (requestInfo.Count < maxRequests)
+                {
+                    // Increment the counter if it is within the windowSizeInMS and maxRequests
+                    requestInfo.Count++;
+                    RateLimitedItems.Set(key, requestInfo); // Update the value in cache
+                    return true;
+                }
             }
             // Deny the request if the maxRequests is reached within windowSizeInMS
             return false;
@@ -64,7 +68,8 @@ namespace Aikido.Zen.Core.Helpers
             RateLimitedItems = new LRUCache<string, RequestInfo>(size, ttlInMs);
         }
 
-        internal struct RequestInfo {
+        internal struct RequestInfo
+        {
             public int Count;
             public long StartTime;
 
