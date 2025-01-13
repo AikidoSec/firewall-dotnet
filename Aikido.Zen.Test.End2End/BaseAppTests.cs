@@ -26,6 +26,8 @@ public abstract class BaseAppTests
     private const string NetworkName = "test-network";
     private readonly INetwork Network;
 
+    private bool IsGitHubActions => Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true";
+
     private readonly string MountDirectory = Path.Combine(Directory.GetCurrentDirectory(), "..\\..\\..\\..\\");
 
     protected abstract string ProjectDirectory { get; }
@@ -44,12 +46,9 @@ public abstract class BaseAppTests
 
     protected BaseAppTests()
     {
-        // Determine if running on GitHub Actions
-        var isGitHubActions = Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true";
-
         // Set network driver based on environment
         Network = new NetworkBuilder()
-            .WithCreateParameterModifier(parameter => parameter.Driver = isGitHubActions ? "nat" : "bridge")
+            .WithCreateParameterModifier(parameter => parameter.Driver = IsGitHubActions ? "nat" : "bridge")
             .WithName(NetworkName)
             .Build();
         Network.CreateAsync().Wait();
@@ -120,16 +119,13 @@ public abstract class BaseAppTests
 
     protected async Task StartMockServer()
     {
-        // Adjust mount path for GitHub Actions
-        var mountPath = Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true"
-            ? Environment.GetEnvironmentVariable("GITHUB_PATH") + "\\Aikido.Zen.Server.Mock"
-            : MountDirectory;
+        var mountDestination = IsGitHubActions ? "app:z" : "/app";
 
         MockServerContainer = new ContainerBuilder()
             .WithNetwork(Network)
             .WithImage("mcr.microsoft.com/dotnet/sdk:8.0")
-            .WithBindMount(mountPath, "/app")
-            .WithWorkingDirectory("/app")
+            .WithBindMount(MountDirectory, mountDestination)
+            .WithWorkingDirectory(mountDestination)
             .WithCommand("dotnet", "run", "--project", "e2e/Aikido.Zen.Server.Mock", "--urls", $"http://+:{MockServerPort}")
             .WithExposedPort(MockServerPort)
             .WithPortBinding(MockServerPort, true)
@@ -167,16 +163,13 @@ public abstract class BaseAppTests
             }
         }
 
-        // Adjust mount path for GitHub Actions
-        var mountPath = Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true"
-            ? Environment.GetEnvironmentVariable("GITHUB_PATH") + "\\Aikido.Zen.Server.Mock"
-            : MountDirectory;
+        var mountDestination = IsGitHubActions ? "app:z" : "/app";
 
         AppContainer = new ContainerBuilder()
             .WithNetwork(Network)
             .WithImage($"mcr.microsoft.com/dotnet/sdk:{dotnetVersion}")
-            .WithBindMount(mountPath, "/app")
-            .WithWorkingDirectory("/app")
+            .WithBindMount(MountDirectory, mountDestination)
+            .WithWorkingDirectory(mountDestination)
             .WithCommand("dotnet", "run", "--project", ProjectDirectory, "--urls", $"http://+:{AppPort}", "--framework", $"net{dotnetVersion}")
             .WithExposedPort(AppPort)
             .WithPortBinding(AppPort, true)
