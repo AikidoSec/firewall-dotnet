@@ -119,13 +119,13 @@ public abstract class BaseAppTests
 
     protected async Task StartMockServer()
     {
-        var mountDestination = IsGitHubActions ? "app:z" : "/app";
+        var mountDestination = IsGitHubActions ? "/app:z" : "/app";
 
         MockServerContainer = new ContainerBuilder()
             .WithNetwork(Network)
             .WithImage("mcr.microsoft.com/dotnet/sdk:8.0")
             .WithBindMount(MountDirectory, mountDestination)
-            .WithWorkingDirectory(mountDestination)
+            .WithWorkingDirectory("app")
             .WithCommand("dotnet", "run", "--project", "e2e/Aikido.Zen.Server.Mock", "--urls", $"http://+:{MockServerPort}")
             .WithExposedPort(MockServerPort)
             .WithPortBinding(MockServerPort, true)
@@ -163,13 +163,13 @@ public abstract class BaseAppTests
             }
         }
 
-        var mountDestination = IsGitHubActions ? "app:z" : "/app";
+        var mountDestination = IsGitHubActions ? "/app:z" : "/app";
 
         AppContainer = new ContainerBuilder()
             .WithNetwork(Network)
             .WithImage($"mcr.microsoft.com/dotnet/sdk:{dotnetVersion}")
             .WithBindMount(MountDirectory, mountDestination)
-            .WithWorkingDirectory(mountDestination)
+            .WithWorkingDirectory("app")
             .WithCommand("dotnet", "run", "--project", ProjectDirectory, "--urls", $"http://+:{AppPort}", "--framework", $"net{dotnetVersion}")
             .WithExposedPort(AppPort)
             .WithPortBinding(AppPort, true)
