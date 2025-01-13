@@ -28,7 +28,9 @@ public abstract class BaseAppTests
 
     private bool IsGitHubActions => Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true";
 
-    private readonly string MountDirectory = Path.Combine(Directory.GetCurrentDirectory(), "..\\..\\..\\..\\");
+    private readonly string MountDirectory => IsGitHubActions
+        ? Path.Combine(Environment.GetEnvironmentVariable("GITHUB_PATH"), "..", "..", "..", "..")
+        : Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..", "..");
 
     protected abstract string ProjectDirectory { get; }
     protected virtual Dictionary<string, string> DefaultEnvironmentVariables => new()
@@ -121,11 +123,18 @@ public abstract class BaseAppTests
     {
         var mountDestination = IsGitHubActions ? "/app:z" : "/app";
 
+        Console.WriteLine("MountDirectory: " + MountDirectory);
+        Console.WriteLine("mountDestination: " + mountDestination);
+        Console.WriteLine("Path.Combine(MountDirectory, mountDestination): " + Path.Combine(MountDirectory, mountDestination));
+        Console.WriteLine("Directory.GetCurrentDirectory(): " + Directory.GetCurrentDirectory());
+        Console.WriteLine("ProjectDirectory: " + ProjectDirectory);
+        Console.WriteLine("Path.GetFullPath(mountDestination): " + Path.GetFullPath(mountDestination));
+
         MockServerContainer = new ContainerBuilder()
             .WithNetwork(Network)
             .WithImage("mcr.microsoft.com/dotnet/sdk:8.0")
             .WithBindMount(MountDirectory, mountDestination)
-            .WithWorkingDirectory("app")
+            .WithWorkingDirectory(Path.Combine(MountDirectory, mountDestination))
             .WithCommand("dotnet", "run", "--project", "e2e/Aikido.Zen.Server.Mock", "--urls", $"http://+:{MockServerPort}")
             .WithExposedPort(MockServerPort)
             .WithPortBinding(MockServerPort, true)
@@ -169,7 +178,7 @@ public abstract class BaseAppTests
             .WithNetwork(Network)
             .WithImage($"mcr.microsoft.com/dotnet/sdk:{dotnetVersion}")
             .WithBindMount(MountDirectory, mountDestination)
-            .WithWorkingDirectory("app")
+            .WithWorkingDirectory(Path.Combine(MountDirectory, mountDestination))
             .WithCommand("dotnet", "run", "--project", ProjectDirectory, "--urls", $"http://+:{AppPort}", "--framework", $"net{dotnetVersion}")
             .WithExposedPort(AppPort)
             .WithPortBinding(AppPort, true)
