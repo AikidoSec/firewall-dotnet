@@ -115,13 +115,8 @@ Task("Test")
         var coverageDir = MakeAbsolute(Directory("./coverage"));
         EnsureDirectoryExists(coverageDir);
 
-        // Get test projects from both Aikido.Zen.Test and Aikido.Zen.Test.End2End directories
+        // Get test projects from Aikido.Zen.Test directory
         var testProjects = GetFiles("./Aikido.Zen.Test/*.csproj") as IEnumerable<FilePath>;
-        // concat the e2e tests if the environment framework is core
-        if (!framework.StartsWith("4."))
-        {
-            testProjects = testProjects.Concat(GetFiles("./Aikido.Zen.Test.End2End/*.csproj"));
-        }
         foreach (var project in testProjects)
         {
             DotNetTest(project.FullPath, new DotNetTestSettings
@@ -135,7 +130,6 @@ Task("Test")
                     .Append($"/p:CoverletOutput={coverageDir.FullPath}/coverage.xml")
                     .Append("/p:Include=[Aikido.Zen.*]*")
                     .Append("/p:Exclude=[Aikido.Zen.Test]*")
-                    .Append("/p:Exclude=[Aikido.Zen.Test.End2End]*")
                     .Append("--verbosity detailed")
             });
         }
@@ -145,6 +139,30 @@ Task("Test")
         {
             Warning("Coverage file was not generated!");
         }
+    });
+
+/// <summary>
+/// Task to run end-to-end tests.
+/// </summary>
+Task("TestE2E")
+    .IsDependentOn("Build")
+    .Does(() =>
+    {
+        var coverageDir = MakeAbsolute(Directory("./coverage"));
+        EnsureDirectoryExists(coverageDir);
+
+        // Get test projects from Aikido.Zen.Test.End2End directory
+        var testProjects = GetFiles("./Aikido.Zen.Test.End2End/*.csproj");
+        foreach (var project in testProjects)
+        {
+            DotNetTest(project.FullPath, new DotNetTestSettings
+            {
+                Configuration = configuration,
+                NoBuild = true,
+                NoRestore = true
+            });
+        }
+        Information($"TestE2E task completed successfully.");
     });
 
 Task("Pack")
@@ -177,6 +195,7 @@ Task("Pack")
 
 Task("CreatePackages")
     .IsDependentOn("Test")
+    .IsDependentOn("TestE2E")
     .IsDependentOn("Pack");
 
 Task("Default")

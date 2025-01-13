@@ -1,17 +1,16 @@
-name: Unit tests
+name: End-to-End Tests
 
 on:
     workflow_call: {}
     pull_request: { branches: [main] }
 
 jobs:
-    build-and-test:
-        runs-on: windows-2022 # needs to be windows because we support .NET framework
-        timeout-minutes: 30
+    e2e-test:
+        runs-on: windows-latest
+        timeout-minutes: 60
         strategy:
             matrix:
-                dotnet-version:
-                    ["4.6.1", "4.7.2", "4.8.2", "6.0.x", "7.0.x", "8.0.x"]
+                dotnet-version: ["6.0.x", "7.0.x", "8.0.x"]
             fail-fast: false
 
         env:
@@ -48,16 +47,7 @@ jobs:
                   dotnet tool restore
                   dotnet restore
 
-            - name: Build and Test
+            - name: Build and Run E2E Tests
               run: |
                   dotnet tool install --global Cake.Tool
-                  dotnet cake --target=Test --configuration=Release --framework=${{ matrix.dotnet-version }}
-
-            - name: Upload coverage to Codecov
-              uses: codecov/codecov-action@v4
-              continue-on-error: true
-              with:
-                  token: ${{ secrets.CODECOV_TOKEN }}
-                  files: ./coverage/coverage.xml
-                  fail_ci_if_error: true
-                  slug: AikidoSec/firewall-dotnet
+                  dotnet cake --target=TestE2E --configuration=Release --framework=${{ matrix.dotnet-version }}
