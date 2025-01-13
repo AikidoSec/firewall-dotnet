@@ -152,5 +152,46 @@ namespace Aikido.Zen.Test
             Assert.That(result1, Is.False);
             Assert.That(result2, Is.False);
         }
+
+        [Test]
+        public void ToCidrString_ShouldReturnSingleCidr_WhenSingleIpProvided()
+        {
+            // Arrange
+            var startIp = "192.168.1.1";
+
+            // Act
+            var result = IPHelper.ToCidrString(startIp);
+
+            // Assert
+            Assert.That(result, Is.EquivalentTo(new List<string> { "192.168.1.1" }));
+        }
+
+        [Test]
+        public void ToCidrString_ShouldReturnCidrRange_WhenIpRangeProvided()
+        {
+            // Arrange
+            var startIp = "192.168.1.0";
+            var endIp = "192.168.1.255";
+
+            // Act
+            var result = IPHelper.ToCidrString(startIp, endIp);
+
+            // Assert
+            Assert.That(result, Is.EquivalentTo(new List<string> { "192.168.1.0/24" }));
+        }
+
+        [Test]
+        public void ToCidrString_ShouldReturnMultipleCidrs_WhenNonContiguousIpRangeProvided()
+        {
+            // Arrange
+            var startIp = "192.168.1.0";
+            var endIp = "192.168.1.128";
+
+            // Act
+            var result = IPHelper.ToCidrString(startIp, endIp);
+
+            // Assert
+            Assert.That(result, Is.EquivalentTo(new List<string> { "192.168.1.0/25", "192.168.1.128/32" }));
+        }
     }
 }
