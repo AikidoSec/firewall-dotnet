@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json;
 using Docker.DotNet.Models;
 using DotNet.Testcontainers.Builders;
+using DotNet.Testcontainers.Configurations;
 using DotNet.Testcontainers.Containers;
 using DotNet.Testcontainers.Networks;
 using NUnit.Framework;
@@ -43,6 +44,7 @@ public abstract class BaseAppTests
     {
         // Create network first
         Network = new NetworkBuilder()
+            .WithDriver(NetworkDriver.Host)
             .WithName(NetworkName)
             .Build();
         Network.CreateAsync().Wait();
