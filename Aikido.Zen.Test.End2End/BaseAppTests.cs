@@ -124,7 +124,7 @@ public abstract class BaseAppTests
         var mountSource = IsGitHubActions
         ? Path.Combine(MountDirectory, "\\Aikido.Zen.Server.Mock")
         : MountDirectory;
-        var mountDestination = IsGitHubActions ? "/app:z" : "/app";
+        var mountDestination = IsGitHubActions ? "app:z" : "/app";
 
         // Log information to ensure it is visible in GitHub Actions
         Console.WriteLine($"::notice::MountDirectory: {MountDirectory}");
@@ -176,7 +176,7 @@ public abstract class BaseAppTests
             }
         }
 
-        var mountDestination = IsGitHubActions ? "/app:z" : "/app";
+        var mountDestination = IsGitHubActions ? "app:z" : "/app";
         var mountSource = IsGitHubActions
         ? Path.Combine(MountDirectory, ProjectDirectory)
         : MountDirectory;
