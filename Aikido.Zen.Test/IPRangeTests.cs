@@ -19,12 +19,15 @@ namespace Aikido.Zen.Test
         {
             // Arrange
             var ip = "192.168.1.1";
+            var ip6 = "2001:0db8:85a3:0000:0000:8a2e:0370:7334";
 
             // Act
             _ipRange.InsertRange(ip);
+            _ipRange.InsertRange(ip6);
 
             // Assert
             Assert.That(_ipRange.IsIpInRange(ip));
+            Assert.That(_ipRange.IsIpInRange(ip6));
         }
 
         [Test]
@@ -32,14 +35,19 @@ namespace Aikido.Zen.Test
         {
             // Arrange
             var cidr = "192.168.1.0/24";
+            var cidr6 = "2001:0db8:85a3:0000:0000:8a2e:0370:7334/64";
 
             // Act
             _ipRange.InsertRange(cidr);
+            _ipRange.InsertRange(cidr6);
 
             // Assert
             Assert.That(_ipRange.IsIpInRange("192.168.1.1"));
             Assert.That(_ipRange.IsIpInRange("192.168.1.255"));
             Assert.That(_ipRange.IsIpInRange("192.168.2.1"), Is.False);
+            Assert.That(_ipRange.IsIpInRange("2001:0db8:85a3:0000:0000:8a2e:0370:7334"));
+            Assert.That(_ipRange.IsIpInRange("2001:0db8:85a3:0000:0000:8a2e:0370:7335"));
+            Assert.That(_ipRange.IsIpInRange("2001:0db8:85a3:0000:0000:8a2e:0370:7334:ffff"), Is.False);
         }
 
         [Test]

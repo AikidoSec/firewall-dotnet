@@ -38,6 +38,7 @@ class IPRange
 
     /// <summary>
     /// Inserts a range of IP addresses or a single IP address into the Trie.
+    /// Supports both IPv4 and IPv6.
     /// </summary>
     /// <param name="cidrOrIp">The CIDR notation of the IP range or a single IP address.</param>
     public void InsertRange(string cidrOrIp)
@@ -46,15 +47,20 @@ class IPRange
         try
         {
             var parts = cidrOrIp.Split('/');
-            var ip = parts[0];
-            if (!IPHelper.IsValidIp(ip))
+            var ipString = parts[0];
+            if (!IPAddress.TryParse(ipString, out IPAddress ipAddress))
             {
                 return;
             }
-            var prefixLength = parts.Length > 1 ? int.Parse(parts[1]) : 32;
+
+            // Determine if the IP is IPv4 or IPv6
+            bool isIPv6 = ipAddress.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6;
+            int prefixLength = parts.Length > 1 ? int.Parse(parts[1]) : (isIPv6 ? 128 : 32);
 
             var currentNode = _root;
-            foreach (var byteValue in ip.Split('.').Select(byte.Parse))
+            var addressBytes = ipAddress.GetAddressBytes();
+
+            foreach (var byteValue in addressBytes)
             {
                 for (int bitIndex = 7; bitIndex >= 0; bitIndex--)
                 {
@@ -83,6 +89,7 @@ class IPRange
 
     /// <summary>
     /// Checks if a given IP address is within any of the stored IP ranges.
+    /// Supports both IPv4 and IPv6.
     /// </summary>
     /// <param name="ip">The IP address to check.</param>
     /// <returns>True if the IP is in range, otherwise false.</returns>
@@ -91,14 +98,15 @@ class IPRange
         _lock.EnterReadLock();
         try
         {
-            // Validate the IP address before processing
-            if (!IPHelper.IsValidIp(ip))
+            if (!IPAddress.TryParse(ip, out IPAddress ipAddress))
             {
                 return false;
             }
 
             var currentNode = _root;
-            foreach (var byteValue in ip.Split('.').Select(byte.Parse))
+            var addressBytes = ipAddress.GetAddressBytes();
+
+            foreach (var byteValue in addressBytes)
             {
                 for (int bitIndex = 7; bitIndex >= 0; bitIndex--)
                 {
