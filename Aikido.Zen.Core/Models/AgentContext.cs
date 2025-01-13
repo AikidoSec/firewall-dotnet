@@ -137,17 +137,10 @@ namespace Aikido.Zen.Core.Models
 
         public void UpdateBlockedIps(IEnumerable<string> blockedIPs) {
             if (blockedIPs == null) {
-                BlockList.UpdateBlockedSubnets(new List<IPAddressRange>());
+                BlockList.UpdateBlockedSubnets(new List<string>());
                 return;
             }
-            
-            var ranges = new List<IPAddressRange>();
-            foreach (var ip in blockedIPs) {
-                if (IPAddressRange.TryParse(ip, out var range)) {
-                    ranges.Add(range);
-                }
-            }
-            BlockList.UpdateBlockedSubnets(ranges);
+            BlockList.UpdateBlockedSubnets(blockedIPs);
         }
 
         public IEnumerable<Host> Hostnames => _hostnames.Select(x => x.Value);

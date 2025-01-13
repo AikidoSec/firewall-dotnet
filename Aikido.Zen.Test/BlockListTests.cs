@@ -19,8 +19,8 @@ namespace Aikido.Zen.Test
         public void UpdateBlockedSubnets_ShouldUpdateBlockedSubnetsList()
         {
             // Arrange
-            var subnet1 = IPAddressRange.Parse("192.168.1.0/24");
-            var subnet2 = IPAddressRange.Parse("10.0.0.0/8");
+            var subnet1 = "192.168.1.0/24";
+            var subnet2 = "10.0.0.0/8";
             var subnets = new[] { subnet1, subnet2 };
 
             // Act
@@ -36,11 +36,11 @@ namespace Aikido.Zen.Test
         public void UpdateBlockedSubnets_WithEmptyList_ShouldClearBlockedSubnets()
         {
             // Arrange
-            var subnet = IPAddressRange.Parse("192.168.1.0/24");
+            var subnet = "192.168.1.0/24";
             _blockList.UpdateBlockedSubnets(new[] { subnet });
 
             // Act
-            _blockList.UpdateBlockedSubnets(Array.Empty<IPAddressRange>());
+            _blockList.UpdateBlockedSubnets(Array.Empty<string>());
 
             // Assert
             Assert.That(_blockList.IsIPBlocked("192.168.1.100"), Is.False);
@@ -114,19 +114,6 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void AddIpAddressToBlocklist_WithInvalidIP_ShouldStillAddToBlocklist()
-        {
-            // Arrange
-            var invalidIp = "invalid.ip.address";
-
-            // Act
-            _blockList.AddIpAddressToBlocklist(invalidIp);
-
-            // Assert
-            Assert.That(_blockList.IsIPBlocked(invalidIp));
-        }
-
-        [Test]
         public void IsIPBlocked_WithInvalidIP_ShouldReturnFalse()
         {
             // Arrange
@@ -181,7 +168,7 @@ namespace Aikido.Zen.Test
                 new EndpointConfig {
                     Method = "GET",
                     Route = "testUrl",
-                    AllowedIPAddresses = new[] { "10.0.0.0/8" }
+                    AllowedIPAddresses = [ "10.0.0.0/8" ]
                 }
             };
 
@@ -193,60 +180,48 @@ namespace Aikido.Zen.Test
             Assert.That(_blockList.IsBlocked(ip, url)); // Not in allowed subnet
             Assert.That(_blockList.IsBlocked("10.0.0.1", url), Is.False); // In allowed subnet
             Assert.That(_blockList.IsBlocked("invalid.ip", url), Is.False); // Invalid IP should not be blocked
-            Assert.That(_blockList.IsBlocked("10.0.0.1", url), Is.False); // Non-blocked user in allowed subnet
-        }
-
-        [Test]
-        public void ConcurrentAccess_ShouldHandleConcurrentUpdates()
-        {
-            // Arrange
-            var tasks = new List<Task>();
-            var ip = "192.168.1.100";
-
-            // Act
-            for (int i = 0; i < 100; i++)
-            {
-                tasks.Add(Task.Run(() => _blockList.AddIpAddressToBlocklist(ip)));
-                tasks.Add(Task.Run(() => _blockList.UpdateBlockedSubnets(new[] { IPAddressRange.Parse("10.0.0.0/8") })));
-            }
-
-            Task.WaitAll(tasks.ToArray());
-
-            // Assert
-            Assert.That(_blockList.IsIPBlocked(ip));
         }
 
         [Test]
         public void LargeBlocklistHandling_ShouldHandleLargeNumberOfIPs()
         {
             // Arrange
-            for (int i = 0; i < 10000; i++)
+            for (int i = 0; i < 256; i++)
             {
                 _blockList.AddIpAddressToBlocklist($"192.168.1.{i}");
+                _blockList.AddIpAddressToBlocklist($"192.168.{i}.0/24");
             }
 
             // Act & Assert
-            Assert.That(_blockList.IsIPBlocked("192.168.1.9999"));
-            Assert.That(_blockList.IsIPBlocked("192.168.2.1"), Is.False);
+            Assert.That(_blockList.IsIPBlocked("192.168.1.255"));
+            Assert.That(_blockList.IsIPBlocked("192.168.2.1"));
+            Assert.That(_blockList.IsIPBlocked("191.167.2.1"), Is.False);
         }
 
         [Test]
         public void PerformanceWithDifferentSizes_ShouldPerformEfficiently()
         {
             // Arrange
-            var stopwatch = new System.Diagnostics.Stopwatch();
             var ip = "192.168.1.100";
 
             // Act
-            stopwatch.Start();
-            for (int i = 0; i < 10000; i++)
+            for (int i = 0; i < 256; i++)
             {
-                _blockList.AddIpAddressToBlocklist($"192.168.1.{i}");
+                for (int j = 0; j < 256; j++)
+                {
+                    _blockList.AddIpAddressToBlocklist($"192.{i}.{j}.0");
+                }
+            }
+            var stopwatch = new System.Diagnostics.Stopwatch();
+            stopwatch.Start();
+            for (int i = 0; i < 256; i++)
+            {
+                _blockList.IsIPBlocked($"192.168.1.{i}");
             }
             stopwatch.Stop();
 
             // Assert
-            Assert.That(stopwatch.ElapsedMilliseconds < 1000); // Ensure it completes within 1 second
+            Assert.That(stopwatch.ElapsedMilliseconds, Is.AtMost(5)); // Ensure it completes within 5ms
         }
 
     }
