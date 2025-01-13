@@ -28,7 +28,7 @@ public abstract class BaseAppTests
 
     private bool IsGitHubActions => Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true";
 
-    private readonly string MountDirectory => IsGitHubActions
+    private string MountDirectory => IsGitHubActions
         ? Path.Combine(Environment.GetEnvironmentVariable("GITHUB_PATH"), "..", "..", "..", "..")
         : Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..", "..");
 
