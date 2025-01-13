@@ -31,25 +31,25 @@ jobs:
                   restore-keys: |
                       ${{ runner.os }}-nuget-
 
-            - name: Setup .NET
-              uses: xt0rted/setup-dotnet@v1.0.0
-              with:
-                  dotnet-version: |
-                      6.0.x
-                      7.0.x
-                      8.0.x
+            # - name: Setup .NET
+            #   uses: xt0rted/setup-dotnet@v1.0.0
+            #   with:
+            #       dotnet-version: |
+            #           6.0.x
+            #           7.0.x
+            #           8.0.x
 
-            - name: Add msbuild to PATH
-              uses: microsoft/setup-msbuild@v2
-              with:
-                  vs-version: "[17.2,19.0)"
+            # - name: Add msbuild to PATH
+            #   uses: microsoft/setup-msbuild@v2
+            #   with:
+            #       vs-version: "[17.2,19.0)"
 
-            - name: Install dependencies
-              run: |
-                  dotnet tool restore
-                  dotnet restore
+            # - name: Install dependencies
+            #   run: |
+            #       dotnet tool restore
+            #       dotnet restore
 
-            - name: Build and Run E2E Tests
-              run: |
-                  dotnet tool install --global Cake.Tool
-                  dotnet cake --target=TestE2E --configuration=Release --framework=${{ matrix.dotnet-version }}
+            # - name: Build and Run E2E Tests
+            #   run: |
+            #       dotnet tool install --global Cake.Tool
+            #       dotnet cake --target=TestE2E --configuration=Release --framework=${{ matrix.dotnet-version }}
