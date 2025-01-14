@@ -23,8 +23,8 @@ jobs:
     parameters:
       dotnet_version:
         type: string
-    executor:
-      name: win/default
+    machine:
+      image: windows-server-2019
     environment:
       ROOT_DIR: ${CIRCLE_WORKING_DIRECTORY}
       USE_NAT: true
