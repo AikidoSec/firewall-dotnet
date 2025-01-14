@@ -52,3 +52,4 @@ workflows:
             branches:
               only:
                 - main
+        dotnet_version: << matrix.dotnet_version >>
