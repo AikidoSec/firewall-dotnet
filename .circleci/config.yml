@@ -12,7 +12,7 @@ jobs:
       - run:
           name: Generate csproj Checksums
           command: |
-            find . -type f -name "*.csproj" -exec sha256sum {} \; | awk '{print $1}' > csproj-checksums.lock
+            find . -type f -name "*.csproj" | sort | xargs sha256sum | awk '{print $1}' > csproj-checksums.lock
       - persist_to_workspace:
           root: .
           paths:
@@ -35,7 +35,6 @@ jobs:
           name: Restore NuGet Packages
           keys:
             - nuget-packages-{{ checksum "csproj-checksums.lock" }}
-            - nuget-packages-
       - run:
           name: Restore NuGet Packages
           command: |
@@ -58,6 +57,7 @@ jobs:
           key: nuget-packages-{{ checksum "csproj-checksums.lock" }}
           paths:
             - ~/.nuget/packages
+            - packages
 
 workflows:
   test_on_pr:
