@@ -84,7 +84,9 @@ Task("Build")
                 PlatformTarget = PlatformTarget.MSIL,
                 MaxCpuCount = 1,
                 NodeReuse = false,
-                DetailedSummary = false
+                DetailedSummary = false,
+                NodeReuse = true
+
             }
             .WithTarget("Build");
 
@@ -130,7 +132,7 @@ Task("Test")
                     .Append($"/p:CoverletOutput={coverageDir.FullPath}/coverage.xml")
                     .Append("/p:Include=[Aikido.Zen.*]*")
                     .Append("/p:Exclude=[Aikido.Zen.Test]*")
-                    .Append("--verbosity detailed")
+                    .Append("--verbosity diagnostic")
             });
         }
         Information($"Test task completed successfully. Coverage report at: {coverageDir.FullPath}");

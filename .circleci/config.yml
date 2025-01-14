@@ -1,0 +1,54 @@
+version: 2.1
+
+executors:
+  dotnet-executor:
+    docker:
+      - image: circleci/dotnet:<< parameters.dotnet_version >>
+    parameters:
+      dotnet_version:
+        type: string
+    working_directory: ~/project
+
+jobs:
+  checkout_code:
+    docker:
+      - image: cimg/base:2022.08
+    steps:
+      - run: mkdir -p ~/.ssh && ssh-keyscan -H github.com >> ~/.ssh/known_hosts
+      - run: git clone --depth 1 "$CIRCLE_REPOSITORY_URL" --branch "$CIRCLE_BRANCH" .
+      - save_cache:
+          key: sourcecode-{{ .Revision }}
+          paths:
+            - .
+
+  e2e_test:
+    executor: dotnet-executor
+    parameters:
+      dotnet_version:
+        type: string
+    steps:
+      - restore_cache:
+          keys:
+            - sourcecode-{{ .Revision }}
+      - run:
+          name: Install Dependencies
+          command: dotnet restore
+      - run:
+          name: Run E2E Tests
+          command: dotnet cake --target=TestE2E --configuration=Release --framework=net${{ parameters.dotnet_version }} --verbosity=diagnostic
+
+workflows:
+  version: 2
+  test_on_pr:
+    jobs:
+      - checkout_code
+      - e2e_test:
+          matrix:
+            parameters:
+              dotnet_version: ["6.0", "7.0", "8.0"]
+          requires:
+            - checkout_code
+          filters:
+            branches:
+              only:
+                - main

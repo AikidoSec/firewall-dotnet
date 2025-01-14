@@ -29,8 +29,8 @@ public abstract class BaseAppTests
     private bool IsGitHubActions => Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true";
 
     private string WorkDirectory => IsGitHubActions
-        ? Environment.GetEnvironmentVariable("MOUNT_DIR")
-        : Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..", "..");
+        ? Path.GetFullPath(Path.Combine(Environment.GetEnvironmentVariable("MOUNT_DIR"), "..", "..", "..", ".."))
+        : Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..", ".."));
 
     protected abstract string ProjectDirectory { get; }
     protected virtual Dictionary<string, string> DefaultEnvironmentVariables => new()
