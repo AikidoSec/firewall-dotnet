@@ -29,8 +29,8 @@ public abstract class BaseAppTests
 
 
     private string WorkDirectory => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ROOT_DIR"))
-        ? Path.GetFullPath(Environment.GetEnvironmentVariable("ROOT_DIR"))
-        : Path.GetFullPath(Directory.GetCurrentDirectory());
+        ? Path.GetFullPath(Path.Combine(Environment.GetEnvironmentVariable("ROOT_DIR"), "..", "..", "..", ".."))
+        : Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..", ".."));
 
     protected abstract string ProjectDirectory { get; }
     protected virtual Dictionary<string, string> DefaultEnvironmentVariables => new()
@@ -131,30 +131,34 @@ public abstract class BaseAppTests
             Console.WriteLine($"Current Directory: {Directory.GetCurrentDirectory()}");
             Console.WriteLine($"Work Directory: {WorkDirectory}");
 
+            // Start the mock server as a local process
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = "dotnet",
+                Arguments = $"run --project e2e/Aikido.Zen.Server.Mock --urls http://+:{MockServerPort}",
+                WorkingDirectory = Path.Combine(WorkDirectory, "e2e/Aikido.Zen.Server.Mock"),
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
 
-            MockServerContainer = new ContainerBuilder()
-                .WithNetwork(Network)
-                .WithImage("mcr.microsoft.com/dotnet/sdk:8.0")
-                .WithBindMount(WorkDirectory, "/workspace")
-                .WithWorkingDirectory("/app")
-                .WithCommand("dotnet", "run", "--project", "e2e/Aikido.Zen.Server.Mock", "--urls", $"http://+:{MockServerPort}")
-                .WithExposedPort(MockServerPort)
-                .WithPortBinding(MockServerPort, true)
-                .WithWaitStrategy(Wait.ForUnixContainer()
-                    .UntilHttpRequestIsSucceeded(r => r
-                        .ForPath("/health")
-                        .ForPort(MockServerPort)))
-                .WithName("mock-server")
-                .Build();
+            var process = new Process { StartInfo = startInfo };
+            process.OutputDataReceived += (sender, args) => Console.WriteLine(args.Data);
+            process.ErrorDataReceived += (sender, args) => Console.WriteLine(args.Data);
 
-            await MockServerContainer.StartAsync();
+            process.Start();
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
+
+            // Wait for the server to be ready
+            await Task.Delay(5000); // Adjust this delay as needed
         }
         catch (Exception e)
         {
             var exception = new Exception($"Current Directory: {Directory.GetCurrentDirectory()} Work Directory: {WorkDirectory}, {e.Message}", e);
             throw exception;
         }
-
     }
 
     protected async Task StartSampleApp(Dictionary<string, string>? additionalEnvVars = null, string dbType = "sqlite", string dotnetVersion = "8.0")
@@ -164,10 +168,10 @@ public abstract class BaseAppTests
         _ = dbType switch
         {
             "sqlite" => containerEnvVars["ConnectionStrings__Sqlite"] = ":memory:",
-            "sqlserver" => containerEnvVars["ConnectionStrings__DefaultConnection"] = $"Server=sql-server-test-server,1433;Database=master;User=sa;Password=Strong@Password123!;TrustServerCertificate=true",
-            "mongodb" => containerEnvVars["ConnectionStrings__MongoDB"] = $"mongodb://root:password@mongodb-test-server:27017",
-            "postgres" => containerEnvVars["ConnectionStrings__PostgresConnection"] = $"Host=postgres-test-server;Port=5432;Database=main_db;Username=root;Password=password",
-            "mysql" => containerEnvVars["ConnectionStrings__MySqlConnection"] = "Server=mysql-test-server;Port=3306;Database=catsdb;User=root;Password=mypassword;Allow User Variables=true",
+            "sqlserver" => containerEnvVars["ConnectionStrings__DefaultConnection"] = $"Server=localhost,1433;Database=master;User=sa;Password=Strong@Password123!;TrustServerCertificate=true",
+            "mongodb" => containerEnvVars["ConnectionStrings__MongoDB"] = $"mongodb://root:password@localhost:27017",
+            "postgres" => containerEnvVars["ConnectionStrings__PostgresConnection"] = $"Host=localhost;Port=5432;Database=main_db;Username=root;Password=password",
+            "mysql" => containerEnvVars["ConnectionStrings__MySqlConnection"] = "Server=localhost;Port=3306;Database=catsdb;User=root;Password=mypassword;Allow User Variables=true",
             _ => ""
         };
 
@@ -179,27 +183,35 @@ public abstract class BaseAppTests
             }
         }
 
-        AppContainer = new ContainerBuilder()
-            .WithNetwork(Network)
-            .WithImage($"mcr.microsoft.com/dotnet/sdk:{dotnetVersion}")
-            .WithBindMount(WorkDirectory, "/workspace")
-            .WithWorkingDirectory("/app")
-            .WithCommand("dotnet", "run", "--project", ProjectDirectory, "--urls", $"http://+:{AppPort}", "--framework", $"net{dotnetVersion}")
-            .WithExposedPort(AppPort)
-            .WithPortBinding(AppPort, true)
-            .WithEnvironment(containerEnvVars)
-            .WithName($"sample-app-{dbType ?? "unknown"}")
-            .WithWaitStrategy(Wait.ForUnixContainer()
-                .UntilHttpRequestIsSucceeded(r => r
-                    .ForPath("/health")
-                    .ForPort(AppPort)))
-            .Build();
+        // Start the sample app as a local process
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = "dotnet",
+            Arguments = $"run --project {ProjectDirectory} --urls http://+:{AppPort} --framework net{dotnetVersion}",
+            WorkingDirectory = Path.Combine(WorkDirectory, ProjectDirectory),
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
 
-        await AppContainer.StartAsync();
+        foreach (var envVar in containerEnvVars)
+        {
+            startInfo.EnvironmentVariables[envVar.Key] = envVar.Value;
+        }
 
-        var mappedPort = AppContainer.GetMappedPublicPort(AppPort);
-        Client = new();
-        Client.BaseAddress = new Uri($"http://localhost:{mappedPort}");
+        var process = new Process { StartInfo = startInfo };
+        process.OutputDataReceived += (sender, args) => Console.WriteLine(args.Data);
+        process.ErrorDataReceived += (sender, args) => Console.WriteLine(args.Data);
+
+        process.Start();
+        process.BeginOutputReadLine();
+        process.BeginErrorReadLine();
+
+        // Wait for the app to be ready
+        await Task.Delay(5000); // Adjust this delay as needed
+
+        Client = new HttpClient { BaseAddress = new Uri($"http://localhost:{AppPort}") };
     }
 
     public async Task InitializeAsync()
