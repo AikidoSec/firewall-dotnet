@@ -122,12 +122,18 @@ public abstract class BaseAppTests
 
     protected async Task StartMockServer()
     {
-        // log mount source 
-        Console.WriteLine($"::notice::WorkDirectory: {WorkDirectory}");
+        // Debug logging for paths
+        Console.WriteLine($"::debug::Current Directory: {Directory.GetCurrentDirectory()}");
+        Console.WriteLine($"::debug::Work Directory: {WorkDirectory}");
+
+        // Convert to Windows docker path format
+        var dockerPath = WorkDirectory.Replace("C:", "/c").Replace("\\", "/");
+        Console.WriteLine($"::debug::Docker Mount Path: {dockerPath}");
+
         MockServerContainer = new ContainerBuilder()
             .WithNetwork(Network)
             .WithImage("mcr.microsoft.com/dotnet/sdk:8.0")
-            .WithBindMount(WorkDirectory, "/app")
+            .WithBindMount(dockerPath, "/app")
             .WithWorkingDirectory("/app")
             .WithCommand("dotnet", "run", "--project", "e2e/Aikido.Zen.Server.Mock", "--urls", $"http://+:{MockServerPort}")
             .WithExposedPort(MockServerPort)
@@ -164,10 +170,14 @@ public abstract class BaseAppTests
             }
         }
 
+        // Convert to Windows docker path format
+        var dockerPath = WorkDirectory.Replace("C:", "/c").Replace("\\", "/");
+        Console.WriteLine($"::debug::Sample App Docker Mount Path: {dockerPath}");
+
         AppContainer = new ContainerBuilder()
             .WithNetwork(Network)
             .WithImage($"mcr.microsoft.com/dotnet/sdk:{dotnetVersion}")
-            .WithBindMount(WorkDirectory, "/app")
+            .WithBindMount(dockerPath, "/app")
             .WithWorkingDirectory("/app")
             .WithCommand("dotnet", "run", "--project", ProjectDirectory, "--urls", $"http://+:{AppPort}", "--framework", $"net{dotnetVersion}")
             .WithExposedPort(AppPort)
