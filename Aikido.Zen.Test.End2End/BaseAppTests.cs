@@ -29,8 +29,8 @@ public abstract class BaseAppTests
 
 
     private string WorkDirectory => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ROOT_DIR"))
-        ? Path.GetFullPath(Path.Combine(Environment.GetEnvironmentVariable("ROOT_DIR"), "..", "..", "..", "..", ".."))
-        : Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..", ".."));
+        ? Path.GetFullPath(Environment.GetEnvironmentVariable("ROOT_DIR"))
+        : Path.GetFullPath(Directory.GetCurrentDirectory());
 
     protected abstract string ProjectDirectory { get; }
     protected virtual Dictionary<string, string> DefaultEnvironmentVariables => new()
@@ -135,7 +135,7 @@ public abstract class BaseAppTests
             MockServerContainer = new ContainerBuilder()
                 .WithNetwork(Network)
                 .WithImage("mcr.microsoft.com/dotnet/sdk:8.0")
-                .WithBindMount(WorkDirectory, ".")
+                .WithBindMount(WorkDirectory, "/workspace")
                 .WithWorkingDirectory("/app")
                 .WithCommand("dotnet", "run", "--project", "e2e/Aikido.Zen.Server.Mock", "--urls", $"http://+:{MockServerPort}")
                 .WithExposedPort(MockServerPort)
@@ -154,6 +154,7 @@ public abstract class BaseAppTests
             var exception = new Exception($"Current Directory: {Directory.GetCurrentDirectory()} Work Directory: {WorkDirectory}, {e.Message}", e);
             throw exception;
         }
+
     }
 
     protected async Task StartSampleApp(Dictionary<string, string>? additionalEnvVars = null, string dbType = "sqlite", string dotnetVersion = "8.0")
@@ -181,7 +182,7 @@ public abstract class BaseAppTests
         AppContainer = new ContainerBuilder()
             .WithNetwork(Network)
             .WithImage($"mcr.microsoft.com/dotnet/sdk:{dotnetVersion}")
-            .WithBindMount(WorkDirectory, ".")
+            .WithBindMount(WorkDirectory, "/workspace")
             .WithWorkingDirectory("/app")
             .WithCommand("dotnet", "run", "--project", ProjectDirectory, "--urls", $"http://+:{AppPort}", "--framework", $"net{dotnetVersion}")
             .WithExposedPort(AppPort)
