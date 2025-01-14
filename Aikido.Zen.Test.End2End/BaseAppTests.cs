@@ -29,7 +29,7 @@ public abstract class BaseAppTests
 
 
     private string WorkDirectory => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ROOT_DIR"))
-        ? Path.GetFullPath(Path.Combine(Environment.GetEnvironmentVariable("ROOT_DIR"), "..", "..", "..", ".."))
+        ? Path.GetFullPath(Path.Combine(Environment.GetEnvironmentVariable("ROOT_DIR"), "..", "..", "..", "..", ".."))
         : Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..", ".."));
 
     protected abstract string ProjectDirectory { get; }
@@ -126,8 +126,10 @@ public abstract class BaseAppTests
         try
         {
             // Debug logging for paths
-            TestContext.WriteLine($"::debug::Current Directory: {Directory.GetCurrentDirectory()}");
-            TestContext.WriteLine($"::debug::Work Directory: {WorkDirectory}");
+            TestContext.WriteLine($"Current Directory: {Directory.GetCurrentDirectory()}");
+            TestContext.WriteLine($"Work Directory: {WorkDirectory}");
+            Console.WriteLine($"Current Directory: {Directory.GetCurrentDirectory()}");
+            Console.WriteLine($"Work Directory: {WorkDirectory}");
 
 
             MockServerContainer = new ContainerBuilder()
