@@ -1,17 +1,16 @@
 version: 2.1
 
 orbs:
-  win: circleci/windows@5.0 # Latest stable version of the Windows orb
+  win: circleci/windows@5.0
 
 jobs:
   checkout_code:
     docker:
       - image: cimg/base:2022.08
     steps:
-      - run: mkdir -p ~/.ssh && ssh-keyscan -H github.com >> ~/.ssh/known_hosts
-      - run: git clone --depth 1 "$CIRCLE_REPOSITORY_URL" --branch "$CIRCLE_BRANCH" .
-      - save_cache:
-          key: sourcecode-{{ .Revision }}
+      - checkout
+      - persist_to_workspace:
+          root: .
           paths:
             - .
 
@@ -20,11 +19,10 @@ jobs:
       dotnet_version:
         type: string
     executor:
-      name: win/default # Uses Windows Server 2022 with multiple .NET SDKs installed
+      name: win/default
     steps:
-      - restore_cache:
-          keys:
-            - sourcecode-{{ .Revision }}
+      - attach_workspace:
+          at: .
       - run:
           name: Install Dependencies
           command: dotnet restore
