@@ -31,16 +31,16 @@ jobs:
           command: dotnet restore
       - run:
           name: Build Solution
-          command: dotnet build --configuration Development
+          command: dotnet build --configuration Debug
       - run:
           name: Build DotNetCore Project
           command: |
-            dotnet build "Aikido.Zen.DotNetCore/Aikido.Zen.DotNetCore.csproj" --configuration Development --framework << parameters.dotnet_version >>
+            dotnet build "Aikido.Zen.DotNetCore/Aikido.Zen.DotNetCore.csproj" --configuration Debug --framework << parameters.dotnet_version >>
       - run:
           name: Run E2E Tests
           command: |
             dotnet test "Aikido.Zen.Test.End2End/Aikido.Zen.Test.End2End.csproj" \
-              --configuration Development \
+              --configuration Debug \
               --verbosity detailed \
               --logger "console;verbosity=detailed" \
               --no-build \
