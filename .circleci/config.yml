@@ -11,7 +11,7 @@ jobs:
       - checkout
       - run:
           name: Generate Package References Checksum
-          command: bash .circle-ci/generate-packages-checksum.sh
+          command: bash ./.circleci/generate-packages-checksum.sh
       - persist_to_workspace:
           root: .
           paths:
