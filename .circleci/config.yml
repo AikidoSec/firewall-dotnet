@@ -1,14 +1,5 @@
 version: 2.1
 
-executors:
-  dotnet-executor:
-    docker:
-      - image: circleci/dotnet:<< parameters.dotnet_version >>
-    parameters:
-      dotnet_version:
-        type: string
-    working_directory: ~/project
-
 jobs:
   checkout_code:
     docker:
@@ -22,10 +13,11 @@ jobs:
             - .
 
   e2e_test:
-    executor: dotnet-executor
     parameters:
       dotnet_version:
         type: string
+    docker:
+      - image: mcr.microsoft.com/dotnet/sdk:<< parameters.dotnet_version >>
     steps:
       - restore_cache:
           keys:
@@ -35,7 +27,7 @@ jobs:
           command: dotnet restore
       - run:
           name: Run E2E Tests
-          command: dotnet cake --target=TestE2E --configuration=Release --framework=net${{ parameters.dotnet_version }} --verbosity=diagnostic
+          command: dotnet cake --target=TestE2E --configuration=Release --framework=net<< parameters.dotnet_version >> --verbosity=diagnostic
 
 workflows:
   version: 2
