@@ -49,7 +49,7 @@ public abstract class BaseAppTests
     protected BaseAppTests()
     {
         // Set network driver based on environment
-        Console.WriteLine($"::notice::Setting network driver to {UseNat ? "nat" : "bridge"}");
+        Console.WriteLine($"::notice::Setting network driver to {(UseNat ? "nat" : "bridge")}");
         Network = new NetworkBuilder()
             .WithCreateParameterModifier(parameter => parameter.Driver = UseNat ? "nat" : "bridge")
             .WithName(NetworkName)
