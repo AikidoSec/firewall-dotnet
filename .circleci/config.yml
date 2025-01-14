@@ -12,7 +12,8 @@ jobs:
       - run:
           name: Generate csproj Checksums
           command: |
-            find . -type f -name "*.csproj" | sort | xargs sha256sum | awk '{print $1}' > csproj-checksums.lock
+            # Find all .csproj files, sort them, and generate a consistent checksum
+            find . -type f -name "*.csproj" | sort | xargs sha256sum | awk '{print $1}' | sort | sha256sum | awk '{print $1}' > csproj-checksums.lock
       - persist_to_workspace:
           root: .
           paths:
