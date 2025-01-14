@@ -83,10 +83,8 @@ Task("Build")
                 Verbosity = Verbosity.Quiet,
                 PlatformTarget = PlatformTarget.MSIL,
                 MaxCpuCount = 1,
-                NodeReuse = false,
                 DetailedSummary = false,
                 NodeReuse = true
-
             }
             .WithTarget("Build");
 
