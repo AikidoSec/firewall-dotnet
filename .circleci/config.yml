@@ -1,5 +1,8 @@
 version: 2.1
 
+orbs:
+  win: circleci/windows@5.0 # Latest stable version of the Windows orb
+
 jobs:
   checkout_code:
     docker:
@@ -16,8 +19,8 @@ jobs:
     parameters:
       dotnet_version:
         type: string
-    docker:
-      - image: mcr.microsoft.com/dotnet/sdk:<< parameters.dotnet_version >>
+    executor:
+      name: win/default # Uses Windows Server 2022 with multiple .NET SDKs installed
     steps:
       - restore_cache:
           keys:
@@ -30,17 +33,16 @@ jobs:
           command: dotnet cake --target=TestE2E --configuration=Release --framework=net<< parameters.dotnet_version >> --verbosity=diagnostic
 
 workflows:
-  version: 2
   test_on_pr:
     jobs:
       - checkout_code
       - e2e_test:
           requires:
             - checkout_code
+          matrix:
+            parameters:
+              dotnet_version: ["6.0", "7.0", "8.0"]
           filters:
             branches:
               only:
                 - main
-          matrix:
-            parameters:
-              dotnet_version: ["6.0", "7.0", "8.0"]
