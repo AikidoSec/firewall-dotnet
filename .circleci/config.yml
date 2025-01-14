@@ -49,10 +49,10 @@ jobs:
           command: |
             dotnet test "Aikido.Zen.Test.End2End/Aikido.Zen.Test.End2End.csproj" `
               --configuration Debug `
-              --verbosity detailed `
               --logger "console;verbosity=detailed" `
               --no-build `
-              --no-restore
+              --no-restore  `
+              tee test-output.log
       - save_cache:
           key: nuget-packages-{{ checksum "csproj-checksums.lock" }}
           paths:
