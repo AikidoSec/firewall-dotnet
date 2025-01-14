@@ -13,12 +13,15 @@ jobs:
           root: .
           paths:
             - .
+
   e2e_test:
     parameters:
       dotnet_version:
         type: string
     executor:
       name: win/default
+    environment:
+      ROOT_DIR:
     steps:
       - attach_workspace:
           at: .
@@ -31,6 +34,8 @@ jobs:
       - run:
           name: Run E2E Tests
           command: dotnet cake --target=TestE2E --configuration=Release --framework=net<< parameters.dotnet_version >> --verbosity=diagnostic
+          environment:
+            ROOT_DIR: 
 
 workflows:
   test_on_pr:

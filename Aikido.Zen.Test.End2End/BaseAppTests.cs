@@ -26,10 +26,9 @@ public abstract class BaseAppTests
     private const string NetworkName = "test-network";
     private readonly INetwork Network;
 
-    private bool IsGitHubActions => Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true";
 
     private string WorkDirectory => IsGitHubActions
-        ? Path.GetFullPath(Path.Combine(Environment.GetEnvironmentVariable("MOUNT_DIR"), "..", "..", "..", ".."))
+        ? Path.GetFullPath(Path.Combine(Environment.GetEnvironmentVariable("ROOT_DIR"), "..", "..", "..", ".."))
         : Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..", ".."));
 
     protected abstract string ProjectDirectory { get; }
