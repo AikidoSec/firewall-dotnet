@@ -29,8 +29,8 @@ public abstract class BaseAppTests
     private bool IsGitHubActions => Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true";
 
     private string WorkDirectory => IsGitHubActions
-    ? Environment.GetEnvironmentVariable("RUNNER_TEMP")
-    : Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..", "..");
+        ? Environment.GetEnvironmentVariable("MOUNT_DIR")
+        : Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..", "..");
 
     protected abstract string ProjectDirectory { get; }
     protected virtual Dictionary<string, string> DefaultEnvironmentVariables => new()
@@ -121,11 +121,9 @@ public abstract class BaseAppTests
 
     protected async Task StartMockServer()
     {
-        // Use the runner's temp directory for mounting
-        var mountSource = Path.Combine(WorkDirectory, "e2e", "Aikido.Zen.Server.Mock");
+        var mountSource = Environment.GetEnvironmentVariable("MOUNT_DIR") ?? Path.Combine(WorkDirectory, "e2e", "Aikido.Zen.Server.Mock");
+        // log mount source 
         Console.WriteLine($"::notice::MountSource: {mountSource}");
-        Console.WriteLine($"::notice::CurrentDirectory: {Directory.GetCurrentDirectory()}");
-
         MockServerContainer = new ContainerBuilder()
             .WithNetwork(Network)
             .WithImage("mcr.microsoft.com/dotnet/sdk:8.0")
@@ -210,8 +208,6 @@ public abstract class BaseAppTests
 
         // Dispose all database containers in parallel
         await Task.WhenAll(_dbContainers.Select(c => c.DisposeAsync().AsTask()));
-
-
 
         Client.Dispose();
 
