@@ -28,7 +28,7 @@ public abstract class BaseAppTests
 
     private bool IsGitHubActions => Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true";
 
-    private string MountDirectory => IsGitHubActions
+    private string WorkDirectory => IsGitHubActions
     ? Environment.GetEnvironmentVariable("RUNNER_TEMP")
     : Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..", "..");
 
@@ -122,7 +122,7 @@ public abstract class BaseAppTests
     protected async Task StartMockServer()
     {
         // Use the runner's temp directory for mounting
-        var mountSource = Path.Combine(MountDirectory, "e2e", "Aikido.Zen.Server.Mock");
+        var mountSource = Path.Combine(Work, "e2e", "Aikido.Zen.Server.Mock");
         Console.WriteLine($"::notice::MountSource: {mountSource}");
         Console.WriteLine($"::notice::CurrentDirectory: {Directory.GetCurrentDirectory()}");
 
@@ -132,7 +132,7 @@ public abstract class BaseAppTests
             .WithNetwork(Network)
             .WithImage("mcr.microsoft.com/dotnet/sdk:8.0")
             .WithBindMount(mountSource, mountDestination)
-            .WithWorkingDirectory(mountDestination)
+            .WithWorkingDirectory("/app")
             .WithCommand("dotnet", "run", "--project", "e2e/Aikido.Zen.Server.Mock", "--urls", $"http://+:{MockServerPort}")
             .WithExposedPort(MockServerPort)
             .WithPortBinding(MockServerPort, true)
@@ -168,7 +168,7 @@ public abstract class BaseAppTests
             }
         }
 
-        var mountSource = Path.Combine(MountDirectory, ProjectDirectory);
+        var mountSource = Path.Combine(Work, ProjectDirectory);
 
         var mountDestination = IsGitHubActions ? "app:z" : "/app";
 
@@ -176,7 +176,7 @@ public abstract class BaseAppTests
             .WithNetwork(Network)
             .WithImage($"mcr.microsoft.com/dotnet/sdk:{dotnetVersion}")
             .WithBindMount(mountSource, mountDestination)
-            .WithWorkingDirectory(mountDestination)
+            .WithWorkingDirectory("/app")
             .WithCommand("dotnet", "run", "--project", ProjectDirectory, "--urls", $"http://+:{AppPort}", "--framework", $"net{dotnetVersion}")
             .WithExposedPort(AppPort)
             .WithPortBinding(AppPort, true)
