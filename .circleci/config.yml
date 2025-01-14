@@ -27,15 +27,23 @@ jobs:
       - attach_workspace:
           at: .
       - run:
-          name: Install Dependencies
+          name: Restore NuGet Packages (.NET Framework)
+          command: |
+            nuget restore "sample-apps/DotNetFramework.Sample.App/DotNetFramework.Sample.App.csproj"
+            nuget restore "Aikido.Zen.DotNetFramework/Aikido.Zen.DotNetFramework.csproj"
+      - run:
+          name: Install Dependencies (.NET Core)
           command: dotnet restore
       - run:
-          name: Build Solution
-          command: dotnet build --configuration Debug
-      - run:
-          name: Build DotNetCore Project
+          name: Build .NET Framework Projects
           command: |
-            dotnet build "Aikido.Zen.DotNetCore/Aikido.Zen.DotNetCore.csproj" --configuration Debug --framework << parameters.dotnet_version >>
+            $msbuildPath = "C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe"
+            & $msbuildPath "sample-apps/DotNetFramework.Sample.App/DotNetFramework.Sample.App.csproj" /p:Configuration=Debug /p:Platform="Any CPU" /t:Rebuild
+            & $msbuildPath "Aikido.Zen.DotNetFramework/Aikido.Zen.DotNetFramework.csproj" /p:Configuration=Debug /p:Platform="Any CPU" /t:Rebuild
+      - run:
+          name: Build .NET Core Projects
+          command: |
+            dotnet build "Aikido.Zen.DotNetCore/Aikido.Zen.DotNetCore.csproj" --configuration Debug --framework net<< parameters.dotnet_version >>
       - run:
           name: Run E2E Tests
           command: |
