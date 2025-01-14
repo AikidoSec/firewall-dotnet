@@ -57,4 +57,4 @@ jobs:
             - name: Build and Run E2E Tests
               run: |
                   dotnet tool install --global Cake.Tool
-                  dotnet cake --target=TestE2E --configuration=Release --framework=${{ matrix.dotnet-version }}
+                  dotnet cake --target=TestE2E --configuration=Release --framework=${{ matrix.dotnet-version }} --RUNNER_TEMP=${{ runner.temp }}
