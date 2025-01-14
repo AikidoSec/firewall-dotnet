@@ -43,13 +43,15 @@ workflows:
     jobs:
       - checkout_code
       - e2e_test:
-          matrix:
-            parameters:
-              dotnet_version: ["6.0", "7.0", "8.0"]
           requires:
             - checkout_code
           filters:
             branches:
               only:
                 - main
-        dotnet_version: << matrix.dotnet_version >>
+          dotnet_version: << matrix.dotnet_version >>
+
+    # Define the matrix at the workflow level
+    matrix:
+      parameters:
+        dotnet_version: ["6.0", "7.0", "8.0"]
