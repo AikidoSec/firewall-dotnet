@@ -121,18 +121,24 @@ public abstract class BaseAppTests
 
     protected async Task StartMockServer()
     {
-        // Use the runner's temp directory for mounting
         var mountSource = IsGitHubActions
-            ? Path.Combine(Environment.GetEnvironmentVariable("RUNNER_TEMP") ?? "/tmp", "project", "Aikido.Zen.Server.Mock")
-            : Path.Combine(MountDirectory, "e2e", "Aikido.Zen.Server.Mock");
+        ? Path.Combine(MountDirectory, "\\Aikido.Zen.Server.Mock")
+        : MountDirectory;
+        var mountDestination = IsGitHubActions ? "app:z" : "/app";
 
-        var mountDestination = "/app";
+        // Log information to ensure it is visible in GitHub Actions
+        Console.WriteLine($"::notice::MountDirectory: {MountDirectory}");
+        Console.WriteLine($"::notice::mountDestination: {mountDestination}");
+        Console.WriteLine($"::notice::Path.Combine(MountDirectory, mountDestination): {Path.Combine(MountDirectory, mountDestination)}");
+        Console.WriteLine($"::notice::Directory.GetCurrentDirectory(): {Directory.GetCurrentDirectory()}");
+        Console.WriteLine($"::notice::ProjectDirectory: {ProjectDirectory}");
+        Console.WriteLine($"::notice::Path.GetFullPath(mountDestination): {Path.GetFullPath(mountDestination)}");
 
         MockServerContainer = new ContainerBuilder()
             .WithNetwork(Network)
             .WithImage("mcr.microsoft.com/dotnet/sdk:8.0")
             .WithBindMount(mountSource, mountDestination)
-            .WithWorkingDirectory(mountDestination)
+            .WithWorkingDirectory(Path.Combine(mountSource, mountDestination))
             .WithCommand("dotnet", "run", "--project", "e2e/Aikido.Zen.Server.Mock", "--urls", $"http://+:{MockServerPort}")
             .WithExposedPort(MockServerPort)
             .WithPortBinding(MockServerPort, true)
@@ -148,6 +154,7 @@ public abstract class BaseAppTests
 
     protected async Task StartSampleApp(Dictionary<string, string>? additionalEnvVars = null, string dbType = "sqlite", string dotnetVersion = "8.0")
     {
+        // Get mapped ports for all services
         var containerEnvVars = new Dictionary<string, string>(DefaultEnvironmentVariables);
 
         _ = dbType switch
@@ -160,6 +167,7 @@ public abstract class BaseAppTests
             _ => ""
         };
 
+        // Add additional environment variables
         if (additionalEnvVars != null)
         {
             foreach (var (key, value) in additionalEnvVars)
@@ -168,17 +176,16 @@ public abstract class BaseAppTests
             }
         }
 
+        var mountDestination = IsGitHubActions ? "app:z" : "/app";
         var mountSource = IsGitHubActions
-            ? Path.Combine(Environment.GetEnvironmentVariable("RUNNER_TEMP") ?? "/tmp", "project", ProjectDirectory)
-            : Path.Combine(MountDirectory, ProjectDirectory);
-
-        var mountDestination = "/app";
+        ? Path.Combine(MountDirectory, ProjectDirectory)
+        : MountDirectory;
 
         AppContainer = new ContainerBuilder()
             .WithNetwork(Network)
             .WithImage($"mcr.microsoft.com/dotnet/sdk:{dotnetVersion}")
-            .WithBindMount(mountSource, mountDestination)
-            .WithWorkingDirectory(mountDestination)
+            .WithBindMount(MountDirectory, mountDestination)
+            .WithWorkingDirectory(Path.Combine(MountDirectory, mountDestination))
             .WithCommand("dotnet", "run", "--project", ProjectDirectory, "--urls", $"http://+:{AppPort}", "--framework", $"net{dotnetVersion}")
             .WithExposedPort(AppPort)
             .WithPortBinding(AppPort, true)
@@ -187,7 +194,8 @@ public abstract class BaseAppTests
             .WithWaitStrategy(Wait.ForUnixContainer()
                 .UntilHttpRequestIsSucceeded(r => r
                     .ForPath("/health")
-                    .ForPort(AppPort)))
+                    .ForPort(AppPort)
+                    ))
             .Build();
 
         await AppContainer.StartAsync();
