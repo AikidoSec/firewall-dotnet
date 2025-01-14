@@ -49,7 +49,7 @@ public abstract class BaseAppTests
     protected BaseAppTests()
     {
         // Set network driver based on environment
-        Console.WriteLine($"::notice::Setting network driver to {(UseNat ? "nat" : "bridge")}");
+        TestContext.WriteLine($"::notice::Setting network driver to {(UseNat ? "nat" : "bridge")}");
         Network = new NetworkBuilder()
             .WithCreateParameterModifier(parameter => parameter.Driver = UseNat ? "nat" : "bridge")
             .WithName(NetworkName)
@@ -123,12 +123,12 @@ public abstract class BaseAppTests
     protected async Task StartMockServer()
     {
         // Debug logging for paths
-        Console.WriteLine($"::debug::Current Directory: {Directory.GetCurrentDirectory()}");
-        Console.WriteLine($"::debug::Work Directory: {WorkDirectory}");
+        TestContext.WriteLine($"::debug::Current Directory: {Directory.GetCurrentDirectory()}");
+        TestContext.WriteLine($"::debug::Work Directory: {WorkDirectory}");
 
         // Convert to Windows docker path format
         var dockerPath = WorkDirectory.Replace("C:", "/c").Replace("\\", "/");
-        Console.WriteLine($"::debug::Docker Mount Path: {dockerPath}");
+        TestContext.WriteLine($"::debug::Docker Mount Path: {dockerPath}");
 
         MockServerContainer = new ContainerBuilder()
             .WithNetwork(Network)
@@ -172,7 +172,7 @@ public abstract class BaseAppTests
 
         // Convert to Windows docker path format
         var dockerPath = WorkDirectory.Replace("C:", "/c").Replace("\\", "/");
-        Console.WriteLine($"::debug::Sample App Docker Mount Path: {dockerPath}");
+        TestContext.WriteLine($"::debug::Sample App Docker Mount Path: {dockerPath}");
 
         AppContainer = new ContainerBuilder()
             .WithNetwork(Network)
