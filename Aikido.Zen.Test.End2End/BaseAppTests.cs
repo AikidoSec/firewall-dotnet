@@ -56,6 +56,7 @@ public abstract class BaseAppTests
             .Build();
         Network.CreateAsync().Wait();
         InitializeDatabaseContainers();
+        Trace.Listeners.Add(new ConsoleTraceListener());
     }
 
     private void InitializeDatabaseContainers()
