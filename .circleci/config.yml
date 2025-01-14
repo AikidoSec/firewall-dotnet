@@ -33,8 +33,8 @@ jobs:
           at: .
       - restore_cache:
           keys:
-            - nuget-packages-v1-{{ checksum "packages.checksum" }}
-            - nuget-packages-v1-
+            - nuget-packages-v2-{{ checksum "packages.checksum" }}
+            - nuget-packages-v2-
           paths:
             - packages
             - ~/.nuget/packages
