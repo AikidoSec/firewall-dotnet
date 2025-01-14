@@ -31,31 +31,16 @@ jobs:
     steps:
       - attach_workspace:
           at: .
-      - run:
-          name: Check for Cache
-          command: |
-            try
-            {
-              $no_nuget = (ls ~\.nuget\packages).Length -eq 0
-              $exit_code = if ($no_nuget) { 1 } else { 0 }
-              exit $exit_code
-            }
-            catch
-            {
-              exit 1
-            }
+      - restore_cache:
+          keys:
+            - nuget-packages-v1-{{ checksum "packages.checksum" }}
+            - nuget-packages-v1-
+          paths:
+            - packages
+            - ~/.nuget/packages
       - run:
           name: Restore NuGet Packages
-          command: |
-            dotnet restore --use-lock-file
-            nuget restore
-          when: on_fail
-      - save_cache:
-          name: Cache Nuget Packages
-          key: nuget-{{ checksum "Directory.Packages.props" }}-{{ .Environment.CACHE_VERSION }}
-          paths:
-            - "~/.nuget"
-          when: always
+          command: nuget restore
       - run:
           name: Build
           command: |
@@ -68,6 +53,12 @@ jobs:
               --configuration Release `
               --verbosity detailed `
               --logger "console;verbosity=detailed"
+      - save_cache:
+          name: Cache Nuget Packages
+          key: nuget-{{ checksum "packages.checksum" }}-{{ .Environment.CACHE_VERSION }}
+          paths:
+            - packages
+            - ~/.nuget/packages
 
 workflows:
   test_on_pr:
