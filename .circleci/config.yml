@@ -53,12 +53,14 @@ jobs:
               --logger "console;verbosity=detailed" `
               --no-build `
               --no-restore  `
-              tee test-output.log
+              --output test-output.log
       - save_cache:
           key: nuget-packages-{{ checksum "csproj-checksums.lock" }}
           paths:
-            - ~/.nuget/packages
             - packages
+            - ~/.nuget/packages
+            - test-output.log
+            - csproj-checksums.lock
 
 workflows:
   test_on_pr:
