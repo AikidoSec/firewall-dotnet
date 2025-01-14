@@ -150,6 +150,7 @@ public abstract class BaseAppTests
         catch (Exception e)
         {
             var exception = new Exception($"Current Directory: {Directory.GetCurrentDirectory()} Work Directory: {WorkDirectory}, {e.Message}", e);
+            throw exception;
         }
 
     }
