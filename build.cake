@@ -154,6 +154,7 @@ Task("TestE2E")
         {
             DotNetTest(project.FullPath, new DotNetTestSettings
             {
+                DiagnosticOutput = true,
                 Configuration = configuration,
                 NoBuild = true,
                 NoRestore = true,
