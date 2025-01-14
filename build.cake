@@ -160,7 +160,6 @@ Task("TestE2E")
                 ArgumentCustomization = args => args
                     .Append("--verbosity detailed")
                     .Append("--logger console;verbosity=detailed")
-                    .Append($"--MOUNT_DIR={Environment.GetEnvironmentVariable("MOUNT_DIR")}")
             });
         }
         Information($"TestE2E task completed successfully.");

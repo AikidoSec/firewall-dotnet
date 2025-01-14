@@ -121,13 +121,12 @@ public abstract class BaseAppTests
 
     protected async Task StartMockServer()
     {
-        var mountSource = Environment.GetEnvironmentVariable("MOUNT_DIR") ?? Path.Combine(WorkDirectory, "e2e", "Aikido.Zen.Server.Mock");
         // log mount source 
-        Console.WriteLine($"::notice::MountSource: {mountSource}");
+        Console.WriteLine($"::notice::WorkDirectory: {WorkDirectory}");
         MockServerContainer = new ContainerBuilder()
             .WithNetwork(Network)
             .WithImage("mcr.microsoft.com/dotnet/sdk:8.0")
-            .WithBindMount(mountSource, "/app")
+            .WithBindMount(WorkDirectory, "/app")
             .WithWorkingDirectory("/app")
             .WithCommand("dotnet", "run", "--project", "e2e/Aikido.Zen.Server.Mock", "--urls", $"http://+:{MockServerPort}")
             .WithExposedPort(MockServerPort)
@@ -164,12 +163,10 @@ public abstract class BaseAppTests
             }
         }
 
-        var mountSource = Path.Combine(WorkDirectory, ProjectDirectory);
-
         AppContainer = new ContainerBuilder()
             .WithNetwork(Network)
             .WithImage($"mcr.microsoft.com/dotnet/sdk:{dotnetVersion}")
-            .WithBindMount(mountSource, "/app")
+            .WithBindMount(WorkDirectory, "/app")
             .WithWorkingDirectory("/app")
             .WithCommand("dotnet", "run", "--project", ProjectDirectory, "--urls", $"http://+:{AppPort}", "--framework", $"net{dotnetVersion}")
             .WithExposedPort(AppPort)
