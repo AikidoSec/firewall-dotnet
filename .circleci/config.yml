@@ -27,7 +27,7 @@ jobs:
       - attach_workspace:
           at: .
       - run:
-          name: Restore NuGet Packages (.NET Framework)
+          name: Restore NuGet Packages
           command: |
             nuget restore
       - run:
