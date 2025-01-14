@@ -13,7 +13,6 @@ jobs:
           root: .
           paths:
             - .
-
   e2e_test:
     parameters:
       dotnet_version:
@@ -40,7 +39,3 @@ workflows:
           matrix:
             parameters:
               dotnet_version: ["6.0", "7.0", "8.0"]
-          filters:
-            branches:
-              only:
-                - main
