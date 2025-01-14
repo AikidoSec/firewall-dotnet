@@ -29,7 +29,7 @@ public abstract class BaseAppTests
     private bool IsGitHubActions => Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true";
 
     private string MountDirectory => IsGitHubActions
-    ? Environment.GetEnvironmentVariable("GITHUB_PATH")
+    ? Environment.GetEnvironmentVariable("RUNNER_TEMP")
     : Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..", "..");
 
     protected abstract string ProjectDirectory { get; }
@@ -122,11 +122,11 @@ public abstract class BaseAppTests
     protected async Task StartMockServer()
     {
         // Use the runner's temp directory for mounting
-        var mountSource = IsGitHubActions
-            ? Path.Combine(Environment.GetEnvironmentVariable("RUNNER_TEMP") ?? "/tmp", "project", "Aikido.Zen.Server.Mock")
-            : Path.Combine(MountDirectory, "e2e", "Aikido.Zen.Server.Mock");
+        var mountSource = Path.Combine(MountDirectory, "e2e", "Aikido.Zen.Server.Mock");
+        Console.WriteLine($"::notice::MountSource: {mountSource}");
+        Console.WriteLine($"::notice::CurrentDirectory: {Directory.GetCurrentDirectory()}");
 
-        var mountDestination = "/app";
+        var mountDestination = IsGitHubActions ? "app:z" : "/app";
 
         MockServerContainer = new ContainerBuilder()
             .WithNetwork(Network)
@@ -168,11 +168,9 @@ public abstract class BaseAppTests
             }
         }
 
-        var mountSource = IsGitHubActions
-            ? Path.Combine(Environment.GetEnvironmentVariable("RUNNER_TEMP") ?? "/tmp", "project", ProjectDirectory)
-            : Path.Combine(MountDirectory, ProjectDirectory);
+        var mountSource = Path.Combine(MountDirectory, ProjectDirectory);
 
-        var mountDestination = "/app";
+        var mountDestination = IsGitHubActions ? "app:z" : "/app";
 
         AppContainer = new ContainerBuilder()
             .WithNetwork(Network)

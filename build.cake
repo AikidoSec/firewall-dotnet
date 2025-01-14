@@ -148,9 +148,6 @@ Task("TestE2E")
     .IsDependentOn("Build")
     .Does(() =>
     {
-        var coverageDir = MakeAbsolute(Directory("./coverage"));
-        EnsureDirectoryExists(coverageDir);
-
         // Get test projects from Aikido.Zen.Test.End2End directory
         var testProjects = GetFiles("./Aikido.Zen.Test.End2End/*.csproj");
         foreach (var project in testProjects)
@@ -159,7 +156,10 @@ Task("TestE2E")
             {
                 Configuration = configuration,
                 NoBuild = true,
-                NoRestore = true
+                NoRestore = true,
+                ArgumentCustomization = args => args
+                    .Append("--verbosity detailed")
+                    .Append("--logger", "console;verbosity=detailed")
             });
         }
         Information($"TestE2E task completed successfully.");
