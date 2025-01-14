@@ -37,6 +37,7 @@ jobs:
           name: Restore NuGet Packages
           keys:
             - nuget-packages-{{ checksum "csproj-checksums.lock" }}
+            - nuget-packages-
       - run:
           name: Restore NuGet Packages
           command: |
