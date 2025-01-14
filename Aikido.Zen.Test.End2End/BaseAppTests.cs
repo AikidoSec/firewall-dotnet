@@ -126,12 +126,10 @@ public abstract class BaseAppTests
         Console.WriteLine($"::notice::MountSource: {mountSource}");
         Console.WriteLine($"::notice::CurrentDirectory: {Directory.GetCurrentDirectory()}");
 
-        var mountDestination = IsGitHubActions ? "app:z" : "/app";
-
         MockServerContainer = new ContainerBuilder()
             .WithNetwork(Network)
             .WithImage("mcr.microsoft.com/dotnet/sdk:8.0")
-            .WithBindMount(mountSource, mountDestination)
+            .WithBindMount(mountSource, "/app")
             .WithWorkingDirectory("/app")
             .WithCommand("dotnet", "run", "--project", "e2e/Aikido.Zen.Server.Mock", "--urls", $"http://+:{MockServerPort}")
             .WithExposedPort(MockServerPort)
@@ -170,12 +168,10 @@ public abstract class BaseAppTests
 
         var mountSource = Path.Combine(WorkDirectory, ProjectDirectory);
 
-        var mountDestination = IsGitHubActions ? "app:z" : "/app";
-
         AppContainer = new ContainerBuilder()
             .WithNetwork(Network)
             .WithImage($"mcr.microsoft.com/dotnet/sdk:{dotnetVersion}")
-            .WithBindMount(mountSource, mountDestination)
+            .WithBindMount(mountSource, "/app")
             .WithWorkingDirectory("/app")
             .WithCommand("dotnet", "run", "--project", ProjectDirectory, "--urls", $"http://+:{AppPort}", "--framework", $"net{dotnetVersion}")
             .WithExposedPort(AppPort)
