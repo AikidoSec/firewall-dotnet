@@ -48,7 +48,7 @@ jobs:
             & $msbuildPath
       - save_cache:
           name: Cache Nuget Packages
-          key: nuget-{{ checksum "packages.checksum" }}-{{ .Environment.CACHE_VERSION }}
+          key: nuget-{{ checksum "packages.checksum" }}
           paths:
             - packages
             - ~/.nuget/packages
