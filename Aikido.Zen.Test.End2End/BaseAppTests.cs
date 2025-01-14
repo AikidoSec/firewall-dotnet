@@ -122,7 +122,7 @@ public abstract class BaseAppTests
     protected async Task StartMockServer()
     {
         // Use the runner's temp directory for mounting
-        var mountSource = Path.Combine(Work, "e2e", "Aikido.Zen.Server.Mock");
+        var mountSource = Path.Combine(WorkDirectory, "e2e", "Aikido.Zen.Server.Mock");
         Console.WriteLine($"::notice::MountSource: {mountSource}");
         Console.WriteLine($"::notice::CurrentDirectory: {Directory.GetCurrentDirectory()}");
 
@@ -168,7 +168,7 @@ public abstract class BaseAppTests
             }
         }
 
-        var mountSource = Path.Combine(Work, ProjectDirectory);
+        var mountSource = Path.Combine(WorkDirectory, ProjectDirectory);
 
         var mountDestination = IsGitHubActions ? "app:z" : "/app";
 
