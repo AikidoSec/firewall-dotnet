@@ -60,12 +60,17 @@ Task("DownloadLibraries")
 Task("Restore")
     .Does(() =>
     {
-        NuGetRestore(solution);
-        DotNetRestore(solution, new DotNetRestoreSettings
-        {
-            Verbosity = DotNetVerbosity.Quiet
+    // Get all project files except those containing ".benchmarks"
+    var projectsToRestore = GetFiles("./**/*.csproj")
+        .Where(p => !p.FullPath.Contains(".Benchmarks"));
+
+    // Restore each project individually
+    foreach (var project in projectsToRestore)
+    {
+        NuGetRestore(project);
+        Verbosity = DotNetVerbosity.Quiet
         });
-        Information("Restore task completed successfully.");
+Information("Restore task completed successfully.");
     });
 
 Task("Build")
@@ -121,6 +126,7 @@ Task("Test")
         {
             DotNetTest(project.FullPath, new DotNetTestSettings
             {
+                SetupProcessSettings = processSettings => processSettings.RedirectStandardOutput = true,
                 Configuration = configuration,
                 NoBuild = true,
                 NoRestore = true,
