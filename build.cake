@@ -159,7 +159,7 @@ Task("TestE2E")
                 NoRestore = true,
                 ArgumentCustomization = args => args
                     .Append("--verbosity detailed")
-                    .Append("--logger", "console;verbosity=detailed")
+                    .Append("--logger console;verbosity=detailed")
             });
         }
         Information($"TestE2E task completed successfully.");
