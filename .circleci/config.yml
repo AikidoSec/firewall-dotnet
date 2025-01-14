@@ -29,8 +29,8 @@ jobs:
       - run:
           name: Restore NuGet Packages (.NET Framework)
           command: |
-            nuget restore "sample-apps/DotNetFramework.Sample.App/DotNetFramework.Sample.App.csproj"
-            nuget restore "Aikido.Zen.DotNetFramework/Aikido.Zen.DotNetFramework.csproj"
+            nuget restore "${CIRCLE_WORKING_DIRECTORY}/sample-apps/DotNetFramework.Sample.App/DotNetFramework.Sample.App.csproj"
+            nuget restore "${CIRCLE_WORKING_DIRECTORY}/Aikido.Zen.DotNetFramework/Aikido.Zen.DotNetFramework.csproj"
       - run:
           name: Install Dependencies (.NET Core)
           command: dotnet restore
