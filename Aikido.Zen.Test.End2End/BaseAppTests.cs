@@ -25,9 +25,10 @@ public abstract class BaseAppTests
     private const int AppPort = 5002;
     private const string NetworkName = "test-network";
     private readonly INetwork Network;
+    private bool UseNat => Environment.GetEnvironmentVariable("USE_NAT") == "true";
 
 
-    private string WorkDirectory => IsGitHubActions
+    private string WorkDirectory => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ROOT_DIR"))
         ? Path.GetFullPath(Path.Combine(Environment.GetEnvironmentVariable("ROOT_DIR"), "..", "..", "..", ".."))
         : Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..", ".."));
 
@@ -49,7 +50,7 @@ public abstract class BaseAppTests
     {
         // Set network driver based on environment
         Network = new NetworkBuilder()
-            .WithCreateParameterModifier(parameter => parameter.Driver = IsGitHubActions ? "nat" : "bridge")
+            .WithCreateParameterModifier(parameter => parameter.Driver = UseNat ? "nat" : "bridge")
             .WithName(NetworkName)
             .Build();
         Network.CreateAsync().Wait();
