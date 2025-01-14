@@ -122,30 +122,35 @@ public abstract class BaseAppTests
 
     protected async Task StartMockServer()
     {
-        // Debug logging for paths
-        TestContext.WriteLine($"::debug::Current Directory: {Directory.GetCurrentDirectory()}");
-        TestContext.WriteLine($"::debug::Work Directory: {WorkDirectory}");
+        try
+        {
+            // Debug logging for paths
+            TestContext.WriteLine($"::debug::Current Directory: {Directory.GetCurrentDirectory()}");
+            TestContext.WriteLine($"::debug::Work Directory: {WorkDirectory}");
 
-        // Convert to Windows docker path format
-        var dockerPath = WorkDirectory.Replace("C:", "/c").Replace("\\", "/");
-        TestContext.WriteLine($"::debug::Docker Mount Path: {dockerPath}");
 
-        MockServerContainer = new ContainerBuilder()
-            .WithNetwork(Network)
-            .WithImage("mcr.microsoft.com/dotnet/sdk:8.0")
-            .WithBindMount(dockerPath, "/app")
-            .WithWorkingDirectory("/app")
-            .WithCommand("dotnet", "run", "--project", "e2e/Aikido.Zen.Server.Mock", "--urls", $"http://+:{MockServerPort}")
-            .WithExposedPort(MockServerPort)
-            .WithPortBinding(MockServerPort, true)
-            .WithWaitStrategy(Wait.ForUnixContainer()
-                .UntilHttpRequestIsSucceeded(r => r
-                    .ForPath("/health")
-                    .ForPort(MockServerPort)))
-            .WithName("mock-server")
-            .Build();
+            MockServerContainer = new ContainerBuilder()
+                .WithNetwork(Network)
+                .WithImage("mcr.microsoft.com/dotnet/sdk:8.0")
+                .WithBindMount(WorkDirectory, "/app")
+                .WithWorkingDirectory("/app")
+                .WithCommand("dotnet", "run", "--project", "e2e/Aikido.Zen.Server.Mock", "--urls", $"http://+:{MockServerPort}")
+                .WithExposedPort(MockServerPort)
+                .WithPortBinding(MockServerPort, true)
+                .WithWaitStrategy(Wait.ForUnixContainer()
+                    .UntilHttpRequestIsSucceeded(r => r
+                        .ForPath("/health")
+                        .ForPort(MockServerPort)))
+                .WithName("mock-server")
+                .Build();
 
-        await MockServerContainer.StartAsync();
+            await MockServerContainer.StartAsync();
+        }
+        catch (Exception e)
+        {
+            var exception = new Exception($"Current Directory: {Directory.GetCurrentDirectory()} Work Directory: {WorkDirectory}, {e.Message}", e);
+        }
+
     }
 
     protected async Task StartSampleApp(Dictionary<string, string>? additionalEnvVars = null, string dbType = "sqlite", string dotnetVersion = "8.0")
@@ -170,14 +175,10 @@ public abstract class BaseAppTests
             }
         }
 
-        // Convert to Windows docker path format
-        var dockerPath = WorkDirectory.Replace("C:", "/c").Replace("\\", "/");
-        TestContext.WriteLine($"::debug::Sample App Docker Mount Path: {dockerPath}");
-
         AppContainer = new ContainerBuilder()
             .WithNetwork(Network)
             .WithImage($"mcr.microsoft.com/dotnet/sdk:{dotnetVersion}")
-            .WithBindMount(dockerPath, "/app")
+            .WithBindMount(WorkDirectory, "/app")
             .WithWorkingDirectory("/app")
             .WithCommand("dotnet", "run", "--project", ProjectDirectory, "--urls", $"http://+:{AppPort}", "--framework", $"net{dotnetVersion}")
             .WithExposedPort(AppPort)
