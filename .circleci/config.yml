@@ -9,10 +9,17 @@ jobs:
       - image: cimg/base:2022.08
     steps:
       - checkout
+      - run:
+          name: Generate csproj Checksums
+          command: |
+            Get-ChildItem -Recurse -Filter *.csproj | ForEach-Object {
+              Get-FileHash $_.FullName -Algorithm SHA256 | Select-Object -ExpandProperty Hash
+            } | Out-File -FilePath csproj-checksums.lock -Encoding utf8
       - persist_to_workspace:
           root: .
           paths:
             - .
+            - csproj-checksums.lock
 
   e2e_test:
     parameters:
@@ -26,6 +33,10 @@ jobs:
     steps:
       - attach_workspace:
           at: .
+      - restore_cache:
+          name: Restore NuGet Packages
+          keys:
+            - nuget-packages-{{ checksum "csproj-checksums.lock" }}
       - run:
           name: Restore NuGet Packages
           command: |
@@ -44,6 +55,10 @@ jobs:
               --logger "console;verbosity=detailed" \
               --no-build \
               --no-restore
+      - save_cache:
+          key: nuget-packages-{{ checksum "csproj-checksums.lock" }}
+          paths:
+            - ~/.nuget/packages
 
 workflows:
   test_on_pr:
