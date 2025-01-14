@@ -27,9 +27,6 @@ jobs:
       - attach_workspace:
           at: .
       - run:
-          name: Install Dependencies
-          command: dotnet restore
-      - run:
           name: Run Restore tools
           command: dotnet tool restore
       - run:
