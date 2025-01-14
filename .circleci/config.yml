@@ -10,15 +10,14 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Generate csproj Checksums
-          command: |
-            # Find all .csproj files, sort them, and generate a consistent checksum
-            find . -type f -name "*.csproj" | sort | xargs sha256sum | awk '{print $1}' | sort | sha256sum | awk '{print $1}' > csproj-checksums.lock
+          name: Generate Package References Checksum
+          command: bash ./generate-packages-checksum.sh
       - persist_to_workspace:
           root: .
           paths:
             - .
-            - csproj-checksums.lock
+            - packages.txt
+            - packages.checksum
 
   e2e_test:
     parameters:
@@ -33,15 +32,14 @@ jobs:
       - attach_workspace:
           at: .
       - restore_cache:
-          name: Restore NuGet Packages
           keys:
-            - nuget-packages-{{ checksum "csproj-checksums.lock" }}
+            - nuget-packages-v1-{{ checksum "packages.checksum" }}
+            - nuget-packages-v1-
       - run:
           name: Restore NuGet Packages
-          command: |
-            nuget restore
+          command: nuget restore
       - run:
-          name: Build .NET Framework Projects
+          name: Build
           command: |
             $msbuildPath = "C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe"
             & $msbuildPath
@@ -49,18 +47,9 @@ jobs:
           name: Run E2E Tests
           command: |
             dotnet test "Aikido.Zen.Test.End2End/Aikido.Zen.Test.End2End.csproj" `
-              --configuration Debug `
-              --logger "console;verbosity=detailed" `
-              --no-build `
-              --no-restore  `
-              --output test-output.log
-      - save_cache:
-          key: nuget-packages-{{ checksum "csproj-checksums.lock" }}
-          paths:
-            - packages
-            - ~/.nuget/packages
-            - test-output.log
-            - csproj-checksums.lock
+              --configuration Release `
+              --verbosity detailed `
+              --logger "console;verbosity=detailed"
 
 workflows:
   test_on_pr:
