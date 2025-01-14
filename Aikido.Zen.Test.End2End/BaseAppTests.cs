@@ -29,7 +29,7 @@ public abstract class BaseAppTests
 
 
     private string WorkDirectory => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ROOT_DIR"))
-        ? Path.GetFullPath(Path.Combine(Environment.GetEnvironmentVariable("ROOT_DIR"), "..", "..", "..", ".."))
+        ? Path.GetFullPath(Path.Combine(Environment.GetEnvironmentVariable("ROOT_DIR"), "..", "..", "..", "..", ".."))
         : Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..", ".."));
 
     protected abstract string ProjectDirectory { get; }
@@ -135,7 +135,7 @@ public abstract class BaseAppTests
             MockServerContainer = new ContainerBuilder()
                 .WithNetwork(Network)
                 .WithImage("mcr.microsoft.com/dotnet/sdk:8.0")
-                .WithBindMount(WorkDirectory, "/workspace")
+                .WithBindMount(WorkDirectory, "/app")
                 .WithWorkingDirectory("/app")
                 .WithCommand("dotnet", "run", "--project", "e2e/Aikido.Zen.Server.Mock", "--urls", $"http://+:{MockServerPort}")
                 .WithExposedPort(MockServerPort)
