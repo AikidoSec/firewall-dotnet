@@ -60,16 +60,7 @@ Task("DownloadLibraries")
 Task("Restore")
     .Does(() =>
     {
-        // Get all project files except those containing ".benchmarks"
-        var projectsToRestore = GetFiles("./**/*.csproj")
-            .Where(p => !p.FullPath.Contains(".benchmarks"));
-
-        // Restore each project individually
-        foreach (var project in projectsToRestore)
-        {
-            NuGetRestore(project);
-        }
-        Information("Restore task completed successfully.");
+        NuGetRestore(solution);
     });
 
 Task("Build")
