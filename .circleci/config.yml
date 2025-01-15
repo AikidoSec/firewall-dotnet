@@ -1,8 +1,5 @@
 version: 2.1
 
-orbs:
-  win: circleci/windows@5.0
-
 jobs:
   checkout_code:
     docker:
@@ -23,11 +20,8 @@ jobs:
     parameters:
       dotnet_version:
         type: string
-    executor:
-      name: win/server-2022
-    environment:
-      ROOT_DIR: ${CIRCLE_WORKING_DIRECTORY}
-      CI: true
+    docker:
+      - image: mcr.microsoft.com/dotnet/sdk:<< parameters.dotnet_version >>
     steps:
       - attach_workspace:
           at: .
@@ -39,17 +33,6 @@ jobs:
           command: |
             dotnet tool install --global Cake.Tool
             dotnet cake --target DownloadLibraries
-      - run:
-          name: Switch to Linux containers
-          command: |
-            # Ensure DockerCli.exe is available and switch to Linux containers
-            dockerCliPath="/c/Program Files/Docker/Docker/DockerCli.exe"
-            if [ -f "$dockerCliPath" ]; then
-              "$dockerCliPath" -SwitchDaemon
-            else
-              echo "DockerCli.exe not found. Ensure Docker Desktop is installed." >&2
-              exit 1
-            fi
       - restore_cache:
           keys:
             - nuget-packages-v2-{{ checksum "packages.checksum" }}
@@ -59,27 +42,18 @@ jobs:
             - ~/.nuget/packages
       - run:
           name: Restore NuGet Packages
-          command: nuget restore
-      - run:
-          name: Build
-          command: |
-            $msbuildPath = "C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe"
-            & $msbuildPath
+          command: dotnet restore
       - save_cache:
-          name: Cache Nuget Packages
           key: nuget-packages-v2-{{ checksum "packages.checksum" }}
           paths:
             - packages
             - ~/.nuget/packages
       - run:
-          name: Create SQL LocalDB
-          command: sqllocaldb create "mssqllocaldb"
-      - run:
           name: Run E2E Tests
           command: |
-            dotnet test "Aikido.Zen.Test.End2End/Aikido.Zen.Test.End2End.csproj" `
-              --configuration Release `
-              --output "TestResults" `
+            dotnet test "Aikido.Zen.Test.End2End/Aikido.Zen.Test.End2End.csproj" \
+              --configuration Release \
+              --output "TestResults" \
               --logger "console;"
       - store_test_results:
           path: TestResults
