@@ -23,16 +23,14 @@ jobs:
     docker:
       - image: mcr.microsoft.com/dotnet/sdk:<< parameters.dotnet_version >>
     steps:
-      - setup_remote_docker
+      - checkout
+      - setup_remote_docker:
+          version: 20.10.7
       - run:
-          name: Install Docker and start the docker daemon
-          command: |
-            apt-get update
-            apt-get install -y docker.io
-            service docker start
-
+          name: Verify Docker Setup
+          command: docker --version
       - run:
-          name: check if docker is running
+          name: Check if Docker is Running
           command: docker info | grep -i "Platform" | grep -i "linux"
       - attach_workspace:
           at: .
