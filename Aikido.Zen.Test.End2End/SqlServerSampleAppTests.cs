@@ -15,7 +15,6 @@ namespace Aikido.Zen.Test.End2End;
 [TestFixture]
 public class SqlServerSampleAppTests : WebApplicationTestBase
 {
-    private const string ProjectDirectory = "e2e/sample-apps/SqlServerSampleApp";
     private IContainer? _sqlServerContainer;
 
     private WebApplicationFactory<SqlServerStartup> CreateSampleAppFactory()

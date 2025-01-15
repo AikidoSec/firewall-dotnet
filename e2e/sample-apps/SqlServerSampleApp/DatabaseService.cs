@@ -30,6 +30,59 @@ namespace SqlServerSampleApp
         }
 
         /// <summary>
+        /// Ensures that the database and tables are created.
+        /// </summary>
+        public static async Task EnsureDatabaseSetupAsync()
+        {
+            // First connect to master to create the database
+            var masterConnection = new SqlConnection(ConnectionString.Replace("Database=catsdb", "Database=master"));
+            await masterConnection.OpenAsync();
+
+            // Create database if it doesn't exist
+            var createDbCommand = new SqlCommand(
+                @"IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'catsdb')
+                BEGIN
+                    CREATE DATABASE catsdb;
+                END", masterConnection);
+            await createDbCommand.ExecuteNonQueryAsync();
+            await masterConnection.CloseAsync();
+
+            // Now connect to catsdb to create the table
+            using var connection = CreateDataConn();
+            await connection.OpenAsync();
+
+            // Create table if it doesn't exist
+            var setupTableCommand = new SqlCommand(
+                @"IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'pets' AND schema_id = SCHEMA_ID('dbo'))
+                BEGIN
+                    CREATE TABLE dbo.pets (
+                        pet_id INT IDENTITY(1,1) PRIMARY KEY,
+                        pet_name NVARCHAR(100) NOT NULL,
+                        owner NVARCHAR(100) NOT NULL
+                    );
+                END", connection);
+            await setupTableCommand.ExecuteNonQueryAsync();
+        }
+
+        /// <summary>
+        /// Creates a new pet with the given name in the database.
+        /// </summary>
+        /// <param name="petName">The name of the pet</param>
+        /// <returns>The number of rows affected</returns>
+        public static int CreatePetByName(string petName)
+        {
+            string sql = $"INSERT INTO dbo.pets (pet_name, owner) VALUES ('{petName}', 'Aikido Security')";
+            using (var conn = CreateDataConn())
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    return cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
+        /// <summary>
         /// Retrieves all pets from the database.
         /// </summary>
         /// <returns>A list of Pet objects</returns>
@@ -55,8 +108,9 @@ namespace SqlServerSampleApp
                     }
                 }
             }
-            catch (SqlException)
+            catch (SqlException ex)
             {
+                Console.WriteLine($"Error getting pets: {ex.Message}");
                 // Handle exception
             }
             return pets;
@@ -88,62 +142,12 @@ namespace SqlServerSampleApp
                     }
                 }
             }
-            catch (SqlException)
+            catch (SqlException ex)
             {
+                Console.WriteLine($"Error getting pet by id: {ex.Message}");
                 // Handle exception
             }
             return new Pet(0, "Unknown");
-        }
-
-        /// <summary>
-        /// Creates a new pet with the given name in the database.
-        /// </summary>
-        /// <param name="petName">The name of the pet</param>
-        /// <returns>The number of rows affected</returns>
-        public static int CreatePetByName(string petName)
-        {
-            string sql = $"INSERT INTO dbo.pets (pet_name, owner) VALUES ('{petName}', 'Aikido Security')";
-            using (var conn = CreateDataConn())
-            {
-                conn.Open();
-                using (var cmd = new SqlCommand(sql, conn))
-                {
-                    return cmd.ExecuteNonQuery();
-                }
-            }
-            return 0;
-        }
-
-        /// <summary>
-        /// Ensures that the database and tables are created.
-        /// </summary>
-        public static async Task EnsureDatabaseSetupAsync()
-        {
-            using var connection = CreateDataConn();
-            await connection.OpenAsync();
-
-            // Create database if it doesn't exist
-            var createDbCommand = new SqlCommand(
-                @"IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'test')
-                BEGIN
-                    CREATE DATABASE test;
-                END", connection);
-            await createDbCommand.ExecuteNonQueryAsync();
-
-            // Switch to test database
-            await connection.ChangeDatabaseAsync("test");
-
-            // Create table if it doesn't exist
-            var setupTableCommand = new SqlCommand(
-                @"IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'pets' AND schema_id = SCHEMA_ID('dbo'))
-                BEGIN
-                    CREATE TABLE dbo.pets (
-                        pet_id INT IDENTITY(1,1) PRIMARY KEY,
-                        pet_name NVARCHAR(100) NOT NULL,
-                        owner NVARCHAR(100) NOT NULL
-                    );
-                END", connection);
-            await setupTableCommand.ExecuteNonQueryAsync();
         }
     }
 }

@@ -72,6 +72,12 @@ namespace SampleApp.Common
                 }
             });
 
+            app.ApplicationServices.GetRequiredService<IHostApplicationLifetime>().ApplicationStarted.Register(async () =>
+            {
+                Console.WriteLine("Ensuring database setup");
+                await EnsureDatabaseSetupAsync();
+            });
+
             ConfigureEndpoints(app);
         }
 
@@ -121,36 +127,6 @@ namespace SampleApp.Common
                     }
                 });
             });
-        }
-
-        /// <summary>
-        /// Builds and starts the application
-        /// </summary>
-        public async Task<WebApplication> BuildAndRunAsync()
-        {
-            var builder = WebApplication.CreateBuilder();
-            ConfigureServices(builder.Services);
-
-            var app = builder.Build();
-            Configure(app);
-
-            app.Lifetime.ApplicationStarted.Register(async () =>
-            {
-                try
-                {
-                    app.Logger.LogInformation("Initializing database connection...");
-                    await EnsureDatabaseSetupAsync();
-                    app.Logger.LogInformation("Database connection established successfully");
-                }
-                catch (Exception ex)
-                {
-                    app.Logger.LogError(ex, "Failed to initialize database connection");
-                    app.Logger.LogError($"Connection string: {ConnectionString}");
-                    Environment.Exit(1);
-                }
-            });
-
-            return app;
         }
     }
 }
