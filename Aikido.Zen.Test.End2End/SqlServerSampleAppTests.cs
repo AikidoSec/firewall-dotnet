@@ -22,7 +22,6 @@ public class SqlServerSampleAppTests : WebApplicationTestBase
         var factory = new WebApplicationFactory<SqlServerStartup>()
             .WithWebHostBuilder(builder =>
             {
-                builder.UseContentRoot(Path.Combine(WorkDirectory, ProjectDirectory));
                 //add env variables from base.SampleAppEnvironmentVariables
                 builder.ConfigureAppConfiguration((context, config) =>
                 {

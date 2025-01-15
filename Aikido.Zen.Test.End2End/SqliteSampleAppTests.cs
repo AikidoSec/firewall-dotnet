@@ -20,7 +20,6 @@ public class SqliteSampleAppTests : WebApplicationTestBase
         var factory = new WebApplicationFactory<SQLiteStartup>()
             .WithWebHostBuilder(builder =>
             {
-                builder.UseContentRoot(Path.Combine(WorkDirectory, ProjectDirectory));
                 builder.ConfigureAppConfiguration((context, config) =>
                 {
                     foreach (var envVar in SampleAppEnvironmentVariables)

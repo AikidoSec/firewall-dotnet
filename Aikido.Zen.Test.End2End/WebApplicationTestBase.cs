@@ -19,7 +19,6 @@ namespace Aikido.Zen.Test.End2End
         protected HttpClient SampleAppClient { get; set; }
         protected HttpClient MockServerClient { get; private set; }
         protected WebApplicationFactory<Aikido.Zen.Server.Mock.MockServerStartup> MockServerFactory { get; private set; }
-        protected string WorkDirectory { get; private set; }
         protected string MockServerToken => "test-token";
         protected const int MockServerPort = 3000;
 
@@ -37,9 +36,6 @@ namespace Aikido.Zen.Test.End2End
         {
             // Initialize containers list
             DbContainers = new List<IContainer>();
-
-            // Get the work directory
-            WorkDirectory = GetWorkDirectory();
 
             // Setup database containers based on test needs
             await SetupDatabaseContainers();
@@ -75,25 +71,6 @@ namespace Aikido.Zen.Test.End2End
         /// </summary>
         protected abstract Task SetupDatabaseContainers();
 
-        /// <summary>
-        /// Gets the work directory for the test project
-        /// </summary>
-        private string GetWorkDirectory()
-        {
-            var currentDirectory = TestContext.CurrentContext.TestDirectory;
-            var projectDir = "Aikido.Zen.Test.End2End";
-            var index = currentDirectory.IndexOf(projectDir, StringComparison.OrdinalIgnoreCase);
-
-            if (index == -1)
-            {
-                // Log a warning and return the current directory as a fallback
-                TestContext.Out.WriteLine($"Warning: Could not find {projectDir} in {currentDirectory}. Using current directory as work directory.");
-                TestContext.WriteLine($"Warning: Could not find {projectDir} in {currentDirectory}. Using current directory as work directory.");
-                return currentDirectory;
-            }
-
-            return currentDirectory.Substring(0, index + projectDir.Length);
-        }
 
         /// <summary>
         /// Creates a MySQL container
@@ -143,8 +120,17 @@ namespace Aikido.Zen.Test.End2End
         /// </summary>
         protected async Task<IContainer> CreateSqlServerContainer()
         {
-            var sqlServer = new ContainerBuilder()
-                .WithImage("mcr.microsoft.com/mssql/server:2019-latest")
+            sqlServerBuilder = new ContainerBuilder();
+
+            if (Environment.GetEnvironmentVariable("CI") == "true")
+            {
+                sqlServerBuilder.WithImage("microsoft/mssql-server-windows-express");
+            }
+            else
+            {
+                sqlServerBuilder.WithImage("mcr.microsoft.com/mssql/server:2019-latest");
+            }
+            var sqlServer = new sqlServerBuilder;
                 .WithEnvironment("ACCEPT_EULA", "Y")
                 .WithEnvironment("SA_PASSWORD", "YourStrong!Passw0rd")
                 .WithExposedPort(1433)

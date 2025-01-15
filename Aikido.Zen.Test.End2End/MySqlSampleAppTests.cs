@@ -21,7 +21,6 @@ public class MySqlSampleAppTests : WebApplicationTestBase
         var factory = new WebApplicationFactory<MySqlStartup>()
             .WithWebHostBuilder(builder =>
             {
-                builder.UseContentRoot(Path.Combine(WorkDirectory, ProjectDirectory));
                 builder.ConfigureAppConfiguration((context, config) =>
                 {
                     foreach (var envVar in SampleAppEnvironmentVariables)

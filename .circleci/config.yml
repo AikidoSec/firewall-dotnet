@@ -27,8 +27,7 @@ jobs:
       name: win/server-2022
     environment:
       ROOT_DIR: ${CIRCLE_WORKING_DIRECTORY}
-      USE_NAT: true
-      LINUX_DOCKER_IMAGE: true
+      CI: true
     steps:
       - attach_workspace:
           at: .

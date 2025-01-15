@@ -21,7 +21,6 @@ public class PostgresSampleAppTests : WebApplicationTestBase
         var factory = new WebApplicationFactory<PostgresStartup>()
             .WithWebHostBuilder(builder =>
             {
-                builder.UseContentRoot(Path.Combine(WorkDirectory, ProjectDirectory));
                 builder.ConfigureAppConfiguration((context, config) =>
                 {
                     foreach (var envVar in SampleAppEnvironmentVariables)
