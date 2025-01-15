@@ -25,10 +25,10 @@ namespace Aikido.Zen.Test.End2End
         protected IDictionary<string, string> SampleAppEnvironmentVariables = new Dictionary<string, string>
         {
             ["ConnectionStrings__Sqlite"] = ":memory:",
-            ["ConnectionStrings__DefaultConnection"] = $"Server=localhost,1433;Database=master;User=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=true",
-            ["ConnectionStrings__MongoDB"] = $"mongodb://root:password@localhost:27017",
-            ["ConnectionStrings__PostgresConnection"] = $"Host=localhost;Port=5432;Database=catsdb;Username=postgres;Password=YourStrong!Passw0rd",
-            ["ConnectionStrings__MySqlConnection"] = "Server=localhost;Port=3306;Database=catsdb;User=root;Password=YourStrong!Passw0rd;Allow User Variables=true",
+            ["ConnectionStrings__DefaultConnection"] = $"Server=127.0.0.1,1433;Database=master;User=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=true",
+            ["ConnectionStrings__MongoDB"] = $"mongodb://root:password@127.0.0.1:27017",
+            ["ConnectionStrings__PostgresConnection"] = $"Host=127.0.0.1;Port=5432;Database=catsdb;Username=postgres;Password=YourStrong!Passw0rd",
+            ["ConnectionStrings__MySqlConnection"] = "Server=127.0.0.1;Port=3306;Database=catsdb;User=root;Password=YourStrong!Passw0rd;Allow User Variables=true",
         };
 
         [OneTimeSetUp]
