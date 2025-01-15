@@ -120,32 +120,21 @@ namespace Aikido.Zen.Test.End2End
         /// </summary>
         protected async Task<IContainer> CreateSqlServerContainer()
         {
-            var sqlServerBuilder = new ContainerBuilder();
 
-            if (Environment.GetEnvironmentVariable("CI") != "true")
-            {
+            var sqlServer = new ContainerBuilder()
+                .WithImage("mcr.microsoft.com/mssql/server:2019-latest")
+                .WithEnvironment("ACCEPT_EULA", "Y")
+                .WithEnvironment("SA_PASSWORD", "YourStrong!Passw0rd")
+                .WithExposedPort(1433)
+                .WithPortBinding(1433, false)
+                .WithWaitStrategy(Wait.ForUnixContainer()
+                    .UntilPortIsAvailable(1433))
+                .WithName($"sqlserver-test-server")
+                .Build();
 
-                var sqlServer = new ContainerBuilder()
-                    .WithImage("mcr.microsoft.com/mssql/server:2019-latest")
-                    .WithEnvironment("ACCEPT_EULA", "Y")
-                    .WithEnvironment("SA_PASSWORD", "YourStrong!Passw0rd")
-                    .WithExposedPort(1433)
-                    .WithPortBinding(1433, false)
-                    .WithWaitStrategy(Wait.ForUnixContainer()
-                        .UntilPortIsAvailable(1433))
-                    .WithName($"sqlserver-test-server")
-                    .Build();
-
-                await sqlServer.StartAsync();
-                DbContainers.Add(sqlServer);
-                return sqlServer;
-            }
-            else
-            {
-                // use localdb
-                SampleAppEnvironmentVariables["ConnectionStrings__DefaultConnection"] = "Server=(localdb)\\mssqllocaldb;Database=master;Trusted_Connection=True;MultipleActiveResultSets=true";
-                return null;
-            }
+            await sqlServer.StartAsync();
+            DbContainers.Add(sqlServer);
+            return sqlServer;
         }
     }
 }
