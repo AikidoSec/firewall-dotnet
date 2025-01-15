@@ -24,6 +24,9 @@ jobs:
       - image: mcr.microsoft.com/dotnet/sdk:<< parameters.dotnet_version >>
     steps:
       - setup_remote_docker
+      - run:
+          name: Check if Docker is running on Linux
+          command: docker info | grep -i "Platform" | grep -i "linux"
       - attach_workspace:
           at: .
       - run:
