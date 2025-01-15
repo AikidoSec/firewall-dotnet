@@ -133,7 +133,7 @@ public abstract class BaseAppTests
 
             MockServerContainer = new ContainerBuilder()
                 .WithNetwork(Network)
-                .WithImage("mcr.microsoft.com/dotnet/sdk:8.0")
+                .WithImage("mcr.microsoft.com/dotnet/sdk:8.0-nanoserver-ltsc2022")
                 .WithResourceMapping(new DirectoryInfo(Path.Combine(WorkDirectory, "e2e/Aikido.Zen.Server.Mock")), "/mockapp")
                 .WithWorkingDirectory("/mockapp")
                 .WithCommand("dotnet", "run", "--urls", $"http://+:{MockServerPort}")
@@ -179,7 +179,7 @@ public abstract class BaseAppTests
 
         AppContainer = new ContainerBuilder()
             .WithNetwork(Network)
-            .WithImage($"mcr.microsoft.com/dotnet/sdk:{dotnetVersion}")
+            .WithImage($"mcr.microsoft.com/dotnet/sdk:{dotnetVersion}nanoserver-ltsc2022")
             .WithResourceMapping(new DirectoryInfo(Path.Combine(WorkDirectory, ProjectDirectory)), "/sampleapp")
             .WithWorkingDirectory("/sampleapp")
             .WithCommand("dotnet", "run", "--urls", $"http://+:{AppPort}", "--framework", $"net{dotnetVersion}")
