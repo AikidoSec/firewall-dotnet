@@ -24,8 +24,7 @@ jobs:
       - image: mcr.microsoft.com/dotnet/sdk:<< parameters.dotnet_version >>
     steps:
       - checkout
-      - setup_remote_docker:
-          version: 20.10.7
+      - setup_remote_docker
       - run:
           name: Verify Docker Setup
           command: docker --version
