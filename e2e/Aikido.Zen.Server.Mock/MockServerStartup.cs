@@ -30,6 +30,7 @@ namespace Aikido.Zen.Server.Mock
         /// </summary>
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddResponseCompression();
             services.AddSingleton<AppService>();
             services.AddSingleton<ConfigService>();
             services.AddSingleton<EventService>();
