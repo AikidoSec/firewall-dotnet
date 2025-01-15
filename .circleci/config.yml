@@ -27,8 +27,8 @@ jobs:
       - run:
           name: Install Docker
           command: |
-            sudo apt-get update
-            sudo apt-get install -y docker.io
+            apt-get update
+            apt-get install -y docker.io
       - run:
           name: check if docker is running
           command: docker info | grep -i "Platform" | grep -i "linux"
