@@ -137,7 +137,7 @@ namespace SqlServerSampleApp
             var setupTableCommand = new SqlCommand(
                 @"IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'pets' AND schema_id = SCHEMA_ID('dbo'))
                 BEGIN
-                    CREATE TABLE pets (
+                    CREATE TABLE dbo.pets (
                         pet_id INT IDENTITY(1,1) PRIMARY KEY,
                         pet_name NVARCHAR(100) NOT NULL,
                         owner NVARCHAR(100) NOT NULL
