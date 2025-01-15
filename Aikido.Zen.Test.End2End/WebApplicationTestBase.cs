@@ -122,27 +122,28 @@ namespace Aikido.Zen.Test.End2End
         {
             var sqlServerBuilder = new ContainerBuilder();
 
-            if (Environment.GetEnvironmentVariable("CI") == "true")
+            if (Environment.GetEnvironmentVariable("CI") != "true")
             {
-                sqlServerBuilder.WithImage("microsoft/mssql-server-windows-express");
+
+                var sqlServer = new ContainerBuilder()
+                    .WithEnvironment("ACCEPT_EULA", "Y")
+                    .WithEnvironment("SA_PASSWORD", "YourStrong!Passw0rd")
+                    .WithExposedPort(1433)
+                    .WithPortBinding(1433, false)
+                    .WithWaitStrategy(Wait.ForUnixContainer()
+                        .UntilPortIsAvailable(1433))
+                    .WithName($"sqlserver-test-server")
+                    .Build();
+
+                await sqlServer.StartAsync();
+                DbContainers.Add(sqlServer);
+                return sqlServer;
             }
             else
             {
-                sqlServerBuilder.WithImage("mcr.microsoft.com/mssql/server:2019-latest");
+                // use localdb
+                SampleAppEnvironmentVariables["ConnectionStrings__DefaultConnection"] = "Server=(localdb)\\mssqllocaldb;Database=master;Trusted_Connection=True;MultipleActiveResultSets=true";
             }
-            var sqlServer = sqlServerBuilder
-                .WithEnvironment("ACCEPT_EULA", "Y")
-                .WithEnvironment("SA_PASSWORD", "YourStrong!Passw0rd")
-                .WithExposedPort(1433)
-                .WithPortBinding(1433, false)
-                .WithWaitStrategy(Wait.ForUnixContainer()
-                    .UntilPortIsAvailable(1433))
-                .WithName($"sqlserver-test-server")
-                .Build();
-
-            await sqlServer.StartAsync();
-            DbContainers.Add(sqlServer);
-            return sqlServer;
         }
     }
 }

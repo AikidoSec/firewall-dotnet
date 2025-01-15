@@ -53,6 +53,9 @@ jobs:
             - packages
             - ~/.nuget/packages
       - run:
+          name: Create SQL LocalDB
+          command: sqllocaldb create "mssqllocaldb"
+      - run:
           name: Run E2E Tests
           command: |
             dotnet test "Aikido.Zen.Test.End2End/Aikido.Zen.Test.End2End.csproj" `
