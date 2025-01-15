@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using MySqlConnector;
+using SampleApp.Common.Models;
 
 namespace MySqlSampleApp
 {
@@ -40,8 +41,7 @@ namespace MySqlSampleApp
                             {
                                 int id = reader.GetInt32("pet_id");
                                 string name = reader.GetString("pet_name");
-                                string owner = reader.GetString("owner");
-                                pets.Add(new Pet(id, name, owner));
+                                pets.Add(new Pet(id, name));
                             }
                         }
                     }
@@ -69,8 +69,7 @@ namespace MySqlSampleApp
                             {
                                 int petId = reader.GetInt32("pet_id");
                                 string name = reader.GetString("pet_name");
-                                string owner = reader.GetString("owner");
-                                return new Pet(petId, name, owner);
+                                return new Pet(petId, name);
                             }
                         }
                     }
@@ -80,7 +79,7 @@ namespace MySqlSampleApp
             {
                 // Handle exception
             }
-            return new Pet(0, "Unknown", "Unknown");
+            return new Pet(0, "Unknown");
         }
 
         public static int CreatePetByName(string petName)
@@ -129,8 +128,4 @@ namespace MySqlSampleApp
             }
         }
     }
-
-    public record Pet(int Id, string Name, string Owner);
-
-    public record PetCreate(string Name);
 }

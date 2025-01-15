@@ -7,8 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-      <ProjectReference Include="..\..\..\Aikido.Zen.DotNetCore\Aikido.Zen.DotNetCore.csproj" />
       <PackageReference Include="Npgsql" Version="9.0.2" />
   </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\..\Aikido.Zen.DotNetCore\Aikido.Zen.DotNetCore.csproj" />
+        <ProjectReference Include="..\..\..\SampleApp.Common\SampleApp.Common.csproj" />
+    </ItemGroup>
 
 </Project>

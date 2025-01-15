@@ -28,8 +28,8 @@ public abstract class BaseAppTests
     private bool UseNat => Environment.GetEnvironmentVariable("USE_NAT") == "true";
 
     private string DockerImage => Environment.GetEnvironmentVariable("LINUX_DOCKER_IMAGE") == "true"
-        ? $"mcr.microsoft.com/dotnet/sdk:{0}-nanoserver-ltsc2022"
-        : $"mcr.microsoft.com/dotnet/sdk:{0}-alpine";
+        ? "mcr.microsoft.com/dotnet/sdk:{0}-nanoserver-ltsc2022"
+        : "mcr.microsoft.com/dotnet/sdk:{0}";
 
 
     private string WorkDirectory => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ROOT_DIR"))

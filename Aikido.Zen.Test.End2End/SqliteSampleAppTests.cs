@@ -1,75 +1,168 @@
-using System.Text;
-using System.Text.Json;
-using NUnit.Framework;
 using System.Net;
+using System.Net.Http.Json;
+using DotNet.Testcontainers.Containers;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.Configuration;
+using NUnit.Framework;
+using SQLiteSampleApp;
 
 namespace Aikido.Zen.Test.End2End;
 
-public class SqliteSampleAppTests : BaseAppTests
+[TestFixture]
+public class SqliteSampleAppTests : WebApplicationTestBase
 {
-    protected override string ProjectDirectory => "e2e/sample-apps/SQLiteSampleApp";
+    private const string ProjectDirectory = "e2e/sample-apps/SQLiteSampleApp";
+
+    private WebApplicationFactory<SQLiteStartup> CreateSampleAppFactory()
+    {
+        var factory = new WebApplicationFactory<SQLiteStartup>()
+            .WithWebHostBuilder(builder =>
+            {
+                builder.UseContentRoot(Path.Combine(WorkDirectory, ProjectDirectory));
+                builder.ConfigureAppConfiguration((context, config) =>
+                {
+                    foreach (var envVar in SampleAppEnvironmentVariables)
+                    {
+                        Environment.SetEnvironmentVariable(envVar.Key, envVar.Value);
+                    }
+                });
+            });
+        return factory;
+    }
+
+    protected override async Task SetupDatabaseContainers()
+    {
+        // SQLite uses in-memory database, no container needed
+        await Task.CompletedTask;
+    }
 
     [OneTimeSetUp]
-    public async Task InitializeAsync()
+    public override async Task OneTimeSetUp()
     {
-        await base.InitializeAsync();
+        await base.OneTimeSetUp();
     }
 
     [OneTimeTearDown]
-    public async Task DisposeAsync()
+    public override async Task OneTimeTearDown()
     {
-        await base.DisposeAsync();
+        await base.OneTimeTearDown();
     }
 
-    /// <summary>
-    /// Test the SQLite sample app with Zen enabled.
-    /// </summary>
     [Test]
     [CancelAfter(30000)]
-    public async Task TestWithZen()
+    public async Task TestWithZen_WhenSafePayload_ShouldSucceed()
     {
-        await StartSampleApp(new Dictionary<string, string>
-        {
-            ["AIKIDO_BLOCKING"] = "true"
-        }, "sqlite");
+        // Arrange
+        SampleAppEnvironmentVariables["AIKIDO_DISABLE"] = "false";
+        SampleAppEnvironmentVariables["AIKIDO_BLOCKING"] = "true";
+        SampleAppClient = CreateSampleAppFactory().CreateClient();
 
-        var safePayload = CreateJsonContent(new { Name = "Bobby" });
-        var unsafePayload = CreateJsonContent(new { Name = "Malicious Pet', 'Gru from the Minions'); -- " });
+        var safePayload = new { Name = "Bobby" };
 
         // Act
-        var safeResponse = await Client.PostAsync("/api/pets/create", safePayload);
-        var body = await safeResponse.Content.ReadAsStringAsync();
-        var unsafeResponse = await Client.PostAsync("/api/pets/create", unsafePayload);
+        var response = await SampleAppClient.PostAsJsonAsync("/api/pets/create", safePayload);
+        var content = await response.Content.ReadAsStringAsync();
 
         // Assert
-        Assert.That(safeResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-        Assert.That(unsafeResponse.StatusCode, Is.EqualTo(HttpStatusCode.InternalServerError));
-        await AppContainer!.DisposeAsync();
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        Assert.That(content, Does.Contain("rows"));
     }
 
-    /// <summary>
-    /// Test the SQLite sample app without Zen enabled.
-    /// </summary>
     [Test]
     [CancelAfter(30000)]
-    public async Task TestWithoutZen()
+    public async Task TestWithZen_WhenUnsafePayload_ShouldBlock()
     {
-        await StartSampleApp(new Dictionary<string, string>
-        {
-            ["AIKIDO_BLOCKING"] = "false"
-        }, "sqlite");
+        // Arrange
+        SampleAppEnvironmentVariables["AIKIDO_DISABLE"] = "false";
+        SampleAppEnvironmentVariables["AIKIDO_BLOCKING"] = "true";
+        SampleAppClient = CreateSampleAppFactory().CreateClient();
 
-        var safePayload = CreateJsonContent(new { Name = "Bobby" });
-        var unsafePayload = CreateJsonContent(new { Name = "Malicious Pet', 'Gru from the Minions'); -- " });
+        var unsafePayload = new { Name = "Malicious Pet', 'Gru from the Minions'); -- " };
 
         // Act
-        var safeResponse = await Client.PostAsync("/api/pets/create", safePayload);
-        var body = await safeResponse.Content.ReadAsStringAsync();
-        var unsafeResponse = await Client.PostAsync("/api/pets/create", unsafePayload);
+        var response = await SampleAppClient.PostAsJsonAsync("/api/pets/create", unsafePayload);
+        var content = await response.Content.ReadAsStringAsync();
 
         // Assert
-        Assert.That(safeResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-        Assert.That(unsafeResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-        await AppContainer!.DisposeAsync();
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.InternalServerError));
+    }
+
+    [Test]
+    [CancelAfter(30000)]
+    public async Task TestWithoutZen_WhenSafePayload_ShouldSucceed()
+    {
+        // Arrange
+        SampleAppEnvironmentVariables["AIKIDO_DISABLE"] = "false";
+        SampleAppEnvironmentVariables["AIKIDO_BLOCKING"] = "true";
+        SampleAppClient = CreateSampleAppFactory().CreateClient();
+
+        var safePayload = new { Name = "Bobby" };
+
+        // Act
+        var response = await SampleAppClient.PostAsJsonAsync("/api/pets/create", safePayload);
+        var content = await response.Content.ReadAsStringAsync();
+
+        // Assert
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        Assert.That(content, Does.Contain("rows"));
+    }
+
+    [Test]
+    [CancelAfter(30000)]
+    public async Task TestWithoutZen_WhenUnsafePayload_ShouldNotBlock()
+    {
+        // Arrange
+        SampleAppEnvironmentVariables["AIKIDO_DISABLE"] = "false";
+        SampleAppEnvironmentVariables["AIKIDO_BLOCKING"] = "false";
+        SampleAppClient = CreateSampleAppFactory().CreateClient();
+
+        var unsafePayload = new { Name = "Malicious Pet', 'Gru from the Minions'); -- " };
+
+        // Act
+        var response = await SampleAppClient.PostAsJsonAsync("/api/pets/create", unsafePayload);
+        var content = await response.Content.ReadAsStringAsync();
+
+        // Assert
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+    }
+
+    [Test]
+    [CancelAfter(30000)]
+    public async Task TestWithZen_WhenUnsafePayload_AndBlockingDisabled_ShouldNotBlock()
+    {
+        // Arrange
+        SampleAppEnvironmentVariables["AIKIDO_DISABLE"] = "false";
+        SampleAppEnvironmentVariables["AIKIDO_BLOCKING"] = "false";
+        SampleAppClient = CreateSampleAppFactory().CreateClient();
+
+        var unsafePayload = new { Name = "Malicious Pet', 'Gru from the Minions'); -- " };
+
+        // Act
+        var response = await SampleAppClient.PostAsJsonAsync("/api/pets/create", unsafePayload);
+        var content = await response.Content.ReadAsStringAsync();
+
+        // Assert
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+    }
+
+    [Test]
+    [CancelAfter(30000)]
+    public async Task TestWithZenDisabled_WhenUnsafePayload_ShouldNotBlock()
+    {
+        // Arrange
+        SampleAppEnvironmentVariables["AIKIDO_DISABLE"] = "true";
+        SampleAppEnvironmentVariables["AIKIDO_BLOCKING"] = "true";
+        SampleAppClient = CreateSampleAppFactory().CreateClient();
+
+        var unsafePayload = new { Name = "Malicious Pet', 'Gru from the Minions'); -- " };
+
+        // Act
+        var response = await SampleAppClient.PostAsJsonAsync("/api/pets/create", unsafePayload);
+        var content = await response.Content.ReadAsStringAsync();
+
+        // Assert
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
     }
 }

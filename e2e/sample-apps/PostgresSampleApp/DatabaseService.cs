@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Npgsql;
+using SampleApp.Common.Models;
 
 namespace PostgresSampleApp
 {
@@ -38,8 +39,7 @@ namespace PostgresSampleApp
                             {
                                 int id = reader.GetInt32(reader.GetOrdinal("pet_id"));
                                 string name = reader.GetString(reader.GetOrdinal("pet_name"));
-                                string owner = reader.GetString(reader.GetOrdinal("owner"));
-                                pets.Add(new Pet(id, name, owner));
+                                pets.Add(new Pet(id, name));
                             }
                         }
                     }
@@ -67,8 +67,7 @@ namespace PostgresSampleApp
                             {
                                 int petId = reader.GetInt32(reader.GetOrdinal("pet_id"));
                                 string name = reader.GetString(reader.GetOrdinal("pet_name"));
-                                string owner = reader.GetString(reader.GetOrdinal("owner"));
-                                return new Pet(petId, name, owner);
+                                return new Pet(petId, name);
                             }
                         }
                     }
@@ -78,7 +77,7 @@ namespace PostgresSampleApp
             {
                 // Handle exception
             }
-            return new Pet(0, "Unknown", "Unknown");
+            return new Pet(0, "Unknown");
         }
 
         public static int CreatePetByName(string petName)
@@ -115,8 +114,4 @@ namespace PostgresSampleApp
             await setupPetsTableCommand.ExecuteNonQueryAsync();
         }
     }
-
-    public record Pet(int Id, string Name, string Owner);
-
-    public record PetCreate(string Name);
 }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using Microsoft.Data.SqlClient;
 using System.Threading.Tasks;
+using SampleApp.Common.Models;
 
 namespace SqlServerSampleApp
 {
@@ -48,8 +49,7 @@ namespace SqlServerSampleApp
                             {
                                 int id = reader.GetInt32(reader.GetOrdinal("pet_id"));
                                 string name = reader.GetString(reader.GetOrdinal("pet_name"));
-                                string owner = reader.GetString(reader.GetOrdinal("owner"));
-                                pets.Add(new Pet(id, name, owner));
+                                pets.Add(new Pet(id, name));
                             }
                         }
                     }
@@ -82,8 +82,7 @@ namespace SqlServerSampleApp
                             {
                                 int petId = reader.GetInt32(reader.GetOrdinal("pet_id"));
                                 string name = reader.GetString(reader.GetOrdinal("pet_name"));
-                                string owner = reader.GetString(reader.GetOrdinal("owner"));
-                                return new Pet(petId, name, owner);
+                                return new Pet(petId, name);
                             }
                         }
                     }
@@ -93,7 +92,7 @@ namespace SqlServerSampleApp
             {
                 // Handle exception
             }
-            return new Pet(0, "Unknown", "Unknown");
+            return new Pet(0, "Unknown");
         }
 
         /// <summary>
@@ -154,16 +153,5 @@ namespace SqlServerSampleApp
             await setupTableCommand.ExecuteNonQueryAsync();
         }
     }
-
-    /// <summary>
-    /// Represents a pet with an ID, name, and owner.
-    /// </summary>
-    public record Pet(int Id, string Name, string Owner);
-
-    /// <summary>
-    /// Represents the data needed to create a new pet.
-    /// </summary>
-    /// <param name="name"></param>
-    public record PetCreate(string Name);
 }
 

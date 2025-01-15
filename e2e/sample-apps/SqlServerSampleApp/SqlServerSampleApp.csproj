@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\Aikido.Zen.DotNetCore\Aikido.Zen.DotNetCore.csproj" />
+    <ProjectReference Include="..\..\..\SampleApp.Common\SampleApp.Common.csproj" />
   </ItemGroup>
 
 </Project>
