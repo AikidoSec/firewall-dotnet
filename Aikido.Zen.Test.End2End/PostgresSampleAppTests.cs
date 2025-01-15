@@ -81,8 +81,15 @@ public class PostgresSampleAppTests : WebApplicationTestBase
         var unsafePayload = new { Name = "Malicious Pet', 'Gru from the Minions'); -- " };
 
         // Act
-        var response = await SampleAppClient.PostAsJsonAsync("/api/pets/create", unsafePayload);
-        var content = await response.Content.ReadAsStringAsync();
+        try
+        {
+            var response = await SampleAppClient.PostAsJsonAsync("/api/pets/create", unsafePayload);
+            var content = await response.Content.ReadAsStringAsync();
+        }
+        catch (AikidoException ex)
+        {
+            Assert.That(ex.Message, Does.Contain("SQL injection detected"));
+        }
 
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.InternalServerError));
