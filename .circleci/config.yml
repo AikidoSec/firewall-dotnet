@@ -47,12 +47,7 @@ jobs:
           command: |
             dotnet test "Aikido.Zen.Test.End2End/Aikido.Zen.Test.End2End.csproj" \
               --configuration Release \
-              --output "TestResults" \
               --logger "console;"
-      - store_test_results:
-          path: TestResults
-      - store_artifacts:
-          path: TestResults
 
 workflows:
   test_on_pr:
