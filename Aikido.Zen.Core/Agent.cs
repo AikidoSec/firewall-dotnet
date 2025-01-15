@@ -257,7 +257,6 @@ namespace Aikido.Zen.Core
             catch (Exception)
             {
                 // pass through
-                _logger.LogError(ex, "AikidoZen: Error disposing agent");
             }
             finally
             {
