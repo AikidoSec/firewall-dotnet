@@ -1,8 +1,7 @@
 version: 2.1
 
 orbs:
-  # win: circleci/windows@5.0
-  linux: circleci/docker@2.8.1
+  win: circleci/windows@5.0
 
 jobs:
   checkout_code:
@@ -25,10 +24,10 @@ jobs:
       dotnet_version:
         type: string
     executor:
-      name: linux/docker
+      name: win/server-2022
     environment:
       ROOT_DIR: ${CIRCLE_WORKING_DIRECTORY}
-    #  CI: true
+      CI: true
     steps:
       - attach_workspace:
           at: .
@@ -50,21 +49,30 @@ jobs:
       - run:
           name: Restore NuGet Packages
           command: nuget restore
-      # - run:
-      #     name: Build
-      #     command: |
-      #       $msbuildPath = "C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe"
-      #       & $msbuildPath
+      - run:
+          name: Build
+          command: |
+            $msbuildPath = "C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe"
+            & $msbuildPath
       - save_cache:
           name: Cache Nuget Packages
           key: nuget-packages-v2-{{ checksum "packages.checksum" }}
           paths:
             - packages
             - ~/.nuget/packages
-      # - run:
-      #     name: Create SQL LocalDB
-      #     command: sqllocaldb create "mssqllocaldb"
-
+      - run:
+          name: Create SQL LocalDB
+          command: sqllocaldb create "mssqllocaldb"
+      - run:
+          name: Switch to Linux containers
+          command: |
+            # Ensure DockerCli.exe is available and switch to Linux containers
+            $dockerCliPath = "C:\Program Files\Docker\Docker\DockerCli.exe"
+            if (Test-Path $dockerCliPath) {
+              & $dockerCliPath -SwitchDaemon
+            } else {
+              Write-Error "DockerCli.exe not found. Ensure Docker Desktop is installed."
+            }
       - run:
           name: Run E2E Tests
           command: |
