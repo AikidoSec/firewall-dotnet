@@ -39,6 +39,17 @@ jobs:
           command: |
             dotnet tool install --global Cake.Tool
             dotnet cake --target DownloadLibraries
+      - run:
+          name: Switch to Linux containers
+          command: |
+            # Ensure DockerCli.exe is available and switch to Linux containers
+            dockerCliPath="/c/Program Files/Docker/Docker/DockerCli.exe"
+            if [ -f "$dockerCliPath" ]; then
+              "$dockerCliPath" -SwitchDaemon
+            else
+              echo "DockerCli.exe not found. Ensure Docker Desktop is installed." >&2
+              exit 1
+            fi
       - restore_cache:
           keys:
             - nuget-packages-v2-{{ checksum "packages.checksum" }}
@@ -63,16 +74,6 @@ jobs:
       - run:
           name: Create SQL LocalDB
           command: sqllocaldb create "mssqllocaldb"
-      - run:
-          name: Switch to Linux containers
-          command: |
-            # Ensure DockerCli.exe is available and switch to Linux containers
-            $dockerCliPath = "C:\Program Files\Docker\Docker\DockerCli.exe"
-            if (Test-Path $dockerCliPath) {
-              & $dockerCliPath -SwitchDaemon
-            } else {
-              Write-Error "DockerCli.exe not found. Ensure Docker Desktop is installed."
-            }
       - run:
           name: Run E2E Tests
           command: |
