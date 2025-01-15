@@ -126,6 +126,7 @@ namespace Aikido.Zen.Test.End2End
             {
 
                 var sqlServer = new ContainerBuilder()
+                    .WithImage("mcr.microsoft.com/mssql/server:2019-latest")
                     .WithEnvironment("ACCEPT_EULA", "Y")
                     .WithEnvironment("SA_PASSWORD", "YourStrong!Passw0rd")
                     .WithExposedPort(1433)
@@ -143,6 +144,7 @@ namespace Aikido.Zen.Test.End2End
             {
                 // use localdb
                 SampleAppEnvironmentVariables["ConnectionStrings__DefaultConnection"] = "Server=(localdb)\\mssqllocaldb;Database=master;Trusted_Connection=True;MultipleActiveResultSets=true";
+                return null;
             }
         }
     }
