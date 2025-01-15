@@ -31,6 +31,12 @@ jobs:
     steps:
       - attach_workspace:
           at: .
+      - run:
+          name: Install dotnet tools
+          command: dotnet tool restore
+      - run:
+          name: Download zen binaries
+          command: cake --target DownloadLibraries
       - restore_cache:
           keys:
             - nuget-packages-v2-{{ checksum "packages.checksum" }}
