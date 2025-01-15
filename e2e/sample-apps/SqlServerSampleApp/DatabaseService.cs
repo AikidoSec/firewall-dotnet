@@ -103,20 +103,13 @@ namespace SqlServerSampleApp
         public static int CreatePetByName(string petName)
         {
             string sql = $"INSERT INTO dbo.pets (pet_name, owner) VALUES ('{petName}', 'Aikido Security')";
-            try
+            using (var conn = CreateDataConn())
             {
-                using (var conn = CreateDataConn())
+                conn.Open();
+                using (var cmd = new SqlCommand(sql, conn))
                 {
-                    conn.Open();
-                    using (var cmd = new SqlCommand(sql, conn))
-                    {
-                        return cmd.ExecuteNonQuery();
-                    }
+                    return cmd.ExecuteNonQuery();
                 }
-            }
-            catch (SqlException)
-            {
-                // Handle exception
             }
             return 0;
         }
