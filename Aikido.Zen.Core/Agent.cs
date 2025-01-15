@@ -35,6 +35,8 @@ namespace Aikido.Zen.Core
 
         // Rate limiting and timing constants for the event processing loop
         private const int RateLimitPerSecond = 10;
+
+        // this is internal, so we can change it in our unit tests
         internal const int RetryDelayMs = 250;
         private const int EmptyQueueDelayMs = 100;
         private const int ErrorRetryDelayMs = 1000;

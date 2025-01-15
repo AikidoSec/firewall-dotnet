@@ -40,6 +40,9 @@ namespace Aikido.Zen.Server.Mock
         /// </summary>
         public void Configure(WebApplication app)
         {
+            // enable gzip compression
+            app.UseResponseCompression();
+
             // Configure endpoints for each controller
             _runtimeController.ConfigureEndpoints(app);
             _healthController.ConfigureEndpoints(app);

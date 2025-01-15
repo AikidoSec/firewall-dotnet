@@ -8,6 +8,7 @@ namespace Aikido.Zen.Core.Models
 {
     /// <summary>
     /// A thread-safe Least Recently Used (LRU) Cache with a fixed capacity and TTL.
+    /// This is a thread-safe implementation, because it handles data from http requests, which are handled  in parallel.
     /// </summary>
     /// <typeparam name="K">The type of the keys in the cache.</typeparam>
     /// <typeparam name="V">The type of the values in the cache.</typeparam>

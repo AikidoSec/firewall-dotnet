@@ -29,6 +29,7 @@ namespace Aikido.Zen.Core.Helpers
             var currentTime = GetCurrentTimestamp();
             RequestInfo requestInfo;
 
+            // since http requests are handled in parallel, we need to lock the cache to prevent race conditions
             lock (_lock)
             {
                 if (!RateLimitedItems.TryGetValue(key, out requestInfo))
