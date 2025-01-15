@@ -25,10 +25,12 @@ jobs:
     steps:
       - setup_remote_docker
       - run:
-          name: Install Docker
+          name: Install Docker and start the docker daemon
           command: |
             apt-get update
             apt-get install -y docker.io
+            service docker start
+
       - run:
           name: check if docker is running
           command: docker info | grep -i "Platform" | grep -i "linux"
