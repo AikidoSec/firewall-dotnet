@@ -36,7 +36,9 @@ jobs:
           command: dotnet tool restore
       - run:
           name: Download zen binaries
-          command: cake --target DownloadLibraries
+          command: |
+            dotnet tool install --global Cake.Tool
+            dotnet cake --target DownloadLibraries
       - restore_cache:
           keys:
             - nuget-packages-v2-{{ checksum "packages.checksum" }}
