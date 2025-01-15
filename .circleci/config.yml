@@ -23,6 +23,7 @@ jobs:
     docker:
       - image: mcr.microsoft.com/dotnet/sdk:<< parameters.dotnet_version >>
     steps:
+      - setup_remote_docker
       - attach_workspace:
           at: .
       - run:
