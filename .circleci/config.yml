@@ -1,8 +1,8 @@
 version: 2.1
 
 orbs:
-  win: circleci/windows@5.0
-  linux: circleci/docker@3.1
+  # win: circleci/windows@5.0
+  linux: circleci/docker@2.8.1
 
 jobs:
   checkout_code:
@@ -25,7 +25,7 @@ jobs:
       dotnet_version:
         type: string
     executor:
-      name: linux/default
+      name: linux/docker
     environment:
       ROOT_DIR: ${CIRCLE_WORKING_DIRECTORY}
     #  CI: true
