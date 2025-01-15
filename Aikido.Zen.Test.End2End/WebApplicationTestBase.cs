@@ -82,14 +82,17 @@ namespace Aikido.Zen.Test.End2End
         {
             var currentDirectory = TestContext.CurrentContext.TestDirectory;
             var projectDir = "Aikido.Zen.Test.End2End";
-            var index = currentDirectory.IndexOf(projectDir);
+            var index = currentDirectory.IndexOf(projectDir, StringComparison.OrdinalIgnoreCase);
 
             if (index == -1)
             {
-                throw new DirectoryNotFoundException($"Could not find {projectDir} in {currentDirectory}");
+                // Log a warning and return the current directory as a fallback
+                TestContext.Out.WriteLine($"Warning: Could not find {projectDir} in {currentDirectory}. Using current directory as work directory.");
+                TestContext.WriteLine($"Warning: Could not find {projectDir} in {currentDirectory}. Using current directory as work directory.");
+                return currentDirectory;
             }
 
-            return currentDirectory.Substring(0, index);
+            return currentDirectory.Substring(0, index + projectDir.Length);
         }
 
         /// <summary>
