@@ -1,5 +1,8 @@
 version: 2.1
 
+orbs:
+  linux: circleci/docker@2.8.1
+
 jobs:
   checkout_code:
     docker:
@@ -20,17 +23,15 @@ jobs:
     parameters:
       dotnet_version:
         type: string
-    docker:
-      - image: mcr.microsoft.com/dotnet/sdk:<< parameters.dotnet_version >>
+    executor:
+      name: linux/docker
     steps:
       - checkout
-      - setup_remote_docker
       - run:
-          name: Verify Docker Setup
-          command: docker --version
-      - run:
-          name: Check if Docker is Running
-          command: docker info | grep -i "Platform" | grep -i "linux"
+          name: install dotnet
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y dotnet-sdk-8.0
       - attach_workspace:
           at: .
       - run:
