@@ -120,7 +120,7 @@ namespace Aikido.Zen.Test.End2End
         /// </summary>
         protected async Task<IContainer> CreateSqlServerContainer()
         {
-            sqlServerBuilder = new ContainerBuilder();
+            var sqlServerBuilder = new ContainerBuilder();
 
             if (Environment.GetEnvironmentVariable("CI") == "true")
             {
@@ -130,7 +130,7 @@ namespace Aikido.Zen.Test.End2End
             {
                 sqlServerBuilder.WithImage("mcr.microsoft.com/mssql/server:2019-latest");
             }
-            var sqlServer = new sqlServerBuilder;
+            var sqlServer = sqlServerBuilder
                 .WithEnvironment("ACCEPT_EULA", "Y")
                 .WithEnvironment("SA_PASSWORD", "YourStrong!Passw0rd")
                 .WithExposedPort(1433)
