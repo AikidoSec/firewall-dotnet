@@ -240,9 +240,10 @@ namespace Aikido.Zen.Core
                                 .GetResult();
                             eventItem.Callback?.Invoke(eventItem.Event, response);
                         }
-                        catch (Exception)
+                        catch (Exception ex)
                         {
                             // pass through
+                            _logger.LogError(ex, "AikidoZen: Error processing event: {event}", eventItem.Event);
                         }
                     }
                 }
@@ -256,6 +257,7 @@ namespace Aikido.Zen.Core
             catch (Exception)
             {
                 // pass through
+                _logger.LogError(ex, "AikidoZen: Error disposing agent");
             }
             finally
             {
@@ -370,6 +372,7 @@ namespace Aikido.Zen.Core
                 catch (OperationCanceledException) when (_cancellationSource.Token.IsCancellationRequested)
                 {
                     break;
+
                 }
                 catch (Exception)
                 {
