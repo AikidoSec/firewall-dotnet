@@ -25,9 +25,11 @@ jobs:
         type: string
     executor:
       name: win/server-2022
+      docker_layer_caching: true
     environment:
       ROOT_DIR: ${CIRCLE_WORKING_DIRECTORY}
       USE_NAT: true
+      LINUX_DOCKER_IMAGE: true
     steps:
       - attach_workspace:
           at: .

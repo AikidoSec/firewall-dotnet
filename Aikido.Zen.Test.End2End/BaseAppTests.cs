@@ -27,6 +27,10 @@ public abstract class BaseAppTests
     private readonly INetwork Network;
     private bool UseNat => Environment.GetEnvironmentVariable("USE_NAT") == "true";
 
+    private string DockerImage => Environment.GetEnvironmentVariable("LINUX_DOCKER_IMAGE") == "true"
+        ? $"mcr.microsoft.com/dotnet/sdk:{0}-nanoserver-ltsc2022"
+        : $"mcr.microsoft.com/dotnet/sdk:{0}-alpine";
+
 
     private string WorkDirectory => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ROOT_DIR"))
         ? Path.GetFullPath(Path.Combine(Environment.GetEnvironmentVariable("ROOT_DIR"), "..", "..", "..", "..", ".."))
@@ -133,7 +137,7 @@ public abstract class BaseAppTests
 
             MockServerContainer = new ContainerBuilder()
                 .WithNetwork(Network)
-                .WithImage("mcr.microsoft.com/dotnet/sdk:8.0-nanoserver-ltsc2022")
+                .WithImage(string.Format(DockerImage, "8.0"))
                 .WithResourceMapping(new DirectoryInfo(Path.Combine(WorkDirectory, "e2e/Aikido.Zen.Server.Mock")), "/mockapp")
                 .WithWorkingDirectory("/mockapp")
                 .WithCommand("dotnet", "run", "--urls", $"http://+:{MockServerPort}")
@@ -179,7 +183,7 @@ public abstract class BaseAppTests
 
         AppContainer = new ContainerBuilder()
             .WithNetwork(Network)
-            .WithImage($"mcr.microsoft.com/dotnet/sdk:{dotnetVersion}nanoserver-ltsc2022")
+            .WithImage(string.Format(DockerImage, dotnetVersion))
             .WithResourceMapping(new DirectoryInfo(Path.Combine(WorkDirectory, ProjectDirectory)), "/sampleapp")
             .WithWorkingDirectory("/sampleapp")
             .WithCommand("dotnet", "run", "--urls", $"http://+:{AppPort}", "--framework", $"net{dotnetVersion}")
