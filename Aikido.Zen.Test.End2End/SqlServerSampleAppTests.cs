@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using Aikido.Zen.Core.Exceptions;
 using DotNet.Testcontainers.Containers;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -87,14 +88,14 @@ public class SqlServerSampleAppTests : WebApplicationTestBase
         {
             var response = await SampleAppClient.PostAsJsonAsync("/api/pets/create", unsafePayload);
             var content = await response.Content.ReadAsStringAsync();
+            // Assert
+            Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
         }
         catch (AikidoException ex)
         {
             Assert.That(ex.Message, Does.Contain("SQL injection detected"));
         }
 
-        // Assert
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.InternalServerError));
     }
 
     [Test]

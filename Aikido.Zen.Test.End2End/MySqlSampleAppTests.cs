@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using NUnit.Framework;
 using MySqlSampleApp;
+using Aikido.Zen.Core.Exceptions;
 
 namespace Aikido.Zen.Test.End2End;
 
@@ -85,14 +86,14 @@ public class MySqlSampleAppTests : WebApplicationTestBase
         {
             var response = await SampleAppClient.PostAsJsonAsync("/api/pets/create", unsafePayload);
             var content = await response.Content.ReadAsStringAsync();
+            // Assert
+            Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
         }
         catch (AikidoException ex)
         {
             Assert.That(ex.Message, Does.Contain("SQL injection detected"));
         }
 
-        // Assert
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.InternalServerError));
     }
 
     [Test]

@@ -9,6 +9,7 @@ using SampleApp.Common.Controllers;
 using Microsoft.AspNetCore.Http;
 using System.Net;
 using System.Security.Claims;
+using Aikido.Zen.Core.Exceptions;
 
 namespace SampleApp.Common
 {
@@ -56,6 +57,20 @@ namespace SampleApp.Common
             app.UseDeveloperExceptionPage();
             app.UseZenFireWall();
             app.UseHttpsRedirection();
+
+            // Global exception handler for AikidoExceptions
+            app.Use(async (context, next) =>
+            {
+                try
+                {
+                    await next();
+                }
+                catch (AikidoException ex)
+                {
+                    context.Response.StatusCode = (int)HttpStatusCode.Forbidden;
+                    await context.Response.WriteAsync("Request blocked due to security policy.");
+                }
+            });
 
             ConfigureEndpoints(app);
         }
