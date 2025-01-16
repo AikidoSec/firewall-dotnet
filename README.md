@@ -2,7 +2,7 @@
 
 
 # Zen, in-app firewall for .NET | by Aikido
-[![Codecov](https://img.shields.io/codecov/c/github/AikidoSec/firewall-dotnet?style=flat-square&token=AJK9LU35GY)](https://app.codecov.io/gh/aikidosec/firewall-dotnet)
+[![Codecov](https://img.shields.io/codecov/c/github/AikidoSec/firewall-dotnet?style=flat-square&token=J74AVIU17K)](https://app.codecov.io/gh/aikidosec/firewall-dotnet)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com)
 [![Unit tests](https://github.com/AikidoSec/firewall-dotnet/actions/workflows/unit-test.yml/badge.svg)](https://github.com/AikidoSec/firewall-dotnet/actions/workflows/unit-test.yml)
 
