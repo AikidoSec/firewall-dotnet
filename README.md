@@ -34,8 +34,12 @@ Zen operates autonomously on the same server as your .NET app to:
 ## Supported libraries and frameworks
 
 ### Web frameworks
-* ✅ ASP.NET Core <= 8.0
-* ✅ ASP.NET Framework >= 4.6 and <= 4.8
+* ✅ ASP.NET Core 6.0
+* ✅ ASP.NET Core 7.0
+* ✅ ASP.NET Core 8.0
+* ✅ ASP.NET Framework 4.6.x
+* ✅ ASP.NET Framework 4.7.x
+* ✅ ASP.NET Framework 4.8.x
 
 ### Database drivers
 * ✅ Microsoft.Data.SqlClient
@@ -210,9 +214,7 @@ address: support@aikido.dev or create an account at https://app.aikido.dev.
 
 ## Performance
 
-| Without Zen      | With Zen      | Difference in ms |
-|------------------|---------------|------------------|
-| 3.64ms           | 4.05ms        | +0.41ms          |
+TODO
 
 ## Code of Conduct
 
