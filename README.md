@@ -34,8 +34,8 @@ Zen operates autonomously on the same server as your .NET app to:
 ## Supported libraries and frameworks
 
 ### Web frameworks
-* ✅ ASP.NET Core
-* ✅ ASP.NET Framework
+* ✅ ASP.NET Core <= 8.0
+* ✅ ASP.NET Framework >= 4.6 and <= 4.8
 
 ### Database drivers
 * ✅ Microsoft.Data.SqlClient
