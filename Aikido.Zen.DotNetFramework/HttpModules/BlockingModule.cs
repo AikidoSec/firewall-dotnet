@@ -42,7 +42,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             }
 
             // block the request if the user is blocked
-            if (!EnvironmentHelper.DryMode && Agent.Instance.Context.IsBlocked(user, aikidoContext.RemoteAddress, routeKey))
+            if (!EnvironmentHelper.DryMode && Agent.Instance.Context.IsBlocked(user, aikidoContext.RemoteAddress, routeKey, aikidoContext.UserAgent))
             {
                 Agent.Instance.Context.AddAbortedRequest();
                 throw new HttpException(403, "Request blocked");

@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Aikido.Zen.Core.Models;
 using NetTools;
 
@@ -56,18 +57,21 @@ namespace Aikido.Zen.Test
                     AllowedIPAddresses = new[] { "10.0.0.0/8" }
                 }
             };
+            var blockedUserAgents = new Regex("googlebot|bingbot|yandexbot");
 
             _agentContext.UpdateBlockedUsers(new[] { "user1" });
             _agentContext.BlockList.AddIpAddressToBlocklist("192.168.1.101");
             _agentContext.BlockList.UpdateAllowedSubnets(endpoints);
+            _agentContext.UpdateBlockedUserAgents(blockedUserAgents);
 
             // Act & Assert
-            Assert.That(_agentContext.IsBlocked(user, "192.168.1.102", url)); // Blocked user
-            Assert.That(_agentContext.IsBlocked(null, "192.168.1.101", url)); // Blocked IP
-            Assert.That(_agentContext.IsBlocked(null, ip, url)); // Not in allowed subnet
-            Assert.That(_agentContext.IsBlocked(null, "10.0.0.1", url), Is.False); // In allowed subnet
-            Assert.That(_agentContext.IsBlocked(null, "invalid.ip", url), Is.False); // Invalid IP should not be blocked
-            Assert.That(_agentContext.IsBlocked(new User("user2", "allowed"), "10.0.0.1", url), Is.False); // Non-blocked user in allowed subnet
+            Assert.That(_agentContext.IsBlocked(user, "192.168.1.102", url, "useragent")); // Blocked user
+            Assert.That(_agentContext.IsBlocked(null, "192.168.1.101", url, "useragent")); // Blocked IP
+            Assert.That(_agentContext.IsBlocked(null, ip, url, "useragent")); // Not in allowed subnet
+            Assert.That(_agentContext.IsBlocked(null, "10.0.0.1", url, "useragent"), Is.False); // In allowed subnet
+            Assert.That(_agentContext.IsBlocked(null, "invalid.ip", url, "useragent"), Is.False); // Invalid IP should not be blocked
+            Assert.That(_agentContext.IsBlocked(new User("user2", "allowed"), "10.0.0.1", url, "useragent"), Is.False); // Non-blocked user in allowed subnet
+            Assert.That(_agentContext.IsBlocked(new User("user2", "allowed"), "192.168.1.101", url, "googlebot"), Is.True); // Blocked user agent
         }
 
         [Test]
@@ -206,7 +210,7 @@ namespace Aikido.Zen.Test
             _agentContext.UpdateBlockedUsers(new[] { "user1" });
 
             // Act
-            var isBlocked = _agentContext.IsBlocked(user, string.Empty, string.Empty);
+            var isBlocked = _agentContext.IsBlocked(user, string.Empty, string.Empty, string.Empty);
 
             // Assert
             Assert.That(isBlocked);
@@ -219,7 +223,7 @@ namespace Aikido.Zen.Test
             var user = new User("user1", "User One");
 
             // Act
-            var isBlocked = _agentContext.IsBlocked(user, string.Empty, string.Empty);
+            var isBlocked = _agentContext.IsBlocked(user, string.Empty, string.Empty, string.Empty);
 
             // Assert
             Assert.That(isBlocked, Is.False);
@@ -333,12 +337,13 @@ namespace Aikido.Zen.Test
                     Route = "/test",
                     AllowedIPAddresses = new[] { "192.168.1.0/24" },
                     RateLimiting = new RateLimitingConfig { MaxRequests = 60 }
+
                 }
             };
             var configVersion = 123L;
 
             // Act
-            _agentContext.UpdateConfig(block, blockedUsers, endpoints, configVersion);
+            _agentContext.UpdateConfig(block, blockedUsers, endpoints, null, configVersion);
 
             // Assert
             Assert.Multiple(() =>
@@ -398,6 +403,62 @@ namespace Aikido.Zen.Test
                 Assert.That(_agentContext.BlockList.IsIPBlocked("invalid-ip"), Is.False);
                 Assert.That(_agentContext.BlockList.IsIPBlocked("not-an-ip"), Is.False);
             });
+        }
+
+        [Test]
+        public void UpdateBlockedUserAgents_ShouldUpdateBlockedUserAgentsList()
+        {
+            // Arrange
+            var userAgents = new Regex("googlebot|bingbot|yandexbot");
+
+            // Act
+            _agentContext.UpdateBlockedUserAgents(userAgents);
+
+            // Assert
+            Assert.That(_agentContext.IsUserAgentBlocked("googlebot"), Is.True);
+            Assert.That(_agentContext.IsUserAgentBlocked("bingbot"), Is.True);
+            Assert.That(_agentContext.IsUserAgentBlocked("yandexbot"), Is.True);
+            Assert.That(_agentContext.IsUserAgentBlocked("Opera/9.80"), Is.False);
+        }
+
+        [Test]
+        public void UpdateBlockedUserAgents_WithEmptyList_ShouldClearBlockedUserAgents()
+        {
+            // Arrange
+            _agentContext.UpdateBlockedUserAgents(new Regex( "Mozilla/5.0" ));
+
+            // Act
+            _agentContext.UpdateBlockedUserAgents(null);
+
+            // Assert
+            Assert.That(_agentContext.IsUserAgentBlocked("Mozilla/5.0"), Is.False);
+        }
+
+        [Test]
+        public void IsUserAgentBlocked_ShouldReturnTrue_WhenUserAgentIsBlocked()
+        {
+            // Arrange
+            var userAgent = "Mozilla/5.0";
+            _agentContext.UpdateBlockedUserAgents(new Regex(userAgent));
+
+            // Act
+            var isBlocked = _agentContext.IsUserAgentBlocked(userAgent);
+
+            // Assert
+            Assert.That(isBlocked, Is.True);
+        }
+
+        [Test]
+        public void IsUserAgentBlocked_ShouldReturnFalse_WhenUserAgentIsNotBlocked()
+        {
+            // Arrange
+            var userAgent = "Mozilla/5.0";
+
+            // Act
+            var isBlocked = _agentContext.IsUserAgentBlocked(userAgent);
+
+            // Assert
+            Assert.That(isBlocked, Is.False);
         }
     }
 }

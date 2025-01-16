@@ -3,6 +3,7 @@ using BenchmarkDotNet.Jobs;
 using Aikido.Zen.Core.Models.Ip;
 using System.Collections.Generic;
 using BenchmarkDotNet.Columns;
+using System.Linq;
 
 namespace Aikido.Zen.Benchmarks
 {
@@ -13,37 +14,37 @@ namespace Aikido.Zen.Benchmarks
     {
         private BlockList _blockList;
         private List<string> _ipRanges;
-        private List<string> _userIds;
         private List<string> _checkIps;
-        private List<string> _checkUserIds;
 
         [Params(100000)] // Number of IP ranges to block
         public int BlockedIpRangeCount { get; set; }
 
-        [Params(1000)] // Number of users to test
-        public int UserCount { get; set; }
+        [Params(1, 100, 1000)] // Number of IPs to check
+        public int IpsToCheck { get; set; }
 
         [GlobalSetup]
         public void Setup()
         {
             _blockList = new BlockList();
             _ipRanges = new List<string>(BlockedIpRangeCount);
-            _userIds = new List<string>(UserCount);
-            _checkIps = new List<string>(UserCount);
-            _checkUserIds = new List<string>(UserCount);
+            _checkIps = new List<string>();
 
             // Initialize test data
             for (int i = 0; i < BlockedIpRangeCount; i++)
             {
                 _ipRanges.Add($"192.168.{i / 256}.{i % 256}/32");
                 _ipRanges.Add($"10.{i / 256}.{i % 256}.0/24");
+                // ipv6
+                _ipRanges.Add($"2001:{i:X4}:{i:X4}:{i:X4}:{i:X4}:{i:X4}:{i:X4}:{i:X4}/128");
             }
 
-            for (int i = 0; i < UserCount; i++)
+            for (int i = 0; i < BlockedIpRangeCount; i++)
             {
-                _userIds.Add($"user-{i}");
-                _checkIps.Add(i < UserCount / 2 ? $"192.168.{i / 256}.{i % 256}" : $"10.0.{i / 256}.{i % 256}");
-                _checkUserIds.Add($"user-{i}");
+                if (i < BlockedIpRangeCount / 2)
+                    _checkIps.Add($"10.{i / 256}.{i % 256}.0/24");
+                // ipv6
+                if (i < BlockedIpRangeCount / 2)
+                    _checkIps.Add($"2001:{i:X4}:{i:X4}:{i:X4}:{i:X4}:{i:X4}:{i:X4}:{i:X4}");
             }
 
             // Update blocked subnets
@@ -54,7 +55,7 @@ namespace Aikido.Zen.Benchmarks
         public void CheckBlockedIPs()
         {
             // Check if IPs are blocked
-            foreach (var ip in _checkIps)
+            foreach (var ip in _checkIps.Take(IpsToCheck))
             {
                 _blockList.IsIPBlocked(ip);
             }
@@ -63,13 +64,11 @@ namespace Aikido.Zen.Benchmarks
         [Benchmark]
         public void CheckIsBlocked()
         {
-            // Check if access is blocked based on IP and userId
-            for (int i = 0; i < _checkIps.Count; i++)
+            // Check if access is blocked based on IP and path
+            foreach (var ip in _checkIps.Take(IpsToCheck))
             {
-                _blockList.IsBlocked(_checkIps[i], $"GET|user/{_checkUserIds[i]}");
+                _blockList.IsBlocked(ip, $"GET|path/");
             }
         }
     }
 }
-
-
