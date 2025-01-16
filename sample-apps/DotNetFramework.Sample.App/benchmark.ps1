@@ -27,8 +27,10 @@ function Start-Application {
         [string]$aikidoDisable
     )
     [System.Environment]::SetEnvironmentVariable("AIKIDO_DISABLE", $aikidoDisable, [System.EnvironmentVariableTarget]::Process)
-    Start-Process -FilePath "C:\Program Files\IIS Express\iisexpress.exe" -ArgumentList "/path:$projectDir /port:5095" -NoNewWindow -PassThru -RedirectStandardOutput "%temp%\iisexpress.log"
-    Start-Sleep -Seconds 5
+    [System.Environment]::SetEnvironmentVariable("AIKIDO_TOKEN", "123456789", [System.EnvironmentVariableTarget]::Process)
+
+    Start-Process -FilePath "C:\Program Files\IIS Express\iisexpress.exe" -ArgumentList "/path:$projectDir /port:5095" -NoNewWindow -PassThru -RedirectStandardOutput "app.log"
+    Start-Sleep -Seconds 10
 }
 
 # Function to stop the application

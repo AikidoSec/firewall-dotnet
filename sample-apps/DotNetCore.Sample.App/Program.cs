@@ -29,6 +29,10 @@ app
     // add Zen middleware
     .UseZenFireWall()
     // add controllers
-    .UseEndpoints(endpoints => endpoints.MapControllers());
+    .UseEndpoints(endpoints =>
+    {
+        endpoints.MapControllers();
+        endpoints.MapGet("/", () => "Hello World");
+    });
 
 app.Run();
