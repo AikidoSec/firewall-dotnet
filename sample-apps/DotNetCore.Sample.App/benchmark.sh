@@ -35,7 +35,7 @@ HELLO_ENDPOINT="${BASE_ADDRESS}benchmark/hello"
 start_application() {
     local aikido_disable=$1
     export AIKIDO_DISABLE=$aikido_disable
-    export AIKIDO_TOKEN=AIK_RUNTIME_10768_3465_uVQNoDEyMOF2iDwwyQhOl8kBfNWcXPYQlpMi3ghlHaFNvjfm
+    export AIKIDO_TOKEN=12456789
     dotnet run --project "${PROJECT_DIR}DotNetCore.Sample.App.csproj" --configuration Release > app.log 2>&1 &
     sleep 10  # Wait for the application to start
 }
