@@ -30,6 +30,9 @@ namespace Aikido.Zen.Benchmarks
             Console.WriteLine("Running lru cache benchmarks...");
             summaries.Add(BenchmarkRunner.Run<LRUCacheBenchmarks>());
 
+            Console.WriteLine("Running block list benchmarks...");
+            summaries.Add(BenchmarkRunner.Run<BlockListBenchmarks>());
+
             foreach (var summary in summaries)
             {
                 Console.WriteLine("Saving summary at " + summary.ResultsDirectoryPath);
@@ -37,7 +40,7 @@ namespace Aikido.Zen.Benchmarks
                 // Export the results to a markdown file
                 MarkdownExporter.Console.ExportToFiles(summary, BenchmarkDotNet.Loggers.ConsoleLogger.Default);
             }
-            
+
             Console.ReadLine();
         }
     }
