@@ -492,6 +492,7 @@ namespace Aikido.Zen.Test
             var configLastUpdated = 123L;
             var newConfigLastUpdated = 124L;
             var blockedUsers = new[] { "user1", "user2" };
+            var blockedUserAgents = "userAgent1|userAgent2";
             var endpoints = new[]
             {
                 new EndpointConfig
@@ -514,6 +515,7 @@ namespace Aikido.Zen.Test
             {
                 Success = true,
                 BlockedUserIds = blockedUsers,
+                BlockedUserAgents = blockedUserAgents,
                 Endpoints = endpoints,
                 ConfigUpdatedAt = newConfigLastUpdated
             };
@@ -537,6 +539,7 @@ namespace Aikido.Zen.Test
                 Assert.That(response.Success, Is.True);
                 Assert.That(response.ConfigUpdatedAt, Is.EqualTo(newConfigLastUpdated));
                 Assert.That(response.BlockedUserIds, Is.EquivalentTo(blockedUsers));
+                Assert.That(response.BlockedUserAgents, Is.EquivalentTo(blockedUserAgents));
                 Assert.That(response.Endpoints, Is.EquivalentTo(endpoints));
             });
 

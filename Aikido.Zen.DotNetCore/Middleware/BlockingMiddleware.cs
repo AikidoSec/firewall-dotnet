@@ -30,7 +30,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
 
 
             // block the request if the user is blocked
-            if (!EnvironmentHelper.DryMode && Agent.Instance.Context.IsBlocked(user, context.Connection?.RemoteIpAddress?.ToString(), routeKey))
+            if (!EnvironmentHelper.DryMode && Agent.Instance.Context.IsBlocked(user, context.Connection?.RemoteIpAddress?.ToString(), routeKey, aikidoContext.UserAgent))
             {
                 Agent.Instance.Context.AddAbortedRequest();
                 context.Response.StatusCode = 403;

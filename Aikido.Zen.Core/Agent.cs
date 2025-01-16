@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Aikido.Zen.Core.Api;
@@ -107,7 +108,7 @@ namespace Aikido.Zen.Core
                 if (response.Success)
                 {
                     var reportingResponse = response as ReportingAPIResponse;
-                    Task.Run(() => UpdateConfig(reportingResponse.Block, reportingResponse.BlockedUserIds, reportingResponse.Endpoints, reportingResponse.ConfigUpdatedAt));
+                    Task.Run(() => UpdateConfig(reportingResponse.Block, reportingResponse.BlockedUserIds, reportingResponse.Endpoints, reportingResponse.BlockedUserAgentsRegex, reportingResponse.ConfigUpdatedAt));
                 }
             });
 
@@ -126,6 +127,7 @@ namespace Aikido.Zen.Core
                     if (reportingResponse != null && reportingResponse.Success)
                     {
                         _context.UpdateBlockedUsers(reportingResponse.BlockedUserIds);
+                        _context.UpdateBlockedUserAgents(reportingResponse.BlockedUserAgentsRegex);
                     }
                 }
             };
@@ -349,7 +351,7 @@ namespace Aikido.Zen.Core
                     {
                         if (ConfigChanged(out var response))
                         {
-                            await UpdateConfig(response.Block, response.BlockedUserIds, response.Endpoints, response.ConfigUpdatedAt);
+                            await UpdateConfig(response.Block, response.BlockedUserIds, response.Endpoints, response.BlockedUserAgentsRegex, response.ConfigUpdatedAt);
                         }
                         _lastConfigCheck = DateTime.UtcNow.Ticks;
                     }
@@ -509,9 +511,9 @@ namespace Aikido.Zen.Core
             return false;
         }
 
-        private async Task UpdateConfig(bool block, IEnumerable<string> blockedUsers, IEnumerable<EndpointConfig> endpoints, long configVersion)
+        private async Task UpdateConfig(bool block, IEnumerable<string> blockedUsers, IEnumerable<EndpointConfig> endpoints, Regex blockedUserAgents, long configVersion)
         {
-            _context.UpdateConfig(block, blockedUsers, endpoints, configVersion);
+            _context.UpdateConfig(block, blockedUsers, endpoints, blockedUserAgents, configVersion);
             await UpdateBlockedIps();
         }
 
