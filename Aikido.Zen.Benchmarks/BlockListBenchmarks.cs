@@ -36,6 +36,7 @@ namespace Aikido.Zen.Benchmarks
             for (int i = 0; i < BlockedIpRangeCount; i++)
             {
                 _ipRanges.Add($"192.168.{i / 256}.{i % 256}/32");
+                _ipRanges.Add($"10.{i / 256}.{i % 256}.0/24");
             }
 
             for (int i = 0; i < UserCount; i++)
