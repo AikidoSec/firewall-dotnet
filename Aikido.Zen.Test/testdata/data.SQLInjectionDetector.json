@@ -35,6 +35,41 @@
         "isInjection": true
     },
     {
+        "command": "INSERT INTO Users (Name) VALUES ('Test'), ('Test2');--",
+        "dialect": 0,
+        "userInput": "Test'), ('Test2');--",
+        "description": "ATTACK: SQL injection with comment",
+        "isInjection": true
+    },
+    {
+        "command": "INSERT INTO pets (pet_name, owner) VALUES ('Malicious Pet', 'Aikido Security'), ('Gru from the Minions', 'Evil Corp'); -- '",
+        "dialect": 0,
+        "userInput": "Malicious Pet', 'Aikido Security'), ('Gru from the Minions', 'Evil Corp'); -- ",
+        "description": "ATTACK: Generic SQL injection with multiple values",
+        "isInjection": true
+    },
+    {
+        "command": "INSERT INTO dbo.pets (pet_name, owner) VALUES ('Malicious Pet', 'Aikido Security'), ('Gru from the Minions', 'Evil Corp'); -- '",
+        "dialect": 7,
+        "userInput": "Malicious Pet', 'Aikido Security'), ('Gru from the Minions', 'Evil Corp'); -- ",
+        "description": "ATTACK: Microsoft SQL injection with multiple values", 
+        "isInjection": true
+    },
+    {
+        "command": "INSERT INTO pets (pet_name, owner) VALUES ('Malicious Pet', 'Aikido Security'), ('Gru from the Minions', 'Evil Corp'); -- '",
+        "dialect": 8,
+        "userInput": "Malicious Pet', 'Aikido Security'), ('Gru from the Minions', 'Evil Corp'); -- ",
+        "description": "ATTACK: MySQL injection with multiple values",
+        "isInjection": true
+    },
+    {
+        "command": "INSERT INTO pets (pet_name, owner) VALUES ('Malicious Pet', 'Aikido Security'), ('Gru from the Minions', 'Evil Corp'); -- '",
+        "dialect": 9,
+        "userInput": "Malicious Pet', 'Aikido Security'), ('Gru from the Minions', 'Evil Corp'); -- ",
+        "description": "ATTACK: PostgreSQL injection with multiple values",
+        "isInjection": true
+    },
+    {
         "command": "SELECT * FROM users WHERE id = 'users\\\\'",
         "dialect": 0,
         "userInput": "users\\\\",

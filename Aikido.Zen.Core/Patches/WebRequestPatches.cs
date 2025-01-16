@@ -15,15 +15,25 @@ namespace Aikido.Zen.Core.Patches
         {
             PatchMethod(harmony, typeof(WebRequest), "GetResponse", nameof(CaptureRequest));
             PatchMethod(harmony, typeof(WebRequest), "GetResponseAsync", nameof(CaptureRequest));
+            PatchMethod(harmony, typeof(HttpWebRequest), "GetResponse", nameof(CaptureRequest));
+            PatchMethod(harmony, typeof(HttpWebRequest), "GetResponseAsync", nameof(CaptureRequest));
         }
 
         private static void PatchMethod(Harmony harmony, Type type, string methodName, string patchMethodName)
         {
-            var method = AccessTools.Method(type, methodName);
-            if (method != null)
+            try
             {
-                harmony.Patch(method, new HarmonyMethod(typeof(WebRequestPatches).GetMethod(nameof(CaptureRequest), BindingFlags.Static | BindingFlags.NonPublic)));
+                var method = AccessTools.Method(type, methodName);
+                if (method != null && !method.IsAbstract)
+                {
+                    harmony.Patch(method, new HarmonyMethod(typeof(WebRequestPatches).GetMethod(nameof(CaptureRequest), BindingFlags.Static | BindingFlags.NonPublic)));
+                }
             }
+            catch
+            {
+                // some methods fail to patch (abstract or not implemented) depending on the framework, so we just ignore them
+            }
+
         }
 
         internal static bool CaptureRequest(WebRequest __instance)

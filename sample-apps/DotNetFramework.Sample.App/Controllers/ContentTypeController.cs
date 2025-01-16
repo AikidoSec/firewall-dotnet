@@ -17,8 +17,9 @@ namespace DotNetFramework.Sample.App.Controllers
         /// <returns>The received form data</returns>
         [HttpPost]
         [Route("form")]
-        public IHttpActionResult PostFormUrlEncoded([FromBody] FormDataCollection formData)
+        public IHttpActionResult PostFormUrlEncoded()
         {
+            var form = HttpContext.Current.Request.Form;
             return Ok(HttpContext.Current.Items["Aikido.Zen.Context"]);
         }
 

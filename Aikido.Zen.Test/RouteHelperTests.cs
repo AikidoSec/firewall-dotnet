@@ -20,7 +20,7 @@ namespace Aikido.Zen.Test
             var result = inputSpan.IsRouteParameter();
 
             // Assert
-            Assert.AreEqual(expectedResult, result);
+            Assert.That(expectedResult, Is.EqualTo(result));
         }
 
         [TestCase("/api/{id}", "/api/123", true)]
@@ -51,7 +51,7 @@ namespace Aikido.Zen.Test
             var result = RouteHelper.MatchRoute(pattern, path);
 
             // Assert
-            Assert.AreEqual(expectedResult, result);
+            Assert.That(expectedResult, Is.EqualTo(result));
         }
 
         

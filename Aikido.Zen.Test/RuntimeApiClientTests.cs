@@ -47,7 +47,7 @@ namespace Aikido.Zen.Test
             Task.Delay(100);
 
             // Assert
-            Assert.IsTrue(result.Success);
+            Assert.That(result.Success);
             _handlerMock.Protected().Verify(
                 "SendAsync",
                 Times.Once(),
@@ -99,7 +99,7 @@ namespace Aikido.Zen.Test
             await Task.Delay(100);
 
             // Assert
-            Assert.IsTrue(result.Success);
+            Assert.That(result.Success);
             _handlerMock.Protected().Verify(
                 "SendAsync",
                 Times.Once(),

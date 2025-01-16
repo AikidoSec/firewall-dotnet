@@ -67,7 +67,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
             await next(httpContext);
         }
 
-        private string? GetRoute(HttpContext context)
+        private string GetRoute(HttpContext context)
         {
             // we use the .NET core route collection to match against the request path,
             // this way, the routes found by Zen match the routes found by the .NET core

@@ -11,21 +11,37 @@ namespace Aikido.Zen.Core.Patches
     {
         public static void ApplyPatches(Harmony harmony)
         {
-            var method = AccessTools.Method(typeof(HttpClient), "SendAsync", new[] { 
+            var asyncMethod = AccessTools.Method(typeof(HttpClient), "SendAsync", new[] { 
                 typeof(HttpRequestMessage), 
                 typeof(HttpCompletionOption), 
                 typeof(CancellationToken) 
             });
-
-            if (method != null)
+            var syncMethod = AccessTools.Method(typeof(HttpClient), "Send", new[] {
+                typeof(HttpRequestMessage),
+                typeof(CancellationToken)
+            });
+            try
             {
-                harmony.Patch(method, new HarmonyMethod(typeof(HttpClientPatches).GetMethod(nameof(CaptureRequest), BindingFlags.Static | BindingFlags.NonPublic)));
+                if (asyncMethod != null && !asyncMethod.IsAbstract)
+                {
+                    var patchMethod = new HarmonyMethod(typeof(HttpClientPatches).GetMethod(nameof(CaptureRequest), BindingFlags.Static | BindingFlags.NonPublic));
+                    harmony.Patch(asyncMethod, patchMethod);
+                }
+
+                if (syncMethod != null && !syncMethod.IsAbstract)
+                {
+                    harmony.Patch(syncMethod, new HarmonyMethod(typeof(HttpClientPatches).GetMethod(nameof(CaptureRequest), BindingFlags.Static | BindingFlags.NonPublic)));
+                }
             }
+            catch (Exception)
+            {
+                // continue
+            }
+
         }
 
         internal static bool CaptureRequest(
             HttpRequestMessage request,
-            CancellationToken cancellationToken,
             HttpClient __instance)
         {
             var uri = __instance.BaseAddress == null

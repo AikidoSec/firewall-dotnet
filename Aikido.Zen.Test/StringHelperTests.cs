@@ -1,4 +1,4 @@
-﻿using Aikido.Zen.Core.Helpers;
+using Aikido.Zen.Core.Helpers;
 using NUnit.Framework;
 using System;
 
@@ -21,7 +21,7 @@ namespace Aikido.Zen.Test
             var result = sourceSpan.Contains(valueSpan);
 
             // Assert
-            Assert.AreEqual(expectedResult, result);
+            Assert.That(expectedResult, Is.EqualTo(result));
         }
 
         [TestCase("segment1/segment2", "segment1", "segment2")]
@@ -36,8 +36,8 @@ namespace Aikido.Zen.Test
             var segment = inputSpan.GetNextSegment(out var remainder);
 
             // Assert
-            Assert.AreEqual(expectedSegment, segment.ToString());
-            Assert.AreEqual(expectedRemainder, remainder.ToString());
+            Assert.That(expectedSegment, Is.EqualTo(segment.ToString()));
+            Assert.That(expectedRemainder, Is.EqualTo(remainder.ToString()));
         }
 
     }

@@ -36,15 +36,14 @@ namespace Aikido.Zen.Core.Patches
             switch (assemblyName)
             {
                 case "System.Data.SqlClient":
+                case "Microsoft.Data.SqlClient":
                     return SQLDialect.MicrosoftSQL;
-                case "Microsoft.Data.Sqlite":
-                    return SQLDialect.Generic;
                 case "MySql.Data":
+                case "MySqlConnector":
+                case "MySqlX":
                     return SQLDialect.MySQL;
                 case "Npgsql":
                     return SQLDialect.PostgreSQL;
-                case "MySqlConnector":
-                    return SQLDialect.MySQL;
                 default:
                     return SQLDialect.Generic;
             }

@@ -2,6 +2,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Text;
+using Aikido.Zen.Core.Exceptions;
 
 namespace Aikido.Zen.Core.Vulnerabilities
 {
@@ -127,7 +128,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
 
             if (result > 1)
             {
-                throw new Exception("Error in detecting shell injection");
+                throw new AikidoException("Error in detecting shell injection");
             }
             return result == 1;
         }

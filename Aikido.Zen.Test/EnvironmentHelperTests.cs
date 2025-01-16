@@ -15,7 +15,7 @@ namespace Aikido.Zen.Test
             var token = EnvironmentHelper.Token;
 
             // Assert
-            Assert.AreEqual("test_token", token);
+            Assert.That(token, Is.EqualTo("test_token"));
         }
 
         [Test]
@@ -28,7 +28,7 @@ namespace Aikido.Zen.Test
             var dryMode = EnvironmentHelper.DryMode;
 
             // Assert
-            Assert.IsTrue(dryMode);
+            Assert.That(dryMode);
         }
 
         [Test]
@@ -41,7 +41,7 @@ namespace Aikido.Zen.Test
             var dryMode = EnvironmentHelper.DryMode;
 
             // Assert
-            Assert.IsFalse(dryMode);
+            Assert.That(dryMode, Is.False);
         }
 
         [Test]
@@ -54,7 +54,7 @@ namespace Aikido.Zen.Test
             var url = EnvironmentHelper.AikidoUrl;
 
             // Assert
-            Assert.AreEqual("https://custom.aikido.dev", url);
+            Assert.That(url, Is.EqualTo("https://custom.aikido.dev"));
         }
 
         [Test]
@@ -67,7 +67,7 @@ namespace Aikido.Zen.Test
             var url = EnvironmentHelper.AikidoUrl;
 
             // Assert
-            Assert.AreEqual("https://guard.aikido.dev", url);
+            Assert.That(url, Is.EqualTo("https://guard.aikido.dev"));
         }
 
         [Test]
@@ -80,7 +80,7 @@ namespace Aikido.Zen.Test
             var url = EnvironmentHelper.AikidoRealtimeUrl;
 
             // Assert
-            Assert.AreEqual("https://custom-realtime.aikido.dev", url);
+            Assert.That(url, Is.EqualTo("https://custom-realtime.aikido.dev"));
         }
 
         [Test]
@@ -93,7 +93,7 @@ namespace Aikido.Zen.Test
             var url = EnvironmentHelper.AikidoRealtimeUrl;
 
             // Assert
-            Assert.AreEqual("https://runtime.aikido.dev", url);
+            Assert.That(url, Is.EqualTo("https://runtime.aikido.dev"));
         }
     }
 }

@@ -3,6 +3,7 @@
 
 var target = Argument("target", "Default");
 var configuration = Argument("configuration", "Release");
+var framework = Argument("framework", "");
 var solution = "./Aikido.Zen.sln";
 var projectName = "Aikido.Zen.Core";
 var version = "0.1.35";
@@ -42,14 +43,14 @@ Task("DownloadLibraries")
         {
             FilePath file = files.First();
             var currVersion = FileReadText(file).Split('-')[1];
-            if(currVersion == version)
+            if (currVersion == version)
             {
                 Information("Libraries already downloaded. skipping download.");
                 return;
             }
         }
 
-        foreach(var file in filesToDownload)
+        foreach (var file in filesToDownload)
         {
             DownloadFile($"{baseUrl}{file}", $"{librariesDir}/{file}");
         }
@@ -60,11 +61,6 @@ Task("Restore")
     .Does(() =>
     {
         NuGetRestore(solution);
-        DotNetRestore(solution, new DotNetRestoreSettings 
-        {
-            Verbosity = DotNetVerbosity.Quiet
-        });
-        Information("Restore task completed successfully.");
     });
 
 Task("Build")
@@ -73,7 +69,7 @@ Task("Build")
     .IsDependentOn("Restore")
     .Does(() =>
     {
-        try 
+        try
         {
             var msBuildSettings = new MSBuildSettings
             {
@@ -82,15 +78,15 @@ Task("Build")
                 Verbosity = Verbosity.Quiet,
                 PlatformTarget = PlatformTarget.MSIL,
                 MaxCpuCount = 1,
-                NodeReuse = false,
-                DetailedSummary = false
+                DetailedSummary = false,
+                NodeReuse = true
             }
             .WithTarget("Build");
 
             var projects = GetFiles("./**/*.csproj")
                 .Where(p => !p.FullPath.Contains("sample-apps") && !p.FullPath.Contains("Aikido.Zen.Benchmarks"));
 
-            foreach(var project in projects)
+            foreach (var project in projects)
             {
                 MSBuild(project, msBuildSettings);
             }
@@ -113,12 +109,14 @@ Task("Test")
     {
         var coverageDir = MakeAbsolute(Directory("./coverage"));
         EnsureDirectoryExists(coverageDir);
-        
-        var testProjects = GetFiles("./Aikido.Zen.Test/*.csproj");
-        foreach(var project in testProjects)
+
+        // Get test projects from Aikido.Zen.Test directory
+        var testProjects = GetFiles("./Aikido.Zen.Test/*.csproj") as IEnumerable<FilePath>;
+        foreach (var project in testProjects)
         {
             DotNetTest(project.FullPath, new DotNetTestSettings
             {
+                SetupProcessSettings = processSettings => processSettings.RedirectStandardOutput = true,
                 Configuration = configuration,
                 NoBuild = true,
                 NoRestore = true,
@@ -128,21 +126,46 @@ Task("Test")
                     .Append($"/p:CoverletOutput={coverageDir.FullPath}/coverage.xml")
                     .Append("/p:Include=[Aikido.Zen.*]*")
                     .Append("/p:Exclude=[Aikido.Zen.Test]*")
-                    .Append("--verbosity detailed")
+                    .Append("--verbosity diagnostic")
             });
         }
         Information($"Test task completed successfully. Coverage report at: {coverageDir.FullPath}");
-        
+
         if (!FileExists($"{coverageDir.FullPath}/coverage.xml"))
         {
             Warning("Coverage file was not generated!");
         }
     });
 
+/// <summary>
+/// Task to run end-to-end tests.
+/// </summary>
+Task("TestE2E")
+    .IsDependentOn("Build")
+    .Does(() =>
+    {
+        // Get test projects from Aikido.Zen.Test.End2End directory
+        var testProjects = GetFiles("./Aikido.Zen.Test.End2End/*.csproj");
+        foreach (var project in testProjects)
+        {
+            DotNetTest(project.FullPath, new DotNetTestSettings
+            {
+                DiagnosticOutput = true,
+                Configuration = configuration,
+                NoBuild = true,
+                NoRestore = true,
+                ArgumentCustomization = args => args
+                    .Append("--verbosity detailed")
+                    .Append("--logger console;verbosity=detailed")
+            });
+        }
+        Information($"TestE2E task completed successfully.");
+    });
+
 Task("Pack")
     .Does(() =>
     {
-        if(configuration == "Release")
+        if (configuration == "Release")
         {
             var projects = new[] {
                 "./Aikido.Zen.Core/Aikido.Zen.Core.csproj",
@@ -150,7 +173,7 @@ Task("Pack")
                 "./Aikido.Zen.DotNetCore/Aikido.Zen.DotNetCore.csproj"
             };
 
-            foreach(var project in projects)
+            foreach (var project in projects)
             {
                 DotNetPack(project, new DotNetPackSettings
                 {
@@ -169,6 +192,7 @@ Task("Pack")
 
 Task("CreatePackages")
     .IsDependentOn("Test")
+    .IsDependentOn("TestE2E")
     .IsDependentOn("Pack");
 
 Task("Default")

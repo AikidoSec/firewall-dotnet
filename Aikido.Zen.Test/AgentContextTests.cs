@@ -62,12 +62,12 @@ namespace Aikido.Zen.Test
             _agentContext.BlockList.UpdateAllowedSubnets(endpoints);
 
             // Act & Assert
-            Assert.IsTrue(_agentContext.IsBlocked(user, "192.168.1.102", url)); // Blocked user
-            Assert.IsTrue(_agentContext.IsBlocked(null, "192.168.1.101", url)); // Blocked IP
-            Assert.IsTrue(_agentContext.IsBlocked(null, ip, url)); // Not in allowed subnet
-            Assert.IsFalse(_agentContext.IsBlocked(null, "10.0.0.1", url)); // In allowed subnet
-            Assert.IsFalse(_agentContext.IsBlocked(null, "invalid.ip", url)); // Invalid IP should not be blocked
-            Assert.IsFalse(_agentContext.IsBlocked(new User("user2", "allowed"), "10.0.0.1", url)); // Non-blocked user in allowed subnet
+            Assert.That(_agentContext.IsBlocked(user, "192.168.1.102", url)); // Blocked user
+            Assert.That(_agentContext.IsBlocked(null, "192.168.1.101", url)); // Blocked IP
+            Assert.That(_agentContext.IsBlocked(null, ip, url)); // Not in allowed subnet
+            Assert.That(_agentContext.IsBlocked(null, "10.0.0.1", url), Is.False); // In allowed subnet
+            Assert.That(_agentContext.IsBlocked(null, "invalid.ip", url), Is.False); // Invalid IP should not be blocked
+            Assert.That(_agentContext.IsBlocked(new User("user2", "allowed"), "10.0.0.1", url), Is.False); // Non-blocked user in allowed subnet
         }
 
         [Test]
@@ -121,7 +121,7 @@ namespace Aikido.Zen.Test
 
             // Assert
             var host = _agentContext.Hostnames.FirstOrDefault(h => h.Hostname == "example.com");
-            Assert.IsNotNull(host);
+            Assert.That(host == null, Is.False);
             Assert.That(host.Port, Is.EqualTo(8080));
         }
 
@@ -151,7 +151,7 @@ namespace Aikido.Zen.Test
 
             // Assert
             var userExtended = _agentContext.Users.FirstOrDefault(u => u.Id == "user1");
-            Assert.IsNotNull(userExtended);
+            Assert.That(userExtended == null, Is.False);
             Assert.That(userExtended.Name, Is.EqualTo("User One"));
             Assert.That(userExtended.LastIpAddress, Is.EqualTo(ipAddress));
         }
@@ -168,7 +168,7 @@ namespace Aikido.Zen.Test
 
             // Assert
             var route = _agentContext.Routes.FirstOrDefault(r => r.Path == path);
-            Assert.IsNotNull(route);
+            Assert.That(route == null, Is.False);
             Assert.That(route.Method, Is.EqualTo(method));
             Assert.That(route.Hits, Is.EqualTo(1));
         }
@@ -193,9 +193,9 @@ namespace Aikido.Zen.Test
             Assert.That(_agentContext.RequestsAborted, Is.EqualTo(0));
             Assert.That(_agentContext.AttacksDetected, Is.EqualTo(0));
             Assert.That(_agentContext.AttacksBlocked, Is.EqualTo(0));
-            Assert.IsEmpty(_agentContext.Hostnames);
-            Assert.IsEmpty(_agentContext.Users);
-            Assert.IsEmpty(_agentContext.Routes);
+            Assert.That(_agentContext.Hostnames, Is.Empty);
+            Assert.That(_agentContext.Users, Is.Empty);
+            Assert.That(_agentContext.Routes, Is.Empty);
         }
 
         [Test]
@@ -209,7 +209,7 @@ namespace Aikido.Zen.Test
             var isBlocked = _agentContext.IsBlocked(user, string.Empty, string.Empty);
 
             // Assert
-            Assert.IsTrue(isBlocked);
+            Assert.That(isBlocked);
         }
 
         [Test]
@@ -222,7 +222,7 @@ namespace Aikido.Zen.Test
             var isBlocked = _agentContext.IsBlocked(user, string.Empty, string.Empty);
 
             // Assert
-            Assert.IsFalse(isBlocked);
+            Assert.That(isBlocked, Is.False);
         }
 
         [Test]
