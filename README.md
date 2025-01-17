@@ -214,7 +214,7 @@ address: support@aikido.dev or create an account at https://app.aikido.dev.
 
 ## Performance
 
-TODO
+![Under construction](https://img.icons8.com/emoji/20/000000/construction-emoji.png) Under construction ![Under construction](https://img.icons8.com/emoji/20/000000/construction-emoji.png)
 
 ## Code of Conduct
 
