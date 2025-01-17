@@ -1,7 +1,5 @@
 using System.Text.RegularExpressions;
 using Aikido.Zen.Core.Models;
-using NetTools;
-
 namespace Aikido.Zen.Test
 {
     public class AgentContextTests

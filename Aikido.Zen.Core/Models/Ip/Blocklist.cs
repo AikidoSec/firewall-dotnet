@@ -4,7 +4,6 @@ using System.Linq;
 using System.Net;
 using System.Threading;
 using Aikido.Zen.Core.Helpers;
-using NetTools;
 
 namespace Aikido.Zen.Core.Models.Ip
 {

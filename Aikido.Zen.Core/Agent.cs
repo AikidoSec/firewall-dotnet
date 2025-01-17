@@ -14,7 +14,6 @@ using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Models.Events;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using NetTools;
 
 [assembly: InternalsVisibleTo("Aikido.Zen.Tests")]
 namespace Aikido.Zen.Core

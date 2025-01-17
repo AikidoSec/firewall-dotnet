@@ -9,47 +9,49 @@ namespace Aikido.Zen.Core.Patches
 {
     internal static class HttpClientPatches
     {
+        /// <summary>
+        /// Applies patches to HttpClient methods using Harmony and reflection.
+        /// </summary>
+        /// <param name="harmony">The Harmony instance used for patching.</param>
         public static void ApplyPatches(Harmony harmony)
         {
-            var asyncMethod = AccessTools.Method(typeof(HttpClient), "SendAsync", new[] { 
-                typeof(HttpRequestMessage), 
-                typeof(HttpCompletionOption), 
-                typeof(CancellationToken) 
-            });
-            var syncMethod = AccessTools.Method(typeof(HttpClient), "Send", new[] {
-                typeof(HttpRequestMessage),
-                typeof(CancellationToken)
-            });
-            try
-            {
-                if (asyncMethod != null && !asyncMethod.IsAbstract)
-                {
-                    var patchMethod = new HarmonyMethod(typeof(HttpClientPatches).GetMethod(nameof(CaptureRequest), BindingFlags.Static | BindingFlags.NonPublic));
-                    harmony.Patch(asyncMethod, patchMethod);
-                }
-
-                if (syncMethod != null && !syncMethod.IsAbstract)
-                {
-                    harmony.Patch(syncMethod, new HarmonyMethod(typeof(HttpClientPatches).GetMethod(nameof(CaptureRequest), BindingFlags.Static | BindingFlags.NonPublic)));
-                }
-            }
-            catch (Exception)
-            {
-                // continue
-            }
-
+            // Use reflection to get the methods dynamically
+            PatchMethod(harmony, "System.Net.Http", "HttpClient", "SendAsync", "System.Net.Http.HttpRequestMessage", "System.Net.Http.HttpCompletionOption", "System.Threading.CancellationToken");
+            PatchMethod(harmony, "System.Net.Http", "HttpClient", "Send", "System.Net.Http.HttpRequestMessage", "System.Threading.CancellationToken");
         }
 
-        internal static bool CaptureRequest(
-            HttpRequestMessage request,
-            HttpClient __instance)
+        /// <summary>
+        /// Patches a method using Harmony by dynamically retrieving it via reflection.
+        /// </summary>
+        /// <param name="harmony">The Harmony instance used for patching.</param>
+        /// <param name="assemblyName">The name of the assembly containing the type.</param>
+        /// <param name="typeName">The name of the type containing the method.</param>
+        /// <param name="methodName">The name of the method to patch.</param>
+        /// <param name="parameterTypeNames">The names of the parameter types for the method.</param>
+        private static void PatchMethod(Harmony harmony, string assemblyName, string typeName, string methodName, params string[] parameterTypeNames)
+        {
+            var method = ReflectionHelper.GetMethodFromAssembly(assemblyName, typeName, methodName, parameterTypeNames);
+            if (method != null && !method.IsAbstract)
+            {
+                var patchMethod = new HarmonyMethod(typeof(HttpClientPatches).GetMethod(nameof(CaptureRequest), BindingFlags.Static | BindingFlags.NonPublic));
+                harmony.Patch(method, patchMethod);
+            }
+        }
+
+        /// <summary>
+        /// Callback method executed before the original HttpClient method is executed.
+        /// </summary>
+        /// <param name="request">The HttpRequestMessage being sent.</param>
+        /// <param name="__instance">The instance of HttpClient being used.</param>
+        /// <returns>True if the original method should continue execution; otherwise, false.</returns>
+        internal static bool CaptureRequest(HttpRequestMessage request, HttpClient __instance)
         {
             var uri = __instance.BaseAddress == null
                 ? request.RequestUri
                 : request.RequestUri == null
                     ? __instance.BaseAddress
                     : new Uri(__instance.BaseAddress, request.RequestUri);
-                    
+
             var (hostname, port) = UriHelper.ExtractHost(uri);
             if (hostname.EndsWith("aikido.dev"))
                 return true;
