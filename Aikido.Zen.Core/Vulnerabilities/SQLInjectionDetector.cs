@@ -10,6 +10,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
     {
         /// <summary>
         /// Detects potential SQL injection vulnerabilities in a query string
+        /// the query and userInput are converted to lowercase before being processed
         /// </summary>
         /// <param name="query">The SQL query to analyze</param>
         /// <param name="userInput">The user input to check for injection attempts</param>
@@ -17,6 +18,8 @@ namespace Aikido.Zen.Core.Vulnerabilities
         /// <returns>True if SQL injection is detected, false otherwise</returns>
         public static bool IsSQLInjection(string query, string userInput, SQLDialect dialect)
         {
+            query = query?.ToLower();
+            userInput = userInput?.ToLower();
             return ZenInternals.IsSQLInjection(query, userInput, dialect.ToRustDialectInt());
         }
     }
