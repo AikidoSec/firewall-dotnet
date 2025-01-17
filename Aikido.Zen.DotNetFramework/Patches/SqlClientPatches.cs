@@ -80,7 +80,7 @@ namespace Aikido.Zen.DotNetFramework.Patches
         {
             var dbCommand = __instance as System.Data.Common.DbCommand;
             if (dbCommand == null) return true;
-            var assembly = __instance.GetType().Assembly.FullName?.Split(", Culture=")[0];
+            var assembly = __instance.GetType().Assembly.FullName?.Split(new[] { ", Culture=" }, StringSplitOptions.RemoveEmptyEntries)[0];
             return Aikido.Zen.Core.Patches.SqlClientPatcher.OnCommandExecuting(__args, __originalMethod, dbCommand, assembly, Zen.GetContext());
         }
     }
