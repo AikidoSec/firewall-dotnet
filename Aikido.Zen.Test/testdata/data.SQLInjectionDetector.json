@@ -10,7 +10,7 @@
         "command": "SELECT * FROM users WHERE id = '1'; DROP TABLE users; -- '",
         "dialect": 0,
         "userInput": "1'; DROP TABLE users; -- ",
-        "description": "ATTACK: Command chaining with comment", 
+        "description": "ATTACK: Command chaining with comment",
         "isInjection": true
     },
     {
@@ -52,7 +52,7 @@
         "command": "INSERT INTO dbo.pets (pet_name, owner) VALUES ('Malicious Pet', 'Aikido Security'), ('Gru from the Minions', 'Evil Corp'); -- '",
         "dialect": 7,
         "userInput": "Malicious Pet', 'Aikido Security'), ('Gru from the Minions', 'Evil Corp'); -- ",
-        "description": "ATTACK: Microsoft SQL injection with multiple values", 
+        "description": "ATTACK: Microsoft SQL injection with multiple values",
         "isInjection": true
     },
     {
@@ -89,5 +89,47 @@
         "userInput": "' OR 1=1 -- ",
         "description": "SAFE: PostgreSQL named dollar sign quotes",
         "isInjection": false
+    },
+    {
+        "command": "SELECT * FROM users WHERE id = 'USER'",
+        "dialect": 0,
+        "userInput": "USER",
+        "description": "SAFE: Uppercase user input",
+        "isInjection": false
+    },
+    {
+        "command": "SELECT * FROM users WHERE id = 'user'",
+        "dialect": 0,
+        "userInput": "USER",
+        "description": "SAFE: Lowercase query with uppercase user input",
+        "isInjection": false
+    },
+    {
+        "command": "SELECT * FROM USERS WHERE ID = 'user'",
+        "dialect": 0,
+        "userInput": "user",
+        "description": "SAFE: Uppercase query with lowercase user input",
+        "isInjection": false
+    },
+    {
+        "command": "SELECT * FROM USERS WHERE ID = 'USER'",
+        "dialect": 0,
+        "userInput": "user",
+        "description": "SAFE: Uppercase query and user input",
+        "isInjection": false
+    },
+    {
+        "command": "SELECT * FROM users WHERE id = 'user' OR 1=1 --",
+        "dialect": 0,
+        "userInput": "USER' OR 1=1 --",
+        "description": "ATTACK: Uppercase user input with SQL injection",
+        "isInjection": true
+    },
+    {
+        "command": "SELECT * FROM USERS WHERE ID = 'user' OR 1=1 --",
+        "dialect": 0,
+        "userInput": "user' OR 1=1 --",
+        "description": "ATTACK: Uppercase query with lowercase user input and SQL injection",
+        "isInjection": true
     }
 ]

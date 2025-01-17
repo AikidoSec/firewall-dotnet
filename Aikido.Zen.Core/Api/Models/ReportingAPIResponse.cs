@@ -53,6 +53,6 @@ namespace Aikido.Zen.Core.Api
         /// <summary>
         /// Gets the regex pattern for blocked user agents.
         /// </summary>
-        public Regex BlockedUserAgentsRegex => new Regex(BlockedUserAgents);
+        public Regex BlockedUserAgentsRegex => BlockedUserAgents != null ? new Regex(BlockedUserAgents) : null;
     }
 }
