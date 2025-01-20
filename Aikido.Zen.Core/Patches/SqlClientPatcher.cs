@@ -10,7 +10,8 @@ namespace Aikido.Zen.Core.Patches
     {
         public static bool OnCommandExecuting(object[] __args, MethodBase __originalMethod, DbCommand __instance, string assembly, Context context)
         {
-            var command = __instance;
+            var command = __instance
+                ?? __args[0] as DbCommand;
             var methodInfo = __originalMethod as MethodInfo;
 
             if (context == null)
@@ -37,6 +38,7 @@ namespace Aikido.Zen.Core.Patches
             {
                 case "System.Data.SqlClient":
                 case "Microsoft.Data.SqlClient":
+                case "System.Data.SqlServerCe":
                     return SQLDialect.MicrosoftSQL;
                 case "MySql.Data":
                 case "MySqlConnector":

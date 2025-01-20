@@ -58,6 +58,8 @@
      <file src="bin\Release\net8.0\Aikido.Zen.DotNetCore.dll" target="lib\net8.0" />
      <file src="bin\Release\net7.0\Aikido.Zen.DotNetCore.dll" target="lib\net7.0" />
      <file src="bin\Release\net6.0\Aikido.Zen.DotNetCore.dll" target="lib\net6.0" />
-     <file src="bin\libraries\**\*" target="lib\libraries" />
+     <file src="bin\Release\net8.0\libraries\*.*" target="lib\net8.0\libraries" />
+     <file src="bin\Release\net7.0\libraries\*.*" target="lib\net7.0\libraries" />
+     <file src="bin\Release\net6.0\libraries\*.*" target="lib\net6.0\libraries" />
   </files>
 </package>

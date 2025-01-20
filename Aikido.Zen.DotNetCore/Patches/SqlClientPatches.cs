@@ -46,6 +46,11 @@ namespace Aikido.Zen.DotNetCore.Patches
             PatchMethod(harmony, "MySqlX", "XDevAPI.Relational.Table", "Insert");
             PatchMethod(harmony, "MySqlX", "XDevAPI.Relational.Table", "Update");
             PatchMethod(harmony, "MySqlX", "XDevAPI.Relational.Table", "Delete");
+
+            // NPoco
+            PatchMethod(harmony, "NPoco", "Database", "ExecuteReaderHelper", "System.Data.Common.DbCommand");
+            PatchMethod(harmony, "NPoco", "Database", "ExecuteNonQueryHelper", "System.Data.Common.DbCommand");
+            PatchMethod(harmony, "NPoco", "Database", "ExecuteScalarHelper", "System.Data.Common.DbCommand");
         }
 
         private static void PatchMethod(Harmony harmony, string assemblyName, string typeName, string methodName, params string[] parameterTypeNames)
@@ -59,7 +64,8 @@ namespace Aikido.Zen.DotNetCore.Patches
 
         private static bool OnCommandExecuting(object[] __args, MethodBase __originalMethod, object __instance)
         {
-            var dbCommand = __instance as System.Data.Common.DbCommand;
+            var dbCommand = __instance as System.Data.Common.DbCommand
+                ?? __args[0] as System.Data.Common.DbCommand;
             if (dbCommand == null) return true;
             var assembly = __instance.GetType().Assembly.FullName?.Split(", Culture=")[0];
             return Aikido.Zen.Core.Patches.SqlClientPatcher.OnCommandExecuting(__args, __originalMethod, dbCommand, assembly, Zen.GetContext());
