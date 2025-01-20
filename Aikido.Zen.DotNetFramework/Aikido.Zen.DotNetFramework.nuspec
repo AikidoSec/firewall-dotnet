@@ -1,16 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <package >
   <metadata>
-    <id>$id$</id>
-    <version>$version$</version>
+    <id>Aikido.Zen.DotNetFramework</id>
+    <version>0.0.1-alpha4</version>
     <title>$title$</title>
-    <authors>$author$</authors>
+    <authors>Aikido Security</authors>
+    <owners>Aikido Security</owners>
+    <description>Aikido Security Zen .NET Framework Firewall</description>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <license type="expression">MIT</license>
-    <!-- <icon>icon.png</icon> -->
-    <projectUrl>http://project_url_here_or_delete_this_line/</projectUrl>
-    <description>Aikido Zen, An in-app firewall for .NET</description>
-    <releaseNotes>Summary of changes made in this release of the package.</releaseNotes>
     <copyright>Copyright 2024 Aikido</copyright>
     <tags>firewall .NET</tags>
   </metadata>
