@@ -32,11 +32,9 @@ namespace Aikido.Zen.Core.Helpers
         public static MethodInfo GetMethodFromAssembly(string assemblyName, string typeName, string methodName, params string[] parameterTypeNames)
         {
             // Attempt to load the assembly
-            // Attempt to get the assembly from the cache, if not found, load it
             if (!_assemblies.TryGetValue(assemblyName, out var assembly))
             {
                 assembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.GetName().Name == assemblyName);
-                // If the assembly is not loaded, and the assembly path exists, load it
                 if (File.Exists($"{assemblyName}.dll") && assembly == null)
                 {
                     assembly = Assembly.LoadFrom($"{assemblyName}.dll");
@@ -49,13 +47,16 @@ namespace Aikido.Zen.Core.Helpers
             var typeKey = $"{assemblyName}.{typeName}";
             if (!_types.TryGetValue(typeKey, out var type))
             {
-                type = assembly.ExportedTypes.FirstOrDefault(t => t.Name == typeName);
+                type = assembly.GetType(typeKey); // Ensure full type name is used
                 if (type == null) return null;
                 _types[typeKey] = type;
             }
 
-            // Use reflection to get the method
-            var method = type.GetMethods().FirstOrDefault(m => m.Name == methodName && m.GetParameters().All(p => parameterTypeNames.Any(ptn => ptn == p.ParameterType.FullName)));
+            // Use reflection to get the method, make sure to check for public, internal and private methods
+            var method = type
+                .GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static)
+                .FirstOrDefault(m => m.Name == methodName &&
+                                     m.GetParameters().Select(p => p.ParameterType.FullName).SequenceEqual(parameterTypeNames));
             return method;
         }
 

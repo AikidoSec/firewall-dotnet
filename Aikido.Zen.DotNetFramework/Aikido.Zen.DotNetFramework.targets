@@ -1,0 +1,21 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <!-- Include the DLLs you want to copy to the output directory -->
+    <None Include="$(MSBuildThisFileDirectory)libraries\libzen_internals_x86_64-pc-windows-gnu.dll">
+      <Link>libraries\libzen_internals_x86_64-pc-windows-gnu.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)libraries\libzen_internals_x86_64-pc-windows-gnu.dll.sha256sum">
+      <Link>libraries\libzen_internals_x86_64-pc-windows-gnu.dll.sha256sum</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <Target Name="CopyLibraries" AfterTargets="Build">
+    <ItemGroup>
+      <!-- Define a new item group for the specific files to copy -->
+      <LibraryFiles Include="@(None)" Condition="'%(FileName)' == 'libzen_internals_x86_64-pc-windows-gnu'" />
+    </ItemGroup>
+    <Copy SourceFiles="@(LibraryFiles)" DestinationFolder="$(OutputPath)libraries\" />
+  </Target>
+</Project>
