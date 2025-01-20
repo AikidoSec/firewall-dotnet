@@ -11,5 +11,17 @@
     <license type="expression">MIT</license>
     <copyright>Copyright 2024 Aikido</copyright>
     <tags>firewall .NET</tags>
+    <frameworkAssemblies>
+      <frameworkAssembly assemblyName="Lib.Harmony" targetFramework="net40" />
+      <frameworkAssembly assemblyName="Microsoft.AspNetCore.Http.Abstractions" targetFramework="net40" />
+      <frameworkAssembly assemblyName="Microsoft.AspNetCore.WebUtilities" targetFramework="net40" />
+      <frameworkAssembly assemblyName="Microsoft.Extensions.Logging.Abstractions" targetFramework="net40" />
+      <frameworkAssembly assemblyName="System.Text.Json" targetFramework="net40" />
+    </frameworkAssemblies>
   </metadata>
+  <files>
+    <file src="bin\Release\Aikido.Zen.Core.dll" target="lib" />
+    <file src="bin\Release\Aikido.Zen.DotNetFramework.dll" target="lib" />
+    <file src="bin\libraries\**\*" target="lib\libraries" />
+  </files>
 </package>
