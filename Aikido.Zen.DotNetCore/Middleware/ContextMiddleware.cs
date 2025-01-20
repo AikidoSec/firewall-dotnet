@@ -2,6 +2,7 @@ using Aikido.Zen.Core;
 using Aikido.Zen.Core.Helpers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using System.Collections.Concurrent;
 
 namespace Aikido.Zen.DotNetCore.Middleware
 {
@@ -18,9 +19,9 @@ namespace Aikido.Zen.DotNetCore.Middleware
 
         public async Task InvokeAsync(HttpContext httpContext, RequestDelegate next)
         {
-            // Convert headers and query parameters to dictionaries once
-            var queryDictionary = httpContext.Request.Query.ToDictionary(q => q.Key, q => q.Value.ToArray());
-            var headersDictionary = httpContext.Request.Headers.ToDictionary(h => h.Key, h => h.Value.ToArray());
+            // Convert headers and query parameters to thread-safe dictionaries
+            var queryDictionary = new ConcurrentDictionary<string, string[]>(httpContext.Request.Query.ToDictionary(q => q.Key, q => q.Value.ToArray()));
+            var headersDictionary = new ConcurrentDictionary<string, string[]>(httpContext.Request.Headers.ToDictionary(h => h.Key, h => h.Value.ToArray()));
 
             var context = new Context
             {
