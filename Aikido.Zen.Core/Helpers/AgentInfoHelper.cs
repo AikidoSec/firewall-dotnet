@@ -1,6 +1,7 @@
 using Aikido.Zen.Core.Models;
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 [assembly: InternalsVisibleTo("Aikido.Zen.Tests")]
 namespace Aikido.Zen.Core.Helpers
 {
@@ -21,7 +22,7 @@ namespace Aikido.Zen.Core.Helpers
 			Platform = new Platform
 			{
 				Version = Environment.Version.ToString(),
-				Arch = Environment.Version.Major >= 5 ? "core" : "framework"
+				Arch = RuntimeInformation.ProcessArchitecture.ToString()
 			},
 			IpAddress = IPHelper.Server,
 			Library = "firewall-dotnet",
