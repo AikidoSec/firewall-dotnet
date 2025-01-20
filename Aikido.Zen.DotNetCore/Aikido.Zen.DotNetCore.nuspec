@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>Aikido.Zen.DotNetCore</id>
-    <version>0.0.1-alpha4</version>
+    <version>0.0.1-alpha5</version>
     <title>$title$</title>
     <authors>Aikido Security</authors>
     <owners>Aikido Security</owners>
@@ -51,15 +51,14 @@
       </group>
     </dependencies>
   </metadata>
-   <files>
-     <file src="bin\Release\net8.0\Aikido.Zen.Core.dll" target="lib\net8.0" />
-     <file src="bin\Release\net7.0\Aikido.Zen.Core.dll" target="lib\net7.0" />
-     <file src="bin\Release\net6.0\Aikido.Zen.Core.dll" target="lib\net6.0" />
-     <file src="bin\Release\net8.0\Aikido.Zen.DotNetCore.dll" target="lib\net8.0" />
-     <file src="bin\Release\net7.0\Aikido.Zen.DotNetCore.dll" target="lib\net7.0" />
-     <file src="bin\Release\net6.0\Aikido.Zen.DotNetCore.dll" target="lib\net6.0" />
-     <file src="bin\Release\net8.0\libraries\*.*" target="lib\net8.0\libraries" />
-     <file src="bin\Release\net7.0\libraries\*.*" target="lib\net7.0\libraries" />
-     <file src="bin\Release\net6.0\libraries\*.*" target="lib\net6.0\libraries" />
+  <files>
+    <file src="Aikido.Zen.DotNetCore.targets" target="Build\" />
+    <file src="bin\Release\net8.0\Aikido.Zen.Core.dll" target="lib\net8.0" />
+    <file src="bin\Release\net7.0\Aikido.Zen.Core.dll" target="lib\net7.0" />
+    <file src="bin\Release\net6.0\Aikido.Zen.Core.dll" target="lib\net6.0" />
+    <file src="bin\Release\net8.0\Aikido.Zen.DotNetCore.dll" target="lib\net8.0" />
+    <file src="bin\Release\net7.0\Aikido.Zen.DotNetCore.dll" target="lib\net7.0" />
+    <file src="bin\Release\net6.0\Aikido.Zen.DotNetCore.dll" target="lib\net6.0" />
+    <file src="bin\Release\net8.0\libraries\*.*" target="Build\libraries" />
   </files>
 </package>
