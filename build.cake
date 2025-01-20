@@ -168,7 +168,6 @@ Task("Pack")
         if (configuration == "Release")
         {
             var projects = new[] {
-                "./Aikido.Zen.Core/Aikido.Zen.Core.csproj",
                 "./Aikido.Zen.DotNetFramework/Aikido.Zen.DotNetFramework.csproj",
                 "./Aikido.Zen.DotNetCore/Aikido.Zen.DotNetCore.csproj"
             };
