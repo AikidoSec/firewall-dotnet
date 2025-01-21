@@ -12,12 +12,13 @@ jobs:
         env:
             DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
             DOTNET_CLI_TELEMETRY_OPTOUT: true
-            CAKE_NUGETAPIKEY: ${{ secrets.NUGETAPIKEY }}
 
         steps:
-            - uses: actions/checkout@v4
+            - name: Checkout code
+              uses: actions/checkout@v4
 
-            - uses: actions/cache@v3
+            - name: Cache NuGet packages
+              uses: actions/cache@v3
               with:
                   path: |
                       ~/.nuget/packages
@@ -46,10 +47,17 @@ jobs:
               run: dotnet tool install --global Cake.Tool
 
             - name: Run Cake Script to Build and Pack
-              run: dotnet cake build.cake --target=CreatePackages
+              run: |
+                  TAG_NAME=${{ github.ref_name }}
+                  dotnet cake build.cake --target=CreatePackages --libVersion=${{ github.ref_name }}
 
             - name: Publish NuGet Packages
               run: |
-                  for %%f in (artifacts\*.nupkg) do (
-                    dotnet nuget push %%f --api-key ${{ secrets.NUGETAPIKEY }} --source https://api.nuget.org/v3/index.json
+                  for %f in (artifacts\*.nupkg) do (
+                    dotnet nuget push %f --api-key ${{ secrets.NUGETAPIKEY }} --source https://api.nuget.org/v3/index.json
+                    if errorlevel 1 (
+                      echo "Failed to push %f"
+                      exit /b 1
+                    )
+                    echo "Pushed %f"
                   )

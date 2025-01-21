@@ -6,9 +6,10 @@ var configuration = Argument("configuration", "Release");
 var framework = Argument("framework", "");
 var solution = "./Aikido.Zen.sln";
 var projectName = "Aikido.Zen.Core";
-var version = "0.1.35";
+var zenInternalsVersion = "0.1.35";
+var libVersion = Argument("libVersion");
 
-var baseUrl = $"https://github.com/AikidoSec/zen-internals/releases/download/v{version}/";
+var baseUrl = $"https://github.com/AikidoSec/zen-internals/releases/download/v{zenInternalsVersion}/";
 var librariesDir = $"./{projectName}/libraries";
 
 var filesToDownload = new string[] {
@@ -43,7 +44,7 @@ Task("DownloadLibraries")
         {
             FilePath file = files.First();
             var currVersion = FileReadText(file).Split('-')[1];
-            if (currVersion == version)
+            if (currVersion == zenInternalsVersion)
             {
                 Information("Libraries already downloaded. skipping download.");
                 return;
@@ -81,7 +82,8 @@ Task("Build")
                 DetailedSummary = false,
                 NodeReuse = true
             }
-            .WithTarget("Build");
+            .WithTarget("Build")
+            .WithProperty("version", libVersion);
 
             var projects = GetFiles("./**/*.csproj")
                 .Where(p => !p.FullPath.Contains("sample-apps") && !p.FullPath.Contains("Aikido.Zen.Benchmarks"));
@@ -174,11 +176,13 @@ Task("Pack")
 
             foreach (var project in projects)
             {
-                DotNetPack(project, new DotNetPackSettings
+                var specFile = project.Replace(".csproj", ".nuspec");
+                DotNetPack(specFile, new DotNetPackSettings
                 {
                     Configuration = configuration,
                     NoBuild = true,
                     OutputDirectory = "./artifacts",
+                    Version = libVersion
                 });
             }
             Information("Pack task completed successfully.");
