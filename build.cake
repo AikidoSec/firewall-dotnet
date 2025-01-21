@@ -195,8 +195,7 @@ Task("Pack")
     });
 
 Task("CreatePackages")
-    .IsDependentOn("Test")
-    .IsDependentOn("TestE2E")
+    .IsDependentOn("Build")
     .IsDependentOn("Pack");
 
 Task("Default")
