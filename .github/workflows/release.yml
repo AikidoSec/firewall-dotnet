@@ -53,11 +53,13 @@ jobs:
 
             - name: Publish NuGet Packages
               run: |
-                  for %f in (artifacts\*.nupkg) do (
-                    dotnet nuget push %f --api-key ${{ secrets.NUGETAPIKEY }} --source https://api.nuget.org/v3/index.json
-                    if errorlevel 1 (
-                      echo "Failed to push %f"
-                      exit /b 1
-                    )
-                    echo "Pushed %f"
-                  )
+                  $ErrorActionPreference = "Stop"
+                  Get-ChildItem -Path artifacts\*.nupkg | ForEach-Object {
+                    try {
+                      dotnet nuget push $_.FullName --api-key ${{ secrets.NUGETAPIKEY }} --source https://api.nuget.org/v3/index.json
+                      Write-Host "Pushed $($_.FullName)"
+                    } catch {
+                      Write-Host "Failed to push $($_.FullName)"
+                      exit 1
+                    }
+                  }
