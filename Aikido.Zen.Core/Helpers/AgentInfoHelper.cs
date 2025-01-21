@@ -26,7 +26,7 @@ namespace Aikido.Zen.Core.Helpers
 			},
 			IpAddress = IPHelper.Server,
 			Library = "firewall-dotnet",
-			Version = "1.0.0",
+			Version = typeof(AgentInfoHelper).Assembly.GetName().Version.ToString(),
 			// Determine if running in a serverless environment
 			Serverless = Environment.GetEnvironmentVariable("AWS_LAMBDA_FUNCTION_NAME") != null || Environment.GetEnvironmentVariable("WEBSITE_INSTANCE_ID") != null
 		};
@@ -39,10 +39,10 @@ namespace Aikido.Zen.Core.Helpers
 		{
 			// Update only the fields that can change
 			_cachedAgentInfo.DryMode = EnvironmentHelper.DryMode;
-            _cachedAgentInfo.Serverless = Environment.GetEnvironmentVariable("AWS_LAMBDA_FUNCTION_NAME") != null || Environment.GetEnvironmentVariable("WEBSITE_INSTANCE_ID") != null;
+			_cachedAgentInfo.Serverless = Environment.GetEnvironmentVariable("AWS_LAMBDA_FUNCTION_NAME") != null || Environment.GetEnvironmentVariable("WEBSITE_INSTANCE_ID") != null;
 
 
-            return _cachedAgentInfo;
+			return _cachedAgentInfo;
 		}
 	}
 }
