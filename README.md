@@ -46,6 +46,8 @@ Zen operates autonomously on the same server as your .NET app to:
 ### Database drivers
 * ✅ Microsoft.Data.SqlClient
 * ✅ System.Data.SqlClient
+* ✅ System.Data.SqlServerCE (.NET Framework)
+* ✅ NPoco
 * ✅ Microsoft.Data.Sqlite
 * ✅ MySql.Data.MySqlClient
 * ✅ MySqlConnector
