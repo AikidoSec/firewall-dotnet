@@ -1,4 +1,5 @@
 #addin nuget:?package=Cake.FileHelpers&version=6.0.0
+#addin nuget:?package=Cake.NuGet&version=6.0.0
 
 
 var target = Argument("target", "Default");
