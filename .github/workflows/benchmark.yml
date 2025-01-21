@@ -1,0 +1,149 @@
+on:
+    push: {}
+    workflow_call: {}
+
+jobs:
+    benchmark:
+        runs-on: windows-latest
+
+        services:
+            mysql:
+                image: mysql:8.0
+                env:
+                    MYSQL_ROOT_PASSWORD: mypassword
+                    MYSQL_DATABASE: catsdb
+                ports:
+                    - 27015:3306
+                options: --health-cmd='mysqladmin ping --silent' --health-interval=10s --health-timeout=5s --health-retries=3
+
+            sqlserver:
+                image: mcr.microsoft.com/mssql/server:2022-latest
+                env:
+                    ACCEPT_EULA: Y
+                    SA_PASSWORD: Strong@Password123!
+                    MSSQL_PID: Express
+                ports:
+                    - 27014:1433
+                options: --health-cmd='exit 0' --health-interval=10s --health-timeout=5s --health-retries=3
+
+            postgres:
+                image: postgres:14-alpine
+                env:
+                    POSTGRES_PASSWORD: password
+                    POSTGRES_USER: root
+                    POSTGRES_DB: main_db
+                ports:
+                    - 27016:5432
+                options: --health-cmd='pg_isready -U root' --health-interval=10s --health-timeout=5s --health-retries=3
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v2
+
+            - name: Set up .NET
+              uses: actions/setup-dotnet@v2
+              with:
+                  dotnet-version: "8.0.x" # Adjust based on your target framework
+
+            - name: Install k6
+              run: |
+                  choco install k6
+
+            - name: Build mock server
+              run: |
+                  dotnet build e2e/Aikido.Zen.Server.Mock/Aikido.Zen.Server.Mock.csproj
+
+            - name: Run mock server
+              run: |
+                  dotnet run --project e2e/Aikido.Zen.Server.Mock/Aikido.Zen.Server.Mock.csproj --urls "http://localhost:5080" &
+                  $env:AIKIDO_TOKEN = "123"
+                  $env:AIKIDO_URL = "http://localhost:5080"
+                  $env:AIKIDO_REALTIME_URL = "http://localhost:5080"
+
+            - name: Build sample apps
+              run: |
+                  dotnet build e2e/sample-apps/MySqlSampleApp/MySqlSampleApp.csproj
+                  dotnet build e2e/sample-apps/SqlServerSampleApp/SqlServerSampleApp.csproj
+                  dotnet build e2e/sample-apps/SQLiteSampleApp/SqliteSampleApp.csproj
+                  dotnet build e2e/sample-apps/PostgresSampleApp/PostgresSampleApp.csproj
+
+            - name: Run MySqlSampleApp without Zen
+              run: |
+                  Stop-Process -Name "dotnet" -Force -ErrorAction SilentlyContinue
+                  $env:AIKIDO_DISABLED = "true"
+                  dotnet run --project e2e/sample-apps/MySqlSampleApp/MySqlSampleApp.csproj --urls "http://localhost:5081" &
+                  Start-Sleep -Seconds 5
+                  $avgResponseTimeTrueMySql = k6 run benchmark.js --env APP_URL=http://localhost:5081 | Out-String
+                  Write-Output "MySqlSampleApp Average Response Time without Zen: $avgResponseTimeTrueMySql"
+
+            - name: Run MySqlSampleApp with Zen
+              run: |
+                  Stop-Process -Name "dotnet" -Force -ErrorAction SilentlyContinue
+                  $env:AIKIDO_DISABLED = "false"
+                  dotnet run --project e2e/sample-apps/MySqlSampleApp/MySqlSampleApp.csproj --urls "http://localhost:5081" &
+                  Start-Sleep -Seconds 5
+                  $avgResponseTimeFalseMySql = k6 run benchmark.js --env APP_URL=http://localhost:5081 | Out-String
+                  Write-Output "MySqlSampleApp Average Response Time with Zen: $avgResponseTimeFalseMySql"
+
+            - name: Run SqlServerSampleApp without Zen
+              run: |
+                  Stop-Process -Name "dotnet" -Force -ErrorAction SilentlyContinue
+                  $env:AIKIDO_DISABLED = "true"
+                  dotnet run --project e2e/sample-apps/SqlServerSampleApp/SqlServerSampleApp.csproj --urls "http://localhost:5082" &
+                  Start-Sleep -Seconds 5
+                  $avgResponseTimeTrueSqlServer = k6 run benchmark.js --env APP_URL=http://localhost:5082 | Out-String
+                  Write-Output "SqlServerSampleApp Average Response Time without Zen: $avgResponseTimeTrueSqlServer"
+
+            - name: Run SqlServerSampleApp with Zen
+              run: |
+                  Stop-Process -Name "dotnet" -Force -ErrorAction SilentlyContinue
+                  $env:AIKIDO_DISABLED = "false"
+                  dotnet run --project e2e/sample-apps/SqlServerSampleApp/SqlServerSampleApp.csproj --urls "http://localhost:5082" &
+                  Start-Sleep -Seconds 5
+                  $avgResponseTimeFalseSqlServer = k6 run benchmark.js --env APP_URL=http://localhost:5082 | Out-String
+                  Write-Output "SqlServerSampleApp Average Response Time with Zen: $avgResponseTimeFalseSqlServer"
+
+            - name: Run SQLiteSampleApp without Zen
+              run: |
+                  Stop-Process -Name "dotnet" -Force -ErrorAction SilentlyContinue
+                  $env:AIKIDO_DISABLED = "true"
+                  dotnet run --project e2e/sample-apps/SQLiteSampleApp/SqliteSampleApp.csproj --urls "http://localhost:5083" &
+                  Start-Sleep -Seconds 5
+                  $avgResponseTimeTrueSQLite = k6 run benchmark.js --env APP_URL=http://localhost:5083 | Out-String
+                  Write-Output "SQLiteSampleApp Average Response Time without Zen: $avgResponseTimeTrueSQLite"
+
+            - name: Run SQLiteSampleApp with Zen
+              run: |
+                  Stop-Process -Name "dotnet" -Force -ErrorAction SilentlyContinue
+                  $env:AIKIDO_DISABLED = "false"
+                  dotnet run --project e2e/sample-apps/SQLiteSampleApp/SqliteSampleApp.csproj --urls "http://localhost:5083" &
+                  Start-Sleep -Seconds 5
+                  $avgResponseTimeFalseSQLite = k6 run benchmark.js --env APP_URL=http://localhost:5083 | Out-String
+                  Write-Output "SQLiteSampleApp Average Response Time with Zen: $avgResponseTimeFalseSQLite"
+
+            - name: Run PostgresSampleApp without Zen
+              run: |
+                  Stop-Process -Name "dotnet" -Force -ErrorAction SilentlyContinue
+                  $env:AIKIDO_DISABLED = "true"
+                  dotnet run --project e2e/sample-apps/PostgresSampleApp/PostgresSampleApp.csproj --urls "http://localhost:5084" &
+                  Start-Sleep -Seconds 5
+                  $avgResponseTimeTruePostgres = k6 run benchmark.js --env APP_URL=http://localhost:5084 | Out-String
+                  Write-Output "PostgresSampleApp Average Response Time without Zen: $avgResponseTimeTruePostgres"
+
+            - name: Run PostgresSampleApp with Zen
+              run: |
+                  Stop-Process -Name "dotnet" -Force -ErrorAction SilentlyContinue
+                  $env:AIKIDO_DISABLED = "false"
+                  dotnet run --project e2e/sample-apps/PostgresSampleApp/PostgresSampleApp.csproj --urls "http://localhost:5084" &
+                  Start-Sleep -Seconds 5
+                  $avgResponseTimeFalsePostgres = k6 run benchmark.js --env APP_URL=http://localhost:5084 | Out-String
+                  Write-Output "PostgresSampleApp Average Response Time with Zen: $avgResponseTimeFalsePostgres"
+
+            - name: Compare Response Times
+              run: |
+                  $difference = [math]::Abs($avgResponseTimeTrue - $avgResponseTimeFalse)
+                  if ($difference -gt 5) {
+                      Write-Error "Response time difference is greater than 5ms: $difference ms"
+                  } else {
+                      Write-Output "Response time difference is within acceptable range: $difference ms"
+                  }
