@@ -5,6 +5,8 @@
 [![Codecov](https://img.shields.io/codecov/c/github/AikidoSec/firewall-dotnet?style=flat-square&token=J74AVIU17K)](https://app.codecov.io/gh/aikidosec/firewall-dotnet)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com)
 [![Unit tests](https://github.com/AikidoSec/firewall-dotnet/actions/workflows/unit-test.yml/badge.svg)](https://github.com/AikidoSec/firewall-dotnet/actions/workflows/unit-test.yml)
+[![NuGet version (Aikido.Zen.DotNetCore)](https://img.shields.io/nuget/v/Aikido.Zen.DotNetCore.svg?style=flat-square&label=Aikido.Zen.DotNetCore)](https://www.nuget.org/packages/Aikido.Zen.DotNetCore/)
+[![NuGet version (Aikido.Zen.DotNetFramework)](https://img.shields.io/nuget/v/Aikido.Zen.DotNetFramework.svg?style=flat-square&label=Aikido.Zen.DotNetFramework)](https://www.nuget.org/packages/Aikido.Zen.DotNetFramework/)
 
 Zen, your in-app firewall for peace of mind– at runtime.
 
@@ -46,6 +48,8 @@ Zen operates autonomously on the same server as your .NET app to:
 ### Database drivers
 * ✅ Microsoft.Data.SqlClient
 * ✅ System.Data.SqlClient
+* ✅ System.Data.SqlServerCE (.NET Framework)
+* ✅ NPoco
 * ✅ Microsoft.Data.Sqlite
 * ✅ MySql.Data.MySqlClient
 * ✅ MySqlConnector
@@ -56,10 +60,12 @@ Zen operates autonomously on the same server as your .NET app to:
 
 ### .NET Core
 
+Ensure that your project runs on .NET Framework 6, 7 or 8.
+
 - Install the package from NuGet:
 
 ``` shell
-dotnet add package Zen.Aikido
+dotnet add package Zen.Aikido.DotNetCore
 ```
 
 - Add the following to your `appsettings.json` file: (use secrets manager to store the API key)
@@ -116,7 +122,21 @@ You can also set the user in your custom middleware, if you would like to block 
 
 ### .NET Framework
 
-To add the Aikido token in the Web.config file, follow these steps:
+Ensure that your project runs on .NET Framework 4.6 or higher.
+
+- Install the package from NuGet:
+
+``` shell
+dotnet add package Zen.Aikido.DotNetFramework
+```
+
+or
+
+``` shell
+Install-Package Zen.Aikido.DotNetFramework
+```
+
+- To add the Aikido token in the Web.config file, follow these steps:
 
 1. Open your `Web.config` file.
 2. Locate the `<appSettings>` section.
@@ -126,7 +146,7 @@ To add the Aikido token in the Web.config file, follow these steps:
 <add key="Aikido:AikidoToken" value="your-api-key" />
 ```
 
-in your global.asax.cs file, add the following:
+- in your global.asax.cs file, add the following:
 
 ``` csharp
 protected void Application_Start()
@@ -146,7 +166,7 @@ public void Configuration(IAppBuilder app)
 }
 ```
 
-If you would like to block users by their identity, you can pass in a function to set the user, in your global.asax.cs file.
+- If you would like to block users by their identity, you can pass in a function to set the user, in your global.asax.cs file.
 
 ``` csharp
 public void Application_Start()
