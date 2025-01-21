@@ -75,7 +75,7 @@ dotnet add package Zen.Aikido
 - or add it as an environment variable
 
 ``` shell
-AIKIDO_TOKEN
+AIKIDO_TOKEN=<YOUR-TOKEN-HERE>
 ```
 
 If you are using a startup class, you can add the following to your `Startup.cs` file:
