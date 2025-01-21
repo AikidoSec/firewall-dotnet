@@ -1,5 +1,6 @@
 #addin nuget:?package=Cake.FileHelpers&version=6.0.0
-#addin nuget:?package=Cake.NuGet&version=6.0.0
+#load "nuget:https://www.nuget.org/api/v2?package=Cake.NuGet&version=5.0.0"
+
 
 
 var target = Argument("target", "Default");
@@ -8,7 +9,7 @@ var framework = Argument("framework", "");
 var solution = "./Aikido.Zen.sln";
 var projectName = "Aikido.Zen.Core";
 var zenInternalsVersion = "0.1.35";
-var libVersion = Argument("libVersion");
+var libVersion = Argument("libVersion", "0.0.1-alpha5");
 
 var baseUrl = $"https://github.com/AikidoSec/zen-internals/releases/download/v{zenInternalsVersion}/";
 var librariesDir = $"./{projectName}/libraries";
@@ -178,12 +179,12 @@ Task("Pack")
             foreach (var project in projects)
             {
                 var specFile = project.Replace(".csproj", ".nuspec");
-                NugetPack(specFile, new NugetPackSettings
+                var nugetPackSettings = new NuGetPackSettings
                 {
-                    Configuration = configuration,
                     OutputDirectory = "./artifacts",
-                    Version = libVersion
-                });
+                    Version = libVersion,
+                };
+                NuGetPack(specFile, nugetPackSettings);
             }
             Information("Pack task completed successfully.");
         }
