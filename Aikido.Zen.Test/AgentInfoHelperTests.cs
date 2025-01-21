@@ -39,7 +39,7 @@ namespace Aikido.Zen.Test
                 // Basic properties
                 Assert.That(agentInfo.Hostname, Is.EqualTo(Environment.MachineName));
                 Assert.That(agentInfo.Library, Is.EqualTo("firewall-dotnet"));
-                Assert.That(agentInfo.Version, Is.EqualTo("1.0.0"));
+                Assert.That(agentInfo.Version, Is.EqualTo(typeof(AgentInfoHelper).Assembly.GetName().Version!.ToString()));
                 Assert.That(agentInfo.IpAddress, Is.Not.Null);
 
                 // OS Info
