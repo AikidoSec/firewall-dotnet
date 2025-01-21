@@ -119,7 +119,7 @@ You can also set the user in your custom middleware, if you would like to block 
 - Install the package from NuGet:
 
 ``` shell
-dotnet add package Zen.Aikido.DotNetCore
+dotnet add package Zen.Aikido.DotNetFramework
 ```
 
 or
