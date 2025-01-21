@@ -1,6 +1,5 @@
 using System.Net;
 using System.Linq;
-using NetTools;
 using System.Collections.Generic;
 using System;
 
@@ -26,30 +25,6 @@ namespace Aikido.Zen.Core.Helpers
         public static bool IsValidIp(string ip)
         {
             return IPAddress.TryParse(ip, out _);
-        }
-
-        /// <summary>
-        /// Check if an IP address is in a subnet
-        /// Example:
-        /// Mask: 192.168.1.0/24
-        /// Address: 192.168.1.1
-        /// </summary>
-        /// <param name="address"></param>
-        /// <param name="subnet"></param>
-        /// <returns></returns>
-        public static bool IsInSubnet(IPAddress address, IPAddressRange subnet)
-        {
-            return subnet.Contains(address);
-        }
-
-        /// <summary>
-        /// Checks if a given ip string is a subnet
-        /// </summary>
-        /// <param name="ip"></param>
-        /// <returns></returns>
-        public static bool IsSubnet(string ip)
-        {
-            return ip.Contains("/") && IPAddressRange.TryParse(ip, out _);
         }
 
         /// <summary>

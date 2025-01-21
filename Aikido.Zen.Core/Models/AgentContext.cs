@@ -1,7 +1,6 @@
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models.Ip;
 using Microsoft.AspNetCore.Http;
-using NetTools;
 using System;
 using System.Collections.Generic;
 using System.Linq;

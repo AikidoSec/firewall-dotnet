@@ -1,72 +1,68 @@
-using Aikido.Zen.Core.Helpers;
-using HarmonyLib;
-using Microsoft.Data.Sqlite;
-using MySql.Data.MySqlClient;
-using System.Data.Common;
-using Npgsql;
-using Aikido.Zen.Core.Models;
-using MySqlX.XDevAPI.Relational;
+using System;
 using System.Reflection;
+using HarmonyLib;
+using Aikido.Zen.Core.Models;
+using Aikido.Zen.Core.Helpers;
 
 namespace Aikido.Zen.DotNetCore.Patches
 {
     internal static class SqlClientPatches
     {
-        // we need to patch from inside the framework, because we have to pass the context, which is constructed in a framework specific manner
         public static void ApplyPatches(Harmony harmony)
         {
-
-            // Generic
-            PatchMethod(harmony, typeof(DbCommand), "ExecuteNonQueryAsync");
-            PatchMethod(harmony, typeof(DbCommand), "ExecuteReaderAsync", typeof(System.Data.CommandBehavior));
-            PatchMethod(harmony, typeof(DbCommand), "ExecuteScalarAsync");
+            // Use reflection to get the types dynamically
+            PatchMethod(harmony, "System.Data.Common", "DbCommand", "ExecuteNonQueryAsync");
+            PatchMethod(harmony, "System.Data.Common", "DbCommand", "ExecuteReaderAsync", "System.Data.CommandBehavior");
+            PatchMethod(harmony, "System.Data.Common", "DbCommand", "ExecuteScalarAsync");
 
             // SQL Server
-            PatchMethod(harmony, typeof(Microsoft.Data.SqlClient.SqlCommand), "ExecuteNonQuery");
-            PatchMethod(harmony, typeof(Microsoft.Data.SqlClient.SqlCommand), "ExecuteScalar");
-            PatchMethod(harmony, typeof(Microsoft.Data.SqlClient.SqlCommand), "ExecuteReader", typeof(System.Data.CommandBehavior));
-            PatchMethod(harmony, typeof(System.Data.SqlClient.SqlCommand), "ExecuteNonQuery");
-            PatchMethod(harmony, typeof(System.Data.SqlClient.SqlCommand), "ExecuteScalar");
-            PatchMethod(harmony, typeof(System.Data.SqlClient.SqlCommand), "ExecuteReader", typeof(System.Data.CommandBehavior));
+            PatchMethod(harmony, "Microsoft.Data.SqlClient", "SqlCommand", "ExecuteNonQuery");
+            PatchMethod(harmony, "Microsoft.Data.SqlClient", "SqlCommand", "ExecuteScalar");
+            PatchMethod(harmony, "Microsoft.Data.SqlClient", "SqlCommand", "ExecuteReader", "System.Data.CommandBehavior");
+            PatchMethod(harmony, "System.Data.SqlClient", "SqlCommand", "ExecuteNonQuery");
+            PatchMethod(harmony, "System.Data.SqlClient", "SqlCommand", "ExecuteScalar");
+            PatchMethod(harmony, "System.Data.SqlClient", "SqlCommand", "ExecuteReader", "System.Data.CommandBehavior");
 
             // SQLite
-            PatchMethod(harmony, typeof(SqliteCommand), "ExecuteNonQuery");
-            PatchMethod(harmony, typeof(SqliteCommand), "ExecuteScalar");
-            PatchMethod(harmony, typeof(SqliteCommand), "ExecuteReader", typeof(System.Data.CommandBehavior));
+            PatchMethod(harmony, "Microsoft.Data.Sqlite", "SqliteCommand", "ExecuteNonQuery");
+            PatchMethod(harmony, "Microsoft.Data.Sqlite", "SqliteCommand", "ExecuteScalar");
+            PatchMethod(harmony, "Microsoft.Data.Sqlite", "SqliteCommand", "ExecuteReader", "System.Data.CommandBehavior");
 
             // MySql, MariaDB
-            PatchMethod(harmony, typeof(MySqlCommand), "ExecuteNonQuery");
-            PatchMethod(harmony, typeof(MySqlCommand), "ExecuteScalar");
-            PatchMethod(harmony, typeof(MySqlCommand), "ExecuteReader", typeof(System.Data.CommandBehavior));
-            PatchMethod(harmony, typeof(MySqlConnector.MySqlCommand), "ExecuteNonQuery");
-            PatchMethod(harmony, typeof(MySqlConnector.MySqlCommand), "ExecuteScalar");
-            PatchMethod(harmony, typeof(MySqlConnector.MySqlCommand), "ExecuteReader", typeof(System.Data.CommandBehavior));
+            PatchMethod(harmony, "MySql.Data", "MySqlClient.MySqlCommand", "ExecuteNonQuery");
+            PatchMethod(harmony, "MySql.Data", "MySqlClient.MySqlCommand", "ExecuteScalar");
+            PatchMethod(harmony, "MySql.Data", "MySqlClient.MySqlCommand", "ExecuteReader", "System.Data.CommandBehavior");
+            PatchMethod(harmony, "MySqlConnector", "MySqlCommand", "ExecuteNonQuery");
+            PatchMethod(harmony, "MySqlConnector", "MySqlCommand", "ExecuteScalar");
+            PatchMethod(harmony, "MySqlConnector", "MySqlCommand", "ExecuteReader", "System.Data.CommandBehavior");
 
             // PostgreSQL
-            PatchMethod(harmony, typeof(NpgsqlCommand), "ExecuteNonQuery");
-            PatchMethod(harmony, typeof(NpgsqlCommand), "ExecuteScalar");
-            PatchMethod(harmony, typeof(NpgsqlCommand), "ExecuteReader", typeof(System.Data.CommandBehavior));
+            PatchMethod(harmony, "Npgsql", "NpgsqlCommand", "ExecuteNonQuery");
+            PatchMethod(harmony, "Npgsql", "NpgsqlCommand", "ExecuteScalar");
+            PatchMethod(harmony, "Npgsql", "NpgsqlCommand", "ExecuteReader", "System.Data.CommandBehavior");
 
             // MySqlX
-            PatchMethod(harmony, typeof(Table), "Select");
-            PatchMethod(harmony, typeof(Table), "Insert");
-            PatchMethod(harmony, typeof(Table), "Update");
-            PatchMethod(harmony, typeof(Table), "Delete");
+            PatchMethod(harmony, "MySqlX", "XDevAPI.Relational.Table", "Select");
+            PatchMethod(harmony, "MySqlX", "XDevAPI.Relational.Table", "Insert");
+            PatchMethod(harmony, "MySqlX", "XDevAPI.Relational.Table", "Update");
+            PatchMethod(harmony, "MySqlX", "XDevAPI.Relational.Table", "Delete");
         }
 
-        private static void PatchMethod(Harmony harmony, Type type, string methodName, params Type[] parameters)
+        private static void PatchMethod(Harmony harmony, string assemblyName, string typeName, string methodName, params string[] parameterTypeNames)
         {
-            var method = AccessTools.Method(type, methodName, parameters);
+            var method = ReflectionHelper.GetMethodFromAssembly(assemblyName, typeName, methodName, parameterTypeNames);
             if (method != null)
             {
                 harmony.Patch(method, new HarmonyMethod(typeof(SqlClientPatches).GetMethod(nameof(OnCommandExecuting), BindingFlags.Static | BindingFlags.NonPublic)));
             }
         }
 
-        private static bool OnCommandExecuting(object[] __args, MethodBase __originalMethod, DbCommand __instance)
+        private static bool OnCommandExecuting(object[] __args, MethodBase __originalMethod, object __instance)
         {
+            var dbCommand = __instance as System.Data.Common.DbCommand;
+            if (dbCommand == null) return true;
             var assembly = __instance.GetType().Assembly.FullName?.Split(", Culture=")[0];
-            return Aikido.Zen.Core.Patches.SqlClientPatcher.OnCommandExecuting(__args, __originalMethod, __instance, assembly, Zen.GetContext());
+            return Aikido.Zen.Core.Patches.SqlClientPatcher.OnCommandExecuting(__args, __originalMethod, dbCommand, assembly, Zen.GetContext());
         }
     }
 }
