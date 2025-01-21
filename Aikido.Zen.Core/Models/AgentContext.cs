@@ -27,8 +27,6 @@ namespace Aikido.Zen.Core.Models
         private long _started = DateTimeHelper.UTCNowUnixMilliseconds();
         public long ConfigLastUpdated { get; set; } = 0;
 
-        public IList<string> Patches { get; set; } = new List<string>();
-
 
         public void AddRequest()
         {

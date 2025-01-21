@@ -80,7 +80,6 @@ namespace Aikido.Zen.DotNetFramework.Patches
             if (method != null)
             {
                 harmony.Patch(method, new HarmonyMethod(typeof(SqlClientPatches).GetMethod(nameof(OnCommandExecuting), BindingFlags.Static | BindingFlags.NonPublic)));
-                Agent.Instance.Context.Patches.Add($"{assemblyName}.{typeName}.{methodName}");
             }
         }
 

@@ -27,7 +27,7 @@ jobs:
                   restore-keys: |
                       ${{ runner.os }}-nuget-
 
-            - name: Setup .NET
+            - name: Install .NET versions that we need for building the library
               uses: actions/setup-dotnet@v4
               with:
                   dotnet-version: |
