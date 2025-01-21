@@ -20,6 +20,8 @@ Zen will autonomously protect your .NET applications from the inside against:
 
 * 🛡️ [SQL injection attacks](https://www.aikido.dev/blog/the-state-of-sql-injections)
 * 🛡️ [Path traversal attacks](https://owasp.org/www-community/attacks/Path_Traversal)
+* 🚧 [Command injection attacks](https://owasp.org/www-community/attacks/Command_Injection)
+* 🚧 [Server-side request forgery (SSRF)](https://owasp.org/www-community/attacks/Server_Side_Request_Forgery)
 
 Zen operates autonomously on the same server as your .NET app to:
 
