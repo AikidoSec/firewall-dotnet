@@ -40,6 +40,11 @@ jobs:
               with:
                   vs-version: "[17.2,19.0)"
 
+            - name: Install dependencies
+              run: |
+                  dotnet tool restore
+                  dotnet restore
+
             - name: Install Cake Tool
               run: dotnet tool install --global Cake.Tool
 
