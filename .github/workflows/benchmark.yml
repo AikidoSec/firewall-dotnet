@@ -67,22 +67,26 @@ jobs:
                   dotnet build e2e/sample-apps/PostgresSampleApp/PostgresSampleApp.csproj
 
             - name: Run MySqlSampleApp without Zen
+              id: mysql_without_zen
               run: |
                   pkill dotnet || true
                   export AIKIDO_DISABLED="true"
                   dotnet run --project e2e/sample-apps/MySqlSampleApp/MySqlSampleApp.csproj --urls "http://localhost:5081" &
                   sleep 5
-                  avgResponseTimeTrueMySql=$(k6 run benchmark.js --env APP_URL=http://localhost:5081)
+                  avgResponseTimeTrueMySql=$(k6 run benchmark.js --env APP_URL=http://localhost:5081 | grep "Average Response Time" | awk '{print $4}')
                   echo "MySqlSampleApp Average Response Time without Zen: $avgResponseTimeTrueMySql"
+                  echo "::set-output name=avgResponseTimeTrueMySql::$avgResponseTimeTrueMySql"
 
             - name: Run MySqlSampleApp with Zen
+              id: mysql_with_zen
               run: |
                   pkill dotnet || true
                   export AIKIDO_DISABLED="false"
                   dotnet run --project e2e/sample-apps/MySqlSampleApp/MySqlSampleApp.csproj --urls "http://localhost:5081" &
                   sleep 5
-                  avgResponseTimeFalseMySql=$(k6 run benchmark.js --env APP_URL=http://localhost:5081)
+                  avgResponseTimeFalseMySql=$(k6 run benchmark.js --env APP_URL=http://localhost:5081 | grep "Average Response Time" | awk '{print $4}')
                   echo "MySqlSampleApp Average Response Time with Zen: $avgResponseTimeFalseMySql"
+                  echo "::set-output name=avgResponseTimeFalseMySql::$avgResponseTimeFalseMySql"
 
             - name: Run SqlServerSampleApp without Zen
               run: |
@@ -140,10 +144,13 @@ jobs:
 
             - name: Compare Response Times
               run: |
-                  difference=$(echo "$avgResponseTimeTrue - $avgResponseTimeFalse" | bc -l | awk '{print sqrt($1^2)}')
+                  difference=$(echo "$avgResponseTimeTrueMySql - $avgResponseTimeFalseMySql" | bc -l | awk '{print sqrt($1^2)}')
                   if (( $(echo "$difference > 5" | bc -l) )); then
                       echo "Response time difference is greater than 5ms: ${difference}ms" >&2
                       exit 1
                   else
                       echo "Response time difference is within acceptable range: ${difference}ms"
                   fi
+              env:
+                  avgResponseTimeTrueMySql: ${{ steps.mysql_without_zen.outputs.avgResponseTimeTrueMySql }}
+                  avgResponseTimeFalseMySql: ${{ steps.mysql_with_zen.outputs.avgResponseTimeFalseMySql }}

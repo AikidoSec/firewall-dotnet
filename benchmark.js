@@ -1,6 +1,6 @@
 import http from "k6/http";
-import { sleep } from "k6";
-import { check } from "k6";
+import { sleep, check } from "k6";
+import { Trend } from "k6/metrics";
 
 /**
  * Options for the k6 test
@@ -10,6 +10,9 @@ export let options = {
     vus: 1, // 1 user looping for 10 iterations
     iterations: 10, // 10 iterations
 };
+
+// Create a Trend metric to track response times
+let GET_TREND = new Trend("GET_TREND");
 
 /**
  * Main function for the k6 test
@@ -23,6 +26,7 @@ export default function () {
 
     // Make a GET request to the /health endpoint
     let res = http.get(`${__ENV.APP_URL}/health`);
+    GET_TREND.add(res.timings.duration);
 
     // Check if the response status is 200
     check(res, {
@@ -39,9 +43,13 @@ export default function () {
  * @returns {Object} - The summary output
  */
 export function handleSummary(data) {
-    const avgResponseTime = data.metrics.http_req_duration.avg;
-    console.log(`Average Response Time: ${avgResponseTime} ms`);
-    return {
-        stdout: avgResponseTime, // Output the data to stdout
-    };
+    // Extract the average response time from the GET_TREND metric
+    const avgResponseTime = data.metrics.GET_TREND
+        ? data.metrics.GET_TREND.values.avg
+        : 0;
+
+    // Print the average response time to the console
+    console.log(`Average Response Time: ${avgResponseTime}ms`);
+
+    return {};
 }
