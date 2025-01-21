@@ -14,8 +14,6 @@ jobs:
                     MYSQL_DATABASE: catsdb
                 ports:
                     - 27015:3306
-                options: --health-cmd='mysqladmin ping --silent' --health-interval=10s --health-timeout=5s --health-retries=3
-
             sqlserver:
                 image: mcr.microsoft.com/mssql/server:2022-latest
                 env:
@@ -24,7 +22,6 @@ jobs:
                     MSSQL_PID: Express
                 ports:
                     - 27014:1433
-                options: --health-cmd='exit 0' --health-interval=10s --health-timeout=5s --health-retries=3
 
             postgres:
                 image: postgres:14-alpine
@@ -34,7 +31,6 @@ jobs:
                     POSTGRES_DB: main_db
                 ports:
                     - 27016:5432
-                options: --health-cmd='pg_isready -U root' --health-interval=10s --health-timeout=5s --health-retries=3
 
         steps:
             - name: Checkout code
