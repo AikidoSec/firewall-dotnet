@@ -1,70 +1,27 @@
+name: Benchmark
+
 on:
-    push: {}
-    workflow_call: {}
+    push:
+        branches:
+            - main
 
 jobs:
     benchmark:
         runs-on: ubuntu-latest
-
-        services:
-            mysql:
-                image: mysql:8.0
-                env:
-                    MYSQL_ROOT_PASSWORD: mypassword
-                    MYSQL_DATABASE: catsdb
-                ports:
-                    - 27015:3306
-            sqlserver:
-                image: mcr.microsoft.com/mssql/server:2022-latest
-                env:
-                    ACCEPT_EULA: Y
-                    SA_PASSWORD: Strong@Password123!
-                    MSSQL_PID: Express
-                ports:
-                    - 27014:1433
-
-            postgres:
-                image: postgres:14-alpine
-                env:
-                    POSTGRES_PASSWORD: password
-                    POSTGRES_USER: root
-                    POSTGRES_DB: main_db
-                ports:
-                    - 27016:5432
 
         steps:
             - name: Checkout code
               uses: actions/checkout@v2
 
             - name: Set up .NET
-              uses: actions/setup-dotnet@v2
+              uses: actions/setup-dotnet@v1
               with:
-                  dotnet-version: "8.0.x" # Adjust based on your target framework
+                  dotnet-version: "6.0.x"
 
             - name: Install k6
               run: |
-                  sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
-                  echo "deb https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
                   sudo apt-get update
-                  sudo apt-get install k6
-
-            - name: Build mock server
-              run: |
-                  dotnet build e2e/Aikido.Zen.Server.Mock/Aikido.Zen.Server.Mock.csproj
-
-            - name: Run mock server
-              run: |
-                  dotnet run --project e2e/Aikido.Zen.Server.Mock/Aikido.Zen.Server.Mock.csproj --urls "http://localhost:5080" &
-                  export AIKIDO_TOKEN="123"
-                  export AIKIDO_URL="http://localhost:5080"
-                  export AIKIDO_REALTIME_URL="http://localhost:5080"
-
-            - name: Build sample apps
-              run: |
-                  dotnet build e2e/sample-apps/MySqlSampleApp/MySqlSampleApp.csproj
-                  dotnet build e2e/sample-apps/SqlServerSampleApp/SqlServerSampleApp.csproj
-                  dotnet build e2e/sample-apps/SQLiteSampleApp/SqliteSampleApp.csproj
-                  dotnet build e2e/sample-apps/PostgresSampleApp/PostgresSampleApp.csproj
+                  sudo apt-get install -y k6
 
             - name: Run MySqlSampleApp without Zen
               id: mysql_without_zen
@@ -74,8 +31,12 @@ jobs:
                   dotnet run --project e2e/sample-apps/MySqlSampleApp/MySqlSampleApp.csproj --urls "http://localhost:5081" &
                   sleep 5
                   avgResponseTimeTrueMySql=$(k6 run benchmark.js --env APP_URL=http://localhost:5081 | grep "Average Response Time" | awk '{print $4}')
+                  if [ -z "$avgResponseTimeTrueMySql" ]; then
+                      echo "Failed to capture MySqlSampleApp response time without Zen" >&2
+                      exit 1
+                  fi
                   echo "MySqlSampleApp Average Response Time without Zen: $avgResponseTimeTrueMySql"
-                  echo "::set-output name=avgResponseTimeTrueMySql::$avgResponseTimeTrueMySql"
+                  echo "avgResponseTimeTrueMySql=$avgResponseTimeTrueMySql" >> $GITHUB_ENV
 
             - name: Run MySqlSampleApp with Zen
               id: mysql_with_zen
@@ -85,72 +46,132 @@ jobs:
                   dotnet run --project e2e/sample-apps/MySqlSampleApp/MySqlSampleApp.csproj --urls "http://localhost:5081" &
                   sleep 5
                   avgResponseTimeFalseMySql=$(k6 run benchmark.js --env APP_URL=http://localhost:5081 | grep "Average Response Time" | awk '{print $4}')
+                  if [ -z "$avgResponseTimeFalseMySql" ]; then
+                      echo "Failed to capture MySqlSampleApp response time with Zen" >&2
+                      exit 1
+                  fi
                   echo "MySqlSampleApp Average Response Time with Zen: $avgResponseTimeFalseMySql"
-                  echo "::set-output name=avgResponseTimeFalseMySql::$avgResponseTimeFalseMySql"
+                  echo "avgResponseTimeFalseMySql=$avgResponseTimeFalseMySql" >> $GITHUB_ENV
 
             - name: Run SqlServerSampleApp without Zen
+              id: sqlserver_without_zen
               run: |
                   pkill dotnet || true
                   export AIKIDO_DISABLED="true"
                   dotnet run --project e2e/sample-apps/SqlServerSampleApp/SqlServerSampleApp.csproj --urls "http://localhost:5082" &
                   sleep 5
-                  avgResponseTimeTrueSqlServer=$(k6 run benchmark.js --env APP_URL=http://localhost:5082)
+                  avgResponseTimeTrueSqlServer=$(k6 run benchmark.js --env APP_URL=http://localhost:5082 | grep "Average Response Time" | awk '{print $4}')
+                  if [ -z "$avgResponseTimeTrueSqlServer" ]; then
+                      echo "Failed to capture SqlServerSampleApp response time without Zen" >&2
+                      exit 1
+                  fi
                   echo "SqlServerSampleApp Average Response Time without Zen: $avgResponseTimeTrueSqlServer"
+                  echo "avgResponseTimeTrueSqlServer=$avgResponseTimeTrueSqlServer" >> $GITHUB_ENV
 
             - name: Run SqlServerSampleApp with Zen
+              id: sqlserver_with_zen
               run: |
                   pkill dotnet || true
                   export AIKIDO_DISABLED="false"
                   dotnet run --project e2e/sample-apps/SqlServerSampleApp/SqlServerSampleApp.csproj --urls "http://localhost:5082" &
                   sleep 5
-                  avgResponseTimeFalseSqlServer=$(k6 run benchmark.js --env APP_URL=http://localhost:5082)
+                  avgResponseTimeFalseSqlServer=$(k6 run benchmark.js --env APP_URL=http://localhost:5082 | grep "Average Response Time" | awk '{print $4}')
+                  if [ -z "$avgResponseTimeFalseSqlServer" ]; then
+                      echo "Failed to capture SqlServerSampleApp response time with Zen" >&2
+                      exit 1
+                  fi
                   echo "SqlServerSampleApp Average Response Time with Zen: $avgResponseTimeFalseSqlServer"
+                  echo "avgResponseTimeFalseSqlServer=$avgResponseTimeFalseSqlServer" >> $GITHUB_ENV
 
             - name: Run SQLiteSampleApp without Zen
+              id: sqlite_without_zen
               run: |
                   pkill dotnet || true
                   export AIKIDO_DISABLED="true"
                   dotnet run --project e2e/sample-apps/SQLiteSampleApp/SqliteSampleApp.csproj --urls "http://localhost:5083" &
                   sleep 5
-                  avgResponseTimeTrueSQLite=$(k6 run benchmark.js --env APP_URL=http://localhost:5083)
+                  avgResponseTimeTrueSQLite=$(k6 run benchmark.js --env APP_URL=http://localhost:5083 | grep "Average Response Time" | awk '{print $4}')
+                  if [ -z "$avgResponseTimeTrueSQLite" ]; then
+                      echo "Failed to capture SQLiteSampleApp response time without Zen" >&2
+                      exit 1
+                  fi
                   echo "SQLiteSampleApp Average Response Time without Zen: $avgResponseTimeTrueSQLite"
+                  echo "avgResponseTimeTrueSQLite=$avgResponseTimeTrueSQLite" >> $GITHUB_ENV
 
             - name: Run SQLiteSampleApp with Zen
+              id: sqlite_with_zen
               run: |
                   pkill dotnet || true
                   export AIKIDO_DISABLED="false"
                   dotnet run --project e2e/sample-apps/SQLiteSampleApp/SqliteSampleApp.csproj --urls "http://localhost:5083" &
                   sleep 5
-                  avgResponseTimeFalseSQLite=$(k6 run benchmark.js --env APP_URL=http://localhost:5083)
+                  avgResponseTimeFalseSQLite=$(k6 run benchmark.js --env APP_URL=http://localhost:5083 | grep "Average Response Time" | awk '{print $4}')
+                  if [ -z "$avgResponseTimeFalseSQLite" ]; then
+                      echo "Failed to capture SQLiteSampleApp response time with Zen" >&2
+                      exit 1
+                  fi
                   echo "SQLiteSampleApp Average Response Time with Zen: $avgResponseTimeFalseSQLite"
+                  echo "avgResponseTimeFalseSQLite=$avgResponseTimeFalseSQLite" >> $GITHUB_ENV
 
             - name: Run PostgresSampleApp without Zen
+              id: postgres_without_zen
               run: |
                   pkill dotnet || true
                   export AIKIDO_DISABLED="true"
                   dotnet run --project e2e/sample-apps/PostgresSampleApp/PostgresSampleApp.csproj --urls "http://localhost:5084" &
                   sleep 5
-                  avgResponseTimeTruePostgres=$(k6 run benchmark.js --env APP_URL=http://localhost:5084)
+                  avgResponseTimeTruePostgres=$(k6 run benchmark.js --env APP_URL=http://localhost:5084 | grep "Average Response Time" | awk '{print $4}')
+                  if [ -z "$avgResponseTimeTruePostgres" ]; then
+                      echo "Failed to capture PostgresSampleApp response time without Zen" >&2
+                      exit 1
+                  fi
                   echo "PostgresSampleApp Average Response Time without Zen: $avgResponseTimeTruePostgres"
+                  echo "avgResponseTimeTruePostgres=$avgResponseTimeTruePostgres" >> $GITHUB_ENV
 
             - name: Run PostgresSampleApp with Zen
+              id: postgres_with_zen
               run: |
                   pkill dotnet || true
                   export AIKIDO_DISABLED="false"
                   dotnet run --project e2e/sample-apps/PostgresSampleApp/PostgresSampleApp.csproj --urls "http://localhost:5084" &
                   sleep 5
-                  avgResponseTimeFalsePostgres=$(k6 run benchmark.js --env APP_URL=http://localhost:5084)
+                  avgResponseTimeFalsePostgres=$(k6 run benchmark.js --env APP_URL=http://localhost:5084 | grep "Average Response Time" | awk '{print $4}')
+                  if [ -z "$avgResponseTimeFalsePostgres" ]; then
+                      echo "Failed to capture PostgresSampleApp response time with Zen" >&2
+                      exit 1
+                  fi
                   echo "PostgresSampleApp Average Response Time with Zen: $avgResponseTimeFalsePostgres"
+                  echo "avgResponseTimeFalsePostgres=$avgResponseTimeFalsePostgres" >> $GITHUB_ENV
 
             - name: Compare Response Times
               run: |
-                  difference=$(echo "$avgResponseTimeTrueMySql - $avgResponseTimeFalseMySql" | bc -l | awk '{print sqrt($1^2)}')
-                  if (( $(echo "$difference > 5" | bc -l) )); then
-                      echo "Response time difference is greater than 5ms: ${difference}ms" >&2
-                      exit 1
-                  else
-                      echo "Response time difference is within acceptable range: ${difference}ms"
-                  fi
+                  compare() {
+                      local trueTime=$1
+                      local falseTime=$2
+                      local appName=$3
+                      if [ -z "$trueTime" ] || [ -z "$falseTime" ]; then
+                          echo "Missing response time data for $appName" >&2
+                          exit 1
+                      fi
+                      local difference=$(echo "$trueTime - $falseTime" | bc -l | awk '{print sqrt($1^2)}')
+                      if (( $(echo "$difference > 5" | bc -l) )); then
+                          echo "$appName response time difference is greater than 5ms: ${difference}ms" >&2
+                          exit 1
+                      else
+                          echo "$appName response time difference is within acceptable range: ${difference}ms"
+                      fi
+                  }
+
+                  compare $avgResponseTimeTrueMySql $avgResponseTimeFalseMySql "MySqlSampleApp"
+                  compare $avgResponseTimeTrueSqlServer $avgResponseTimeFalseSqlServer "SqlServerSampleApp"
+                  compare $avgResponseTimeTrueSQLite $avgResponseTimeFalseSQLite "SQLiteSampleApp"
+                  compare $avgResponseTimeTruePostgres $avgResponseTimeFalsePostgres "PostgresSampleApp"
               env:
-                  avgResponseTimeTrueMySql: ${{ steps.mysql_without_zen.outputs.avgResponseTimeTrueMySql }}
-                  avgResponseTimeFalseMySql: ${{ steps.mysql_with_zen.outputs.avgResponseTimeFalseMySql }}
+                  avgResponseTimeTrueMySql: ${{ env.avgResponseTimeTrueMySql }}
+                  avgResponseTimeFalseMySql: ${{ env.avgResponseTimeFalseMySql }}
+                  avgResponseTimeTrueSqlServer: ${{ env.avgResponseTimeTrueSqlServer }}
+                  avgResponseTimeFalseSqlServer: ${{ env.avgResponseTimeFalseSqlServer }}
+                  avgResponseTimeTrueSQLite: ${{ env.avgResponseTimeTrueSQLite }}
+                  avgResponseTimeFalseSQLite: ${{ env.avgResponseTimeFalseSQLite }}
+                  avgResponseTimeTruePostgres: ${{ env.avgResponseTimeTruePostgres }}
+                  avgResponseTimeFalsePostgres: ${{ env.avgResponseTimeFalsePostgres }}
