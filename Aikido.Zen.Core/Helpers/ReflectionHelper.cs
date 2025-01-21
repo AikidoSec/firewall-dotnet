@@ -47,7 +47,8 @@ namespace Aikido.Zen.Core.Helpers
             var typeKey = $"{assemblyName}.{typeName}";
             if (!_types.TryGetValue(typeKey, out var type))
             {
-                type = assembly.GetType(typeKey); // Ensure full type name is used
+                type = assembly.ExportedTypes.FirstOrDefault(t => t.Name == typeName || t.FullName == typeName);
+
                 if (type == null) return null;
                 _types[typeKey] = type;
             }
