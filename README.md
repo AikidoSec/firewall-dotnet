@@ -59,7 +59,7 @@ Zen operates autonomously on the same server as your .NET app to:
 - Install the package from NuGet:
 
 ``` shell
-dotnet add package Zen.Aikido
+dotnet add package Zen.Aikido.DotNetCore
 ```
 
 - Add the following to your `appsettings.json` file: (use secrets manager to store the API key)
@@ -115,6 +115,18 @@ You can also set the user in your custom middleware, if you would like to block 
 ```
 
 ### .NET Framework
+
+- Install the package from NuGet:
+
+``` shell
+dotnet add package Zen.Aikido.DotNetCore
+```
+
+or
+
+``` shell
+Install-Package Zen.Aikido.DotNetFramework
+```
 
 To add the Aikido token in the Web.config file, follow these steps:
 
