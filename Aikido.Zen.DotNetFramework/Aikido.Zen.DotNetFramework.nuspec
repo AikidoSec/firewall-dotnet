@@ -1,17 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <package >
   <metadata>
-    <id>$id$</id>
-    <version>$version$</version>
+    <id>Aikido.Zen.DotNetFramework</id>
+    <version>*</version>
     <title>$title$</title>
-    <authors>$author$</authors>
+    <authors>Aikido Security</authors>
+    <owners>Aikido Security</owners>
+    <description>Aikido Security Zen .NET Framework Firewall</description>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <license type="expression">MIT</license>
-    <!-- <icon>icon.png</icon> -->
-    <projectUrl>http://project_url_here_or_delete_this_line/</projectUrl>
-    <description>Aikido Zen, An in-app firewall for .NET</description>
-    <releaseNotes>Summary of changes made in this release of the package.</releaseNotes>
     <copyright>Copyright 2024 Aikido</copyright>
     <tags>firewall .NET</tags>
+    <dependencies>
+        <dependency id="Lib.Harmony" version="[2.3.3,99.99.99)" />
+        <dependency id="Microsoft.AspNetCore.Http.Abstractions" version="[2.2.0,99.99.99)" />
+        <dependency id="Microsoft.AspNetCore.WebUtilities" version="[2.2.0,99.99.99)" />
+        <dependency id="Microsoft.Extensions.Logging.Abstractions" version="[8.0.2,99.99.99)" />
+        <dependency id="System.Text.Json" version="[8.0.5,99.99.99)" />
+    </dependencies>
   </metadata>
+  <files>
+    <file src="Aikido.Zen.DotNetFramework.targets" target="Build\" />
+    <file src="bin\Release\libraries\libzen_internals_x86_64-pc-windows-gnu.dll" target="Build\libraries\" />
+    <file src="bin\Release\libraries\libzen_internals_x86_64-pc-windows-gnu.dll.sha256sum" target="Build\libraries\" />
+    <file src="bin\Release\Aikido.Zen.Core.dll" target="lib" />
+    <file src="bin\Release\Aikido.Zen.DotNetFramework.dll" target="lib" />
+  </files>
 </package>

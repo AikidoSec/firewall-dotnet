@@ -1,4 +1,6 @@
 #addin nuget:?package=Cake.FileHelpers&version=6.0.0
+#load "nuget:https://www.nuget.org/api/v2?package=Cake.NuGet&version=5.0.0"
+
 
 
 var target = Argument("target", "Default");
@@ -6,9 +8,10 @@ var configuration = Argument("configuration", "Release");
 var framework = Argument("framework", "");
 var solution = "./Aikido.Zen.sln";
 var projectName = "Aikido.Zen.Core";
-var version = "0.1.35";
+var zenInternalsVersion = "0.1.35";
+var libVersion = Argument("libVersion", "0.0.1-alpha5");
 
-var baseUrl = $"https://github.com/AikidoSec/zen-internals/releases/download/v{version}/";
+var baseUrl = $"https://github.com/AikidoSec/zen-internals/releases/download/v{zenInternalsVersion}/";
 var librariesDir = $"./{projectName}/libraries";
 
 var filesToDownload = new string[] {
@@ -43,7 +46,7 @@ Task("DownloadLibraries")
         {
             FilePath file = files.First();
             var currVersion = FileReadText(file).Split('-')[1];
-            if (currVersion == version)
+            if (currVersion == zenInternalsVersion)
             {
                 Information("Libraries already downloaded. skipping download.");
                 return;
@@ -81,7 +84,8 @@ Task("Build")
                 DetailedSummary = false,
                 NodeReuse = true
             }
-            .WithTarget("Build");
+            .WithTarget("Build")
+            .WithProperty("version", libVersion);
 
             var projects = GetFiles("./**/*.csproj")
                 .Where(p => !p.FullPath.Contains("sample-apps") && !p.FullPath.Contains("Aikido.Zen.Benchmarks"));
@@ -168,19 +172,19 @@ Task("Pack")
         if (configuration == "Release")
         {
             var projects = new[] {
-                "./Aikido.Zen.Core/Aikido.Zen.Core.csproj",
                 "./Aikido.Zen.DotNetFramework/Aikido.Zen.DotNetFramework.csproj",
                 "./Aikido.Zen.DotNetCore/Aikido.Zen.DotNetCore.csproj"
             };
 
             foreach (var project in projects)
             {
-                DotNetPack(project, new DotNetPackSettings
+                var specFile = project.Replace(".csproj", ".nuspec");
+                var nugetPackSettings = new NuGetPackSettings
                 {
-                    Configuration = configuration,
-                    NoBuild = true,
                     OutputDirectory = "./artifacts",
-                });
+                    Version = libVersion,
+                };
+                NuGetPack(specFile, nugetPackSettings);
             }
             Information("Pack task completed successfully.");
         }
@@ -191,8 +195,7 @@ Task("Pack")
     });
 
 Task("CreatePackages")
-    .IsDependentOn("Test")
-    .IsDependentOn("TestE2E")
+    .IsDependentOn("Build")
     .IsDependentOn("Pack");
 
 Task("Default")

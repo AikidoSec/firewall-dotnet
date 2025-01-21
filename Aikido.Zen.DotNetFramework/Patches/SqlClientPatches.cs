@@ -3,6 +3,7 @@ using System.Reflection;
 using HarmonyLib;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Helpers;
+using Aikido.Zen.Core;
 
 namespace Aikido.Zen.DotNetFramework.Patches
 {
@@ -27,6 +28,14 @@ namespace Aikido.Zen.DotNetFramework.Patches
             PatchMethod(harmony, "System.Data.SqlClient", "SqlCommand", "ExecuteScalar");
             PatchMethod(harmony, "System.Data.SqlClient", "SqlCommand", "ExecuteReader", "System.Data.CommandBehavior");
 
+            //SQL ServerCE
+            PatchMethod(harmony, "System.Data.SqlServerCe", "SqlCeCommand", "ExecuteNonQuery");
+            PatchMethod(harmony, "System.Data.SqlServerCe", "SqlCeCommand", "ExecuteScalar");
+            PatchMethod(harmony, "System.Data.SqlServerCe", "SqlCeCommand", "ExecuteReader", "System.Data.CommandBehavior");
+            PatchMethod(harmony, "System.Data.SqlServerCe", "SqlCeCommand", "ExecuteNonQuery");
+            PatchMethod(harmony, "System.Data.SqlServerCe", "SqlCeCommand", "ExecuteScalar");
+            PatchMethod(harmony, "System.Data.SqlServerCe", "SqlCeCommand", "ExecuteReader", "System.Data.CommandBehavior");
+
             // SQLite
             PatchMethod(harmony, "Microsoft.Data.Sqlite", "SqliteCommand", "ExecuteNonQuery");
             PatchMethod(harmony, "Microsoft.Data.Sqlite", "SqliteCommand", "ExecuteScalar");
@@ -50,6 +59,11 @@ namespace Aikido.Zen.DotNetFramework.Patches
             PatchMethod(harmony, "MySqlX", "XDevAPI.Relational.Table", "Insert");
             PatchMethod(harmony, "MySqlX", "XDevAPI.Relational.Table", "Update");
             PatchMethod(harmony, "MySqlX", "XDevAPI.Relational.Table", "Delete");
+
+            // NPoco
+            PatchMethod(harmony, "NPoco", "Database", "ExecuteReaderHelper", "System.Data.Common.DbCommand");
+            PatchMethod(harmony, "NPoco", "Database", "ExecuteNonQueryHelper", "System.Data.Common.DbCommand");
+            PatchMethod(harmony, "NPoco", "Database", "ExecuteScalarHelper", "System.Data.Common.DbCommand");
         }
 
         /// <summary>
@@ -78,7 +92,8 @@ namespace Aikido.Zen.DotNetFramework.Patches
         /// <returns>True if the original method should continue execution; otherwise, false.</returns>
         private static bool OnCommandExecuting(object[] __args, MethodBase __originalMethod, object __instance)
         {
-            var dbCommand = __instance as System.Data.Common.DbCommand;
+            var dbCommand = __instance as System.Data.Common.DbCommand
+                ?? __args[0] as System.Data.Common.DbCommand;
             if (dbCommand == null) return true;
             var assembly = __instance.GetType().Assembly.FullName?.Split(new[] { ", Culture=" }, StringSplitOptions.RemoveEmptyEntries)[0];
             return Aikido.Zen.Core.Patches.SqlClientPatcher.OnCommandExecuting(__args, __originalMethod, dbCommand, assembly, Zen.GetContext());

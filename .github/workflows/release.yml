@@ -1,0 +1,65 @@
+name: Publish NuGet Packages
+
+on:
+    release:
+        types: [created]
+
+jobs:
+    publish:
+        runs-on: windows-2022
+        timeout-minutes: 30
+
+        env:
+            DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+            DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Cache NuGet packages
+              uses: actions/cache@v3
+              with:
+                  path: |
+                      ~/.nuget/packages
+                      ~/.local/share/NuGet/v3-cache
+                  key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/*.props', '**/*.targets') }}
+                  restore-keys: |
+                      ${{ runner.os }}-nuget-
+
+            - name: Install .NET versions that we need for building the library
+              uses: actions/setup-dotnet@v4
+              with:
+                  dotnet-version: |
+                      6.0
+                      7.0
+                      8.0
+
+            - name: Add msbuild to PATH
+              uses: microsoft/setup-msbuild@v2
+              with:
+                  vs-version: "[17.2,19.0)"
+
+            - name: Install dependencies
+              run: |
+                  dotnet tool restore
+                  dotnet restore
+
+            - name: Install Cake Tool
+              run: dotnet tool install --global Cake.Tool
+
+            - name: Run Cake Script to Build and Pack
+              run: dotnet cake build.cake --target=CreatePackages --libVersion=${{ github.ref_name }}
+
+            - name: Publish NuGet Packages
+              run: |
+                  $ErrorActionPreference = "Stop"
+                  Get-ChildItem -Path artifacts\*.nupkg | ForEach-Object {
+                    try {
+                      dotnet nuget push $_.FullName --api-key ${{ secrets.NUGETAPIKEY }} --source https://api.nuget.org/v3/index.json
+                      Write-Host "Pushed $($_.FullName)"
+                    } catch {
+                      Write-Host "Failed to push $($_.FullName)"
+                      exit 1
+                    }
+                  }
