@@ -5,8 +5,8 @@
 [![Codecov](https://img.shields.io/codecov/c/github/AikidoSec/firewall-dotnet?style=flat-square&token=J74AVIU17K)](https://app.codecov.io/gh/aikidosec/firewall-dotnet)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com)
 [![Unit tests](https://github.com/AikidoSec/firewall-dotnet/actions/workflows/unit-test.yml/badge.svg)](https://github.com/AikidoSec/firewall-dotnet/actions/workflows/unit-test.yml)
-[![NuGet version (Aikido.Zen.DotNetCore)](https://img.shields.io/nuget/v/Aikido.Zen.DotNetCore.svg?style=flat-square)](https://www.nuget.org/packages/Aikido.Zen.DotNetCore/)
-[![NuGet version (Aikido.Zen.DotNetFramework)](https://img.shields.io/nuget/v/Aikido.Zen.DotNetFramework.svg?style=flat-square)](https://www.nuget.org/packages/Aikido.Zen.DotNetFramework/)
+[![NuGet version (Aikido.Zen.DotNetCore)](https://img.shields.io/nuget/v/Aikido.Zen.DotNetCore.svg?style=flat-square&label=Aikido.Zen.DotNetCore)](https://www.nuget.org/packages/Aikido.Zen.DotNetCore/)
+[![NuGet version (Aikido.Zen.DotNetFramework)](https://img.shields.io/nuget/v/Aikido.Zen.DotNetFramework.svg?style=flat-square&label=Aikido.Zen.DotNetFramework)](https://www.nuget.org/packages/Aikido.Zen.DotNetFramework/)
 
 Zen, your in-app firewall for peace of mind– at runtime.
 
