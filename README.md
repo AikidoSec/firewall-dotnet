@@ -58,6 +58,8 @@ Zen operates autonomously on the same server as your .NET app to:
 
 ### .NET Core
 
+Ensure that your project runs on .NET Framework 6, 7 or 8.
+
 - Install the package from NuGet:
 
 ``` shell
@@ -118,6 +120,8 @@ You can also set the user in your custom middleware, if you would like to block 
 
 ### .NET Framework
 
+Ensure that your project runs on .NET Framework 4.6 or higher.
+
 - Install the package from NuGet:
 
 ``` shell
@@ -130,7 +134,7 @@ or
 Install-Package Zen.Aikido.DotNetFramework
 ```
 
-To add the Aikido token in the Web.config file, follow these steps:
+- To add the Aikido token in the Web.config file, follow these steps:
 
 1. Open your `Web.config` file.
 2. Locate the `<appSettings>` section.
@@ -140,7 +144,7 @@ To add the Aikido token in the Web.config file, follow these steps:
 <add key="Aikido:AikidoToken" value="your-api-key" />
 ```
 
-in your global.asax.cs file, add the following:
+- in your global.asax.cs file, add the following:
 
 ``` csharp
 protected void Application_Start()
@@ -160,7 +164,7 @@ public void Configuration(IAppBuilder app)
 }
 ```
 
-If you would like to block users by their identity, you can pass in a function to set the user, in your global.asax.cs file.
+- If you would like to block users by their identity, you can pass in a function to set the user, in your global.asax.cs file.
 
 ``` csharp
 public void Application_Start()
