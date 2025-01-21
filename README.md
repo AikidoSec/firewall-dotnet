@@ -29,7 +29,7 @@ Zen operates autonomously on the same server as your .NET app to:
 * ✅ Rate limit specific API endpoints by IP or by user
 * ✅ Allow you to block specific users manually
 * ✅ Allow you to block traffic by country
-* ✅ Allow you to block traffic by bots
+* ✅ Allow you to block bots and AI scrapers
 * ✅ Allow you to allow traffic by ip per endpoint
 
 
