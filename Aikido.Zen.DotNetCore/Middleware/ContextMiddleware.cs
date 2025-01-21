@@ -35,10 +35,9 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 Route = GetRoute(httpContext),
             };
 
-            var clientIp = context.RemoteAddress;
             // Add request information to the agent, which will collect routes, users and stats
             // every x minutes, this information will be sent to the Zen server as a heartbeat event, and the collected info will be cleared
-            Agent.Instance.CaptureInboundRequest(context.User, context.Url, context.Method, clientIp);
+            Agent.Instance.CaptureInboundRequest(context.User, context.Url, context.Method, context.RemoteAddress);
 
             try
             {
