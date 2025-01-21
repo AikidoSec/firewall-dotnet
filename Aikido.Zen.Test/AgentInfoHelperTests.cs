@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Aikido.Zen.Core.Helpers;
 
 namespace Aikido.Zen.Test
@@ -38,7 +39,7 @@ namespace Aikido.Zen.Test
                 // Basic properties
                 Assert.That(agentInfo.Hostname, Is.EqualTo(Environment.MachineName));
                 Assert.That(agentInfo.Library, Is.EqualTo("firewall-dotnet"));
-                Assert.That(agentInfo.Version, Is.EqualTo("1.0.0"));
+                Assert.That(agentInfo.Version, Is.EqualTo(typeof(AgentInfoHelper).Assembly.GetName().Version!.ToString()));
                 Assert.That(agentInfo.IpAddress, Is.Not.Null);
 
                 // OS Info
@@ -47,7 +48,7 @@ namespace Aikido.Zen.Test
 
                 // Platform Info
                 Assert.That(agentInfo.Platform.Version, Is.EqualTo(Environment.Version.ToString()));
-                Assert.That(agentInfo.Platform.Arch, Is.EqualTo(Environment.Version.Major >= 5 ? "core" : "framework"));
+                Assert.That(agentInfo.Platform.Arch, Is.EqualTo(RuntimeInformation.ProcessArchitecture.ToString()));
             });
         }
 
@@ -101,7 +102,7 @@ namespace Aikido.Zen.Test
                 var agentInfo = AgentInfoHelper.GetInfo();
 
                 // Assert
-                Assert.That(agentInfo.Platform.Arch, Is.EqualTo("core"));
+                Assert.That(agentInfo.Platform.Arch, Is.EqualTo(RuntimeInformation.ProcessArchitecture.ToString()));
             }
         }
 
@@ -115,7 +116,7 @@ namespace Aikido.Zen.Test
                 var agentInfo = AgentInfoHelper.GetInfo();
 
                 // Assert
-                Assert.That(agentInfo.Platform.Arch, Is.EqualTo("framework"));
+                Assert.That(agentInfo.Platform.Arch, Is.EqualTo(RuntimeInformation.ProcessArchitecture.ToString()));
             }
         }
 

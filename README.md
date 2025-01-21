@@ -12,34 +12,161 @@ Zen is an embedded Web Application Firewall that autonomously protects your .NET
 
 Zen protects your .NET apps by preventing user input containing dangerous strings, which allow SQL injections. It runs on the same server as your .NET app for easy installation and zero maintenance.
 
-Zen for .NET currently supports onwards of .NET xx. The latest tested version is .NET xx.
+Zen for .NET currently supports onwards of .NET 4.6. The latest tested version is .NET 8.0.
 
 ## Features
 
 Zen will autonomously protect your .NET applications from the inside against:
 
-* 🛡️ [NoSQL injection attacks](https://www.aikido.dev/blog/web-application-security-vulnerabilities)
 * 🛡️ [SQL injection attacks](https://www.aikido.dev/blog/the-state-of-sql-injections)
-* 🛡️ [Command injection attacks](https://www.aikido.dev/blog/command-injection-in-2024-unpacked)
-* 🛡️ [Path traversal attacks](https://owasp.org/www-community/attacks/Path_Traversal)
-* 🛡️ [Server-side request forgery (SSRF)](./docs/ssrf.md)
+* 🛡️ [Path traversal attacks](https://www.aikido.dev/blog/path-traversal-in-2024-the-year-unpacked)
+* 🚧 [Command injection attacks](https://www.aikido.dev/blog/command-injection-in-2024-unpacked)
+* 🚧 [Server-side request forgery (SSRF)](https://owasp.org/www-community/attacks/Server_Side_Request_Forgery)
 
 Zen operates autonomously on the same server as your .NET app to:
 
 * ✅ Secure your app like a classic web application firewall (WAF), but with none of the infrastructure or cost.
 * ✅ Rate limit specific API endpoints by IP or by user
 * ✅ Allow you to block specific users manually
-* ✅ Auto-generate API specifications
+* ✅ Allow you to block traffic by country
+* ✅ Allow you to block bots and AI scrapers
+* ✅ Allow you to allow traffic by ip per endpoint
+
+
 ## Supported libraries and frameworks
+
 ### Web frameworks
-* ✅ TODO
+* ✅ ASP.NET Core 6.0
+* ✅ ASP.NET Core 7.0
+* ✅ ASP.NET Core 8.0
+* ✅ ASP.NET Framework 4.6.x
+* ✅ ASP.NET Framework 4.7.x
+* ✅ ASP.NET Framework 4.8.x
 
 ### Database drivers
-* ✅ TODO
+* ✅ Microsoft.Data.SqlClient
+* ✅ System.Data.SqlClient
+* ✅ Microsoft.Data.Sqlite
+* ✅ MySql.Data.MySqlClient
+* ✅ MySqlConnector
+* ✅ Npgsql
+* ✅ MySqlX
 
 ## Installation
 
-TODO
+### .NET Core
+
+- Install the package from NuGet:
+
+``` shell
+dotnet add package Zen.Aikido
+```
+
+- Add the following to your `appsettings.json` file: (use secrets manager to store the API key)
+
+``` json
+{
+  "Aikido": {
+    "AikidoToken": "your-api-key"
+  }
+}
+```
+
+- or add it as an environment variable
+
+``` shell
+AIKIDO_TOKEN=<YOUR-TOKEN-HERE>
+```
+
+If you are using a startup class, you can add the following to your `Startup.cs` file:
+
+``` csharp
+public void ConfigureServices(IServiceCollection services)
+{
+    // other services
+    services.AddZenFirewall(Configuration);
+    // other services
+}
+
+public void Configure(IApplicationBuilder app)
+{
+    // other middleware
+    app.UseZenFirewall(); // place this after userouting, or after authorization, but high enough in the pipeline to catch all requests
+    // other middleware
+}
+```
+
+You can also set the user in your custom middleware, if you would like to block users by their identity.
+
+``` csharp
+// add routing
+    .UseRouting()
+    // authorize users
+    .Use((context, next) =>
+    {
+        var id = context.User?.Identity?.Name ?? "test";
+        var name = context.User?.Identity?.Name ?? "Anonymous";
+        if (!string.IsNullOrEmpty(id))
+            Zen.SetUser(id, name, context);
+        return next();
+    })
+    // add Zen middleware
+    .UseZenFireWall()
+```
+
+### .NET Framework
+
+To add the Aikido token in the Web.config file, follow these steps:
+
+1. Open your `Web.config` file.
+2. Locate the `<appSettings>` section.
+3. Add the following key-value pair within the `<appSettings>` section:
+
+``` xml
+<add key="Aikido:AikidoToken" value="your-api-key" />
+```
+
+in your global.asax.cs file, add the following:
+
+``` csharp
+protected void Application_Start()
+{
+    // other code
+    Zen.Start();
+}
+```
+
+if you are using OWIN, you can add the following to your `Startup.cs` file:
+
+``` csharp
+public void Configuration(IAppBuilder app)
+{
+    // other code
+    Zen.Start();
+}
+```
+
+If you would like to block users by their identity, you can pass in a function to set the user, in your global.asax.cs file.
+
+``` csharp
+public void Application_Start()
+{
+    // other code
+    Zen.SetUser(context => new User(context.User.Identity.Name, context.User.Identity.Name));
+    Zen.Start();
+}
+```
+
+Or if you are using OWIN, you can add the following to your `Startup.cs` file:
+
+``` csharp
+public void Configuration(IAppBuilder app)
+{
+    // other code
+    Zen.SetUser(context => new User(context.User.Identity.Name, context.User.Identity.Name));
+    Zen.Start();
+}
+```
 
 ## Reporting to your Aikido Security dashboard
 
@@ -89,7 +216,7 @@ address: support@aikido.dev or create an account at https://app.aikido.dev.
 
 ## Performance
 
-TODO
+![Under construction](https://img.icons8.com/emoji/20/000000/construction-emoji.png) Under construction ![Under construction](https://img.icons8.com/emoji/20/000000/construction-emoji.png)
 
 ## Code of Conduct
 

@@ -18,48 +18,47 @@ namespace Aikido.Zen.DotNetCore.Middleware
 
         public async Task InvokeAsync(HttpContext httpContext, RequestDelegate next)
         {
-            // this will be used to check for attacks
+            // Convert headers and query parameters to dictionaries once
+            var queryDictionary = httpContext.Request.Query.ToDictionary(q => q.Key, q => q.Value.ToArray());
+            var headersDictionary = httpContext.Request.Headers.ToDictionary(h => h.Key, h => h.Value.ToArray());
+
             var context = new Context
             {
                 Url = httpContext.Request.Path.ToString(),
                 Method = httpContext.Request.Method,
-                Query = httpContext.Request.Query.ToDictionary(q => q.Key, q => q.Value.ToArray()),
-                Headers = httpContext.Request.Headers
-                    .ToDictionary(h => h.Key, h => h.Value.ToArray()),
-                RemoteAddress = httpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty,
+                Query = queryDictionary,
+                Headers = headersDictionary,
+                RemoteAddress = httpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty, // no need to use X-FORWARDED-FOR, .NET Core already handles this
                 Cookies = httpContext.Request.Cookies.ToDictionary(c => c.Key, c => c.Value),
-                UserAgent = httpContext.Request.Headers["User-Agent"].ToString(),
+                UserAgent = headersDictionary.TryGetValue("User-Agent", out var userAgent) ? userAgent.FirstOrDefault() : string.Empty,
                 Source = Environment.Version.Major >= 5 ? "DotNetCore" : "DotNetFramework",
                 Route = GetRoute(httpContext),
             };
 
-            // no need to use X-FORWARDED-FOR, .NET Core already handles this
-            var clientIp = httpContext.Connection.RemoteIpAddress?.ToString();
             // Add request information to the agent, which will collect routes, users and stats
             // every x minutes, this information will be sent to the Zen server as a heartbeat event, and the collected info will be cleared
-            Agent.Instance.CaptureInboundRequest(context.User, httpContext.Request.Path, context.Method, clientIp);
+            Agent.Instance.CaptureInboundRequest(context.User, context.Url, context.Method, context.RemoteAddress);
 
             try
             {
                 var request = httpContext.Request;
-                // allow the body to be read multiple times
                 request.EnableBuffering();
+
                 var parsedUserInput = await HttpHelper.ReadAndFlattenHttpDataAsync(
-                    queryParams: context.Query.ToDictionary(h => h.Key, h => string.Join(',', h.Value)),
-                    headers: context.Headers.ToDictionary(h => h.Key, h => string.Join(',', h.Value)),
+                    queryParams: queryDictionary.ToDictionary(h => h.Key, h => string.Join(',', h.Value)),
+                    headers: headersDictionary.ToDictionary(h => h.Key, h => string.Join(',', h.Value)),
                     cookies: context.Cookies,
                     body: request.Body,
                     contentType: request.ContentType,
                     contentLength: request.ContentLength ?? 0
                 );
+
                 context.ParsedUserInput = parsedUserInput;
                 context.Body = request.Body;
-
             }
             catch (Exception e)
             {
-                var message = e.Message;
-                var trace = e.StackTrace;
+                // Log the exception details if necessary
                 throw;
             }
 
