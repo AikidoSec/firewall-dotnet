@@ -177,10 +177,9 @@ Task("Pack")
             foreach (var project in projects)
             {
                 var specFile = project.Replace(".csproj", ".nuspec");
-                DotNetPack(specFile, new DotNetPackSettings
+                NugetPack(specFile, new NugetPackSettings
                 {
                     Configuration = configuration,
-                    NoBuild = true,
                     OutputDirectory = "./artifacts",
                     Version = libVersion
                 });
