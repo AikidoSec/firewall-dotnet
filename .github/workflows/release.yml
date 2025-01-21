@@ -44,9 +44,7 @@ jobs:
               run: dotnet tool install --global Cake.Tool
 
             - name: Run Cake Script to Build and Pack
-              run: |
-                  TAG_NAME=${{ github.ref_name }}
-                  dotnet cake build.cake --target=CreatePackages --libVersion=${{ github.ref_name }}
+              run: dotnet cake build.cake --target=CreatePackages --libVersion=${{ github.ref_name }}
 
             - name: Publish NuGet Packages
               run: |
