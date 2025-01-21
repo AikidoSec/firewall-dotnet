@@ -28,15 +28,15 @@ jobs:
                       ${{ runner.os }}-nuget-
 
             - name: Setup .NET
-              uses: actions/setup-dotnet@v3
+              uses: actions/setup-dotnet@v4
               with:
                   dotnet-version: |
-                      4.6.2
-                      4.7.2
-                      4.8.1
-                      6.0.x
-                      7.0.x
-                      8.0.x
+                      4.6
+                      4.7
+                      4.8
+                      6.0
+                      7.0
+                      8.0
 
             - name: Add msbuild to PATH
               uses: microsoft/setup-msbuild@v2
