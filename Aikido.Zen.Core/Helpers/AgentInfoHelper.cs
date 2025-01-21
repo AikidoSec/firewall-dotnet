@@ -39,8 +39,9 @@ namespace Aikido.Zen.Core.Helpers
 		{
 			// Update only the fields that can change
 			_cachedAgentInfo.DryMode = EnvironmentHelper.DryMode;
+            _cachedAgentInfo.Serverless = Environment.GetEnvironmentVariable("AWS_LAMBDA_FUNCTION_NAME") != null || Environment.GetEnvironmentVariable("WEBSITE_INSTANCE_ID") != null;
 
-			return _cachedAgentInfo;
+            return _cachedAgentInfo;
 		}
 	}
 }
