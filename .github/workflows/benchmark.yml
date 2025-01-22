@@ -82,7 +82,7 @@ jobs:
                     sleep 5
                     
                     # Run k6 benchmark
-                    no_zen_output=$(k6 run --quiet --summary-export=summary_no_zen.json --duration 10s script.js)
+                    no_zen_output=$(k6 run --quiet --summary-export=summary_no_zen.json benchmark.js)
                     no_zen_time=$(jq '.metrics.http_req_duration.values.avg' summary_no_zen.json)
                     
                     echo "Running $app with Zen..."
@@ -92,7 +92,7 @@ jobs:
                     sleep 5
                     
                     # Run k6 benchmark
-                    zen_output=$(k6 run --quiet --summary-export=summary_zen.json --duration 10s script.js)
+                    zen_output=$(k6 run --quiet --summary-export=summary_zen.json benchmark.js)
                     zen_time=$(jq '.metrics.http_req_duration.values.avg' summary_zen.json)
                     
                     # Compare response times
