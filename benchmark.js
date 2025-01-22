@@ -21,14 +21,25 @@ export default function () {
     // Check if APP_URL is defined
     if (!__ENV.APP_URL) {
         console.error("::error::APP_URL environment variable is not set.");
-        return;
+        throw new Error("APP_URL environment variable is not set.");
     }
     if (!__ENV.AIKIDO_URL || !__ENV.AIKIDO_REALTIME_URL) {
         console.error(
             "::error::AIKIDO_URL or AIKIDO_REALTIME_URL environment variable is not set."
         );
-        return;
+        throw new Error(
+            "AIKIDO_URL or AIKIDO_REALTIME_URL environment variable is not set."
+        );
     }
+    // log the env variables that start with AIKIDO
+    console.log(
+        "AIKIDO_URL:",
+        __ENV.AIKIDO_URL,
+        "AIKIDO_REALTIME_URL:",
+        __ENV.AIKIDO_REALTIME_URL,
+        "AIKIDO_TOKEN:",
+        __ENV.AIKIDO_TOKEN
+    );
 
     // Make a GET request to the /health endpoint
     let res = http.get(`${__ENV.APP_URL}/health`);
