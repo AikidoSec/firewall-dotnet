@@ -96,7 +96,7 @@ jobs:
                     done
 
                     # Run k6 benchmark
-                    k6 run --out json=summary_no_zen.json benchmark.js
+                    k6 run --quiet --out json=summary_no_zen.json benchmark.js
                     no_zen_time=$(jq -r 'select(.type=="Point" and .metric=="http_req_duration") | .data.value' summary_no_zen.json | jq -s add/length)
 
                     echo "Running $app with Zen..."
@@ -122,15 +122,15 @@ jobs:
                     done
                     
                     # Run k6 benchmark
-                    k6 run --out json=summary_zen.json benchmark.js
+                    k6 run --quiet --out json=summary_zen.json benchmark.js
                     zen_time=$(jq -r 'select(.type=="Point" and .metric=="http_req_duration") | .data.value' summary_zen.json | jq -s add/length)
 
                     # Compare response times
                     diff=$(echo "$zen_time - $no_zen_time" | bc)
                     if (( $(echo "$diff > 5" | bc -l) )); then
-                      echo "Performance degradation is more than 5ms for $app: $diff ms"
+                      echo "[✗] Performance degradation is more than 5ms for $app: $diff ms"
                       exit 1
                     else
-                      echo "Performance within threshold for $app: $diff ms"
+                      echo "[✓] Performance within threshold for $app: $diff ms"
                     fi
                   done
