@@ -73,6 +73,7 @@ jobs:
             - name: Run benchmarks and compare
               env:
                   SAMPLE_APPS: ${{ env.apps }}
+                  APP_URL: http://localhost:5081
               run: |
                   for app in $SAMPLE_APPS; do
                     echo "Running $app without Zen..."
