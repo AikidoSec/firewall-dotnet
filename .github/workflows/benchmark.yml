@@ -55,9 +55,6 @@ jobs:
             - name: Run mock server
               run: |
                   dotnet run --project e2e/Aikido.Zen.Server.Mock/Aikido.Zen.Server.Mock.csproj --urls "http://localhost:5080" &
-                  export AIKIDO_TOKEN="123"
-                  export AIKIDO_URL="http://localhost:5080"
-                  export AIKIDO_REALTIME_URL="http://localhost:5080"
 
             - name: Define sample apps
               id: define_apps
@@ -68,6 +65,9 @@ jobs:
               env:
                   SAMPLE_APPS: ${{ env.apps }}
                   APP_URL: http://localhost:5081
+                  AIKIDO_TOKEN: 123
+                  AIKIDO_URL: http://localhost:5080
+                  AIKIDO_REALTIME_URL: http://localhost:5080
               run: |
                   for app in $SAMPLE_APPS; do
                     dotnet build e2e/sample-apps/$app/$app.csproj
