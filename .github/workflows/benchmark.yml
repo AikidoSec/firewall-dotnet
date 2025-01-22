@@ -64,22 +64,19 @@ jobs:
               run: |
                   echo "apps=MySqlSampleApp PostgresSampleApp SqlServerSampleApp SqliteSampleApp" >> $GITHUB_ENV
 
-            - name: Build sample apps
-              run: |
-                  for app in $SAMPLE_APPS; do
-                    dotnet build e2e/sample-apps/$app/$app.csproj
-                  done
-
             - name: Run benchmarks and compare
               env:
                   SAMPLE_APPS: ${{ env.apps }}
                   APP_URL: http://localhost:5081
               run: |
                   for app in $SAMPLE_APPS; do
+                    dotnet build e2e/sample-apps/$app/$app.csproj
+                  done
+                  for app in $SAMPLE_APPS; do
                     echo "Running $app without Zen..."
                     pkill dotnet || true
                     export AIKIDO_DISABLED="true"
-                    dotnet run --project e2e/sample-apps/$app/$app.csproj --urls "http://localhost:5081" &
+                    dotnet run --project e2e/sample-apps/$app/$app.csproj --urls "http://localhost:5081"  &
                     sleep 5
                     
                     # Run k6 benchmark
