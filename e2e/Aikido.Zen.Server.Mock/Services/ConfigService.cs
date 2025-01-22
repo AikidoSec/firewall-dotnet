@@ -41,7 +41,7 @@ public class ConfigService
 
     public List<string> GetBlockedIps(int appId)
     {
-        return _blockedIps.TryGetValue(appId, out var ips) ? ips : new List<string>();
+        return _blockedIps.TryGetValue(appId, out var ips) ? ips : _largeBlockedIpList;
     }
 
     public void UpdateBlockedUserAgents(int appId, string userAgents)

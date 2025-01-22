@@ -12,7 +12,6 @@ builder.Services
     .AddRouting()
     .AddControllers()
     .AddXmlDataContractSerializerFormatters();
-
 var app = builder.Build();
 app
     // add routing

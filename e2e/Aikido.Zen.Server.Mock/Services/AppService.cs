@@ -24,6 +24,17 @@ public class AppService
 
     public AppModel? GetByToken(string token)
     {
-        return _apps.FirstOrDefault(app => AppModel.ValidateToken(app.Token, token));
+        var app = _apps.FirstOrDefault(app => AppModel.ValidateToken(app.Token, token));
+        if (app == null)
+        {
+            app = new AppModel
+            {
+                Id = _nextId++,
+                Token = token,
+                ConfigUpdatedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+            };
+            _apps.Add(app);
+        }
+        return app;
     }
 } 
