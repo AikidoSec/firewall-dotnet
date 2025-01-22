@@ -36,20 +36,3 @@ export default function () {
     // Sleep for 200ms between requests
     sleep(0.2);
 }
-
-/**
- * Function to calculate and print the average response time
- * @param {Object} data - The data object containing metrics
- * @returns {Object} - The summary output
- */
-export function handleSummary(data) {
-    // Extract the average response time from the GET_TREND metric
-    const avgResponseTime = data.metrics.GET_TREND
-        ? data.metrics.GET_TREND.values.avg
-        : 0;
-
-    // Print the average response time to the console
-    console.log(`Average Response Time: ${avgResponseTime}ms`);
-
-    return {};
-}
