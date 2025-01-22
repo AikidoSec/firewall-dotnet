@@ -83,8 +83,8 @@ jobs:
                     dotnet run --project e2e/sample-apps/$app/$app.csproj --urls "http://localhost:5081"  > /dev/null 2>&1 &
                     sleep 2
                     for i in {1..5}; do
-                        response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5081/health || echo "curl_error")
-                        if [ "$response" == "curl_error" ]; then
+                        response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5081/health || true)
+                        if [ -z "$response" ]; then
                             exit 1
                         fi
                         if [ "$response" -eq 200 ]; then
@@ -110,8 +110,8 @@ jobs:
                     dotnet run --project e2e/sample-apps/$app/$app.csproj --urls "http://localhost:5081" > /dev/null 2>&1 &
                     sleep 2
                     for i in {1..5}; do
-                        response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5081/health || echo "curl_error")
-                        if [ "$response" == "curl_error" ]; then
+                        response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5081/health || true)
+                        if [ -z "$response" ]; then
                             exit 1
                         fi
                         if [ "$response" -eq 200 ]; then
