@@ -48,7 +48,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
                     Agent.Instance.Context.AddAbortedRequest();
                     context.Response.StatusCode = 429;
                     context.Response.Headers.Add("Retry-After", rateLimitConfig.WindowSizeInMS.ToString());
-                    await context.Response.WriteAsync("Too many requests");
+                    await context.Response.WriteAsync($"You are rate limited by Aikido firewall. (Your IP: {aikidoContext.RemoteAddress})");
                     return;
                 }
             }
