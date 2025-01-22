@@ -65,7 +65,7 @@ public class ConfigService
             ["heartbeatIntervalInMS"] = 10 * 60 * 1000,
             ["endpoints"] = new List<EndpointConfig>(),
             ["blockedUserIds"] = new List<string>(),
-            ["allowedIPAddresses"] = this._largeBlockedIpList,
+            ["allowedIPAddresses"] = _largeBlockedIpList,
             ["receivedAnyStats"] = true
         };
     }
