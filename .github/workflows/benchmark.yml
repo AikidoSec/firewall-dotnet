@@ -48,6 +48,11 @@ jobs:
                   sudo apt-get update
                   sudo apt-get install k6
 
+            - name: Install wrk
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install -y wrk
+
             - name: Build mock server
               run: |
                   dotnet build e2e/Aikido.Zen.Server.Mock/Aikido.Zen.Server.Mock.csproj
@@ -96,8 +101,14 @@ jobs:
                     done
 
                     # Run k6 benchmark
-                    k6 run --quiet --out json=summary_no_zen.json benchmark.js
+                    k6 run --quiet --out json=summary_no_zen.json benchmark.js > /dev/null 2>&1
                     no_zen_time=$(jq -r 'select(.type=="Point" and .metric=="http_req_duration") | .data.value' summary_no_zen.json | jq -s add/length)
+
+                    # Run wrk benchmark
+                    echo "Running wrk benchmark for $app without Zen..."
+                    wrk_no_zen_output=$(wrk -t12 -c400 -d30s http://localhost:5081)
+                    echo "$wrk_no_zen_output"
+                    no_zen_throughput=$(echo "$wrk_no_zen_output" | grep "Requests/sec" | awk '{print $2}')
 
                     echo "Running $app with Zen..."
                     pkill dotnet || true
@@ -122,8 +133,18 @@ jobs:
                     done
                     
                     # Run k6 benchmark
-                    k6 run --quiet --out json=summary_zen.json benchmark.js
+                    k6 run --quiet --out json=summary_zen.json benchmark.js > /dev/null 2>&1
                     zen_time=$(jq -r 'select(.type=="Point" and .metric=="http_req_duration") | .data.value' summary_zen.json | jq -s add/length)
+
+                    # Run wrk benchmark
+                    echo "Running wrk benchmark for $app with Zen..."
+                    wrk_zen_output=$(wrk -t12 -c400 -d30s http://localhost:5081)
+                    echo "$wrk_zen_output"
+                    zen_throughput=$(echo "$wrk_zen_output" | grep "Requests/sec" | awk '{print $2}')
+
+                    # Calculate and log throughput difference
+                    throughput_diff=$(echo "scale=2; (($zen_throughput - $no_zen_throughput) / $no_zen_throughput) * 100" | bc)
+                    echo "Throughput difference for $app: $throughput_diff%"
 
                     # Compare response times
                     diff=$(echo "$zen_time - $no_zen_time" | bc)
