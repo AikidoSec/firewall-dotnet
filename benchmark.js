@@ -32,14 +32,7 @@ export default function () {
         );
     }
     // log the env variables that start with AIKIDO
-    console.log(
-        "AIKIDO_URL:",
-        __ENV.AIKIDO_URL,
-        "AIKIDO_REALTIME_URL:",
-        __ENV.AIKIDO_REALTIME_URL,
-        "AIKIDO_TOKEN:",
-        __ENV.AIKIDO_TOKEN
-    );
+    console.log("AIKIDO_DISABLED=", __ENV.AIKIDO_DISABLED);
 
     // Make a GET request to the /health endpoint
     let res = http.get(`${__ENV.APP_URL}/health`);
