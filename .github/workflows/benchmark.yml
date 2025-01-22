@@ -78,7 +78,6 @@ jobs:
                     dotnet build e2e/sample-apps/$app/$app.csproj > /dev/null 2>&1
                   done
                   for app in $SAMPLE_APPS; do
-                    echo "Running $app without Zen..."
                     pkill dotnet || true
                     export AIKIDO_DISABLED=true
                     dotnet run --project e2e/sample-apps/$app/$app.csproj --urls "http://localhost:5081"  > /dev/null 2>&1 &
@@ -89,14 +88,12 @@ jobs:
                             exit 1
                         fi
                         if [ "$response" -eq 200 ]; then
-                            echo "Health endpoint is ready"
                             break
                         fi
                         if [ $i -eq 5 ]; then
                             echo "Health endpoint failed to respond after 5 attempts"
                             exit 1
                         fi
-                        echo "Waiting for health endpoint (attempt $i/5)..."
                         sleep 2
                     done
 
@@ -105,12 +102,9 @@ jobs:
                     no_zen_time=$(jq -r 'select(.type=="Point" and .metric=="http_req_duration") | .data.value' summary_no_zen.json | jq -s add/length)
 
                     # Run wrk benchmark
-                    echo "Running wrk benchmark for $app without Zen..."
-                    wrk_no_zen_output=$(wrk -t12 -c400 -d15s http://localhost:5081)
-                    echo "$wrk_no_zen_output"
+                    wrk_no_zen_output=$(wrk -t12 -c400 -d15s http://localhost:5081) > /dev/null 2>&1
                     no_zen_throughput=$(echo "$wrk_no_zen_output" | grep "Requests/sec" | awk '{print $2}')
 
-                    echo "Running $app with Zen..."
                     pkill dotnet || true
                     export AIKIDO_DISABLED=false
                     dotnet run --project e2e/sample-apps/$app/$app.csproj --urls "http://localhost:5081" > /dev/null 2>&1 &
@@ -121,14 +115,12 @@ jobs:
                             exit 1
                         fi
                         if [ "$response" -eq 200 ]; then
-                            echo "Health endpoint is ready"
                             break
                         fi
                         if [ $i -eq 5 ]; then
                             echo "Health endpoint failed to respond after 5 attempts"
                             exit 1
                         fi
-                        echo "Waiting for health endpoint (attempt $i/5)..."
                         sleep 2
                     done
                     
@@ -137,14 +129,16 @@ jobs:
                     zen_time=$(jq -r 'select(.type=="Point" and .metric=="http_req_duration") | .data.value' summary_zen.json | jq -s add/length)
 
                     # Run wrk benchmark
-                    echo "Running wrk benchmark for $app with Zen..."
-                    wrk_zen_output=$(wrk -t12 -c400 -d15s http://localhost:5081)
-                    echo "$wrk_zen_output"
+                    wrk_zen_output=$(wrk -t12 -c400 -d15s http://localhost:5081) > /dev/null 2>&1
                     zen_throughput=$(echo "$wrk_zen_output" | grep "Requests/sec" | awk '{print $2}')
 
                     # Calculate and log throughput difference
                     throughput_diff=$(echo "scale=2; (($zen_throughput - $no_zen_throughput) / $no_zen_throughput) * 100" | bc)
-                    echo "Throughput difference for $app: $throughput_diff%"
+                    if (( $(echo "$throughput_diff < 5" | bc -l) )); then
+                        echo "[✓] Throughput difference for $app: $throughput_diff%"
+                    else
+                        echo "[✗] Throughput difference for $app: $throughput_diff%"
+                    fi
 
                     # Compare response times
                     diff=$(echo "$zen_time - $no_zen_time" | bc)
