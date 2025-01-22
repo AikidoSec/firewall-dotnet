@@ -77,7 +77,22 @@ jobs:
                     pkill dotnet || true
                     export AIKIDO_DISABLED="true"
                     dotnet run --project e2e/sample-apps/$app/$app.csproj --urls "http://localhost:5081" > /dev/null 2>&1 &
-                    sleep 5
+                    sleep 2
+                    # Wait for health endpoint to be ready (max 5 attempts)
+                    for i in {1..5}; do
+                        response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5081/health)
+                        if [ "$response" -eq 200 ]; then
+                            echo "Health endpoint is ready"
+                            break
+                        fi
+                        if [ $i -eq 5 ]; then
+                            echo "Health endpoint failed to respond after 5 attempts"
+                            exit 1
+                        fi
+                        echo "Waiting for health endpoint (attempt $i/5)..."
+                        sleep 2
+                    done
+
                     
                     # Run k6 benchmark
                     k6 run --quiet --out json=summary_no_zen.json benchmark.js
@@ -87,7 +102,21 @@ jobs:
                     pkill dotnet || true
                     export AIKIDO_DISABLED="false"
                     dotnet run --project e2e/sample-apps/$app/$app.csproj --urls "http://localhost:5081" > /dev/null 2>&1 &
-                    sleep 5
+                    sleep 2
+                                        # Wait for health endpoint to be ready (max 5 attempts)
+                    for i in {1..5}; do
+                        response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5081/health)
+                        if [ "$response" -eq 200 ]; then
+                            echo "Health endpoint is ready"
+                            break
+                        fi
+                        if [ $i -eq 5 ]; then
+                            echo "Health endpoint failed to respond after 5 attempts"
+                            exit 1
+                        fi
+                        echo "Waiting for health endpoint (attempt $i/5)..."
+                        sleep 2
+                    done
                     
                     # Run k6 benchmark
                     k6 run --quiet --out json=summary_zen.json benchmark.js
