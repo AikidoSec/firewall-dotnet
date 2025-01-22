@@ -62,7 +62,7 @@ jobs:
             - name: Define sample apps
               id: define_apps
               run: |
-                  echo "apps=MySqlSampleApp PostgresSampleApp SqlServerSampleApp SqliteSampleApp" >> $GITHUB_ENV
+                  echo "apps=MySqlSampleApp PostgresSampleApp SqlServerSampleApp SQLiteSampleApp" >> $GITHUB_ENV
 
             - name: Run benchmarks and compare
               env:
