@@ -5,5 +5,6 @@ namespace Aikido.Zen.Core.Models
         public string Path { get; set; }
         public string Method { get; set; }
         public int Hits { get; set; }
+        public APISpec ApiSpec { get; set; }
     }
 }
