@@ -26,20 +26,22 @@ namespace Aikido.Zen.Core
 		public string[] Subdomains { get; set; } = Array.Empty<string>();
 		public Dictionary<string, HashSet<string>> Cache { get; set; } = new Dictionary<string, HashSet<string>>();
 		public List<RedirectInfo> OutgoingRequestRedirects { get; set; } = new List<RedirectInfo>();
-        public IDictionary<string, string> ParsedUserInput { get; set; } = new Dictionary<string, string>();
-        public string UserAgent { get; set; } = string.Empty;
-	}
+		public IDictionary<string, string> ParsedUserInput { get; set; } = new Dictionary<string, string>();
+		public string UserAgent { get; set; } = string.Empty;
+		public bool IsGraphQL => Graphql != null && Graphql.Length > 0;
+		public object ParsedBody { get; set; }
 
-	public struct RedirectInfo
-	{
+		public struct RedirectInfo
+		{
 
-        public RedirectInfo(Uri src, Uri dest)
-        {
-            this.Source = src;
-			this.Destination = dest;
-        }
+			public RedirectInfo(Uri src, Uri dest)
+			{
+				this.Source = src;
+				this.Destination = dest;
+			}
 
-        public Uri Source { get; set; }
-		public Uri Destination { get; set; }
+			public Uri Source { get; set; }
+			public Uri Destination { get; set; }
+		}
 	}
 }
