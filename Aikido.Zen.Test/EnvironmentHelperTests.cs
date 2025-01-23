@@ -1,7 +1,7 @@
 using Aikido.Zen.Core.Helpers;
 using NUnit.Framework;
 
-namespace Aikido.Zen.Test
+namespace Aikido.Zen.Test.Helpers
 {
     public class EnvironmentHelperTests
     {

@@ -3,7 +3,7 @@ using Aikido.Zen.Core.Exceptions;
 using System.Web;
 using Aikido.Zen.Core;
 
-namespace Aikido.Zen.Test
+namespace Aikido.Zen.Test.Helpers
 {
     [TestFixture]
     public class PathTraversalHelperTests

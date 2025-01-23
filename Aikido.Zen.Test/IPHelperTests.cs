@@ -3,7 +3,7 @@ using Aikido.Zen.Core.Models.Ip;
 using System.Net;
 using System.Text.Json;
 
-namespace Aikido.Zen.Test
+namespace Aikido.Zen.Test.Helpers
 {
     public class IPHelperTests
     {
