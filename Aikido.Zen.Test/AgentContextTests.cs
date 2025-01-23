@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using Aikido.Zen.Core;
 using Aikido.Zen.Core.Models;
 namespace Aikido.Zen.Test
 {
@@ -162,17 +163,47 @@ namespace Aikido.Zen.Test
         public void AddRoute_ShouldAddRouteToDictionary()
         {
             // Arrange
-            var path = "/api/test";
-            var method = "GET";
+            var context = new Context
+            {
+                Url = "/api/test",
+                Method = "GET"
+            };
 
             // Act
-            _agentContext.AddRoute(path, method);
+            _agentContext.AddRoute(context);
 
             // Assert
-            var route = _agentContext.Routes.FirstOrDefault(r => r.Path == path);
+            var route = _agentContext.Routes.FirstOrDefault(r => r.Path == context.Url);
             Assert.That(route == null, Is.False);
-            Assert.That(route.Method, Is.EqualTo(method));
+            Assert.That(route.Method, Is.EqualTo(context.Method));
             Assert.That(route.Hits, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void AddRoute_WithNullContext_HandlesGracefully()
+        {
+            // Act
+            _agentContext.AddRoute(null);
+
+            // Assert
+            Assert.That(_agentContext.Routes, Is.Empty);
+        }
+
+        [Test]
+        public void AddRoute_WithNullUrl_HandlesGracefully()
+        {
+            // Arrange
+            var context = new Context
+            {
+                Method = "GET",
+                Url = null
+            };
+
+            // Act
+            _agentContext.AddRoute(context);
+
+            // Assert
+            Assert.That(_agentContext.Routes, Is.Empty);
         }
 
         [Test]
@@ -185,7 +216,11 @@ namespace Aikido.Zen.Test
             _agentContext.AddAttackBlocked();
             _agentContext.AddHostname("example.com:8080");
             _agentContext.AddUser(new User("user1", "User One"), "192.168.1.1");
-            _agentContext.AddRoute("/api/test", "GET");
+            _agentContext.AddRoute(new Context
+            {
+                Url = "/api/test",
+                Method = "GET"
+            });
 
             // Act
             _agentContext.Clear();
@@ -423,7 +458,7 @@ namespace Aikido.Zen.Test
         public void UpdateBlockedUserAgents_WithEmptyList_ShouldClearBlockedUserAgents()
         {
             // Arrange
-            _agentContext.UpdateBlockedUserAgents(new Regex( "Mozilla/5.0" ));
+            _agentContext.UpdateBlockedUserAgents(new Regex("Mozilla/5.0"));
 
             // Act
             _agentContext.UpdateBlockedUserAgents(null);
