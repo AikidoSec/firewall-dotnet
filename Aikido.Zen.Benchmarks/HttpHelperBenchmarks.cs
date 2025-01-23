@@ -58,7 +58,7 @@ namespace Aikido.Zen.Benchmarks
         private string CreateMultipartFormDataContentWithDummyFile(int size)
         {
             var sb = new StringBuilder();
-            
+
             // Add form fields
             for (int i = 1; i <= size; i++)
             {
@@ -74,7 +74,7 @@ namespace Aikido.Zen.Benchmarks
             sb.AppendLine("Content-Type: text/plain");
             sb.AppendLine();
             sb.AppendLine(CreateLargeDummyFileContent(size));
-            
+
             // Add final boundary
             sb.AppendLine($"--{_boundary}--");
 
@@ -92,7 +92,7 @@ namespace Aikido.Zen.Benchmarks
         public void Setup()
         {
             _boundary = Guid.NewGuid().ToString();
-            
+
             _queryParams = new Dictionary<string, string>
             {
                 { "param1", "value1" },
@@ -125,7 +125,7 @@ namespace Aikido.Zen.Benchmarks
         [Benchmark]
         public async Task ProcessJsonRequest()
         {
-            await HttpHelper.ReadAndFlattenHttpDataAsync(
+            var result = await HttpHelper.ReadAndFlattenHttpDataAsync(
                 _queryParams,
                 _headers,
                 _cookies,
@@ -139,7 +139,7 @@ namespace Aikido.Zen.Benchmarks
         [Benchmark]
         public async Task ProcessXmlRequest()
         {
-            await HttpHelper.ReadAndFlattenHttpDataAsync(
+            var result = await HttpHelper.ReadAndFlattenHttpDataAsync(
                 _queryParams,
                 _headers,
                 _cookies,
@@ -153,13 +153,13 @@ namespace Aikido.Zen.Benchmarks
         [Benchmark]
         public async Task ProcessFormRequest()
         {
-            await HttpHelper.ReadAndFlattenHttpDataAsync(
+            var result = await HttpHelper.ReadAndFlattenHttpDataAsync(
                 _queryParams,
                 _headers,
                 _cookies,
-                _xmlBody,
-                XmlContentType,
-                _xmlBody.Length
+                _formBody,
+                FormContentType,
+                _formBody.Length
             );
             _formBody.Position = 0;
         }
@@ -167,7 +167,7 @@ namespace Aikido.Zen.Benchmarks
         [Benchmark]
         public async Task ProcessMultipartFormDataRequest()
         {
-            await HttpHelper.ReadAndFlattenHttpDataAsync(
+            var result = await HttpHelper.ReadAndFlattenHttpDataAsync(
                 _queryParams,
                 _headers,
                 _cookies,
