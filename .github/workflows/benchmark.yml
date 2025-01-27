@@ -66,6 +66,9 @@ jobs:
               run: |
                   echo "apps=MySqlSampleApp PostgresSampleApp SqlServerSampleApp" >> $GITHUB_ENV
 
+            - name: Set execute permissions
+              run: chmod +x scripts/*.sh
+
             - name: Run benchmarks
               run: |
                   ./scripts/run_benchmarks.sh
