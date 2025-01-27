@@ -175,7 +175,7 @@ namespace Aikido.Zen.Core.Helpers
                             using (JsonDocument document = JsonDocument.Parse(jsonContent))
                             {
                                 FlattenJson(result, document.RootElement, "body");
-                                parsedBody = ToJsonObj(document.RootElement, jsonContent);
+                                parsedBody = ToJsonObj(document.RootElement);
                             }
                         }
                         else if (contentType.Contains("application/xml") || contentType.Contains("text/xml"))
@@ -262,7 +262,7 @@ namespace Aikido.Zen.Core.Helpers
                         using (JsonDocument document = await JsonDocument.ParseAsync(section.Body))
                         {
                             FlattenJson(result, document.RootElement, $"body.section.{sectionIndex}");
-                            var jsonData = ToJsonObj(document.RootElement, document.RootElement.GetRawText());
+                            var jsonData = ToJsonObj(document.RootElement);
                             if (contentDisposition.Name.HasValue)
                             {
                                 formData[contentDisposition.Name.Value] = jsonData;
@@ -387,26 +387,43 @@ namespace Aikido.Zen.Core.Helpers
         /// Converts a JsonElement to its appropriate native object representation
         /// </summary>
         /// <param name="element">The JsonElement to convert</param>
-        /// <param name="rawJson">The raw JSON string for complex types that need deserialization</param>
         /// <returns>The converted object</returns>
-        private static object ToJsonObj(JsonElement element, string rawJson)
+        private static object ToJsonObj(JsonElement element)
         {
             switch (element.ValueKind)
             {
                 case JsonValueKind.Object:
-                    return JsonSerializer.Deserialize<Dictionary<string, object>>(rawJson);
+                    var dict = new Dictionary<string, object>();
+                    foreach (var property in element.EnumerateObject())
+                    {
+                        dict[property.Name] = ToJsonObj(property.Value);
+                    }
+                    return dict;
+
                 case JsonValueKind.Array:
-                    return JsonSerializer.Deserialize<List<object>>(rawJson);
+                    var list = new List<object>();
+                    foreach (var item in element.EnumerateArray())
+                    {
+                        list.Add(ToJsonObj(item));
+                    }
+                    return list;
+
                 case JsonValueKind.String:
                     return element.GetString();
+
                 case JsonValueKind.Number:
-                    return element.GetDouble();
+                    // Handle numbers as double or long based on their representation
+                    return element.TryGetInt64(out long l) ? l : element.GetDouble();
+
                 case JsonValueKind.True:
                     return true;
+
                 case JsonValueKind.False:
                     return false;
+
                 case JsonValueKind.Null:
                     return null;
+
                 default:
                     return null;
             }

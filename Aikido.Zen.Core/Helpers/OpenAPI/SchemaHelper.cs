@@ -170,7 +170,7 @@ namespace Aikido.Zen.Core.Helpers.OpenAPI
                 };
             }
 
-            return new DataSchema { Type = new[] { data.GetType().Name.ToLowerInvariant() } };
+            return new DataSchema { Type = new[] { "object" } };
         }
 
         private static bool IsSameType(string[] first, string[] second)
