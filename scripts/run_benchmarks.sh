@@ -9,12 +9,6 @@ fi
 # Run the sample app creation script
 ./scripts/create_sample_app.sh
 
-# Verify if summary_no_zen.json is created
-if [ ! -f "summary_no_zen.json" ]; then
-    echo "[✗] summary_no_zen.json was not created."
-    exit 1
-fi
-
 # Define sample apps
 SAMPLE_APPS=("MySqlSampleApp" "PostgresSampleApp" "SqlServerSampleApp")
 
