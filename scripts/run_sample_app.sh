@@ -6,6 +6,9 @@ if [ -z "$1" ]; then
     exit 1
 fi
 
+# Build the sample app
+dotnet build "$1" > /dev/null 2>&1
+
 # Run the sample app
 dotnet run --project "$1" --urls "http://localhost:5081" > /dev/null 2>&1 &
 sleep 2
