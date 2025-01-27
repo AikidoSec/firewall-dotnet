@@ -1,11 +1,5 @@
 #!/bin/bash
 
-# Check if create_sample_app.sh exists and is executable
-if [ ! -x "./scripts/create_sample_app.sh" ]; then
-    echo "[✗] create_sample_app.sh is missing or not executable."
-    exit 1
-fi
-
 # Check if jq is installed
 if ! command -v jq &> /dev/null; then
     # Install jq
