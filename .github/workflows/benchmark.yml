@@ -61,11 +61,6 @@ jobs:
               run: |
                   dotnet run --project e2e/Aikido.Zen.Server.Mock/Aikido.Zen.Server.Mock.csproj --urls "http://localhost:5080" &
 
-            - name: Define sample apps
-              id: define_apps
-              run: |
-                  echo "apps=MySqlSampleApp PostgresSampleApp SqlServerSampleApp" >> $GITHUB_ENV
-
             - name: Set execute permissions
               run: chmod +x scripts/*.sh
 

@@ -6,6 +6,12 @@ if [ ! -x "./scripts/create_sample_app.sh" ]; then
     exit 1
 fi
 
+# Check if jq is installed
+if ! command -v jq &> /dev/null; then
+    # Install jq
+    sudo apt-get install -y jq
+fi
+
 # Run the sample app creation script
 ./scripts/create_sample_app.sh
 
