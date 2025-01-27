@@ -4,6 +4,7 @@ using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 using Microsoft.AspNetCore.Http;
 using System.Text;
+using System.Web; // Import for HTML encoding
 
 namespace Aikido.Zen.DotNetCore.Middleware
 {
@@ -28,7 +29,6 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 Agent.Instance.Context.AddUser(user, ipAddress: context.Connection.RemoteIpAddress?.ToString());
             }
 
-
             // block the request if the user is blocked
             if (!EnvironmentHelper.DryMode && Agent.Instance.Context.IsBlocked(user, context.Connection?.RemoteIpAddress?.ToString(), routeKey, aikidoContext.UserAgent))
             {
@@ -42,13 +42,14 @@ namespace Aikido.Zen.DotNetCore.Middleware
             if (agentContext.RateLimitedRoutes.TryGetValue(routeKey, out var rateLimitConfig) && rateLimitConfig.Enabled)
             {
                 // should we rate limit this request?
-                var key = $"{routeKey}:user-or-ip:{user?.Id ?? aikidoContext.RemoteAddress}";
+                var remoteAddress = HttpUtility.HtmlEncode(aikidoContext.RemoteAddress); // HTML escape the remote address
+                var key = $"{routeKey}:user-or-ip:{user?.Id ?? remoteAddress}";
                 if (!RateLimitingHelper.IsAllowed(key, rateLimitConfig.WindowSizeInMS, rateLimitConfig.MaxRequests))
                 {
                     Agent.Instance.Context.AddAbortedRequest();
                     context.Response.StatusCode = 429;
                     context.Response.Headers.Add("Retry-After", rateLimitConfig.WindowSizeInMS.ToString());
-                    await context.Response.WriteAsync($"You are rate limited by Aikido firewall. (Your IP: {aikidoContext.RemoteAddress})");
+                    await context.Response.WriteAsync($"You are rate limited by Aikido firewall. (Your IP: {remoteAddress})");
                     return;
                 }
             }
