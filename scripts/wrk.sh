@@ -7,5 +7,6 @@ if ! command -v wrk &> /dev/null; then
     sudo apt-get install -y wrk
 fi
 
-# Run wrk benchmark
-wrk -t12 -c400 -d15s $1 > /dev/null 2>&1
+# Run wrk benchmark and capture output
+wrk_output=$(wrk -t12 -c400 -d15s $1)
+echo "$wrk_output"

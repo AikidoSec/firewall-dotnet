@@ -15,5 +15,5 @@ fi
 
 # Run k6 benchmark
 echo "Running k6 benchmark"
-k6 run --quiet --out json=$1 ./scripts/benchmark.js # > /dev/null 2>&1
+k6 run --quiet --out json=$1 ./scripts/benchmark.js > /dev/null 2>&1
 echo "k6 benchmark completed"

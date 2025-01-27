@@ -29,7 +29,7 @@ for app in "${SAMPLE_APPS[@]}"; do
     no_zen_time=$(jq -r 'select(.type=="Point" and .metric=="http_req_duration") | .data.value' summary_no_zen.json | jq -s add/length)
 
     # Run wrk benchmark
-    ./scripts/wrk.sh http://localhost:5081
+    wrk_no_zen_output=$(./scripts/wrk.sh http://localhost:5081)
     if [ -z "$wrk_no_zen_output" ]; then
         echo "[✗] wrk benchmark failed to produce output."
         exit 1
