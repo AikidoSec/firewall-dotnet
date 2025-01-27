@@ -61,12 +61,42 @@ namespace Aikido.Zen.Core.Helpers.OpenAPI
 
         private static bool IsDateTimeString(string str)
         {
-            return DateTime.TryParse(str, out _);
+            // Create a copy of the input string to avoid modifying the original
+            string strToCheck = str;
+            // Check for leap second format
+            if (str.Contains("59:60"))
+            {
+                // Attempt to parse the string as a date-time without the leap second
+                strToCheck = strToCheck.Replace("59:60", "59:59");
+            }
+            // Attempt to parse the string as a date-time using multiple formats
+            string[] dateTimeFormats = {
+                "yyyy-MM-ddTHH:mm:ssZ",
+                "yyyy-MM-ddTHH:mm:ss.fffZ",
+                "yyyy-MM-ddTHH:mm:ss.ffZ", // Added format to handle two fractional seconds
+                "yyyy-MM-ddTHH:mm:ss.fZ",  // Added format to handle one fractional second
+                "yyyy-MM-ddTHH:mm:sszzz",
+                "yyyy-MM-ddTHH:mm:ss.fffzzz",
+                "yyyy-MM-ddTHH:mm:ss.ffzzz", // Added format to handle two fractional seconds with timezone
+                "yyyy-MM-ddTHH:mm:ss.fzzz",  // Added format to handle one fractional second with timezone
+                "yyyy-MM-ddTHH:mm:ss'Z'", // Leap second format
+                "yyyy-MM-ddTHH:mm:ss.fff'Z'", // Leap second format with milliseconds
+                "yyyy-MM-ddTHH:mm:ss.ff'Z'", // Leap second format with two fractional seconds
+                "yyyy-MM-ddTHH:mm:ss.f'Z'"  // Leap second format with one fractional second
+
+            };
+
+            return DateTime.TryParseExact(strToCheck, dateTimeFormats, null, System.Globalization.DateTimeStyles.AdjustToUniversal | System.Globalization.DateTimeStyles.AllowWhiteSpaces, out _);
         }
 
         private static bool IsDateString(string str)
         {
-            return DateTime.TryParseExact(str, "yyyy-MM-dd", null, System.Globalization.DateTimeStyles.None, out _);
+            // Attempt to parse the string as a date using a simple date format
+            string[] dateFormats = {
+                "yyyy-MM-dd"
+            };
+
+            return DateTime.TryParseExact(str, dateFormats, null, System.Globalization.DateTimeStyles.AdjustToUniversal | System.Globalization.DateTimeStyles.AllowWhiteSpaces, out _);
         }
 
         private static bool IsUuidString(string str)
