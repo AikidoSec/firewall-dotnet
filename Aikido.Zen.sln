@@ -41,6 +41,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SqliteSampleApp", "e2e\samp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SampleApp.Common", "SampleApp.Common\SampleApp.Common.csproj", "{94D50DC6-1261-45D4-BFC7-FA003BB053B4}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UmbracoSampleApp", "e2e\sample-apps\UmbracoSampleApp\UmbracoSampleApp.csproj", "{6E200EFE-8EBC-4226-A340-EB65D3CA0AEC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -103,6 +105,10 @@ Global
 		{94D50DC6-1261-45D4-BFC7-FA003BB053B4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{94D50DC6-1261-45D4-BFC7-FA003BB053B4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{94D50DC6-1261-45D4-BFC7-FA003BB053B4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6E200EFE-8EBC-4226-A340-EB65D3CA0AEC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6E200EFE-8EBC-4226-A340-EB65D3CA0AEC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6E200EFE-8EBC-4226-A340-EB65D3CA0AEC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6E200EFE-8EBC-4226-A340-EB65D3CA0AEC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -118,6 +124,7 @@ Global
 		{9CC15A52-EB3D-4650-BEC0-F9581EF22849} = {A8EE02FE-24BE-473C-A53F-29E4DF043105}
 		{4891B10D-E986-487B-A1B4-277F18EAB185} = {2F12D7E2-3F23-469E-B94D-B36C13AC4466}
 		{94D50DC6-1261-45D4-BFC7-FA003BB053B4} = {2F12D7E2-3F23-469E-B94D-B36C13AC4466}
+		{6E200EFE-8EBC-4226-A340-EB65D3CA0AEC} = {2F12D7E2-3F23-469E-B94D-B36C13AC4466}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {2385A88D-D5F5-407D-A38E-309EAE8715FB}
