@@ -146,8 +146,8 @@ namespace Aikido.Zen.Test.Helpers
             var obj2 = GenerateTestObjectWithDepth(21);
             var schema2 = OpenAPIHelper.GetDataSchema(obj2);
 
-            Assert.That(schema1.ToString(), Does.Contain("\"Type\":[\"string\"]"));
-            Assert.That(schema2.ToString(), Does.Not.Contain("\"Type\":[\"string\"]"));
+            Assert.That(schema1.ToString(), Does.Contain("\"type\":\"string\""));
+            Assert.That(schema2.ToString(), Does.Not.Contain("\"type\":\"string\""));
         }
 
         [Test]
