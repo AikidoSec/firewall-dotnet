@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
 
 namespace Aikido.Zen.Core.Models
@@ -12,7 +13,15 @@ namespace Aikido.Zen.Core.Models
         /// <summary>
         /// Type of this property (e.g., "string", "number", "object", "array", "null")
         /// </summary>
+        [System.Text.Json.Serialization.JsonIgnore]
         public string[] Type { get; set; } = Array.Empty<string>();
+
+        /// <summary>
+        /// Type of this property (e.g., "string", "number", "object", "array", "null")
+        /// defaults to "object" if not set
+        /// </summary>
+        [System.Text.Json.Serialization.JsonPropertyName("type")]
+        public string TypeAsString => string.Join("|", Type.Any() ? Type : new[] { "object" });
 
         /// <summary>
         /// Indicates if this property is optional
