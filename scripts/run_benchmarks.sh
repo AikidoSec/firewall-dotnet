@@ -1,7 +1,19 @@
 #!/bin/bash
 
+# Check if create_sample_app.sh exists and is executable
+if [ ! -x "./create_sample_app.sh" ]; then
+    echo "[✗] create_sample_app.sh is missing or not executable."
+    exit 1
+fi
+
 # Run the sample app creation script
 ./create_sample_app.sh
+
+# Verify if summary_no_zen.json is created
+if [ ! -f "summary_no_zen.json" ]; then
+    echo "[✗] summary_no_zen.json was not created."
+    exit 1
+fi
 
 # Define sample apps
 SAMPLE_APPS=("MySqlSampleApp" "PostgresSampleApp" "SqlServerSampleApp")
@@ -10,10 +22,18 @@ SAMPLE_APPS=("MySqlSampleApp" "PostgresSampleApp" "SqlServerSampleApp")
 for app in "${SAMPLE_APPS[@]}"; do
     # Run k6 benchmark
     ./scripts/k6.sh summary_no_zen.json
+    if [ ! -f "summary_no_zen.json" ]; then
+        echo "[✗] k6 benchmark failed to create summary_no_zen.json."
+        exit 1
+    fi
     no_zen_time=$(jq -r 'select(.type=="Point" and .metric=="http_req_duration") | .data.value' summary_no_zen.json | jq -s add/length)
 
     # Run wrk benchmark
     ./scripts/wrk.sh http://localhost:5081
+    if [ -z "$wrk_no_zen_output" ]; then
+        echo "[✗] wrk benchmark failed to produce output."
+        exit 1
+    fi
     no_zen_throughput=$(echo "$wrk_no_zen_output" | grep "Requests/sec" | awk '{print $2}')
 
     # Calculate and log throughput difference
