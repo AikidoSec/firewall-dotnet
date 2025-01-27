@@ -1,13 +1,13 @@
 #!/bin/bash
 
 # Check if create_sample_app.sh exists and is executable
-if [ ! -x "./create_sample_app.sh" ]; then
+if [ ! -x "./scripts/create_sample_app.sh" ]; then
     echo "[✗] create_sample_app.sh is missing or not executable."
     exit 1
 fi
 
 # Run the sample app creation script
-./create_sample_app.sh
+./scripts/create_sample_app.sh
 
 # Verify if summary_no_zen.json is created
 if [ ! -f "summary_no_zen.json" ]; then

@@ -5,10 +5,10 @@ SAMPLE_APPS=("MySqlSampleApp" "PostgresSampleApp" "SqlServerSampleApp")
 
 # Build and run each sample app
 for app in "${SAMPLE_APPS[@]}"; do
-    dotnet build ../e2e/sample-apps/$app/$app.csproj > /dev/null 2>&1
+    dotnet build e2e/sample-apps/$app/$app.csproj > /dev/null 2>&1
     pkill dotnet || true
     export AIKIDO_DISABLED=true
-    dotnet run --project ../e2e/sample-apps/$app/$app.csproj --urls "http://localhost:5081" > /dev/null 2>&1 &
+    dotnet run --project e2e/sample-apps/$app/$app.csproj --urls "http://localhost:5081" > /dev/null 2>&1 &
     sleep 2
     for i in {1..5}; do
         response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5081/health || true)
