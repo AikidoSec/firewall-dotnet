@@ -70,5 +70,10 @@ jobs:
               run: chmod +x scripts/*.sh
 
             - name: Run benchmarks
+              env:
+                  APP_URL: http://localhost:5081
+                  AIKIDO_TOKEN: 123
+                  AIKIDO_URL: http://localhost:5080
+                  AIKIDO_REALTIME_URL: http://localhost:5080
               run: |
                   ./scripts/run_benchmarks.sh
