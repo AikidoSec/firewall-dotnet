@@ -38,6 +38,7 @@ namespace Aikido.Zen.Core.Helpers.OpenAPI
                         .ToDictionary(x => x.Key, x => x.Value);
                     queryInfo = new DataSchema
                     {
+                        Type = new[] { "object" },
                         Properties = queryInfoProperties
                     };
                 }

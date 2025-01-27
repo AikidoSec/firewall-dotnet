@@ -101,6 +101,10 @@ namespace Aikido.Zen.Core.Models
                 };
                 _routes.Add(route.Path, route);
             }
+            else
+            {
+                OpenAPIHelper.UpdateApiInfo(context, route, EnvironmentHelper.MaxApiDiscoverySamples);
+            }
             route.Hits++;
         }
 
