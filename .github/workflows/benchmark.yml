@@ -1,0 +1,74 @@
+on:
+    push: {}
+    workflow_call: {}
+
+jobs:
+    benchmark:
+        runs-on: ubuntu-latest
+
+        services:
+            mysql:
+                image: mysql:8.0
+                env:
+                    MYSQL_ROOT_PASSWORD: mypassword
+                    MYSQL_DATABASE: catsdb
+                ports:
+                    - 27015:3306
+            sqlserver:
+                image: mcr.microsoft.com/mssql/server:2022-latest
+                env:
+                    ACCEPT_EULA: Y
+                    SA_PASSWORD: Strong@Password123!
+                    MSSQL_PID: Express
+                ports:
+                    - 27014:1433
+
+            postgres:
+                image: postgres:14-alpine
+                env:
+                    POSTGRES_PASSWORD: password
+                    POSTGRES_USER: root
+                    POSTGRES_DB: main_db
+                ports:
+                    - 27016:5432
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v2
+
+            - name: Set up .NET
+              uses: actions/setup-dotnet@v2
+              with:
+                  dotnet-version: "8.0.x" # Adjust based on your target framework
+
+            - name: Install k6
+              run: |
+                  sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+                  echo "deb https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+                  sudo apt-get update
+                  sudo apt-get install k6
+
+            - name: Install wrk
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install -y wrk
+
+            - name: Build mock server
+              run: |
+                  dotnet build e2e/Aikido.Zen.Server.Mock/Aikido.Zen.Server.Mock.csproj
+
+            - name: Run mock server
+              run: |
+                  dotnet run --project e2e/Aikido.Zen.Server.Mock/Aikido.Zen.Server.Mock.csproj --urls "http://localhost:5080" &
+
+            - name: Set execute permissions
+              run: chmod +x scripts/*.sh
+
+            - name: Run benchmarks
+              env:
+                  APP_URL: http://localhost:5081
+                  AIKIDO_TOKEN: 123
+                  AIKIDO_URL: http://localhost:5080
+                  AIKIDO_REALTIME_URL: http://localhost:5080
+              run: |
+                  ./scripts/run_benchmarks.sh

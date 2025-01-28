@@ -24,12 +24,12 @@ public class ConfigService
         {
             _configs[appId] = GenerateDefaultConfig(appId);
         }
-        
+
         foreach (var (key, value) in newConfig)
         {
             _configs[appId][key] = value;
         }
-        
+
         _configs[appId]["configUpdatedAt"] = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
     }
 
@@ -41,7 +41,7 @@ public class ConfigService
 
     public List<string> GetBlockedIps(int appId)
     {
-        return _blockedIps.TryGetValue(appId, out var ips) ? ips : new List<string>();
+        return _blockedIps.TryGetValue(appId, out var ips) ? ips : _largeBlockedIpList;
     }
 
     public void UpdateBlockedUserAgents(int appId, string userAgents)
@@ -65,7 +65,7 @@ public class ConfigService
             ["heartbeatIntervalInMS"] = 10 * 60 * 1000,
             ["endpoints"] = new List<EndpointConfig>(),
             ["blockedUserIds"] = new List<string>(),
-            ["allowedIPAddresses"] = new List<string>(),
+            ["allowedIPAddresses"] = _largeBlockedIpList,
             ["receivedAnyStats"] = true
         };
     }
@@ -77,4 +77,12 @@ public class ConfigService
             config["configUpdatedAt"] = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         }
     }
-} 
+
+    private static List<string> _largeBlockedIpList = Enumerable.Range(0, 1000)
+        .Select(i => i < 500
+            // Generate IPv4 addresses (first 500)
+            ? $"{(i >> 24) & 0xFF}.{(i >> 16) & 0xFF}.{(i >> 8) & 0xFF}.{i & 0xFF}"
+            // Generate IPv6 addresses (last 500) 
+            : $"2001:db8:{((i - 500) >> 8):x}::{(i - 500) & 0xFF:x}")
+        .ToList();
+}

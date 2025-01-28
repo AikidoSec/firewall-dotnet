@@ -65,7 +65,7 @@ Ensure that your project runs on .NET Framework 6, 7 or 8.
 - Install the package from NuGet:
 
 ``` shell
-dotnet add package Zen.Aikido.DotNetCore
+dotnet add package Aikido.Zen.DotNetCore
 ```
 
 - Add the following to your `appsettings.json` file: (use secrets manager to store the API key)
@@ -127,7 +127,7 @@ Ensure that your project runs on .NET Framework 4.6 or higher.
 - Install the package from NuGet:
 
 ``` shell
-dotnet add package Zen.Aikido.DotNetFramework
+dotnet add package Aikido.Zen.DotNetFramework
 ```
 
 or

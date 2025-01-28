@@ -437,3 +437,6 @@ tools/*
 
 
 # End of https://www.toptal.com/developers/gitignore/api/dotnetcore,visualstudio,visualstudiocode
+
+summary_zen.json
+summary_no_zen.json
