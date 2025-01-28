@@ -1,4 +1,3 @@
-
 using HarmonyLib;
 using CorePatcher = Aikido.Zen.Core.Patches.Patcher;
 
@@ -17,6 +16,8 @@ namespace Aikido.Zen.DotNetCore.Patches
             // we need to patch the io patches outside of the Aikido.Zen.Core package, becasue we need to pass the context, which is different for dotnetcore / dotnetframework
             IOPatches.ApplyPatches(harmony);
 
+            // Patch process execution methods to prevent shell injection
+            ProcessPatches.ApplyPatches(harmony);
         }
 
         public static void Unpatch()
