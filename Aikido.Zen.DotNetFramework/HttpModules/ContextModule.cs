@@ -63,12 +63,11 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             };
 
             string clientIp = GetClientIp(httpContext);
-            Agent.Instance.CaptureInboundRequest(context.User, httpContext.Request.Url.AbsolutePath, context.Method, clientIp);
 
             try
             {
                 var request = httpContext.Request;
-                var parsedUserInput = await HttpHelper.ReadAndFlattenHttpDataAsync(
+                var httpData = await HttpHelper.ReadAndFlattenHttpDataAsync(
                     queryParams: request.QueryString.AllKeys.ToDictionary(k => k, k => request.QueryString.Get(k)),
                     headers: request.Headers.AllKeys.ToDictionary(k => k, k => request.Headers.Get(k)),
                     cookies: request.Cookies.AllKeys.ToDictionary(k => k, k => request.Cookies[k].Value),
@@ -76,8 +75,10 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                     contentType: request.ContentType,
                     contentLength: request.ContentLength
                 );
-                context.ParsedUserInput = parsedUserInput;
+                context.ParsedUserInput = httpData.FlattenedData;
                 context.Body = request.InputStream;
+                context.ParsedBody = httpData.ParsedBody;
+                Agent.Instance.CaptureInboundRequest(context);
             }
             catch
             {

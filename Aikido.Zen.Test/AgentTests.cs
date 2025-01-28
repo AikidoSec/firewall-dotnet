@@ -33,11 +33,14 @@ namespace Aikido.Zen.Test
         public void ClearContext_ResetsAllContextValues()
         {
             // Arrange
-            var user = new User("123", "testUser");
-            var path = "/test";
-            var method = "GET";
-            var ip = "127.0.0.1";
-            _agent.CaptureInboundRequest(user, path, method, ip);
+            var context = new Context
+            {
+                User = new User("123", "testUser"),
+                Url = "/test",
+                Method = "GET",
+                RemoteAddress = "127.0.0.1"
+            };
+            _agent.CaptureInboundRequest(context);
             _agent.CaptureOutboundRequest("test.com", 443);
 
             // Act
@@ -322,8 +325,16 @@ namespace Aikido.Zen.Test
         [Test]
         public void CaptureInboundRequest_WithNullUser_HandlesGracefully()
         {
+            // Arrange
+            var context = new Context
+            {
+                Url = "/test",
+                Method = "GET",
+                RemoteAddress = "127.0.0.1"
+            };
+
             // Act
-            _agent.CaptureInboundRequest(null, "/test", "GET", "127.0.0.1");
+            _agent.CaptureInboundRequest(context);
 
             // Assert
             Assert.That(_agent.Context.Users.Count, Is.EqualTo(0));
@@ -336,12 +347,16 @@ namespace Aikido.Zen.Test
         {
             // Arrange
             var user = new User("123", "userName");
-            var path = "/test/path";
-            var method = "POST";
-            var ip = "192.168.1.1";
+            var context = new Context
+            {
+                User = user,
+                Url = "/test/path",
+                Method = "POST",
+                RemoteAddress = "192.168.1.1"
+            };
 
             // Act
-            _agent.CaptureInboundRequest(user, path, method, ip);
+            _agent.CaptureInboundRequest(context);
 
             // Assert
             Assert.That(_agent.Context.Users.Count, Is.EqualTo(1));
@@ -460,10 +475,16 @@ namespace Aikido.Zen.Test
         public void ConstructHeartbeat_ReturnsCorrectHeartbeatData()
         {
             // Arrange
-
+            var context = new Context
+            {
+                User = new User("123", "userName"),
+                Url = "/test",
+                Method = "GET",
+                RemoteAddress = "1.2.3.4"
+            };
             _agent.Context.AddHostname("test.com");
-            _agent.Context.AddUser(new User("123", "userName"), "1.2.3.4");
-            _agent.Context.AddRoute("/test", "GET");
+            _agent.Context.AddUser(context.User, context.RemoteAddress);
+            _agent.Context.AddRoute(context);
             _agent.Context.AddRequest();
             _agent.Context.AddAttackBlocked();
             _agent.Context.AddAttackDetected();

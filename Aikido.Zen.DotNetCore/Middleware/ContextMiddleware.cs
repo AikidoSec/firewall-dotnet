@@ -1,5 +1,6 @@
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Helpers;
+using Aikido.Zen.Core.Helpers.OpenAPI;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using System.Collections.Concurrent;
@@ -36,16 +37,12 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 Route = GetRoute(httpContext),
             };
 
-            // Add request information to the agent, which will collect routes, users and stats
-            // every x minutes, this information will be sent to the Zen server as a heartbeat event, and the collected info will be cleared
-            Agent.Instance.CaptureInboundRequest(context.User, context.Url, context.Method, context.RemoteAddress);
-
             try
             {
                 var request = httpContext.Request;
                 request.EnableBuffering();
 
-                var parsedUserInput = await HttpHelper.ReadAndFlattenHttpDataAsync(
+                var httpData = await HttpHelper.ReadAndFlattenHttpDataAsync(
                     queryParams: queryDictionary.ToDictionary(h => h.Key, h => string.Join(',', h.Value)),
                     headers: headersDictionary.ToDictionary(h => h.Key, h => string.Join(',', h.Value)),
                     cookies: context.Cookies,
@@ -54,8 +51,12 @@ namespace Aikido.Zen.DotNetCore.Middleware
                     contentLength: request.ContentLength ?? 0
                 );
 
-                context.ParsedUserInput = parsedUserInput;
+                context.ParsedUserInput = httpData.FlattenedData;
                 context.Body = request.Body;
+                context.ParsedBody = httpData.ParsedBody;
+                // Add request information to the agent, which will collect routes, users and stats
+                // every x minutes, this information will be sent to the Zen server as a heartbeat event, and the collected info will be cleared
+                Agent.Instance.CaptureInboundRequest(context);
             }
             catch (Exception e)
             {

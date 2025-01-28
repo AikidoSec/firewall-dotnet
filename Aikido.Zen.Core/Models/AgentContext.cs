@@ -1,4 +1,5 @@
 using Aikido.Zen.Core.Helpers;
+using Aikido.Zen.Core.Helpers.OpenAPI;
 using Aikido.Zen.Core.Models.Ip;
 using Microsoft.AspNetCore.Http;
 using System;
@@ -86,18 +87,23 @@ namespace Aikido.Zen.Core.Models
             userExtended.LastSeenAt = DateTimeHelper.UTCNowUnixMilliseconds();
         }
 
-        public void AddRoute(string path, string method)
+        public void AddRoute(Context context)
         {
-            if (path == null) return;
-            _routes.TryGetValue(path, out Route route);
+            if (context == null || context.Url == null) return;
+            _routes.TryGetValue(context.Url, out Route route);
             if (route == null)
             {
                 route = new Route
                 {
-                    Path = path,
-                    Method = method,
+                    Path = context.Url,
+                    Method = context.Method,
+                    ApiSpec = OpenAPIHelper.GetApiInfo(context)
                 };
                 _routes.Add(route.Path, route);
+            }
+            else
+            {
+                OpenAPIHelper.UpdateApiInfo(context, route, EnvironmentHelper.MaxApiDiscoverySamples);
             }
             route.Hits++;
         }

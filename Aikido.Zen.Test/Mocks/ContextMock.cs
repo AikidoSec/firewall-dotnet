@@ -30,7 +30,7 @@ namespace Aikido.Zen.Test.Mocks
                 Xml = null,
                 Subdomains = Array.Empty<string>(),
                 Cache = new Dictionary<string, HashSet<string>>(),
-                OutgoingRequestRedirects = new List<RedirectInfo>(),
+                OutgoingRequestRedirects = new List<Context.RedirectInfo>(),
                 ParsedUserInput = new Dictionary<string, string>(),
                 UserAgent = "test-agent"
             };

@@ -7,7 +7,7 @@ using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 
-namespace Aikido.Zen.Test
+namespace Aikido.Zen.Test.Helpers
 {
     public class APIHelperTests
     {

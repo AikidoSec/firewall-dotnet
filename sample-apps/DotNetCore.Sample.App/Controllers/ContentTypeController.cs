@@ -41,7 +41,7 @@ namespace DotNetCore.Sample.App.Controllers
         [HttpPost("xml"), Consumes("application/xml")]
         public IActionResult HandleXmlData()
         {
-            var xml = new StreamReader(Request.Body).ReadToEnd();
+            var xml = new StreamReader(Request.Body).ReadToEndAsync().Result;
             var doc = new XmlDocument();
             doc.LoadXml(xml);
             return Ok(HttpContext.Items["Aikido.Zen.Context"]);

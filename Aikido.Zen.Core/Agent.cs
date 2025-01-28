@@ -281,15 +281,12 @@ namespace Aikido.Zen.Core
         /// <summary>
         /// Captures inbound requests.
         /// </summary>
-        /// <param name="user">The user making the request</param>
-        /// <param name="path">The request path</param>
-        /// <param name="method">The HTTP method</param>
-        /// <param name="ipAddress">The IP address of the requester</param>
-        public void CaptureInboundRequest(User user, string path, string method, string ipAddress)
+        /// <param name="context">The current context</param>
+        public void CaptureInboundRequest(Context context)
         {
-            if (user != null)
-                _context.AddUser(user, ipAddress);
-            _context.AddRoute(path, method);
+            if (context.User != null)
+                _context.AddUser(context.User, context.RemoteAddress);
+            _context.AddRoute(context);
             _context.AddRequest();
         }
 

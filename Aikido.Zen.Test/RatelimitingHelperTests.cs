@@ -1,6 +1,6 @@
 using Aikido.Zen.Core.Helpers;
 
-namespace Aikido.Zen.Test
+namespace Aikido.Zen.Test.Helpers
 {
     public class RateLimitingHelperTests
     {

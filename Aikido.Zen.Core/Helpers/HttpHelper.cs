@@ -8,7 +8,11 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Net.Http.Headers;
 using Aikido.Zen.Core.Models;
 using Microsoft.Extensions.Logging;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using Aikido.Zen.Core.Helpers;
 
+[assembly: InternalsVisibleTo("Aikido.Zen.Tests")]
 namespace Aikido.Zen.Core.Helpers
 {
     /// <summary>
@@ -16,6 +20,21 @@ namespace Aikido.Zen.Core.Helpers
     /// </summary>
     public class HttpHelper
     {
+        /// <summary>
+        /// Represents the result of processing HTTP request data
+        /// </summary>
+        public class HttpDataResult
+        {
+            /// <summary>
+            /// The flattened request data with dot notation keys
+            /// </summary>
+            public IDictionary<string, string> FlattenedData { get; set; }
+
+            /// <summary>
+            /// The parsed request body as a dictionary
+            /// </summary>
+            public object ParsedBody { get; set; }
+        }
 
         /// <summary>
         /// Reads and flattens HTTP request data into a dictionary with dot-notation keys.
@@ -26,8 +45,8 @@ namespace Aikido.Zen.Core.Helpers
         /// <param name="body">The request body stream.</param>
         /// <param name="contentType">The content type of the request.</param>
         /// <param name="contentLength">The content length of the request body.</param>
-        /// <returns>A dictionary containing flattened request data with keys using dot notation.</returns>
-        public static async Task<IDictionary<string, string>> ReadAndFlattenHttpDataAsync(
+        /// <returns>A HttpDataResult containing both flattened data and parsed body.</returns>
+        public static async Task<HttpDataResult> ReadAndFlattenHttpDataAsync(
             IDictionary<string, string> queryParams,
             IDictionary<string, string> headers,
             IDictionary<string, string> cookies,
@@ -37,22 +56,23 @@ namespace Aikido.Zen.Core.Helpers
             ILogger logger = null)
         {
             var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            object parsedBody = null;
 
             // Process Query Parameters
-            ProcessQueryParameters(queryParams, result);
+            UserInputHelper.ProcessQueryParameters(queryParams, result);
 
             // Process Headers
-            ProcessHeaders(headers, result);
+            UserInputHelper.ProcessHeaders(headers, result);
 
             // Process Cookies
-            ProcessCookies(cookies, result);
+            UserInputHelper.ProcessCookies(cookies, result);
 
             // Process Body
             try
             {
                 if (contentLength > 0)
                 {
-                    await ProcessRequestBodyAsync(body, contentType, result);
+                    parsedBody = await ProcessRequestBodyAsync(body, contentType, result);
                 }
             }
             catch (Exception e)
@@ -60,7 +80,11 @@ namespace Aikido.Zen.Core.Helpers
                 logger?.LogError($"Aikido: caught error while parsing body: {e.Message}");
             }
 
-            return result;
+            return new HttpDataResult
+            {
+                FlattenedData = result,
+                ParsedBody = parsedBody
+            };
         }
 
         /// <summary>
@@ -103,42 +127,18 @@ namespace Aikido.Zen.Core.Helpers
             {
                 return Source.RouteParams;
             }
-            return Source.Body;
+            return UserInputHelper.GetSourceFromUserInputPath(path);
         }
 
-        // Processes query parameters and adds them to the result dictionary.
-        private static void ProcessQueryParameters(IDictionary<string, string> queryParams, IDictionary<string, string> result)
+        private static async Task<object> ProcessRequestBodyAsync(Stream body, string contentType, IDictionary<string, string> result)
         {
-            foreach (var query in queryParams)
-            {
-                result[$"query.{query.Key}"] = query.Value;
-            }
-        }
+            object parsedBody = null;
 
-        // Processes headers and adds them to the result dictionary.
-        private static void ProcessHeaders(IDictionary<string, string> headers, IDictionary<string, string> result)
-        {
-            foreach (var header in headers)
-            {
-                result[$"headers.{header.Key}"] = header.Value;
-            }
-        }
-
-        private static void ProcessCookies(IDictionary<string, string> cookies, IDictionary<string, string> result)
-        {
-            foreach (var cookie in cookies)
-            {
-                result[$"cookies.{cookie.Key}"] = cookie.Value;
-            }
-        }
-
-        private static async Task ProcessRequestBodyAsync(Stream body, string contentType, IDictionary<string, string> result)
-        {
             try
             {
-                if (IsMultipart(contentType, out var boundary))
+                if (UserInputHelper.IsMultipart(contentType, out var boundary))
                 {
-                    await ProcessMultipartFormDataAsync(body, boundary, result);
+                    parsedBody = await ProcessMultipartFormDataAsync(body, boundary, result);
                 }
                 else
                 {
@@ -148,29 +148,31 @@ namespace Aikido.Zen.Core.Helpers
                     {
                         if (contentType.Contains("application/json"))
                         {
-                            using (JsonDocument document = await JsonDocument.ParseAsync(body))
+                            string jsonContent = await reader.ReadToEndAsync();
+                            using (JsonDocument document = JsonDocument.Parse(jsonContent))
                             {
-                                FlattenJson(result, document.RootElement, "body");
+                                JsonHelper.FlattenJson(result, document.RootElement, "body");
+                                parsedBody = JsonHelper.ToJsonObj(document.RootElement);
                             }
-
                         }
                         else if (contentType.Contains("application/xml") || contentType.Contains("text/xml"))
                         {
-                            using (var xmlReader = XmlReader.Create(body, new XmlReaderSettings { Async = true, DtdProcessing = DtdProcessing.Ignore }))
-                            {
-                                var xmlDoc = new XmlDocument();
-                                xmlDoc.Load(xmlReader);
-                                FlattenXml(result, xmlDoc.DocumentElement, "body");
-                            }
+                            var xmlDoc = new XmlDocument();
+                            xmlDoc.Load(reader);
+                            XmlHelper.FlattenXml(result, xmlDoc.DocumentElement, "body");
+                            parsedBody = XmlHelper.XmlToObject(xmlDoc.DocumentElement);
                         }
                         else if (contentType.Contains("application/x-www-form-urlencoded"))
                         {
                             string formString = await reader.ReadToEndAsync();
                             var formPairs = QueryHelpers.ParseQuery(formString);
+                            var formDict = new Dictionary<string, object>();
                             foreach (var pair in formPairs)
                             {
                                 result[$"body.{pair.Key}"] = pair.Value;
+                                formDict[pair.Key] = pair.Value.ToString();
                             }
+                            parsedBody = formDict;
                         }
                     }
                 }
@@ -180,13 +182,18 @@ namespace Aikido.Zen.Core.Helpers
                 // reset the stream position
                 body.Seek(0, SeekOrigin.Begin);
             }
+
+            return parsedBody;
         }
 
-        private static async Task ProcessMultipartFormDataAsync(Stream body, string boundary, IDictionary<string, string> result)
+        private static async Task<object> ProcessMultipartFormDataAsync(Stream body, string boundary, IDictionary<string, string> result)
         {
             var reader = new MultipartReader(boundary, body);
             MultipartSection section = null;
             int sectionIndex = 0;
+
+            // Create a dictionary to store all form data
+            var formData = new Dictionary<string, object>();
 
             while ((section = await reader.ReadNextSectionAsync()) != null)
             {
@@ -197,7 +204,12 @@ namespace Aikido.Zen.Core.Helpers
                     {
                         using (JsonDocument document = await JsonDocument.ParseAsync(section.Body))
                         {
-                            FlattenJson(result, document.RootElement, $"body.section.{sectionIndex}");
+                            JsonHelper.FlattenJson(result, document.RootElement, $"body.section.{sectionIndex}");
+                            var jsonData = JsonHelper.ToJsonObj(document.RootElement);
+                            if (contentDisposition.Name.HasValue)
+                            {
+                                formData[contentDisposition.Name.Value] = jsonData;
+                            }
                         }
                     }
                     else if (section.ContentType == "application/xml" || section.ContentType == "text/xml")
@@ -206,72 +218,44 @@ namespace Aikido.Zen.Core.Helpers
                         {
                             var xmlDoc = new XmlDocument();
                             xmlDoc.Load(xmlReader);
-                            FlattenXml(result, xmlDoc.DocumentElement, $"body.section.{sectionIndex}");
+                            XmlHelper.FlattenXml(result, xmlDoc.DocumentElement, $"body.section.{sectionIndex}");
+                            var xmlData = XmlHelper.XmlToObject(xmlDoc.DocumentElement);
+                            if (contentDisposition.Name.HasValue)
+                            {
+                                formData[contentDisposition.Name.Value] = xmlData;
+                            }
                         }
                     }
                     else if (contentDisposition.IsFileDisposition())
                     {
                         var fileName = contentDisposition.FileName.Value;
-                        var fileSize = section.Body.Length / 1024 / 1024;
-                        var fileContent = fileSize < 1 ? await section.ReadAsStringAsync() : $"File size: {fileSize} MB";
+                        var fileSize = section.Body.Length;
+                        var fileContent = fileSize < 1024 * 1024 ? await section.ReadAsStringAsync() : $"File size: {fileSize / 1024 / 1024} MB";
+
+                        var fileInfo = new Dictionary<string, object>
+                        {
+                            ["fileName"] = fileName,
+
+                        };
+                        if (contentDisposition.Name.HasValue)
+                        {
+                            formData[contentDisposition.Name.Value] = fileInfo;
+                        }
                         result[$"body.section.{sectionIndex}.file.{fileName}"] = fileContent;
                     }
                     else if (contentDisposition.IsFormDisposition())
                     {
                         var formField = contentDisposition.Name.Value;
-                        using (var formReader = new StreamReader(section.Body))
-                        {
-                            result[$"body.section.{sectionIndex}.{formField}"] = await section.ReadAsStringAsync();
-                        }
+                        var fieldValue = await section.ReadAsStringAsync();
+                        formData[formField] = fieldValue;
+                        result[$"body.section.{sectionIndex}.{formField}"] = fieldValue;
                     }
                 }
                 sectionIndex++;
             }
+
+            return formData;
         }
 
-        // Checks if the content type is multipart and extracts the boundary string.
-        private static bool IsMultipart(string contentType, out string boundary)
-        {
-            bool isMultipart = MediaTypeHeaderValue.TryParse(contentType, out var parsedContentType) && parsedContentType.MediaType.Equals("multipart/form-data", StringComparison.OrdinalIgnoreCase);
-            if (!isMultipart)
-            {
-                boundary = null;
-                return false;
-            }
-            boundary = parsedContentType.Boundary.Value;
-            return isMultipart;
-        }
-
-        private static void FlattenJson(IDictionary<string, string> result, JsonElement element, string prefix)
-        {
-            foreach (var property in element.EnumerateObject())
-            {
-                string key = string.IsNullOrEmpty(prefix) ? property.Name : $"{prefix}.{property.Name}";
-                if (property.Value.ValueKind == JsonValueKind.Object)
-                {
-                    FlattenJson(result, property.Value, key);
-                }
-                else
-                {
-                    result[key] = property.Value.ToString();
-                }
-            }
-        }
-
-        private static void FlattenXml(IDictionary<string, string> result, XmlElement element, string prefix)
-        {
-            string newPrefix = string.IsNullOrEmpty(prefix) ? element.Name : $"{prefix}.{element.Name}";
-            foreach (XmlNode childNode in element.ChildNodes)
-            {
-                if (childNode is XmlElement childElement)
-                {
-                    FlattenXml(result, childElement, newPrefix);
-                }
-                else if (childNode is XmlText textNode)
-                {
-                    result[newPrefix] = textNode.Value.Trim();
-                }
-            }
-        }
     }
 }

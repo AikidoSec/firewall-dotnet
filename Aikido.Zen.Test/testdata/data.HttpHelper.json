@@ -11,11 +11,14 @@
         },
         "body": "{\"key\":\"value\"}",
         "contentType": "application/json",
-        "expectedResult": {
+        "expectedFlattenedData": {
             "query.param1": "value1",
             "headers.header1": "value1",
             "cookies.cookie1": "value1",
             "body.key": "value"
+        },
+        "expectedParsedBody": {
+            "key": "value"
         }
     },
     {
@@ -30,11 +33,14 @@
         },
         "body": "{\"key\":\"value\"}",
         "contentType": "application/json",
-        "expectedResult": {
+        "expectedFlattenedData": {
             "query.param1": "value1",
             "headers.header1": "value1",
             "cookies.cookie1": "value1",
             "body.key": "value"
+        },
+        "expectedParsedBody": {
+            "key": "value"
         }
     },
     {
@@ -49,11 +55,12 @@
         },
         "body": "",
         "contentType": "application/json",
-        "expectedResult": {
+        "expectedFlattenedData": {
             "query.param1": "value1",
             "headers.header1": "value1",
             "cookies.cookie1": "value1"
-        }
+        },
+        "expectedParsedBody": null
     },
     {
         "queryParams": {
@@ -67,11 +74,12 @@
         },
         "body": "malformed json",
         "contentType": "application/json",
-        "expectedResult": {
+        "expectedFlattenedData": {
             "query.param1": "value1",
             "headers.header1": "value1",
             "cookies.cookie1": "value1"
-        }
+        },
+        "expectedParsedBody": null
     },
     {
         "queryParams": {
@@ -85,11 +93,14 @@
         },
         "body": "<root><key>value</key></root>",
         "contentType": "application/xml",
-        "expectedResult": {
+        "expectedFlattenedData": {
             "query.param1": "value1",
             "headers.header1": "value1",
             "cookies.cookie1": "value1",
             "body.root.key": "value"
+        },
+        "expectedParsedBody": {
+            "key": "value"
         }
     },
     {
@@ -104,11 +115,14 @@
         },
         "body": "--boundary\r\nContent-Disposition: form-data; name=\"key\"\r\n\r\nvalue\r\n--boundary--",
         "contentType": "multipart/form-data; boundary=boundary",
-        "expectedResult": {
+        "expectedFlattenedData": {
             "query.param1": "value1",
             "headers.header1": "value1",
             "cookies.cookie1": "value1",
             "body.section.0.key": "value"
+        },
+        "expectedParsedBody": {
+            "key": "value"
         }
     },
     {
@@ -123,11 +137,16 @@
         },
         "body": "--boundary\r\nContent-Disposition: form-data; name=\"jsonData\"\r\nContent-Type: application/json\r\n\r\n{\"key\":\"value\"}\r\n--boundary--",
         "contentType": "multipart/form-data; boundary=boundary",
-        "expectedResult": {
+        "expectedFlattenedData": {
             "query.param1": "value1",
             "headers.header1": "value1",
             "cookies.cookie1": "value1",
             "body.section.0.key": "value"
+        },
+        "expectedParsedBody": {
+            "jsonData": {
+                "key": "value"
+            }
         }
     },
     {
@@ -142,11 +161,16 @@
         },
         "body": "--boundary\r\nContent-Disposition: form-data; name=\"xmlData\"\r\nContent-Type: application/xml\r\n\r\n<root><key>value</key></root>\r\n--boundary--",
         "contentType": "multipart/form-data; boundary=boundary",
-        "expectedResult": {
+        "expectedFlattenedData": {
             "query.param1": "value1",
             "headers.header1": "value1",
             "cookies.cookie1": "value1",
             "body.section.0.root.key": "value"
+        },
+        "expectedParsedBody": {
+            "xmlData": {
+                "key": "value"
+            }
         }
     },
     {
@@ -161,11 +185,16 @@
         },
         "body": "--boundary\r\nContent-Disposition: form-data; name=\"file1\"; filename=\"test.txt\"\r\nContent-Type: text/plain\r\n\r\nSmall file content\r\n--boundary--",
         "contentType": "multipart/form-data; boundary=boundary",
-        "expectedResult": {
+        "expectedFlattenedData": {
             "query.param1": "value1",
             "headers.header1": "value1",
             "cookies.cookie1": "value1",
             "body.section.0.file.test.txt": "Small file content"
+        },
+        "expectedParsedBody": {
+            "file1": {
+                "fileName": "test.txt"
+            }
         }
     },
     {
@@ -180,11 +209,16 @@
         },
         "body": "--boundary\r\nContent-Disposition: form-data; name=\"file2\"; filename=\"large.bin\"\r\nContent-Type: application/octet-stream\r\n\r\n[2MB of binary data]\r\n--boundary--",
         "contentType": "multipart/form-data; boundary=boundary",
-        "expectedResult": {
+        "expectedFlattenedData": {
             "query.param1": "value1",
             "headers.header1": "value1",
             "cookies.cookie1": "value1",
             "body.section.0.file.large.bin": "[2MB of binary data]"
+        },
+        "expectedParsedBody": {
+            "file2": {
+                "fileName": "large.bin"
+            }
         }
     },
     {
@@ -199,11 +233,12 @@
         },
         "body": "plain text body",
         "contentType": "text/plain",
-        "expectedResult": {
+        "expectedFlattenedData": {
             "query.param1": "value1",
             "headers.header1": "value1",
             "cookies.cookie1": "value1"
-        }
+        },
+        "expectedParsedBody": null
     },
     {
         "queryParams": {
@@ -217,12 +252,16 @@
         },
         "body": "key1=value1&key2=value2",
         "contentType": "application/x-www-form-urlencoded",
-        "expectedResult": {
+        "expectedFlattenedData": {
             "query.param1": "value1",
             "headers.header1": "value1",
             "cookies.cookie1": "value1",
             "body.key1": "value1",
             "body.key2": "value2"
+        },
+        "expectedParsedBody": {
+            "key1": "value1",
+            "key2": "value2"
         }
     },
     {
@@ -240,7 +279,7 @@
         },
         "body": "{\"key\":\"value\"}",
         "contentType": "application/json",
-        "expectedResult": {
+        "expectedFlattenedData": {
             "query.param1": "value1",
             "query.param2": "value2",
             "headers.header1": "value1",
@@ -248,6 +287,9 @@
             "cookies.cookie1": "value1",
             "cookies.cookie2": "value2",
             "body.key": "value"
+        },
+        "expectedParsedBody": {
+            "key": "value"
         }
     },
     {
@@ -262,11 +304,12 @@
         },
         "body": "<html><body>Test</body></html>",
         "contentType": "text/html",
-        "expectedResult": {
+        "expectedFlattenedData": {
             "query.param1": "value1",
             "headers.header1": "value1",
             "cookies.cookie1": "value1"
-        }
+        },
+        "expectedParsedBody": null
     },
     {
         "queryParams": {
@@ -281,12 +324,15 @@
         },
         "body": "{\"key\":\"value\"}",
         "contentType": "application/json",
-        "expectedResult": {
+        "expectedFlattenedData": {
             "query.param1": "value1",
             "headers.header1": "value1",
             "headers.header2": "value2",
             "cookies.cookie1": "value1",
             "body.key": "value"
+        },
+        "expectedParsedBody": {
+            "key": "value"
         }
     },
     {
@@ -302,12 +348,13 @@
         },
         "body": "plain text body",
         "contentType": "text/plain",
-        "expectedResult": {
+        "expectedFlattenedData": {
             "query.param1": "value1",
             "headers.header1": "value1",
             "cookies.cookie1": "value1",
             "cookies.cookie2": "value2"
-        }
+        },
+        "expectedParsedBody": null
     },
     {
         "queryParams": {
@@ -322,13 +369,17 @@
         },
         "body": "key1=value1&key2=value2",
         "contentType": "application/x-www-form-urlencoded",
-        "expectedResult": {
+        "expectedFlattenedData": {
             "query.param1": "value1",
             "query.param2": "value2",
             "headers.header1": "value1",
             "cookies.cookie1": "value1",
             "body.key1": "value1",
             "body.key2": "value2"
+        },
+        "expectedParsedBody": {
+            "key1": "value1",
+            "key2": "value2"
         }
     }
 ]

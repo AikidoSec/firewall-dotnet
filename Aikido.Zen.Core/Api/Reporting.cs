@@ -41,7 +41,7 @@ namespace Aikido.Zen.Core.Api
 				    var requestContent = new StringContent(eventAsJson, Encoding.UTF8, "application/json");
 				    var request = APIHelper.CreateRequest(token, new Uri(EnvironmentHelper.AikidoUrl), "api/runtime/events", HttpMethod.Post, requestContent);
 
-					var response = await _httpClient.SendAsync(request, cts.Token);
+				var response = await _httpClient.SendAsync(request, cts.Token);
 					return APIHelper.ToAPIResponse<ReportingAPIResponse>(response);
 				}
 				catch (TaskCanceledException)
