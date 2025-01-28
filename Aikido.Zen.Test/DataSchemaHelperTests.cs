@@ -127,7 +127,7 @@ namespace Aikido.Zen.Test.Helpers
             Assert.That(schema.Properties!["e"].Type[0], Is.EqualTo("string"));
             Assert.That(schema.Properties["e"].Format, Is.EqualTo("email"));
             Assert.That(schema.Properties["i"].Type[0], Is.EqualTo("string"));
-            Assert.That(schema.Properties["i"].Format, Is.EqualTo("ipv4"));
+            Assert.That(schema.Properties["i"].Format, Is.Null);
             Assert.That(schema.Properties["u"].Type[0], Is.EqualTo("string"));
             Assert.That(schema.Properties["u"].Format, Is.EqualTo("uri"));
             Assert.That(schema.Properties["d"].Type[0], Is.EqualTo("string"));
