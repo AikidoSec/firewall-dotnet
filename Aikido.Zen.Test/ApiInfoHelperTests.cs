@@ -380,5 +380,78 @@ namespace Aikido.Zen.Test.Helpers
             Assert.That(existingRoute.ApiSpec.Query, Is.Null);
             Assert.That(existingRoute.ApiSpec.Auth, Is.Null);
         }
+
+        [Test]
+        public void UpdateApiInfo_NewBodyInfo_UpdatesBodyCorrectly()
+        {
+            var context = CreateTestContext(
+                headers: new Dictionary<string, string[]>
+                {
+                    { "content-type", ["application/json"] }
+                },
+                body: new Dictionary<string, object>
+                {
+                    { "newField", "newValue" }
+                }
+            );
+
+            var existingRoute = new Route { ApiSpec = new APISpec(), Hits = 0 };
+
+            ApiInfoHelper.UpdateApiInfo(context, existingRoute, 10);
+
+            Assert.That(existingRoute.ApiSpec.Body, Is.Not.Null);
+            Assert.That(existingRoute.ApiSpec.Body.Type, Is.EqualTo("json"));
+            Assert.That(existingRoute.ApiSpec.Body.Schema.Properties["newField"].Type[0], Is.EqualTo("string"));
+        }
+
+        [Test]
+        public void UpdateApiInfo_NewQueryInfo_UpdatesQueryCorrectly()
+        {
+            var context = CreateTestContext(
+                query: new Dictionary<string, string[]>
+                {
+                    { "newQuery", ["newValue"] }
+                }
+            );
+
+            var existingRoute = new Route { ApiSpec = new APISpec(), Hits = 0 };
+
+            ApiInfoHelper.UpdateApiInfo(context, existingRoute, 10);
+
+            Assert.That(existingRoute.ApiSpec.Query, Is.Not.Null);
+            Assert.That(existingRoute.ApiSpec.Query.Properties["newQuery"].Type[0], Is.EqualTo("string"));
+        }
+
+        [Test]
+        public void UpdateApiInfo_NewAuthInfo_UpdatesAuthCorrectly()
+        {
+            var context = CreateTestContext(
+                headers: new Dictionary<string, string[]>
+                {
+                    { "authorization", ["Bearer newToken"] }
+                }
+            );
+
+            var existingRoute = new Route { ApiSpec = new APISpec(), Hits = 0 };
+
+            ApiInfoHelper.UpdateApiInfo(context, existingRoute, 10);
+
+            Assert.That(existingRoute.ApiSpec.Auth, Is.Not.Null);
+            Assert.That(existingRoute.ApiSpec.Auth[0].Type, Is.EqualTo("http"));
+            Assert.That(existingRoute.ApiSpec.Auth[0].Scheme, Is.EqualTo("bearer"));
+        }
+
+        [Test]
+        public void UpdateApiInfo_NormalizeEmptySpec_SetsEmptyApiSpec()
+        {
+            var context = CreateTestContext();
+            var existingRoute = new Route { ApiSpec = new APISpec(), Hits = 0 };
+
+            ApiInfoHelper.UpdateApiInfo(context, existingRoute, 10);
+
+            Assert.That(existingRoute.ApiSpec.Body, Is.Null);
+            Assert.That(existingRoute.ApiSpec.Query, Is.Null);
+            Assert.That(existingRoute.ApiSpec.Auth, Is.Null);
+        }
     }
 }

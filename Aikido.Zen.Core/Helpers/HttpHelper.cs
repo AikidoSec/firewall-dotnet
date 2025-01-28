@@ -9,7 +9,9 @@ using Microsoft.Net.Http.Headers;
 using Aikido.Zen.Core.Models;
 using Microsoft.Extensions.Logging;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
+[assembly: InternalsVisibleTo("Aikido.Zen.Tests")]
 namespace Aikido.Zen.Core.Helpers
 {
     /// <summary>
@@ -209,7 +211,7 @@ namespace Aikido.Zen.Core.Helpers
             return parsedBody;
         }
 
-        private static object XmlToObject(XmlElement element)
+        internal static object XmlToObject(XmlElement element)
         {
             // If element has no child elements, return its text value
             if (!element.HasChildNodes || (element.ChildNodes.Count == 1 && element.FirstChild is XmlText))
@@ -327,7 +329,7 @@ namespace Aikido.Zen.Core.Helpers
             return isMultipart;
         }
 
-        private static void FlattenJson(IDictionary<string, string> result, JsonElement element, string prefix)
+        internal static void FlattenJson(IDictionary<string, string> result, JsonElement element, string prefix)
         {
             if (element.ValueKind == JsonValueKind.Array)
             {
@@ -367,7 +369,7 @@ namespace Aikido.Zen.Core.Helpers
             }
         }
 
-        private static void FlattenXml(IDictionary<string, string> result, XmlElement element, string prefix)
+        internal static void FlattenXml(IDictionary<string, string> result, XmlElement element, string prefix)
         {
             string newPrefix = string.IsNullOrEmpty(prefix) ? element.Name : $"{prefix}.{element.Name}";
             foreach (XmlNode childNode in element.ChildNodes)
@@ -388,7 +390,7 @@ namespace Aikido.Zen.Core.Helpers
         /// </summary>
         /// <param name="element">The JsonElement to convert</param>
         /// <returns>The converted object</returns>
-        private static object ToJsonObj(JsonElement element)
+        internal static object ToJsonObj(JsonElement element)
         {
             switch (element.ValueKind)
             {
