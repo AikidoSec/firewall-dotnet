@@ -172,4 +172,42 @@ public class PostgresSampleAppTests : WebApplicationTestBase
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
     }
+
+    [Test]
+    [CancelAfter(30000)]
+    public async Task TestCommandInjection_WithBlockingEnabled_ShouldBeBlocked()
+    {
+        // Arrange
+        SampleAppEnvironmentVariables["AIKIDO_BLOCKING"] = "true";
+        var factory = CreateSampleAppFactory();
+        var client = factory.CreateClient();
+        var maliciousCommand = "ls $(echo)";
+
+        // Act
+        var response = await client.GetAsync("/api/pets/command?command=" + Uri.EscapeDataString(maliciousCommand));
+
+        // Assert
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+        var responseContent = await response.Content.ReadAsStringAsync();
+        Assert.That(responseContent, Does.Contain("Shell injection detected"), "The command injection was not blocked as expected.");
+    }
+
+    [Test]
+    [CancelAfter(30000)]
+    public async Task TestCommandInjection_WithBlockingDisabled_ShouldNotBeBlocked()
+    {
+        // Arrange
+        SampleAppEnvironmentVariables["AIKIDO_BLOCKING"] = "false";
+        var factory = CreateSampleAppFactory();
+        var client = factory.CreateClient();
+        var maliciousCommand = "echo vulnerable";
+
+        // Act
+        var response = await client.GetAsync("/api/pets/command?command=" + maliciousCommand);
+
+        // Assert
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        var responseContent = await response.Content.ReadAsStringAsync();
+        Assert.That(responseContent, Does.Contain("vulnerable"), "The command injection was unexpectedly blocked.");
+    }
 }
