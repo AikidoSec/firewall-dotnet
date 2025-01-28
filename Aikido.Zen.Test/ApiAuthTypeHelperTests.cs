@@ -125,5 +125,34 @@ namespace Aikido.Zen.Test.Helpers
             // Check Cookie
             Assert.That(result.Exists(x => x.Type == "apiKey" && x.In == "cookie" && x.Name == "session"));
         }
+
+        [Test]
+        public void GetApiAuthType_WithApiKeyWithoutBearer_ReturnsApiKeyType()
+        {
+            var context = CreateTestContext(new Dictionary<string, string[]>
+            {
+                { "x-api-key", ["apikey123"] }
+            });
+
+            var result = ApiAuthTypeHelper.GetApiAuthType(context);
+
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result![0].Type, Is.EqualTo("apiKey"));
+            Assert.That(result[0].In, Is.EqualTo("header"));
+            Assert.That(result[0].Name, Is.EqualTo("x-api-key"));
+        }
+
+        [Test]
+        public void GetApiAuthType_WithEmptyAuthHeader_ReturnsNull()
+        {
+            var context = CreateTestContext(new Dictionary<string, string[]>
+            {
+                { "authorization", [""] }
+            });
+
+            var result = ApiAuthTypeHelper.GetApiAuthType(context);
+
+            Assert.That(result, Is.Null);
+        }
     }
 }

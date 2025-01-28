@@ -301,5 +301,84 @@ namespace Aikido.Zen.Test.Helpers
             Assert.That(result!.Body!.Type, Is.EqualTo("json"));
             Assert.That(result.Body.Schema.Type[0], Is.EqualTo("string"));
         }
+
+        [Test]
+        public void UpdateApiInfo_SuccessfulUpdate_UpdatesRouteCorrectly()
+        {
+            var context = CreateTestContext(
+                headers: new Dictionary<string, string[]>
+                {
+                    { "content-type", ["application/json"] }
+                },
+                body: new Dictionary<string, object>
+                {
+                    { "name", "test" }
+                }
+            );
+
+            var existingRoute = new Route
+            {
+                ApiSpec = new APISpec
+                {
+                    Body = new APIBodyInfo
+                    {
+                        Type = "json",
+                        Schema = new DataSchema
+                        {
+                            Properties = new Dictionary<string, DataSchema>
+                            {
+                                { "name", new DataSchema { Type = new[] { "string" } } }
+                            }
+                        }
+                    }
+                },
+                Hits = 0
+            };
+
+            ApiInfoHelper.UpdateApiInfo(context, existingRoute, 10);
+
+            Assert.That(existingRoute.ApiSpec.Body, Is.Not.Null);
+            Assert.That(existingRoute.ApiSpec.Body.Type, Is.EqualTo("json"));
+            Assert.That(existingRoute.ApiSpec.Body.Schema.Properties["name"].Type[0], Is.EqualTo("string"));
+        }
+
+        [Test]
+        public void UpdateApiInfo_ExceedingMaxSamples_DoesNotUpdate()
+        {
+            var context = CreateTestContext();
+            var existingRoute = new Route { Hits = 11 };
+
+            ApiInfoHelper.UpdateApiInfo(context, existingRoute, 10);
+
+            Assert.That(existingRoute.ApiSpec, Is.Null);
+        }
+
+        [Test]
+        public void UpdateApiInfo_NullNewInfo_DoesNotUpdate()
+        {
+            var context = CreateTestContext();
+            var existingRoute = new Route { ApiSpec = new APISpec(), Hits = 0 };
+
+            ApiInfoHelper.UpdateApiInfo(context, existingRoute, 10);
+
+            Assert.That(existingRoute.ApiSpec.Body, Is.Null);
+            Assert.That(existingRoute.ApiSpec.Query, Is.Null);
+            Assert.That(existingRoute.ApiSpec.Auth, Is.Null);
+        }
+
+        [Test]
+        public void UpdateApiInfo_ErrorHandling_ExitsGracefully()
+        {
+            var context = CreateTestContext();
+            var existingRoute = new Route { ApiSpec = new APISpec(), Hits = 0 };
+
+            // Simulate an error by passing a null context
+            ApiInfoHelper.UpdateApiInfo(null, existingRoute, 10);
+
+            // Ensure no exception is thrown and the route remains unchanged
+            Assert.That(existingRoute.ApiSpec.Body, Is.Null);
+            Assert.That(existingRoute.ApiSpec.Query, Is.Null);
+            Assert.That(existingRoute.ApiSpec.Auth, Is.Null);
+        }
     }
 }
