@@ -29,6 +29,19 @@ namespace Aikido.Zen.Core.Helpers
             return false;
         }
 
+        public static bool Contains(this ReadOnlySpan<char> source, char value)
+            {
+            // Loop through the source and compare characters
+            for (int i = 0; i < source.Length; i++)
+                {
+                if (source[i] == value)
+                    {
+                    return true;
+                    }
+                }
+            return false;
+            }
+
 
         /// <summary>
         /// Gets the next segment from a URL path by splitting on forward slashes.
