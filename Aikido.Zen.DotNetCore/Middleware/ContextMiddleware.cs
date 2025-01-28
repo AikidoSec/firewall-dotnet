@@ -37,6 +37,8 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 Route = GetRoute(httpContext),
             };
 
+            Agent.Instance.SetContextMiddlewareInstalled(true);
+
             try
             {
                 var request = httpContext.Request;

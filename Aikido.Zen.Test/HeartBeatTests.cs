@@ -53,10 +53,10 @@ namespace Aikido.Zen.Test
         {
             // Arrange
             var beforeTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            
+
             // Act
             var heartbeatTime = _heartbeat.Time;
-            
+
             var afterTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
             // Assert

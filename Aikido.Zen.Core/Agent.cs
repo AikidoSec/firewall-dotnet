@@ -313,6 +313,24 @@ namespace Aikido.Zen.Core
         }
 
         /// <summary>
+        /// Sets the flag indicating whether the context middleware is installed.
+        /// </summary>
+        /// <param name="installed">True if the context middleware is installed; otherwise, false.</param>
+        public void SetContextMiddlewareInstalled(bool installed)
+        {
+            _context.ContextMiddlewareInstalled = installed;
+        }
+
+        /// <summary>
+        /// Sets the flag indicating whether the blocking middleware is installed.
+        /// </summary>
+        /// <param name="installed">True if the blocking middleware is installed; otherwise, false.</param>
+        public void SetBlockingMiddlewareInstalled(bool installed)
+        {
+            _context.BlockingMiddlewareInstalled = installed;
+        }
+
+        /// <summary>
         /// Sends out an attack event
         /// </summary>
         /// <param name="kind">The attack kind</param>

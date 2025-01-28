@@ -27,6 +27,8 @@ namespace Aikido.Zen.Core.Models
         private int _requestsAborted = 0;
         private long _started = DateTimeHelper.UTCNowUnixMilliseconds();
         public long ConfigLastUpdated { get; set; } = 0;
+        public bool ContextMiddlewareInstalled { get; set; } = false;
+        public bool BlockingMiddlewareInstalled { get; set; } = false;
 
 
         public void AddRequest()

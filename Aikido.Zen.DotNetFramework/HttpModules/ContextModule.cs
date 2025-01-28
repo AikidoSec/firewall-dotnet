@@ -62,6 +62,8 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 Route = GetRoute(httpContext),
             };
 
+            Agent.Instance.SetContextMiddlewareInstalled(true);
+
             string clientIp = GetClientIp(httpContext);
 
             try
