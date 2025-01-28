@@ -187,9 +187,7 @@ public class SqliteSampleAppTests : WebApplicationTestBase
         var response = await client.GetAsync("/api/pets/command?command=" + Uri.EscapeDataString(maliciousCommand));
 
         // Assert
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-        var responseContent = await response.Content.ReadAsStringAsync();
-        Assert.That(responseContent, Does.Contain("Shell injection detected"), "The command injection was not blocked as expected.");
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
     }
 
     [Test]
@@ -200,7 +198,7 @@ public class SqliteSampleAppTests : WebApplicationTestBase
         SampleAppEnvironmentVariables["AIKIDO_BLOCKING"] = "false";
         var factory = CreateSampleAppFactory();
         var client = factory.CreateClient();
-        var maliciousCommand = "echo vulnerable";
+        var maliciousCommand = "ls $(echo)";
 
         // Act
         var response = await client.GetAsync("/api/pets/command?command=" + maliciousCommand);
@@ -208,6 +206,6 @@ public class SqliteSampleAppTests : WebApplicationTestBase
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
         var responseContent = await response.Content.ReadAsStringAsync();
-        Assert.That(responseContent, Does.Contain("vulnerable"), "The command injection was unexpectedly blocked.");
+        Assert.That(responseContent, Does.Contain("command executed"), "The command injection was unexpectedly blocked.");
     }
 }

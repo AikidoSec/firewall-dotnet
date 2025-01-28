@@ -4,6 +4,7 @@ using System.Reflection;
 using HarmonyLib;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Helpers;
+using Aikido.Zen.Core.Patches;
 
 namespace Aikido.Zen.DotNetFramework.Patches
 {
@@ -19,12 +20,12 @@ namespace Aikido.Zen.DotNetFramework.Patches
         public static void ApplyPatches(Harmony harmony)
         {
             // Patch Process.Start() method
-            PatchMethod(harmony, "System.Diagnostics", "Process", "Start");
+            PatchMethod(harmony, "System.Diagnostics.Process", "Process", "Start");
 
             // Patch properties of ProcessStartInfo
-            PatchMethod(harmony, "System.Diagnostics", "ProcessStartInfo", "FileName");
-            PatchMethod(harmony, "System.Diagnostics", "ProcessStartInfo", "Arguments");
-            PatchMethod(harmony, "System.Diagnostics", "ProcessStartInfo", "UseShellExecute");
+            PatchMethod(harmony, "System.Diagnostics.Process", "ProcessStartInfo", "FileName");
+            PatchMethod(harmony, "System.Diagnostics.Process", "ProcessStartInfo", "Arguments");
+            PatchMethod(harmony, "System.Diagnostics.Process", "ProcessStartInfo", "UseShellExecute");
         }
 
         private static void PatchMethod(Harmony harmony, string assemblyName, string typeName, string methodName)

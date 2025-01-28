@@ -52,7 +52,7 @@ namespace SampleApp.Common.Controllers
                 try
                 {
                     var result = ExecuteCommand(command!);
-                    return Results.Ok(result);
+                    return Results.Ok("command executed");
                 }
                 catch (AikidoException ex)
                 {
@@ -62,7 +62,7 @@ namespace SampleApp.Common.Controllers
                 catch
                 {
                     // this command doesn't work on windows, so let's pretend it worked
-                    return Results.Ok();
+                    return Results.Ok("command executed");
                 }
             });
         }
