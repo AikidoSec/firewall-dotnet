@@ -16,8 +16,6 @@ namespace Aikido.Zen.Core
         public Stream Body { get; set; }
         public IDictionary<string, string> Cookies { get; set; } = new Dictionary<string, string>();
         public bool AttackDetected { get; set; }
-        public bool ConsumedRateLimitForIP { get; set; }
-        public bool ConsumedRateLimitForUser { get; set; }
         public User User { get; set; }
         public string Source { get; set; } = string.Empty;
         public string Route { get; set; } = string.Empty;
