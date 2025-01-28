@@ -24,20 +24,18 @@ namespace Aikido.Zen.Core.Patches
         /// <returns>True if the original method should continue execution; otherwise, false.</returns>
         public static bool OnProcessStart(object[] __args, MethodBase __originalMethod, object __instance, Context context)
         {
-            var processStartInfo = __instance as ProcessStartInfo
-                ?? __args[0] as ProcessStartInfo;
+            var processStartInfo = (__instance as Process)?.StartInfo;
             if (processStartInfo == null || context == null) return true;
 
             // Inspect the FileName and Arguments for shell injection
             foreach (var userInput in context.ParsedUserInput)
             {
-                if (ShellInjectionDetector.IsShellInjection(processStartInfo.FileName, userInput.Value) ||
-                    ShellInjectionDetector.IsShellInjection(processStartInfo.Arguments, userInput.Value))
+                var command = processStartInfo.FileName + " " + processStartInfo.Arguments;
+                if (ShellInjectionDetector.IsShellInjection(command, userInput.Value))
                 {
                     // Log or throw an exception to report the issue
                     var metadata = new Dictionary<string, object> {
-                        { "command", processStartInfo.FileName },
-                        { "arguments", processStartInfo.Arguments }
+                        { "command", command }
                     };
                     Agent.Instance.SendAttackEvent(
                         kind: AttackKind.ShellInjection,
@@ -50,7 +48,11 @@ namespace Aikido.Zen.Core.Patches
                         blocked: !EnvironmentHelper.DryMode
                     );
                     context.AttackDetected = true;
-                    throw new AikidoException("Shell injection detected in process execution.");
+                    if (!EnvironmentHelper.DryMode)
+                    {
+                        throw AikidoException.ShellInjectionDetected();
+                    }
+
                 }
             }
 

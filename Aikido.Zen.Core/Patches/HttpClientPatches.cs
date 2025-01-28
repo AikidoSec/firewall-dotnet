@@ -16,8 +16,17 @@ namespace Aikido.Zen.Core.Patches
         public static void ApplyPatches(Harmony harmony)
         {
             // Use reflection to get the methods dynamically
-            PatchMethod(harmony, "System.Net.Http", "HttpClient", "SendAsync", "System.Net.Http.HttpRequestMessage", "System.Net.Http.HttpCompletionOption", "System.Threading.CancellationToken");
-            PatchMethod(harmony, "System.Net.Http", "HttpClient", "Send", "System.Net.Http.HttpRequestMessage", "System.Threading.CancellationToken");
+            try
+            {
+                PatchMethod(harmony, "System.Net.Http", "HttpClient", "SendAsync", "System.Net.Http.HttpRequestMessage", "System.Net.Http.HttpCompletionOption", "System.Threading.CancellationToken");
+                PatchMethod(harmony, "System.Net.Http", "HttpClient", "Send", "System.Net.Http.HttpRequestMessage", "System.Threading.CancellationToken");
+            }
+            catch (NotImplementedException e)
+            {
+                // pass through, there may be some methods that are not implemented
+                Console.WriteLine("Aikido: error patching HttpClient:" + e.Message);
+            }
+
         }
 
         /// <summary>

@@ -19,12 +19,7 @@ namespace Aikido.Zen.DotNetCore.Patches
         public static void ApplyPatches(Harmony harmony)
         {
             // Patch Process.Start() method
-            PatchMethod(harmony, "System.Diagnostics", "Process", "Start");
-
-            // Patch properties of ProcessStartInfo
-            PatchMethod(harmony, "System.Diagnostics", "ProcessStartInfo", "FileName");
-            PatchMethod(harmony, "System.Diagnostics", "ProcessStartInfo", "Arguments");
-            PatchMethod(harmony, "System.Diagnostics", "ProcessStartInfo", "UseShellExecute");
+            PatchMethod(harmony, "System.Diagnostics.Process", "Process", "Start");
         }
 
         private static void PatchMethod(Harmony harmony, string assemblyName, string typeName, string methodName)
