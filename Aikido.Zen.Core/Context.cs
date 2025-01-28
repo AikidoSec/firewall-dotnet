@@ -32,6 +32,9 @@ namespace Aikido.Zen.Core
         internal bool ContextMiddlewareInstalled { get; set; }
         internal bool BlockingMiddlewareInstalled { get; set; }
 
+        public bool ConsumedRateLimitForIP { get; set; }
+        public bool ConsumedRateLimitForUser { get; set; }
+
         public struct RedirectInfo
         {
 
