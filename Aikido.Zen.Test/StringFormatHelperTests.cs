@@ -36,13 +36,6 @@ namespace Aikido.Zen.Test.Helpers
         }
 
         [Test]
-        public void GetStringFormat_WithValidIPv4_ReturnsIpv4Format()
-        {
-            var result = OpenAPIHelper.GetStringFormat("192.168.1.1");
-            Assert.That(result, Is.EqualTo("ipv4"));
-        }
-
-        [Test]
         public void GetStringFormat_WithInvalidString_ReturnsNull()
         {
             var result = OpenAPIHelper.GetStringFormat("invalid");
@@ -80,20 +73,6 @@ namespace Aikido.Zen.Test.Helpers
         {
             Assert.That(OpenAPIHelper.GetStringFormat("550e8400-e29b-41d4-a716-446655440000"), Is.EqualTo("uuid"));
             Assert.That(OpenAPIHelper.GetStringFormat("00000000-0000-0000-0000-000000000000"), Is.EqualTo("uuid"));
-        }
-
-        [Test]
-        public void GetStringFormat_WithIPv4String_ReturnsIpv4Format()
-        {
-            Assert.That(OpenAPIHelper.GetStringFormat("127.0.0.1"), Is.EqualTo("ipv4"));
-            Assert.That(OpenAPIHelper.GetStringFormat("1.2.3.4"), Is.EqualTo("ipv4"));
-        }
-
-        [Test]
-        public void GetStringFormat_WithIPv6String_ReturnsIpv6Format()
-        {
-            Assert.That(OpenAPIHelper.GetStringFormat("2001:0db8:85a3:0000:0000:8a2e:0370:7334"), Is.EqualTo("ipv6"));
-            Assert.That(OpenAPIHelper.GetStringFormat("2001:db8:0:0:0:8a2e:370:7334"), Is.EqualTo("ipv6"));
         }
 
         [Test]

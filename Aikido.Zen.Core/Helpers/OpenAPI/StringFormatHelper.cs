@@ -45,11 +45,6 @@ namespace Aikido.Zen.Core.Helpers.OpenAPI
             if (foundIndicationChars.Contains("://") && IsUriString(str))
                 return "uri";
 
-            if (foundIndicationChars.Contains(".") && IsIPv4String(str))
-                return "ipv4";
-
-            if (foundIndicationChars.Contains(":") && IsIPv6String(str))
-                return "ipv6";
 
             return null;
         }
@@ -120,16 +115,6 @@ namespace Aikido.Zen.Core.Helpers.OpenAPI
         private static bool IsUriString(string str)
         {
             return Uri.TryCreate(str, UriKind.Absolute, out _);
-        }
-
-        private static bool IsIPv4String(string str)
-        {
-            return System.Net.IPAddress.TryParse(str, out var ip) && ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork;
-        }
-
-        private static bool IsIPv6String(string str)
-        {
-            return System.Net.IPAddress.TryParse(str, out var ip) && ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6;
         }
     }
 }
