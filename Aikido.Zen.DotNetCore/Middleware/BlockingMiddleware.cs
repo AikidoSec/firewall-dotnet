@@ -16,6 +16,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
         {
             var agentContext = Agent.Instance.Context;
             var aikidoContext = context.Items["Aikido.Zen.Context"] as Context;
+            Agent.Instance.SetBlockingMiddlewareInstalled(true);
             if (aikidoContext == null)
             {
                 await next(context);

@@ -383,7 +383,7 @@ namespace Aikido.Zen.Test
             var host = "api.test.com";
             var port = 8080;
 
-            // Act 
+            // Act
             _agent.CaptureOutboundRequest(host, port);
 
             // Assert
@@ -488,7 +488,8 @@ namespace Aikido.Zen.Test
             _agent.Context.AddRequest();
             _agent.Context.AddAttackBlocked();
             _agent.Context.AddAttackDetected();
-
+            _agent.SetContextMiddlewareInstalled(true);
+            _agent.SetBlockingMiddlewareInstalled(true);
             // Act
             var heartbeat = _agent.ConstructHeartbeat();
 
@@ -503,7 +504,20 @@ namespace Aikido.Zen.Test
                 Assert.That(heartbeat.Stats.Requests.AttacksDetected.Total, Is.EqualTo(1));
                 Assert.That(heartbeat.Stats.StartedAt, Is.GreaterThan(0));
                 Assert.That(heartbeat.Stats.EndedAt, Is.GreaterThan(heartbeat.Stats.StartedAt));
+                Assert.That(heartbeat.MiddlewareInstalled, Is.True);
             });
+        }
+
+        [Test]
+        public void ConstructHeartbeat_WithOnlyContextMiddlewareInstalled_SetsMiddlewareInstalledToFalse()
+        {
+            // Act
+            _agent.SetContextMiddlewareInstalled(true);
+            _agent.SetBlockingMiddlewareInstalled(false);
+            var heartbeat = _agent.ConstructHeartbeat();
+
+            // Assert
+            Assert.That(heartbeat.MiddlewareInstalled, Is.False);
         }
 
         [Test]

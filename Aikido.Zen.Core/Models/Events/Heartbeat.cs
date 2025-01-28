@@ -15,6 +15,7 @@ namespace Aikido.Zen.Core.Models.Events
         public IEnumerable<UserExtended> Users { get; set; }
         public AgentInfo Agent { get; set; }
         public long Time => DateTimeHelper.UTCNowUnixMilliseconds();
+        public bool MiddlewareInstalled { get; set; }
 
         // Constants for the heartbeat event
         public const string ScheduleId = "heartbeat";
@@ -24,7 +25,8 @@ namespace Aikido.Zen.Core.Models.Events
         public static TimeSpan Interval => TimeSpan.FromMinutes(10);
 #endif
 
-        public static Heartbeat Create(AgentContext context) {
+        public static Heartbeat Create(AgentContext context)
+        {
             var heartbeat = new Heartbeat
             {
                 Agent = AgentInfoHelper.GetInfo(),
@@ -44,7 +46,7 @@ namespace Aikido.Zen.Core.Models.Events
             };
             heartbeat.Stats.StartedAt = context.Started;
             heartbeat.Stats.EndedAt = DateTimeHelper.UTCNowUnixMilliseconds();
-
+            heartbeat.MiddlewareInstalled = context.ContextMiddlewareInstalled && context.BlockingMiddlewareInstalled;
             return heartbeat;
         }
     }

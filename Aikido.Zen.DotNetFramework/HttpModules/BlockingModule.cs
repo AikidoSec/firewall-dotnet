@@ -30,6 +30,8 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             var aikidoContext = (Context)httpContext.Items["Aikido.Zen.Context"];
             var agentContext = Agent.Instance.Context;
 
+            Agent.Instance.SetBlockingMiddlewareInstalled(true);
+
             if (aikidoContext == null)
             {
                 throw new AikidoException("Aikido context not found in the request");
