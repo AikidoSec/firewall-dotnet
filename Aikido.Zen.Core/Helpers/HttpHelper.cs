@@ -10,6 +10,7 @@ using Aikido.Zen.Core.Models;
 using Microsoft.Extensions.Logging;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using Aikido.Zen.Core.Helpers;
 
 [assembly: InternalsVisibleTo("Aikido.Zen.Tests")]
 namespace Aikido.Zen.Core.Helpers
@@ -58,13 +59,13 @@ namespace Aikido.Zen.Core.Helpers
             object parsedBody = null;
 
             // Process Query Parameters
-            ProcessQueryParameters(queryParams, result);
+            UserInputHelper.ProcessQueryParameters(queryParams, result);
 
             // Process Headers
-            ProcessHeaders(headers, result);
+            UserInputHelper.ProcessHeaders(headers, result);
 
             // Process Cookies
-            ProcessCookies(cookies, result);
+            UserInputHelper.ProcessCookies(cookies, result);
 
             // Process Body
             try
@@ -126,33 +127,7 @@ namespace Aikido.Zen.Core.Helpers
             {
                 return Source.RouteParams;
             }
-            return Source.Body;
-        }
-
-        // Processes query parameters and adds them to the result dictionary.
-        private static void ProcessQueryParameters(IDictionary<string, string> queryParams, IDictionary<string, string> result)
-        {
-            foreach (var query in queryParams)
-            {
-                result[$"query.{query.Key}"] = query.Value;
-            }
-        }
-
-        // Processes headers and adds them to the result dictionary.
-        private static void ProcessHeaders(IDictionary<string, string> headers, IDictionary<string, string> result)
-        {
-            foreach (var header in headers)
-            {
-                result[$"headers.{header.Key}"] = header.Value;
-            }
-        }
-
-        private static void ProcessCookies(IDictionary<string, string> cookies, IDictionary<string, string> result)
-        {
-            foreach (var cookie in cookies)
-            {
-                result[$"cookies.{cookie.Key}"] = cookie.Value;
-            }
+            return UserInputHelper.GetSourceFromUserInputPath(path);
         }
 
         private static async Task<object> ProcessRequestBodyAsync(Stream body, string contentType, IDictionary<string, string> result)
@@ -161,7 +136,7 @@ namespace Aikido.Zen.Core.Helpers
 
             try
             {
-                if (IsMultipart(contentType, out var boundary))
+                if (UserInputHelper.IsMultipart(contentType, out var boundary))
                 {
                     parsedBody = await ProcessMultipartFormDataAsync(body, boundary, result);
                 }
@@ -176,16 +151,16 @@ namespace Aikido.Zen.Core.Helpers
                             string jsonContent = await reader.ReadToEndAsync();
                             using (JsonDocument document = JsonDocument.Parse(jsonContent))
                             {
-                                FlattenJson(result, document.RootElement, "body");
-                                parsedBody = ToJsonObj(document.RootElement);
+                                JsonHelper.FlattenJson(result, document.RootElement, "body");
+                                parsedBody = JsonHelper.ToJsonObj(document.RootElement);
                             }
                         }
                         else if (contentType.Contains("application/xml") || contentType.Contains("text/xml"))
                         {
                             var xmlDoc = new XmlDocument();
                             xmlDoc.Load(reader);
-                            FlattenXml(result, xmlDoc.DocumentElement, "body");
-                            parsedBody = XmlToObject(xmlDoc.DocumentElement);
+                            XmlHelper.FlattenXml(result, xmlDoc.DocumentElement, "body");
+                            parsedBody = XmlHelper.XmlToObject(xmlDoc.DocumentElement);
                         }
                         else if (contentType.Contains("application/x-www-form-urlencoded"))
                         {
@@ -211,40 +186,6 @@ namespace Aikido.Zen.Core.Helpers
             return parsedBody;
         }
 
-        internal static object XmlToObject(XmlElement element)
-        {
-            // If element has no child elements, return its text value
-            if (!element.HasChildNodes || (element.ChildNodes.Count == 1 && element.FirstChild is XmlText))
-            {
-                return element.InnerText.Trim();
-            }
-
-            // Create a dictionary to store child elements
-            var dict = new Dictionary<string, object>();
-
-            // Group child elements by name to detect arrays
-            var childElementGroups = element.ChildNodes
-                .OfType<XmlElement>()
-                .GroupBy(x => x.Name)
-                .ToDictionary(g => g.Key, g => g.ToList());
-
-            foreach (var group in childElementGroups)
-            {
-                // If multiple elements with same name exist, create an array
-                if (group.Value.Count > 1)
-                {
-                    dict[group.Key] = group.Value.Select(child => XmlToObject(child)).ToList();
-                }
-                else
-                {
-                    // Single element - add it directly to the dictionary
-                    dict[group.Key] = XmlToObject(group.Value[0]);
-                }
-            }
-
-            return dict;
-        }
-
         private static async Task<object> ProcessMultipartFormDataAsync(Stream body, string boundary, IDictionary<string, string> result)
         {
             var reader = new MultipartReader(boundary, body);
@@ -263,8 +204,8 @@ namespace Aikido.Zen.Core.Helpers
                     {
                         using (JsonDocument document = await JsonDocument.ParseAsync(section.Body))
                         {
-                            FlattenJson(result, document.RootElement, $"body.section.{sectionIndex}");
-                            var jsonData = ToJsonObj(document.RootElement);
+                            JsonHelper.FlattenJson(result, document.RootElement, $"body.section.{sectionIndex}");
+                            var jsonData = JsonHelper.ToJsonObj(document.RootElement);
                             if (contentDisposition.Name.HasValue)
                             {
                                 formData[contentDisposition.Name.Value] = jsonData;
@@ -277,8 +218,8 @@ namespace Aikido.Zen.Core.Helpers
                         {
                             var xmlDoc = new XmlDocument();
                             xmlDoc.Load(xmlReader);
-                            FlattenXml(result, xmlDoc.DocumentElement, $"body.section.{sectionIndex}");
-                            var xmlData = XmlToObject(xmlDoc.DocumentElement);
+                            XmlHelper.FlattenXml(result, xmlDoc.DocumentElement, $"body.section.{sectionIndex}");
+                            var xmlData = XmlHelper.XmlToObject(xmlDoc.DocumentElement);
                             if (contentDisposition.Name.HasValue)
                             {
                                 formData[contentDisposition.Name.Value] = xmlData;
@@ -316,119 +257,5 @@ namespace Aikido.Zen.Core.Helpers
             return formData;
         }
 
-        // Checks if the content type is multipart and extracts the boundary string.
-        private static bool IsMultipart(string contentType, out string boundary)
-        {
-            bool isMultipart = MediaTypeHeaderValue.TryParse(contentType, out var parsedContentType) && parsedContentType.MediaType.Equals("multipart/form-data", StringComparison.OrdinalIgnoreCase);
-            if (!isMultipart)
-            {
-                boundary = null;
-                return false;
-            }
-            boundary = parsedContentType.Boundary.Value;
-            return isMultipart;
-        }
-
-        internal static void FlattenJson(IDictionary<string, string> result, JsonElement element, string prefix)
-        {
-            if (element.ValueKind == JsonValueKind.Array)
-            {
-                int index = 0;
-                foreach (var item in element.EnumerateArray())
-                {
-                    string arrayPrefix = string.IsNullOrEmpty(prefix) ? index.ToString() : $"{prefix}.{index}";
-                    if (item.ValueKind == JsonValueKind.Object)
-                    {
-                        FlattenJson(result, item, arrayPrefix);
-                    }
-                    else
-                    {
-                        result[arrayPrefix] = item.ToString();
-                    }
-                    index++;
-                }
-            }
-            else if (element.ValueKind == JsonValueKind.Object)
-            {
-                foreach (var property in element.EnumerateObject())
-                {
-                    string key = string.IsNullOrEmpty(prefix) ? property.Name : $"{prefix}.{property.Name}";
-                    if (property.Value.ValueKind == JsonValueKind.Object)
-                    {
-                        FlattenJson(result, property.Value, key);
-                    }
-                    else if (property.Value.ValueKind == JsonValueKind.Array)
-                    {
-                        FlattenJson(result, property.Value, key);
-                    }
-                    else
-                    {
-                        result[key] = property.Value.ToString();
-                    }
-                }
-            }
-        }
-
-        internal static void FlattenXml(IDictionary<string, string> result, XmlElement element, string prefix)
-        {
-            string newPrefix = string.IsNullOrEmpty(prefix) ? element.Name : $"{prefix}.{element.Name}";
-            foreach (XmlNode childNode in element.ChildNodes)
-            {
-                if (childNode is XmlElement childElement)
-                {
-                    FlattenXml(result, childElement, newPrefix);
-                }
-                else if (childNode is XmlText textNode)
-                {
-                    result[newPrefix] = textNode.Value.Trim();
-                }
-            }
-        }
-
-        /// <summary>
-        /// Converts a JsonElement to its appropriate native object representation
-        /// </summary>
-        /// <param name="element">The JsonElement to convert</param>
-        /// <returns>The converted object</returns>
-        internal static object ToJsonObj(JsonElement element)
-        {
-            switch (element.ValueKind)
-            {
-                case JsonValueKind.Object:
-                    var dict = new Dictionary<string, object>();
-                    foreach (var property in element.EnumerateObject())
-                    {
-                        dict[property.Name] = ToJsonObj(property.Value);
-                    }
-                    return dict;
-
-                case JsonValueKind.Array:
-                    var list = new List<object>();
-                    foreach (var item in element.EnumerateArray())
-                    {
-                        list.Add(ToJsonObj(item));
-                    }
-                    return list;
-
-                case JsonValueKind.String:
-                    return element.GetString();
-
-                case JsonValueKind.Number:
-                    // Handle numbers as double or long based on their representation
-                    return element.TryGetInt64(out long l) ? l : element.GetDouble();
-
-                case JsonValueKind.True:
-                    return true;
-
-                case JsonValueKind.False:
-                    return false;
-
-                case JsonValueKind.Null:
-                    return null;
-
-                default:
-                    return null;
-            }
-        }
     }
 }

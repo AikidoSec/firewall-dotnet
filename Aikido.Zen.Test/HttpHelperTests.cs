@@ -110,9 +110,9 @@ namespace Aikido.Zen.Test.Helpers
             var nullElement = JsonDocument.Parse("null").RootElement;
 
             // Act
-            var trueResult = HttpHelper.ToJsonObj(trueElement);
-            var falseResult = HttpHelper.ToJsonObj(falseElement);
-            var nullResult = HttpHelper.ToJsonObj(nullElement);
+            var trueResult = JsonHelper.ToJsonObj(trueElement);
+            var falseResult = JsonHelper.ToJsonObj(falseElement);
+            var nullResult = JsonHelper.ToJsonObj(nullElement);
 
             // Assert
             Assert.That(trueResult, Is.EqualTo(true));
@@ -129,7 +129,7 @@ namespace Aikido.Zen.Test.Helpers
             var result = new Dictionary<string, string>();
 
             // Act
-            HttpHelper.FlattenJson(result, element, "");
+            JsonHelper.FlattenJson(result, element, "");
 
             // Assert
             Assert.That(result["key1.subkey"], Is.EqualTo("value"));
