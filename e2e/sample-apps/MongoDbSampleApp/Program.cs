@@ -5,12 +5,12 @@ using Aikido.Zen.DotNetCore;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddZenFireWall();
+builder.Services.AddZenFirewall();
 builder.Services.AddSingleton<IMongoClient>(new MongoClient("mongodb://localhost:27017"));
 
 var app = builder.Build();
 
-app.UseZenFireWall();
+app.UseZenFirewall();
 
 app.UseHttpsRedirection();
 
@@ -24,7 +24,7 @@ app.MapGet("/", async (HttpContext context, IMongoClient client) =>
     // This will be vulnerable to NoSQL injection when search[$ne]=null
     var filter = BsonDocument.Parse($"{{ title: {search} }}");
     var result = await collection.Find(filter).ToListAsync();
-    
+
     return Results.Ok(result);
 });
 
@@ -37,7 +37,7 @@ app.MapGet("/where", async (HttpContext context, IMongoClient client) =>
     // This will be vulnerable to NoSQL injection
     var filter = BsonDocument.Parse($"{{ title: '{title}' }}");
     var result = await collection.Find(filter).ToListAsync();
-    
+
     return Results.Ok(result);
 });
 
@@ -50,7 +50,7 @@ var summaries = new[]
 
 app.MapGet("/weatherforecast", () =>
 {
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
+    var forecast = Enumerable.Range(1, 5).Select(index =>
         new WeatherForecast
         (
             DateOnly.FromDateTime(DateTime.Now.AddDays(index)),

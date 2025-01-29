@@ -27,7 +27,7 @@ namespace SampleApp.Common
         /// </summary>
         public virtual void ConfigureServices(IServiceCollection services)
         {
-            services.AddZenFireWall();
+            services.AddZenFirewall();
         }
 
         /// <summary>
@@ -55,7 +55,7 @@ namespace SampleApp.Common
             app.UseRouting();
 
             app.UseDeveloperExceptionPage();
-            app.UseZenFireWall();
+            app.UseZenFirewall();
             app.UseHttpsRedirection();
 
             // Global exception handler for AikidoExceptions
