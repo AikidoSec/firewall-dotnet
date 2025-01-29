@@ -147,7 +147,7 @@ Install-Package Zen.Aikido.DotNetFramework
 <add key="Aikido:AikidoToken" value="your-api-key" />
 ```
 
-- in your global.asax.cs file, add the following:
+- in your Global.asax.cs file, add the following:
 
 ``` csharp
 protected void Application_Start()
@@ -167,7 +167,7 @@ public void Configuration(IAppBuilder app)
 }
 ```
 
-- If you would like to block users by their identity, you can pass in a function to set the user, in your global.asax.cs file.
+- If you would like to block users by their identity, you can pass in a function to set the user, in your Global.asax.cs file.
 
 ``` csharp
 public void Application_Start()
