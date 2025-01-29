@@ -3,7 +3,7 @@ using Aikido.Zen.DotNetCore;
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 builder
-    .Services.AddZenFireWall();
+    .Services.AddZenFirewall();
 
 builder.CreateUmbracoBuilder()
     .AddBackOffice()
@@ -15,7 +15,7 @@ WebApplication app = builder.Build();
 
 await app.BootUmbracoAsync();
 
-app.UseZenFireWall();
+app.UseZenFirewall();
 
 app.UseUmbraco()
     .WithMiddleware(u =>

@@ -338,8 +338,8 @@ namespace Aikido.Zen.Test
 
             // Assert
             Assert.That(_agent.Context.Users.Count, Is.EqualTo(0));
-            Assert.That(_agent.Context.Routes.Count, Is.EqualTo(1));
             Assert.That(_agent.Context.Requests, Is.EqualTo(1));
+            Assert.That(_agent.Context.Routes.Count, Is.EqualTo(0));
         }
 
         [Test]
@@ -361,8 +361,7 @@ namespace Aikido.Zen.Test
             // Assert
             Assert.That(_agent.Context.Users.Count, Is.EqualTo(1));
             Assert.That(_agent.Context.Users.Any(u => u.Id == "123"));
-            Assert.That(_agent.Context.Routes.Count, Is.EqualTo(1));
-            Assert.That(_agent.Context.Routes.Any(r => r.Path == "/test/path"));
+            Assert.That(_agent.Context.Routes.Count, Is.EqualTo(0));
             Assert.That(_agent.Context.Requests, Is.EqualTo(1));
         }
 
@@ -646,6 +645,25 @@ namespace Aikido.Zen.Test
 
             // Assert
             _zenApiMock.Verify(x => x.Reporting.GetBlockedIps(It.IsAny<string>()), Times.Never);
+        }
+
+        [Test]
+        public void AddRoute_AddsRouteToContext()
+        {
+            // Arrange
+            var context = new Context
+            {
+                Url = "/test/route",
+                Method = "GET",
+                RemoteAddress = "192.168.1.1"
+            };
+
+            // Act
+            _agent.AddRoute(context);
+
+            // Assert
+            Assert.That(_agent.Context.Routes.Count, Is.EqualTo(1));
+            Assert.That(_agent.Context.Routes.Any(r => r.Path == "/test/route"));
         }
     }
 }

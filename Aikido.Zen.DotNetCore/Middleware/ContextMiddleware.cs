@@ -68,6 +68,13 @@ namespace Aikido.Zen.DotNetCore.Middleware
 
             httpContext.Items["Aikido.Zen.Context"] = context;
             await next(httpContext);
+
+            // Capture the response status code and check if the route should be added
+            int statusCode = httpContext.Response.StatusCode;
+            if (RouteHelper.ShouldAddRoute(context, statusCode))
+            {
+                Agent.Instance.AddRoute(context);
+            }
         }
 
         private string GetRoute(HttpContext context)

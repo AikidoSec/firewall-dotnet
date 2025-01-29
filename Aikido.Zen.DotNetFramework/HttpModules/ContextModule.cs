@@ -28,6 +28,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             context.PostAuthenticateRequest += Context_PostAuthenticateRequest;
             // we add the .Wait(), because we want our module to handle exceptions properly
             context.BeginRequest += (sender, e) => Task.Run(() => Context_BeginRequest(sender, e)).Wait();
+            context.EndRequest += Context_EndRequest; // Subscribe to EndRequest event
         }
 
         private void Context_PostAuthenticateRequest(object sender, EventArgs e)
@@ -92,6 +93,22 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             }
 
             httpContext.Items["Aikido.Zen.Context"] = context;
+        }
+
+        private void Context_EndRequest(object sender, EventArgs e)
+        {
+            var httpContext = ((HttpApplication)sender).Context;
+            var aikidoContext = (Context)httpContext.Items["Aikido.Zen.Context"];
+            if (aikidoContext == null)
+            {
+                return;
+            }
+
+            int statusCode = httpContext.Response.StatusCode;
+            if (RouteHelper.ShouldAddRoute(aikidoContext, statusCode))
+            {
+                Agent.Instance.AddRoute(aikidoContext);
+            }
         }
 
         private static string GetClientIp(HttpContext httpContext)

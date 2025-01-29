@@ -118,7 +118,7 @@ You can also set the user in your custom middleware, if you would like to block 
         return next();
     })
     // add Zen middleware
-    .UseZenFireWall()
+    .UseZenFirewall()
 ```
 
 ### .NET Framework

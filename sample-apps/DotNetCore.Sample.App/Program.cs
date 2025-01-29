@@ -6,7 +6,7 @@ using SQLitePCL;
 /// Creates and configures the web application
 /// </summary>
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddZenFireWall();
+builder.Services.AddZenFirewall();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services
     .AddRouting()
@@ -26,7 +26,7 @@ app
         return next();
     })
     // add Zen middleware
-    .UseZenFireWall()
+    .UseZenFirewall()
     // add controllers
     .UseEndpoints(endpoints =>
     {

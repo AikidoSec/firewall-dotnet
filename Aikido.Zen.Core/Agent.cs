@@ -286,8 +286,16 @@ namespace Aikido.Zen.Core
         {
             if (context.User != null)
                 _context.AddUser(context.User, context.RemoteAddress);
-            _context.AddRoute(context);
             _context.AddRequest();
+        }
+
+        /// <summary>
+        /// Adds a route to the context
+        /// </summary>
+        /// <param name="context">The context of the request</param>
+        public void AddRoute(Context context)
+        {
+            _context.AddRoute(context);
         }
 
         /// <summary>
