@@ -202,7 +202,7 @@ public class PostgresSampleAppTests : WebApplicationTestBase
         var maliciousCommand = "ls $(echo)";
 
         // Act
-        var response = await client.GetAsync("/api/pets/command?command=" + maliciousCommand);
+        var response = await client.GetAsync("/api/pets/command?command=" + Uri.EscapeDataString(maliciousCommand));
 
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
