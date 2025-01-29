@@ -53,6 +53,62 @@ namespace Aikido.Zen.Test
             Assert.That(ShellInjectionDetector.IsSafelyEncapsulated("echo \"USER\"", "$USER"), Is.True);
         }
 
+        [Test]
+        public void IsShellInjection_ShouldDetectTildeInjection()
+        {
+            // Arrange
+            string command = "echo ~user";
+            string userInput = "~";
+
+            // Act
+            var result = ShellInjectionDetector.IsShellInjection(command, userInput);
+
+            // Assert
+            Assert.That(result, Is.True, "Should detect tilde injection when userInput is '~' and command contains '~'.");
+        }
+
+        [Test]
+        public void IsShellInjection_ShouldDetectSeparatorBeforeAndAfter()
+        {
+            // Arrange
+            string command = "echo $USER";
+            string userInput = "$USER";
+
+            // Act
+            var result = ShellInjectionDetector.IsShellInjection(command, userInput);
+
+            // Assert
+            Assert.That(result, Is.True, "Should detect injection when separators are before and after the user input.");
+        }
+
+        [Test]
+        public void IsShellInjection_ShouldDetectSeparatorBeforeEndOfString()
+        {
+            // Arrange
+            string command = "echo $USER";
+            string userInput = "$USER";
+
+            // Act
+            var result = ShellInjectionDetector.IsShellInjection(command, userInput);
+
+            // Assert
+            Assert.That(result, Is.True, "Should detect injection when separator is before and end of string after user input.");
+        }
+
+        [Test]
+        public void IsShellInjection_ShouldDetectStartOfStringSeparatorAfter()
+        {
+            // Arrange
+            string command = "$USER echo";
+            string userInput = "$USER";
+
+            // Act
+            var result = ShellInjectionDetector.IsShellInjection(command, userInput);
+
+            // Assert
+            Assert.That(result, Is.True, "Should detect injection when start of string and separator is after user input.");
+        }
+
         public static IEnumerable<TestCaseData> GetTestData()
         {
             var jsonData = File.ReadAllText("testdata/data.ShellInjectionDetector.json");
