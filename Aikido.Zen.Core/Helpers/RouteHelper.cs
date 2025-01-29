@@ -1,8 +1,18 @@
 using System;
+using System.IO;
+using System.Linq;
+
 namespace Aikido.Zen.Core.Helpers
 {
     public static class RouteHelper
     {
+
+
+        private static readonly string[] ExcludedMethods = { "OPTIONS", "HEAD" };
+        private static readonly string[] IgnoreExtensions = { "properties", "php", "asp", "aspx", "jsp", "config" };
+        private static readonly string[] IgnoreStrings = { "cgi-bin" };
+
+
         /// <summary>
         /// Matches a route pattern against an actual URL path
         /// </summary>
@@ -71,5 +81,69 @@ namespace Aikido.Zen.Core.Helpers
         /// <returns>True if segment is a parameter (e.g. {id}), false otherwise</returns>
         public static bool IsRouteParameter(this ReadOnlySpan<char> span)
             => span.StartsWith("{".AsSpan()) && span.EndsWith("}".AsSpan());
+
+
+        /// <summary>
+        /// Determines if a route should be added based on the context and HTTP status code.
+        /// </summary>
+        /// <param name="context">The context containing route and method information.</param>
+        /// <param name="httpStatusCode">The HTTP status code of the request.</param>
+        /// <returns>True if the route should be added, false otherwise.</returns>
+        public static bool ShouldAddRoute(Context context, int httpStatusCode)
+        {
+            // Check if the status code is valid
+            bool validStatusCode = httpStatusCode >= 200 && httpStatusCode <= 399;
+            if (!validStatusCode)
+            {
+                return false;
+            }
+
+            // Check if the method is excluded
+            if (ExcludedMethods.Contains(context.Method))
+            {
+                return false;
+            }
+
+            // Split the route into segments
+            var segments = context.Route.Split('/');
+
+            // Check for dot files and ignored strings
+            if (segments.Any(IsDotFile) || segments.Any(ContainsIgnoredString))
+            {
+                return false;
+            }
+
+            // Ensure all segments have allowed extensions
+            return segments.All(IsAllowedExtension);
+        }
+
+        private static bool IsAllowedExtension(string segment)
+        {
+            string extension = Path.GetExtension(segment);
+            if (!string.IsNullOrEmpty(extension))
+            {
+                extension = extension.TrimStart('.');
+                if (extension.Length >= 2 && extension.Length <= 5 || IgnoreExtensions.Contains(extension))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private static bool IsDotFile(string segment)
+        {
+            // Allow ".well-known" as per RFC 8615
+            if (segment == ".well-known")
+            {
+                return false;
+            }
+            return segment.StartsWith(".") && segment.Length > 1;
+        }
+
+        private static bool ContainsIgnoredString(string segment)
+        {
+            return IgnoreStrings.Any(str => segment.Contains(str));
+        }
     }
 }

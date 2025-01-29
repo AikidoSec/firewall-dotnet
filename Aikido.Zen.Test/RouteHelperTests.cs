@@ -54,6 +54,24 @@ namespace Aikido.Zen.Test.Helpers
             Assert.That(expectedResult, Is.EqualTo(result));
         }
 
-        
+        [TestCase("/api/resource", "GET", 200, true)]
+        [TestCase("/api/resource", "OPTIONS", 200, false)]
+        [TestCase("/api/resource", "GET", 404, false)]
+        [TestCase("/api/.well-known/resource", "GET", 200, true)]
+        [TestCase("/api/.hidden/resource", "GET", 200, false)]
+        [TestCase("/api/resource.php", "GET", 200, false)]
+        [TestCase("/api/resource", "HEAD", 200, false)]
+        [TestCase("/api/resource", "GET", 500, false)]
+        public void ShouldAddRoute_ShouldReturnExpectedResult(string route, string method, int statusCode, bool expectedResult)
+        {
+            // Arrange
+            var context = new Context { Route = route, Method = method };
+
+            // Act
+            var result = RouteHelper.ShouldAddRoute(context, statusCode);
+
+            // Assert
+            Assert.That(expectedResult, Is.EqualTo(result));
+        }
     }
 }

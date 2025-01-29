@@ -16,7 +16,7 @@ namespace Aikido.Zen.DotNetCore
 {
     public static class DependencyInjection
     {
-        public static IServiceCollection AddZenFireWall(this IServiceCollection services)
+        public static IServiceCollection AddZenFirewall(this IServiceCollection services)
         {
             if (Environment.GetEnvironmentVariable("AIKIDO_DISABLE") == "true")
             {
@@ -53,7 +53,7 @@ namespace Aikido.Zen.DotNetCore
             return services;
         }
 
-        public static IApplicationBuilder UseZenFireWall(this IApplicationBuilder app)
+        public static IApplicationBuilder UseZenFirewall(this IApplicationBuilder app)
         {
             if (Environment.GetEnvironmentVariable("AIKIDO_DISABLE") == "true")
             {
