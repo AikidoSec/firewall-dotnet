@@ -71,8 +71,8 @@ namespace Aikido.Zen.Test
         public void IsShellInjection_ShouldDetectSeparatorBeforeAndAfter()
         {
             // Arrange
-            string command = "echo $USER";
-            string userInput = "$USER";
+            string command = "echo whoami";
+            string userInput = "whoami";
 
             // Act
             var result = ShellInjectionDetector.IsShellInjection(command, userInput);
@@ -86,7 +86,7 @@ namespace Aikido.Zen.Test
         {
             // Arrange
             string command = "echo $USER";
-            string userInput = "$USER";
+            string userInput = "echo";
 
             // Act
             var result = ShellInjectionDetector.IsShellInjection(command, userInput);
