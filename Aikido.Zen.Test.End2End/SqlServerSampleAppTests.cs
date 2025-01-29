@@ -180,6 +180,7 @@ public class SqlServerSampleAppTests : WebApplicationTestBase
     public async Task TestCommandInjection_WithBlockingEnabled_ShouldBeBlocked()
     {
         // Arrange
+        SampleAppEnvironmentVariables["AIKIDO_DISABLE"] = "false";
         SampleAppEnvironmentVariables["AIKIDO_BLOCKING"] = "true";
         var factory = CreateSampleAppFactory();
         var client = factory.CreateClient();
