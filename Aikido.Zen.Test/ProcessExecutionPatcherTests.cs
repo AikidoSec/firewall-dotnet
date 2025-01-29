@@ -27,7 +27,7 @@ namespace Aikido.Zen.Test
             _startInfo = new ProcessStartInfo();
             _context = new Context();
             _methodInfo = typeof(Process).GetMethod("Start", BindingFlags.Public | BindingFlags.Instance);
-            Environment.SetEnvironmentVariable("AIKIDO_BLOCKING", "true");
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
             // setup the agent, because when not running in drymode, SqlClientPatcher will trigger an attack event
             Environment.SetEnvironmentVariable("AIKIDO_TOKEN", "test-token");
             var reportingMock = new Mock<IReportingAPIClient>();
@@ -93,7 +93,7 @@ namespace Aikido.Zen.Test
         public void OnProcessStart_WithShellInjectionInDryMode_ReturnsTrue()
         {
             // Arrange
-            Environment.SetEnvironmentVariable("AIKIDO_BLOCKING", "false");
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "false");
             _context.ParsedUserInput = new Dictionary<string, string> {
                 { "body.command", "maliciousCommand" }
             };
@@ -111,7 +111,7 @@ namespace Aikido.Zen.Test
         [TearDown]
         public void TearDown()
         {
-            Environment.SetEnvironmentVariable("AIKIDO_BLOCKING", null);
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", null);
         }
     }
 }
