@@ -12,7 +12,7 @@ namespace Aikido.Zen.Core.Helpers
 
         private static bool GetDryMode()
         {
-            var blocking = Environment.GetEnvironmentVariable("AIKIDO_BLOCKING");
+            var blocking = Environment.GetEnvironmentVariable("AIKIDO_BLOCK");
             if (blocking == "true" || blocking == "1")
                 return false;
             return true;

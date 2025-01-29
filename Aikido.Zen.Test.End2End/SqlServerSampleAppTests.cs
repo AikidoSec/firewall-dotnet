@@ -57,7 +57,7 @@ public class SqlServerSampleAppTests : WebApplicationTestBase
     {
         // Arrange
         SampleAppEnvironmentVariables["AIKIDO_DISABLE"] = "false";
-        SampleAppEnvironmentVariables["AIKIDO_BLOCKING"] = "true";
+        SampleAppEnvironmentVariables["AIKIDO_BLOCK"] = "true";
         SampleAppClient = CreateSampleAppFactory().CreateClient();
 
         var safePayload = new { Name = "Bobby" };
@@ -77,7 +77,7 @@ public class SqlServerSampleAppTests : WebApplicationTestBase
     {
         // Arrange
         SampleAppEnvironmentVariables["AIKIDO_DISABLE"] = "false";
-        SampleAppEnvironmentVariables["AIKIDO_BLOCKING"] = "true";
+        SampleAppEnvironmentVariables["AIKIDO_BLOCK"] = "true";
         SampleAppClient = CreateSampleAppFactory().CreateClient();
 
         var unsafePayload = new { Name = "Malicious Pet', 'Gru from the Minions'); -- " };
@@ -103,7 +103,7 @@ public class SqlServerSampleAppTests : WebApplicationTestBase
     {
         // Arrange
         SampleAppEnvironmentVariables["AIKIDO_DISABLE"] = "false";
-        SampleAppEnvironmentVariables["AIKIDO_BLOCKING"] = "true";
+        SampleAppEnvironmentVariables["AIKIDO_BLOCK"] = "true";
         SampleAppClient = CreateSampleAppFactory().CreateClient();
 
         var safePayload = new { Name = "Bobby" };
@@ -123,7 +123,7 @@ public class SqlServerSampleAppTests : WebApplicationTestBase
     {
         // Arrange
         SampleAppEnvironmentVariables["AIKIDO_DISABLE"] = "false";
-        SampleAppEnvironmentVariables["AIKIDO_BLOCKING"] = "false";
+        SampleAppEnvironmentVariables["AIKIDO_BLOCK"] = "false";
         SampleAppClient = CreateSampleAppFactory().CreateClient();
 
         var unsafePayload = new { Name = "Malicious Pet', 'Gru from the Minions'); -- " };
@@ -142,7 +142,7 @@ public class SqlServerSampleAppTests : WebApplicationTestBase
     {
         // Arrange
         SampleAppEnvironmentVariables["AIKIDO_DISABLE"] = "false";
-        SampleAppEnvironmentVariables["AIKIDO_BLOCKING"] = "false";
+        SampleAppEnvironmentVariables["AIKIDO_BLOCK"] = "false";
         SampleAppClient = CreateSampleAppFactory().CreateClient();
 
         var unsafePayload = new { Name = "Malicious Pet', 'Gru from the Minions'); -- " };
@@ -161,7 +161,7 @@ public class SqlServerSampleAppTests : WebApplicationTestBase
     {
         // Arrange
         SampleAppEnvironmentVariables["AIKIDO_DISABLE"] = "true";
-        SampleAppEnvironmentVariables["AIKIDO_BLOCKING"] = "true";
+        SampleAppEnvironmentVariables["AIKIDO_BLOCK"] = "true";
         SampleAppClient = CreateSampleAppFactory().CreateClient();
 
         var unsafePayload = new { Name = "Malicious Pet', 'Gru from the Minions'); -- " };
@@ -181,7 +181,7 @@ public class SqlServerSampleAppTests : WebApplicationTestBase
     {
         // Arrange
         SampleAppEnvironmentVariables["AIKIDO_DISABLE"] = "false";
-        SampleAppEnvironmentVariables["AIKIDO_BLOCKING"] = "true";
+        SampleAppEnvironmentVariables["AIKIDO_BLOCK"] = "true";
         var factory = CreateSampleAppFactory();
         var client = factory.CreateClient();
         var maliciousCommand = "ls $(echo)";
@@ -198,7 +198,7 @@ public class SqlServerSampleAppTests : WebApplicationTestBase
     public async Task TestCommandInjection_WithBlockingDisabled_ShouldNotBeBlocked()
     {
         // Arrange
-        SampleAppEnvironmentVariables["AIKIDO_BLOCKING"] = "false";
+        SampleAppEnvironmentVariables["AIKIDO_BLOCK"] = "false";
         var factory = CreateSampleAppFactory();
         var client = factory.CreateClient();
         var maliciousCommand = "ls $(echo)";
