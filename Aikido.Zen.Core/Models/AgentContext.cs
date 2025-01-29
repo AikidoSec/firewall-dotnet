@@ -160,7 +160,7 @@ namespace Aikido.Zen.Core.Models
 
         public void UpdateConfig(bool block, IEnumerable<string> blockedUsers, IEnumerable<EndpointConfig> endpoints, Regex blockedUserAgents, long configVersion)
         {
-            Environment.SetEnvironmentVariable("AIKIDO_BLOCKING", block ? "true" : "false");
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", block ? "true" : "false");
             UpdateBlockedUsers(blockedUsers);
             BlockList.UpdateAllowedSubnets(endpoints);
             UpdateRatelimitedRoutes(endpoints);

@@ -33,7 +33,7 @@ namespace Aikido.Zen.Test
                 .Setup(r => r.GetConfig(It.IsAny<string>()))
                 .ReturnsAsync(new ReportingAPIResponse { Success = true });
             var zenApiMock = new ZenApi(reportingMock.Object, runtimeMock.Object);
-                
+
             Agent.NewInstance(zenApiMock);
         }
 
@@ -70,7 +70,7 @@ namespace Aikido.Zen.Test
         public void OnCommandExecuting_WithSafeQuery_ReturnsTrue()
         {
             // Arrange
-            Environment.SetEnvironmentVariable("AIKIDO_BLOCKING", "true");
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
             _commandMock.Setup(c => c.CommandText).Returns("SELECT * FROM users WHERE id = @id");
             var args = new object[] { };
 
@@ -88,7 +88,7 @@ namespace Aikido.Zen.Test
             _context.ParsedUserInput = new Dictionary<string, string> {
              { "body.query", "1' OR '1'='1'" }
             };
-            Environment.SetEnvironmentVariable("AIKIDO_BLOCKING", "true");
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
             _commandMock.Setup(c => c.CommandText).Returns("SELECT * FROM users WHERE id = '1' OR '1'='1'");
             var args = new object[] { };
 
@@ -103,7 +103,7 @@ namespace Aikido.Zen.Test
         public void OnCommandExecuting_WithSQLInjectionInDryMode_ReturnsTrue()
         {
             // Arrange
-            Environment.SetEnvironmentVariable("AIKIDO_BLOCKING", "false");
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "false");
             _commandMock.Setup(c => c.CommandText).Returns("SELECT * FROM users WHERE id = '1' OR '1'='1'");
             var args = new object[] { };
 
