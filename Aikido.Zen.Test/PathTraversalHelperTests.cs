@@ -15,7 +15,8 @@ namespace Aikido.Zen.Test.Helpers
         [SetUp]
         public void Setup()
         {
-            _context = new Context {
+            _context = new Context
+            {
                 AttackDetected = false,
                 ParsedUserInput = new System.Collections.Generic.Dictionary<string, string>(),
                 Body = new MemoryStream()
@@ -42,7 +43,7 @@ namespace Aikido.Zen.Test.Helpers
         public void DetectPathTraversal_WithSinglePath(string path, bool expectedAttack)
         {
             // Arrange
-            Environment.SetEnvironmentVariable("AIKIDO_BLOCKING", "false");
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "false");
             _context.ParsedUserInput.Add("test", path);
             object[] args = new object[] { path };
 
@@ -58,12 +59,12 @@ namespace Aikido.Zen.Test.Helpers
         public void DetectPathTraversal_WithTraversalInNonDryMode_ThrowsException()
         {
             // Arrange
-            Environment.SetEnvironmentVariable("AIKIDO_BLOCKING", "true");
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
             _context.ParsedUserInput.Add("query", "../test.txt");
             object[] args = new object[] { "/var/www/../test.txt" };
 
             // Act & Assert
-            Assert.Throws<AikidoException>(() => 
+            Assert.Throws<AikidoException>(() =>
                 PathTraversalHelper.DetectPathTraversal(args, ModuleName, _context, Operation));
         }
 
@@ -71,7 +72,7 @@ namespace Aikido.Zen.Test.Helpers
         public void DetectPathTraversal_WithNonStringArg_IgnoresArg()
         {
             // Arrange
-            Environment.SetEnvironmentVariable("AIKIDO_BLOCKING", "true");
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
             _context.ParsedUserInput.Add("test", "../test.txt");
             object[] args = new object[] { 42 };
 
@@ -117,7 +118,7 @@ namespace Aikido.Zen.Test.Helpers
         {
             // Arrange
             _context.ParsedUserInput.Add("query", "../");
-            object[] args = new object[] { 
+            object[] args = new object[] {
                 "safe.txt",
                 new string[] { "../safe1.txt", "../unsafe.txt" },
                 42

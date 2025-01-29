@@ -13,7 +13,7 @@ namespace Aikido.Zen.Test.Helpers
         public void Setup()
         {
             // Store original environment variables
-            _originalBlockingValue = Environment.GetEnvironmentVariable("AIKIDO_BLOCKING");
+            _originalBlockingValue = Environment.GetEnvironmentVariable("AIKIDO_BLOCK");
             _originalLambdaValue = Environment.GetEnvironmentVariable("AWS_LAMBDA_FUNCTION_NAME");
             _originalAzureValue = Environment.GetEnvironmentVariable("WEBSITE_INSTANCE_ID");
         }
@@ -22,7 +22,7 @@ namespace Aikido.Zen.Test.Helpers
         public void Cleanup()
         {
             // Restore original environment variables
-            SetEnvironmentVariable("AIKIDO_BLOCKING", _originalBlockingValue);
+            SetEnvironmentVariable("AIKIDO_BLOCK", _originalBlockingValue);
             SetEnvironmentVariable("AWS_LAMBDA_FUNCTION_NAME", _originalLambdaValue);
             SetEnvironmentVariable("WEBSITE_INSTANCE_ID", _originalAzureValue);
         }

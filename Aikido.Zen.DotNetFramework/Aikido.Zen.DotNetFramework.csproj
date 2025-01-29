@@ -228,6 +228,7 @@
     <Compile Include="HttpModules\BlockingModule.cs" />
     <Compile Include="Patches\IOPatches.cs" />
     <Compile Include="Patches\Patcher.cs" />
+    <Compile Include="Patches\ProcessPatches.cs" />
     <Compile Include="Patches\SqlClientPatches.cs" />
     <Compile Include="Zen.cs" />
     <Compile Include="HttpModules\ContextModule.cs" />

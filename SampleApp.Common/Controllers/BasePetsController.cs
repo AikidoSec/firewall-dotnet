@@ -3,6 +3,9 @@ using Microsoft.AspNetCore.Http;
 using System.Text.Json;
 using SampleApp.Common.Models;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.AspNetCore.Mvc;
+using System.Diagnostics;
+using Aikido.Zen.Core.Exceptions;
 
 namespace SampleApp.Common.Controllers
 {
@@ -42,10 +45,55 @@ namespace SampleApp.Common.Controllers
                 var rowsCreated = CreatePetByName(petData.Name);
                 return Results.Ok(new { Rows = rowsCreated });
             });
+
+            endpoints.MapGet("/api/pets/command", (HttpContext context) =>
+            {
+                var command = context.Request.Query["command"];
+                try
+                {
+                    var result = ExecuteCommand(command!);
+                    return Results.Ok("command executed");
+                }
+                catch (AikidoException ex)
+                {
+                    //throw
+                    throw;
+                }
+                catch
+                {
+                    // this command doesn't work on windows, so let's pretend it worked
+                    return Results.Ok("command executed");
+                }
+            });
         }
 
         public abstract IEnumerable<Pet> GetAllPets();
         public abstract Pet GetPetById(int id);
         public abstract int CreatePetByName(string name);
+
+        /// <summary>
+        /// Executes a command based on user input, simulating a command injection vulnerability.
+        /// </summary>
+        /// <param name="command">The command to execute.</param>
+        /// <returns>The result of the command execution.</returns>
+        public string ExecuteCommand(string command)
+        {
+            // Simulate command injection vulnerability
+            var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "sh",
+                    Arguments = $"-c \"{command}\"",
+                    RedirectStandardOutput = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
+            };
+            process.Start();
+            string result = process.StandardOutput.ReadToEnd();
+            process.WaitForExit();
+            return result;
+        }
     }
 }

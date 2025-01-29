@@ -22,7 +22,7 @@ namespace Aikido.Zen.Test.Helpers
         public void DryMode_ShouldReturnTrue_WhenEnvironmentVariableIsNotTrue()
         {
             // Arrange
-            Environment.SetEnvironmentVariable("AIKIDO_BLOCKING", "false");
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "false");
 
             // Act
             var dryMode = EnvironmentHelper.DryMode;
@@ -35,7 +35,7 @@ namespace Aikido.Zen.Test.Helpers
         public void DryMode_ShouldReturnFalse_WhenEnvironmentVariableIsTrue()
         {
             // Arrange
-            Environment.SetEnvironmentVariable("AIKIDO_BLOCKING", "true");
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
 
             // Act
             var dryMode = EnvironmentHelper.DryMode;

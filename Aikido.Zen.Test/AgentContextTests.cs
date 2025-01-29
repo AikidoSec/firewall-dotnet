@@ -381,7 +381,7 @@ namespace Aikido.Zen.Test
             // Assert
             Assert.Multiple(() =>
             {
-                Assert.That(Environment.GetEnvironmentVariable("AIKIDO_BLOCKING"), Is.EqualTo("true"));
+                Assert.That(Environment.GetEnvironmentVariable("AIKIDO_BLOCK"), Is.EqualTo("true"));
                 Assert.That(_agentContext.IsUserBlocked("user1"), Is.True);
                 Assert.That(_agentContext.IsUserBlocked("user2"), Is.True);
                 Assert.That(_agentContext.RateLimitedRoutes["GET|test"].MaxRequests, Is.EqualTo(60));

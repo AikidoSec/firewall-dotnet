@@ -57,7 +57,7 @@ public class SqlServerSampleAppTests : WebApplicationTestBase
     {
         // Arrange
         SampleAppEnvironmentVariables["AIKIDO_DISABLE"] = "false";
-        SampleAppEnvironmentVariables["AIKIDO_BLOCKING"] = "true";
+        SampleAppEnvironmentVariables["AIKIDO_BLOCK"] = "true";
         SampleAppClient = CreateSampleAppFactory().CreateClient();
 
         var safePayload = new { Name = "Bobby" };
@@ -77,7 +77,7 @@ public class SqlServerSampleAppTests : WebApplicationTestBase
     {
         // Arrange
         SampleAppEnvironmentVariables["AIKIDO_DISABLE"] = "false";
-        SampleAppEnvironmentVariables["AIKIDO_BLOCKING"] = "true";
+        SampleAppEnvironmentVariables["AIKIDO_BLOCK"] = "true";
         SampleAppClient = CreateSampleAppFactory().CreateClient();
 
         var unsafePayload = new { Name = "Malicious Pet', 'Gru from the Minions'); -- " };
@@ -103,7 +103,7 @@ public class SqlServerSampleAppTests : WebApplicationTestBase
     {
         // Arrange
         SampleAppEnvironmentVariables["AIKIDO_DISABLE"] = "false";
-        SampleAppEnvironmentVariables["AIKIDO_BLOCKING"] = "true";
+        SampleAppEnvironmentVariables["AIKIDO_BLOCK"] = "true";
         SampleAppClient = CreateSampleAppFactory().CreateClient();
 
         var safePayload = new { Name = "Bobby" };
@@ -123,7 +123,7 @@ public class SqlServerSampleAppTests : WebApplicationTestBase
     {
         // Arrange
         SampleAppEnvironmentVariables["AIKIDO_DISABLE"] = "false";
-        SampleAppEnvironmentVariables["AIKIDO_BLOCKING"] = "false";
+        SampleAppEnvironmentVariables["AIKIDO_BLOCK"] = "false";
         SampleAppClient = CreateSampleAppFactory().CreateClient();
 
         var unsafePayload = new { Name = "Malicious Pet', 'Gru from the Minions'); -- " };
@@ -142,7 +142,7 @@ public class SqlServerSampleAppTests : WebApplicationTestBase
     {
         // Arrange
         SampleAppEnvironmentVariables["AIKIDO_DISABLE"] = "false";
-        SampleAppEnvironmentVariables["AIKIDO_BLOCKING"] = "false";
+        SampleAppEnvironmentVariables["AIKIDO_BLOCK"] = "false";
         SampleAppClient = CreateSampleAppFactory().CreateClient();
 
         var unsafePayload = new { Name = "Malicious Pet', 'Gru from the Minions'); -- " };
@@ -161,7 +161,7 @@ public class SqlServerSampleAppTests : WebApplicationTestBase
     {
         // Arrange
         SampleAppEnvironmentVariables["AIKIDO_DISABLE"] = "true";
-        SampleAppEnvironmentVariables["AIKIDO_BLOCKING"] = "true";
+        SampleAppEnvironmentVariables["AIKIDO_BLOCK"] = "true";
         SampleAppClient = CreateSampleAppFactory().CreateClient();
 
         var unsafePayload = new { Name = "Malicious Pet', 'Gru from the Minions'); -- " };
@@ -172,5 +172,43 @@ public class SqlServerSampleAppTests : WebApplicationTestBase
 
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+    }
+
+
+    [Test]
+    [CancelAfter(30000)]
+    public async Task TestCommandInjection_WithBlockingEnabled_ShouldBeBlocked()
+    {
+        // Arrange
+        SampleAppEnvironmentVariables["AIKIDO_DISABLE"] = "false";
+        SampleAppEnvironmentVariables["AIKIDO_BLOCK"] = "true";
+        var factory = CreateSampleAppFactory();
+        var client = factory.CreateClient();
+        var maliciousCommand = "ls $(echo)";
+
+        // Act
+        var response = await client.GetAsync("/api/pets/command?command=" + Uri.EscapeDataString(maliciousCommand));
+
+        // Assert
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
+    }
+
+    [Test]
+    [CancelAfter(30000)]
+    public async Task TestCommandInjection_WithBlockingDisabled_ShouldNotBeBlocked()
+    {
+        // Arrange
+        SampleAppEnvironmentVariables["AIKIDO_BLOCK"] = "false";
+        var factory = CreateSampleAppFactory();
+        var client = factory.CreateClient();
+        var maliciousCommand = "ls $(echo)";
+
+        // Act
+        var response = await client.GetAsync("/api/pets/command?command=" + Uri.EscapeDataString(maliciousCommand));
+
+        // Assert
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        var responseContent = await response.Content.ReadAsStringAsync();
+        Assert.That(responseContent, Does.Contain("command executed"), "The command injection was unexpectedly blocked.");
     }
 }
