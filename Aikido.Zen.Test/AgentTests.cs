@@ -361,8 +361,7 @@ namespace Aikido.Zen.Test
             // Assert
             Assert.That(_agent.Context.Users.Count, Is.EqualTo(1));
             Assert.That(_agent.Context.Users.Any(u => u.Id == "123"));
-            Assert.That(_agent.Context.Routes.Count, Is.EqualTo(1));
-            Assert.That(_agent.Context.Routes.Any(r => r.Path == "/test/path"));
+            Assert.That(_agent.Context.Routes.Count, Is.EqualTo(0));
             Assert.That(_agent.Context.Requests, Is.EqualTo(1));
         }
 

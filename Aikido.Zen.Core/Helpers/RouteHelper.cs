@@ -133,7 +133,7 @@ namespace Aikido.Zen.Core.Helpers
 
         private static bool IsDotFile(string segment)
         {
-            // Allow ".well-known" as per RFC 8615
+            // See https://www.rfc-editor.org/rfc/rfc8615
             if (segment == ".well-known")
             {
                 return false;
