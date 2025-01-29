@@ -17,6 +17,9 @@ namespace Aikido.Zen.DotNetFramework.Patches
 
             // Patch process execution methods to prevent shell injection
             ProcessPatches.ApplyPatches(harmony);
+
+            // Apply NoSQL patches
+            NoSQLClientPatches.ApplyPatches(harmony);
         }
 
         public static void Unpatch()

@@ -12,12 +12,9 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
-
-    <VersionPrefix>0.0.1-alpha</VersionPrefix>
-    <VersionSuffix>-b-$()</VersionSuffix>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
-    <Version>0.0.1</Version>
+    <Version>1.0.0</Version>
   </PropertyGroup>
 
     <!-- always copy the \libraries directory to the output directory-->
