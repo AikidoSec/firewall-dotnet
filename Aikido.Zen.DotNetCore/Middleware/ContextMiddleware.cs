@@ -2,6 +2,7 @@ using Aikido.Zen.Core;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Helpers.OpenAPI;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Routing;
 using System.Collections.Concurrent;
 
@@ -44,6 +45,19 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 var request = httpContext.Request;
                 request.EnableBuffering();
 
+                // we need to allow SynchronousIO for xml parsing.
+                var syncIOFeature = httpContext.Features.Get<IHttpBodyControlFeature>();
+                var initialAllowSynchronousIOValue = syncIOFeature?.AllowSynchronousIO;
+                request.ContentType ??= string.Empty;
+                // since the feature could be missing, we need to check if it's null before accessing it
+                if (syncIOFeature?.AllowSynchronousIO != null)
+                {
+                    if (request.ContentType.Contains("xml") || request.ContentType.Contains("multipart"))
+                    {
+                        syncIOFeature.AllowSynchronousIO = true;
+                    }
+                }
+
                 var httpData = await HttpHelper.ReadAndFlattenHttpDataAsync(
                     queryParams: queryDictionary.ToDictionary(h => h.Key, h => string.Join(',', h.Value)),
                     headers: headersDictionary.ToDictionary(h => h.Key, h => string.Join(',', h.Value)),
@@ -52,6 +66,12 @@ namespace Aikido.Zen.DotNetCore.Middleware
                     contentType: request.ContentType,
                     contentLength: request.ContentLength ?? 0
                 );
+
+                // restore the original value of initialAllowSynchronousIOValue
+                if (syncIOFeature != null && initialAllowSynchronousIOValue != null)
+                {
+                    syncIOFeature.AllowSynchronousIO = initialAllowSynchronousIOValue.Value;
+                }
 
                 context.ParsedUserInput = httpData.FlattenedData;
                 context.Body = request.Body;
@@ -62,7 +82,10 @@ namespace Aikido.Zen.DotNetCore.Middleware
             }
             catch (Exception e)
             {
-                // Log the exception details if necessary
+                if (EnvironmentHelper.IsDebugging)
+                {
+                    Console.WriteLine($"AIKIDO: error while parsing body: {e.Message}");
+                }
                 throw;
             }
 

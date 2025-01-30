@@ -1,3 +1,4 @@
+using Aikido.Zen.Core;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
 using System.Xml;
@@ -13,13 +14,15 @@ namespace DotNetCore.Sample.App.Controllers
         {
             var form = await Request.ReadFormAsync();
             var data = form.ToDictionary(x => x.Key, x => x.Value.ToString());
-            return Ok(HttpContext.Items["Aikido.Zen.Context"]);
+            var context = (Context)HttpContext.Items["Aikido.Zen.Context"];
+            return Ok(context.ParsedUserInput);
         }
 
         [HttpPost("multipart"), Consumes("multipart/form-data")]
         public async Task<IActionResult> HandleMultipartForm()
         {
-            return Ok(HttpContext.Items["Aikido.Zen.Context"]);
+            var context = (Context)HttpContext.Items["Aikido.Zen.Context"];
+            return Ok(context.ParsedUserInput);
         }
 
         [HttpPost("text"), Consumes("text/plain")]
@@ -33,18 +36,15 @@ namespace DotNetCore.Sample.App.Controllers
         [HttpPost("json"), Consumes("application/json")]
         public async Task<IActionResult> HandleJsonData()
         {
-            var json = await new StreamReader(Request.Body).ReadToEndAsync();
-            var data = JsonSerializer.Deserialize<IDictionary<string, object>>(json);
-            return Ok(HttpContext.Items["Aikizo.Zen.Context"]);
+            var context = (Context)HttpContext.Items["Aikido.Zen.Context"];
+            return Ok(context.ParsedUserInput);
         }
 
         [HttpPost("xml"), Consumes("application/xml")]
         public IActionResult HandleXmlData()
         {
-            var xml = new StreamReader(Request.Body).ReadToEndAsync().Result;
-            var doc = new XmlDocument();
-            doc.LoadXml(xml);
-            return Ok(HttpContext.Items["Aikido.Zen.Context"]);
+            var context = (Context)HttpContext.Items["Aikido.Zen.Context"];
+            return Ok(context.ParsedUserInput);
         }
     }
-} 
+}

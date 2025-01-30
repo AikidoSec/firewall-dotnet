@@ -158,9 +158,12 @@ namespace Aikido.Zen.Core.Helpers
                         else if (contentType.Contains("application/xml") || contentType.Contains("text/xml"))
                         {
                             var xmlDoc = new XmlDocument();
-                            xmlDoc.Load(reader);
-                            XmlHelper.FlattenXml(result, xmlDoc.DocumentElement, "body");
-                            parsedBody = XmlHelper.XmlToObject(xmlDoc.DocumentElement);
+                            using (var xmlReader = XmlReader.Create(reader, new XmlReaderSettings { Async = true, DtdProcessing = DtdProcessing.Ignore }))
+                            {
+                                xmlDoc.Load(xmlReader);
+                                XmlHelper.FlattenXml(result, xmlDoc.DocumentElement, "body");
+                                parsedBody = XmlHelper.XmlToObject(xmlDoc.DocumentElement);
+                            }
                         }
                         else if (contentType.Contains("application/x-www-form-urlencoded"))
                         {
@@ -175,6 +178,13 @@ namespace Aikido.Zen.Core.Helpers
                             parsedBody = formDict;
                         }
                     }
+                }
+            }
+            catch (Exception e)
+            {
+                if (EnvironmentHelper.IsDebugging)
+                {
+                    Console.WriteLine($"Aikido: error while parsing body: {e.Message}");
                 }
             }
             finally
@@ -214,17 +224,18 @@ namespace Aikido.Zen.Core.Helpers
                     }
                     else if (section.ContentType == "application/xml" || section.ContentType == "text/xml")
                     {
+                        var xmlDoc = new XmlDocument();
                         using (var xmlReader = XmlReader.Create(section.Body, new XmlReaderSettings { Async = true, DtdProcessing = DtdProcessing.Ignore }))
                         {
-                            var xmlDoc = new XmlDocument();
                             xmlDoc.Load(xmlReader);
-                            XmlHelper.FlattenXml(result, xmlDoc.DocumentElement, $"body.section.{sectionIndex}");
-                            var xmlData = XmlHelper.XmlToObject(xmlDoc.DocumentElement);
-                            if (contentDisposition.Name.HasValue)
-                            {
-                                formData[contentDisposition.Name.Value] = xmlData;
-                            }
                         }
+                        XmlHelper.FlattenXml(result, xmlDoc.DocumentElement, $"body.section.{sectionIndex}");
+                        var xmlData = XmlHelper.XmlToObject(xmlDoc.DocumentElement);
+                        if (contentDisposition.Name.HasValue)
+                        {
+                            formData[contentDisposition.Name.Value] = xmlData;
+                        }
+
                     }
                     else if (contentDisposition.IsFileDisposition())
                     {

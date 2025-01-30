@@ -244,7 +244,7 @@ namespace Aikido.Zen.Core
                         catch (Exception ex)
                         {
                             // pass through
-                            _logger.LogError(ex, "AikidoZen: Error processing event: {event}", eventItem.Event);
+                            _logger.LogError(ex, "AIKIDO: Error processing event: {event}", eventItem.Event);
                         }
                     }
                 }
@@ -352,7 +352,7 @@ namespace Aikido.Zen.Core
         /// <returns></returns>
         public virtual void SendAttackEvent(AttackKind kind, Source source, string payload, string operation, Context context, string module, IDictionary<string, object> metadata, bool blocked)
         {
-            _logger.LogInformation("AikidoZen: Attack detected: {kind} {source} {payload} {operation} {context} {module} {metadata} {blocked}",
+            _logger.LogInformation("AIKIDO: Attack detected: {kind} {source} {payload} {operation} {context} {module} {metadata} {blocked}",
                 kind, source, payload, operation, context, module, metadata, blocked);
             QueueEvent(EnvironmentHelper.Token, DetectedAttack.Create(kind, source, payload, operation, context, module, metadata, blocked));
         }
