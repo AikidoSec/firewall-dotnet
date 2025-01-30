@@ -92,6 +92,18 @@ namespace Aikido.Zen.Core
             _batchTimeoutMs = batchTimeoutMs;
             _backgroundTask = Task.Run(ProcessRecurringTasksAsync);
             _context = new AgentContext();
+
+            // Add a console logger if in debug mode
+            if (EnvironmentHelper.IsDebugging)
+            {
+                var loggerFactory = LoggerFactory.Create(builder =>
+                {
+                    builder.AddConsole();
+                });
+                //add the current logger to the factory
+                loggerFactory.AddProvider(new LoggerProvider(logger));
+                _logger = loggerFactory.CreateLogger<Agent>();
+            }
         }
 
         /// <summary>
@@ -244,7 +256,7 @@ namespace Aikido.Zen.Core
                         catch (Exception ex)
                         {
                             // pass through
-                            _logger.LogError(ex, "AikidoZen: Error processing event: {event}", eventItem.Event);
+                            _logger.LogError(ex, "AIKIDO: Error processing event: {event}", eventItem.Event);
                         }
                     }
                 }
@@ -352,7 +364,7 @@ namespace Aikido.Zen.Core
         /// <returns></returns>
         public virtual void SendAttackEvent(AttackKind kind, Source source, string payload, string operation, Context context, string module, IDictionary<string, object> metadata, bool blocked)
         {
-            _logger.LogInformation("AikidoZen: Attack detected: {kind} {source} {payload} {operation} {context} {module} {metadata} {blocked}",
+            _logger.LogInformation("AIKIDO: Attack detected: {kind} {source} {payload} {operation} {context} {module} {metadata} {blocked}",
                 kind, source, payload, operation, context, module, metadata, blocked);
             QueueEvent(EnvironmentHelper.Token, DetectedAttack.Create(kind, source, payload, operation, context, module, metadata, blocked));
         }
