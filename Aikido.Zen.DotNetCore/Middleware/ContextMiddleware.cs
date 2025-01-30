@@ -24,13 +24,11 @@ namespace Aikido.Zen.DotNetCore.Middleware
             // Convert headers and query parameters to thread-safe dictionaries
             var queryDictionary = new ConcurrentDictionary<string, string[]>(httpContext.Request.Query.ToDictionary(q => q.Key, q => q.Value.ToArray()));
             var headersDictionary = new ConcurrentDictionary<string, string[]>(httpContext.Request.Headers.ToDictionary(h => h.Key, h => h.Value.ToArray()));
-
-            // we need to allow SynchronousIO as c# 7.4 does not allow async using statements.
-            var syncIOFeature = httpContext.Features.Get<IHttpBodyControlFeature>();
-            if (syncIOFeature != null)
-            {
-                syncIOFeature.AllowSynchronousIO = true;
-            }
+            //var syncIOFeature = httpContext.Features.Get<IHttpBodyControlFeature>();
+            //if (syncIOFeature != null)
+            //{
+            //    syncIOFeature.AllowSynchronousIO = true;
+            //}
 
             var context = new Context
             {
