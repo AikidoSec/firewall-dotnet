@@ -158,11 +158,12 @@ namespace Aikido.Zen.Core.Helpers
                         else if (contentType.Contains("application/xml") || contentType.Contains("text/xml"))
                         {
                             var xmlDoc = new XmlDocument();
-                            var xmlReader = XmlReader.Create(reader, new XmlReaderSettings { Async = true, DtdProcessing = DtdProcessing.Ignore });
-                            xmlDoc.Load(xmlReader);
-
-                            XmlHelper.FlattenXml(result, xmlDoc.DocumentElement, "body");
-                            parsedBody = XmlHelper.XmlToObject(xmlDoc.DocumentElement);
+                            using (var xmlReader = XmlReader.Create(reader, new XmlReaderSettings { Async = true, DtdProcessing = DtdProcessing.Ignore }))
+                            {
+                                xmlDoc.Load(xmlReader);
+                                XmlHelper.FlattenXml(result, xmlDoc.DocumentElement, "body");
+                                parsedBody = XmlHelper.XmlToObject(xmlDoc.DocumentElement);
+                            }
                         }
                         else if (contentType.Contains("application/x-www-form-urlencoded"))
                         {
@@ -178,6 +179,10 @@ namespace Aikido.Zen.Core.Helpers
                         }
                     }
                 }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Aikido: error while parsing body: {e.Message}");
             }
             finally
             {
@@ -216,9 +221,12 @@ namespace Aikido.Zen.Core.Helpers
                     }
                     else if (section.ContentType == "application/xml" || section.ContentType == "text/xml")
                     {
-                        var xmlReader = XmlReader.Create(section.Body, new XmlReaderSettings { Async = true, DtdProcessing = DtdProcessing.Ignore });
                         var xmlDoc = new XmlDocument();
-                        xmlDoc.Load(xmlReader);
+                        using (var xmlReader = XmlReader.Create(section.Body, new XmlReaderSettings { Async = true, DtdProcessing = DtdProcessing.Ignore }))
+                        {
+                            xmlDoc.Load(xmlReader);
+                            XmlHelper.FlattenXml(result, xmlDoc.DocumentElement, "body");
+                        }
                         XmlHelper.FlattenXml(result, xmlDoc.DocumentElement, $"body.section.{sectionIndex}");
                         var xmlData = XmlHelper.XmlToObject(xmlDoc.DocumentElement);
                         if (contentDisposition.Name.HasValue)

@@ -18,13 +18,24 @@ namespace Aikido.Zen.Core.Helpers
         public static void FlattenXml(IDictionary<string, string> result, XmlElement element, string prefix)
         {
             string newPrefix = string.IsNullOrEmpty(prefix) ? element.Name : $"{prefix}.{element.Name}";
+            var childElementGroups = element.ChildNodes
+                .OfType<XmlElement>()
+                .GroupBy(x => x.Name)
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            foreach (var group in childElementGroups)
+            {
+                for (int i = 0; i < group.Value.Count; i++)
+                {
+                    var childElement = group.Value[i];
+                    string indexedPrefix = group.Value.Count > 1 ? $"{newPrefix}.{group.Key}[{i}]" : $"{newPrefix}.{group.Key}";
+                    FlattenXml(result, childElement, indexedPrefix);
+                }
+            }
+
             foreach (XmlNode childNode in element.ChildNodes)
             {
-                if (childNode is XmlElement childElement)
-                {
-                    FlattenXml(result, childElement, newPrefix);
-                }
-                else if (childNode is XmlText textNode)
+                if (childNode is XmlText textNode)
                 {
                     result[newPrefix] = textNode.Value.Trim();
                 }
