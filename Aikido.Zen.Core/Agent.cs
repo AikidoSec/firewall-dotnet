@@ -31,7 +31,7 @@ namespace Aikido.Zen.Core
         private readonly int _batchTimeoutMs;
         private readonly ConcurrentDictionary<string, ScheduledItem> _scheduledEvents;
         private long _lastConfigCheck = DateTime.UtcNow.Ticks;
-        private static ILogger _logger = NullLogger.Instance;
+        private static ILogger<Agent> _logger = LoggerConfigurator.CreateLogger<Agent>();
 
         // Rate limiting and timing constants for the event processing loop
         private const int RateLimitPerSecond = 10;
@@ -47,13 +47,13 @@ namespace Aikido.Zen.Core
         private static Agent _instance;
 
         /// <summary>
-        /// Configures a static logger for Agent.
-        /// If not configured, uses NullLogger which safely does nothing.
+        /// Configures a static logger for Agent using a LoggerFactory.
         /// </summary>
-        /// <param name="logger">The logger instance to use</param>
-        public static void ConfigureLogger(ILogger logger)
+        /// <param name="loggerFactoryProvider">A func to configure additional logging providers.</param>
+        public static void ConfigureLogger(Func<ILoggerFactory> loggerFactoryProvider)
         {
-            _logger = logger ?? NullLogger.Instance;
+            LoggerConfigurator.ConfigureLogging(loggerFactoryProvider);
+            _logger = LoggerConfigurator.CreateLogger<Agent>();
         }
 
         public static Agent Instance
@@ -92,6 +92,8 @@ namespace Aikido.Zen.Core
             _batchTimeoutMs = batchTimeoutMs;
             _backgroundTask = Task.Run(ProcessRecurringTasksAsync);
             _context = new AgentContext();
+            LoggerConfigurator.ConfigureLogging();
+            _logger = LoggerConfigurator.CreateLogger<Agent>();
         }
 
         /// <summary>
@@ -134,6 +136,8 @@ namespace Aikido.Zen.Core
                 Heartbeat.ScheduleId,
                 scheduledHeartBeat
             );
+
+            _logger.LogDebug("AIKIDO: Agent started.");
         }
 
         /// <summary>
@@ -287,6 +291,7 @@ namespace Aikido.Zen.Core
             if (context.User != null)
                 _context.AddUser(context.User, context.RemoteAddress);
             _context.AddRequest();
+            _logger.LogDebug("AIKIDO: Capturing inbound request from user: {user}", context.User);
         }
 
         /// <summary>
@@ -318,6 +323,7 @@ namespace Aikido.Zen.Core
             if (string.IsNullOrEmpty(host))
                 return;
             _context.AddHostname(host + (port.HasValue ? $":{port}" : ""));
+            _logger.LogDebug("AIKIDO: Capturing outbound request to host: {host}", host);
         }
 
         /// <summary>
