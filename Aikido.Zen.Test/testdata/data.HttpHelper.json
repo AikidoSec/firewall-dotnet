@@ -97,7 +97,7 @@
             "query.param1": "value1",
             "headers.header1": "value1",
             "cookies.cookie1": "value1",
-            "body.root.key": "value"
+            "body.key": "value"
         },
         "expectedParsedBody": {
             "key": "value"
@@ -165,7 +165,7 @@
             "query.param1": "value1",
             "headers.header1": "value1",
             "cookies.cookie1": "value1",
-            "body.section.0.root.key": "value"
+            "body.section.0.key": "value"
         },
         "expectedParsedBody": {
             "xmlData": {

@@ -17,9 +17,11 @@ namespace Aikido.Zen.Core.Helpers
         /// <param name="prefix">The prefix for keys in the dictionary.</param>
         public static void FlattenXml(IDictionary<string, string> result, XmlElement element, string prefix)
         {
-            string newPrefix = string.IsNullOrEmpty(prefix) ? element.Name : $"{prefix}.{element.Name}";
+            // Determine the new prefix based on whether the current element is the root or a child
+            string newPrefix = string.IsNullOrEmpty(prefix) ? string.Empty : prefix;
+
             var childElementGroups = element.ChildNodes
-                .OfType<XmlElement>()
+                    .OfType<XmlElement>()
                 .GroupBy(x => x.Name)
                 .ToDictionary(g => g.Key, g => g.ToList());
 
@@ -28,7 +30,8 @@ namespace Aikido.Zen.Core.Helpers
                 for (int i = 0; i < group.Value.Count; i++)
                 {
                     var childElement = group.Value[i];
-                    string indexedPrefix = group.Value.Count > 1 ? $"{newPrefix}.{group.Key}[{i}]" : $"{newPrefix}.{group.Key}";
+                    // Use indexed prefix only if there are multiple children with the same name
+                    string indexedPrefix = group.Value.Count > 1 ? $"{newPrefix}.{group.Key}.{i}" : $"{newPrefix}.{group.Key}";
                     FlattenXml(result, childElement, indexedPrefix);
                 }
             }
@@ -37,7 +40,8 @@ namespace Aikido.Zen.Core.Helpers
             {
                 if (childNode is XmlText textNode)
                 {
-                    result[newPrefix] = textNode.Value.Trim();
+                    // If newPrefix is empty, use the element's name directly
+                    result[string.IsNullOrEmpty(newPrefix) ? element.Name : newPrefix] = textNode.Value.Trim();
                 }
             }
         }
