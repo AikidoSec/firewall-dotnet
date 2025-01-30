@@ -92,18 +92,6 @@ namespace Aikido.Zen.Core
             _batchTimeoutMs = batchTimeoutMs;
             _backgroundTask = Task.Run(ProcessRecurringTasksAsync);
             _context = new AgentContext();
-
-            // Add a console logger if in debug mode
-            if (EnvironmentHelper.IsDebugging)
-            {
-                var loggerFactory = LoggerFactory.Create(builder =>
-                {
-                    builder.AddConsole();
-                });
-                //add the current logger to the factory
-                loggerFactory.AddProvider(new LoggerProvider(logger));
-                _logger = loggerFactory.CreateLogger<Agent>();
-            }
         }
 
         /// <summary>
