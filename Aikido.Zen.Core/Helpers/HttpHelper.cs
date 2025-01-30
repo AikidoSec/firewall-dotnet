@@ -182,7 +182,10 @@ namespace Aikido.Zen.Core.Helpers
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Aikido: error while parsing body: {e.Message}");
+                if (EnvironmentHelper.IsDebugging)
+                {
+                    Console.WriteLine($"Aikido: error while parsing body: {e.Message}");
+                }
             }
             finally
             {
@@ -225,7 +228,6 @@ namespace Aikido.Zen.Core.Helpers
                         using (var xmlReader = XmlReader.Create(section.Body, new XmlReaderSettings { Async = true, DtdProcessing = DtdProcessing.Ignore }))
                         {
                             xmlDoc.Load(xmlReader);
-                            XmlHelper.FlattenXml(result, xmlDoc.DocumentElement, "body");
                         }
                         XmlHelper.FlattenXml(result, xmlDoc.DocumentElement, $"body.section.{sectionIndex}");
                         var xmlData = XmlHelper.XmlToObject(xmlDoc.DocumentElement);

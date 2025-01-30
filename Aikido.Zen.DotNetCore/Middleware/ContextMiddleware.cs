@@ -47,8 +47,9 @@ namespace Aikido.Zen.DotNetCore.Middleware
 
                 // we need to allow SynchronousIO for xml parsing.
                 var syncIOFeature = httpContext.Features.Get<IHttpBodyControlFeature>();
-                var allowSynchronousIO = syncIOFeature?.AllowSynchronousIO;
+                var initialAllowSynchronousIOValue = syncIOFeature?.AllowSynchronousIO;
                 request.ContentType ??= string.Empty;
+                // since the feature could be missing, we need to check if it's null before accessing it
                 if (syncIOFeature?.AllowSynchronousIO != null)
                 {
                     if (request.ContentType.Contains("xml") || request.ContentType.Contains("multipart"))
@@ -66,10 +67,10 @@ namespace Aikido.Zen.DotNetCore.Middleware
                     contentLength: request.ContentLength ?? 0
                 );
 
-                // restore the original value of AllowSynchronousIO
-                if (syncIOFeature != null && allowSynchronousIO != null)
+                // restore the original value of initialAllowSynchronousIOValue
+                if (initialAllowSynchronousIOValue != null)
                 {
-                    syncIOFeature.AllowSynchronousIO = allowSynchronousIO.Value;
+                    syncIOFeature.AllowSynchronousIO = initialAllowSynchronousIOValue.Value;
                 }
 
                 context.ParsedUserInput = httpData.FlattenedData;
@@ -81,7 +82,10 @@ namespace Aikido.Zen.DotNetCore.Middleware
             }
             catch (Exception e)
             {
-                // Log the exception details if necessary
+                if (EnvironmentHelper.IsDebugging)
+                {
+                    Console.WriteLine($"AIKIDO: error while parsing body: {e.Message}");
+                }
                 throw;
             }
 
