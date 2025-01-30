@@ -68,7 +68,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 );
 
                 // restore the original value of initialAllowSynchronousIOValue
-                if (initialAllowSynchronousIOValue != null)
+                if (syncIOFeature != null && initialAllowSynchronousIOValue != null)
                 {
                     syncIOFeature.AllowSynchronousIO = initialAllowSynchronousIOValue.Value;
                 }
