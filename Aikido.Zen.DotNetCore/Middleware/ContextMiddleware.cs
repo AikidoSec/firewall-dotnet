@@ -82,10 +82,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
             }
             catch (Exception e)
             {
-                if (EnvironmentHelper.IsDebugging)
-                {
-                    Console.WriteLine($"AIKIDO: error while parsing body: {e.Message}");
-                }
+                LogHelper.DebugLog(Agent.Logger, $"Error capturing request: {e.Message}");
                 throw;
             }
 
