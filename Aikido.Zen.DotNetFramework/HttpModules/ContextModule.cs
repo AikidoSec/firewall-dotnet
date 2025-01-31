@@ -83,10 +83,10 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 context.ParsedBody = httpData.ParsedBody;
                 Agent.Instance.CaptureInboundRequest(context);
             }
-            catch (Exception ex )
+            catch (Exception ex)
             {
                 // pass through
-                LogHelper.DebugLog(Agent.Logger, $"Error captureing request {ex.Message}");
+                LogHelper.DebugLog(Agent.Logger, $"AIKIDO: Error captureing request {ex.Message}");
             }
             finally
             {

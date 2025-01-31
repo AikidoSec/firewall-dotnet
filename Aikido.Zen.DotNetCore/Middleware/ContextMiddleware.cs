@@ -82,7 +82,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
             }
             catch (Exception e)
             {
-                LogHelper.DebugLog(Agent.Logger, $"Error capturing request: {e.Message}");
+                LogHelper.DebugLog(Agent.Logger, $"AIKIDO: Error capturing request: {e.Message}");
                 throw;
             }
 
