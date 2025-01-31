@@ -83,9 +83,10 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 context.ParsedBody = httpData.ParsedBody;
                 Agent.Instance.CaptureInboundRequest(context);
             }
-            catch
+            catch (Exception ex)
             {
                 // pass through
+                LogHelper.DebugLog(Agent.Logger, $"AIKIDO: Error capturing request {ex.Message}");
             }
             finally
             {
@@ -139,8 +140,6 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             {
                 routePattern = (route as System.Web.Routing.Route).Url;
             }
-            // remove the leading slash from the route pattern, to ensure we don't distinguish for example between api/users and /api/users
-            return routePattern?.TrimStart('/');
             // remove the leading slash from the route pattern, to ensure we don't distinguish for example between api/users and /api/users
             return routePattern?.TrimStart('/');
         }

@@ -33,7 +33,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 Headers = headersDictionary,
                 RemoteAddress = httpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty, // no need to use X-FORWARDED-FOR, .NET Core already handles this
                 Cookies = httpContext.Request.Cookies.ToDictionary(c => c.Key, c => c.Value),
-                UserAgent = headersDictionary.TryGetValue("User-Agent", out var userAgent) ? userAgent.FirstOrDefault() : string.Empty,
+                UserAgent = headersDictionary.TryGetValue("User-Agent", out var userAgent) ? userAgent.FirstOrDefault() ?? string.Empty : string.Empty,
                 Source = Environment.Version.Major >= 5 ? "DotNetCore" : "DotNetFramework",
                 Route = GetRoute(httpContext),
             };
@@ -82,10 +82,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
             }
             catch (Exception e)
             {
-                if (EnvironmentHelper.IsDebugging)
-                {
-                    Console.WriteLine($"AIKIDO: error while parsing body: {e.Message}");
-                }
+                LogHelper.DebugLog(Agent.Logger, $"AIKIDO: Error capturing request: {e.Message}");
                 throw;
             }
 
