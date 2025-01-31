@@ -92,6 +92,11 @@ namespace Aikido.Zen.Core
             _batchTimeoutMs = batchTimeoutMs;
             _backgroundTask = Task.Run(ProcessRecurringTasksAsync);
             _context = new AgentContext();
+
+            if (EnvironmentHelper.IsDebugging)
+            {
+                Console.WriteLine("AIKIDO: Agent started.");
+            }
         }
 
         /// <summary>
@@ -240,11 +245,19 @@ namespace Aikido.Zen.Core
                                 .GetAwaiter()
                                 .GetResult();
                             eventItem.Callback?.Invoke(eventItem.Event, response);
+                            if (EnvironmentHelper.IsDebugging)
+                            {
+                                Console.WriteLine($"AIKIDO: Event processed: {eventItem.Event.Type}");
+                            }
                         }
                         catch (Exception ex)
                         {
                             // pass through
                             _logger.LogError(ex, "AIKIDO: Error processing event: {event}", eventItem.Event);
+                            if (EnvironmentHelper.IsDebugging)
+                            {
+                                Console.WriteLine($"AIKIDO: Error processing event: {eventItem.Event.Type}");
+                            }
                         }
                     }
                 }
@@ -287,6 +300,11 @@ namespace Aikido.Zen.Core
             if (context.User != null)
                 _context.AddUser(context.User, context.RemoteAddress);
             _context.AddRequest();
+
+            if (EnvironmentHelper.IsDebugging)
+            {
+                Console.WriteLine($"AIKIDO: Capturing inbound request from user: {context.User}");
+            }
         }
 
         /// <summary>
@@ -318,6 +336,11 @@ namespace Aikido.Zen.Core
             if (string.IsNullOrEmpty(host))
                 return;
             _context.AddHostname(host + (port.HasValue ? $":{port}" : ""));
+
+            if (EnvironmentHelper.IsDebugging)
+            {
+                Console.WriteLine($"AIKIDO: Capturing outbound request to host: {host}");
+            }
         }
 
         /// <summary>
@@ -354,6 +377,7 @@ namespace Aikido.Zen.Core
         {
             _logger.LogInformation("AIKIDO: Attack detected: {kind} {source} {payload} {operation} {context} {module} {metadata} {blocked}",
                 kind, source, payload, operation, context, module, metadata, blocked);
+            Console.WriteLine($"AIKIDO: Attack detected: {kind} {source} {payload} {operation} {context} {module} {metadata} {blocked}");
             QueueEvent(EnvironmentHelper.Token, DetectedAttack.Create(kind, source, payload, operation, context, module, metadata, blocked));
         }
 
