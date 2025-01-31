@@ -12,6 +12,7 @@ using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Models.Events;
+using HarmonyLib;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -31,7 +32,7 @@ namespace Aikido.Zen.Core
         private readonly int _batchTimeoutMs;
         private readonly ConcurrentDictionary<string, ScheduledItem> _scheduledEvents;
         private long _lastConfigCheck = DateTime.UtcNow.Ticks;
-        private static ILogger _logger = NullLogger.Instance;
+        public static ILogger Logger = NullLogger.Instance;
 
         // Rate limiting and timing constants for the event processing loop
         private const int RateLimitPerSecond = 10;
@@ -53,7 +54,7 @@ namespace Aikido.Zen.Core
         /// <param name="logger">The logger instance to use</param>
         public static void ConfigureLogger(ILogger logger)
         {
-            _logger = logger ?? NullLogger.Instance;
+            Logger = logger ?? NullLogger.Instance;
         }
 
         public static Agent Instance
@@ -92,11 +93,7 @@ namespace Aikido.Zen.Core
             _batchTimeoutMs = batchTimeoutMs;
             _backgroundTask = Task.Run(ProcessRecurringTasksAsync);
             _context = new AgentContext();
-
-            if (EnvironmentHelper.IsDebugging)
-            {
-                Console.WriteLine("AIKIDO: Agent started.");
-            }
+            LogHelper.DebugLog(Logger, "AIKIDO: Agent started");
         }
 
         /// <summary>
@@ -245,19 +242,12 @@ namespace Aikido.Zen.Core
                                 .GetAwaiter()
                                 .GetResult();
                             eventItem.Callback?.Invoke(eventItem.Event, response);
-                            if (EnvironmentHelper.IsDebugging)
-                            {
-                                Console.WriteLine($"AIKIDO: Event processed: {eventItem.Event.Type}");
-                            }
+                            LogHelper.DebugLog(Logger, $"AIKIDO: Event processed: {eventItem.Event.Type}");
                         }
                         catch (Exception ex)
                         {
                             // pass through
-                            _logger.LogError(ex, "AIKIDO: Error processing event: {event}", eventItem.Event);
-                            if (EnvironmentHelper.IsDebugging)
-                            {
-                                Console.WriteLine($"AIKIDO: Error processing event: {eventItem.Event.Type}");
-                            }
+                            LogHelper.DebugLog(Logger, $"AIKIDO: Error processing event: {eventItem.Event.Type}");
                         }
                     }
                 }
@@ -300,11 +290,7 @@ namespace Aikido.Zen.Core
             if (context.User != null)
                 _context.AddUser(context.User, context.RemoteAddress);
             _context.AddRequest();
-
-            if (EnvironmentHelper.IsDebugging)
-            {
-                Console.WriteLine($"AIKIDO: Capturing inbound request from user: {context.User}");
-            }
+            LogHelper.DebugLog(Logger, $"AIKIDO: Capturing inbound request from user: {context.User}");
         }
 
         /// <summary>
@@ -337,10 +323,7 @@ namespace Aikido.Zen.Core
                 return;
             _context.AddHostname(host + (port.HasValue ? $":{port}" : ""));
 
-            if (EnvironmentHelper.IsDebugging)
-            {
-                Console.WriteLine($"AIKIDO: Capturing outbound request to host: {host}");
-            }
+            LogHelper.DebugLog(Logger, $"AIKIDO: Capturing outbound request to host: {host}");
         }
 
         /// <summary>
@@ -375,9 +358,9 @@ namespace Aikido.Zen.Core
         /// <returns></returns>
         public virtual void SendAttackEvent(AttackKind kind, Source source, string payload, string operation, Context context, string module, IDictionary<string, object> metadata, bool blocked)
         {
-            _logger.LogInformation("AIKIDO: Attack detected: {kind} {source} {payload} {operation} {context} {module} {metadata} {blocked}",
+            LogHelper.DebugLog(Logger, $"AIKIDO: Attack detected: {kind} {source} {payload} {operation} {context} {module} {metadata} {blocked}");
+            Logger.LogInformation("AIKIDO: Attack detected: {kind} {source} {payload} {operation} {context} {module} {metadata} {blocked}",
                 kind, source, payload, operation, context, module, metadata, blocked);
-            Console.WriteLine($"AIKIDO: Attack detected: {kind} {source} {payload} {operation} {context} {module} {metadata} {blocked}");
             QueueEvent(EnvironmentHelper.Token, DetectedAttack.Create(kind, source, payload, operation, context, module, metadata, blocked));
         }
 
