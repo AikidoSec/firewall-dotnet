@@ -58,7 +58,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 RemoteAddress = httpContext.Request.UserHostAddress ?? string.Empty,
                 Cookies = httpContext.Request.Cookies.AllKeys.ToDictionary(k => k, k => httpContext.Request.Cookies[k].Value),
                 User = (User)httpContext.Items["Aikido.Zen.CurrentUser"],
-                UserAgent = LogHelper.SanitizeMessage(httpContext.Request.UserAgent),
+                UserAgent = httpContext.Request.UserAgent,
                 Source = "DotNetFramework",
                 Route = GetRoute(httpContext),
             };

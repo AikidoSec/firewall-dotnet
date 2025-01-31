@@ -286,7 +286,8 @@ namespace Aikido.Zen.Core
             if (context.User != null)
                 _context.AddUser(context.User, context.RemoteAddress);
             _context.AddRequest();
-            LogHelper.DebugLog(Logger, $"AIKIDO: Capturing inbound request from user: {context.User}");
+            if (context.User != null)
+                LogHelper.DebugLog(Logger, $"AIKIDO: Capturing inbound request from user: {context.User.Id}");
         }
 
         /// <summary>
@@ -354,9 +355,9 @@ namespace Aikido.Zen.Core
         /// <returns></returns>
         public virtual void SendAttackEvent(AttackKind kind, Source source, string payload, string operation, Context context, string module, IDictionary<string, object> metadata, bool blocked)
         {
-            LogHelper.DebugLog(Logger, $"AIKIDO: Attack detected: {kind} {source} {payload} {operation} {context} {module} {metadata} {blocked}");
-            Logger.LogInformation("AIKIDO: Attack detected: {kind} {source} {payload} {operation} {context} {module} {metadata} {blocked}",
-                kind, source, payload, operation, context, module, metadata, blocked);
+            LogHelper.DebugLog(Logger, $"AIKIDO: Attack detected: {kind} in {source} {operation}, blocked: {blocked}");
+            Logger.LogInformation("AIKIDO: Attack detected: {kind} in {source} {operation}, blocked: {blocked}",
+                kind, source, operation, blocked);
             QueueEvent(EnvironmentHelper.Token, DetectedAttack.Create(kind, source, payload, operation, context, module, metadata, blocked));
         }
 
