@@ -106,12 +106,18 @@ public void Configure(IApplicationBuilder app)
 You can also set the user in your custom middleware, if you would like to block users by their identity.
 
 ``` csharp
+// ...
+using Aikido.Zen.DotNetCore;
+using Microsoft.AspNet.Identity;
+// ...
 // add routing
     .UseRouting()
     // authorize users
     .Use((context, next) =>
     {
-        var id = context.User?.Identity?.Name ?? "test";
+        // unique id for the user
+        var id = context.User?.Identity?.GetUserId() ?? "test";
+        // name for the user, can be same as id
         var name = context.User?.Identity?.Name ?? "Anonymous";
         if (!string.IsNullOrEmpty(id))
             Zen.SetUser(id, name, context);
@@ -181,10 +187,16 @@ public void Application_Start()
 Or if you are using OWIN, you can add the following to your `Startup.cs` file:
 
 ``` csharp
+// ...
+using Aikido.Zen.DotNetFramework;
+using Aikido.Zen.Core;
+using Microsoft.AspNet.Identity;
+// ...
 public void Configuration(IAppBuilder app)
 {
     // other code
-    Zen.SetUser(context => new User(context.User.Identity.Name, context.User.Identity.Name));
+    // set the user, id should be unique, name can be same as id if needed
+    Zen.SetUser(context => new User(context.User.Identity.GetUserId(), context.User.Identity.Name));
     Zen.Start();
 }
 ```
