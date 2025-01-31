@@ -49,5 +49,46 @@ namespace Aikido.Zen.Test.Helpers
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception, string>>()), Times.Never);
         }
+
+        [Test]
+        public void DebugLog_ShouldSanitizeMessage_WhenMessageContainsDangerousCharacters()
+        {
+            // Arrange
+            var loggerMock = new Mock<ILogger>();
+            Environment.SetEnvironmentVariable("AIKIDO_DEBUG", "true");
+            var message = "Test\nmessage\rwith\tdangerous\ncharacters";
+            var expectedMessage = "Testmessagewithdangerouscharacters";
+
+            // Act
+            LogHelper.DebugLog(loggerMock.Object, message);
+
+            // Assert
+            loggerMock.Verify(logger => logger.Log(
+                It.Is<LogLevel>(level => level == LogLevel.Debug),
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains(expectedMessage)),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception, string>>()), Times.Once);
+        }
+
+        [Test]
+        public void DebugLog_ShouldNotChangeMessage_WhenMessageIsSafe()
+        {
+            // Arrange
+            var loggerMock = new Mock<ILogger>();
+            Environment.SetEnvironmentVariable("AIKIDO_DEBUG", "true");
+            var message = "Safe message";
+
+            // Act
+            LogHelper.DebugLog(loggerMock.Object, message);
+
+            // Assert
+            loggerMock.Verify(logger => logger.Log(
+                It.Is<LogLevel>(level => level == LogLevel.Debug),
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains(message)),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception, string>>()), Times.Once);
+        }
     }
 }
