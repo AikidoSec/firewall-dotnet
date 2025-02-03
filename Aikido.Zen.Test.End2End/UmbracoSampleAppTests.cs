@@ -15,17 +15,11 @@ public class UmbracoSampleAppTests : WebApplicationTestBase
 
     private WebApplicationFactory<Program> CreateSampleAppFactory()
     {
-        var factory = new WebApplicationFactory<Program>()
-            .WithWebHostBuilder(builder =>
-            {
-                builder.ConfigureAppConfiguration((context, config) =>
-                {
-                    foreach (var envVar in SampleAppEnvironmentVariables)
-                    {
-                        Environment.SetEnvironmentVariable(envVar.Key, envVar.Value);
-                    }
-                });
-            });
+        foreach (var envVar in SampleAppEnvironmentVariables)
+        {
+            Environment.SetEnvironmentVariable(envVar.Key, envVar.Value);
+        }
+        var factory = new WebApplicationFactory<Program>();
         return factory;
     }
 
