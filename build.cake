@@ -19,7 +19,7 @@ var filesToDownload = new string[] {
     "libzen_internals_aarch64-apple-darwin.dylib.sha256sum",
     "libzen_internals_aarch64-unknown-linux-gnu.so",
     "libzen_internals_aarch64-unknown-linux-gnu.so.sha256sum",
-    "libzen_internals_aarch64-pc-windows-msvc.dll"
+    "libzen_internals_aarch64-pc-windows-msvc.dll",
     "libzen_internals_aarch64-pc-windows-msvc.dll.sha256sum",
     "libzen_internals_x86_64-apple-darwin.dylib",
     "libzen_internals_x86_64-apple-darwin.dylib.sha256sum",
