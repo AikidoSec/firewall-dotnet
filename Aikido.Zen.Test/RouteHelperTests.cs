@@ -95,7 +95,7 @@ namespace Aikido.Zen.Test.Helpers
         [TestCase(null, "GET", 200, false)]
         [TestCase(null, "OPTIONS", 200, false)]
         [TestCase(null, "GET", 404, false)]
-        public void ShouldAddRoute_RouteIsNull_ShouldReturnExpectedResult(string route, string method, int statusCode, bool expectedResult)
+        public void ShouldAddRoute_RouteIsNull_ShouldReturnExpectedResult(string? route, string method, int statusCode, bool expectedResult)
         {
             // Arrange
             var context = new Context { Route = route, Method = method };
