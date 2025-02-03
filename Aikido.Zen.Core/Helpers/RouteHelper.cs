@@ -91,6 +91,12 @@ namespace Aikido.Zen.Core.Helpers
         /// <returns>True if the route should be added, false otherwise.</returns>
         public static bool ShouldAddRoute(Context context, int httpStatusCode)
         {
+            // Check for null context
+            if (context == null)
+            {
+                return false;
+            }
+
             // Check if the status code is valid
             bool validStatusCode = httpStatusCode >= 200 && httpStatusCode <= 399;
             if (!validStatusCode)
@@ -99,13 +105,19 @@ namespace Aikido.Zen.Core.Helpers
             }
 
             // Check if the method is excluded
-            if (ExcludedMethods.Contains(context.Method))
+            if (context.Method == null || ExcludedMethods.Contains(context.Method))
+            {
+                return false;
+            }
+
+            // Check for null or empty route
+            if (string.IsNullOrEmpty(context.Route))
             {
                 return false;
             }
 
             // Split the route into segments
-            var segments = context.Route.Split('/');
+            var segments = context.Route.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
 
             // Check for dot files and ignored strings
             if (segments.Any(IsDotFile) || segments.Any(ContainsIgnoredString))

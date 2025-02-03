@@ -74,5 +74,37 @@ namespace Aikido.Zen.Test.Helpers
             // Assert
             Assert.That(expectedResult, Is.EqualTo(result));
         }
+
+
+        /// <summary>
+        /// Tests for ShouldAddRoute method when context is null.
+        /// </summary>
+        [Test]
+        public void ShouldAddRoute_ContextIsNull_ShouldReturnFalse()
+        {
+            // Act
+            var result = RouteHelper.ShouldAddRoute(null, 200);
+
+            // Assert
+            Assert.That(result, Is.False);
+        }
+
+        /// <summary>
+        /// Tests for ShouldAddRoute method when route is null.
+        /// </summary>
+        [TestCase(null, "GET", 200, false)]
+        [TestCase(null, "OPTIONS", 200, false)]
+        [TestCase(null, "GET", 404, false)]
+        public void ShouldAddRoute_RouteIsNull_ShouldReturnExpectedResult(string route, string method, int statusCode, bool expectedResult)
+        {
+            // Arrange
+            var context = new Context { Route = route, Method = method };
+
+            // Act
+            var result = RouteHelper.ShouldAddRoute(context, statusCode);
+
+            // Assert
+            Assert.That(expectedResult, Is.EqualTo(result));
+        }
     }
 }

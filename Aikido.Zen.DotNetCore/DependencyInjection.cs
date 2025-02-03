@@ -41,9 +41,6 @@ namespace Aikido.Zen.DotNetCore
                 return new ContextAccessor(httpContextAccessor);
             });
 
-            // register the startup filter
-            services.AddTransient<IStartupFilter, ZenStartupFilter>();
-
             // register the zen Api
             services.AddZenApi();
 
@@ -80,6 +77,7 @@ namespace Aikido.Zen.DotNetCore
                 }
             }
             Patcher.Patch();
+            app.UseMiddleware<ContextMiddleware>();
             app.UseMiddleware<BlockingMiddleware>();
             return app;
         }

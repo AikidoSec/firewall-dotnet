@@ -122,6 +122,12 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
         private string GetRoute(HttpContext context)
         {
             string routePattern = null;
+            // if path is null or a file, we return the path
+            var path = context.Request.Path;
+            if (path == null || path.Contains('.'))
+            {
+                return path;
+            }
             // we use the .NET framework route collection to match against the request path,
             // this way, the routes found by Zen match the routes found by the .NET framework
             foreach (var route in RouteTable.Routes)
