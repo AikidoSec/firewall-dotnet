@@ -27,6 +27,7 @@
     <ProjectReference Include="..\e2e\sample-apps\PostgresSampleApp\PostgresSampleApp.csproj" />
     <ProjectReference Include="..\e2e\sample-apps\SQLiteSampleApp\SqliteSampleApp.csproj" />
     <ProjectReference Include="..\e2e\sample-apps\SqlServerSampleApp\SqlServerSampleApp.csproj" />
+    <ProjectReference Include="..\e2e\sample-apps\UmbracoSampleApp\UmbracoSampleApp.csproj" />
     <ProjectReference Include="..\SampleApp.Common\SampleApp.Common.csproj" />
   </ItemGroup>
 

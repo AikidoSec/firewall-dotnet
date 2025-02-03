@@ -9,6 +9,7 @@
   <ItemGroup>
     <PackageReference Include="Umbraco.Cms" Version="14.3.2" />
     <ProjectReference Include="..\..\..\Aikido.Zen.DotNetCore\Aikido.Zen.DotNetCore.csproj" />
+    <ProjectReference Include="..\..\..\SampleApp.Common\SampleApp.Common.csproj" />
   </ItemGroup>
 
   <ItemGroup>
