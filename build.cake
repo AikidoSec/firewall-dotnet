@@ -118,9 +118,17 @@ Task("Test")
         var testProjects = GetFiles("./**/Aikido.Zen.Test*.csproj") as IEnumerable<FilePath>;
         foreach (var project in testProjects)
         {
+            // skip the e2e tests
+            if (project.FullPath.Contains("End2End"))
+            {
+                Information($"Skipping test project {project.FullPath} for end-to-end tests");
+                continue;
+            }
+
             // skip tests for the wrong framework
             Information($"Running tests for {project.FullPath} on .NET Framework {framework}");
             if (framework.StartsWith("4.") && project.FullPath.Contains("DotNetCore"))
+
             {
                 Information($"Skipping test project {project.FullPath} for .NET Framework {framework}");
                 continue;
