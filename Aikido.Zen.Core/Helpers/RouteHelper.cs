@@ -120,7 +120,7 @@ namespace Aikido.Zen.Core.Helpers
             var segments = context.Route.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
 
             // Check for dot files and ignored strings
-            if (segments.Any(IsDotFile) || segments.Any(ContainsIgnoredString))
+            if (segments.Any(s => IsDotFile(s) && !ContainsIgnoredString(s)))
             {
                 return false;
             }
