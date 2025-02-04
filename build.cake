@@ -132,11 +132,7 @@ Task("Test")
 
             DotNetTest(project.FullPath, new DotNetTestSettings
             {
-                SetupProcessSettings = processSettings =>
-                {
-                    processSettings.RedirectStandardOutput = true;
-                    processSettings.OnOutputDataReceived = data => Information(data);
-                },
+                SetupProcessSettings = processSettings => processSettings.RedirectStandardOutput = true,
                 Configuration = configuration,
                 NoBuild = true,
                 NoRestore = true,
