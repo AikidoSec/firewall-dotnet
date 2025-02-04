@@ -128,15 +128,16 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             {
                 return string.Empty;
             }
-            // we use the .NET framework route collection to match against the request path,
-            // this way, the routes found by Zen match the routes found by the .NET framework
+            // Use the .NET framework route collection to match against the request path,
+            // ensuring the routes found by Zen match those found by the .NET framework
             foreach (var route in RouteTable.Routes)
             {
                 routePattern = GetRoutePattern(route);
                 if (RouteHelper.MatchRoute(routePattern, context.Request.Path))
                     break;
             }
-            return routePattern ?? string.Empty;
+            // Ensure the route pattern starts with a '/'
+            return routePattern != null ? "/" + routePattern.TrimStart('/') : string.Empty;
         }
 
         private string GetRoutePattern(RouteBase route)

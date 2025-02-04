@@ -101,19 +101,31 @@ namespace Aikido.Zen.DotNetCore.Middleware
 
         internal string GetRoute(HttpContext context)
         {
-            // we use the .NET core route collection to match against the request path,
-            // this way, the routes found by Zen match the routes found by the .NET core
+            // Use the .NET core route collection to match against the request path,
+            // ensuring the routes found by Zen match those found by the .NET core
             var routePattern = context.Request.Path.Value;
             if (context.Request.Path == null)
             {
                 return string.Empty;
             }
 
-            var endpoint = _endpoints.FirstOrDefault(e => (e as RouteEndpoint) != null && RouteHelper.MatchRoute((e as RouteEndpoint)!.RoutePattern.RawText, context.Request.Path.Value));
-            // remove the leading slash from the route pattern, to ensure we don't distinguish for example between api/users and /api/users
+            // Find the first endpoint that matches the request path
+            var endpoint = _endpoints.FirstOrDefault(e =>
+            {
+                // Check if the endpoint is a RouteEndpoint
+                if (e is RouteEndpoint routeEndpoint)
+                {
+                    // Use the RouteHelper to check if the route pattern matches the request path
+                    // e.g. /api/users/{id} will match /api/users/123
+                    return RouteHelper.MatchRoute(routeEndpoint.RoutePattern.RawText, context.Request.Path.Value);
+                }
+                return false;
+            });
             routePattern = (endpoint as RouteEndpoint)?.RoutePattern.RawText
                 ?? context.Request.Path;
-            return routePattern?.TrimStart('/') ?? string.Empty;
+
+            // Add a leading slash to the route pattern if not present
+            return routePattern != null ? "/" + routePattern.TrimStart('/') : string.Empty;
         }
     }
 }

@@ -31,7 +31,7 @@ namespace Aikido.Zen.Tests.DotNetCore
             _contextMiddleware = new ContextMiddleware([_mockEndpointDataSource.Object]);
         }
 
-        private Endpoint CreateEndpoint (string pattern, string name)
+        private Endpoint CreateEndpoint(string pattern, string name)
         {
             return new RouteEndpoint(
                 context => Task.CompletedTask,
@@ -55,7 +55,7 @@ namespace Aikido.Zen.Tests.DotNetCore
             var route = _contextMiddleware.GetRoute(_mockHttpContext.Object);
 
             // Assert
-            Assert.AreEqual("api/test", route);
+            Assert.AreEqual("/api/test", route);
         }
 
         [Test]
@@ -67,7 +67,7 @@ namespace Aikido.Zen.Tests.DotNetCore
             var route = _contextMiddleware.GetRoute(_mockHttpContext.Object);
 
             // Assert
-            Assert.AreEqual("api/items/{id}", route);
+            Assert.AreEqual("/api/items/{id}", route);
         }
 
         [Test]
@@ -79,7 +79,7 @@ namespace Aikido.Zen.Tests.DotNetCore
             var route = _contextMiddleware.GetRoute(_mockHttpContext.Object);
 
             // Assert
-            Assert.AreEqual("static/file.js", route);
+            Assert.AreEqual("/static/file.js", route);
         }
 
         [Test]
