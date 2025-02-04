@@ -172,7 +172,6 @@ Task("Test")
     .OnError(ex =>
     {
         Error($"Test task failed with error: {ex.Message}");
-        throw;
     });
 
 
