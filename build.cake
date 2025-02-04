@@ -128,9 +128,15 @@ Task("Test")
                 continue;
             }
 
+            var logFilePath = $"{coverageDir.FullPath}/test-results-{project.GetFilenameWithoutExtension()}.trx";
+
             DotNetTest(project.FullPath, new DotNetTestSettings
             {
-                SetupProcessSettings = processSettings => processSettings.RedirectStandardOutput = true,
+                SetupProcessSettings = processSettings =>
+                {
+                    processSettings.RedirectStandardOutput = true;
+                    processSettings.OnOutputDataReceived = data => Information(data);
+                },
                 Configuration = configuration,
                 NoBuild = true,
                 NoRestore = true,
@@ -147,9 +153,17 @@ Task("Test")
                             .Append("/p:Exclude=[Aikido.Zen.Test]*");
                     }
                     // Increase verbosity to detailed for more information
-                    return args.Append("--verbosity detailed");
+                    return args
+                        .Append("--verbosity detailed")
+                        .Append($"--logger trx;LogFileName={logFilePath}");
                 }
             });
+
+            // Output the test results to the console
+            if (FileExists(logFilePath))
+            {
+                Information(FileReadText(logFilePath));
+            }
         }
         Information($"Test task completed successfully. Coverage report at: {coverageDir.FullPath}");
 
