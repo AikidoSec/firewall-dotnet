@@ -1,32 +1,12 @@
+using UmbracoSampleApp;
 using Aikido.Zen.DotNetCore;
 
-WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
-
-builder
-    .Services.AddZenFirewall();
-
-builder.CreateUmbracoBuilder()
-    .AddBackOffice()
-    .AddWebsite()
-    .AddComposers()
-    .Build();
-
-WebApplication app = builder.Build();
-
-await app.BootUmbracoAsync();
-
-app.UseZenFirewall();
-
-app.UseUmbraco()
-    .WithMiddleware(u =>
+public class Program
+{
+    public static async Task Main(string[] args)
     {
-        u.UseBackOffice();
-        u.UseWebsite();
-    })
-    .WithEndpoints(u =>
-    {
-        u.UseBackOfficeEndpoints();
-        u.UseWebsiteEndpoints();
-    });
+        var app = await AppBuilderHelper.CreateApp(args);
 
-await app.RunAsync();
+        await app.RunAsync();
+    }
+}
