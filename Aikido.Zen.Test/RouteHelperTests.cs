@@ -74,5 +74,69 @@ namespace Aikido.Zen.Test.Helpers
             // Assert
             Assert.That(expectedResult, Is.EqualTo(result));
         }
+
+
+        /// <summary>
+        /// Tests for ShouldAddRoute method when context is null.
+        /// </summary>
+        [Test]
+        public void ShouldAddRoute_ContextIsNull_ShouldReturnFalse()
+        {
+            // Act
+            var result = RouteHelper.ShouldAddRoute(null, 200);
+
+            // Assert
+            Assert.That(result, Is.False);
+        }
+
+        /// <summary>
+        /// Tests for ShouldAddRoute method when route is null.
+        /// </summary>
+        [TestCase(null, "GET", 200, false)]
+        [TestCase(null, "OPTIONS", 200, false)]
+        [TestCase(null, "GET", 404, false)]
+        public void ShouldAddRoute_RouteIsNull_ShouldReturnExpectedResult(string? route, string method, int statusCode, bool expectedResult)
+        {
+            // Arrange
+            var context = new Context { Route = route, Method = method };
+
+            // Act
+            var result = RouteHelper.ShouldAddRoute(context, statusCode);
+
+            // Assert
+            Assert.That(expectedResult, Is.EqualTo(result));
+        }
+
+        [TestCase("", "", true)] // Both pattern and path are empty
+        [TestCase("/api/resource/", "/api/resource", true)] // Trailing slash in pattern
+        [TestCase("/api/resource", "/api/resource/", true)] // Trailing slash in path
+        [TestCase("/api/RESOURCE", "/api/resource", true)] // Case sensitivity
+        [TestCase("/api/{id}/details!", "/api/123/details!", true)] // Special characters in path
+        public void MatchRoute_EdgeCases_ShouldReturnExpectedResult(string pattern, string path, bool expectedResult)
+        {
+            // Act
+            var result = RouteHelper.MatchRoute(pattern, path);
+
+            // Assert
+            Assert.That(expectedResult, Is.EqualTo(result));
+        }
+
+        [TestCase(null, "GET", 200, false)] // Null method
+        [TestCase("/api/resource", null, 200, false)] // Null route
+        [TestCase("/api/resource", "GET", 199, false)] // Invalid status code below 200
+        [TestCase("/api/resource", "GET", 400, false)] // Invalid status code above 399
+        [TestCase("/.hidden/resource", "GET", 200, false)] // Dot file not .well-known
+        [TestCase("/api/cgi-bin/resource", "GET", 200, true)] // Ignored string in route
+        public void ShouldAddRoute_EdgeCases_ShouldReturnExpectedResult(string? route, string? method, int statusCode, bool expectedResult)
+        {
+            // Arrange
+            var context = new Context { Route = route, Method = method };
+
+            // Act
+            var result = RouteHelper.ShouldAddRoute(context, statusCode);
+
+            // Assert
+            Assert.That(expectedResult, Is.EqualTo(result));
+        }
     }
 }

@@ -5,7 +5,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Routing;
 using System.Collections.Concurrent;
+using System.Runtime.CompilerServices;
 
+[assembly: InternalsVisibleTo("Aikido.Zen.Tests.DotNetCore")]
 namespace Aikido.Zen.DotNetCore.Middleware
 {
     /// <summary>
@@ -35,7 +37,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 Cookies = httpContext.Request.Cookies.ToDictionary(c => c.Key, c => c.Value),
                 UserAgent = headersDictionary.TryGetValue("User-Agent", out var userAgent) ? userAgent.FirstOrDefault() ?? string.Empty : string.Empty,
                 Source = Environment.Version.Major >= 5 ? "DotNetCore" : "DotNetFramework",
-                Route = GetRoute(httpContext),
+                Route = GetParametrizedRoute(httpContext),
             };
 
             Agent.Instance.SetContextMiddlewareInstalled(true);
@@ -97,14 +99,33 @@ namespace Aikido.Zen.DotNetCore.Middleware
             }
         }
 
-        private string GetRoute(HttpContext context)
+        internal string GetParametrizedRoute(HttpContext context)
         {
-            // we use the .NET core route collection to match against the request path,
-            // this way, the routes found by Zen match the routes found by the .NET core
-            var path = context.Request.Path.Value;
-            var endpoint = _endpoints.FirstOrDefault(e => (e as RouteEndpoint) != null && RouteHelper.MatchRoute((e as RouteEndpoint)!.RoutePattern.RawText, path));
-            // remove the leading slash from the route pattern, to ensure we don't distinguish for example between api/users and /api/users
-            return (endpoint as RouteEndpoint)?.RoutePattern.RawText.TrimStart('/');
+            // Use the .NET core route collection to match against the request path,
+            // ensuring the routes found by Zen match those found by the .NET core
+            var routePattern = context.Request.Path.Value;
+            if (context.Request.Path == null)
+            {
+                return string.Empty;
+            }
+
+            // Find the first endpoint that matches the request path
+            var endpoint = _endpoints.FirstOrDefault(e =>
+            {
+                // Check if the endpoint is a RouteEndpoint
+                if (e is RouteEndpoint routeEndpoint)
+                {
+                    // Use the RouteHelper to check if the route pattern matches the request path
+                    // e.g. /api/users/{id} will match /api/users/123
+                    return RouteHelper.MatchRoute(routeEndpoint.RoutePattern.RawText, context.Request.Path.Value);
+                }
+                return false;
+            });
+            routePattern = (endpoint as RouteEndpoint)?.RoutePattern.RawText
+                ?? context.Request.Path;
+
+            // Add a leading slash to the route pattern if not present
+            return routePattern != null ? "/" + routePattern.TrimStart('/') : string.Empty;
         }
     }
 }

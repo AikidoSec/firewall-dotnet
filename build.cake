@@ -117,22 +117,59 @@ Task("Test")
         EnsureDirectoryExists(coverageDir);
 
         // Get test projects from Aikido.Zen.Test directory
-        var testProjects = GetFiles("./Aikido.Zen.Test/*.csproj") as IEnumerable<FilePath>;
+        var testProjects = GetFiles("./**/Aikido.Zen.Test*.csproj") as IEnumerable<FilePath>;
         foreach (var project in testProjects)
         {
+            // skip the e2e tests
+            if (project.FullPath.Contains("End2End"))
+            {
+                Information($"Skipping test project {project.FullPath} for end-to-end tests");
+                continue;
+            }
+
+            // skip tests for the wrong framework
+            Information($"Running tests for {project.FullPath} on .NET Framework {framework}");
+            if (framework.StartsWith("4.") && project.FullPath.Contains("DotNetCore"))
+
+            {
+                Information($"Skipping test project {project.FullPath} for .NET Framework {framework}");
+                continue;
+            }
+            if (!framework.StartsWith("4.") && project.FullPath.Contains("DotNetFramework"))
+            {
+                Information($"Skipping test project {project.FullPath} for .NET Framework {framework}");
+                continue;
+            }
+
+            var logFilePath = $"{coverageDir.FullPath}/test-results-{project.GetFilenameWithoutExtension()}.trx";
+
             DotNetTest(project.FullPath, new DotNetTestSettings
             {
-                SetupProcessSettings = processSettings => processSettings.RedirectStandardOutput = true,
+                SetupProcessSettings = processSettings =>
+                {
+                    processSettings.RedirectStandardOutput = true;
+                    processSettings.RedirectStandardError = true;
+                },
                 Configuration = configuration,
                 NoBuild = true,
                 NoRestore = true,
-                ArgumentCustomization = args => args
-                    .Append("/p:CollectCoverage=true")
-                    .Append("/p:CoverletOutputFormat=opencover")
-                    .Append($"/p:CoverletOutput={coverageDir.FullPath}/coverage.xml")
-                    .Append("/p:Include=[Aikido.Zen.*]*")
-                    .Append("/p:Exclude=[Aikido.Zen.Test]*")
-                    .Append("--verbosity diagnostic")
+                ArgumentCustomization = args =>
+                {
+                    // for now, only collect coverage for the main tests project
+                    if (project.FullPath.EndsWith("Aikido.Zen.Tests.csproj"))
+                    {
+                        args = args
+                            .Append("/p:CollectCoverage=true")
+                            .Append("/p:CoverletOutputFormat=opencover")
+                            .Append($"/p:CoverletOutput={coverageDir.FullPath}/coverage.xml")
+                            .Append("/p:Include=[Aikido.Zen.*]*")
+                            .Append("/p:Exclude=[Aikido.Zen.Test]*");
+                    }
+                    // Increase verbosity to diagnostic for more information
+                    return args
+                        .Append("--verbosity diagnostic")
+                        .Append($"--logger trx;LogFileName={logFilePath}");
+                }
             });
         }
         Information($"Test task completed successfully. Coverage report at: {coverageDir.FullPath}");
@@ -141,7 +178,13 @@ Task("Test")
         {
             Warning("Coverage file was not generated!");
         }
+    })
+    .OnError(ex =>
+    {
+        Error($"Test task failed with error: {ex.Message}");
     });
+
+
 
 /// <summary>
 /// Task to run end-to-end tests.

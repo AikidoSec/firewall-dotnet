@@ -7,7 +7,9 @@ using System.Threading.Tasks;
 using Context = Aikido.Zen.Core.Context;
 using Aikido.Zen.Core.Models;
 using System.Web.Routing;
+using System.Runtime.CompilerServices;
 
+[assembly: InternalsVisibleTo("Aikido.Zen.Tests.DotNetFramework")]
 namespace Aikido.Zen.DotNetFramework.HttpModules
 {
     /// <summary>
@@ -60,7 +62,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 User = (User)httpContext.Items["Aikido.Zen.CurrentUser"],
                 UserAgent = httpContext.Request.UserAgent,
                 Source = "DotNetFramework",
-                Route = GetRoute(httpContext),
+                Route = GetParametrizedRoute(httpContext),
             };
 
             Agent.Instance.SetContextMiddlewareInstalled(true);
@@ -119,18 +121,23 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 : httpContext.Request.ServerVariables["REMOTE_ADDR"];
         }
 
-        private string GetRoute(HttpContext context)
+        internal string GetParametrizedRoute(HttpContext context)
         {
-            string routePattern = null;
-            // we use the .NET framework route collection to match against the request path,
-            // this way, the routes found by Zen match the routes found by the .NET framework
+            var routePattern = context.Request.Path;
+            if (routePattern == null)
+            {
+                return string.Empty;
+            }
+            // Use the .NET framework route collection to match against the request path,
+            // ensuring the routes found by Zen match those found by the .NET framework
             foreach (var route in RouteTable.Routes)
             {
                 routePattern = GetRoutePattern(route);
                 if (RouteHelper.MatchRoute(routePattern, context.Request.Path))
                     break;
             }
-            return routePattern;
+            // Ensure the route pattern starts with a '/'
+            return routePattern != null ? "/" + routePattern.TrimStart('/') : string.Empty;
         }
 
         private string GetRoutePattern(RouteBase route)
