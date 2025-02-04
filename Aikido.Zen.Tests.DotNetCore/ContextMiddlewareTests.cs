@@ -52,7 +52,7 @@ namespace Aikido.Zen.Tests.DotNetCore
             _mockHttpContext.Setup(c => c.Request.Path).Returns("/api/test");
 
             // Act
-            var route = _contextMiddleware.GetRoute(_mockHttpContext.Object);
+            var route = _contextMiddleware.GetParametrizedRoute(_mockHttpContext.Object);
 
             // Assert
             Assert.AreEqual("/api/test", route);
@@ -64,7 +64,7 @@ namespace Aikido.Zen.Tests.DotNetCore
             // Arrange
             _mockHttpContext.Setup(c => c.Request.Path).Returns("/api/items/123");
             // Act
-            var route = _contextMiddleware.GetRoute(_mockHttpContext.Object);
+            var route = _contextMiddleware.GetParametrizedRoute(_mockHttpContext.Object);
 
             // Assert
             Assert.AreEqual("/api/items/{id}", route);
@@ -76,7 +76,7 @@ namespace Aikido.Zen.Tests.DotNetCore
             _mockHttpContext.Setup(c => c.Request.Path).Returns("/static/file.js");
 
             // Act
-            var route = _contextMiddleware.GetRoute(_mockHttpContext.Object);
+            var route = _contextMiddleware.GetParametrizedRoute(_mockHttpContext.Object);
 
             // Assert
             Assert.AreEqual("/static/file.js", route);
@@ -89,7 +89,7 @@ namespace Aikido.Zen.Tests.DotNetCore
             _mockHttpContext.Setup(c => c.Request.Path).Returns((string)null);
 
             // Act
-            var route = _contextMiddleware.GetRoute(_mockHttpContext.Object);
+            var route = _contextMiddleware.GetParametrizedRoute(_mockHttpContext.Object);
 
             // Assert
             Assert.AreEqual(string.Empty, route);

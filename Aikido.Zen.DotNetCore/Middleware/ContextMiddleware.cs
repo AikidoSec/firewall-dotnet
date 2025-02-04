@@ -37,7 +37,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 Cookies = httpContext.Request.Cookies.ToDictionary(c => c.Key, c => c.Value),
                 UserAgent = headersDictionary.TryGetValue("User-Agent", out var userAgent) ? userAgent.FirstOrDefault() ?? string.Empty : string.Empty,
                 Source = Environment.Version.Major >= 5 ? "DotNetCore" : "DotNetFramework",
-                Route = GetRoute(httpContext),
+                Route = GetParametrizedRoute(httpContext),
             };
 
             Agent.Instance.SetContextMiddlewareInstalled(true);
@@ -99,7 +99,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
             }
         }
 
-        internal string GetRoute(HttpContext context)
+        internal string GetParametrizedRoute(HttpContext context)
         {
             // Use the .NET core route collection to match against the request path,
             // ensuring the routes found by Zen match those found by the .NET core

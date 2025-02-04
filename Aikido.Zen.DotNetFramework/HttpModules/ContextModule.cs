@@ -62,7 +62,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 User = (User)httpContext.Items["Aikido.Zen.CurrentUser"],
                 UserAgent = httpContext.Request.UserAgent,
                 Source = "DotNetFramework",
-                Route = GetRoute(httpContext),
+                Route = GetParametrizedRoute(httpContext),
             };
 
             Agent.Instance.SetContextMiddlewareInstalled(true);
@@ -121,7 +121,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 : httpContext.Request.ServerVariables["REMOTE_ADDR"];
         }
 
-        internal string GetRoute(HttpContext context)
+        internal string GetParametrizedRoute(HttpContext context)
         {
             var routePattern = context.Request.Path;
             if (routePattern == null)

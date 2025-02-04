@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Web;
 using System.Web.Routing;
 using Moq;
@@ -28,7 +28,7 @@ namespace Aikido.Zen.Tests.DotNetFramework
             _mockHttpContext = new HttpContext(new HttpRequest(string.Empty, "http://test.local/static/file.js", string.Empty), new HttpResponse(null));
 
             // Act
-            var route = _contextModule.GetRoute(_mockHttpContext);
+            var route = _contextModule.GetParametrizedRoute(_mockHttpContext);
 
             // Assert
             Assert.That("/static/file.js", Is.EqualTo(route));
@@ -42,7 +42,7 @@ namespace Aikido.Zen.Tests.DotNetFramework
             _mockHttpContext = new HttpContext(new HttpRequest(string.Empty, "http://test.local/api/items/123", string.Empty), new HttpResponse(null));
 
             // Act
-            var route = _contextModule.GetRoute(_mockHttpContext);
+            var route = _contextModule.GetParametrizedRoute(_mockHttpContext);
 
             // Assert
             Assert.That("/api/items/{id}", Is.EqualTo(route));
@@ -56,7 +56,7 @@ namespace Aikido.Zen.Tests.DotNetFramework
             _mockHttpContext = new HttpContext(new HttpRequest(string.Empty, "http://test.local/api/test", string.Empty), new HttpResponse(null));
 
             // Act
-            var route = _contextModule.GetRoute(_mockHttpContext);
+            var route = _contextModule.GetParametrizedRoute(_mockHttpContext);
 
             // Assert
             Assert.That("/api/test", Is.EqualTo(route));
