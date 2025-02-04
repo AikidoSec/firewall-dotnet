@@ -122,7 +122,6 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
         private string GetRoute(HttpContext context)
         {
             var routePattern = context.Request.Path;
-            string routePattern = path;
             if (routePattern == null)
             {
                 return string.Empty;
