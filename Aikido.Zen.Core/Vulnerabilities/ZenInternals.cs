@@ -44,7 +44,13 @@ namespace Aikido.Zen.Core.Vulnerabilities
             [In] byte[] userinput);
 
         [DllImport("libraries/libzen_internals_x86_64-pc-windows-gnu.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "detect_sql_injection")]
-        private static extern int detect_sql_injection_windows(
+        private static extern int detect_sql_injection_windows_x86_64(
+            [In] byte[] query,
+            [In] byte[] userinput,
+            int dialect);
+
+        [DllImport("libraries/libzen_internals_aarch64-pc-windows-msvc.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "detect_sql_injection")]
+        private static extern int detect_sql_injection_windows_arm64(
             [In] byte[] query,
             [In] byte[] userinput,
             int dialect);
@@ -152,10 +158,20 @@ namespace Aikido.Zen.Core.Vulnerabilities
             int result;
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                result = detect_sql_injection_windows(
-                    NullTerminatedUTF8bytes(query),
-                    NullTerminatedUTF8bytes(userInput),
-                    dialect);
+                if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
+                {
+                    result = detect_sql_injection_windows_arm64(
+                        NullTerminatedUTF8bytes(query),
+                        NullTerminatedUTF8bytes(userInput),
+                        dialect);
+                }
+                else
+                {
+                    result = detect_sql_injection_windows_x86_64(
+                        NullTerminatedUTF8bytes(query),
+                        NullTerminatedUTF8bytes(userInput),
+                        dialect);
+                }
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {

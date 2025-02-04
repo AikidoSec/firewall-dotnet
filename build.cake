@@ -8,7 +8,7 @@ var configuration = Argument("configuration", "Release");
 var framework = Argument("framework", "");
 var solution = "./Aikido.Zen.sln";
 var projectName = "Aikido.Zen.Core";
-var zenInternalsVersion = "0.1.36";
+var zenInternalsVersion = "0.1.37";
 var libVersion = Argument("libVersion", "0.0.1-alpha5");
 
 var baseUrl = $"https://github.com/AikidoSec/zen-internals/releases/download/v{zenInternalsVersion}/";
@@ -19,6 +19,8 @@ var filesToDownload = new string[] {
     "libzen_internals_aarch64-apple-darwin.dylib.sha256sum",
     "libzen_internals_aarch64-unknown-linux-gnu.so",
     "libzen_internals_aarch64-unknown-linux-gnu.so.sha256sum",
+    "libzen_internals_aarch64-pc-windows-msvc.dll",
+    "libzen_internals_aarch64-pc-windows-msvc.dll.sha256sum",
     "libzen_internals_x86_64-apple-darwin.dylib",
     "libzen_internals_x86_64-apple-darwin.dylib.sha256sum",
     "libzen_internals_x86_64-pc-windows-gnu.dll",
