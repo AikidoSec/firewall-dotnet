@@ -121,10 +121,12 @@ Task("Test")
             // skip tests for the wrong framework
             if (framework.StartsWith("4.") && project.FullPath.Contains("DotNetCore"))
             {
+                Information($"Skipping test project {project.FullPath} for .NET Framework {framework}");
                 continue;
             }
             if (!framework.StartsWith("4.") && project.FullPath.Contains("DotNetFramework"))
             {
+                Information($"Skipping test project {project.FullPath} for .NET Framework {framework}");
                 continue;
             }
 
@@ -132,7 +134,11 @@ Task("Test")
 
             DotNetTest(project.FullPath, new DotNetTestSettings
             {
-                SetupProcessSettings = processSettings => processSettings.RedirectStandardOutput = true,
+                SetupProcessSettings = processSettings =>
+                {
+                    processSettings.RedirectStandardOutput = true;
+                    processSettings.RedirectStandardError = true;
+                },
                 Configuration = configuration,
                 NoBuild = true,
                 NoRestore = true,
@@ -148,9 +154,9 @@ Task("Test")
                             .Append("/p:Include=[Aikido.Zen.*]*")
                             .Append("/p:Exclude=[Aikido.Zen.Test]*");
                     }
-                    // Increase verbosity to detailed for more information
+                    // Increase verbosity to diagnostic for more information
                     return args
-                        .Append("--verbosity detailed")
+                        .Append("--verbosity diagnostic")
                         .Append($"--logger trx;LogFileName={logFilePath}");
                 }
             });
