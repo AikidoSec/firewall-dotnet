@@ -116,7 +116,7 @@ Task("Test")
 
         // Get test projects from Aikido.Zen.Test directory
         // Get test projects from Aikido.Zen.Tests, Aikido.Zen.Tests.DotNetFramework, and Aikido.Zen.Tests.DotNetCore directories
-        var testProjects = GetFiles("./**/Aikido.Zen.Tests.*.csproj") as IEnumerable<FilePath>;
+        var testProjects = GetFiles("./**/Aikido.Zen.Test*.csproj") as IEnumerable<FilePath>;
         foreach (var project in testProjects)
         {
             // skip tests for the wrong framework
