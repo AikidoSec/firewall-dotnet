@@ -5,7 +5,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Routing;
 using System.Collections.Concurrent;
+using System.Runtime.CompilerServices;
 
+[assembly: InternalsVisibleTo("Aikido.Zen.Tests.DotNetCore")]
 namespace Aikido.Zen.DotNetCore.Middleware
 {
     /// <summary>
@@ -97,7 +99,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
             }
         }
 
-        private string GetRoute(HttpContext context)
+        internal string GetRoute(HttpContext context)
         {
             // we use the .NET core route collection to match against the request path,
             // this way, the routes found by Zen match the routes found by the .NET core

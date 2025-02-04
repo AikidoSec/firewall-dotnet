@@ -7,7 +7,9 @@ using System.Threading.Tasks;
 using Context = Aikido.Zen.Core.Context;
 using Aikido.Zen.Core.Models;
 using System.Web.Routing;
+using System.Runtime.CompilerServices;
 
+[assembly: InternalsVisibleTo("Aikido.Zen.Tests.DotNetFramework")]
 namespace Aikido.Zen.DotNetFramework.HttpModules
 {
     /// <summary>
@@ -119,7 +121,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 : httpContext.Request.ServerVariables["REMOTE_ADDR"];
         }
 
-        private string GetRoute(HttpContext context)
+        internal string GetRoute(HttpContext context)
         {
             var routePattern = context.Request.Path;
             if (routePattern == null)
@@ -134,7 +136,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 if (RouteHelper.MatchRoute(routePattern, context.Request.Path))
                     break;
             }
-            return routePattern?.TrimStart('/') ?? string.Empty;
+            return routePattern ?? string.Empty;
         }
 
         private string GetRoutePattern(RouteBase route)

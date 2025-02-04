@@ -115,22 +115,40 @@ Task("Test")
         EnsureDirectoryExists(coverageDir);
 
         // Get test projects from Aikido.Zen.Test directory
-        var testProjects = GetFiles("./Aikido.Zen.Test/*.csproj") as IEnumerable<FilePath>;
+        // Get test projects from Aikido.Zen.Tests, Aikido.Zen.Tests.DotNetFramework, and Aikido.Zen.Tests.DotNetCore directories
+        var testProjects = GetFiles("./**/Aikido.Zen.Tests.*.csproj") as IEnumerable<FilePath>;
         foreach (var project in testProjects)
         {
+            // skip tests for the wrong framework
+            if (framework.Contains("4.") && project.FullPath.Contains("DotNetCore"))
+            {
+                continue;
+            }
+            if (!framework.Contains("4.") && project.FullPath.Contains("DotNetFramework"))
+            {
+                continue;
+            }
+
             DotNetTest(project.FullPath, new DotNetTestSettings
             {
                 SetupProcessSettings = processSettings => processSettings.RedirectStandardOutput = true,
                 Configuration = configuration,
                 NoBuild = true,
                 NoRestore = true,
-                ArgumentCustomization = args => args
-                    .Append("/p:CollectCoverage=true")
-                    .Append("/p:CoverletOutputFormat=opencover")
-                    .Append($"/p:CoverletOutput={coverageDir.FullPath}/coverage.xml")
-                    .Append("/p:Include=[Aikido.Zen.*]*")
-                    .Append("/p:Exclude=[Aikido.Zen.Test]*")
-                    .Append("--verbosity diagnostic")
+                ArgumentCustomization = args =>
+                {
+                    // for now, only collect coverage for the main tests project
+                    if (project.FullPath.EndsWith("Aikido.Zen.Tests.csproj"))
+                    {
+                        args = args
+                            .Append("/p:CollectCoverage=true")
+                            .Append("/p:CoverletOutputFormat=opencover")
+                            .Append($"/p:CoverletOutput={coverageDir.FullPath}/coverage.xml")
+                            .Append("/p:Include=[Aikido.Zen.*]*")
+                            .Append("/p:Exclude=[Aikido.Zen.Test]*");
+                    }
+                    return args.Append("--verbosity diagnostic");
+                }
             });
         }
         Information($"Test task completed successfully. Coverage report at: {coverageDir.FullPath}");
