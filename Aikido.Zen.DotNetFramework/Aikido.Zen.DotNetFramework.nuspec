@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>Aikido.Zen.DotNetFramework</id>
-    <version>*</version>
+    <version>$version$</version>
     <title>$title$</title>
     <authors>Aikido Security</authors>
     <owners>Aikido Security</owners>
