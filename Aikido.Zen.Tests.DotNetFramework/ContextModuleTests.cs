@@ -21,7 +21,7 @@ namespace Aikido.Zen.Tests.DotNetFramework
         }
 
         [Test]
-        public void GetRoute_ReturnsCorrectRoutePattern_ForStaticFiles()
+        public void GetParametrizedRoute_ReturnsCorrectRoutePattern_ForStaticFiles ()
         {
             // Arrange
             RouteTable.Routes.Add(new Route("static/file.js", new StopRoutingHandler()));
@@ -35,7 +35,7 @@ namespace Aikido.Zen.Tests.DotNetFramework
         }
 
         [Test]
-        public void GetRoute_ReturnsCorrectRoutePattern_ForRouteParameters()
+        public void GetParametrizedRoute_ReturnsCorrectRoutePattern_ForRouteParameters ()
         {
             // Arrange
             RouteTable.Routes.Add(new Route("api/items/{id}", new StopRoutingHandler()));
@@ -49,7 +49,7 @@ namespace Aikido.Zen.Tests.DotNetFramework
         }
 
         [Test]
-        public void GetRoute_ReturnsCorrectRoutePattern()
+        public void GetParametrizedRoute_ReturnsCorrectRoutePattern ()
         {
             // Arrange
             RouteTable.Routes.Add(new Route("api/test", new StopRoutingHandler()));

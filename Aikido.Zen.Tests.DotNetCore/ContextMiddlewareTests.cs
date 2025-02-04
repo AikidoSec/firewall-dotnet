@@ -46,7 +46,7 @@ namespace Aikido.Zen.Tests.DotNetCore
         }
 
         [Test]
-        public void GetRoute_ReturnsCorrectRoutePattern()
+        public void GetParametrizedRoute_ReturnsCorrectRoutePattern ()
         {
             // Arrange
             _mockHttpContext.Setup(c => c.Request.Path).Returns("/api/test");
@@ -59,7 +59,7 @@ namespace Aikido.Zen.Tests.DotNetCore
         }
 
         [Test]
-        public void GetRoute_ReturnsCorrectRoutePattern_WithRouteParameters()
+        public void GetParametrizedRoute_ReturnsCorrectRoutePattern_WithRouteParameters ()
         {
             // Arrange
             _mockHttpContext.Setup(c => c.Request.Path).Returns("/api/items/123");
@@ -71,7 +71,7 @@ namespace Aikido.Zen.Tests.DotNetCore
         }
 
         [Test]
-        public void GetRoute_ReturnsCorrectRoutePattern_ForStaticFiles()
+        public void GetParametrizedRoute_ReturnsCorrectRoutePattern_ForStaticFiles ()
         {
             _mockHttpContext.Setup(c => c.Request.Path).Returns("/static/file.js");
 
@@ -83,7 +83,7 @@ namespace Aikido.Zen.Tests.DotNetCore
         }
 
         [Test]
-        public void GetRoute_ReturnsEmptyString_ForNullPath()
+        public void GetParametrizedRoute_ReturnsEmptyString_ForNullPath ()
         {
             // Arrange
             _mockHttpContext.Setup(c => c.Request.Path).Returns((string)null);
