@@ -119,6 +119,7 @@ Task("Test")
         foreach (var project in testProjects)
         {
             // skip tests for the wrong framework
+            Information($"Running tests for {project.FullPath} on .NET Framework {framework}");
             if (framework.StartsWith("4.") && project.FullPath.Contains("DotNetCore"))
             {
                 Information($"Skipping test project {project.FullPath} for .NET Framework {framework}");
@@ -160,12 +161,6 @@ Task("Test")
                         .Append($"--logger trx;LogFileName={logFilePath}");
                 }
             });
-
-            // Output the test results to the console
-            if (FileExists(logFilePath))
-            {
-                Information(FileReadText(logFilePath));
-            }
         }
         Information($"Test task completed successfully. Coverage report at: {coverageDir.FullPath}");
 
@@ -173,7 +168,14 @@ Task("Test")
         {
             Warning("Coverage file was not generated!");
         }
+    })
+    .OnError(ex =>
+    {
+        Error($"Test task failed with error: {ex.Message}");
+        throw;
     });
+
+
 
 /// <summary>
 /// Task to run end-to-end tests.
