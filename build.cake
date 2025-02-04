@@ -115,16 +115,15 @@ Task("Test")
         EnsureDirectoryExists(coverageDir);
 
         // Get test projects from Aikido.Zen.Test directory
-        // Get test projects from Aikido.Zen.Tests, Aikido.Zen.Tests.DotNetFramework, and Aikido.Zen.Tests.DotNetCore directories
         var testProjects = GetFiles("./**/Aikido.Zen.Test*.csproj") as IEnumerable<FilePath>;
         foreach (var project in testProjects)
         {
             // skip tests for the wrong framework
-            if (framework.Contains("4.") && project.FullPath.Contains("DotNetCore"))
+            if (framework.StartsWith("4.") && project.FullPath.Contains("DotNetCore"))
             {
                 continue;
             }
-            if (!framework.Contains("4.") && project.FullPath.Contains("DotNetFramework"))
+            if (!framework.StartsWith("4.") && project.FullPath.Contains("DotNetFramework"))
             {
                 continue;
             }
@@ -147,7 +146,8 @@ Task("Test")
                             .Append("/p:Include=[Aikido.Zen.*]*")
                             .Append("/p:Exclude=[Aikido.Zen.Test]*");
                     }
-                    return args.Append("--verbosity diagnostic");
+                    // Increase verbosity to detailed for more information
+                    return args.Append("--verbosity detailed");
                 }
             });
         }
