@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Aikido.Zen.Core.Models;
 using Microsoft.Net.Http.Headers;
+using System.Text.Json;
 
 namespace Aikido.Zen.Core.Helpers
 {
@@ -47,7 +48,14 @@ namespace Aikido.Zen.Core.Helpers
         {
             foreach (var query in queryParams)
             {
-                result[$"query.{query.Key}"] = query.Value;
+                if (JsonHelper.TryParseJson(query.Value, out var jsonValue))
+                {
+                    JsonHelper.FlattenJson(result, jsonValue, $"query.{query.Key}");
+                }
+                else
+                {
+                    result[$"query.{query.Key}"] = query.Value;
+                }
             }
         }
 
@@ -60,7 +68,23 @@ namespace Aikido.Zen.Core.Helpers
         {
             foreach (var header in headers)
             {
-                result[$"headers.{header.Key}"] = header.Value;
+                if (JsonHelper.TryParseJson(header.Value, out var jsonValue))
+                {
+                    JsonHelper.FlattenJson(result, jsonValue, $"headers.{header.Key}");
+                }
+                else
+                {
+                    result[$"headers.{header.Key}"] = header.Value;
+                }
+            }
+
+            if (headers.TryGetValue("Authorization", out var authHeader))
+            {
+                var (isJwt, decodedObject) = JwtHelper.TryDecodeAsJwt(authHeader);
+                if (isJwt && decodedObject != null && !result.ContainsKey("auth"))
+                {
+                    JsonHelper.FlattenJson(result, JsonDocument.Parse(JsonSerializer.Serialize(decodedObject)).RootElement, "auth.jwt");
+                }
             }
         }
 
