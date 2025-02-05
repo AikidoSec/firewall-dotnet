@@ -1,7 +1,5 @@
-using System;
 using System.Reflection;
 using HarmonyLib;
-using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Helpers;
 
 namespace Aikido.Zen.DotNetCore.Patches
@@ -11,16 +9,26 @@ namespace Aikido.Zen.DotNetCore.Patches
         public static void ApplyPatches(Harmony harmony)
         {
             // Use reflection to get the types dynamically
-            PatchMethod(harmony, "MongoDB.Driver", "MongoCollection", "Find");
-            PatchMethod(harmony, "MongoDB.Driver", "MongoCollection", "InsertOne");
-            PatchMethod(harmony, "MongoDB.Driver", "MongoCollection", "UpdateOne");
-            PatchMethod(harmony, "MongoDB.Driver", "MongoCollection", "DeleteOne");
-            PatchMethod(harmony, "MongoDB.Driver", "MongoCollection", "Aggregate");
-            PatchMethod(harmony, "MongoDB.Driver", "MongoCommand", "RunCommand");
-            PatchMethod(harmony, "MongoDB.Driver", "MongoCommand", "RunCommandAsync");
+            PatchMethod(harmony, "MongoDB.Driver.IMongoDatabase", "RunCommand");
+            PatchMethod(harmony, "MongoDB.Driver.IMongoDatabase", "RunCommandAsync");
+            PatchMethod(harmony, "MongoDB.Driver.IMongoCollection`1", "Find");
+            PatchMethod(harmony, "MongoDB.Driver.IMongoCollection`1", "FindAsync");
         }
 
-        private static void PatchMethod(Harmony harmony, string assemblyName, string typeName, string methodName, params string[] parameterTypeNames)
+        private static void PatchMethod (Harmony harmony, string interfaceName, string interfaceMethodName)
+        {
+            var implementingTypes = ReflectionHelper.GetImplementingClasses(interfaceName, "MongoDB.Driver", "MongoDb.Bson");
+            foreach (var implementingType in implementingTypes)
+            {
+               var method = ReflectionHelper.GetMethodFromAssembly(implementingType.Assembly.GetName().Name, implementingType.Name, interfaceMethodName);
+               if (method != null)
+               {
+                   harmony.Patch(method, new HarmonyMethod(typeof(NoSQLClientPatches).GetMethod(nameof(OnCommandExecuting), BindingFlags.Static | BindingFlags.NonPublic)));
+               }
+            }
+        }
+
+        private static void PatchMethod (Harmony harmony, string assemblyName, string typeName, string methodName, params string[] parameterTypeNames)
         {
             var method = ReflectionHelper.GetMethodFromAssembly(assemblyName, typeName, methodName, parameterTypeNames);
             if (method != null)

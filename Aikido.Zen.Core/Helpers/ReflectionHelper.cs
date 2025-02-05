@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 
 namespace Aikido.Zen.Core.Helpers
 {
@@ -57,9 +56,85 @@ namespace Aikido.Zen.Core.Helpers
             var method = type
                 .GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static)
                 .FirstOrDefault(m => m.Name == methodName &&
-                                     m.GetParameters().Select(p => p.ParameterType.FullName).SequenceEqual(parameterTypeNames));
+                                     (!parameterTypeNames.Any() || m.GetParameters().Select(p => p.ParameterType.FullName).SequenceEqual(parameterTypeNames)) &&
+                                     m.IsGenericMethod == false
+                                    );
             return method;
         }
+
+        /// <summary>
+        /// Returns all classes that implement the specified interface within the given assemblies.
+        /// </summary>
+        /// <param name="interfaceType">The interface type to search for.</param>
+        /// <param name="assemblyNames">The names of the assemblies to search within.</param>
+        /// <returns>A list of types that implement the specified interface.</returns>
+        public static List<Type> GetImplementingClasses(Type interfaceType, params string[] assemblyNames)
+        {
+            var implementingTypes = new List<Type>();
+
+            foreach (var assemblyName in assemblyNames)
+            {
+                if (!_assemblies.TryGetValue(assemblyName, out var assembly))
+                {
+                    assembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.GetName().Name == assemblyName);
+                    if (File.Exists($"{assemblyName}.dll") && assembly == null)
+                    {
+                        assembly = Assembly.LoadFrom($"{assemblyName}.dll");
+                    }
+                    if (assembly == null) continue;
+                    _assemblies[assemblyName] = assembly;
+                }
+
+                // Find all types in the assembly that implement the specified interface
+                var types = assembly.DefinedTypes.Where(t => t.IsClass && !t.IsAbstract)
+                    .Where(t => t.GetInterfaces().Any(i => (i.IsGenericType && i.GetGenericTypeDefinition() == interfaceType) || i.IsAssignableFrom(t)));
+                implementingTypes.AddRange(types);
+            }
+
+            return implementingTypes;
+        }
+
+        /// <summary>
+        /// Returns all classes that implement the specified interface within the given assemblies.
+        /// </summary>
+        /// <param name="fullTypeName">The full name of the type to search for.</param>
+        /// <param name="assemblyNames">The names of the assemblies to search within.</param>
+        /// <returns>A list of types that implement the specified interface.</returns>
+        public static List<Type> GetImplementingClasses(string fullTypeName, params string[] assemblyNames)
+        {
+            var type = Type.GetType(fullTypeName) ??
+                AppDomain.CurrentDomain.GetAssemblies()
+                    .SelectMany(a => a.GetTypes())
+                    .FirstOrDefault(t => t.FullName == fullTypeName);
+            if (type == null)
+            {
+                return new List<Type>();
+            }
+            return GetImplementingClasses(type, assemblyNames);
+        }
+
+        /// <summary>
+        /// Retrieves all methods from the specified type by their name.
+        /// </summary>
+        /// <param name="type">The type to search for the methods.</param>
+        /// <param name="methodName">The name of the methods to find.</param>
+        /// <returns>A list of MethodInfo objects representing the methods if found; otherwise, an empty list.</returns>
+        public static List<MethodInfo> GetMethodsFromType(Type type, string methodName)
+        {
+            if (type == null || string.IsNullOrEmpty(methodName))
+            {
+                return new List<MethodInfo>();
+            }
+
+            // Search for all methods with the specified name in the given type
+            var methods = type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static)
+                              .Where(m => m.Name == methodName)
+                              .ToList();
+
+            return methods;
+        }
+
+
 
         public static void ClearCache()
         {

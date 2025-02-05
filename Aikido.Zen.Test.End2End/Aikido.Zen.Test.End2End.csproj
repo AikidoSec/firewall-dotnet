@@ -24,6 +24,7 @@
     <ProjectReference Include="..\Aikido.Zen.Core\Aikido.Zen.Core.csproj" />
     <ProjectReference Include="..\e2e\Aikido.Zen.Server.Mock\Aikido.Zen.Server.Mock.csproj" />
     <ProjectReference Include="..\e2e\sample-apps\MySqlSampleApp\MySqlSampleApp.csproj" />
+    <ProjectReference Include="..\e2e\sample-apps\MongoDbSampleApp\MongoDbSampleApp.csproj" />
     <ProjectReference Include="..\e2e\sample-apps\PostgresSampleApp\PostgresSampleApp.csproj" />
     <ProjectReference Include="..\e2e\sample-apps\SQLiteSampleApp\SqliteSampleApp.csproj" />
     <ProjectReference Include="..\e2e\sample-apps\SqlServerSampleApp\SqlServerSampleApp.csproj" />
