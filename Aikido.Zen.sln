@@ -47,6 +47,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aikido.Zen.Tests.DotNetFram
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aikido.Zen.Tests.DotNetCore", "Aikido.Zen.Tests.DotNetCore\Aikido.Zen.Tests.DotNetCore.csproj", "{A778053F-B458-4764-A967-C54EB05C70FE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MongoDbSampleApp", "e2e\sample-apps\MongoDbSampleApp\MongoDbSampleApp.csproj", "{BE65DC8B-A3F0-4B13-99D7-800A701A9149}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -121,6 +123,10 @@ Global
 		{A778053F-B458-4764-A967-C54EB05C70FE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A778053F-B458-4764-A967-C54EB05C70FE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A778053F-B458-4764-A967-C54EB05C70FE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BE65DC8B-A3F0-4B13-99D7-800A701A9149}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BE65DC8B-A3F0-4B13-99D7-800A701A9149}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BE65DC8B-A3F0-4B13-99D7-800A701A9149}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BE65DC8B-A3F0-4B13-99D7-800A701A9149}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -137,6 +143,7 @@ Global
 		{4891B10D-E986-487B-A1B4-277F18EAB185} = {2F12D7E2-3F23-469E-B94D-B36C13AC4466}
 		{94D50DC6-1261-45D4-BFC7-FA003BB053B4} = {2F12D7E2-3F23-469E-B94D-B36C13AC4466}
 		{6E200EFE-8EBC-4226-A340-EB65D3CA0AEC} = {2F12D7E2-3F23-469E-B94D-B36C13AC4466}
+		{BE65DC8B-A3F0-4B13-99D7-800A701A9149} = {2F12D7E2-3F23-469E-B94D-B36C13AC4466}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {2385A88D-D5F5-407D-A38E-309EAE8715FB}
