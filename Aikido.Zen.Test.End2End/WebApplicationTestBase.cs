@@ -71,6 +71,30 @@ namespace Aikido.Zen.Test.End2End
         /// </summary>
         protected abstract Task SetupDatabaseContainers();
 
+        /// <summary>
+        /// Creates a MongoDB container
+        /// </summary>
+        protected async Task<IContainer> CreateMongoDbContainer()
+        {
+            // Build the MongoDB container with necessary configurations
+            var mongoDb = new ContainerBuilder()
+                .WithImage("mongo:latest") // Use the latest MongoDB image
+                .WithEnvironment("MONGO_INITDB_ROOT_USERNAME", "root") // Set the root username
+                .WithEnvironment("MONGO_INITDB_ROOT_PASSWORD", "password") // Set the root password
+                .WithExposedPort(27017) // Expose the default MongoDB port
+                .WithPortBinding(27017, false) // Bind the port to the host
+                .WithWaitStrategy(Wait.ForUnixContainer()
+                    .UntilPortIsAvailable(27017)) // Wait until the port is available
+                .WithName($"mongo-test-server") // Name the container
+                .Build();
+
+            // Start the MongoDB container
+            await mongoDb.StartAsync();
+            // Add the container to the list of database containers
+            DbContainers.Add(mongoDb);
+            return mongoDb;
+        }
+
 
         /// <summary>
         /// Creates a MySQL container
