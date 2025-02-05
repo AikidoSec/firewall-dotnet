@@ -98,5 +98,41 @@ namespace Aikido.Zen.Core.Helpers
                     return null;
             }
         }
+
+        /// <summary>
+        /// Tries to parse a JSON string into a JsonElement.
+        /// </summary>
+        /// <param name="jsonString">The JSON string to parse.</param>
+        /// <param name="jsonElement">The resulting JsonElement if parsing is successful.</param>
+        /// <returns>True if parsing is successful, false otherwise.</returns>
+        public static bool TryParseJson(string jsonString, out JsonElement jsonElement)
+        {
+            if (string.IsNullOrWhiteSpace(jsonString))
+            {
+                jsonElement = default;
+                return false;
+            }
+
+            try
+            {
+                // check for legal first characters
+                if (jsonString[0] != '{' && jsonString[0] != '[')
+                {
+                    jsonElement = default;
+                    return false;
+                }
+
+                using (JsonDocument doc = JsonDocument.Parse(jsonString))
+                {
+                    jsonElement = doc.RootElement.Clone();
+                    return true;
+                }
+            }
+            catch (JsonException)
+            {
+                jsonElement = default;
+                return false;
+            }
+        }
     }
 }
