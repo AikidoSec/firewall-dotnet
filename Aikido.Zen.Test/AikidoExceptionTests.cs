@@ -7,6 +7,9 @@ using Moq;
 
 namespace Aikido.Zen.Test
 {
+    /// <summary>
+    /// Test class for AikidoException.
+    /// </summary>
     public class AikidoExceptionTests
     {
         private Mock<ILogger> _mockLogger;
@@ -67,10 +70,23 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void NoSQLInjectionDetected_ShouldReturnCorrectMessage()
+        {
+            // Arrange
+            string expectedMessage = "NoSQL injection detected";
+
+            // Act
+            var exception = AikidoException.NoSQLInjectionDetected();
+
+            // Assert
+            Assert.That(exception.Message, Is.EqualTo(expectedMessage));
+        }
+
+        [Test]
         public void ShellInjectionDetected_ShouldReturnCorrectMessage()
         {
             // Arrange
-            string expectedMessage = $"Shell injection detected";
+            string expectedMessage = "Shell injection detected";
 
             // Act
             var exception = AikidoException.ShellInjectionDetected();
@@ -94,7 +110,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void Ratelimited_ShouldReturnCorrectMessage()
+        public void RateLimited_ShouldReturnCorrectMessage()
         {
             // Arrange
             string route = "/api/data";
@@ -102,6 +118,21 @@ namespace Aikido.Zen.Test
 
             // Act
             var exception = AikidoException.RateLimited(route);
+
+            // Assert
+            Assert.That(exception.Message, Is.EqualTo(expectedMessage));
+        }
+
+        [Test]
+        public void PathTraversalDetected_ShouldReturnCorrectMessage()
+        {
+            // Arrange
+            string assemblyName = "TestAssembly";
+            string operation = "ReadFile";
+            string expectedMessage = $"Path traversal detected in {assemblyName} during {operation}";
+
+            // Act
+            var exception = AikidoException.PathTraversalDetected(assemblyName, operation);
 
             // Assert
             Assert.That(exception.Message, Is.EqualTo(expectedMessage));

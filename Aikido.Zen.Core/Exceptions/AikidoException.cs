@@ -29,6 +29,11 @@ namespace Aikido.Zen.Core.Exceptions
             return new AikidoException($"{dialect}: SQL injection detected");
         }
 
+        public static AikidoException NoSQLInjectionDetected ()
+        {
+            return new AikidoException("NoSQL injection detected");
+        }
+
         public static AikidoException ShellInjectionDetected()
         {
             return new AikidoException($"Shell injection detected");
