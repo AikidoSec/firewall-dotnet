@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
+using Aikido.Zen.Core.Helpers;
 
 namespace Aikido.Zen.Core.Vulnerabilities
 {
@@ -22,36 +23,36 @@ namespace Aikido.Zen.Core.Vulnerabilities
             {
                 return false;
             }
-
-            foreach (var source in context.GetSources())
+            if (MatchFlattenedInputWithFilter(context.ParsedUserInput, filterElement))
             {
-                if (source.ValueKind == JsonValueKind.Object || source.ValueKind == JsonValueKind.Array)
-                {
-                    if (FindFilterPartWithOperators(source, filterElement))
-                    {
-                        return true;
-                    }
-                }
+                return true;
             }
 
             return false;
         }
 
-        private static bool FindFilterPartWithOperators(JsonElement userInput, JsonElement filterPart)
+        private static bool MatchFlattenedInputWithFilter(IDictionary<string, string> userInput, JsonElement filterPart)
         {
             if (filterPart.ValueKind == JsonValueKind.Object)
             {
                 foreach (var property in filterPart.EnumerateObject())
                 {
-                    if (property.Name.StartsWith("$") && userInput.TryGetProperty(property.Name, out var userValue))
+                    if (property.Name == "$where")
                     {
-                        if (userValue.ValueKind == property.Value.ValueKind && userValue.ToString() == property.Value.ToString())
+                        // Detect JavaScript expressions in $where clauses
+                        if (property.Value.ToString().Contains("sleep") || property.Value.ToString().Contains("eval"))
                         {
                             return true;
                         }
                     }
-
-                    if (FindFilterPartWithOperators(userInput, property.Value))
+                    foreach (var userKey in userInput.Keys)
+                    {
+                        if (userKey.EndsWith(property.Name) && userInput[userKey] == property.Value.ToString() && property.Name.StartsWith("$"))
+                        {
+                            return true;
+                        }
+                    }
+                    if (MatchFlattenedInputWithFilter(userInput, property.Value))
                     {
                         return true;
                     }
@@ -62,7 +63,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
             {
                 foreach (var item in filterPart.EnumerateArray())
                 {
-                    if (FindFilterPartWithOperators(userInput, item))
+                    if (MatchFlattenedInputWithFilter(userInput, item))
                     {
                         return true;
                     }

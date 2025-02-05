@@ -1,6 +1,7 @@
 using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
+using Aikido.Zen.Core.Vulnerabilities;
 using System.Reflection;
 using System.Text.Json;
 

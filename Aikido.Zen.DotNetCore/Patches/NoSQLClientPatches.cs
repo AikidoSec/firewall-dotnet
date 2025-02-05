@@ -16,6 +16,8 @@ namespace Aikido.Zen.DotNetCore.Patches
             PatchMethod(harmony, "MongoDB.Driver", "MongoCollection", "UpdateOne");
             PatchMethod(harmony, "MongoDB.Driver", "MongoCollection", "DeleteOne");
             PatchMethod(harmony, "MongoDB.Driver", "MongoCollection", "Aggregate");
+            PatchMethod(harmony, "MongoDB.Driver", "MongoCommand", "RunCommand");
+            PatchMethod(harmony, "MongoDB.Driver", "MongoCommand", "RunCommandAsync");
         }
 
         private static void PatchMethod(Harmony harmony, string assemblyName, string typeName, string methodName, params string[] parameterTypeNames)
