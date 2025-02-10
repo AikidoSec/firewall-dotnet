@@ -665,5 +665,203 @@ namespace Aikido.Zen.Test
             Assert.That(_agent.Context.Routes.Count, Is.EqualTo(1));
             Assert.That(_agent.Context.Routes.Any(r => r.Path == "/test/route"));
         }
+
+        [Test]
+        public void UpdateConfig_ShouldUpdateWhitelistedIPs()
+        {
+            // Arrange
+            var block = true;
+            var blockedUsers = new[] { "user1" };
+            var allowedIPs = new[] { "192.168.1.0/24", "10.0.0.0/8" };
+            var endpoints = new[]
+            {
+                new EndpointConfig
+                {
+                    Method = "GET",
+                    Route = "test",
+                    AllowedIPAddresses = new[] { "172.16.0.0/16" }
+                }
+            };
+            var configVersion = 123L;
+
+            // Act
+            _agent.Context.UpdateConfig(block, blockedUsers, allowedIPs, endpoints, null, configVersion);
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(_agent.Context.BlockList.IsWhitelisted("192.168.1.100"), Is.True);
+                Assert.That(_agent.Context.BlockList.IsWhitelisted("10.10.10.10"), Is.True);
+                Assert.That(_agent.Context.BlockList.IsWhitelisted("172.16.1.1"), Is.False);
+            });
+        }
+
+        [Test]
+        public void UpdateConfig_WhitelistedIP_ShouldBypassAllBlocking()
+        {
+            // Arrange
+            var block = true;
+            var blockedUsers = new[] { "user1" };
+            var allowedIPs = new[] { "192.168.1.0/24" };
+            var endpoints = new[]
+            {
+                new EndpointConfig
+                {
+                    Method = "GET",
+                    Route = "test",
+                    AllowedIPAddresses = new[] { "10.0.0.0/8" }
+                }
+            };
+            var configVersion = 123L;
+            var ip = "192.168.1.100";
+            var url = "GET|test";
+
+            // Act
+            _agent.Context.UpdateConfig(block, blockedUsers, allowedIPs, endpoints, null, configVersion);
+            _agent.Context.BlockList.AddIpAddressToBlocklist(ip); // Try to block the whitelisted IP
+
+            // Assert
+            Assert.That(_agent.Context.BlockList.IsBlocked(ip, url), Is.False, "Whitelisted IP should bypass all blocking");
+        }
+
+        [Test]
+        public void UpdateConfig_WhitelistedIP_ShouldBypassEndpointRestrictions()
+        {
+            // Arrange
+            var block = true;
+            var blockedUsers = Array.Empty<string>();
+            var allowedIPs = new[] { "192.168.1.0/24" };
+            var endpoints = new[]
+            {
+                new EndpointConfig
+                {
+                    Method = "GET",
+                    Route = "test",
+                    AllowedIPAddresses = new[] { "10.0.0.0/8" } // Different subnet
+                }
+            };
+            var configVersion = 123L;
+            var ip = "192.168.1.100";
+            var url = "GET|test";
+
+            // Act
+            _agent.Context.UpdateConfig(block, blockedUsers, allowedIPs, endpoints, null, configVersion);
+
+            // Assert
+            Assert.That(_agent.Context.BlockList.IsBlocked(ip, url), Is.False, "Whitelisted IP should bypass endpoint restrictions");
+        }
+
+        [Test]
+        public void UpdateConfig_ShouldClearWhitelistWhenEmpty()
+        {
+            // Arrange
+            var block = true;
+            var blockedUsers = Array.Empty<string>();
+            var allowedIPs = new[] { "192.168.1.0/24" };
+            var endpoints = Array.Empty<EndpointConfig>();
+            var configVersion = 123L;
+            var ip = "192.168.1.100";
+
+            // First update with allowed IPs
+            _agent.Context.UpdateConfig(block, blockedUsers, allowedIPs, endpoints, null, configVersion);
+            Assert.That(_agent.Context.BlockList.IsWhitelisted(ip), Is.True, "IP should be whitelisted initially");
+
+            // Act - update with empty allowed IPs
+            _agent.Context.UpdateConfig(block, blockedUsers, Array.Empty<string>(), endpoints, null, configVersion + 1);
+
+            // Assert
+            Assert.That(_agent.Context.BlockList.IsWhitelisted(ip), Is.False, "Whitelist should be cleared");
+        }
+
+        [Test]
+        public void UpdateConfig_ShouldHandleWhitelistingCorrectly()
+        {
+            // Arrange
+            var block = true;
+            var blockedUsers = new[] { "user1" };
+            var allowedIPs = new[] { "192.168.1.0/24", "10.0.0.0/8" };
+            var endpoints = new[]
+            {
+                new EndpointConfig
+                {
+                    Method = "GET",
+                    Route = "test",
+                    AllowedIPAddresses = new[] { "172.16.0.0/24" }
+                }
+            };
+            var configVersion = 123L;
+            var ip = "192.168.1.100";
+            var url = "GET|test";
+
+            // Act - Initial config with whitelist
+            _agent.Context.UpdateConfig(block, blockedUsers, allowedIPs, endpoints, null, configVersion);
+
+            // Assert - Check whitelist functionality
+            Assert.Multiple(() =>
+            {
+                // Basic whitelist checks
+                Assert.That(_agent.Context.BlockList.IsWhitelisted("192.168.1.100"), Is.True, "IP in first subnet should be whitelisted");
+                Assert.That(_agent.Context.BlockList.IsWhitelisted("10.10.10.10"), Is.True, "IP in second subnet should be whitelisted");
+                Assert.That(_agent.Context.BlockList.IsWhitelisted("172.16.1.1"), Is.False, "IP not in any subnet should not be whitelisted");
+
+                // Verify whitelist bypasses all blocking
+                _agent.Context.BlockList.AddIpAddressToBlocklist(ip);
+                Assert.That(_agent.Context.BlockList.IsBlocked(ip, url), Is.False, "Whitelisted IP should bypass blocklist");
+                Assert.That(_agent.Context.BlockList.IsBlocked(ip, "GET|other"), Is.False, "Whitelisted IP should bypass endpoint restrictions");
+                Assert.That(_agent.Context.BlockList.IsBlocked(ip, "POST|test"), Is.False, "Whitelisted IP should bypass method restrictions");
+
+                // Verify non-whitelisted IPs are still subject to blocking
+                Assert.That(_agent.Context.BlockList.IsBlocked("172.16.1.1", url), Is.True, "Non-whitelisted IP should still be subject to endpoint restrictions");
+            });
+
+            // Act - Update config to clear whitelist
+            _agent.Context.UpdateConfig(block, blockedUsers, Array.Empty<string>(), endpoints, null, configVersion + 1);
+
+            // Assert - Verify whitelist is cleared and blocking is restored
+            Assert.Multiple(() =>
+            {
+                Assert.That(_agent.Context.BlockList.IsWhitelisted(ip), Is.False, "Whitelist should be cleared");
+                Assert.That(_agent.Context.BlockList.IsBlocked(ip, url), Is.True, "IP should be blocked after whitelist is cleared");
+            });
+        }
+
+        [Test]
+        public void UpdateConfig_WhitelistedIP_ShouldBypassAllBlockingConditions()
+        {
+            // Arrange
+            var block = true;
+            var blockedUsers = new[] { "user1" };
+            var allowedIPs = new[] { "192.168.1.0/24" };
+            var endpoints = new[]
+            {
+                new EndpointConfig
+                {
+                    Method = "GET",
+                    Route = "test",
+                    AllowedIPAddresses = new[] { "10.0.0.0" } // Different subnet
+                }
+            };
+            var configVersion = 123L;
+            var ip = "192.168.1.100";
+            var url = "GET|test";
+
+            // Act
+            _agent.Context.UpdateConfig(block, blockedUsers, allowedIPs, endpoints, null, configVersion);
+            _agent.Context.BlockList.AddIpAddressToBlocklist(ip);
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                // Verify IP is whitelisted
+                Assert.That(_agent.Context.BlockList.IsWhitelisted(ip), Is.True);
+
+                // Verify whitelist bypasses all blocking conditions
+                Assert.That(_agent.Context.BlockList.IsBlocked(ip, url), Is.False, "Should bypass blocklist");
+                Assert.That(_agent.Context.BlockList.IsBlocked(ip, "GET|other"), Is.False, "Should bypass endpoint restrictions");
+
+                // Verify non-whitelisted IPs are still blocked
+                Assert.That(_agent.Context.BlockList.IsBlocked("10.0.0.1", url), Is.True, "Non-whitelisted IP should still be blocked if not in endpoint allowlist");
+            });
+        }
     }
 }
