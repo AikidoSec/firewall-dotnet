@@ -211,6 +211,29 @@ namespace Aikido.Zen.Core.Models.Ip
             }
         }
 
+        public bool IsWhitelisted(string ip)
+        {
+            _lock.EnterReadLock();
+            try
+            {
+                if (!IPHelper.IsValidIp(ip))
+                {
+                    return false; // Invalid IPs are not whitelisted
+                }
+
+                if (_allowedSubnets.HasItems)
+                {
+                    return _allowedSubnets.IsIpInRange(ip);
+                }
+
+                return false; // No whitelisted IPs means not whitelisted
+            }
+            finally
+            {
+                _lock.ExitReadLock();
+            }
+        }
+
         /// <summary>
         /// Checks if an IP is bypassed.
         /// </summary>
