@@ -1,3 +1,5 @@
+using System;
+using System.Linq;
 using System.Reflection;
 using HarmonyLib;
 using Aikido.Zen.Core.Helpers;
@@ -9,31 +11,49 @@ namespace Aikido.Zen.DotNetCore.Patches
         public static void ApplyPatches(Harmony harmony)
         {
             // Use reflection to get the types dynamically
-            PatchMethod(harmony, "MongoDB.Driver.IMongoDatabase", "RunCommand");
-            PatchMethod(harmony, "MongoDB.Driver.IMongoDatabase", "RunCommandAsync");
-            PatchMethod(harmony, "MongoDB.Driver.IMongoCollection`1", "Find");
-            PatchMethod(harmony, "MongoDB.Driver.IMongoCollection`1", "FindAsync");
+            PatchMethod(harmony, "MongoDB.Driver.IMongoDatabase", "RunCommand", "MongoDB.Driver.Command`1", "MongoDB.Driver.ReadPreference", "System.Threading.CancellationToken");
+            PatchMethod(harmony, "MongoDB.Driver.IMongoDatabase", "RunCommandAsync", "MongoDB.Driver.Command`1", "MongoDB.Driver.ReadPreference", "System.Threading.CancellationToken");
+            PatchMethod(harmony, "MongoDB.Driver.IMongoCollection`1", "Find", "MongoDB.Driver.IMongoCollection`1", "MongoDB.Driver.FilterDefinition", "MongoDB.Driver.FindOptions");
+            PatchMethod(harmony, "MongoDB.Driver.IMongoCollection`1", "FindAsync", "MongoDB.Driver.IMongoCollection`1", "MongoDB.Driver.FilterDefinition`1", "MongoDB.Driver.FindOptions`2", "System.Threading.CancellationToken");
         }
 
-        private static void PatchMethod (Harmony harmony, string interfaceName, string interfaceMethodName)
+        private static void PatchMethod(Harmony harmony, string interfaceName, string interfaceMethodName, params string[] parameterTypeNames)
         {
-            var implementingTypes = ReflectionHelper.GetImplementingClasses(interfaceName, "MongoDB.Driver", "MongoDb.Bson");
-            foreach (var implementingType in implementingTypes)
+            // Try to get the type directly first
+            var interfaceType = Type.GetType(interfaceName + ", MongoDB.Driver");
+            Console.WriteLine($"Trying to find interface type: {interfaceName}");
+            Console.WriteLine($"Direct type lookup result: {interfaceType}");
+
+            if (interfaceType == null)
             {
-               var method = ReflectionHelper.GetMethodFromAssembly(implementingType.Assembly.GetName().Name, implementingType.Name, interfaceMethodName);
-               if (method != null)
-               {
-                   harmony.Patch(method, new HarmonyMethod(typeof(NoSQLClientPatches).GetMethod(nameof(OnCommandExecuting), BindingFlags.Static | BindingFlags.NonPublic)));
-               }
+                // If not found, try without namespace
+                var simpleInterfaceName = interfaceName.Split('.').Last();
+                interfaceType = Type.GetType(simpleInterfaceName + ", MongoDB.Driver");
+                Console.WriteLine($"Trying simple name: {simpleInterfaceName}");
+                Console.WriteLine($"Simple name type lookup result: {interfaceType}");
             }
-        }
 
-        private static void PatchMethod (Harmony harmony, string assemblyName, string typeName, string methodName, params string[] parameterTypeNames)
-        {
-            var method = ReflectionHelper.GetMethodFromAssembly(assemblyName, typeName, methodName, parameterTypeNames);
-            if (method != null)
+            if (interfaceType != null)
             {
-                harmony.Patch(method, new HarmonyMethod(typeof(NoSQLClientPatches).GetMethod(nameof(OnCommandExecuting), BindingFlags.Static | BindingFlags.NonPublic)));
+                var implementingTypes = ReflectionHelper.GetImplementingClasses(interfaceType, "MongoDB.Driver", "MongoDB.Bson");
+                Console.WriteLine($"Found {implementingTypes.Count} implementing types");
+                foreach (var implementingType in implementingTypes)
+                {
+                    var methods = ReflectionHelper.GetMethodsFromType(implementingType, interfaceMethodName, parameterTypeNames);
+                    foreach (var method in methods)
+                    {
+                        harmony.Patch(method, new HarmonyMethod(typeof(NoSQLClientPatches).GetMethod(nameof(OnCommandExecuting), BindingFlags.Static | BindingFlags.NonPublic)));
+                    }
+                }
+            }
+            else
+            {
+                Console.WriteLine("Failed to find interface type");
+                // Try to list all loaded assemblies to help diagnose
+                foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies().Where(a => a.FullName.Contains("MongoDB")))
+                {
+                    Console.WriteLine($"Loaded MongoDB assembly: {assembly.FullName}");
+                }
             }
         }
 
