@@ -60,7 +60,7 @@ namespace Aikido.Zen.Test
 
             _agentContext.UpdateBlockedUsers(new[] { "user1" });
             _agentContext.BlockList.AddIpAddressToBlocklist("192.168.1.101");
-            _agentContext.BlockList.UpdateAllowedSubnets(endpoints);
+            _agentContext.BlockList.UpdateAllowedForEndpointSubnets(endpoints);
             _agentContext.UpdateBlockedUserAgents(blockedUserAgents);
 
             // Act & Assert
@@ -376,7 +376,7 @@ namespace Aikido.Zen.Test
             var configVersion = 123L;
 
             // Act
-            _agentContext.UpdateConfig(block, blockedUsers, endpoints, null, configVersion);
+            _agentContext.UpdateConfig(block, blockedUsers, [], endpoints, null, configVersion);
 
             // Assert
             Assert.Multiple(() =>

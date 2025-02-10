@@ -158,11 +158,12 @@ namespace Aikido.Zen.Core.Models
             }
         }
 
-        public void UpdateConfig(bool block, IEnumerable<string> blockedUsers, IEnumerable<EndpointConfig> endpoints, Regex blockedUserAgents, long configVersion)
+        public void UpdateConfig(bool block, IEnumerable<string> blockedUsers, IEnumerable<string> allowedIpAddresses, IEnumerable<EndpointConfig> endpoints, Regex blockedUserAgents, long configVersion)
         {
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", block ? "true" : "false");
             UpdateBlockedUsers(blockedUsers);
-            BlockList.UpdateAllowedSubnets(endpoints);
+            BlockList.UpdateAllowedForEndpointSubnets(endpoints);
+            BlockList.UpdateAllowedSubnets(allowedIpAddresses);
             UpdateRatelimitedRoutes(endpoints);
             UpdateBlockedUserAgents(blockedUserAgents);
             ConfigLastUpdated = configVersion;
