@@ -53,6 +53,7 @@ namespace SampleApp.Common
             });
 
             app.UseRouting();
+            app.UseForwardedHeaders();
 
             app.UseDeveloperExceptionPage();
             app.UseZenFirewall();

@@ -23,6 +23,11 @@ namespace Aikido.Zen.DotNetCore.Middleware
 
         public async Task InvokeAsync(HttpContext httpContext, RequestDelegate next)
         {
+            if (Agent.Instance.Context.BlockList.IsAllowedIP(GetIp(httpContext)) || EnvironmentHelper.IsDisabled)
+            {
+                await next(httpContext);
+                return;
+            }
             // Convert headers and query parameters to thread-safe dictionaries
             var queryDictionary = new ConcurrentDictionary<string, string[]>(httpContext.Request.Query.ToDictionary(q => q.Key, q => q.Value.ToArray()));
             var headersDictionary = new ConcurrentDictionary<string, string[]>(httpContext.Request.Headers.ToDictionary(h => h.Key, h => h.Value.ToArray()));
@@ -33,12 +38,13 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 Method = httpContext.Request.Method,
                 Query = queryDictionary,
                 Headers = headersDictionary,
-                RemoteAddress = httpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty, // no need to use X-FORWARDED-FOR, .NET Core already handles this
+                RemoteAddress = GetIp(httpContext), // no need to use X-FORWARDED-FOR, .NET Core already handles this, can be configured in program.cs or startup.cs
                 Cookies = httpContext.Request.Cookies.ToDictionary(c => c.Key, c => c.Value),
                 UserAgent = headersDictionary.TryGetValue("User-Agent", out var userAgent) ? userAgent.FirstOrDefault() ?? string.Empty : string.Empty,
                 Source = Environment.Version.Major >= 5 ? "DotNetCore" : "DotNetFramework",
                 Route = GetParametrizedRoute(httpContext),
             };
+
 
             Agent.Instance.SetContextMiddlewareInstalled(true);
 
@@ -126,6 +132,11 @@ namespace Aikido.Zen.DotNetCore.Middleware
 
             // Add a leading slash to the route pattern if not present
             return routePattern != null ? "/" + routePattern.TrimStart('/') : string.Empty;
+        }
+
+        internal string GetIp(HttpContext context)
+        {
+            return context.Connection.RemoteIpAddress?.ToString() ?? string.Empty;
         }
     }
 }
