@@ -667,7 +667,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void UpdateConfig_ShouldUpdateWhitelistedIPs()
+        public void UpdateConfig_ShouldUpdateAllowedIPs()
         {
             // Arrange
             var block = true;
@@ -690,14 +690,14 @@ namespace Aikido.Zen.Test
             // Assert
             Assert.Multiple(() =>
             {
-                Assert.That(_agent.Context.BlockList.IsWhitelisted("192.168.1.100"), Is.True);
-                Assert.That(_agent.Context.BlockList.IsWhitelisted("10.10.10.10"), Is.True);
-                Assert.That(_agent.Context.BlockList.IsWhitelisted("172.16.1.1"), Is.False);
+                Assert.That(_agent.Context.BlockList.IsAllowedIP("192.168.1.100"), Is.True);
+                Assert.That(_agent.Context.BlockList.IsAllowedIP("10.10.10.10"), Is.True);
+                Assert.That(_agent.Context.BlockList.IsAllowedIP("172.16.1.1"), Is.False);
             });
         }
 
         [Test]
-        public void UpdateConfig_WhitelistedIP_ShouldBypassAllBlocking()
+        public void UpdateConfig_AllowedIP_ShouldBypassAllBlocking()
         {
             // Arrange
             var block = true;
@@ -718,14 +718,14 @@ namespace Aikido.Zen.Test
 
             // Act
             _agent.Context.UpdateConfig(block, blockedUsers, allowedIPs, endpoints, null, configVersion);
-            _agent.Context.BlockList.AddIpAddressToBlocklist(ip); // Try to block the whitelisted IP
+            _agent.Context.BlockList.AddIpAddressToBlocklist(ip); // Try to block the allowed IP
 
             // Assert
-            Assert.That(_agent.Context.BlockList.IsBlocked(ip, url), Is.False, "Whitelisted IP should bypass all blocking");
+            Assert.That(_agent.Context.BlockList.IsBlocked(ip, url), Is.False, "Allowed IP should bypass all blocking");
         }
 
         [Test]
-        public void UpdateConfig_WhitelistedIP_ShouldBypassEndpointRestrictions()
+        public void UpdateConfig_AllowedIP_ShouldBypassEndpointRestrictions()
         {
             // Arrange
             var block = true;
@@ -748,7 +748,7 @@ namespace Aikido.Zen.Test
             _agent.Context.UpdateConfig(block, blockedUsers, allowedIPs, endpoints, null, configVersion);
 
             // Assert
-            Assert.That(_agent.Context.BlockList.IsBlocked(ip, url), Is.False, "Whitelisted IP should bypass endpoint restrictions");
+            Assert.That(_agent.Context.BlockList.IsBlocked(ip, url), Is.False, "Allowed IP should bypass endpoint restrictions");
         }
 
         [Test]
@@ -764,13 +764,13 @@ namespace Aikido.Zen.Test
 
             // First update with allowed IPs
             _agent.Context.UpdateConfig(block, blockedUsers, allowedIPs, endpoints, null, configVersion);
-            Assert.That(_agent.Context.BlockList.IsWhitelisted(ip), Is.True, "IP should be whitelisted initially");
+            Assert.That(_agent.Context.BlockList.IsAllowedIP(ip), Is.True, "IP should be allowed initially");
 
             // Act - update with empty allowed IPs
             _agent.Context.UpdateConfig(block, blockedUsers, Array.Empty<string>(), endpoints, null, configVersion + 1);
 
             // Assert
-            Assert.That(_agent.Context.BlockList.IsWhitelisted(ip), Is.False, "Whitelist should be cleared");
+            Assert.That(_agent.Context.BlockList.IsAllowedIP(ip), Is.False, "Allowed ip list should be cleared");
         }
 
         [Test]
@@ -800,18 +800,18 @@ namespace Aikido.Zen.Test
             Assert.Multiple(() =>
             {
                 // Basic whitelist checks
-                Assert.That(_agent.Context.BlockList.IsWhitelisted("192.168.1.100"), Is.True, "IP in first subnet should be whitelisted");
-                Assert.That(_agent.Context.BlockList.IsWhitelisted("10.10.10.10"), Is.True, "IP in second subnet should be whitelisted");
-                Assert.That(_agent.Context.BlockList.IsWhitelisted("172.16.1.1"), Is.False, "IP not in any subnet should not be whitelisted");
+                Assert.That(_agent.Context.BlockList.IsAllowedIP("192.168.1.100"), Is.True, "IP in first subnet should be allowed");
+                Assert.That(_agent.Context.BlockList.IsAllowedIP("10.10.10.10"), Is.True, "IP in second subnet should be allowed");
+                Assert.That(_agent.Context.BlockList.IsAllowedIP("172.16.1.1"), Is.False, "IP not in any subnet should not be allowed");
 
                 // Verify whitelist bypasses all blocking
                 _agent.Context.BlockList.AddIpAddressToBlocklist(ip);
-                Assert.That(_agent.Context.BlockList.IsBlocked(ip, url), Is.False, "Whitelisted IP should bypass blocklist");
-                Assert.That(_agent.Context.BlockList.IsBlocked(ip, "GET|other"), Is.False, "Whitelisted IP should bypass endpoint restrictions");
-                Assert.That(_agent.Context.BlockList.IsBlocked(ip, "POST|test"), Is.False, "Whitelisted IP should bypass method restrictions");
+                Assert.That(_agent.Context.BlockList.IsBlocked(ip, url), Is.False, "Allowed IP should bypass blocklist");
+                Assert.That(_agent.Context.BlockList.IsBlocked(ip, "GET|other"), Is.False, "Allowed IP should bypass endpoint restrictions");
+                Assert.That(_agent.Context.BlockList.IsBlocked(ip, "POST|test"), Is.False, "Allowed IP should bypass method restrictions");
 
-                // Verify non-whitelisted IPs are still subject to blocking
-                Assert.That(_agent.Context.BlockList.IsBlocked("172.16.1.1", url), Is.True, "Non-whitelisted IP should still be subject to endpoint restrictions");
+                // Verify non-allowed IPs are still subject to blocking
+                Assert.That(_agent.Context.BlockList.IsBlocked("172.16.1.1", url), Is.True, "Non-allowed IP should still be subject to endpoint restrictions");
             });
 
             // Act - Update config to clear whitelist
@@ -820,13 +820,13 @@ namespace Aikido.Zen.Test
             // Assert - Verify whitelist is cleared and blocking is restored
             Assert.Multiple(() =>
             {
-                Assert.That(_agent.Context.BlockList.IsWhitelisted(ip), Is.False, "Whitelist should be cleared");
+                Assert.That(_agent.Context.BlockList.IsAllowedIP(ip), Is.False, "Whitelist should be cleared");
                 Assert.That(_agent.Context.BlockList.IsBlocked(ip, url), Is.True, "IP should be blocked after whitelist is cleared");
             });
         }
 
         [Test]
-        public void UpdateConfig_WhitelistedIP_ShouldBypassAllBlockingConditions()
+        public void UpdateConfig_AllowedIP_ShouldBypassAllBlockingConditions()
         {
             // Arrange
             var block = true;
@@ -852,15 +852,15 @@ namespace Aikido.Zen.Test
             // Assert
             Assert.Multiple(() =>
             {
-                // Verify IP is whitelisted
-                Assert.That(_agent.Context.BlockList.IsWhitelisted(ip), Is.True);
+                // Verify IP is allowed
+                Assert.That(_agent.Context.BlockList.IsAllowedIP(ip), Is.True);
 
                 // Verify whitelist bypasses all blocking conditions
                 Assert.That(_agent.Context.BlockList.IsBlocked(ip, url), Is.False, "Should bypass blocklist");
                 Assert.That(_agent.Context.BlockList.IsBlocked(ip, "GET|other"), Is.False, "Should bypass endpoint restrictions");
 
-                // Verify non-whitelisted IPs are still blocked
-                Assert.That(_agent.Context.BlockList.IsBlocked("10.0.0.1", url), Is.True, "Non-whitelisted IP should still be blocked if not in endpoint allowlist");
+                // Verify non-allowed IPs are still blocked
+                Assert.That(_agent.Context.BlockList.IsBlocked("10.0.0.1", url), Is.True, "Non-allowed IP should still be blocked if not in endpoint allowlist");
             });
         }
     }

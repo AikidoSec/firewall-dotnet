@@ -226,7 +226,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void UpdateAllowedSubnets_ShouldUpdateWhitelistedIPs()
+        public void UpdateAllowedSubnets_ShouldUpdateAllowedIPs()
         {
             // Arrange
             var subnets = new[] { "192.168.1.0/24", "10.0.0.0/8" };
@@ -235,31 +235,31 @@ namespace Aikido.Zen.Test
             _blockList.UpdateAllowedSubnets(subnets);
 
             // Assert
-            Assert.That(_blockList.IsWhitelisted("192.168.1.100"), Is.True);
-            Assert.That(_blockList.IsWhitelisted("10.10.10.10"), Is.True);
-            Assert.That(_blockList.IsWhitelisted("172.16.1.1"), Is.False);
+            Assert.That(_blockList.IsAllowedIP("192.168.1.100"), Is.True);
+            Assert.That(_blockList.IsAllowedIP("10.10.10.10"), Is.True);
+            Assert.That(_blockList.IsAllowedIP("172.16.1.1"), Is.False);
         }
 
         [Test]
-        public void IsWhitelisted_WithInvalidIP_ShouldReturnFalse()
+        public void IsAllowedIp_WithInvalidIP_ShouldReturnFalse()
         {
             // Arrange
             var subnets = new[] { "192.168.1.0/24" };
             _blockList.UpdateAllowedSubnets(subnets);
 
             // Act & Assert
-            Assert.That(_blockList.IsWhitelisted("invalid.ip"), Is.False);
+            Assert.That(_blockList.IsAllowedIP("invalid.ip"), Is.False);
         }
 
         [Test]
-        public void IsWhitelisted_WithNoAllowedSubnets_ShouldReturnFalse()
+        public void IsAllowedIp_WithNoAllowedSubnets_ShouldReturnFalse()
         {
             // Act & Assert
-            Assert.That(_blockList.IsWhitelisted("192.168.1.100"), Is.False);
+            Assert.That(_blockList.IsAllowedIP("192.168.1.100"), Is.False);
         }
 
         [Test]
-        public void IsBlocked_WhitelistedIP_ShouldBypassAllBlocking()
+        public void IsBlocked_AllowedIP_ShouldBypassAllBlocking()
         {
             // Arrange
             var ip = "192.168.1.100";
@@ -276,15 +276,15 @@ namespace Aikido.Zen.Test
             };
             _blockList.UpdateAllowedForEndpointSubnets(endpoints);
 
-            // Add IP to whitelist
+            // Add IP to allow
             _blockList.UpdateAllowedSubnets(new[] { "192.168.1.0/24" });
 
             // Act & Assert
-            Assert.That(_blockList.IsBlocked(ip, url), Is.False, "Whitelisted IP should bypass all blocking");
+            Assert.That(_blockList.IsBlocked(ip, url), Is.False, "Allowed IP should bypass all blocking");
         }
 
         [Test]
-        public void IsBlocked_WhitelistedIP_ShouldBypassEndpointRestrictions()
+        public void IsBlocked_AllowedIP_ShouldBypassEndpointRestrictions()
         {
             // Arrange
             var ip = "192.168.1.100";
@@ -300,30 +300,30 @@ namespace Aikido.Zen.Test
             };
             _blockList.UpdateAllowedForEndpointSubnets(endpoints);
 
-            // Add IP to whitelist
+            // Add IP to allow
             _blockList.UpdateAllowedSubnets(new[] { "192.168.1.0/24" });
 
             // Act & Assert
-            Assert.That(_blockList.IsBlocked(ip, url), Is.False, "Whitelisted IP should bypass endpoint restrictions");
+            Assert.That(_blockList.IsBlocked(ip, url), Is.False, "Allowed IP should bypass endpoint restrictions");
         }
 
         [Test]
-        public void UpdateAllowedSubnets_WithEmptyList_ShouldClearWhitelist()
+        public void UpdateAllowedSubnets_WithEmptyList_ShouldClearAllowedIps()
         {
             // Arrange
             var ip = "192.168.1.100";
             _blockList.UpdateAllowedSubnets(new[] { "192.168.1.0/24" });
-            Assert.That(_blockList.IsWhitelisted(ip), Is.True, "IP should be whitelisted initially");
+            Assert.That(_blockList.IsAllowedIP(ip), Is.True, "IP should be allowed initially");
 
             // Act
             _blockList.UpdateAllowedSubnets(Array.Empty<string>());
 
             // Assert
-            Assert.That(_blockList.IsWhitelisted(ip), Is.False, "Whitelist should be cleared");
+            Assert.That(_blockList.IsAllowedIP(ip), Is.False, "AllowedIp list should be cleared");
         }
 
         [Test]
-        public void IsBlocked_WhitelistedIPWithBlockedUserAgent_ShouldBypassBlocking()
+        public void IsBlocked_AllowedIPWithBlockedUserAgent_ShouldBypassBlocking()
         {
             // Arrange
             var ip = "192.168.1.100";
@@ -340,11 +340,11 @@ namespace Aikido.Zen.Test
             };
             _blockList.UpdateAllowedForEndpointSubnets(endpoints);
 
-            // Add IP to whitelist
+            // Add IP to allowed
             _blockList.UpdateAllowedSubnets(new[] { "192.168.1.0/24" });
 
             // Act & Assert
-            Assert.That(_blockList.IsBlocked(ip, url), Is.False, "Whitelisted IP should bypass all blocking regardless of other conditions");
+            Assert.That(_blockList.IsBlocked(ip, url), Is.False, "Allowed IP should bypass all blocking regardless of other conditions");
         }
     }
 }
