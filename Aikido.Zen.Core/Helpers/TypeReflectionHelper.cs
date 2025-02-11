@@ -15,6 +15,16 @@ namespace Aikido.Zen.Core.Helpers
         private static readonly ConcurrentDictionary<Type, List<Type>> _genericImplementationsCache = new ConcurrentDictionary<Type, List<Type>>();
         private static readonly ConcurrentDictionary<(Type, string), IEnumerable<MethodInfo>> _methodCache = new ConcurrentDictionary<(Type, string), IEnumerable<MethodInfo>>();
 
+        // Common value types used for generic type implementations
+        private static readonly Type[] CommonValueTypes = new[]
+        {
+            typeof(int),
+            typeof(double),
+            typeof(float),
+            typeof(bool),
+            typeof(object)
+        };
+
         /// <summary>
         /// Gets a type from an assembly, using caching for better performance.
         /// </summary>
@@ -80,16 +90,11 @@ namespace Aikido.Zen.Core.Helpers
                         {
                             var genericTypeDef = paramType.GetGenericTypeDefinition();
                             var implementations = GetGenericTypeImplementations(genericTypeDef);
-
-                            // Check if any implementation matches the expected type name using full names
-                            bool hasMatchingImplementation = implementations.Any(impl =>
-                                impl.FullName == expectedTypeName ||
-                                impl.AssemblyQualifiedName == expectedTypeName);
-
-                            if (!hasMatchingImplementation)
+                            // create methods with each implementation
+                            foreach (var implementation in implementations)
                             {
-                                isMatch = false;
-                                break;
+                                var implementedMethod = method.MakeGenericMethod(implementation);
+                                matchingMethods.Add(implementedMethod);
                             }
                         }
                         else
@@ -118,8 +123,11 @@ namespace Aikido.Zen.Core.Helpers
         }
 
         /// <summary>
-        /// Gets all concrete implementations of a generic type definition from the specified assemblies.
+        /// Gets all concrete implementations of a generic type definition.
+        /// Handles both single and multiple type parameters with their constraints.
         /// </summary>
+        /// <param name="genericTypeDefinition">The generic type definition to create implementations for</param>
+        /// <returns>List of concrete type implementations</returns>
         internal static List<Type> GetGenericTypeImplementations(Type genericTypeDefinition)
         {
             if (!genericTypeDefinition.IsGenericTypeDefinition)
@@ -130,65 +138,141 @@ namespace Aikido.Zen.Core.Helpers
             return _genericImplementationsCache.GetOrAdd(genericTypeDefinition, _ =>
             {
                 var implementations = new List<Type>();
+                var genericArgs = genericTypeDefinition.GetGenericArguments();
+                var parameterCombinations = GetGenericParameterCombinations(genericArgs);
 
-                foreach (var assembly in AssemblyHelper.GetAssemblies())
+                foreach (var combination in parameterCombinations)
                 {
-                    var fullName = assembly.FullName;
                     try
                     {
-                        var types = assembly.GetTypes()
-                            .Where(t => t.IsClass && !t.IsAbstract && !t.IsGenericTypeDefinition)
-                            .Where(t =>
-                            {
-                                try
-                                {
-                                    if (t.IsGenericType && t.GetGenericTypeDefinition() == genericTypeDefinition)
-                                        return true;
-
-                                    return t.GetInterfaces()
-                                        .Where(i => i.IsGenericType && !i.IsGenericTypeDefinition)
-                                        .Any(i => i.GetGenericTypeDefinition() == genericTypeDefinition);
-                                }
-                                catch (TypeLoadException)
-                                {
-                                    return false;
-                                }
-                            })
-                            .ToList();
-
-                        implementations.AddRange(types);
-
-                        // Cache the types we found using full names
-                        foreach (var type in types)
-                        {
-                            _types.TryAdd($"{assembly.GetName().Name}.{type.FullName}", type);
-                        }
+                        var constructedType = genericTypeDefinition.MakeGenericType(combination.ToArray());
+                        implementations.Add(constructedType);
                     }
-                    catch (ReflectionTypeLoadException ex)
+                    catch (ArgumentException)
                     {
-                        // Try to get any types that were successfully loaded
-                        var loadedTypes = ex.Types?.Where(t => t != null);
-                        if (loadedTypes != null)
-                        {
-                            var validTypes = loadedTypes
-                                .Where(t => t.IsClass && !t.IsAbstract && !t.IsGenericTypeDefinition)
-                                .Where(t => t.GetInterfaces()
-                                    .Where(i => i.IsGenericType && !i.IsGenericTypeDefinition)
-                                    .Any(i => i.GetGenericTypeDefinition() == genericTypeDefinition))
-                                .ToList();
-
-                            implementations.AddRange(validTypes);
-                        }
-                    }
-                    catch (Exception)
-                    {
-                        // Skip other exceptions but consider logging them
+                        // Skip invalid combinations that don't satisfy constraints
                         continue;
                     }
                 }
 
                 return implementations;
             });
+        }
+
+        /// <summary>
+        /// Gets all possible combinations of type parameters that satisfy the constraints.
+        /// </summary>
+        /// <param name="genericParameters">Array of generic type parameters</param>
+        /// <returns>List of valid type parameter combinations</returns>
+        private static List<List<Type>> GetGenericParameterCombinations(Type[] genericParameters)
+        {
+            var result = new List<List<Type>>();
+            var currentCombination = new List<Type>();
+
+            void GenerateCombinations(int paramIndex)
+            {
+                if (paramIndex == genericParameters.Length)
+                {
+                    result.Add(new List<Type>(currentCombination));
+                    return;
+                }
+
+                var parameter = genericParameters[paramIndex];
+                var validTypes = GetValidTypesForParameter(parameter);
+
+                foreach (var type in validTypes)
+                {
+                    currentCombination.Add(type);
+                    GenerateCombinations(paramIndex + 1);
+                    currentCombination.RemoveAt(currentCombination.Count - 1);
+                }
+            }
+
+            GenerateCombinations(0);
+            return result;
+        }
+
+        /// <summary>
+        /// Gets valid types that satisfy the constraints of a generic parameter.
+        /// </summary>
+        /// <param name="parameter">The generic parameter to find valid types for</param>
+        /// <returns>List of valid types for the parameter</returns>
+        private static List<Type> GetValidTypesForParameter(Type parameter)
+        {
+            var validTypes = new List<Type>();
+            var constraints = parameter.GetGenericParameterConstraints();
+            var attributes = parameter.GenericParameterAttributes;
+
+            bool hasReferenceTypeConstraint = (attributes & GenericParameterAttributes.ReferenceTypeConstraint) != 0;
+            bool hasValueTypeConstraint = (attributes & GenericParameterAttributes.NotNullableValueTypeConstraint) != 0;
+
+            // Handle interface constraints
+            var interfaceConstraints = constraints.Where(c => c.IsInterface).ToList();
+            if (interfaceConstraints.Any())
+            {
+                foreach (var constraint in interfaceConstraints)
+                {
+                    validTypes.AddRange(GetImplementingClasses(constraint, AssemblyHelper.GetAssemblies()));
+                }
+                return validTypes.Distinct().ToList();
+            }
+
+            // Handle class constraints
+            var classConstraints = constraints.Where(c => c.IsClass).ToList();
+            if (classConstraints.Any())
+            {
+                validTypes.Add(typeof(object));
+                return validTypes;
+            }
+
+            // Handle reference/value type constraints
+            if (hasReferenceTypeConstraint)
+            {
+                validTypes.Add(typeof(object));
+            }
+            else if (hasValueTypeConstraint)
+            {
+                validTypes.AddRange(CommonValueTypes.Where(t => t.IsValueType));
+            }
+            else
+            {
+                validTypes.AddRange(CommonValueTypes);
+            }
+
+            return validTypes;
+        }
+
+        /// <summary>
+        /// Gets all concrete implementations of a generic method.
+        /// </summary>
+        /// <param name="method">The generic method to create implementations for</param>
+        /// <returns>List of concrete method implementations</returns>
+        internal static List<MethodInfo> GetGenericMethodImplementations(MethodInfo method)
+        {
+            if (!method.IsGenericMethod)
+            {
+                throw new ArgumentException("Method must be generic", nameof(method));
+            }
+
+            var implementations = new List<MethodInfo>();
+            var genericArgs = method.GetGenericArguments();
+            var parameterCombinations = GetGenericParameterCombinations(genericArgs);
+
+            foreach (var combination in parameterCombinations)
+            {
+                try
+                {
+                    var constructedMethod = method.MakeGenericMethod(combination.ToArray());
+                    implementations.Add(constructedMethod);
+                }
+                catch (ArgumentException)
+                {
+                    // Skip invalid combinations that don't satisfy constraints
+                    continue;
+                }
+            }
+
+            return implementations;
         }
 
         /// <summary>

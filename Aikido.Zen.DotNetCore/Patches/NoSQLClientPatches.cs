@@ -42,7 +42,14 @@ namespace Aikido.Zen.DotNetCore.Patches
                     var methods = ReflectionHelper.GetMethodsFromType(implementingType, interfaceMethodName, parameterTypeNames);
                     foreach (var method in methods)
                     {
-                        harmony.Patch(method, new HarmonyMethod(typeof(NoSQLClientPatches).GetMethod(nameof(OnCommandExecuting), BindingFlags.Static | BindingFlags.NonPublic)));
+                        try
+                        {
+                            harmony.Patch(method, new HarmonyMethod(typeof(NoSQLClientPatches).GetMethod(nameof(OnCommandExecuting), BindingFlags.Static | BindingFlags.NonPublic)));
+                        }
+                        catch (Exception ex)
+                        {
+                            // pass through
+                        }
                     }
                 }
             }

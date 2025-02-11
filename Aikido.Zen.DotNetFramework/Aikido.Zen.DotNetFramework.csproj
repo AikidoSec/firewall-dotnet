@@ -230,7 +230,6 @@
     <Compile Include="Patches\Patcher.cs" />
     <Compile Include="Patches\ProcessPatches.cs" />
     <Compile Include="Patches\SqlClientPatches.cs" />
-    <Compile Include="Patches\NoSQLClientPatches.cs" />
     <Compile Include="Zen.cs" />
     <Compile Include="HttpModules\ContextModule.cs" />
     <Compile Include="ModuleRegistry.cs" />
