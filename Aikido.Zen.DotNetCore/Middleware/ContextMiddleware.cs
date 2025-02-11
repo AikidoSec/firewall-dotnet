@@ -23,7 +23,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
 
         public async Task InvokeAsync(HttpContext httpContext, RequestDelegate next)
         {
-            if (Agent.Instance.Context.BlockList.IsAllowedIP(GetIp(httpContext)) || EnvironmentHelper.IsDisabled)
+            if (Agent.Instance.Context.BlockList.IsBypassedIP(GetIp(httpContext)) || EnvironmentHelper.IsDisabled)
             {
                 await next(httpContext);
                 return;

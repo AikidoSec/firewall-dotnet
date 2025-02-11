@@ -667,12 +667,12 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void UpdateConfig_ShouldUpdateAllowedIPs()
+        public void UpdateConfig_ShouldUpdateBypassedIPs()
         {
             // Arrange
             var block = true;
             var blockedUsers = new[] { "user1" };
-            var allowedIPs = new[] { "192.168.1.0/24", "10.0.0.0/8" };
+            var bypassedIPs = new[] { "192.168.1.0/24", "10.0.0.0/8" };
             var endpoints = new[]
             {
                 new EndpointConfig
@@ -684,25 +684,33 @@ namespace Aikido.Zen.Test
             };
             var configVersion = 123L;
 
+            var apiResponse = new ReportingAPIResponse
+            {
+                Block = block,
+                BlockedUserIds = blockedUsers,
+                BypassedIPAddresses = bypassedIPs,
+                Endpoints = endpoints
+            };
+
             // Act
-            _agent.Context.UpdateConfig(block, blockedUsers, allowedIPs, endpoints, null, configVersion);
+            _agent.Context.UpdateConfig(apiResponse);
 
             // Assert
             Assert.Multiple(() =>
             {
-                Assert.That(_agent.Context.BlockList.IsAllowedIP("192.168.1.100"), Is.True);
-                Assert.That(_agent.Context.BlockList.IsAllowedIP("10.10.10.10"), Is.True);
-                Assert.That(_agent.Context.BlockList.IsAllowedIP("172.16.1.1"), Is.False);
+                Assert.That(_agent.Context.BlockList.IsBypassedIP("192.168.1.100"), Is.True);
+                Assert.That(_agent.Context.BlockList.IsBypassedIP("10.10.10.10"), Is.True);
+                Assert.That(_agent.Context.BlockList.IsBypassedIP("172.16.1.1"), Is.False);
             });
         }
 
         [Test]
-        public void UpdateConfig_AllowedIP_ShouldBypassAllBlocking()
+        public void UpdateConfig_BypassedIP_ShouldBypassAllBlocking()
         {
             // Arrange
             var block = true;
             var blockedUsers = new[] { "user1" };
-            var allowedIPs = new[] { "192.168.1.0/24" };
+            var bypassedIPs = new[] { "192.168.1.0/24" };
             var endpoints = new[]
             {
                 new EndpointConfig
@@ -716,21 +724,29 @@ namespace Aikido.Zen.Test
             var ip = "192.168.1.100";
             var url = "GET|test";
 
+            var apiResponse = new ReportingAPIResponse
+            {
+                Block = block,
+                BlockedUserIds = blockedUsers,
+                BypassedIPAddresses = bypassedIPs,
+                Endpoints = endpoints
+            };
+
             // Act
-            _agent.Context.UpdateConfig(block, blockedUsers, allowedIPs, endpoints, null, configVersion);
+            _agent.Context.UpdateConfig(apiResponse);
             _agent.Context.BlockList.AddIpAddressToBlocklist(ip); // Try to block the allowed IP
 
             // Assert
-            Assert.That(_agent.Context.BlockList.IsBlocked(ip, url), Is.False, "Allowed IP should bypass all blocking");
+            Assert.That(_agent.Context.BlockList.IsBlocked(ip, url), Is.False, "Bypassed IP should bypass all blocking");
         }
 
         [Test]
-        public void UpdateConfig_AllowedIP_ShouldBypassEndpointRestrictions()
+        public void UpdateConfig_BypassedIPs_ShouldBypassEndpointRestrictions()
         {
             // Arrange
             var block = true;
             var blockedUsers = Array.Empty<string>();
-            var allowedIPs = new[] { "192.168.1.0/24" };
+            var bypassedIPs = new[] { "192.168.1.0/24" };
             var endpoints = new[]
             {
                 new EndpointConfig
@@ -744,42 +760,59 @@ namespace Aikido.Zen.Test
             var ip = "192.168.1.100";
             var url = "GET|test";
 
+            var apiResponse = new ReportingAPIResponse
+            {
+                Block = block,
+                BlockedUserIds = blockedUsers,
+                BypassedIPAddresses = bypassedIPs,
+                Endpoints = endpoints
+            };
+
             // Act
-            _agent.Context.UpdateConfig(block, blockedUsers, allowedIPs, endpoints, null, configVersion);
+            _agent.Context.UpdateConfig(apiResponse);
 
             // Assert
-            Assert.That(_agent.Context.BlockList.IsBlocked(ip, url), Is.False, "Allowed IP should bypass endpoint restrictions");
+            Assert.That(_agent.Context.BlockList.IsBypassedIP(ip), Is.True, "Bypassed IP should bypass endpoint restrictions");
         }
 
         [Test]
-        public void UpdateConfig_ShouldClearAllowedIpsWhenEmpty()
+        public void UpdateConfig_ShouldClearBypassedIPsWhenEmpty()
         {
             // Arrange
             var block = true;
             var blockedUsers = Array.Empty<string>();
-            var allowedIPs = new[] { "192.168.1.0/24" };
+            var bypassedIPs = new[] { "192.168.1.0/24" };
             var endpoints = Array.Empty<EndpointConfig>();
             var configVersion = 123L;
             var ip = "192.168.1.100";
 
-            // First update with allowed IPs
-            _agent.Context.UpdateConfig(block, blockedUsers, allowedIPs, endpoints, null, configVersion);
-            Assert.That(_agent.Context.BlockList.IsAllowedIP(ip), Is.True, "IP should be allowed initially");
+            var apiResponse = new ReportingAPIResponse
+            {
+                Block = block,
+                BlockedUserIds = blockedUsers,
+                BypassedIPAddresses = bypassedIPs,
+                Endpoints = endpoints
+            };
 
-            // Act - update with empty allowed IPs
-            _agent.Context.UpdateConfig(block, blockedUsers, Array.Empty<string>(), endpoints, null, configVersion + 1);
+            // First update with bypassed IPs
+            _agent.Context.UpdateConfig(apiResponse);
+            Assert.That(_agent.Context.BlockList.IsBypassedIP(ip), Is.True, "IP should be bypassed initially");
+
+            // Act - update with empty bypassed IPs
+            apiResponse.BypassedIPAddresses = Array.Empty<string>();
+            _agent.Context.UpdateConfig(apiResponse);
 
             // Assert
-            Assert.That(_agent.Context.BlockList.IsAllowedIP(ip), Is.False, "Allowed ip list should be cleared");
+            Assert.That(_agent.Context.BlockList.IsBypassedIP(ip), Is.False, "Bypassed ip list should be cleared");
         }
 
         [Test]
-        public void UpdateConfig_ShouldHandleAllowedIpsingCorrectly()
+        public void UpdateConfig_ShouldHandleBypassedIpsingCorrectly()
         {
             // Arrange
             var block = true;
             var blockedUsers = new[] { "user1" };
-            var allowedIPs = new[] { "192.168.1.0/24", "10.0.0.0/8" };
+            var bypassedIPs = new[] { "192.168.1.0/24", "10.0.0.0/8" };
             var endpoints = new[]
             {
                 new EndpointConfig
@@ -793,16 +826,24 @@ namespace Aikido.Zen.Test
             var ip = "192.168.1.100";
             var url = "GET|test";
 
-            // Act - Initial config with allowed ips
-            _agent.Context.UpdateConfig(block, blockedUsers, allowedIPs, endpoints, null, configVersion);
+            var apiResponse = new ReportingAPIResponse
+            {
+                Block = block,
+                BlockedUserIds = blockedUsers,
+                BypassedIPAddresses = bypassedIPs,
+                Endpoints = endpoints
+            };
+
+            // Act - Initial config with bypassed ips
+            _agent.Context.UpdateConfig(apiResponse);
 
             // Assert - Check allowed ips functionality
             Assert.Multiple(() =>
             {
                 // Basic allowed ips checks
-                Assert.That(_agent.Context.BlockList.IsAllowedIP("192.168.1.100"), Is.True, "IP in first subnet should be allowed");
-                Assert.That(_agent.Context.BlockList.IsAllowedIP("10.10.10.10"), Is.True, "IP in second subnet should be allowed");
-                Assert.That(_agent.Context.BlockList.IsAllowedIP("172.16.1.1"), Is.False, "IP not in any subnet should not be allowed");
+                Assert.That(_agent.Context.BlockList.IsBypassedIP("192.168.1.100"), Is.True, "IP in first subnet should be allowed");
+                Assert.That(_agent.Context.BlockList.IsBypassedIP("10.10.10.10"), Is.True, "IP in second subnet should be allowed");
+                Assert.That(_agent.Context.BlockList.IsBypassedIP("172.16.1.1"), Is.False, "IP not in any subnet should not be allowed");
 
                 // Verify allowed ips bypasses all blocking
                 _agent.Context.BlockList.AddIpAddressToBlocklist(ip);
@@ -814,24 +855,25 @@ namespace Aikido.Zen.Test
                 Assert.That(_agent.Context.BlockList.IsBlocked("172.16.1.1", url), Is.True, "Non-allowed IP should still be subject to endpoint restrictions");
             });
 
-            // Act - Update config to clear allowed ips
-            _agent.Context.UpdateConfig(block, blockedUsers, Array.Empty<string>(), endpoints, null, configVersion + 1);
+            // Act - Update config to clear bypassed ips
+            apiResponse.BypassedIPAddresses = Array.Empty<string>();
+            _agent.Context.UpdateConfig(apiResponse);
 
-            // Assert - Verify allowed ips is cleared and blocking is restored
+            // Assert - Verify bypassed ips is cleared and blocking is restored
             Assert.Multiple(() =>
             {
-                Assert.That(_agent.Context.BlockList.IsAllowedIP(ip), Is.False, "allowed ips should be cleared");
-                Assert.That(_agent.Context.BlockList.IsBlocked(ip, url), Is.True, "IP should be blocked after allowed ips is cleared");
+                Assert.That(_agent.Context.BlockList.IsBypassedIP(ip), Is.False, "bypassed ips should be cleared");
+                Assert.That(_agent.Context.BlockList.IsBlocked(ip, url), Is.True, "IP should be blocked after bypassed ips is cleared");
             });
         }
 
         [Test]
-        public void UpdateConfig_AllowedIP_ShouldBypassAllBlockingConditions()
+        public void UpdateConfig_BypassedIP_ShouldBypassAllBlockingConditions()
         {
             // Arrange
             var block = true;
             var blockedUsers = new[] { "user1" };
-            var allowedIPs = new[] { "192.168.1.0/24" };
+            var bypassedIPs = new[] { "192.168.1.0/24" };
             var endpoints = new[]
             {
                 new EndpointConfig
@@ -845,15 +887,23 @@ namespace Aikido.Zen.Test
             var ip = "192.168.1.100";
             var url = "GET|test";
 
+            var apiResponse = new ReportingAPIResponse
+            {
+                Block = block,
+                BlockedUserIds = blockedUsers,
+                BypassedIPAddresses = bypassedIPs,
+                Endpoints = endpoints
+            };
+
             // Act
-            _agent.Context.UpdateConfig(block, blockedUsers, allowedIPs, endpoints, null, configVersion);
+            _agent.Context.UpdateConfig(apiResponse);
             _agent.Context.BlockList.AddIpAddressToBlocklist(ip);
 
             // Assert
             Assert.Multiple(() =>
             {
                 // Verify IP is allowed
-                Assert.That(_agent.Context.BlockList.IsAllowedIP(ip), Is.True);
+                Assert.That(_agent.Context.BlockList.IsBypassedIP(ip), Is.True);
 
                 // Verify allowed ip list bypasses all blocking conditions
                 Assert.That(_agent.Context.BlockList.IsBlocked(ip, url), Is.False, "Should bypass blocklist");
