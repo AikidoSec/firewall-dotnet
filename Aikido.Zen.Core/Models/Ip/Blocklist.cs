@@ -218,7 +218,7 @@ namespace Aikido.Zen.Core.Models.Ip
             {
                 if (!IPHelper.IsValidIp(ip))
                 {
-                    return false; // Invalid IPs are not allowed
+                    return true; // Invalid IPs are not allowed, since allowing bypasses other blocking rules
                 }
 
                 if (_allowedSubnets.HasItems)

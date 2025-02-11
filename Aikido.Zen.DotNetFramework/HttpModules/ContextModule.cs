@@ -56,6 +56,11 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 return;
             }
 
+            if (Agent.Instance.Context.BlockList.IsAllowedIP(GetClientIp(httpContext)) || EnvironmentHelper.IsDisabled)
+            {
+                return;
+            }
+
             var context = new Context
             {
                 Url = httpContext.Request.Path,
