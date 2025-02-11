@@ -183,14 +183,14 @@ namespace Aikido.Zen.Core.Models.Ip
             }
         }
 
-        public bool IsWhitelisted(string ip)
+        public bool IsAllowedIP(string ip)
         {
             _lock.EnterReadLock();
             try
             {
                 if (!IPHelper.IsValidIp(ip))
                 {
-                    return false; // Invalid IPs are not whitelisted
+                    return false; // Invalid IPs are not allowed
                 }
 
                 if (_allowedSubnets.HasItems)
@@ -198,7 +198,7 @@ namespace Aikido.Zen.Core.Models.Ip
                     return _allowedSubnets.IsIpInRange(ip);
                 }
 
-                return false; // No whitelisted IPs means not whitelisted
+                return false; // No allowed IPs means not allowed
             }
             finally
             {
@@ -214,7 +214,7 @@ namespace Aikido.Zen.Core.Models.Ip
         /// <returns>True if access is blocked, false otherwise.</returns>
         public bool IsBlocked(string ip, string endpoint)
         {
-            if (IsWhitelisted(ip))
+            if (IsAllowedIP(ip))
             {
                 return false;
             }
