@@ -211,14 +211,14 @@ namespace Aikido.Zen.Core.Models.Ip
             }
         }
 
-        public bool IsAllowedIP(string ip)
+        public bool IsBypassedIP(string ip)
         {
             _lock.EnterReadLock();
             try
             {
                 if (!IPHelper.IsValidIp(ip))
                 {
-                    return true; // Invalid IPs are not allowed, since allowing bypasses other blocking rules
+                    return false; // Invalid IPs are not allowed, since allowing bypasses other blocking rules
                 }
 
                 if (_allowedSubnets.HasItems)
