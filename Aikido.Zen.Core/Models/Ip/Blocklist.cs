@@ -211,14 +211,14 @@ namespace Aikido.Zen.Core.Models.Ip
             }
         }
 
-        public bool IsWhitelisted(string ip)
+        public bool IsAllowedIP(string ip)
         {
             _lock.EnterReadLock();
             try
             {
                 if (!IPHelper.IsValidIp(ip))
                 {
-                    return false; // Invalid IPs are not whitelisted
+                    return false; // Invalid IPs are not allowed
                 }
 
                 if (_allowedSubnets.HasItems)
@@ -226,7 +226,58 @@ namespace Aikido.Zen.Core.Models.Ip
                     return _allowedSubnets.IsIpInRange(ip);
                 }
 
-                return false; // No whitelisted IPs means not whitelisted
+                return true; // No allowed IPs means allowed
+            }
+            finally
+            {
+                _lock.ExitReadLock();
+            }
+        }
+
+        /// <summary>
+        /// Checks if an IP is bypassed.
+        /// </summary>
+        /// <param name="ip">The IP address to check.</param>
+        /// <returns>True if the IP is bypassed, false otherwise.</returns>
+        public bool IsBypassedIP(string ip)
+        {
+            _lock.EnterReadLock();
+            try
+            {
+                if (!IPHelper.IsValidIp(ip))
+                {
+                    return false; // Invalid IPs are not allowed, since allowing bypasses other blocking rules
+                }
+
+                if (_bypassedIps.HasItems)
+                {
+                    return _bypassedIps.IsIpInRange(ip);
+                }
+
+                return false;
+            }
+            finally
+            {
+                _lock.ExitReadLock();
+            }
+        }
+
+        public bool IsAllowedIP(string ip)
+        {
+            _lock.EnterReadLock();
+            try
+            {
+                if (!IPHelper.IsValidIp(ip))
+                {
+                    return !_allowedIps.HasItems; // Invalid IPs are not allowed if there are allowed IPs
+                }
+
+                if (_allowedIps.HasItems)
+                {
+                    return _allowedIps.IsIpInRange(ip);
+                }
+
+                return true;
             }
             finally
             {
