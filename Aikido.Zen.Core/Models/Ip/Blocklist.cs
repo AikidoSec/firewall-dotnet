@@ -80,9 +80,9 @@ namespace Aikido.Zen.Core.Models.Ip
         }
 
         /// <summary>
-        /// Updates the allowed subnet ranges.
+        /// Updates the allowed ip addresses or ranges, they bypass all blocking rules
         /// </summary>
-        /// <param name="subnets">The subnet ranges to allow.</param>
+        /// <param name="subnets">The ip addresses or ranges to allow.</param>
         public void UpdateAllowedSubnets(IEnumerable<string> subnets)
 
         {
@@ -124,7 +124,7 @@ namespace Aikido.Zen.Core.Models.Ip
         }
 
         /// <summary>
-        /// Checks if an IP address is blocked.
+        /// Checks if an IP address is blocked. (e.g. due to geo restrictions, known malicious IPs, etc.)
         /// </summary>
         /// <param name="ip">The IP address to check.</param>
         /// <returns>True if the IP is blocked, false otherwise.</returns>
@@ -190,7 +190,7 @@ namespace Aikido.Zen.Core.Models.Ip
             {
                 if (!IPHelper.IsValidIp(ip))
                 {
-                    return false; // Invalid IPs are not allowed
+                    return true; // Invalid IPs are not allowed, since allowing bypasses other blocking rules
                 }
 
                 if (_allowedSubnets.HasItems)
@@ -198,7 +198,7 @@ namespace Aikido.Zen.Core.Models.Ip
                     return _allowedSubnets.IsIpInRange(ip);
                 }
 
-                return false; // No allowed IPs means not allowed
+                return false;
             }
             finally
             {
