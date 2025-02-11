@@ -1,3 +1,4 @@
+using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Helpers.OpenAPI;
 using Aikido.Zen.Core.Models.Ip;
@@ -158,15 +159,15 @@ namespace Aikido.Zen.Core.Models
             }
         }
 
-        public void UpdateConfig(bool block, IEnumerable<string> blockedUsers, IEnumerable<string> allowedIpAddresses, IEnumerable<EndpointConfig> endpoints, Regex blockedUserAgents, long configVersion)
+        public void UpdateConfig(ReportingAPIResponse response)
         {
-            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", block ? "true" : "false");
-            UpdateBlockedUsers(blockedUsers);
-            BlockList.UpdateAllowedForEndpointSubnets(endpoints);
-            BlockList.UpdateAllowedSubnets(allowedIpAddresses);
-            UpdateRatelimitedRoutes(endpoints);
-            UpdateBlockedUserAgents(blockedUserAgents);
-            ConfigLastUpdated = configVersion;
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", response.Block ? "true" : "false");
+            UpdateBlockedUsers(response.BlockedUserIds);
+            BlockList.UpdateAllowedForEndpointSubnets(response.Endpoints);
+            BlockList.UpdateAllowedSubnets(response.BypassedIPAddresses);
+            UpdateRatelimitedRoutes(response.Endpoints);
+            UpdateBlockedUserAgents(response.BlockedUserAgentsRegex);
+            ConfigLastUpdated = response.ConfigUpdatedAt;
         }
 
         public void UpdateBlockedIps(IEnumerable<string> blockedIPs)

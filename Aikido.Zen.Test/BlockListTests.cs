@@ -235,9 +235,9 @@ namespace Aikido.Zen.Test
             _blockList.UpdateAllowedSubnets(subnets);
 
             // Assert
-            Assert.That(_blockList.IsAllowedIP("192.168.1.100"), Is.True);
-            Assert.That(_blockList.IsAllowedIP("10.10.10.10"), Is.True);
-            Assert.That(_blockList.IsAllowedIP("172.16.1.1"), Is.False);
+            Assert.That(_blockList.IsBypassedIP("192.168.1.100"), Is.True);
+            Assert.That(_blockList.IsBypassedIP("10.10.10.10"), Is.True);
+            Assert.That(_blockList.IsBypassedIP("172.16.1.1"), Is.False);
         }
 
         [Test]
@@ -248,14 +248,14 @@ namespace Aikido.Zen.Test
             _blockList.UpdateAllowedSubnets(subnets);
 
             // Act & Assert
-            Assert.That(_blockList.IsAllowedIP("invalid.ip"), Is.False);
+            Assert.That(_blockList.IsBypassedIP("invalid.ip"), Is.False);
         }
 
         [Test]
         public void IsAllowedIp_WithNoAllowedSubnets_ShouldReturnFalse()
         {
             // Act & Assert
-            Assert.That(_blockList.IsAllowedIP("192.168.1.100"), Is.False);
+            Assert.That(_blockList.IsBypassedIP("192.168.1.100"), Is.False);
         }
 
         [Test]
@@ -313,13 +313,13 @@ namespace Aikido.Zen.Test
             // Arrange
             var ip = "192.168.1.100";
             _blockList.UpdateAllowedSubnets(new[] { "192.168.1.0/24" });
-            Assert.That(_blockList.IsAllowedIP(ip), Is.True, "IP should be allowed initially");
+            Assert.That(_blockList.IsBypassedIP(ip), Is.True, "IP should be allowed initially");
 
             // Act
             _blockList.UpdateAllowedSubnets(Array.Empty<string>());
 
             // Assert
-            Assert.That(_blockList.IsAllowedIP(ip), Is.False, "AllowedIp list should be cleared");
+            Assert.That(_blockList.IsBypassedIP(ip), Is.False, "AllowedIp list should be cleared");
         }
 
         [Test]

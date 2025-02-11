@@ -183,14 +183,14 @@ namespace Aikido.Zen.Core.Models.Ip
             }
         }
 
-        public bool IsAllowedIP(string ip)
+        public bool IsBypassedIP(string ip)
         {
             _lock.EnterReadLock();
             try
             {
                 if (!IPHelper.IsValidIp(ip))
                 {
-                    return true; // Invalid IPs are not allowed, since allowing bypasses other blocking rules
+                    return false; // Invalid IPs are not allowed, since allowing bypasses other blocking rules
                 }
 
                 if (_allowedSubnets.HasItems)
@@ -214,7 +214,7 @@ namespace Aikido.Zen.Core.Models.Ip
         /// <returns>True if access is blocked, false otherwise.</returns>
         public bool IsBlocked(string ip, string endpoint)
         {
-            if (IsAllowedIP(ip))
+            if (IsBypassedIP(ip))
             {
                 return false;
             }

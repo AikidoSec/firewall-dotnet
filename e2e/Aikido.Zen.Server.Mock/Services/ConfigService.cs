@@ -66,6 +66,7 @@ public class ConfigService
             ["endpoints"] = new List<EndpointConfig>(),
             ["blockedUserIds"] = new List<string>(),
             ["allowedIPAddresses"] = _largeBlockedIpList,
+            ["bypassedIPAddresses"] = new List<string>(),
             ["receivedAnyStats"] = true
         };
     }
@@ -82,7 +83,7 @@ public class ConfigService
         .Select(i => i < 500
             // Generate IPv4 addresses (first 500)
             ? $"{(i >> 24) & 0xFF}.{(i >> 16) & 0xFF}.{(i >> 8) & 0xFF}.{i & 0xFF}"
-            // Generate IPv6 addresses (last 500) 
+            // Generate IPv6 addresses (last 500)
             : $"2001:db8:{((i - 500) >> 8):x}::{(i - 500) & 0xFF:x}")
         .ToList();
 }

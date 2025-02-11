@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using Aikido.Zen.Core;
+using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Models;
 namespace Aikido.Zen.Test
 {
@@ -375,8 +376,16 @@ namespace Aikido.Zen.Test
             };
             var configVersion = 123L;
 
+            var response = new ReportingAPIResponse
+            {
+                Block = block,
+                BlockedUserIds = blockedUsers,
+                Endpoints = endpoints,
+                ConfigUpdatedAt = configVersion
+            };
+
             // Act
-            _agentContext.UpdateConfig(block, blockedUsers, [], endpoints, null, configVersion);
+            _agentContext.UpdateConfig(response);
 
             // Assert
             Assert.Multiple(() =>
