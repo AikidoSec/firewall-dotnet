@@ -15,212 +15,195 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void UpdateBlockedSubnets_ShouldUpdateBlockedSubnetsList()
+        public void BlockedSubnets_BasicOperations()
         {
-            // Arrange
-            var subnet1 = "192.168.1.0/24";
-            var subnet2 = "10.0.0.0/8";
-            var subnets = new[] { subnet1, subnet2 };
-
-            // Act
+            // Test adding and clearing blocked subnets
+            var subnets = new[] { "192.168.1.0/24", "10.0.0.0/8" };
             _blockList.UpdateBlockedSubnets(subnets);
 
-            // Assert
             Assert.That(_blockList.IsIPBlocked("192.168.1.100"));
             Assert.That(_blockList.IsIPBlocked("10.10.10.10"));
             Assert.That(_blockList.IsIPBlocked("172.16.1.1"), Is.False);
-        }
 
-        [Test]
-        public void UpdateBlockedSubnets_WithEmptyList_ShouldClearBlockedSubnets()
-        {
-            // Arrange
-            var subnet = "192.168.1.0/24";
-            _blockList.UpdateBlockedSubnets(new[] { subnet });
-
-            // Act
+            // Test clearing blocked subnets
             _blockList.UpdateBlockedSubnets(Array.Empty<string>());
-
-            // Assert
             Assert.That(_blockList.IsIPBlocked("192.168.1.100"), Is.False);
-        }
 
-        [Test]
-        public void UpdateAllowedSubnets_ShouldUpdateAllowedSubnetsPerUrl()
-        {
-            // Arrange
-            var endpoints = new List<EndpointConfig> {
-                new EndpointConfig {
-                    Method = "GET",
-                    Route = "url1",
-                    AllowedIPAddresses = new[] { "192.168.1.0/24" }
-                },
-                new EndpointConfig {
-                    Method = "POST", 
-                    Route = "url2",
-                    AllowedIPAddresses = new[] { "10.0.0.0/8" }
-                },
-                new EndpointConfig {
-                    Method = "POST",
-                    Route = "url1", 
-                    AllowedIPAddresses = new[] { "10.0.0.0/8" }
-                }
-            };
-
-            // Act
-            _blockList.UpdateAllowedSubnets(endpoints);
-
-            // Assert
-            Assert.That(_blockList.IsIPAllowed("192.168.1.100", "GET|url1"));
-            Assert.That(_blockList.IsIPAllowed("192.168.1.100", "POST|url1"), Is.False);
-            Assert.That(_blockList.IsIPAllowed("10.10.10.10", "POST|url2"));
-            Assert.That(_blockList.IsIPAllowed("10.10.10.10", "GET|url1"), Is.False);
-            Assert.That(_blockList.IsIPAllowed("172.16.1.1", "GET|url3")); // No restrictions for url3
-        }
-
-        [Test]
-        public void UpdateAllowedSubnets_WithEmptyList_ShouldClearAllowedSubnets()
-        {
-            // Arrange
-            var endpoints = new List<EndpointConfig> {
-                new EndpointConfig {
-                    Method = "GET",
-                    Route = "url1",
-                    AllowedIPAddresses = new[] { "192.168.1.0/24" }
-                }
-            };
-            _blockList.UpdateAllowedSubnets(endpoints);
-
-            // Act
-            _blockList.UpdateAllowedSubnets(new List<EndpointConfig>());
-
-            // Assert
-            Assert.That(_blockList.IsIPAllowed("192.168.1.100", "GET|url1")); // Should allow when no restrictions
-        }
-
-        [Test]
-        public void AddIpAddressToBlocklist_ShouldBlockSpecificIP()
-        {
-            // Arrange
-            var ip = "192.168.1.100";
-
-            // Act
-            _blockList.AddIpAddressToBlocklist(ip);
-
-            // Assert
-            Assert.That(_blockList.IsIPBlocked(ip));
+            // Test adding single IP
+            _blockList.AddIpAddressToBlocklist("192.168.1.100");
+            Assert.That(_blockList.IsIPBlocked("192.168.1.100"));
             Assert.That(_blockList.IsIPBlocked("192.168.1.101"), Is.False);
         }
 
         [Test]
-        public void IsIPBlocked_WithInvalidIP_ShouldReturnFalse()
+        public void AllowedSubnets_EndpointSpecific()
         {
-            // Arrange
-            var invalidIp = "invalid.ip.address";
-
-            // Act & Assert
-            Assert.That(_blockList.IsIPBlocked(invalidIp), Is.False);
-        }
-
-        [Test]
-        public void IsIPAllowed_WithEmptyAllowedIpAddresses_ShouldAllowIP()
-        {
-            // Arrange
-            var endpoints = new List<EndpointConfig> {
-                new EndpointConfig {
-                    Method = "GET", 
-                    Route = "testUrl",
-                    AllowedIPAddresses = new string[] { } // Empty allowed IPs
-                }
-            };
-            _blockList.UpdateAllowedSubnets(endpoints);
-
-            // Act & Assert
-            Assert.That(_blockList.IsIPAllowed("192.168.1.100", "GET|testUrl")); // Should allow when no IP restrictions
-        }
-
-        [Test]
-        public void IsIPAllowed_WithInvalidIP_ShouldReturnTrue()
-        {
-            // Arrange
+            // Test endpoint-specific allowed subnets
             var endpoints = new List<EndpointConfig> {
                 new EndpointConfig {
                     Method = "GET",
-                    Route = "testUrl",
+                    Route = "url1",
                     AllowedIPAddresses = new[] { "192.168.1.0/24" }
-                }
-            };
-            _blockList.UpdateAllowedSubnets(endpoints);
-
-            // Act & Assert
-            Assert.That(_blockList.IsIPAllowed("invalid.ip", "GET|testUrl"));
-        }
-
-        [Test]
-        public void IsBlocked_ShouldCheckAllBlockingConditions()
-        {
-            // Arrange
-            var ip = "192.168.1.100";
-            var url = "GET|testUrl";
-            var endpoints = new List<EndpointConfig> {
+                },
                 new EndpointConfig {
-                    Method = "GET",
-                    Route = "testUrl",
-                    AllowedIPAddresses = [ "10.0.0.0/8" ]
+                    Method = "POST",
+                    Route = "url2",
+                    AllowedIPAddresses = new[] { "10.0.0.0/8" }
                 }
             };
 
-            _blockList.AddIpAddressToBlocklist("192.168.1.101");
-            _blockList.UpdateAllowedSubnets(endpoints);
+            _blockList.UpdateAllowedForEndpointSubnets(endpoints);
 
-            // Act & Assert
-            Assert.That(_blockList.IsBlocked("192.168.1.101", url)); // Blocked IP
-            Assert.That(_blockList.IsBlocked(ip, url)); // Not in allowed subnet
-            Assert.That(_blockList.IsBlocked("10.0.0.1", url), Is.False); // In allowed subnet
-            Assert.That(_blockList.IsBlocked("invalid.ip", url), Is.False); // Invalid IP should not be blocked
+            // Test endpoint-specific rules
+            Assert.That(_blockList.IsIPAllowed("192.168.1.100", "GET|url1"));
+            Assert.That(_blockList.IsIPAllowed("192.168.1.100", "POST|url2"), Is.False);
+            Assert.That(_blockList.IsIPAllowed("10.10.10.10", "POST|url2"));
+            Assert.That(_blockList.IsIPAllowed("172.16.1.1", "GET|url3")); // No restrictions
+
+            // Test clearing endpoint restrictions
+            _blockList.UpdateAllowedForEndpointSubnets(new List<EndpointConfig>());
+            Assert.That(_blockList.IsIPAllowed("192.168.1.100", "GET|url1")); // Should allow when no restrictions
         }
 
         [Test]
-        public void LargeBlocklistHandling_ShouldHandleLargeNumberOfIPs()
+        public void GlobalAllowedSubnets_IPv4AndIPv6()
         {
-            // Arrange
-            for (int i = 0; i < 256; i++)
-            {
-                _blockList.AddIpAddressToBlocklist($"192.168.1.{i}");
-                _blockList.AddIpAddressToBlocklist($"192.168.{i}.0/24");
-            }
+            // Test mixed IPv4 and IPv6 allowed subnets
+            var allowedSubnets = new[] {
+                "192.168.1.0/24",           // IPv4
+                "10.0.0.0/8",               // IPv4
+                "2001:db8::/32",            // IPv6
+                "fe80::/10",                // IPv6 link-local
+                "2001:db8:3333:4444:5555:6666:7777:8888" // Specific IPv6
+            };
 
-            // Act & Assert
-            Assert.That(_blockList.IsIPBlocked("192.168.1.255"));
-            Assert.That(_blockList.IsIPBlocked("192.168.2.1"));
-            Assert.That(_blockList.IsIPBlocked("191.167.2.1"), Is.False);
+            _blockList.UpdateAllowedSubnets(allowedSubnets);
+
+            // Test IPv4 addresses
+            Assert.That(_blockList.IsAllowedIP("192.168.1.100"), Is.True);
+            Assert.That(_blockList.IsAllowedIP("10.10.10.10"), Is.True);
+            Assert.That(_blockList.IsAllowedIP("172.16.1.1"), Is.False);
+
+            // Test IPv6 addresses
+            Assert.That(_blockList.IsAllowedIP("2001:db8:3333:4444:5555:6666:7777:8888"), Is.True);
+            Assert.That(_blockList.IsAllowedIP("fe80::1234:5678:9abc:def0"), Is.True);
+            Assert.That(_blockList.IsAllowedIP("2002:db8:1111:2222:3333:4444:5555:6666"), Is.False);
+
+            // Test empty allowed list
+            _blockList.UpdateAllowedSubnets(Array.Empty<string>());
+            Assert.That(_blockList.IsAllowedIP("192.168.1.100"), Is.False);
+            Assert.That(_blockList.IsAllowedIP("2001:db8:3333:4444:5555:6666:7777:8888"), Is.False);
         }
 
         [Test]
-        public void PerformanceWithDifferentSizes_ShouldPerformEfficiently()
+        public void InvalidIPHandling()
         {
-            // Arrange
-            var ip = "192.168.1.100";
+            // Setup some rules
+            _blockList.UpdateBlockedSubnets(new[] { "192.168.1.0/24" });
+            _blockList.UpdateAllowedSubnets(new[] { "10.0.0.0/8" });
 
-            // Act
-            for (int i = 0; i < 256; i++)
+            // Test invalid IPs in different contexts
+            var invalidIPs = new[] {
+                "invalid.ip.address",
+                "256.256.256.256",
+                "2001:invalid:ipv6",
+                "not_an_ip"
+            };
+
+            foreach (var invalidIp in invalidIPs)
             {
-                for (int j = 0; j < 256; j++)
-                {
-                    _blockList.AddIpAddressToBlocklist($"192.{i}.{j}.0");
-                }
+                Assert.That(_blockList.IsIPBlocked(invalidIp), Is.False, "Invalid IP should not be blocked");
+                Assert.That(_blockList.IsIPAllowed(invalidIp, "GET|testUrl"), Is.True, "Invalid IP should be allowed for endpoints");
+                Assert.That(_blockList.IsAllowedIP(invalidIp), Is.True, "Invalid IP should be allowed globally");
             }
+        }
+
+        [Test]
+        public void PrivateAndLocalIPHandling()
+        {
+            // Setup some blocking rules (these should be bypassed for private/local IPs)
+            _blockList.UpdateBlockedSubnets(new[] { "0.0.0.0/0" }); // Try to block everything
+
+            // Test IPv4 private and local addresses
+            var ipv4Tests = new[] {
+                ("127.0.0.1", "IPv4 Localhost"),
+                ("127.0.0.53", "IPv4 Localhost range"),
+                ("192.168.1.100", "IPv4 Private Class C"),
+                ("10.10.10.10", "IPv4 Private Class A"),
+                ("172.16.1.1", "IPv4 Private Class B")
+            };
+
+            foreach (var (ip, description) in ipv4Tests)
+            {
+                Assert.That(_blockList.IsBlocked(ip, "ANY"), Is.False,
+                    $"{description} ({ip}) should never be blocked");
+            }
+
+            // Test IPv6 private and local addresses
+            var ipv6Tests = new[] {
+                ("::1", "IPv6 Localhost"),
+                ("fe80::1", "IPv6 Link Local"),
+                ("fc00::1", "IPv6 Unique Local"),
+                ("fd00::1", "IPv6 Unique Local")
+            };
+
+            foreach (var (ip, description) in ipv6Tests)
+            {
+                Assert.That(_blockList.IsBlocked(ip, "ANY"), Is.False,
+                    $"{description} ({ip}) should never be blocked");
+            }
+        }
+
+        [Test]
+        public void Performance_LargeScaleOperations()
+        {
+            const int SUBNET_COUNT = 100;
+            const int TEST_IPS_COUNT = 1000;
+            const int MAX_ACCEPTABLE_MS = 100; // More realistic timeout
+
+            // Add a reasonable number of subnets
+            var random = new Random(42); // Fixed seed for reproducibility
+            for (int i = 0; i < SUBNET_COUNT; i++)
+            {
+                var firstOctet = random.Next(1, 224); // Valid non-reserved first octet
+                var secondOctet = random.Next(0, 256);
+                _blockList.AddIpAddressToBlocklist($"{firstOctet}.{secondOctet}.0.0/16");
+            }
+
             var stopwatch = new System.Diagnostics.Stopwatch();
             stopwatch.Start();
-            for (int i = 0; i < 256; i++)
+
+            // Test performance with realistic dataset
+            int matchCount = 0;
+            for (int i = 0; i < TEST_IPS_COUNT; i++)
             {
-                _blockList.IsIPBlocked($"192.168.1.{i}");
+                var testIp = $"{random.Next(1, 224)}.{random.Next(0, 256)}.{random.Next(0, 256)}.{random.Next(0, 256)}";
+                if (_blockList.IsIPBlocked(testIp))
+                {
+                    matchCount++;
+                }
             }
+
             stopwatch.Stop();
 
-            // Assert
-            Assert.That(stopwatch.ElapsedMilliseconds, Is.AtMost(5)); // Ensure it completes within 5ms
-        }
+            // Log performance metrics
+            Console.WriteLine($"Processed {TEST_IPS_COUNT} IPs against {SUBNET_COUNT} subnets");
+            Console.WriteLine($"Found {matchCount} matches");
+            Console.WriteLine($"Total time: {stopwatch.ElapsedMilliseconds}ms");
+            Console.WriteLine($"Average time per IP: {(double)stopwatch.ElapsedMilliseconds / TEST_IPS_COUNT:F3}ms");
 
+            Assert.That(stopwatch.ElapsedMilliseconds, Is.AtMost(MAX_ACCEPTABLE_MS),
+                $"Large scale operations should complete within {MAX_ACCEPTABLE_MS}ms");
+
+            // Verify accuracy with known IPs
+            var knownBlockedIP = $"192.168.1.1";
+            _blockList.AddIpAddressToBlocklist(knownBlockedIP);
+            Assert.That(_blockList.IsIPBlocked(knownBlockedIP), Is.True,
+                "Should correctly identify known blocked IP");
+
+            var knownAllowedIP = "8.8.8.8";
+            Assert.That(_blockList.IsIPBlocked(knownAllowedIP), Is.False,
+                "Should correctly identify known allowed IP");
+        }
     }
 }

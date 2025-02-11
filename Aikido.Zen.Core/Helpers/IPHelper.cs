@@ -77,6 +77,20 @@ namespace Aikido.Zen.Core.Helpers
         }
 
         /// <summary>
+        /// Checks if a given IP address is a private or local IP address.
+        /// </summary>
+        /// <param name="ip">The IP address to check.</param>
+        /// <returns>True if the IP address is a private or local IP address, false otherwise.</returns>
+        public static bool IsPrivateOrLocalIp(string ip)
+        {
+            if (!IPAddress.TryParse(ip, out var parsedIp))
+            {
+                return false;
+            }
+            return IPAddress.IsLoopback(parsedIp) || IsPrivateIPAddress(parsedIp);
+        }
+
+        /// <summary>
         /// Converts an IP address to a long integer.
         /// </summary>
         /// <param name="ipAddress">The IP address as a string.</param>
@@ -123,6 +137,43 @@ namespace Aikido.Zen.Core.Helpers
         private static long IMask(int s)
         {
             return (long)(Math.Pow(2, 32) - Math.Pow(2, (32 - s)));
+        }
+
+        /// <summary>
+        /// Checks if an IP address is a private IP address.
+        /// Supports both IPv4 and IPv6 address formats.
+        /// </summary>
+        /// <param name="ip">The IP address to check.</param>
+        /// <returns>True if the IP address is private, false otherwise.</returns>
+        private static bool IsPrivateIPAddress(IPAddress ip)
+        {
+            byte[] ipBytes = ip.GetAddressBytes();
+
+            // Check if IPv4 private address ranges
+            if (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+            {
+                // 10.0.0.0/8
+                // 172.16.0.0/12
+                // 192.168.0.0/16
+                if (ipBytes[0] == 10 ||
+                    (ipBytes[0] == 172 && ipBytes[1] >= 16 && ipBytes[1] <= 31) ||
+                    (ipBytes[0] == 192 && ipBytes[1] == 168))
+                {
+                    return true;
+                }
+            }
+
+            // Check if IPv6 private address ranges
+            if (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6)
+            {
+                // Unique local addresses (fc00::/7)
+                if ((ipBytes[0] & 0xFE) == 0xFC)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

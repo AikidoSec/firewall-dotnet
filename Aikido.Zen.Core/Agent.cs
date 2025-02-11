@@ -105,7 +105,7 @@ namespace Aikido.Zen.Core
                 if (response.Success)
                 {
                     var reportingResponse = response as ReportingAPIResponse;
-                    Task.Run(() => UpdateConfig(reportingResponse.Block, reportingResponse.BlockedUserIds, reportingResponse.Endpoints, reportingResponse.BlockedUserAgentsRegex, reportingResponse.ConfigUpdatedAt));
+                    Task.Run(() => UpdateConfig(reportingResponse));
                 }
             });
 
@@ -377,7 +377,7 @@ namespace Aikido.Zen.Core
                     {
                         if (ConfigChanged(out var response))
                         {
-                            await UpdateConfig(response.Block, response.BlockedUserIds, response.Endpoints, response.BlockedUserAgentsRegex, response.ConfigUpdatedAt);
+                            await UpdateConfig(response);
                         }
                         _lastConfigCheck = DateTime.UtcNow.Ticks;
                     }
@@ -537,9 +537,9 @@ namespace Aikido.Zen.Core
             return false;
         }
 
-        private async Task UpdateConfig(bool block, IEnumerable<string> blockedUsers, IEnumerable<EndpointConfig> endpoints, Regex blockedUserAgents, long configVersion)
+        private async Task UpdateConfig(ReportingAPIResponse response)
         {
-            _context.UpdateConfig(block, blockedUsers, endpoints, blockedUserAgents, configVersion);
+            _context.UpdateConfig(response);
             await UpdateBlockedIps();
         }
 

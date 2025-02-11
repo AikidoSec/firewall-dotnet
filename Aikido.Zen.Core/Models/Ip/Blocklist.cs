@@ -190,7 +190,7 @@ namespace Aikido.Zen.Core.Models.Ip
             {
                 if (!IPHelper.IsValidIp(ip))
                 {
-                    return false; // Invalid IPs are by default allowed
+                    return true; // Invalid IPs are by default allowed
                 }
 
                 if (_allowedSubnets.HasItems)
@@ -206,6 +206,11 @@ namespace Aikido.Zen.Core.Models.Ip
             }
         }
 
+        internal bool IsPrivateOrLocalIp(string ip)
+        {
+            return IPHelper.IsPrivateOrLocalIp(ip);
+        }
+
         /// <summary>
         /// Checks if access should be blocked based on IP and URL.
         /// </summary>
@@ -214,10 +219,11 @@ namespace Aikido.Zen.Core.Models.Ip
         /// <returns>True if access is blocked, false otherwise.</returns>
         public bool IsBlocked(string ip, string endpoint)
         {
-            if (IsAllowedIP(ip))
+            if (IsPrivateOrLocalIp(ip))
             {
                 return false;
             }
+
             return IsIPBlocked(ip) || !IsIPAllowed(ip, endpoint);
         }
     }
