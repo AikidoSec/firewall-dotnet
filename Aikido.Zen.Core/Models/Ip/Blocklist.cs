@@ -155,7 +155,7 @@ namespace Aikido.Zen.Core.Models.Ip
         /// <param name="ip">The IP address to check.</param>
         /// <param name="endpoint">The endpoint, e.g., GET|the/path.</param>
         /// <returns>True if the IP is allowed, false otherwise.</returns>
-        public bool IsIPAllowed(string ip, string endpoint)
+        public bool IsIPAllowedForEndpoint(string ip, string endpoint)
         {
             _lock.EnterReadLock();
             try
@@ -224,7 +224,7 @@ namespace Aikido.Zen.Core.Models.Ip
                 return false;
             }
 
-            return IsIPBlocked(ip) || !IsIPAllowed(ip, endpoint);
+            return IsIPBlocked(ip) || !IsIPAllowedForEndpoint(ip, endpoint);
         }
     }
 }

@@ -9,13 +9,13 @@ namespace Aikido.Zen.Test
         private BlockList _blockList;
 
         [SetUp]
-        public void Setup()
+        public void Setup ()
         {
             _blockList = new BlockList();
         }
 
         [Test]
-        public void BlockedSubnets_BasicOperations()
+        public void BlockedSubnets_BasicOperations ()
         {
             // Test adding and clearing blocked subnets
             var subnets = new[] { "192.168.1.0/24", "10.0.0.0/8" };
@@ -36,7 +36,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void AllowedSubnets_EndpointSpecific()
+        public void AllowedSubnets_EndpointSpecific ()
         {
             // Test endpoint-specific allowed subnets
             var endpoints = new List<EndpointConfig> {
@@ -55,18 +55,18 @@ namespace Aikido.Zen.Test
             _blockList.UpdateAllowedForEndpointSubnets(endpoints);
 
             // Test endpoint-specific rules
-            Assert.That(_blockList.IsIPAllowed("192.168.1.100", "GET|url1"));
-            Assert.That(_blockList.IsIPAllowed("192.168.1.100", "POST|url2"), Is.False);
-            Assert.That(_blockList.IsIPAllowed("10.10.10.10", "POST|url2"));
-            Assert.That(_blockList.IsIPAllowed("172.16.1.1", "GET|url3")); // No restrictions
+            Assert.That(_blockList.IsIPAllowedForEndpoint("192.168.1.100", "GET|url1"));
+            Assert.That(_blockList.IsIPAllowedForEndpoint("192.168.1.100", "POST|url2"), Is.False);
+            Assert.That(_blockList.IsIPAllowedForEndpoint("10.10.10.10", "POST|url2"));
+            Assert.That(_blockList.IsIPAllowedForEndpoint("172.16.1.1", "GET|url3")); // No restrictions
 
             // Test clearing endpoint restrictions
             _blockList.UpdateAllowedForEndpointSubnets(new List<EndpointConfig>());
-            Assert.That(_blockList.IsIPAllowed("192.168.1.100", "GET|url1")); // Should allow when no restrictions
+            Assert.That(_blockList.IsIPAllowedForEndpoint("192.168.1.100", "GET|url1")); // Should allow when no restrictions
         }
 
         [Test]
-        public void GlobalAllowedSubnets_IPv4AndIPv6()
+        public void GlobalAllowedSubnets_IPv4AndIPv6 ()
         {
             // Test mixed IPv4 and IPv6 allowed subnets
             var allowedSubnets = new[] {
@@ -96,7 +96,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void InvalidIPHandling()
+        public void InvalidIPHandling ()
         {
             // Setup some rules
             _blockList.UpdateBlockedSubnets(new[] { "192.168.1.0/24" });
@@ -113,13 +113,13 @@ namespace Aikido.Zen.Test
             foreach (var invalidIp in invalidIPs)
             {
                 Assert.That(_blockList.IsIPBlocked(invalidIp), Is.False, "Invalid IP should not be blocked");
-                Assert.That(_blockList.IsIPAllowed(invalidIp, "GET|testUrl"), Is.True, "Invalid IP should be allowed for endpoints");
+                Assert.That(_blockList.IsIPAllowedForEndpoint(invalidIp, "GET|testUrl"), Is.True, "Invalid IP should be allowed for endpoints");
                 Assert.That(_blockList.IsAllowedIP(invalidIp), Is.True, "Invalid IP should be allowed globally");
             }
         }
 
         [Test]
-        public void PrivateAndLocalIPHandling()
+        public void PrivateAndLocalIPHandling ()
         {
             // Setup some blocking rules (these should be bypassed for private/local IPs)
             _blockList.UpdateBlockedSubnets(new[] { "0.0.0.0/0" }); // Try to block everything
@@ -155,7 +155,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void Performance_LargeScaleOperations()
+        public void Performance_LargeScaleOperations ()
         {
             const int SUBNET_COUNT = 100;
             const int TEST_IPS_COUNT = 1000;
