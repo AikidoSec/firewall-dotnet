@@ -164,6 +164,7 @@ namespace Aikido.Zen.Core.Models
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", response.Block ? "true" : "false");
             UpdateBlockedUsers(response.BlockedUserIds);
             BlockList.UpdateAllowedSubnets(response.AllowedIPAddresses);
+            BlockList.UpdateAllowedForEndpointSubnets(response.Endpoints);
             UpdateRatelimitedRoutes(response.Endpoints);
             UpdateBlockedUserAgents(response.BlockedUserAgentsRegex);
             ConfigLastUpdated = response.ConfigUpdatedAt;
