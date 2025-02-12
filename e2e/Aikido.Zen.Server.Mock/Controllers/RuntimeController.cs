@@ -45,7 +45,7 @@ namespace Aikido.Zen.Server.Mock.Controllers
                 return Results.Json(_eventService.ListEvents(appModel!.Id));
             }).AddEndpointFilter<AuthFilter>();
 
-            app.MapPost("/api/runtime/events", async (HttpContext context, Dictionary<string, object> eventData) =>
+            app.MapPost("/api/runtime/events", (HttpContext context, Dictionary<string, object> eventData) =>
             {
                 var appModel = context.Items["app"] as AppModel;
                 _eventService.CaptureEvent(appModel!.Id, eventData);
