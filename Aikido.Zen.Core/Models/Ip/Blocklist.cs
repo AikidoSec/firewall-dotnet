@@ -183,7 +183,7 @@ namespace Aikido.Zen.Core.Models.Ip
             }
         }
 
-        public bool IsAllowedIP(string ip)
+        public bool IsIPAllowed(string ip)
         {
             _lock.EnterReadLock();
             try
@@ -224,7 +224,7 @@ namespace Aikido.Zen.Core.Models.Ip
                 return false;
             }
 
-            return IsIPBlocked(ip) || !IsIPAllowedForEndpoint(ip, endpoint);
+            return !IsIPAllowed(ip) || IsIPBlocked(ip) || !IsIPAllowedForEndpoint(ip, endpoint);
         }
     }
 }
