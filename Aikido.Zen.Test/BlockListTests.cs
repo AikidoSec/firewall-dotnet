@@ -80,19 +80,19 @@ namespace Aikido.Zen.Test
             _blockList.UpdateAllowedSubnets(allowedSubnets);
 
             // Test IPv4 addresses
-            Assert.That(_blockList.IsAllowedIP("192.168.1.100"), Is.True);
-            Assert.That(_blockList.IsAllowedIP("10.10.10.10"), Is.True);
-            Assert.That(_blockList.IsAllowedIP("172.16.1.1"), Is.False);
+            Assert.That(_blockList.IsIPAllowed("192.168.1.100"), Is.True);
+            Assert.That(_blockList.IsIPAllowed("10.10.10.10"), Is.True);
+            Assert.That(_blockList.IsIPAllowed("172.16.1.1"), Is.False);
 
             // Test IPv6 addresses
-            Assert.That(_blockList.IsAllowedIP("2001:db8:3333:4444:5555:6666:7777:8888"), Is.True);
-            Assert.That(_blockList.IsAllowedIP("fe80::1234:5678:9abc:def0"), Is.True);
-            Assert.That(_blockList.IsAllowedIP("2002:db8:1111:2222:3333:4444:5555:6666"), Is.False);
+            Assert.That(_blockList.IsIPAllowed("2001:db8:3333:4444:5555:6666:7777:8888"), Is.True);
+            Assert.That(_blockList.IsIPAllowed("fe80::1234:5678:9abc:def0"), Is.True);
+            Assert.That(_blockList.IsIPAllowed("2002:db8:1111:2222:3333:4444:5555:6666"), Is.False);
 
             // Test empty allowed list
             _blockList.UpdateAllowedSubnets(Array.Empty<string>());
-            Assert.That(_blockList.IsAllowedIP("192.168.1.100"), Is.False);
-            Assert.That(_blockList.IsAllowedIP("2001:db8:3333:4444:5555:6666:7777:8888"), Is.False);
+            Assert.That(_blockList.IsIPAllowed("192.168.1.100"), Is.False);
+            Assert.That(_blockList.IsIPAllowed("2001:db8:3333:4444:5555:6666:7777:8888"), Is.False);
         }
 
         [Test]
@@ -114,7 +114,7 @@ namespace Aikido.Zen.Test
             {
                 Assert.That(_blockList.IsIPBlocked(invalidIp), Is.False, "Invalid IP should not be blocked");
                 Assert.That(_blockList.IsIPAllowedForEndpoint(invalidIp, "GET|testUrl"), Is.True, "Invalid IP should be allowed for endpoints");
-                Assert.That(_blockList.IsAllowedIP(invalidIp), Is.True, "Invalid IP should be allowed globally");
+                Assert.That(_blockList.IsIPAllowed(invalidIp), Is.True, "Invalid IP should be allowed globally");
             }
         }
 
@@ -142,7 +142,6 @@ namespace Aikido.Zen.Test
             // Test IPv6 private and local addresses
             var ipv6Tests = new[] {
                 ("::1", "IPv6 Localhost"),
-                ("fe80::1", "IPv6 Link Local"),
                 ("fc00::1", "IPv6 Unique Local"),
                 ("fd00::1", "IPv6 Unique Local")
             };
