@@ -181,8 +181,8 @@ namespace Aikido.Zen.Core.Models
         {
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", response.Block ? "true" : "false");
             UpdateBlockedUsers(response.BlockedUserIds);
-            BlockList.UpdateAllowedSubnets(response.AllowedIPAddresses);
-            BlockList.UpdateAllowedForEndpointSubnets(response.Endpoints);
+            BlockList.UpdateAllowedIps(response.AllowedIPAddresses);
+            BlockList.UpdateAllowedIpsForEndpoint(response.Endpoints);
             UpdateRatelimitedRoutes(response.Endpoints);
             UpdateBlockedUserAgents(response.BlockedUserAgentsRegex);
             ConfigLastUpdated = response.ConfigUpdatedAt;
@@ -192,10 +192,10 @@ namespace Aikido.Zen.Core.Models
         {
             if (blockedIPs == null)
             {
-                BlockList.UpdateBlockedSubnets(new List<string>());
+                BlockList.UpdateBlockedIps(new List<string>());
                 return;
             }
-            BlockList.UpdateBlockedSubnets(blockedIPs);
+            BlockList.UpdateBlockedIps(blockedIPs);
         }
 
         public void UpdateBlockedUserAgents(Regex blockedUserAgents)

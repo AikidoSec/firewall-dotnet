@@ -63,9 +63,9 @@ namespace Aikido.Zen.Test
             _agentContext.UpdateBlockedUsers(new[] { "user1" });
             _agentContext.BlockList.AddIpAddressToBlocklist("192.168.1.101");
             _agentContext.BlockList.AddIpAddressToBlocklist("123.123.123.123");
-            _agentContext.BlockList.UpdateAllowedSubnets(allowedIps);
+            _agentContext.BlockList.UpdateAllowedIps(allowedIps);
             _agentContext.UpdateBlockedUserAgents(blockedUserAgents);
-            _agentContext.BlockList.UpdateAllowedForEndpointSubnets(endpoints);
+            _agentContext.BlockList.UpdateAllowedIpsForEndpoint(endpoints);
 
             // Act & Assert
             Assert.That(_agentContext.IsBlocked(user, "192.168.1.102", url, "useragent")); // Blocked user

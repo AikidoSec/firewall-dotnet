@@ -13,16 +13,16 @@ namespace Aikido.Zen.Core.Models.Ip
     public class BlockList
     {
         // The state of our blocklist needs to be thread-safe, as incoming ASP requests can be multithreaded, and the agent, which runs on a background thread, can also update/access the state.
-        private IPRange _blockedSubnets = new IPRange();
-        private IPRange _allowedSubnets = new IPRange();
-        private ConcurrentDictionary<string, IPRange> _allowedForEndpointSubnets = new ConcurrentDictionary<string, IPRange>();
+        private IPRange _blockedIps = new IPRange();
+        private IPRange _allowedIps = new IPRange();
+        private ConcurrentDictionary<string, IPRange> _allowedIpsForEndpoint = new ConcurrentDictionary<string, IPRange>();
         private readonly ReaderWriterLockSlim _lock = new ReaderWriterLockSlim();
 
         /// <summary>
         /// Updates the allowed subnet ranges per URL.
         /// </summary>
         /// <param name="endpoints">The endpoint configurations containing allowed IP addresses.</param>
-        public void UpdateAllowedForEndpointSubnets(IEnumerable<EndpointConfig> endpoints)
+        public void UpdateAllowedIpsForEndpoint(IEnumerable<EndpointConfig> endpoints)
         {
             _lock.EnterWriteLock();
             try
@@ -43,10 +43,10 @@ namespace Aikido.Zen.Core.Models.Ip
                     }
                 );
 
-                _allowedForEndpointSubnets.Clear();
+                _allowedIpsForEndpoint.Clear();
                 foreach (var subnet in subnets)
                 {
-                    _allowedForEndpointSubnets.TryAdd(subnet.Key, subnet.Value);
+                    _allowedIpsForEndpoint.TryAdd(subnet.Key, subnet.Value);
                 }
             }
             finally
@@ -58,18 +58,18 @@ namespace Aikido.Zen.Core.Models.Ip
         /// <summary>
         /// Updates the blocked subnet ranges.
         /// </summary>
-        /// <param name="subnets">The subnet ranges to block.</param>
-        public void UpdateBlockedSubnets(IEnumerable<string> subnets)
+        /// <param name="ips">The subnet ranges to block.</param>
+        public void UpdateBlockedIps(IEnumerable<string> ips)
         {
             _lock.EnterWriteLock();
             try
             {
-                _blockedSubnets = new IPRange();
-                foreach (var subnet in subnets)
+                _blockedIps = new IPRange();
+                foreach (var subnet in ips)
                 {
                     foreach (var cidr in IPHelper.ToCidrString(subnet))
                     {
-                        _blockedSubnets.InsertRange(cidr);
+                        _blockedIps.InsertRange(cidr);
                     }
                 }
             }
@@ -82,20 +82,20 @@ namespace Aikido.Zen.Core.Models.Ip
         /// <summary>
         /// Updates the allowed ip addresses or ranges, they bypass all blocking rules
         /// </summary>
-        /// <param name="subnets">The ip addresses or ranges to allow.</param>
-        public void UpdateAllowedSubnets(IEnumerable<string> subnets)
+        /// <param name="ips">The ip addresses or ranges to allow.</param>
+        public void UpdateAllowedIps(IEnumerable<string> ips)
 
         {
             _lock.EnterWriteLock();
             try
             {
-                _allowedSubnets = new IPRange();
-                foreach (var subnet in subnets)
+                _allowedIps = new IPRange();
+                foreach (var subnet in ips)
                 {
 
                     foreach (var cidr in IPHelper.ToCidrString(subnet))
                     {
-                        _allowedSubnets.InsertRange(cidr);
+                        _allowedIps.InsertRange(cidr);
                     }
 
                 }
@@ -115,7 +115,7 @@ namespace Aikido.Zen.Core.Models.Ip
             _lock.EnterWriteLock();
             try
             {
-                _blockedSubnets.InsertRange(ip);
+                _blockedIps.InsertRange(ip);
             }
             finally
             {
@@ -138,10 +138,10 @@ namespace Aikido.Zen.Core.Models.Ip
                     return false; // Allow invalid IPs by default
                 }
 
-                if (!_blockedSubnets.HasItems)
+                if (!_blockedIps.HasItems)
                     return false; // Allow if no blocked subnets are defined
 
-                return _blockedSubnets.IsIpInRange(ip);
+                return _blockedIps.IsIpInRange(ip);
             }
             finally
             {
@@ -163,10 +163,10 @@ namespace Aikido.Zen.Core.Models.Ip
                 if (!IPAddress.TryParse(ip, out var parsedIp))
                 {
                     // If no specific subnets are defined for the endpoint, allow invalid IPs, otherwise block them
-                    return _allowedForEndpointSubnets.Count == 0;
+                    return _allowedIpsForEndpoint.Count == 0;
                 }
 
-                if (!_allowedForEndpointSubnets.TryGetValue(endpoint, out var trie))
+                if (!_allowedIpsForEndpoint.TryGetValue(endpoint, out var trie))
                 {
                     return true; // Allow if no specific subnets are defined for the endpoint
                 }
@@ -189,11 +189,11 @@ namespace Aikido.Zen.Core.Models.Ip
             _lock.EnterReadLock();
             try
             {
-                if (_allowedSubnets.HasItems)
+                if (_allowedIps.HasItems)
                 {
                     if (IPHelper.IsValidIp(ip))
                     {
-                        return _allowedSubnets.IsIpInRange(ip);
+                        return _allowedIps.IsIpInRange(ip);
                     }
                     return false;
                 }
