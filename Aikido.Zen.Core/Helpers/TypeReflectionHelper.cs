@@ -63,12 +63,13 @@ namespace Aikido.Zen.Core.Helpers
                     BindingFlags.NonPublic |
                     BindingFlags.Instance |
                     BindingFlags.Static
-                );
+                ).Where(m => !m.IsAbstract);
 
                 var matchingMethods = new List<MethodInfo>();
 
                 foreach (var method in methods)
                 {
+                    var currMethodName = method.Name;
                     if (method.Name != methodName) continue;
                     if (parameterTypeNames.Length == 0)
                     {
@@ -99,12 +100,8 @@ namespace Aikido.Zen.Core.Helpers
                         }
                         else
                         {
-                            // For non-generic types, compare full type names
-                            var actualTypeName = paramType.IsGenericParameter
-                                ? paramType.Name  // For generic parameters, we still use just the name
-                                : paramType.FullName ?? paramType.AssemblyQualifiedName;
 
-                            if (actualTypeName != expectedTypeName)
+                            if (paramType.Name != expectedTypeName)
                             {
                                 isMatch = false;
                                 break;

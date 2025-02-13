@@ -44,7 +44,7 @@ public class MongoDbSampleAppTests : WebApplicationTestBase
         SampleAppEnvironmentVariables["AIKIDO_BLOCK"] = "true";
         var client = CreateSampleAppFactory().CreateClient();
 
-        // Attempt to exploit NoSQL injection
+        // Attempt to exploit NoSQL injection using $ne operator
         var unsafePayload = new { search = "{ \"$ne\": null }" };
 
         // Act
@@ -64,7 +64,7 @@ public class MongoDbSampleAppTests : WebApplicationTestBase
         SampleAppEnvironmentVariables["AIKIDO_BLOCK"] = "true";
         var client = CreateSampleAppFactory().CreateClient();
 
-        var safePayload = new { search = "Bobby" };
+        var safePayload = new { search = "title" };
 
         // Act
         var response = await client.GetAsync($"/?search={Uri.EscapeDataString(safePayload.search)}");

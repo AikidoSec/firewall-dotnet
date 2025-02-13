@@ -25,6 +25,17 @@ namespace Aikido.Zen.Core.Helpers
         }
 
         /// <summary>
+        /// Gets a type by name and assembly name from an assembly, returns null if type or assembly is not found
+        /// </summary>
+        /// <param name="assembly"></param>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        public static Type GetTypeFromAssembly(string assembly, string type)
+        {
+            return TypeReflectionHelper.GetTypeFromAssembly(AssemblyHelper.GetAssembly(assembly), type);
+        }
+
+        /// <summary>
         /// Returns all classes that implement the specified interface within the given assemblies.
         /// </summary>
         public static List<Type> GetImplementingClasses(Type interfaceType, params string[] assemblyNames)

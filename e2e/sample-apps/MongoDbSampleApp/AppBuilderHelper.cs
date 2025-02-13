@@ -55,9 +55,14 @@ namespace MongoDbSampleApp
                 var database = client.GetDatabase("test");
                 var collection = database.GetCollection<BsonDocument>("items");
 
-                // This endpoint is vulnerable to NoSQL injection
-                // The search parameter is directly inserted into the filter without validation or sanitization
-                var filter = new BsonDocument("title", new BsonDocument("$eq", search));
+                // This endpoint is vulnerable to NoSQL injection through string concatenation
+                // The search parameter is directly concatenated into the query string
+                var filter = new BsonDocument
+                {
+                    { "_id", search}
+                }.ToString();
+
+                Console.WriteLine($"Filter: {filter}");
                 var result = await collection.Find(filter).ToListAsync();
 
                 return Results.Ok(result);
@@ -69,8 +74,10 @@ namespace MongoDbSampleApp
                 var database = client.GetDatabase("test");
                 var collection = database.GetCollection<BsonDocument>("items");
 
-                // This endpoint is vulnerable to NoSQL injection
-                var filter = BsonDocument.Parse($"{{ title: '{title}' }}");
+                // This endpoint is vulnerable to NoSQL injection through direct string concatenation
+                // Allows direct injection of MongoDB operators
+                var filter = "{ \"title\": " + title + " }";
+                Console.WriteLine($"Filter: {filter}");
                 var result = await collection.Find(filter).ToListAsync();
 
                 return Results.Ok(result);
