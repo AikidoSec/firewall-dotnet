@@ -124,9 +124,27 @@ namespace Aikido.Zen.Core.Models
             _blockedUsers.Clear();
         }
 
+        public bool IsBlocked(User user, string ip, string endpoint, string userAgent, out string reason)
+        {
+            reason = "";
+            if (user != null && IsUserBlocked(user.Id))
+            {
+                reason = $"User is blocked";
+                return true;
+            }
+
+            if (IsUserAgentBlocked(userAgent))
+            {
+                reason = $"User agent is blocked";
+                return true;
+            }
+
+            return _blockList.IsBlocked(ip, endpoint, out reason);
+        }
+
         public bool IsBlocked(User user, string ip, string endpoint, string userAgent)
         {
-            return (user != null && IsUserBlocked(user.Id)) || _blockList.IsBlocked(ip, endpoint) || IsUserAgentBlocked(userAgent);
+            return IsBlocked(user, ip, endpoint, userAgent, out _);
         }
 
         public bool IsUserBlocked(string userId)

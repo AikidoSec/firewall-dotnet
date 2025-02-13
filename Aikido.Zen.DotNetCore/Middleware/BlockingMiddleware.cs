@@ -31,11 +31,11 @@ namespace Aikido.Zen.DotNetCore.Middleware
             }
 
             // block the request if the user is blocked
-            if (!EnvironmentHelper.DryMode && Agent.Instance.Context.IsBlocked(user, aikidoContext.RemoteAddress, routeKey, aikidoContext.UserAgent))
+            if (!EnvironmentHelper.DryMode && Agent.Instance.Context.IsBlocked(user, aikidoContext.RemoteAddress, routeKey, aikidoContext.UserAgent, out string reason))
             {
                 Agent.Instance.Context.AddAbortedRequest();
                 context.Response.StatusCode = 403;
-                await context.Response.WriteAsync("Request blocked");
+                await context.Response.WriteAsync($"Your request is blocked: {HttpUtility.HtmlEncode(reason)}");
                 return;
             }
 

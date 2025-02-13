@@ -80,9 +80,11 @@ public class BlockingTests : WebApplicationTestBase
 
         // Act
         var response = await SampleAppClient.GetAsync("/api/pets");
+        var content = await response.Content.ReadAsStringAsync();
 
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
+        Assert.That(content, Does.Contain("Your request is blocked: IP is not allowed"));
     }
 
     [Test]
@@ -124,9 +126,11 @@ public class BlockingTests : WebApplicationTestBase
 
         // Act
         var response = await SampleAppClient.GetAsync("/api/pets");
+        var content = await response.Content.ReadAsStringAsync();
 
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
+        Assert.That(content, Does.Contain("Your request is blocked: User agent is blocked"));
     }
 
     [Test]

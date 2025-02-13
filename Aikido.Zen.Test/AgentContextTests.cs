@@ -73,7 +73,7 @@ namespace Aikido.Zen.Test
             Assert.That(_agentContext.IsBlocked(null, "123.123.123.123", url, "useragent")); // Blocked IP
             Assert.That(_agentContext.IsBlocked(null, "123.1.1.1", url, "useragent")); // Not in allowed subnet
             Assert.That(_agentContext.IsBlocked(null, "10.0.0.1", url, "useragent"), Is.False); // In allowed subnet
-            Assert.That(_agentContext.IsBlocked(null, "invalid.ip", url, "useragent"), Is.False); // Invalid IP should not be blocked
+            Assert.That(_agentContext.IsBlocked(null, "invalid.ip", url, "useragent"), Is.True); // Invalid IP should be blocked
             Assert.That(_agentContext.IsBlocked(new User("user2", "allowed"), "10.0.0.1", url, "useragent"), Is.False); // Non-blocked user in allowed subnet
             Assert.That(_agentContext.IsBlocked(new User("user2", "allowed"), "192.168.1.101", url, "googlebot"), Is.True); // Blocked user agent
         }
@@ -248,10 +248,11 @@ namespace Aikido.Zen.Test
             _agentContext.UpdateBlockedUsers(new[] { "user1" });
 
             // Act
-            var isBlocked = _agentContext.IsBlocked(user, string.Empty, string.Empty, string.Empty);
+            var isBlocked = _agentContext.IsBlocked(user, string.Empty, string.Empty, string.Empty, out string reason);
 
             // Assert
             Assert.That(isBlocked);
+            Assert.That(reason, Is.EqualTo("User is blocked"));
         }
 
         [Test]
@@ -261,10 +262,26 @@ namespace Aikido.Zen.Test
             var user = new User("user1", "User One");
 
             // Act
-            var isBlocked = _agentContext.IsBlocked(user, string.Empty, string.Empty, string.Empty);
+            var isBlocked = _agentContext.IsBlocked(user, string.Empty, string.Empty, string.Empty, out string reason);
 
             // Assert
             Assert.That(isBlocked, Is.False);
+            Assert.That(reason, Is.EqualTo("IP is allowed"));
+        }
+
+        [Test]
+        public void IsBlocked_ShouldReturnTrue_WithReason_WhenUserAgentIsBlocked()
+        {
+            // Arrange
+            var userAgent = "malicious-bot";
+            _agentContext.UpdateBlockedUserAgents(new Regex(userAgent));
+
+            // Act
+            var isBlocked = _agentContext.IsBlocked(null, string.Empty, string.Empty, userAgent, out string reason);
+
+            // Assert
+            Assert.That(isBlocked, Is.True);
+            Assert.That(reason, Is.EqualTo("User agent is blocked"));
         }
 
         [Test]

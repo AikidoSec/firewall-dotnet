@@ -9,13 +9,13 @@ namespace Aikido.Zen.Test
         private BlockList _blockList;
 
         [SetUp]
-        public void Setup ()
+        public void Setup()
         {
             _blockList = new BlockList();
         }
 
         [Test]
-        public void BlockedSubnets_BasicOperations ()
+        public void BlockedSubnets_BasicOperations()
         {
             // Test adding and clearing blocked subnets
             var subnets = new[] { "192.168.1.0/24", "10.0.0.0/8" };
@@ -36,7 +36,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void AllowedSubnets_EndpointSpecific ()
+        public void AllowedSubnets_EndpointSpecific()
         {
             // Test endpoint-specific allowed subnets
             var endpoints = new List<EndpointConfig> {
@@ -66,7 +66,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void GlobalAllowedSubnets_IPv4AndIPv6 ()
+        public void GlobalAllowedSubnets_IPv4AndIPv6()
         {
             // Test mixed IPv4 and IPv6 allowed subnets
             var allowedSubnets = new[] {
@@ -96,7 +96,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void InvalidIPHandling ()
+        public void InvalidIPHandling()
         {
             // Setup some rules
             _blockList.UpdateBlockedSubnets(new[] { "192.168.1.0/24" });
@@ -119,7 +119,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void PrivateAndLocalIPHandling ()
+        public void PrivateAndLocalIPHandling()
         {
             // Setup some blocking rules (these should be bypassed for private/local IPs)
             _blockList.UpdateBlockedSubnets(new[] { "0.0.0.0/0" }); // Try to block everything
@@ -135,7 +135,7 @@ namespace Aikido.Zen.Test
 
             foreach (var (ip, description) in ipv4Tests)
             {
-                Assert.That(_blockList.IsBlocked(ip, "ANY"), Is.False,
+                Assert.That(_blockList.IsBlocked(ip, "ANY", out string reason), Is.False,
                     $"{description} ({ip}) should never be blocked");
             }
 
@@ -148,13 +148,13 @@ namespace Aikido.Zen.Test
 
             foreach (var (ip, description) in ipv6Tests)
             {
-                Assert.That(_blockList.IsBlocked(ip, "ANY"), Is.False,
+                Assert.That(_blockList.IsBlocked(ip, "ANY", out string reason), Is.False,
                     $"{description} ({ip}) should never be blocked");
             }
         }
 
         [Test]
-        public void Performance_LargeScaleOperations ()
+        public void Performance_LargeScaleOperations()
         {
             const int SUBNET_COUNT = 100;
             const int TEST_IPS_COUNT = 1000;
@@ -203,6 +203,72 @@ namespace Aikido.Zen.Test
             var knownAllowedIP = "8.8.8.8";
             Assert.That(_blockList.IsIPBlocked(knownAllowedIP), Is.False,
                 "Should correctly identify known allowed IP");
+        }
+
+        [Test]
+        public void IsBlocked_ShouldProvideCorrectReason()
+        {
+            // Test private/local IP - these should always be allowed regardless of other rules
+            var privateAndLocalIps = new[] {
+                "127.0.0.1",      // IPv4 localhost
+                "::1",            // IPv6 localhost
+                "192.168.1.100",  // Class C private
+                "10.10.10.10",    // Class A private
+                "172.16.1.1"      // Class B private
+            };
+
+            // Set up restrictive rules that should not affect private/local IPs
+            _blockList.UpdateBlockedSubnets(new[] { "0.0.0.0/0" }); // Try to block everything
+            _blockList.UpdateAllowedSubnets(new[] { "8.8.8.8/32" }); // Only allow Google DNS
+
+            foreach (var ip in privateAndLocalIps)
+            {
+                Assert.Multiple(() =>
+                {
+                    Assert.That(_blockList.IsBlocked(ip, "ANY", out string reason), Is.False);
+                    Assert.That(reason, Is.EqualTo("Private or local IP"));
+                });
+            }
+
+            // Now test public IPs with various rules
+            _blockList.UpdateBlockedSubnets(new[] { "203.0.113.0/24" });
+            _blockList.UpdateAllowedSubnets(new[] { "198.51.100.0/24", "203.0.113.1", "8.8.4.4" });
+
+            // Test blocked IP
+            Assert.Multiple(() =>
+            {
+                Assert.That(_blockList.IsBlocked("203.0.113.1", "ANY", out string reason), Is.True);
+                Assert.That(reason, Is.EqualTo("IP is blocked"));
+            });
+
+            // Test IP not allowed
+            Assert.Multiple(() =>
+            {
+                Assert.That(_blockList.IsBlocked("8.8.8.8", "ANY", out string reason), Is.True);
+                Assert.That(reason, Is.EqualTo("IP is not allowed"));
+            });
+
+            // Test IP not allowed for endpoint
+            var endpoints = new List<EndpointConfig> {
+                new EndpointConfig {
+                    Method = "GET",
+                    Route = "url1",
+                    AllowedIPAddresses = new[] { "198.51.100.0/24" }
+                }
+            };
+            _blockList.UpdateAllowedForEndpointSubnets(endpoints);
+            Assert.Multiple(() =>
+            {
+                Assert.That(_blockList.IsBlocked("8.8.4.4", "GET|url1", out string reason), Is.True);
+                Assert.That(reason, Is.EqualTo("IP is not allowed for endpoint"));
+            });
+
+            // Test allowed IP
+            Assert.Multiple(() =>
+            {
+                Assert.That(_blockList.IsBlocked("198.51.100.1", "ANY", out string reason), Is.False);
+                Assert.That(reason, Is.EqualTo("IP is allowed"));
+            });
         }
     }
 }

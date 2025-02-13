@@ -162,7 +162,8 @@ namespace Aikido.Zen.Core.Models.Ip
             {
                 if (!IPAddress.TryParse(ip, out var parsedIp))
                 {
-                    return true; // Allow invalid IPs by default
+                    // If no specific subnets are defined for the endpoint, allow invalid IPs, otherwise block them
+                    return _allowedForEndpointSubnets.Count == 0;
                 }
 
                 if (!_allowedForEndpointSubnets.TryGetValue(endpoint, out var trie))
@@ -188,17 +189,16 @@ namespace Aikido.Zen.Core.Models.Ip
             _lock.EnterReadLock();
             try
             {
-                if (!IPHelper.IsValidIp(ip))
-                {
-                    return true; // Invalid IPs are by default allowed
-                }
-
                 if (_allowedSubnets.HasItems)
                 {
-                    return _allowedSubnets.IsIpInRange(ip);
+                    if (IPHelper.IsValidIp(ip))
+                    {
+                        return _allowedSubnets.IsIpInRange(ip);
+                    }
+                    return false;
                 }
 
-                return false;
+                return true;
             }
             finally
             {
@@ -217,14 +217,36 @@ namespace Aikido.Zen.Core.Models.Ip
         /// <param name="ip">The IP address to check.</param>
         /// <param name="endpoint">The endpoint, e.g., GET|the/path.</param>
         /// <returns>True if access is blocked, false otherwise.</returns>
-        public bool IsBlocked(string ip, string endpoint)
+        public bool IsBlocked(string ip, string endpoint, out string reason)
         {
+            reason = "";
             if (IsPrivateOrLocalIp(ip))
             {
+                reason = "Private or local IP";
                 return false;
             }
 
-            return !IsIPAllowed(ip) || IsIPBlocked(ip) || !IsIPAllowedForEndpoint(ip, endpoint);
+            if (!IsIPAllowed(ip))
+            {
+                reason = "IP is not allowed";
+                return true;
+            }
+
+            if (!IsIPAllowedForEndpoint(ip, endpoint))
+            {
+                reason = "IP is not allowed for endpoint";
+                return true;
+            }
+
+            if (IsIPBlocked(ip))
+            {
+                reason = "IP is blocked";
+                return true;
+            }
+
+
+            reason = "IP is allowed";
+            return false;
         }
     }
 }
