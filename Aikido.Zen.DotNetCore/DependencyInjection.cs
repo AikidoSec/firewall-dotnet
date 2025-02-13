@@ -26,7 +26,7 @@ namespace Aikido.Zen.DotNetCore
         }
 
         /// <summary>
-        /// Configures a custom HttpClient to be used by the Zen API clients
+        /// Configures a custom HttpClient to be used by the Zen API clients, helpful for testing
         /// </summary>
         /// <param name="httpClient">The HttpClient instance to use</param>
         /// <returns>The builder instance for method chaining</returns>
@@ -38,6 +38,7 @@ namespace Aikido.Zen.DotNetCore
 
         internal void ConfigureServices()
         {
+            // if we have a custom httpclient, use it
             if (_httpClient != null)
             {
                 _services.AddTransient<IReportingAPIClient>(provider =>
@@ -49,6 +50,7 @@ namespace Aikido.Zen.DotNetCore
                     return new RuntimeAPIClient(_httpClient);
                 });
             }
+            // otherwise, use the default httpclient
             else
             {
                 _services.AddTransient<IReportingAPIClient>(provider =>

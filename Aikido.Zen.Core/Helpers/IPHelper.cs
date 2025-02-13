@@ -2,11 +2,59 @@ using System.Net;
 using System.Linq;
 using System.Collections.Generic;
 using System;
+using Aikido.Zen.Core.Models.Ip;
 
 namespace Aikido.Zen.Core.Helpers
 {
     public class IPHelper
     {
+        private static readonly IPRange _privateIpRanges;
+
+        static IPHelper()
+        {
+            _privateIpRanges = new IPRange();
+
+            // IPv4 private ranges
+            var ipv4Ranges = new[]
+            {
+                "0.0.0.0/8",
+                "10.0.0.0/8",
+                "100.64.0.0/10",
+                "127.0.0.0/8",
+                "169.254.0.0/16",
+                "172.16.0.0/12",
+                "192.0.0.0/24",
+                "192.0.2.0/24",
+                "192.31.196.0/24",
+                "192.52.193.0/24",
+                "192.88.99.0/24",
+                "192.168.0.0/16",
+                "192.175.48.0/24",
+                "198.18.0.0/15",
+                "198.51.100.0/24",
+                "203.0.113.0/24",
+                "240.0.0.0/4",
+                "224.0.0.0/4",
+                "255.255.255.255/32"
+            };
+
+            // IPv6 private ranges
+            var ipv6Ranges = new[]
+            {
+                "::/128",           // Unspecified address
+                "::1/128",          // Loopback address
+                "fc00::/7",         // Unique local address (ULA)
+                "fe80::/10",        // Link-local address (LLA)
+                "::ffff:127.0.0.1/128", // IPv4-mapped address
+                "::ffff:0:0/96"     // IPv4-mapped addresses
+            };
+
+            foreach (var range in ipv4Ranges.Concat(ipv6Ranges))
+            {
+                _privateIpRanges.InsertRange(range);
+            }
+        }
+
         public static string Server
         {
             get
@@ -141,39 +189,14 @@ namespace Aikido.Zen.Core.Helpers
 
         /// <summary>
         /// Checks if an IP address is a private IP address.
-        /// Supports both IPv4 and IPv6 address formats.
+        /// Supports both IPv4 and IPv6 address formats using a comprehensive list of private IP ranges.
+        /// https://github.com/AikidoSec/firewall-node/blob/02f25f1e2566c84e695b9f4b7d1723138485654d/library/vulnerabilities/ssrf/isPrivateIP.ts
         /// </summary>
         /// <param name="ip">The IP address to check.</param>
         /// <returns>True if the IP address is private, false otherwise.</returns>
         private static bool IsPrivateIPAddress(IPAddress ip)
         {
-            byte[] ipBytes = ip.GetAddressBytes();
-
-            // Check if IPv4 private address ranges
-            if (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
-            {
-                // 10.0.0.0/8
-                // 172.16.0.0/12
-                // 192.168.0.0/16
-                if (ipBytes[0] == 10 ||
-                    (ipBytes[0] == 172 && ipBytes[1] >= 16 && ipBytes[1] <= 31) ||
-                    (ipBytes[0] == 192 && ipBytes[1] == 168))
-                {
-                    return true;
-                }
-            }
-
-            // Check if IPv6 private address ranges
-            if (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6)
-            {
-                // Unique local addresses (fc00::/7)
-                if ((ipBytes[0] & 0xFE) == 0xFC)
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            return _privateIpRanges.IsIpInRange(ip.ToString());
         }
     }
 }
