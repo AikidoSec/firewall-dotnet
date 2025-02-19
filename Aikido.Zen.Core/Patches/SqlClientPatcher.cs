@@ -19,6 +19,16 @@ namespace Aikido.Zen.Core.Patches
                 return true;
             }
             var type = __instance.GetType().Name;
+            var timer = StatHelper.StartTimer();
+            var isSqlInjection = command != null && SqlCommandHelper.DetectSQLInjection(command.CommandText, GetDialect(assembly), context, assembly, $"{type}.{methodInfo.Name}");
+            var duration = timer.StopTimer();
+            Agent.Instance.Context.AddSinkStat(
+                sink: __originalMethod.DeclaringType?.FullName,
+                blocked: !EnvironmentHelper.DryMode,
+                attackDetected: isSqlInjection,
+                durationInMs: duration,
+                withoutContext: false
+            );
             if (command != null && SqlCommandHelper.DetectSQLInjection(command.CommandText, GetDialect(assembly), context, assembly, $"{type}.{methodInfo.Name}"))
             {
                 // keep going if dry mode

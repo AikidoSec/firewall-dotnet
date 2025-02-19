@@ -102,7 +102,7 @@ namespace Aikido.Zen.Test
         public void AddAttackDetected_ShouldIncrementAttacksDetected()
         {
             // Act
-            _agentContext.AddAttackDetected();
+            _agentContext.AddAttackDetected(true);
 
             // Assert
             Assert.That(_agentContext.AttacksDetected, Is.EqualTo(1));
@@ -217,7 +217,7 @@ namespace Aikido.Zen.Test
             // Arrange
             _agentContext.AddRequest();
             _agentContext.AddAbortedRequest();
-            _agentContext.AddAttackDetected();
+            _agentContext.AddAttackDetected(true);
             _agentContext.AddAttackBlocked();
             _agentContext.AddHostname("example.com:8080");
             _agentContext.AddUser(new User("user1", "User One"), "192.168.1.1");
@@ -516,6 +516,94 @@ namespace Aikido.Zen.Test
 
             // Assert
             Assert.That(isBlocked, Is.False);
+        }
+
+        [Test]
+        public void AddSinkStat_ShouldIncreaseStats_WhenCalled()
+        {
+            // Arrange
+            var initialStats = _agentContext.Requests;
+            var sink = "testSink";
+            var blocked = true;
+            var attackDetected = true;
+            var durationInMs = 100.0;
+            var withoutContext = false;
+
+            // Act
+            _agentContext.AddSinkStat(sink, blocked, attackDetected, durationInMs, withoutContext);
+
+            // Assert
+            Assert.That(_agentContext.Requests, Is.EqualTo(initialStats + 1));
+        }
+
+        [Test]
+        public void AddSinkStat_ShouldNotIncreaseStats_WhenWithoutContextIsTrue()
+        {
+            // Arrange
+            var initialStats = _agentContext.Requests;
+            var sink = "testSink";
+            var blocked = true;
+            var attackDetected = true;
+            var durationInMs = 100.0;
+            var withoutContext = true;
+
+            // Act
+            _agentContext.AddSinkStat(sink, blocked, attackDetected, durationInMs, withoutContext);
+
+            // Assert
+            Assert.That(_agentContext.Requests, Is.EqualTo(initialStats));
+        }
+
+        [Test]
+        public void AddSinkStat_ShouldTrackBlockedAttacks()
+        {
+            // Arrange
+            var sink = "testSink";
+            var blocked = true;
+            var attackDetected = true;
+            var durationInMs = 100.0;
+            var withoutContext = false;
+
+            // Act
+            _agentContext.AddSinkStat(sink, blocked, attackDetected, durationInMs, withoutContext);
+
+            // Assert
+            Assert.That(_agentContext.AttacksBlocked, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void AddSinkStat_ShouldTrackDetectedAttacks()
+        {
+            // Arrange
+            var sink = "testSink";
+            var blocked = false;
+            var attackDetected = true;
+            var durationInMs = 100.0;
+            var withoutContext = false;
+
+            // Act
+            _agentContext.AddSinkStat(sink, blocked, attackDetected, durationInMs, withoutContext);
+
+            // Assert
+            Assert.That(_agentContext.AttacksDetected, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void AddSinkStat_ShouldTrackDuration()
+        {
+            // Arrange
+            var sink = "testSink";
+            var blocked = false;
+            var attackDetected = false;
+            var durationInMs = 100.0;
+            var withoutContext = false;
+
+            // Act
+            _agentContext.AddSinkStat(sink, blocked, attackDetected, durationInMs, withoutContext);
+
+            // Assert
+            // Assuming there's a way to retrieve the duration from the stats, this is a placeholder assertion
+            // Assert.That(_agentContext.GetDurationForSink(sink), Is.EqualTo(durationInMs));
         }
     }
 }

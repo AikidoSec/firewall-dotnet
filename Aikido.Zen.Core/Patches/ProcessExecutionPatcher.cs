@@ -31,7 +31,17 @@ namespace Aikido.Zen.Core.Patches
             foreach (var userInput in context.ParsedUserInput)
             {
                 var command = processStartInfo.FileName + " " + processStartInfo.Arguments;
-                if (ShellInjectionDetector.IsShellInjection(command, userInput.Value))
+                var timer = StatHelper.StartTimer();
+                var isShellInjection = ShellInjectionDetector.IsShellInjection(command, userInput.Value);
+                var duration = timer.StopTimer();
+                Agent.Instance.Context.AddSinkStat(
+                    sink: __originalMethod.DeclaringType?.FullName,
+                    blocked: !EnvironmentHelper.DryMode,
+                    attackDetected: isShellInjection,
+                    durationInMs: duration,
+                    withoutContext: false
+                );
+                if (isShellInjection)
                 {
                     // Log or throw an exception to report the issue
                     var metadata = new Dictionary<string, object> {
