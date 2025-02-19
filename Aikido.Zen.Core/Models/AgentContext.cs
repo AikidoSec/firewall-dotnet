@@ -199,6 +199,16 @@ namespace Aikido.Zen.Core.Models
             _blockedUserAgents = blockedUserAgents;
         }
 
+        public MonitoredSinkStats GetStatsForSink(string sink)
+        {
+            if (!_stats.Sinks.TryGetValue(sink, out MonitoredSinkStats stats))
+            {
+                stats = new MonitoredSinkStats();
+                _stats.Sinks[sink] = stats;
+            }
+            return stats;
+        }
+
         public IEnumerable<Host> Hostnames => _hostnames.Select(x => x.Value);
         public IEnumerable<UserExtended> Users => _users.Select(x => x.Value);
         public IEnumerable<Route> Routes => _routes.Select(x => x.Value);
@@ -207,6 +217,8 @@ namespace Aikido.Zen.Core.Models
         public int RequestsAborted => _stats.Requests.Aborted;
         public int AttacksDetected => _stats.Requests.AttacksDetected.Total;
         public int AttacksBlocked => _stats.Requests.AttacksDetected.Blocked;
+
+        public IDictionary<string, MonitoredSinkStats> Sinks => _stats.Sinks;
         public long Started => _started;
         public BlockList BlockList => _blockList;
         public Regex BlockedUserAgents => _blockedUserAgents;
