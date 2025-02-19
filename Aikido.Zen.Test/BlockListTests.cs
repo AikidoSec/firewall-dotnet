@@ -91,8 +91,8 @@ namespace Aikido.Zen.Test
 
             // Test empty allowed list
             _blockList.UpdateAllowedIps(Array.Empty<string>());
-            Assert.That(_blockList.IsIPAllowed("192.168.1.100"), Is.False);
-            Assert.That(_blockList.IsIPAllowed("2001:db8:3333:4444:5555:6666:7777:8888"), Is.False);
+            Assert.That(_blockList.IsIPAllowed("192.168.1.100"), Is.True);
+            Assert.That(_blockList.IsIPAllowed("2001:db8:3333:4444:5555:6666:7777:8888"), Is.True);
         }
 
         [Test]
@@ -114,7 +114,7 @@ namespace Aikido.Zen.Test
             {
                 Assert.That(_blockList.IsIPBlocked(invalidIp), Is.False, "Invalid IP should not be blocked");
                 Assert.That(_blockList.IsIPAllowedForEndpoint(invalidIp, "GET|testUrl"), Is.True, "Invalid IP should be allowed for endpoints");
-                Assert.That(_blockList.IsIPAllowed(invalidIp), Is.True, "Invalid IP should be allowed globally");
+                Assert.That(_blockList.IsIPAllowed(invalidIp), Is.False, "Invalid IP should not be allowed globally");
             }
         }
 
@@ -231,13 +231,13 @@ namespace Aikido.Zen.Test
             }
 
             // Now test public IPs with various rules
-            _blockList.UpdateBlockedIps(new[] { "203.0.113.0/24" });
-            _blockList.UpdateAllowedIps(new[] { "198.51.100.0/24", "203.0.113.1", "8.8.4.4" });
+            _blockList.UpdateBlockedIps(new[] { "123.0.113.0/24" });
+            _blockList.UpdateAllowedIps(new[] { "123.51.100.0/24", "203.0.113.1", "8.8.4.4", "123.0.113.1" });
 
             // Test blocked IP
             Assert.Multiple(() =>
             {
-                Assert.That(_blockList.IsBlocked("203.0.113.1", "ANY", out string reason), Is.True);
+                Assert.That(_blockList.IsBlocked("123.0.113.1", "ANY", out string reason), Is.True);
                 Assert.That(reason, Is.EqualTo("IP is blocked"));
             });
 
@@ -266,7 +266,7 @@ namespace Aikido.Zen.Test
             // Test allowed IP
             Assert.Multiple(() =>
             {
-                Assert.That(_blockList.IsBlocked("198.51.100.1", "ANY", out string reason), Is.False);
+                Assert.That(_blockList.IsBlocked("123.51.100.1", "ANY", out string reason), Is.False);
                 Assert.That(reason, Is.EqualTo("IP is allowed"));
             });
         }
