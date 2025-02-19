@@ -136,7 +136,7 @@ namespace Aikido.Zen.Core.Models
                    _requests.AttacksDetected.Total == 0;
         }
 
-        public void OnInspectedCall(string sink, bool blocked, bool attackDetected, double durationInMs, bool withoutContext)
+        public void AddSinkStat(string sink, bool blocked, bool attackDetected, double durationInMs, bool withoutContext)
         {
             EnsureSinkStats(sink);
             var sinkStats = _sinks[sink];
