@@ -46,6 +46,7 @@ namespace Aikido.Zen.Core.Models.Events
             };
             heartbeat.Stats.StartedAt = context.Started;
             heartbeat.Stats.EndedAt = DateTimeHelper.UTCNowUnixMilliseconds();
+            heartbeat.Stats.Sinks = context.Sinks;
             heartbeat.MiddlewareInstalled = context.ContextMiddlewareInstalled && context.BlockingMiddlewareInstalled;
             return heartbeat;
         }

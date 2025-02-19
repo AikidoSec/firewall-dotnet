@@ -519,11 +519,11 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void AddSinkStat_ShouldIncreaseStats_WhenCalled()
+        public void AddSinkStat_ShouldIncreaseCall_WhenCalled()
         {
             // Arrange
-            var initialStats = _agentContext.Requests;
             var sink = "testSink";
+            var initialStats = _agentContext.GetStatsForSink(sink).Total;
             var blocked = true;
             var attackDetected = true;
             var durationInMs = 100.0;
@@ -533,7 +533,7 @@ namespace Aikido.Zen.Test
             _agentContext.AddSinkStat(sink, blocked, attackDetected, durationInMs, withoutContext);
 
             // Assert
-            Assert.That(_agentContext.Requests, Is.EqualTo(initialStats + 1));
+            Assert.That(_agentContext.GetStatsForSink(sink).Total, Is.EqualTo(initialStats + 1));
         }
 
         [Test]
@@ -568,7 +568,7 @@ namespace Aikido.Zen.Test
             _agentContext.AddSinkStat(sink, blocked, attackDetected, durationInMs, withoutContext);
 
             // Assert
-            Assert.That(_agentContext.AttacksBlocked, Is.EqualTo(1));
+            Assert.That(_agentContext.Sinks[sink].AttacksDetected.Blocked, Is.EqualTo(1));
         }
 
         [Test]
@@ -585,7 +585,8 @@ namespace Aikido.Zen.Test
             _agentContext.AddSinkStat(sink, blocked, attackDetected, durationInMs, withoutContext);
 
             // Assert
-            Assert.That(_agentContext.AttacksDetected, Is.EqualTo(1));
+            Assert.That(_agentContext.GetStatsForSink(sink).AttacksDetected.Blocked, Is.EqualTo(0));
+            Assert.That(_agentContext.GetStatsForSink(sink).AttacksDetected.Total, Is.EqualTo(1));
         }
 
         [Test]

@@ -8,7 +8,7 @@ namespace Aikido.Zen.Core.Models
     {
         private readonly int _maxPerfSamplesInMem;
         private readonly int _maxCompressedStatsInMem;
-        private Dictionary<string, MonitoredSinkStats> _sinks = new Dictionary<string, MonitoredSinkStats>();
+        private IDictionary<string, MonitoredSinkStats> _sinks = new Dictionary<string, MonitoredSinkStats>();
         private Requests _requests = new Requests();
 
         public Stats(int maxPerfSamplesInMem = 1000, int maxCompressedStatsInMem = 100)
@@ -18,7 +18,11 @@ namespace Aikido.Zen.Core.Models
             Reset();
         }
 
-        public Dictionary<string, MonitoredSinkStats> Sinks => _sinks;
+        public IDictionary<string, MonitoredSinkStats> Sinks
+        {
+            get => _sinks;
+            set => _sinks = value;
+        }
         public long StartedAt { get; set; }
         public long EndedAt { get; set; }
         public Requests Requests => _requests;
@@ -188,7 +192,7 @@ namespace Aikido.Zen.Core.Models
 
     public class StatsSnapshot
     {
-        public Dictionary<string, MonitoredSinkStats> Sinks { get; set; }
+        public IDictionary<string, MonitoredSinkStats> Sinks { get; set; }
         public long StartedAt { get; set; }
         public Requests Requests { get; set; }
     }
