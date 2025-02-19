@@ -1,0 +1,9 @@
+# EditorConfig is awesome: https://EditorConfig.org
+
+# top-most EditorConfig file
+root = true
+
+# C# files in this directory are examples/documentation only
+[*.cs]
+generated_code = true
+dotnet_analyzer_diagnostic.severity = none

@@ -43,10 +43,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SampleApp.Common", "SampleA
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UmbracoSampleApp", "e2e\sample-apps\UmbracoSampleApp\UmbracoSampleApp.csproj", "{6E200EFE-8EBC-4226-A340-EB65D3CA0AEC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aikido.Zen.Tests.DotNetFramework", "Aikido.Zen.Tests.DotNetFramework\Aikido.Zen.Tests.DotNetFramework.csproj", "{8EB5DD53-9E86-47B5-8E4F-96D3D4D45B71}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aikido.Zen.Tests.DotNetCore", "Aikido.Zen.Tests.DotNetCore\Aikido.Zen.Tests.DotNetCore.csproj", "{A778053F-B458-4764-A967-C54EB05C70FE}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -113,14 +109,6 @@ Global
 		{6E200EFE-8EBC-4226-A340-EB65D3CA0AEC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6E200EFE-8EBC-4226-A340-EB65D3CA0AEC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6E200EFE-8EBC-4226-A340-EB65D3CA0AEC}.Release|Any CPU.Build.0 = Release|Any CPU
-		{8EB5DD53-9E86-47B5-8E4F-96D3D4D45B71}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{8EB5DD53-9E86-47B5-8E4F-96D3D4D45B71}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{8EB5DD53-9E86-47B5-8E4F-96D3D4D45B71}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{8EB5DD53-9E86-47B5-8E4F-96D3D4D45B71}.Release|Any CPU.Build.0 = Release|Any CPU
-		{A778053F-B458-4764-A967-C54EB05C70FE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A778053F-B458-4764-A967-C54EB05C70FE}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A778053F-B458-4764-A967-C54EB05C70FE}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A778053F-B458-4764-A967-C54EB05C70FE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

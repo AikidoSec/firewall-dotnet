@@ -1,6 +1,15 @@
 # Created by https://www.toptal.com/developers/gitignore/api/dotnetcore,visualstudio,visualstudiocode
 # Edit at https://www.toptal.com/developers/gitignore?templates=dotnetcore,visualstudio,visualstudiocode
 
+# CoreCLR source code
+coreclr/
+
+# cmake build files
+Aikido.Zen.Profiler/build/
+Aikido.Zen.Profiler/bin/
+Aikido.Zen.Profiler/lib/
+Aikido.Zen.Profiler/out/
+
 ### DotnetCore ###
 # .NET Core build folders
 bin/

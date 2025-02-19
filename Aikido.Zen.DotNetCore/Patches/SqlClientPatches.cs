@@ -3,13 +3,15 @@ using System.Reflection;
 using HarmonyLib;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Helpers;
+using Aikido.Zen.Core;
 
 namespace Aikido.Zen.DotNetCore.Patches
 {
     internal static class SqlClientPatches
     {
-        public static void ApplyPatches(Harmony harmony)
+        public static void ApplyPatches (Harmony harmony)
         {
+            Bridge.RegisterCallback("System.Data.Common", "System.Data.Common.DbCommand.ExecuteNonQueryAsync[System.String,System.Data.Common.DbTransaction]", OnCommandExecuting);
             // Use reflection to get the types dynamically
             PatchMethod(harmony, "System.Data.Common", "DbCommand", "ExecuteNonQueryAsync");
             PatchMethod(harmony, "System.Data.Common", "DbCommand", "ExecuteReaderAsync", "System.Data.CommandBehavior");
@@ -53,7 +55,7 @@ namespace Aikido.Zen.DotNetCore.Patches
             PatchMethod(harmony, "NPoco", "Database", "ExecuteScalarHelper", "System.Data.Common.DbCommand");
         }
 
-        private static void PatchMethod(Harmony harmony, string assemblyName, string typeName, string methodName, params string[] parameterTypeNames)
+        private static void PatchMethod (Harmony harmony, string assemblyName, string typeName, string methodName, params string[] parameterTypeNames)
         {
             var method = ReflectionHelper.GetMethodFromAssembly(assemblyName, typeName, methodName, parameterTypeNames);
             if (method != null)
@@ -62,7 +64,15 @@ namespace Aikido.Zen.DotNetCore.Patches
             }
         }
 
-        private static bool OnCommandExecuting(object[] __args, MethodBase __originalMethod, object __instance)
+        private static void OnCommandExecuting (object instance, object[] args)
+        {
+            var dbCommand = instance as System.Data.Common.DbCommand
+                ?? args[0] as System.Data.Common.DbCommand;
+            if (dbCommand == null) return;
+            var assembly = instance.GetType().Assembly.FullName?.Split(", Culture=")[0];
+        }
+
+        private static bool OnCommandExecuting (object[] __args, MethodBase __originalMethod, object __instance)
         {
             var dbCommand = __instance as System.Data.Common.DbCommand
                 ?? __args[0] as System.Data.Common.DbCommand;

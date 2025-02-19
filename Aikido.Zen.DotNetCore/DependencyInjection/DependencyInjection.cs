@@ -1,10 +1,8 @@
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Api;
-using Aikido.Zen.DotNetCore.StartupFilters;
 using Microsoft.Extensions.Options;
 using Aikido.Zen.DotNetCore.Middleware;
 using Aikido.Zen.DotNetCore.Patches;
@@ -22,6 +20,8 @@ namespace Aikido.Zen.DotNetCore
             {
                 return services;
             }
+            // setup the profiler
+            services.AddAikidoProfiler();
 
             // register the options
             services.AddOptions();
@@ -34,6 +34,7 @@ namespace Aikido.Zen.DotNetCore
 
             // make sure we use the httpcontext accessor
             services.AddHttpContextAccessor();
+
             // now we can register our context accessor
             services.AddTransient<ContextAccessor>(factory =>
             {
