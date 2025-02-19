@@ -125,7 +125,8 @@ namespace Aikido.Zen.Core.Models
                 return sortedValues[lower];
 
             var weight = index - lower;
-            return (1 - weight) * sortedValues[lower] + weight * sortedValues[upper];
+            var result = (1 - weight) * sortedValues[lower] + weight * sortedValues[upper];
+            return Math.Round(result, 2);
         }
 
         public bool IsEmpty()
