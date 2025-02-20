@@ -8,9 +8,9 @@ namespace Aikido.Zen.Core.Models
     {
         private readonly int _maxPerfSamplesInMem;
         private readonly int _maxCompressedStatsInMem;
-        private Dictionary<string, MonitoredSinkStats> _sinks = new Dictionary<string, MonitoredSinkStats>();
+        private IDictionary<string, MonitoredSinkStats> _sinks = new Dictionary<string, MonitoredSinkStats>();
         private Requests _requests = new Requests();
-        
+
         public Stats(int maxPerfSamplesInMem = 1000, int maxCompressedStatsInMem = 100)
         {
             _maxPerfSamplesInMem = maxPerfSamplesInMem;
@@ -18,7 +18,11 @@ namespace Aikido.Zen.Core.Models
             Reset();
         }
 
-        public Dictionary<string, MonitoredSinkStats> Sinks => _sinks;
+        public IDictionary<string, MonitoredSinkStats> Sinks
+        {
+            get => _sinks;
+            set => _sinks = value;
+        }
         public long StartedAt { get; set; }
         public long EndedAt { get; set; }
         public Requests Requests => _requests;
@@ -78,14 +82,118 @@ namespace Aikido.Zen.Core.Models
 
         private void CompressPerfSamples(string sink)
         {
-            // Implementation for compressing performance samples would go here
+            if (!_sinks.ContainsKey(sink) || _sinks[sink].Durations.Count == 0)
+            {
+                return;
+            }
+
+            var timings = _sinks[sink].Durations;
+            var averageInMs = timings.Average();
+
+            // Calculate percentiles
+            var sortedTimings = timings.OrderBy(t => t).ToList();
+            var percentiles = new Dictionary<string, double>
+            {
+                ["50"] = CalculatePercentile(sortedTimings, 50),
+                ["75"] = CalculatePercentile(sortedTimings, 75),
+                ["90"] = CalculatePercentile(sortedTimings, 90),
+                ["95"] = CalculatePercentile(sortedTimings, 95),
+                ["99"] = CalculatePercentile(sortedTimings, 99)
+            };
+
+            _sinks[sink].CompressedTimings.Add(new CompressedTiming
+            {
+                AverageInMS = averageInMs,
+                Percentiles = percentiles,
+                CompressedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+            });
+
+            if (_sinks[sink].CompressedTimings.Count > _maxCompressedStatsInMem)
+            {
+                _sinks[sink].CompressedTimings.RemoveAt(0);
+            }
+
+            _sinks[sink].Durations.Clear();
+        }
+
+        private static double CalculatePercentile(List<double> sortedValues, int percentile)
+        {
+            if (sortedValues.Count == 0)
+                return 0;
+
+            var index = (percentile / 100.0) * (sortedValues.Count - 1);
+            var lower = (int)Math.Floor(index);
+            var upper = (int)Math.Ceiling(index);
+
+            if (lower == upper)
+                return sortedValues[lower];
+
+            var weight = index - lower;
+            var result = (1 - weight) * sortedValues[lower] + weight * sortedValues[upper];
+            return Math.Round(result, 2);
         }
 
         public bool IsEmpty()
         {
-            return !_sinks.Any() && 
-                   _requests.Total == 0 && 
+            return !_sinks.Any() &&
+                   _requests.Total == 0 &&
                    _requests.AttacksDetected.Total == 0;
         }
+
+        public void AddSinkStat(string sink, bool blocked, bool attackDetected, double durationInMs, bool withoutContext)
+        {
+            EnsureSinkStats(sink);
+            var sinkStats = _sinks[sink];
+            sinkStats.Total++;
+
+            if (withoutContext)
+            {
+                sinkStats.WithoutContext++;
+                return;
+            }
+
+            if (sinkStats.Durations.Count >= _maxPerfSamplesInMem)
+            {
+                CompressPerfSamples(sink);
+            }
+
+            sinkStats.Durations.Add(durationInMs);
+
+            if (attackDetected)
+            {
+                sinkStats.AttacksDetected.Total++;
+                if (blocked)
+                {
+                    sinkStats.AttacksDetected.Blocked++;
+                }
+            }
+        }
+
+        public void OnRequest()
+        {
+            _requests.Total++;
+        }
+
+        public void OnAbortedRequest()
+        {
+            _requests.Aborted++;
+        }
+
+        public StatsSnapshot GetStats()
+        {
+            return new StatsSnapshot
+            {
+                Sinks = _sinks,
+                StartedAt = StartedAt,
+                Requests = _requests
+            };
+        }
+    }
+
+    public class StatsSnapshot
+    {
+        public IDictionary<string, MonitoredSinkStats> Sinks { get; set; }
+        public long StartedAt { get; set; }
+        public Requests Requests { get; set; }
     }
 }

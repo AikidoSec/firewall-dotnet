@@ -2,11 +2,9 @@ using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Helpers.OpenAPI;
 using Aikido.Zen.Core.Models.Ip;
-using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Text.RegularExpressions;
 
 namespace Aikido.Zen.Core.Models
@@ -22,34 +20,35 @@ namespace Aikido.Zen.Core.Models
         private BlockList _blockList = new BlockList();
         private HashSet<string> _blockedUsers = new HashSet<string>();
 
-        private int _requests = 0;
-        private int _attacksDetected = 0;
-        private int _attacksBlocked = 0;
-        private int _requestsAborted = 0;
+        private Stats _stats = new Stats();
         private long _started = DateTimeHelper.UTCNowUnixMilliseconds();
         public long ConfigLastUpdated { get; set; } = 0;
         public bool ContextMiddlewareInstalled { get; set; } = false;
         public bool BlockingMiddlewareInstalled { get; set; } = false;
 
+        public void AddSinkStat(string sink, bool blocked, bool attackDetected, double durationInMs, bool withoutContext)
+        {
+            _stats.AddSinkStat(sink, blocked, attackDetected, durationInMs, withoutContext);
+        }
 
         public void AddRequest()
         {
-            _requests++;
+            _stats.OnRequest();
         }
 
         public void AddAbortedRequest()
         {
-            _requestsAborted++;
+            _stats.OnAbortedRequest();
         }
 
-        public void AddAttackDetected()
+        public void AddAttackDetected(bool blocked)
         {
-            _attacksDetected++;
+            _stats.OnDetectedAttack(blocked);
         }
 
         public void AddAttackBlocked()
         {
-            _attacksBlocked++;
+            _stats.OnDetectedAttack(true);
         }
 
         public void AddRateLimitedEndpoint(string path, RateLimitingConfig config)
@@ -116,10 +115,7 @@ namespace Aikido.Zen.Core.Models
             _hostnames.Clear();
             _users.Clear();
             _routes.Clear();
-            _requests = 0;
-            _attacksDetected = 0;
-            _attacksBlocked = 0;
-            _requestsAborted = 0;
+            _stats.Reset();
             _started = DateTimeHelper.UTCNowUnixMilliseconds();
             _blockedUsers.Clear();
         }
@@ -203,14 +199,26 @@ namespace Aikido.Zen.Core.Models
             _blockedUserAgents = blockedUserAgents;
         }
 
+        public MonitoredSinkStats GetStatsForSink(string sink)
+        {
+            if (!_stats.Sinks.TryGetValue(sink, out MonitoredSinkStats stats))
+            {
+                stats = new MonitoredSinkStats();
+                _stats.Sinks[sink] = stats;
+            }
+            return stats;
+        }
+
         public IEnumerable<Host> Hostnames => _hostnames.Select(x => x.Value);
         public IEnumerable<UserExtended> Users => _users.Select(x => x.Value);
         public IEnumerable<Route> Routes => _routes.Select(x => x.Value);
         public IDictionary<string, RateLimitingConfig> RateLimitedRoutes => _rateLimitedRoutes;
-        public int Requests => _requests;
-        public int RequestsAborted => _requestsAborted;
-        public int AttacksDetected => _attacksDetected;
-        public int AttacksBlocked => _attacksBlocked;
+        public int Requests => _stats.Requests.Total;
+        public int RequestsAborted => _stats.Requests.Aborted;
+        public int AttacksDetected => _stats.Requests.AttacksDetected.Total;
+        public int AttacksBlocked => _stats.Requests.AttacksDetected.Blocked;
+
+        public IDictionary<string, MonitoredSinkStats> Sinks => _stats.Sinks;
         public long Started => _started;
         public BlockList BlockList => _blockList;
         public Regex BlockedUserAgents => _blockedUserAgents;

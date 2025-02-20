@@ -486,7 +486,6 @@ namespace Aikido.Zen.Test
             _agent.Context.AddRoute(context);
             _agent.Context.AddRequest();
             _agent.Context.AddAttackBlocked();
-            _agent.Context.AddAttackDetected();
             _agent.SetContextMiddlewareInstalled(true);
             _agent.SetBlockingMiddlewareInstalled(true);
             // Act

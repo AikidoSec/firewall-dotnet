@@ -358,6 +358,7 @@ namespace Aikido.Zen.Core
             LogHelper.DebugLog(Logger, $"AIKIDO: Attack detected: {kind} in {source} {operation}, blocked: {blocked}");
             Logger.LogInformation("AIKIDO: Attack detected: {kind} in {source} {operation}, blocked: {blocked}",
                 kind, source, operation, blocked);
+            _context.AddAttackDetected(blocked);
             QueueEvent(EnvironmentHelper.Token, DetectedAttack.Create(kind, source, payload, operation, context, module, metadata, blocked));
         }
 
