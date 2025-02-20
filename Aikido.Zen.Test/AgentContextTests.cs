@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using Aikido.Zen.Core;
+using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Models;
 namespace Aikido.Zen.Test
 {
@@ -49,6 +50,7 @@ namespace Aikido.Zen.Test
             var user = new User("user1", "blocked");
             var ip = "192.168.1.100";
             var url = "GET|testurl";
+            var allowedIps = new[] { "192.168.1.111" };
             var endpoints = new List<EndpointConfig> {
                 new EndpointConfig {
                     Method = "GET",
@@ -60,15 +62,18 @@ namespace Aikido.Zen.Test
 
             _agentContext.UpdateBlockedUsers(new[] { "user1" });
             _agentContext.BlockList.AddIpAddressToBlocklist("192.168.1.101");
-            _agentContext.BlockList.UpdateAllowedSubnets(endpoints);
+            _agentContext.BlockList.AddIpAddressToBlocklist("123.123.123.123");
+            _agentContext.BlockList.UpdateAllowedIps(allowedIps);
             _agentContext.UpdateBlockedUserAgents(blockedUserAgents);
+            _agentContext.BlockList.UpdateAllowedIpsForEndpoint(endpoints);
 
             // Act & Assert
             Assert.That(_agentContext.IsBlocked(user, "192.168.1.102", url, "useragent")); // Blocked user
-            Assert.That(_agentContext.IsBlocked(null, "192.168.1.101", url, "useragent")); // Blocked IP
-            Assert.That(_agentContext.IsBlocked(null, ip, url, "useragent")); // Not in allowed subnet
+            Assert.That(_agentContext.IsBlocked(null, "192.168.1.101", url, "useragent"), Is.False); // Blocked IP, but local IP should not be blocked
+            Assert.That(_agentContext.IsBlocked(null, "123.123.123.123", url, "useragent")); // Blocked IP
+            Assert.That(_agentContext.IsBlocked(null, "123.1.1.1", url, "useragent")); // Not in allowed subnet
             Assert.That(_agentContext.IsBlocked(null, "10.0.0.1", url, "useragent"), Is.False); // In allowed subnet
-            Assert.That(_agentContext.IsBlocked(null, "invalid.ip", url, "useragent"), Is.False); // Invalid IP should not be blocked
+            Assert.That(_agentContext.IsBlocked(null, "invalid.ip", url, "useragent"), Is.True); // Invalid IP should be blocked
             Assert.That(_agentContext.IsBlocked(new User("user2", "allowed"), "10.0.0.1", url, "useragent"), Is.False); // Non-blocked user in allowed subnet
             Assert.That(_agentContext.IsBlocked(new User("user2", "allowed"), "192.168.1.101", url, "googlebot"), Is.True); // Blocked user agent
         }
@@ -243,10 +248,11 @@ namespace Aikido.Zen.Test
             _agentContext.UpdateBlockedUsers(new[] { "user1" });
 
             // Act
-            var isBlocked = _agentContext.IsBlocked(user, string.Empty, string.Empty, string.Empty);
+            var isBlocked = _agentContext.IsBlocked(user, string.Empty, string.Empty, string.Empty, out string reason);
 
             // Assert
             Assert.That(isBlocked);
+            Assert.That(reason, Is.EqualTo("User is blocked"));
         }
 
         [Test]
@@ -256,10 +262,26 @@ namespace Aikido.Zen.Test
             var user = new User("user1", "User One");
 
             // Act
-            var isBlocked = _agentContext.IsBlocked(user, string.Empty, string.Empty, string.Empty);
+            var isBlocked = _agentContext.IsBlocked(user, string.Empty, string.Empty, string.Empty, out string reason);
 
             // Assert
             Assert.That(isBlocked, Is.False);
+            Assert.That(reason, Is.EqualTo("IP is allowed"));
+        }
+
+        [Test]
+        public void IsBlocked_ShouldReturnTrue_WithReason_WhenUserAgentIsBlocked()
+        {
+            // Arrange
+            var userAgent = "malicious-bot";
+            _agentContext.UpdateBlockedUserAgents(new Regex(userAgent));
+
+            // Act
+            var isBlocked = _agentContext.IsBlocked(null, string.Empty, string.Empty, userAgent, out string reason);
+
+            // Assert
+            Assert.That(isBlocked, Is.True);
+            Assert.That(reason, Is.EqualTo("User agent is blocked"));
         }
 
         [Test]
@@ -375,8 +397,10 @@ namespace Aikido.Zen.Test
             };
             var configVersion = 123L;
 
+            var response = new ReportingAPIResponse { Block = block, BlockedUserIds = blockedUsers, Endpoints = endpoints, ConfigUpdatedAt = configVersion };
+
             // Act
-            _agentContext.UpdateConfig(block, blockedUsers, endpoints, null, configVersion);
+            _agentContext.UpdateConfig(response);
 
             // Assert
             Assert.Multiple(() =>

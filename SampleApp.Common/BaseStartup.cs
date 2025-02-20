@@ -41,7 +41,10 @@ namespace SampleApp.Common
             // when mocking, we don't have an ip address
             app.Use((context, next) =>
             {
-                context.Request.HttpContext.Connection.RemoteIpAddress ??= IPAddress.Parse("192.168.0.1");
+                context.Request.HttpContext.Connection.RemoteIpAddress ??=
+                    string.IsNullOrEmpty(context.Request.HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault()) ?
+                    IPAddress.Parse("192.168.0.1") :
+                    IPAddress.Parse(context.Request.HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault()!);
                 if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("TEST_USER")))
                 {
                     context.User = new ClaimsPrincipal(new ClaimsIdentity(new Claim[]

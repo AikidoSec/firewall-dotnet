@@ -1,3 +1,4 @@
+using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Helpers.OpenAPI;
 using Aikido.Zen.Core.Models.Ip;
@@ -123,9 +124,27 @@ namespace Aikido.Zen.Core.Models
             _blockedUsers.Clear();
         }
 
+        public bool IsBlocked(User user, string ip, string endpoint, string userAgent, out string reason)
+        {
+            reason = "";
+            if (user != null && IsUserBlocked(user.Id))
+            {
+                reason = $"User is blocked";
+                return true;
+            }
+
+            if (IsUserAgentBlocked(userAgent))
+            {
+                reason = $"User agent is blocked";
+                return true;
+            }
+
+            return _blockList.IsBlocked(ip, endpoint, out reason);
+        }
+
         public bool IsBlocked(User user, string ip, string endpoint, string userAgent)
         {
-            return (user != null && IsUserBlocked(user.Id)) || _blockList.IsBlocked(ip, endpoint) || IsUserAgentBlocked(userAgent);
+            return IsBlocked(user, ip, endpoint, userAgent, out _);
         }
 
         public bool IsUserBlocked(string userId)
@@ -158,24 +177,25 @@ namespace Aikido.Zen.Core.Models
             }
         }
 
-        public void UpdateConfig(bool block, IEnumerable<string> blockedUsers, IEnumerable<EndpointConfig> endpoints, Regex blockedUserAgents, long configVersion)
+        public void UpdateConfig(ReportingAPIResponse response)
         {
-            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", block ? "true" : "false");
-            UpdateBlockedUsers(blockedUsers);
-            BlockList.UpdateAllowedSubnets(endpoints);
-            UpdateRatelimitedRoutes(endpoints);
-            UpdateBlockedUserAgents(blockedUserAgents);
-            ConfigLastUpdated = configVersion;
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", response.Block ? "true" : "false");
+            UpdateBlockedUsers(response.BlockedUserIds);
+            BlockList.UpdateAllowedIps(response.AllowedIPAddresses);
+            BlockList.UpdateAllowedIpsForEndpoint(response.Endpoints);
+            UpdateRatelimitedRoutes(response.Endpoints);
+            UpdateBlockedUserAgents(response.BlockedUserAgentsRegex);
+            ConfigLastUpdated = response.ConfigUpdatedAt;
         }
 
         public void UpdateBlockedIps(IEnumerable<string> blockedIPs)
         {
             if (blockedIPs == null)
             {
-                BlockList.UpdateBlockedSubnets(new List<string>());
+                BlockList.UpdateBlockedIps(new List<string>());
                 return;
             }
-            BlockList.UpdateBlockedSubnets(blockedIPs);
+            BlockList.UpdateBlockedIps(blockedIPs);
         }
 
         public void UpdateBlockedUserAgents(Regex blockedUserAgents)

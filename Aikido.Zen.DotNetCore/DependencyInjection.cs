@@ -1,10 +1,8 @@
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Api;
-using Aikido.Zen.DotNetCore.StartupFilters;
 using Microsoft.Extensions.Options;
 using Aikido.Zen.DotNetCore.Middleware;
 using Aikido.Zen.DotNetCore.Patches;
@@ -14,9 +12,69 @@ using Microsoft.Extensions.Logging;
 
 namespace Aikido.Zen.DotNetCore
 {
+    /// <summary>
+    /// Builder class for configuring Zen Firewall options
+    /// </summary>
+    public class ZenFirewallBuilder
+    {
+        private readonly IServiceCollection _services;
+        private HttpClient _httpClient;
+
+        internal ZenFirewallBuilder(IServiceCollection services)
+        {
+            _services = services;
+        }
+
+        /// <summary>
+        /// Configures a custom HttpClient to be used by the Zen API clients, helpful for testing
+        /// </summary>
+        /// <param name="httpClient">The HttpClient instance to use</param>
+        /// <returns>The builder instance for method chaining</returns>
+        public ZenFirewallBuilder UseHttpClient(HttpClient httpClient)
+        {
+            _httpClient = httpClient;
+            return this;
+        }
+
+        internal void ConfigureServices()
+        {
+            // if we have a custom httpclient, use it
+            if (_httpClient != null)
+            {
+                _services.AddTransient<IReportingAPIClient>(provider =>
+                {
+                    return new ReportingAPIClient(_httpClient);
+                });
+                _services.AddTransient<IRuntimeAPIClient>(provider =>
+                {
+                    return new RuntimeAPIClient(_httpClient);
+                });
+            }
+            // otherwise, use the default httpclient
+            else
+            {
+                _services.AddTransient<IReportingAPIClient>(provider =>
+                {
+                    return new ReportingAPIClient();
+                });
+                _services.AddTransient<IRuntimeAPIClient>(provider =>
+                {
+                    return new RuntimeAPIClient();
+                });
+            }
+            _services.AddTransient<IZenApi, ZenApi>();
+        }
+    }
+
     public static class DependencyInjection
     {
-        public static IServiceCollection AddZenFirewall(this IServiceCollection services)
+        /// <summary>
+        /// Adds Zen Firewall services to the service collection
+        /// </summary>
+        /// <param name="services">The IServiceCollection to add services to</param>
+        /// <param name="configureOptions">Optional delegate to configure Zen Firewall options</param>
+        /// <returns>The service collection for method chaining</returns>
+        public static IServiceCollection AddZenFirewall(this IServiceCollection services, Action<ZenFirewallBuilder> configureOptions = null)
         {
             if (Environment.GetEnvironmentVariable("AIKIDO_DISABLE") == "true")
             {
@@ -41,8 +99,10 @@ namespace Aikido.Zen.DotNetCore
                 return new ContextAccessor(httpContextAccessor);
             });
 
-            // register the zen Api
-            services.AddZenApi();
+            // Configure Zen API with optional custom settings
+            var builder = new ZenFirewallBuilder(services);
+            configureOptions?.Invoke(builder);
+            builder.ConfigureServices();
 
             // register the middleware
             services.AddAikidoZenMiddleware();
