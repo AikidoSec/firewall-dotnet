@@ -1,18 +1,14 @@
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
-using DotNet.Testcontainers.Networks;
 using Microsoft.AspNetCore.Mvc.Testing;
 using NUnit.Framework;
 using System.Net.Http.Json;
-using Aikido.Zen.Server.Mock;
-using Microsoft.AspNetCore.Hosting;
-using SampleApp.Common;
-
 namespace Aikido.Zen.Test.End2End
 {
     /// <summary>
     /// Base class for E2E tests using WebApplicationFactory for both mock server and sample apps
     /// </summary>
+    [NonParallelizable]
     public abstract class WebApplicationTestBase
     {
         protected List<IContainer> DbContainers { get; private set; }
@@ -30,6 +26,37 @@ namespace Aikido.Zen.Test.End2End
             ["ConnectionStrings__PostgresConnection"] = $"Host=127.0.0.1;Port=5432;Database=catsdb;Username=postgres;Password=YourStrong!Passw0rd",
             ["ConnectionStrings__MySqlConnection"] = "Server=127.0.0.1;Port=3306;Database=catsdb;User=root;Password=YourStrong!Passw0rd;Allow User Variables=true",
         };
+
+        /// <summary>
+        /// Resets the mock server state to ensure each test starts with a clean configuration
+        /// </summary>
+        protected async Task ResetMockServerState()
+        {
+            var defaultConfig = new Dictionary<string, object>
+            {
+                ["blockedIpAddresses"] = new string[] { },
+                ["allowedIpAddresses"] = new string[] { },
+                ["blockedUserAgents"] = "",
+                ["endpoints"] = new object[] { },
+                ["block"] = false
+            };
+
+            try
+            {
+                await MockServerClient.PostAsJsonAsync("/api/runtime/config", defaultConfig);
+            }
+            catch (Exception)
+            {
+                // Ignore errors during reset as the endpoints might not be ready yet
+            }
+        }
+
+        [TearDown]
+        public virtual async Task TearDown()
+        {
+            await ResetMockServerState();
+            SampleAppClient?.Dispose();
+        }
 
         [OneTimeSetUp]
         public virtual async Task OneTimeSetUp()

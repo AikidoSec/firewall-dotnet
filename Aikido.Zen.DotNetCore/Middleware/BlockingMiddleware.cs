@@ -30,7 +30,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 Agent.Instance.Context.AddUser(user, ipAddress: context.Connection.RemoteIpAddress?.ToString());
             }
 
-            // block the request if the user is blocked
+            // block the request if the user or Ip is blocked
             if (!EnvironmentHelper.DryMode && Agent.Instance.Context.IsBlocked(user, aikidoContext.RemoteAddress, routeKey, aikidoContext.UserAgent, out string reason))
             {
                 Agent.Instance.Context.AddAbortedRequest();

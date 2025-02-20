@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Http.Json;
-using Aikido.Zen.Core.Models;
 using Microsoft.AspNetCore.Mvc.Testing;
 using NUnit.Framework;
 using SQLiteSampleApp;
@@ -11,7 +10,7 @@ namespace Aikido.Zen.Test.End2End;
 /// End-to-end tests for blocking functionality including IP blocking, user agent blocking,
 /// and endpoint-specific allow rules
 /// </summary>
-[TestFixture]
+[NonParallelizable]
 public class BlockingTests : WebApplicationTestBase
 {
 
@@ -52,25 +51,21 @@ public class BlockingTests : WebApplicationTestBase
         var lists = new Dictionary<string, object>
         {
             ["blockedIPAddresses"] = blockedIps,
-            ["blockedUserAgents"] = blockedUserAgents
+            ["blockedUserAgents"] = blockedUserAgents,
+            ["allowedIPAddresses"] = new string[] { }
         };
         await MockServerClient.PostAsync("/api/runtime/firewall/lists", JsonContent.Create(lists));
     }
 
-    [OneTimeTearDown]
-    public override async Task OneTimeTearDown()
-    {
-        SampleAppClient?.Dispose();
-        await base.OneTimeTearDown();
-    }
-
     [Test]
     [CancelAfter(30000)]
+    [NonParallelizable]
     public async Task TestIPBlocking_WhenIPIsBlocked_ShouldReturnForbidden()
     {
         // Arrange
         var config = new Dictionary<string, object>
         {
+            ["blockedIpAddresses"] = new string[] { },
             ["allowedIpAddresses"] = new[] { "127.0.0.1" },
             ["block"] = true,
         };
@@ -89,11 +84,13 @@ public class BlockingTests : WebApplicationTestBase
 
     [Test]
     [CancelAfter(30000)]
+    [NonParallelizable]
     public async Task TestIPBlocking_WhenIPIsAllowed_ShouldSucceed()
     {
         // Arrange
         var config = new Dictionary<string, object>
         {
+            ["blockedIpAddresses"] = new string[] { },
             ["allowedIpAddresses"] = new[] { "192.168.1.200" },
             ["block"] = true,
         };
@@ -110,16 +107,18 @@ public class BlockingTests : WebApplicationTestBase
 
     [Test]
     [CancelAfter(30000)]
+    [NonParallelizable]
     public async Task TestUserAgentBlocking_WhenUserAgentIsBlocked_ShouldReturnForbidden()
     {
         // Arrange
         var config = new Dictionary<string, object>
         {
-            ["allowedIpAddresses"] = new[] { "127.0.0.1" },
+            ["blockedIpAddresses"] = new string[] { },
+            ["allowedIpAddresses"] = new string[] { },
+            ["blockedUserAgents"] = "malicious-bot",
             ["block"] = true,
         };
         await MockServerClient.PostAsJsonAsync("/api/runtime/config", config);
-        await UpdateFirewallLists(new List<string>(), "malicious-bot");
         SampleAppClient = CreateSampleAppFactory().CreateClient();
         SampleAppClient.DefaultRequestHeaders.Add("User-Agent", "malicious-bot");
         SampleAppClient.DefaultRequestHeaders.Add("X-Forwarded-For", "123.123.123.123");
@@ -135,11 +134,14 @@ public class BlockingTests : WebApplicationTestBase
 
     [Test]
     [CancelAfter(30000)]
+    [NonParallelizable]
     public async Task TestEndpointSpecificAllowRule_WhenIPAllowedForEndpoint_ShouldSucceed()
     {
         // Arrange
         var config = new Dictionary<string, object>
         {
+            ["blockedIpAddresses"] = new string[] { },
+            ["allowedIpAddresses"] = new string[] { },
             ["endpoints"] = new[]
             {
                 new
@@ -164,11 +166,14 @@ public class BlockingTests : WebApplicationTestBase
 
     [Test]
     [CancelAfter(30000)]
+    [NonParallelizable]
     public async Task TestEndpointSpecificAllowRule_WhenIPNotAllowedForEndpoint_ShouldReturnForbidden()
     {
         // Arrange
         var config = new Dictionary<string, object>
         {
+            ["blockedIpAddresses"] = new string[] { },
+            ["allowedIpAddresses"] = new string[] { },
             ["endpoints"] = new[]
             {
                 new
@@ -193,11 +198,13 @@ public class BlockingTests : WebApplicationTestBase
 
     [Test]
     [CancelAfter(30000)]
+    [NonParallelizable]
     public async Task TestPrivateIP_ShouldNotBeBlocked_EvenWhenExplicitlyBlocked()
     {
         // Arrange
         var config = new Dictionary<string, object>
         {
+            ["blockedIpAddresses"] = new string[] { },
             ["allowedIpAddresses"] = new[] { "127.0.0.1" },
             ["block"] = true,
         };
@@ -230,12 +237,14 @@ public class BlockingTests : WebApplicationTestBase
 
     [Test]
     [CancelAfter(30000)]
+    [NonParallelizable]
     public async Task TestLocalIP_ShouldNotBeBlocked_EvenWhenExplicitlyBlocked()
     {
         // Arrange
         var config = new Dictionary<string, object>
         {
             ["allowedIpAddresses"] = new[] { "127.0.0.1" },
+            ["blockedIpAddresses"] = new string[] { },
             ["block"] = true,
         };
         await MockServerClient.PostAsJsonAsync("/api/runtime/config", config);
@@ -266,11 +275,14 @@ public class BlockingTests : WebApplicationTestBase
 
     [Test]
     [CancelAfter(30000)]
+    [NonParallelizable]
     public async Task TestPrivateAndLocalIP_ShouldNotBeBlocked_WhenEndpointHasAllowList()
     {
         // Arrange
         var config = new Dictionary<string, object>
         {
+            ["blockedIpAddresses"] = new string[] { },
+            ["allowedIpAddresses"] = new string[] { },
             ["endpoints"] = new[]
             {
                 new
@@ -308,12 +320,14 @@ public class BlockingTests : WebApplicationTestBase
 
     [Test]
     [CancelAfter(30000)]
+    [NonParallelizable]
     public async Task TestMultipleBlockingRules_WhenBothIPAndUserAgentBlocked_ShouldReturnForbidden()
     {
         // Arrange
         var config = new Dictionary<string, object>
         {
             ["allowedIpAddresses"] = new[] { "123.123.123.123" },
+            ["blockedIpAddresses"] = new string[] { },
             ["block"] = true,
         };
         await MockServerClient.PostAsJsonAsync("/api/runtime/config", config);
