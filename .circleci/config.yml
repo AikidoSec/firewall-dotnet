@@ -21,7 +21,7 @@ jobs:
       dotnet_version:
         type: string
     machine:
-      image: ubuntu-2204:current
+      image: ubuntu-2404:current
     steps:
       - checkout
       - run:
