@@ -17,7 +17,7 @@
         <dependency id="Microsoft.AspNetCore.WebUtilities" version="[2.2.0,99.99.99)" />
         <dependency id="Microsoft.Extensions.Logging.Abstractions" version="[9.0.2,99.99.99)" />
         <dependency id="Microsoft.Extensions.Logging" version="[9.0.2,99.99.99)" />
-        <dependency id="System.Text.Json" version="[9.0.0,99.99.99)" />
+        <dependency id="System.Text.Json" version="[9.0.2,99.99.99)" />
     </dependencies>
   </metadata>
   <files>
