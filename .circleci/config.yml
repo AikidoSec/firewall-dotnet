@@ -27,6 +27,7 @@ jobs:
       - run:
           name: install dotnet
           command: |
+            sudo add-apt-repository ppa:dotnet/backports
             sudo apt-get update
             sudo apt-get install -y dotnet-sdk-<< parameters.dotnet_version >>
       - attach_workspace:
