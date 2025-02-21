@@ -42,6 +42,7 @@ Zen operates autonomously on the same server as your .NET app to:
 * ✅ ASP.NET Core 6.0
 * ✅ ASP.NET Core 7.0
 * ✅ ASP.NET Core 8.0
+* ✅ ASP.NET Core 9.0
 * ✅ ASP.NET Framework 4.6.x
 * ✅ ASP.NET Framework 4.7.x
 * ✅ ASP.NET Framework 4.8.x
