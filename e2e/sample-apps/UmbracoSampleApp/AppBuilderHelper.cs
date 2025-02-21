@@ -25,6 +25,9 @@ namespace UmbracoSampleApp
         {
             var builder = WebApplication.CreateBuilder(args);
 
+            // Use Kestrel for the web server instead of IIS Express (IIS Express is not supported on cross-platform)
+            builder.WebHost.UseKestrel();
+
             builder.CreateUmbracoBuilder()
                 .AddBackOffice()
                 .AddWebsite()
@@ -87,7 +90,7 @@ namespace UmbracoSampleApp
     public class UmbracoApplicationNotificationHandler : INotificationHandler<UmbracoApplicationStartedNotification>
     {
         private readonly DatabaseService databaseService;
-        public UmbracoApplicationNotificationHandler (DatabaseService databaseService)
+        public UmbracoApplicationNotificationHandler(DatabaseService databaseService)
         {
             this.databaseService = databaseService;
         }

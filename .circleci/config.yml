@@ -21,12 +21,13 @@ jobs:
       dotnet_version:
         type: string
     machine:
-      image: ubuntu-2204:current
+      image: ubuntu-2404:current
     steps:
       - checkout
       - run:
           name: install dotnet
           command: |
+            sudo add-apt-repository -y ppa:dotnet/backports
             sudo apt-get update
             sudo apt-get install -y dotnet-sdk-<< parameters.dotnet_version >>
       - attach_workspace:
@@ -45,6 +46,10 @@ jobs:
       - run:
           name: Run E2E Tests
           command: |
+            # Set terminal size to avoid logger failure
+            # https://github.com/dotnet/msbuild/issues/11213
+            stty cols 120
+            stty rows 50
             dotnet test "Aikido.Zen.Test.End2End/Aikido.Zen.Test.End2End.csproj" \
               --configuration Release \
               --logger "console;"
@@ -58,4 +63,4 @@ workflows:
             - checkout_code
           matrix:
             parameters:
-              dotnet_version: ["8.0"]
+              dotnet_version: ["9.0"]

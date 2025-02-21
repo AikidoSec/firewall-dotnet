@@ -19,38 +19,48 @@
       </group>
     </frameworkReferences>
     <dependencies>
-      <group targetFramework="net8.0">
-        <dependency id="Lib.Harmony" version="2.3.3" />
+      <group targetFramework="net9.0">
+        <dependency id="Lib.Harmony" version="2.3.5" />
         <dependency id="Microsoft.AspNetCore.Hosting.Abstractions" version="2.2.0" />
         <dependency id="Microsoft.AspNetCore.Http" version="2.2.2" />
         <dependency id="Microsoft.AspNetCore.Routing" version="2.2.2" />
         <dependency id="Microsoft.AspNetCore.Routing.Abstractions" version="2.2.0" />
-        <dependency id="Microsoft.Extensions.DependencyInjection" version="8.0.0" />
+        <dependency id="Microsoft.Extensions.DependencyInjection" version="9.0.2" />
+        <dependency id="Microsoft.Extensions.Options" version="9.0.0" />
+        <dependency id="System.Text.Json" version="9.0.1" />
+        <dependen
+      <group targetFramework="net8.0">
+        <dependency id="Lib.Harmony" version="2.3.5" />
+        <dependency id="Microsoft.AspNetCore.Hosting.Abstractions" version="2.2.0" />
+        <dependency id="Microsoft.AspNetCore.Http" version="2.2.2" />
+        <dependency id="Microsoft.AspNetCore.Routing" version="2.2.2" />
+        <dependency id="Microsoft.AspNetCore.Routing.Abstractions" version="2.2.0" />
+        <dependency id="Microsoft.Extensions.DependencyInjection" version="9.0.2" />
         <dependency id="Microsoft.Extensions.Options" version="8.0.0" />
-        <dependency id="System.Text.Json" version="8.0.5" />
-        <dependency id="Microsoft.Extensions.Logging" version="8.0.0" />
+        <dependency id="System.Text.Json" version="9.0.1" />
+        <dependency id="Microsoft.Extensions.Logging" version="9.0.2" />
       </group>
       <group targetFramework="net7.0">
-        <dependency id="Lib.Harmony" version="2.3.3" />
+        <dependency id="Lib.Harmony" version="2.3.5" />
         <dependency id="Microsoft.AspNetCore.Hosting.Abstractions" version="2.2.0" />
         <dependency id="Microsoft.AspNetCore.Http" version="2.2.2" />
         <dependency id="Microsoft.AspNetCore.Routing" version="2.2.2" />
         <dependency id="Microsoft.AspNetCore.Routing.Abstractions" version="2.2.0" />
         <dependency id="Microsoft.Extensions.DependencyInjection" version="7.0.0" />
         <dependency id="Microsoft.Extensions.Options" version="7.0.0" />
-        <dependency id="System.Text.Json" version="7.0.0" />
-        <dependency id="Microsoft.Extensions.Logging" version="8.0.0" />
+        <dependency id="System.Text.Json" version="9.0.1" />
+        <dependency id="Microsoft.Extensions.Logging" version="9.0.2" />
       </group>
       <group targetFramework="net6.0">
-        <dependency id="Lib.Harmony" version="2.3.3" />
+        <dependency id="Lib.Harmony" version="2.3.5" />
         <dependency id="Microsoft.AspNetCore.Hosting.Abstractions" version="2.2.0" />
         <dependency id="Microsoft.AspNetCore.Http" version="2.2.2" />
         <dependency id="Microsoft.AspNetCore.Routing" version="2.2.2" />
         <dependency id="Microsoft.AspNetCore.Routing.Abstractions" version="2.2.0" />
         <dependency id="Microsoft.Extensions.DependencyInjection" version="6.0.0" />
         <dependency id="Microsoft.Extensions.Options" version="6.0.0" />
-        <dependency id="System.Text.Json" version="6.0.0" />
-        <dependency id="Microsoft.Extensions.Logging" version="8.0.0" />
+        <dependency id="System.Text.Json" version="9.0.1" />
+        <dependency id="Microsoft.Extensions.Logging" version="9.0.2" />
       </group>
     </dependencies>
   </metadata>
