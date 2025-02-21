@@ -24,6 +24,7 @@ namespace UmbracoSampleApp
         public static async Task<WebApplication> CreateApp(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+            builder.WebHost.UseKestrel();
 
             builder.CreateUmbracoBuilder()
                 .AddBackOffice()
