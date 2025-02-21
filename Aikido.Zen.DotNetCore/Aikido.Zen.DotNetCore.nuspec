@@ -28,7 +28,8 @@
         <dependency id="Microsoft.Extensions.DependencyInjection" version="9.0.2" />
         <dependency id="Microsoft.Extensions.Options" version="9.0.0" />
         <dependency id="System.Text.Json" version="9.0.1" />
-        <dependen
+        <dependency id="Microsoft.Extensions.Logging" version="9.0.2" />
+      </group>
       <group targetFramework="net8.0">
         <dependency id="Lib.Harmony" version="2.3.5" />
         <dependency id="Microsoft.AspNetCore.Hosting.Abstractions" version="2.2.0" />
