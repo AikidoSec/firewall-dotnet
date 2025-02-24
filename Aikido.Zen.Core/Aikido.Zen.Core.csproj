@@ -38,8 +38,8 @@
     <PackageReference Include="Lib.Harmony" Version="2.3.5" />
     <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="2.2.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.2" />
-    <PackageReference Include="System.Text.Json" Version="9.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="[6.0,)" />
+    <PackageReference Include="System.Text.Json" Version="[6.0,)" />
     <PackageReference Include="System.Xml.XDocument" Version="4.3.0" />
   </ItemGroup>
 </Project>

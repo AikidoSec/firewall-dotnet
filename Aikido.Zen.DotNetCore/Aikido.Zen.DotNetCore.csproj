@@ -1,13 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net6.0;net7.0;net8.0;</TargetFrameworks>
+    <TargetFrameworks>net6.0;net7.0;net8.0;net9.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>disable</Nullable>
     <PackageOutputPath>..\nupkgs</PackageOutputPath>
     <AssemblyVersion>0.0.1</AssemblyVersion>
     <FileVersion>0.0.1</FileVersion>
     <UserSecretsId>97bd5157-97c6-4825-833a-933ce895cbc0</UserSecretsId>
+    <NoWarn>NU1605</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -20,12 +21,18 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" Condition="'$(TargetFramework)' == 'net7.0'" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" Condition="'$(TargetFramework)' == 'net8.0'" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.2" Condition="'$(TargetFramework)' == 'net9.0'" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="6.0.0" Condition="'$(TargetFramework)' == 'net6.0'" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="7.0.0" Condition="'$(TargetFramework)' == 'net7.0'" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.0" Condition="'$(TargetFramework)' == 'net8.0'" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.2" Condition="'$(TargetFramework)' == 'net9.0'" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="6.0.0" Condition="'$(TargetFramework)' == 'net6.0'" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="7.0.0" Condition="'$(TargetFramework)' == 'net7.0'" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.0" Condition="'$(TargetFramework)' == 'net8.0'" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.2" Condition="'$(TargetFramework)' == 'net9.0'" />
-    <PackageReference Include="System.Text.Json" Version="9.0.2" />
+    <PackageReference Include="System.Text.Json" Version="6.0.0" Condition="'$(TargetFramework)' == 'net6.0'" />
+    <PackageReference Include="System.Text.Json" Version="7.0.0" Condition="'$(TargetFramework)' == 'net7.0'" />
+    <PackageReference Include="System.Text.Json" Version="8.0.0" Condition="'$(TargetFramework)' == 'net8.0'" />
+    <PackageReference Include="System.Text.Json" Version="9.0.2" Condition="'$(TargetFramework)' == 'net9.0'" />
   </ItemGroup>
 
   <ItemGroup>
