@@ -1,4 +1,5 @@
 using Aikido.Zen.Core.Helpers;
+using System.Diagnostics;
 
 namespace Aikido.Zen.Test.Helpers
 {
@@ -22,7 +23,7 @@ namespace Aikido.Zen.Test.Helpers
             // Act & Assert
             for (int i = 0; i < maxRequests; i++)
             {
-                Assert.That(RateLimitingHelper.IsAllowed(key, windowSize, maxRequests), Is.True, 
+                Assert.That(RateLimitingHelper.IsAllowed(key, windowSize, maxRequests), Is.True,
                     $"Request {i + 1} should be allowed");
             }
 
@@ -62,7 +63,7 @@ namespace Aikido.Zen.Test.Helpers
         {
             // Arrange
             string key1 = "user1";
-            string key2 = "user2"; 
+            string key2 = "user2";
             int windowSize = 60000; // 1 minute
             int maxRequests = 5;
 
@@ -188,15 +189,147 @@ namespace Aikido.Zen.Test.Helpers
             // Act & Assert
             // First request - should set initial count to 1
             Assert.That(RateLimitingHelper.IsAllowed(key, windowSize, maxRequests), Is.True);
-            
+
             // Second request - should increment to 2
             Assert.That(RateLimitingHelper.IsAllowed(key, windowSize, maxRequests), Is.True);
-            
+
             // Third request - should increment to 3
             Assert.That(RateLimitingHelper.IsAllowed(key, windowSize, maxRequests), Is.True);
-            
+
             // Fourth request - should be denied as count is at max
             Assert.That(RateLimitingHelper.IsAllowed(key, windowSize, maxRequests), Is.False);
+        }
+
+        [Test]
+        public void ShouldHandleTTLExpiration()
+        {
+            // Arrange
+            string key = "test_key";
+            int windowSize = 1000;
+            int maxRequests = 5;
+
+            // Act & Assert
+            for (int i = 0; i < maxRequests; i++)
+            {
+                Assert.That(RateLimitingHelper.IsAllowed(key, windowSize, maxRequests), Is.True);
+            }
+
+            System.Threading.Thread.Sleep(windowSize + 50);
+
+            Assert.That(RateLimitingHelper.IsAllowed(key, windowSize, maxRequests), Is.True,
+                "Request after TTL should be allowed");
+        }
+
+        [Test]
+        public void ShouldHandleSlidingWindowWithIntermittentRequests()
+        {
+            // Arrange
+            string key = "test_key";
+            int windowSize = 1000;
+            int maxRequests = 5;
+            int delayBetweenRequests = 100;
+
+            // Act & Assert
+            for (int i = 0; i < maxRequests; i++)
+            {
+                Assert.That(RateLimitingHelper.IsAllowed(key, windowSize, maxRequests), Is.True,
+                    $"Request {i + 1} should be allowed");
+                System.Threading.Thread.Sleep(delayBetweenRequests);
+            }
+
+            System.Threading.Thread.Sleep(windowSize + 50);
+
+            Assert.That(RateLimitingHelper.IsAllowed(key, windowSize, maxRequests), Is.True,
+                "Request after sliding window should be allowed");
+        }
+
+        [Test]
+        public void ShouldHandleSlidingWindowWithBurstRequests()
+        {
+            // Arrange
+            string key = "test_key";
+            int windowSize = 1000;
+            int maxRequests = 5;
+
+            // Initial burst of requests
+            for (int i = 0; i < maxRequests; i++)
+            {
+                Assert.That(RateLimitingHelper.IsAllowed(key, windowSize, maxRequests), Is.True,
+                    $"Initial request {i + 1} should be allowed");
+            }
+
+            // Wait for half the window
+            System.Threading.Thread.Sleep(windowSize / 2);
+
+            // These requests should be denied as we're still within the window
+            Assert.That(RateLimitingHelper.IsAllowed(key, windowSize, maxRequests), Is.False,
+                "Request should be denied during mid-window");
+            Assert.That(RateLimitingHelper.IsAllowed(key, windowSize, maxRequests), Is.False,
+                "Request should be denied during mid-window");
+            Assert.That(RateLimitingHelper.IsAllowed(key, windowSize, maxRequests), Is.False,
+                "Request should be denied during mid-window");
+
+            // Wait for the remaining window
+            System.Threading.Thread.Sleep(windowSize / 2 + 50);
+
+            // Should allow 2 requests as older ones have expired
+            Assert.That(RateLimitingHelper.IsAllowed(key, windowSize, maxRequests), Is.True,
+                "First request after partial window expiry should be allowed");
+            Assert.That(RateLimitingHelper.IsAllowed(key, windowSize, maxRequests), Is.True,
+                "Second request after partial window expiry should be allowed");
+            Assert.That(RateLimitingHelper.IsAllowed(key, windowSize, maxRequests), Is.False,
+                "Third request should be denied");
+
+            // Wait for full window
+            System.Threading.Thread.Sleep(windowSize + 50);
+
+            Assert.That(RateLimitingHelper.IsAllowed(key, windowSize, maxRequests), Is.True,
+                "Request after full window expiry should be allowed");
+        }
+
+        [Test]
+        public void ShouldHandleDifferentWindowSizes()
+        {
+            // Arrange
+            string key = "test_key";
+            int windowSize = 1000; // 1 second window
+            int maxRequests = 5;
+
+            // Act & Assert
+            for (int i = 0; i < maxRequests; i++)
+            {
+                Assert.That(RateLimitingHelper.IsAllowed(key, windowSize, maxRequests), Is.True,
+                    $"Request {i + 1} should be allowed");
+            }
+
+            Assert.That(RateLimitingHelper.IsAllowed(key, windowSize, maxRequests), Is.False,
+                $"Request {maxRequests + 1} should not be allowed");
+        }
+
+        [Test]
+        public void ShouldHandleSlidingWindowEdgeCase()
+        {
+            // Arrange
+            string key = "test_key";
+            int windowSize = 1000;
+            int maxRequests = 5;
+
+            // Act & Assert
+            for (int i = 0; i < maxRequests; i++)
+            {
+                Assert.That(RateLimitingHelper.IsAllowed(key, windowSize, maxRequests), Is.True,
+                    $"Request {i + 1} should be allowed");
+            }
+
+            System.Threading.Thread.Sleep(windowSize + 50);
+
+            Assert.That(RateLimitingHelper.IsAllowed(key, windowSize, maxRequests), Is.True,
+                "Request after first window should be allowed");
+
+            System.Threading.Thread.Sleep(windowSize + 50);
+
+            Assert.That(RateLimitingHelper.IsAllowed(key, windowSize, maxRequests), Is.True,
+                "Request after second window should be allowed");
         }
     }
 }
