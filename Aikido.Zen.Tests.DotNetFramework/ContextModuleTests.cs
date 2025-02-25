@@ -5,6 +5,12 @@ using Moq;
 using NUnit.Framework;
 using System.Collections.Generic;
 using Aikido.Zen.DotNetFramework.HttpModules;
+using Aikido.Zen.Core;
+using Aikido.Zen.Core.Models;
+using Aikido.Zen.Core.Helpers;
+using Aikido.Zen.Tests.Mocks;
+using System.IO;
+using System.Reflection;
 
 namespace Aikido.Zen.Tests.DotNetFramework
 {
@@ -21,10 +27,10 @@ namespace Aikido.Zen.Tests.DotNetFramework
         }
 
         [Test]
-        public void GetParametrizedRoute_ReturnsCorrectRoutePattern_ForStaticFiles ()
+        public void GetParametrizedRoute_ReturnsCorrectRoutePattern_ForStaticFiles()
         {
             // Arrange
-            RouteTable.Routes.Add(new Route("static/file.js", new StopRoutingHandler()));
+            RouteTable.Routes.Add(new System.Web.Routing.Route("static/file.js", new StopRoutingHandler()));
             _mockHttpContext = new HttpContext(new HttpRequest(string.Empty, "http://test.local/static/file.js", string.Empty), new HttpResponse(null));
 
             // Act
@@ -35,10 +41,10 @@ namespace Aikido.Zen.Tests.DotNetFramework
         }
 
         [Test]
-        public void GetParametrizedRoute_ReturnsCorrectRoutePattern_ForRouteParameters ()
+        public void GetParametrizedRoute_ReturnsCorrectRoutePattern_ForRouteParameters()
         {
             // Arrange
-            RouteTable.Routes.Add(new Route("api/items/{id}", new StopRoutingHandler()));
+            RouteTable.Routes.Add(new System.Web.Routing.Route("api/items/{id}", new StopRoutingHandler()));
             _mockHttpContext = new HttpContext(new HttpRequest(string.Empty, "http://test.local/api/items/123", string.Empty), new HttpResponse(null));
 
             // Act
@@ -49,10 +55,10 @@ namespace Aikido.Zen.Tests.DotNetFramework
         }
 
         [Test]
-        public void GetParametrizedRoute_ReturnsCorrectRoutePattern ()
+        public void GetParametrizedRoute_ReturnsCorrectRoutePattern()
         {
             // Arrange
-            RouteTable.Routes.Add(new Route("api/test", new StopRoutingHandler()));
+            RouteTable.Routes.Add(new System.Web.Routing.Route("api/test", new StopRoutingHandler()));
             _mockHttpContext = new HttpContext(new HttpRequest(string.Empty, "http://test.local/api/test", string.Empty), new HttpResponse(null));
 
             // Act

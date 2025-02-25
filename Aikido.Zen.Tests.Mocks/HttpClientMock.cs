@@ -6,7 +6,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Aikido.Zen.Test.Mocks
+namespace Aikido.Zen.Tests.Mocks
 {
     public static class HttpClientMock
     {

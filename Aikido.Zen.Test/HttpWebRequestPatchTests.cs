@@ -1,7 +1,7 @@
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Patches;
-using Aikido.Zen.Test.Mocks;
+using Aikido.Zen.Tests.Mocks;
 using Moq;
 using System.Net;
 
