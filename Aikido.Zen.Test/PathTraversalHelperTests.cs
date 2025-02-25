@@ -2,6 +2,7 @@ using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Exceptions;
 using System.Web;
 using Aikido.Zen.Core;
+using Aikido.Zen.Tests.Mocks;
 
 namespace Aikido.Zen.Test.Helpers
 {
@@ -22,7 +23,7 @@ namespace Aikido.Zen.Test.Helpers
                 Body = new MemoryStream()
             };
             Environment.SetEnvironmentVariable("AIKIDO_TOKEN", "test-token");
-            Agent.NewInstance(Mocks.ZenApiMock.CreateMock().Object);
+            Agent.NewInstance(ZenApiMock.CreateMock().Object);
         }
 
         [Test]

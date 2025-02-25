@@ -144,6 +144,10 @@
       <Project>{e25d0127-765e-49e7-85e5-4b45e19499b2}</Project>
       <Name>Aikido.Zen.DotNetFramework</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Aikido.Zen.Tests.Mocks\Aikido.Zen.Tests.Mocks.csproj">
+      <Project>{e9404338-175f-49b6-81fa-55acbf93f1de}</Project>
+      <Name>Aikido.Zen.Tests.Mocks</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets" Condition="Exists('$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets')" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -4,7 +4,7 @@ using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Models.Events;
 using Moq;
-using Aikido.Zen.Test.Mocks;
+using Aikido.Zen.Tests.Mocks;
 
 namespace Aikido.Zen.Test.Helpers
 {
