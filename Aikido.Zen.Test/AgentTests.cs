@@ -685,16 +685,29 @@ namespace Aikido.Zen.Test
             var configVersion = 123L;
 
             // Create config response for endpoints and other settings
+            // Create config response for endpoints and other settings
             var apiResponse = new ReportingAPIResponse
             {
                 Block = block,
                 BlockedUserIds = blockedUsers,
-                Endpoints = endpoints
+                Endpoints = endpoints,
                 BypassedIPAddresses = bypassedIPs,
             };
 
+            // Create firewall lists response for bypassed IPs
+            var allowedIPList = new FirewallListsAPIResponse.IPList
+            {
+                Source = "test",
+                Description = "test bypassed IPs",
+                Ips = bypassedIPs
+            };
+            var firewallListsResponse = new FirewallListsAPIResponse(
+                allowedIPAddresses: new[] { allowedIPList }
+            );
+
             // Act
             _agent.Context.UpdateConfig(apiResponse);
+            _agent.Context.UpdateFirewallLists(firewallListsResponse);
 
             // Assert
             Assert.Multiple(() =>
@@ -813,16 +826,21 @@ namespace Aikido.Zen.Test
             var ip = "192.168.1.100";
 
             // Create config response for endpoints and other settings
+            // Create config response for endpoints and other settings
             var apiResponse = new ReportingAPIResponse
             {
                 Block = block,
                 BlockedUserIds = blockedUsers,
-                Endpoints = endpoints
+                Endpoints = endpoints,
                 BypassedIPAddresses = bypassedIPs,
             };
+            var firewallListsResponse = new FirewallListsAPIResponse(
+                allowedIPAddresses: new[] { allowedIPList }
+            );
 
             // First update with bypassed IPs
             _agent.Context.UpdateConfig(apiResponse);
+            _agent.Context.UpdateFirewallLists(firewallListsResponse);
             Assert.That(_agent.Context.BlockList.IsBypassedIP(ip), Is.True, "IP should be bypassed initially");
 
             // Act - update with empty bypassed IPs
@@ -870,8 +888,13 @@ namespace Aikido.Zen.Test
                 Ips = bypassedIPs
             };
 
+            var firewallListsResponse = new FirewallListsAPIResponse(
+                allowedIPAddresses: new[] { allowedIPList }
+            );
+
             // Act - Initial config with bypassed ips
             _agent.Context.UpdateConfig(apiResponse);
+            _agent.Context.UpdateFirewallLists(firewallListsResponse);
 
             // Assert - Check allowed ips functionality
             Assert.Multiple(() =>
