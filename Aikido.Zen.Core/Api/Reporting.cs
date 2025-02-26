@@ -68,14 +68,14 @@ namespace Aikido.Zen.Core.Api
                     var response = await _httpClient.SendAsync(request, cts.Token);
                     return APIHelper.ToAPIResponse<FirewallListsAPIResponse>(response);
                 }
-                catch (TaskCanceledException)
+                catch (TaskCanceledException e)
                 {
                     if (!cts.Token.IsCancellationRequested)
                         return new FirewallListsAPIResponse { Success = false, Error = "timeout" };
 
                     throw;
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
                     throw;
                 }
