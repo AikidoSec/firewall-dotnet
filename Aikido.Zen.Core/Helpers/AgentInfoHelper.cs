@@ -49,6 +49,7 @@ namespace Aikido.Zen.Core.Helpers
         {
             // remove the build number
             version = version.Split('+')[0];
+            // remove 4th version number, not used by nuget
             version = string.Join(".", version.Split('.').Take(3));
             // remove the prerelease version
             version = version.Split('-')[0];
