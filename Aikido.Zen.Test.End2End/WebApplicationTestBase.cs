@@ -42,14 +42,14 @@ namespace Aikido.Zen.Test.End2End
 
             // Setup mock server
             MockServerFactory = new WebApplicationFactory<Aikido.Zen.Server.Mock.MockServerStartup>();
-            MockServerClient = MockServerFactory.CreateClient();
+            // create a client for the sample app that handles gzip decompression
+            MockServerClient = MockServerFactory.CreateDefaultClient(new DecompressionDelegatingHandler());
 
-            // Create a new app and get the token
+            // Get a token from the mock server
             var response = await MockServerClient.PostAsync("/api/runtime/apps", null);
             response.EnsureSuccessStatusCode();
-            var appResponse = await response.Content.ReadFromJsonAsync<AppResponse>();
-            MockServerToken = appResponse.Token;
-            MockServerClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", MockServerToken);
+            MockServerToken = (await response.Content.ReadFromJsonAsync<IDictionary<string, string>>())?["token"] ?? "test-token";
+            MockServerClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue(MockServerToken);
 
             // Set environment variable for the sample app
             SampleAppEnvironmentVariables["AIKIDO_TOKEN"] = MockServerToken;
@@ -153,6 +153,35 @@ namespace Aikido.Zen.Test.End2End
             /// The token for the created app
             /// </summary>
             public string Token { get; set; }
+        }
+    }
+
+    public class DecompressionDelegatingHandler : DelegatingHandler
+    {
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var response = await base.SendAsync(request, cancellationToken);
+
+            if (response.Content.Headers.ContentEncoding.LastOrDefault() == "gzip")
+            {
+                response.Content = CreateGZipDecompressedContent(response.Content);
+            }
+
+            return response;
+        }
+
+        private static HttpContent CreateGZipDecompressedContent(HttpContent originalContent)
+        {
+            var assembly = typeof(HttpClient).Assembly;
+
+            const string typeName = "System.Net.Http.DecompressionHandler+GZipDecompressedContent";
+            var gZipDecompressedContentType = assembly.GetType(typeName);
+            if (gZipDecompressedContentType == null)
+            {
+                throw new InvalidOperationException($"Failed to find type '{typeName}'");
+            }
+
+            return (HttpContent)Activator.CreateInstance(gZipDecompressedContentType, originalContent);
         }
     }
 }
