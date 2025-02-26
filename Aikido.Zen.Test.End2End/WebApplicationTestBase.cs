@@ -51,13 +51,6 @@ namespace Aikido.Zen.Test.End2End
             MockServerToken = (await response.Content.ReadFromJsonAsync<IDictionary<string, string>>())?["token"] ?? "test-token";
             MockServerClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue(MockServerToken);
 
-            // Create a new app and get the token
-            var response = await MockServerClient.PostAsync("/api/runtime/apps", null);
-            response.EnsureSuccessStatusCode();
-            var appResponse = await response.Content.ReadFromJsonAsync<AppResponse>();
-            MockServerToken = appResponse.Token;
-            MockServerClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", MockServerToken);
-
             // Set environment variable for the sample app
             SampleAppEnvironmentVariables["AIKIDO_TOKEN"] = MockServerToken;
             // set the base url for the mock server
