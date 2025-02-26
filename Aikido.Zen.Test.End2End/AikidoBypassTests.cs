@@ -1,9 +1,8 @@
 using Microsoft.AspNetCore.Mvc.Testing;
 using NUnit.Framework;
 using System.Net;
-using System.Net.Http.Headers;
+using Aikido.Zen.DotNetCore;
 using System.Net.Http.Json;
-using Aikido.Zen.Server.Mock.Models;
 using SQLiteSampleApp;
 
 namespace Aikido.Zen.Test.End2End
@@ -20,6 +19,14 @@ namespace Aikido.Zen.Test.End2End
             var factory = new WebApplicationFactory<SQLiteStartup>()
                 .WithWebHostBuilder(builder =>
                 {
+                    builder.ConfigureServices(services =>
+                    {
+                        services.AddZenFirewall(options =>
+                        {
+                            // add our mocked http client
+                            options.UseHttpClient(MockServerClient);
+                        });
+                    });
                     builder.ConfigureAppConfiguration((context, config) =>
                     {
                         foreach (var envVar in SampleAppEnvironmentVariables)
@@ -47,15 +54,15 @@ namespace Aikido.Zen.Test.End2End
             // Configure mock server to return config with bypass IP
             var firewallLists = new Dictionary<string, object>
             {
-                ["allowedIPAddresses"] = new List<string> { "127.0.0.1" }
+                ["allowedIPAddresses"] = new List<string> { "123.123.123.123" }
             };
             SampleAppEnvironmentVariables["AIKIDO_BLOCK"] = "true";
-            SampleAppClient = CreateSampleAppFactory().CreateClient();
             await MockServerClient.PostAsJsonAsync("/api/runtime/firewall/lists", firewallLists);
+            SampleAppClient = CreateSampleAppFactory().CreateClient();
 
             var unsafePayload = new { Name = "Malicious Pet', 'Gru from the Minions'); -- " };
             var request = new HttpRequestMessage(HttpMethod.Post, "/api/pets/create");
-            request.Headers.Add("X-Forwarded-For", "127.0.0.1");
+            request.Headers.Add("X-Forwarded-For", "123.123.123.123");
             request.Content = JsonContent.Create(unsafePayload);
 
             // Act
@@ -97,7 +104,7 @@ namespace Aikido.Zen.Test.End2End
             // Configure mock server to return config with bypass IP ranges
             var firewallLists = new Dictionary<string, object>
             {
-                ["allowedIPAddresses"] = new List<string> { "10.0.0.0/8", "192.168.0.0/16", "172.16.0.0/12" }
+                ["allowedIPAddresses"] = new List<string> { "10.0.0.0/8", "123.123.123.0/16", "172.16.0.0/12" }
             };
             SampleAppEnvironmentVariables["AIKIDO_BLOCK"] = "true";
             SampleAppClient = CreateSampleAppFactory().CreateClient();
@@ -105,7 +112,7 @@ namespace Aikido.Zen.Test.End2End
 
             var unsafePayload = new { Name = "Malicious Pet', 'Gru from the Minions'); -- " };
             var request = new HttpRequestMessage(HttpMethod.Post, "/api/pets/create");
-            request.Headers.Add("X-Forwarded-For", "192.168.1.100"); // IP within the 192.168.0.0/16 range
+            request.Headers.Add("X-Forwarded-For", "123.123.123.123"); // IP within the 123.123.123.0/16 range
             request.Content = JsonContent.Create(unsafePayload);
 
             // Act
