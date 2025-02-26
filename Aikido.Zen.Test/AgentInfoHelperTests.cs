@@ -131,5 +131,32 @@ namespace Aikido.Zen.Test.Helpers
                 Environment.SetEnvironmentVariable(variable, value);
             }
         }
+
+        [Test]
+        public void CleanVersion_ShouldRemoveBuildNumber()
+        {
+            var version = "1.2.3+4";
+            var otherVersion = "1.2.3.0";
+            var cleanedVersion = AgentInfoHelper.CleanVersion(version);
+            var cleanedOtherVersion = AgentInfoHelper.CleanVersion(otherVersion);
+            Assert.That(cleanedVersion, Is.EqualTo("1.2.3"));
+            Assert.That(cleanedOtherVersion, Is.EqualTo("1.2.3"));
+        }
+
+        [Test]
+        public void CleanVersion_ShouldRemovePrereleaseVersion()
+        {
+            var version = "1.2.3-alpha";
+            var cleanedVersion = AgentInfoHelper.CleanVersion(version);
+            Assert.That(cleanedVersion, Is.EqualTo("1.2.3"));
+        }
+
+        [Test]
+        public void CleanVersion_ShouldRemoveBuildNumberAndPrereleaseVersion()
+        {
+            var version = "1.2.3+4-alpha";
+            var cleanedVersion = AgentInfoHelper.CleanVersion(version);
+            Assert.That(cleanedVersion, Is.EqualTo("1.2.3"));
+        }
     }
 }
