@@ -110,7 +110,7 @@ namespace Aikido.Zen.Core
             });
 
             // get blocked ip list and add to context
-            Task.Run(UpdateBlockedIps);
+            Task.Run(async () => await UpdateBlockedIps()).GetAwaiter().GetResult();
 
             // Schedule heartbeat event every x minutes
             var scheduledHeartBeat = new ScheduledItem
@@ -547,10 +547,10 @@ namespace Aikido.Zen.Core
         {
             if (string.IsNullOrEmpty(EnvironmentHelper.Token))
                 return;
-            var blockedIPsResponse = await _api.Reporting.GetBlockedIps(EnvironmentHelper.Token);
-            if (blockedIPsResponse.Success && blockedIPsResponse.BlockedIPAddresses != null)
+            var firewallListsResponse = await _api.Reporting.GetFirewallLists(EnvironmentHelper.Token);
+            if (firewallListsResponse.Success)
             {
-                _context.UpdateBlockedIps(blockedIPsResponse.Ips);
+                _context.UpdateFirewallLists(firewallListsResponse);
             }
         }
 

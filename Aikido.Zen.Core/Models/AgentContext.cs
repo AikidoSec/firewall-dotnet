@@ -164,20 +164,22 @@ namespace Aikido.Zen.Core.Models
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", response.Block ? "true" : "false");
             UpdateBlockedUsers(response.BlockedUserIds);
             BlockList.UpdateAllowedForEndpointSubnets(response.Endpoints);
-            BlockList.UpdateAllowedSubnets(response.BypassedIPAddresses);
             UpdateRatelimitedRoutes(response.Endpoints);
             UpdateBlockedUserAgents(response.BlockedUserAgentsRegex);
             ConfigLastUpdated = response.ConfigUpdatedAt;
         }
 
-        public void UpdateBlockedIps(IEnumerable<string> blockedIPs)
+        public void UpdateFirewallLists(FirewallListsAPIResponse response)
         {
-            if (blockedIPs == null)
+            if (response == null)
             {
-                BlockList.UpdateBlockedSubnets(new List<string>());
+                BlockList.UpdateBlockedIps(new List<string>());
+                BlockList.UpdateBypassedIps(new List<string>());
                 return;
             }
-            BlockList.UpdateBlockedSubnets(blockedIPs);
+            BlockList.UpdateBlockedIps(response.BlockedIps);
+            BlockList.UpdateBypassedIps(response.AllowedIps);
+            UpdateBlockedUserAgents(response.BlockedUserAgents != null ? new Regex(response.BlockedUserAgents) : null);
         }
 
         public void UpdateBlockedUserAgents(Regex blockedUserAgents)

@@ -45,13 +45,13 @@ namespace Aikido.Zen.Test.End2End
         {
             // Arrange
             // Configure mock server to return config with bypass IP
-            var config = new EndpointConfig
+            var firewallLists = new Dictionary<string, object>
             {
-                AllowedIPAddresses = new[] { "127.0.0.1" }
+                ["allowedIPAddresses"] = new List<string> { "127.0.0.1" }
             };
             SampleAppEnvironmentVariables["AIKIDO_BLOCK"] = "true";
             SampleAppClient = CreateSampleAppFactory().CreateClient();
-            await MockServerClient.PutAsJsonAsync("/api/runtime/config", config);
+            await MockServerClient.PostAsJsonAsync("/api/runtime/firewall/lists", firewallLists);
 
             var unsafePayload = new { Name = "Malicious Pet', 'Gru from the Minions'); -- " };
             var request = new HttpRequestMessage(HttpMethod.Post, "/api/pets/create");
@@ -70,13 +70,13 @@ namespace Aikido.Zen.Test.End2End
         {
             // Arrange
             // Configure mock server to return config without bypass IP
-            var config = new EndpointConfig
+            var firewallLists = new Dictionary<string, object>
             {
-                AllowedIPAddresses = Array.Empty<string>()
+                ["allowedIPAddresses"] = new List<string>()
             };
             SampleAppEnvironmentVariables["AIKIDO_BLOCK"] = "true";
             SampleAppClient = CreateSampleAppFactory().CreateClient();
-            await MockServerClient.PutAsJsonAsync("/api/runtime/config", config);
+            await MockServerClient.PostAsJsonAsync("/api/runtime/firewall/lists", firewallLists);
 
             var unsafePayload = new { Name = "Malicious Pet', 'Gru from the Minions'); -- " };
             var request = new HttpRequestMessage(HttpMethod.Post, "/api/pets/create");
@@ -95,13 +95,13 @@ namespace Aikido.Zen.Test.End2End
         {
             // Arrange
             // Configure mock server to return config with bypass IP ranges
-            var config = new EndpointConfig
+            var firewallLists = new Dictionary<string, object>
             {
-                AllowedIPAddresses = new[] { "10.0.0.0/8", "192.168.0.0/16", "172.16.0.0/12" }
+                ["allowedIPAddresses"] = new List<string> { "10.0.0.0/8", "192.168.0.0/16", "172.16.0.0/12" }
             };
             SampleAppEnvironmentVariables["AIKIDO_BLOCK"] = "true";
             SampleAppClient = CreateSampleAppFactory().CreateClient();
-            await MockServerClient.PutAsJsonAsync("/api/runtime/config", config);
+            await MockServerClient.PostAsJsonAsync("/api/runtime/firewall/lists", firewallLists);
 
             var unsafePayload = new { Name = "Malicious Pet', 'Gru from the Minions'); -- " };
             var request = new HttpRequestMessage(HttpMethod.Post, "/api/pets/create");
@@ -120,17 +120,17 @@ namespace Aikido.Zen.Test.End2End
         {
             // Arrange
             // Configure mock server to return config with bypass IPv6
-            var config = new EndpointConfig
+            var firewallLists = new Dictionary<string, object>
             {
-                AllowedIPAddresses = new[] { "::1" }
+                ["allowedIPAddresses"] = new List<string> { "2001:4860:4860::8888" } // Using a public IPv6 address (Google Public DNS)
             };
             SampleAppEnvironmentVariables["AIKIDO_BLOCK"] = "true";
-            await MockServerClient.PutAsJsonAsync("/api/runtime/config", config);
+            var result = await MockServerClient.PostAsJsonAsync("/api/runtime/firewall/lists", firewallLists);
             SampleAppClient = CreateSampleAppFactory().CreateClient();
 
             var unsafePayload = new { Name = "Malicious Pet', 'Gru from the Minions'); -- " };
             var request = new HttpRequestMessage(HttpMethod.Post, "/api/pets/create");
-            request.Headers.Add("X-Forwarded-For", "::1");
+            request.Headers.Add("X-Forwarded-For", "2001:4860:4860::8888"); // Using the same public IPv6 address
             request.Content = JsonContent.Create(unsafePayload);
 
             // Act
@@ -145,12 +145,12 @@ namespace Aikido.Zen.Test.End2End
         {
             // Arrange
             // Configure mock server to return config without bypass IPv6
-            var config = new EndpointConfig
+            var firewallLists = new Dictionary<string, object>
             {
-                AllowedIPAddresses = Array.Empty<string>()
+                ["allowedIPAddresses"] = new List<string>()
             };
             SampleAppEnvironmentVariables["AIKIDO_BLOCK"] = "true";
-            await MockServerClient.PutAsJsonAsync("/api/runtime/config", config);
+            await MockServerClient.PostAsJsonAsync("/api/runtime/firewall/lists", firewallLists);
             SampleAppClient = CreateSampleAppFactory().CreateClient();
 
             var unsafePayload = new { Name = "Malicious Pet', 'Gru from the Minions'); -- " };
