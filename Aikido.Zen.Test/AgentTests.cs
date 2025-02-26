@@ -644,7 +644,7 @@ namespace Aikido.Zen.Test
             await _agent.UpdateBlockedIps();
 
             // Assert
-            _zenApiMock.Verify(x => x.Reporting.GetBlockedIps(It.IsAny<string>()), Times.Never);
+            _zenApiMock.Verify(x => x.Reporting.GetFirewallLists(It.IsAny<string>()), Times.Never);
         }
 
         [Test]
@@ -684,16 +684,28 @@ namespace Aikido.Zen.Test
             };
             var configVersion = 123L;
 
+            // Create config response for endpoints and other settings
             var apiResponse = new ReportingAPIResponse
             {
                 Block = block,
                 BlockedUserIds = blockedUsers,
-                BypassedIPAddresses = bypassedIPs,
                 Endpoints = endpoints
             };
 
+            // Create firewall lists response for bypassed IPs
+            var allowedIPList = new FirewallListsAPIResponse.IPList
+            {
+                Source = "test",
+                Description = "test bypassed IPs",
+                Ips = bypassedIPs
+            };
+            var firewallListsResponse = new FirewallListsAPIResponse(
+                allowedIPAddresses: new[] { allowedIPList }
+            );
+
             // Act
             _agent.Context.UpdateConfig(apiResponse);
+            _agent.Context.UpdateFirewallLists(firewallListsResponse);
 
             // Assert
             Assert.Multiple(() =>
@@ -724,16 +736,28 @@ namespace Aikido.Zen.Test
             var ip = "192.168.1.100";
             var url = "GET|test";
 
+            // Create config response for endpoints and other settings
             var apiResponse = new ReportingAPIResponse
             {
                 Block = block,
                 BlockedUserIds = blockedUsers,
-                BypassedIPAddresses = bypassedIPs,
                 Endpoints = endpoints
             };
 
+            // Create firewall lists response for bypassed IPs
+            var allowedIPList = new FirewallListsAPIResponse.IPList
+            {
+                Source = "test",
+                Description = "test bypassed IPs",
+                Ips = bypassedIPs
+            };
+            var firewallListsResponse = new FirewallListsAPIResponse(
+                allowedIPAddresses: new[] { allowedIPList }
+            );
+
             // Act
             _agent.Context.UpdateConfig(apiResponse);
+            _agent.Context.UpdateFirewallLists(firewallListsResponse);
             _agent.Context.BlockList.AddIpAddressToBlocklist(ip); // Try to block the allowed IP
 
             // Assert
@@ -760,16 +784,28 @@ namespace Aikido.Zen.Test
             var ip = "192.168.1.100";
             var url = "GET|test";
 
+            // Create config response for endpoints and other settings
             var apiResponse = new ReportingAPIResponse
             {
                 Block = block,
                 BlockedUserIds = blockedUsers,
-                BypassedIPAddresses = bypassedIPs,
                 Endpoints = endpoints
             };
 
+            // Create firewall lists response for bypassed IPs
+            var allowedIPList = new FirewallListsAPIResponse.IPList
+            {
+                Source = "test",
+                Description = "test bypassed IPs",
+                Ips = bypassedIPs
+            };
+            var firewallListsResponse = new FirewallListsAPIResponse(
+                allowedIPAddresses: new[] { allowedIPList }
+            );
+
             // Act
             _agent.Context.UpdateConfig(apiResponse);
+            _agent.Context.UpdateFirewallLists(firewallListsResponse);
 
             // Assert
             Assert.That(_agent.Context.BlockList.IsBypassedIP(ip), Is.True, "Bypassed IP should bypass endpoint restrictions");
@@ -786,21 +822,32 @@ namespace Aikido.Zen.Test
             var configVersion = 123L;
             var ip = "192.168.1.100";
 
+            // Create config response for endpoints and other settings
             var apiResponse = new ReportingAPIResponse
             {
                 Block = block,
                 BlockedUserIds = blockedUsers,
-                BypassedIPAddresses = bypassedIPs,
                 Endpoints = endpoints
             };
 
+            // Create firewall lists response for bypassed IPs
+            var allowedIPList = new FirewallListsAPIResponse.IPList
+            {
+                Source = "test",
+                Description = "test bypassed IPs",
+                Ips = bypassedIPs
+            };
+            var firewallListsResponse = new FirewallListsAPIResponse(
+                allowedIPAddresses: new[] { allowedIPList }
+            );
+
             // First update with bypassed IPs
             _agent.Context.UpdateConfig(apiResponse);
+            _agent.Context.UpdateFirewallLists(firewallListsResponse);
             Assert.That(_agent.Context.BlockList.IsBypassedIP(ip), Is.True, "IP should be bypassed initially");
 
             // Act - update with empty bypassed IPs
-            apiResponse.BypassedIPAddresses = Array.Empty<string>();
-            _agent.Context.UpdateConfig(apiResponse);
+            _agent.Context.UpdateFirewallLists(new FirewallListsAPIResponse());
 
             // Assert
             Assert.That(_agent.Context.BlockList.IsBypassedIP(ip), Is.False, "Bypassed ip list should be cleared");
@@ -826,16 +873,28 @@ namespace Aikido.Zen.Test
             var ip = "192.168.1.100";
             var url = "GET|test";
 
+            // Create config response for endpoints and other settings
             var apiResponse = new ReportingAPIResponse
             {
                 Block = block,
                 BlockedUserIds = blockedUsers,
-                BypassedIPAddresses = bypassedIPs,
                 Endpoints = endpoints
             };
 
+            // Create firewall lists response for bypassed IPs
+            var allowedIPList = new FirewallListsAPIResponse.IPList
+            {
+                Source = "test",
+                Description = "test bypassed IPs",
+                Ips = bypassedIPs
+            };
+            var firewallListsResponse = new FirewallListsAPIResponse(
+                allowedIPAddresses: new[] { allowedIPList }
+            );
+
             // Act - Initial config with bypassed ips
             _agent.Context.UpdateConfig(apiResponse);
+            _agent.Context.UpdateFirewallLists(firewallListsResponse);
 
             // Assert - Check allowed ips functionality
             Assert.Multiple(() =>
@@ -856,8 +915,7 @@ namespace Aikido.Zen.Test
             });
 
             // Act - Update config to clear bypassed ips
-            apiResponse.BypassedIPAddresses = Array.Empty<string>();
-            _agent.Context.UpdateConfig(apiResponse);
+            _agent.Context.UpdateFirewallLists(new FirewallListsAPIResponse());
 
             // Assert - Verify bypassed ips is cleared and blocking is restored
             Assert.Multiple(() =>
@@ -887,16 +945,28 @@ namespace Aikido.Zen.Test
             var ip = "192.168.1.100";
             var url = "GET|test";
 
+            // Create config response for endpoints and other settings
             var apiResponse = new ReportingAPIResponse
             {
                 Block = block,
                 BlockedUserIds = blockedUsers,
-                BypassedIPAddresses = bypassedIPs,
                 Endpoints = endpoints
             };
 
+            // Create firewall lists response for bypassed IPs
+            var allowedIPList = new FirewallListsAPIResponse.IPList
+            {
+                Source = "test",
+                Description = "test bypassed IPs",
+                Ips = bypassedIPs
+            };
+            var firewallListsResponse = new FirewallListsAPIResponse(
+                allowedIPAddresses: new[] { allowedIPList }
+            );
+
             // Act
             _agent.Context.UpdateConfig(apiResponse);
+            _agent.Context.UpdateFirewallLists(firewallListsResponse);
             _agent.Context.BlockList.AddIpAddressToBlocklist(ip);
 
             // Assert

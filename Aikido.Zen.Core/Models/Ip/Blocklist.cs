@@ -59,7 +59,7 @@ namespace Aikido.Zen.Core.Models.Ip
         /// Updates the blocked subnet ranges.
         /// </summary>
         /// <param name="subnets">The subnet ranges to block.</param>
-        public void UpdateBlockedSubnets(IEnumerable<string> subnets)
+        public void UpdateBlockedIps(IEnumerable<string> subnets)
         {
             _lock.EnterWriteLock();
             try
@@ -83,7 +83,7 @@ namespace Aikido.Zen.Core.Models.Ip
         /// Updates the allowed ip addresses or ranges, they bypass all blocking rules
         /// </summary>
         /// <param name="subnets">The ip addresses or ranges to allow.</param>
-        public void UpdateAllowedSubnets(IEnumerable<string> subnets)
+        public void UpdateBypassedIps(IEnumerable<string> subnets)
 
         {
             _lock.EnterWriteLock();

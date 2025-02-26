@@ -23,7 +23,7 @@ namespace Aikido.Zen.Test
             var subnets = new[] { subnet1, subnet2 };
 
             // Act
-            _blockList.UpdateBlockedSubnets(subnets);
+            _blockList.UpdateBlockedIps(subnets);
 
             // Assert
             Assert.That(_blockList.IsIPBlocked("192.168.1.100"));
@@ -36,10 +36,10 @@ namespace Aikido.Zen.Test
         {
             // Arrange
             var subnet = "192.168.1.0/24";
-            _blockList.UpdateBlockedSubnets(new[] { subnet });
+            _blockList.UpdateBlockedIps(new[] { subnet });
 
             // Act
-            _blockList.UpdateBlockedSubnets(Array.Empty<string>());
+            _blockList.UpdateBlockedIps(Array.Empty<string>());
 
             // Assert
             Assert.That(_blockList.IsIPBlocked("192.168.1.100"), Is.False);
@@ -170,8 +170,8 @@ namespace Aikido.Zen.Test
                 }
             };
 
-            _blockList.UpdateBlockedSubnets(new[] { "192.168.1.0/24" });
-            _blockList.UpdateAllowedSubnets(new[] { "10.10.10.10" });
+            _blockList.UpdateBlockedIps(new[] { "192.168.1.0/24" });
+            _blockList.UpdateBypassedIps(new[] { "10.10.10.10" });
             _blockList.AddIpAddressToBlocklist("192.168.1.101");
             _blockList.UpdateAllowedForEndpointSubnets(endpoints);
 
@@ -232,7 +232,7 @@ namespace Aikido.Zen.Test
             var subnets = new[] { "192.168.1.0/24", "10.0.0.0/8" };
 
             // Act
-            _blockList.UpdateAllowedSubnets(subnets);
+            _blockList.UpdateBypassedIps(subnets);
 
             // Assert
             Assert.That(_blockList.IsBypassedIP("192.168.1.100"), Is.True);
@@ -245,7 +245,7 @@ namespace Aikido.Zen.Test
         {
             // Arrange
             var subnets = new[] { "192.168.1.0/24" };
-            _blockList.UpdateAllowedSubnets(subnets);
+            _blockList.UpdateBypassedIps(subnets);
 
             // Act & Assert
             Assert.That(_blockList.IsBypassedIP("invalid.ip"), Is.False);
@@ -277,7 +277,7 @@ namespace Aikido.Zen.Test
             _blockList.UpdateAllowedForEndpointSubnets(endpoints);
 
             // Add IP to allow
-            _blockList.UpdateAllowedSubnets(new[] { "192.168.1.0/24" });
+            _blockList.UpdateBypassedIps(new[] { "192.168.1.0/24" });
 
             // Act & Assert
             Assert.That(_blockList.IsBlocked(ip, url), Is.False, "Allowed IP should bypass all blocking");
@@ -301,7 +301,7 @@ namespace Aikido.Zen.Test
             _blockList.UpdateAllowedForEndpointSubnets(endpoints);
 
             // Add IP to allow
-            _blockList.UpdateAllowedSubnets(new[] { "192.168.1.0/24" });
+            _blockList.UpdateBypassedIps(new[] { "192.168.1.0/24" });
 
             // Act & Assert
             Assert.That(_blockList.IsBlocked(ip, url), Is.False, "Allowed IP should bypass endpoint restrictions");
@@ -312,11 +312,11 @@ namespace Aikido.Zen.Test
         {
             // Arrange
             var ip = "192.168.1.100";
-            _blockList.UpdateAllowedSubnets(new[] { "192.168.1.0/24" });
+            _blockList.UpdateBypassedIps(new[] { "192.168.1.0/24" });
             Assert.That(_blockList.IsBypassedIP(ip), Is.True, "IP should be allowed initially");
 
             // Act
-            _blockList.UpdateAllowedSubnets(Array.Empty<string>());
+            _blockList.UpdateBypassedIps(Array.Empty<string>());
 
             // Assert
             Assert.That(_blockList.IsBypassedIP(ip), Is.False, "AllowedIp list should be cleared");
@@ -341,7 +341,7 @@ namespace Aikido.Zen.Test
             _blockList.UpdateAllowedForEndpointSubnets(endpoints);
 
             // Add IP to allowed
-            _blockList.UpdateAllowedSubnets(new[] { "192.168.1.0/24" });
+            _blockList.UpdateBypassedIps(new[] { "192.168.1.0/24" });
 
             // Act & Assert
             Assert.That(_blockList.IsBlocked(ip, url), Is.False, "Allowed IP should bypass all blocking regardless of other conditions");

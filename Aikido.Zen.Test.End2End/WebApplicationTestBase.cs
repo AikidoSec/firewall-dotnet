@@ -19,7 +19,7 @@ namespace Aikido.Zen.Test.End2End
         protected HttpClient SampleAppClient { get; set; }
         protected HttpClient MockServerClient { get; private set; }
         protected WebApplicationFactory<Aikido.Zen.Server.Mock.MockServerStartup> MockServerFactory { get; private set; }
-        protected string MockServerToken => "test-token";
+        protected string MockServerToken = "test-token";
         protected const int MockServerPort = 3000;
 
         protected IDictionary<string, string> SampleAppEnvironmentVariables = new Dictionary<string, string>
@@ -43,6 +43,13 @@ namespace Aikido.Zen.Test.End2End
             // Setup mock server
             MockServerFactory = new WebApplicationFactory<Aikido.Zen.Server.Mock.MockServerStartup>();
             MockServerClient = MockServerFactory.CreateClient();
+
+            // Create a new app and get the token
+            var response = await MockServerClient.PostAsync("/api/runtime/apps", null);
+            response.EnsureSuccessStatusCode();
+            var appResponse = await response.Content.ReadFromJsonAsync<AppResponse>();
+            MockServerToken = appResponse.Token;
+            MockServerClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", MockServerToken);
 
             // Set environment variable for the sample app
             SampleAppEnvironmentVariables["AIKIDO_TOKEN"] = MockServerToken;
@@ -135,6 +142,17 @@ namespace Aikido.Zen.Test.End2End
             await sqlServer.StartAsync();
             DbContainers.Add(sqlServer);
             return sqlServer;
+        }
+
+        /// <summary>
+        /// Response model for app creation
+        /// </summary>
+        private class AppResponse
+        {
+            /// <summary>
+            /// The token for the created app
+            /// </summary>
+            public string Token { get; set; }
         }
     }
 }

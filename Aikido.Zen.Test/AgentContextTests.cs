@@ -403,9 +403,15 @@ namespace Aikido.Zen.Test
         {
             // Arrange
             var blockedIPs = new[] { "192.168.1.0/24", "10.0.0.1" };
+            var blockedIPList = new FirewallListsAPIResponse.IPList
+            {
+                Ips = blockedIPs,
+                Description = "Test"
+            };
+            var firewallAPiResponse = new FirewallListsAPIResponse(blockedIPAddresses: new[] { blockedIPList });
 
             // Act
-            _agentContext.UpdateBlockedIps(blockedIPs);
+            _agentContext.UpdateFirewallLists(firewallAPiResponse);
 
             // Assert
             Assert.Multiple(() =>
@@ -420,10 +426,18 @@ namespace Aikido.Zen.Test
         public void UpdateBlockedIps_WithNullInput_ShouldHandleGracefully()
         {
             // Arrange
-            _agentContext.UpdateBlockedIps(new[] { "192.168.1.1" });
+            var ips = new[] { "192.168.1.1" };
+            var ipList = new FirewallListsAPIResponse.IPList
+            {
+                Ips = ips,
+                Description = "Test"
+            };
+
+            var firewallListsAPIResponse = new FirewallListsAPIResponse(blockedIPAddresses: new[] { ipList });
+            _agentContext.UpdateFirewallLists(firewallListsAPIResponse);
 
             // Act
-            _agentContext.UpdateBlockedIps(null);
+            _agentContext.UpdateFirewallLists(null);
 
             // Assert
             Assert.That(_agentContext.BlockList.IsIPBlocked("192.168.1.1"), Is.False);
@@ -434,9 +448,15 @@ namespace Aikido.Zen.Test
         {
             // Arrange
             var blockedIPs = new[] { "invalid-ip", "192.168.1.1", "not-an-ip" };
+            var blockedIpList = new FirewallListsAPIResponse.IPList
+            {
+                Ips = blockedIPs,
+                Description = "Test"
+            };
+            var firewallAPiResponse = new FirewallListsAPIResponse(blockedIPAddresses: new[] { blockedIpList });
 
             // Act
-            _agentContext.UpdateBlockedIps(blockedIPs);
+            _agentContext.UpdateFirewallLists(firewallAPiResponse);
 
             // Assert
             Assert.Multiple(() =>

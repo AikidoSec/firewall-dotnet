@@ -9,7 +9,7 @@ namespace Aikido.Zen.Test
         private IZenApi _zenApi;
 
         [Test]
-        public async Task ReportingApiClient_ReportAsync_ShouldReturnSuccess()
+        public async Task ReportingApiClient_ReportAsync_ShouldReturnSuccess ()
         {
             // Arrange
             _zenApi = ZenApiMock.CreateMock().Object;
@@ -22,7 +22,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void ReportingApiClient_ReportAsync_ShouldThrowExceptionOnError()
+        public void ReportingApiClient_ReportAsync_ShouldThrowExceptionOnError ()
         {
             // Arrange
             _zenApi = ZenApiMock.CreateMockWithExceptions().Object;
@@ -32,7 +32,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public async Task RuntimeApiClient_GetConfigVersion_ShouldReturnSuccess()
+        public async Task RuntimeApiClient_GetConfigVersion_ShouldReturnSuccess ()
         {
             // Arrange
             _zenApi = ZenApiMock.CreateMock().Object;
@@ -45,7 +45,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void RuntimeApiClient_GetConfigVersion_ShouldThrowExceptionOnError()
+        public void RuntimeApiClient_GetConfigVersion_ShouldThrowExceptionOnError ()
         {
             // Arrange
             _zenApi = ZenApiMock.CreateMockWithExceptions().Object;
@@ -55,7 +55,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public async Task RuntimeApiClient_GetConfig_ShouldReturnSuccess()
+        public async Task RuntimeApiClient_GetConfig_ShouldReturnSuccess ()
         {
             // Arrange
             _zenApi = ZenApiMock.CreateMock().Object;
@@ -68,7 +68,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void RuntimeApiClient_GetConfig_ShouldThrowExceptionOnError()
+        public void RuntimeApiClient_GetConfig_ShouldThrowExceptionOnError ()
         {
             // Arrange
             _zenApi = ZenApiMock.CreateMockWithExceptions().Object;
@@ -78,26 +78,26 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public async Task ReportingApiClient_GetBlockedIps_ShouldReturnSuccess()
+        public async Task ReportingApiClient_GetBlockedIps_ShouldReturnSuccess ()
         {
             // Arrange
             _zenApi = ZenApiMock.CreateMock().Object;
 
             // Act
-            var result = await _zenApi.Reporting.GetBlockedIps("token");
+            var result = await _zenApi.Reporting.GetFirewallLists("token");
 
             // Assert
             Assert.That(result.Success);
         }
 
         [Test]
-        public void ReportingApiClient_GetBlockedIps_ShouldThrowExceptionOnError()
+        public void ReportingApiClient_GetBlockedIps_ShouldThrowExceptionOnError ()
         {
             // Arrange
             _zenApi = ZenApiMock.CreateMockWithExceptions().Object;
 
             // Act & Assert
-            Assert.ThrowsAsync<Exception>(async () => await _zenApi.Reporting.GetBlockedIps("token"));
+            Assert.ThrowsAsync<Exception>(async () => await _zenApi.Reporting.GetFirewallLists("token"));
         }
     }
 }

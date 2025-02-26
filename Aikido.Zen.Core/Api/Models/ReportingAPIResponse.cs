@@ -35,11 +35,6 @@ namespace Aikido.Zen.Core.Api
         public IEnumerable<string> AllowedIPAddresses { get; set; } = new List<string>();
 
         /// <summary>
-        /// Gets or sets the collection of bypassed IP addresses.
-        /// </summary>
-        public IEnumerable<string> BypassedIPAddresses { get; set; } = new List<string>();
-
-        /// <summary>
         /// Gets or sets the blocked user agents as a comma-separated list of regex patterns.
         /// e.g. "googlebot|bingbot|yahoo|aibot"
         /// </summary>
