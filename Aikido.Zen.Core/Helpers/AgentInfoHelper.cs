@@ -1,5 +1,6 @@
 using Aikido.Zen.Core.Models;
 using System;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 [assembly: InternalsVisibleTo("Aikido.Zen.Tests")]
