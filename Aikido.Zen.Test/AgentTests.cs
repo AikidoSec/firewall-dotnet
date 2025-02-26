@@ -689,12 +689,13 @@ namespace Aikido.Zen.Test
             {
                 Block = block,
                 BlockedUserIds = blockedUsers,
-                Endpoints = endpoints,
-                BypassedIPAddresses = bypassedIPs
+                Endpoints = endpoints
+                BypassedIPAddresses = bypassedIPs,
             };
 
             // Act
             _agent.Context.UpdateConfig(apiResponse);
+            _agent.Context.UpdateFirewallLists(firewallListsResponse);
 
             // Assert
             Assert.Multiple(() =>
@@ -817,12 +818,13 @@ namespace Aikido.Zen.Test
             {
                 Block = block,
                 BlockedUserIds = blockedUsers,
-                Endpoints = endpoints,
-                BypassedIPAddresses = bypassedIPs
+                Endpoints = endpoints
+                BypassedIPAddresses = bypassedIPs,
             };
 
             // First update with bypassed IPs
             _agent.Context.UpdateConfig(apiResponse);
+            _agent.Context.UpdateFirewallLists(firewallListsResponse);
             Assert.That(_agent.Context.BlockList.IsBypassedIP(ip), Is.True, "IP should be bypassed initially");
 
             // Act - update with empty bypassed IPs
@@ -858,8 +860,8 @@ namespace Aikido.Zen.Test
             {
                 Block = block,
                 BlockedUserIds = blockedUsers,
-                Endpoints = endpoints,
-                BypassedIPAddresses = bypassedIPs
+                Endpoints = endpoints
+                BypassedIPAddresses = bypassedIPs,
             };
 
             // Create firewall lists response for bypassed IPs
@@ -872,6 +874,7 @@ namespace Aikido.Zen.Test
 
             // Act - Initial config with bypassed ips
             _agent.Context.UpdateConfig(apiResponse);
+            _agent.Context.UpdateFirewallLists(firewallListsResponse);
 
             // Assert - Check allowed ips functionality
             Assert.Multiple(() =>

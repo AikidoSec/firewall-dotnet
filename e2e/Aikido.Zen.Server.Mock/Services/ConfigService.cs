@@ -78,7 +78,6 @@ public class ConfigService
             ["endpoints"] = new List<EndpointConfig>(),
             ["blockedUserIds"] = new List<string>(),
             ["allowedIPAddresses"] = _largeBlockedIpList,
-            ["bypassedIPAddresses"] = new List<string>(),
             ["receivedAnyStats"] = true
         };
     }
