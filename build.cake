@@ -9,7 +9,7 @@ var framework = Argument("framework", "");
 var solution = "./Aikido.Zen.sln";
 var projectName = "Aikido.Zen.Core";
 var zenInternalsVersion = "0.1.37";
-var libVersion = Argument("libVersion", "0.0.1-alpha5");
+var libVersion = Argument("libVersion", "1.2.0");
 
 var baseUrl = $"https://github.com/AikidoSec/zen-internals/releases/download/v{zenInternalsVersion}/";
 var librariesDir = $"./{projectName}/libraries";
