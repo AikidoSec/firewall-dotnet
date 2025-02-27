@@ -6,6 +6,15 @@
 var target = Argument("target", "Default");
 var configuration = Argument("configuration", "Release");
 var framework = Argument("framework", "");
+var sdkVersion = "";
+if (!string.IsNullOrEmpty(framework))
+{
+    var parts = framework.Split('.');
+    if (parts.Length >= 2)
+    {
+        sdkVersion = $"{parts[0]}.{parts[1]}";
+    }
+}
 var solution = "./Aikido.Zen.sln";
 var projectName = "Aikido.Zen.Core";
 var zenInternalsVersion = "0.1.37";
@@ -130,7 +139,6 @@ Task("Test")
             // skip tests for the wrong framework
             Information($"Running tests for {project.FullPath} on .NET Framework {framework}");
             if (framework.StartsWith("4.") && project.FullPath.Contains("DotNetCore"))
-
             {
                 Information($"Skipping test project {project.FullPath} for .NET Framework {framework}");
                 continue;
@@ -142,8 +150,17 @@ Task("Test")
             }
 
             var logFilePath = $"{coverageDir.FullPath}/test-results-{project.GetFilenameWithoutExtension()}.trx";
+            var outputLogPath = $"{coverageDir.FullPath}/test-output-{project.GetFilenameWithoutExtension()}.log";
+            var errorLogPath = $"{coverageDir.FullPath}/test-error-{project.GetFilenameWithoutExtension()}.log";
 
-            DotNetTest(project.FullPath, new DotNetTestSettings
+            // Create or clear the log files
+            System.IO.File.WriteAllText(outputLogPath, "");
+            System.IO.File.WriteAllText(errorLogPath, "");
+
+            var stdOutput = new List<string>();
+            var stdError = new List<string>();
+
+            var settings = new DotNetTestSettings
             {
                 SetupProcessSettings = processSettings =>
                 {
@@ -166,11 +183,74 @@ Task("Test")
                             .Append("/p:Exclude=[Aikido.Zen.Test]*");
                     }
                     // Increase verbosity to diagnostic for more information
-                    return args
-                        .Append("--verbosity diagnostic")
+                    args = args
+                        .Append("--verbosity detailed")
                         .Append($"--logger trx;LogFileName={logFilePath}");
+
+                    // If SDK version was extracted from framework argument, use it
+                    if (!string.IsNullOrEmpty(sdkVersion))
+                    {
+                        args = args.Append($"--sdk-version {sdkVersion}");
+                    }
+
+                    return args;
                 }
-            });
+            };
+
+            try
+            {
+                var process = StartAndReturnProcess(
+                    "dotnet",
+                    new ProcessSettings
+                    {
+                        Arguments = $"test {project.FullPath} --configuration {configuration} --no-build --no-restore --verbosity detailed --logger trx;LogFileName={logFilePath}",
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        Silent = true
+                    }
+                );
+
+                process.GetStandardOutput().ToList().ForEach(line =>
+                {
+                    stdOutput.Add(line);
+                    System.IO.File.AppendAllText(outputLogPath, line + Environment.NewLine);
+                });
+
+                process.GetStandardError().ToList().ForEach(line =>
+                {
+                    stdError.Add(line);
+                    System.IO.File.AppendAllText(errorLogPath, line + Environment.NewLine);
+                });
+
+                process.WaitForExit();
+
+                if (process.GetExitCode() != 0)
+                {
+                    throw new Exception($"Test failed for {project.GetFilename()}. Exit code: {process.GetExitCode()}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Error($"Test failed for {project.GetFilename()}: {ex.Message}");
+
+                // Print the captured output
+                Information("=== Test Standard Output ===");
+                foreach (var line in stdOutput)
+                {
+                    Information(line);
+                }
+
+                Information("=== Test Standard Error ===");
+                foreach (var line in stdError)
+                {
+                    Error(line);
+                }
+
+                Information($"Full test output log: {outputLogPath}");
+                Information($"Full test error log: {errorLogPath}");
+
+                throw;
+            }
         }
         Information($"Test task completed successfully. Coverage report at: {coverageDir.FullPath}");
 
