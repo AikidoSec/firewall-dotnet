@@ -10,7 +10,7 @@ namespace Aikido.Zen.Test.Helpers
         private string _originalAzureValue;
 
         [SetUp]
-        public void Setup()
+        public void Setup ()
         {
             // Store original environment variables
             _originalBlockingValue = Environment.GetEnvironmentVariable("AIKIDO_BLOCK");
@@ -19,7 +19,7 @@ namespace Aikido.Zen.Test.Helpers
         }
 
         [TearDown]
-        public void Cleanup()
+        public void Cleanup ()
         {
             // Restore original environment variables
             SetEnvironmentVariable("AIKIDO_BLOCK", _originalBlockingValue);
@@ -28,7 +28,7 @@ namespace Aikido.Zen.Test.Helpers
         }
 
         [Test]
-        public void GetInfo_ShouldReturnValidAgentInfo()
+        public void GetInfo_ShouldReturnValidAgentInfo ()
         {
             // Act
             var agentInfo = AgentInfoHelper.GetInfo();
@@ -39,7 +39,7 @@ namespace Aikido.Zen.Test.Helpers
                 // Basic properties
                 Assert.That(agentInfo.Hostname, Is.EqualTo(Environment.MachineName));
                 Assert.That(agentInfo.Library, Is.EqualTo("firewall-dotnet"));
-                Assert.That(agentInfo.Version, Is.EqualTo(typeof(AgentInfoHelper).Assembly.GetName().Version!.ToString()));
+                Assert.That(agentInfo.Version, Is.EqualTo(AgentInfoHelper.CleanVersion(typeof(AgentInfoHelper).Assembly.GetName().Version!.ToString())));
                 Assert.That(agentInfo.IpAddress, Is.Not.Null);
 
                 // OS Info
@@ -53,7 +53,7 @@ namespace Aikido.Zen.Test.Helpers
         }
 
         [Test]
-        public void GetInfo_ServerlessDetection_AWS()
+        public void GetInfo_ServerlessDetection_AWS ()
         {
             // Arrange
             SetEnvironmentVariable("AWS_LAMBDA_FUNCTION_NAME", "test-function");
@@ -66,7 +66,7 @@ namespace Aikido.Zen.Test.Helpers
         }
 
         [Test]
-        public void GetInfo_ServerlessDetection_Azure()
+        public void GetInfo_ServerlessDetection_Azure ()
         {
             // Arrange
             SetEnvironmentVariable("WEBSITE_INSTANCE_ID", "test-instance");
@@ -79,7 +79,7 @@ namespace Aikido.Zen.Test.Helpers
         }
 
         [Test]
-        public void GetInfo_NotServerless_WhenNoServerlessEnvironmentVariables()
+        public void GetInfo_NotServerless_WhenNoServerlessEnvironmentVariables ()
         {
             // Arrange
             SetEnvironmentVariable("AWS_LAMBDA_FUNCTION_NAME", null);
@@ -93,7 +93,7 @@ namespace Aikido.Zen.Test.Helpers
         }
 
         [Test]
-        public void GetInfo_PlatformArchitecture_Core()
+        public void GetInfo_PlatformArchitecture_Core ()
         {
             // This test is environment-dependent
             if (Environment.Version.Major >= 5)
@@ -107,7 +107,7 @@ namespace Aikido.Zen.Test.Helpers
         }
 
         [Test]
-        public void GetInfo_PlatformArchitecture_Framework()
+        public void GetInfo_PlatformArchitecture_Framework ()
         {
             // This test is environment-dependent
             if (Environment.Version.Major < 5)
@@ -120,7 +120,7 @@ namespace Aikido.Zen.Test.Helpers
             }
         }
 
-        private void SetEnvironmentVariable(string variable, string value)
+        private void SetEnvironmentVariable (string variable, string value)
         {
             if (value == null)
             {
@@ -133,7 +133,7 @@ namespace Aikido.Zen.Test.Helpers
         }
 
         [Test]
-        public void CleanVersion_ShouldRemoveBuildNumber()
+        public void CleanVersion_ShouldRemoveBuildNumber ()
         {
             var version = "1.2.3+4";
             var otherVersion = "1.2.3.0";
@@ -144,7 +144,7 @@ namespace Aikido.Zen.Test.Helpers
         }
 
         [Test]
-        public void CleanVersion_ShouldRemovePrereleaseVersion()
+        public void CleanVersion_ShouldRemovePrereleaseVersion ()
         {
             var version = "1.2.3-alpha";
             var cleanedVersion = AgentInfoHelper.CleanVersion(version);
@@ -152,7 +152,7 @@ namespace Aikido.Zen.Test.Helpers
         }
 
         [Test]
-        public void CleanVersion_ShouldRemoveBuildNumberAndPrereleaseVersion()
+        public void CleanVersion_ShouldRemoveBuildNumberAndPrereleaseVersion ()
         {
             var version = "1.2.3+4-alpha";
             var cleanedVersion = AgentInfoHelper.CleanVersion(version);

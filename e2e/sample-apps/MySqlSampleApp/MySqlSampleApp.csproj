@@ -8,8 +8,12 @@
 
   <ItemGroup>
       <ProjectReference Include="..\..\..\Aikido.Zen.DotNetCore\Aikido.Zen.DotNetCore.csproj" />
+      <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.2" />
+      <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.2" />
+      <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.2" />
       <PackageReference Include="MySql.Data" Version="9.1.0" />
       <PackageReference Include="MySqlConnector" Version="2.4.0" />
+      <PackageReference Include="System.Text.Json" Version="9.0.2" />
   </ItemGroup>
 
     <ItemGroup>

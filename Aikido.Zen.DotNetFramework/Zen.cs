@@ -5,6 +5,7 @@ using Aikido.Zen.DotNetFramework.Patches;
 using System.Web;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.DotNetFramework.Configuration;
+using Aikido.Zen.Core.Helpers;
 
 namespace Aikido.Zen.DotNetFramework
 {
@@ -20,6 +21,8 @@ namespace Aikido.Zen.DotNetFramework
             {
                 return;
             }
+            // set zen version
+            AgentInfoHelper.SetVersion(typeof(Zen).Assembly.GetName().Version.ToString());
             // patch the sinks
             Patcher.Patch();
             // setup the agent

@@ -11,14 +11,7 @@
     <!--<OutputPath>..\nupkgs</OutputPath>-->
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
-
-    <VersionPrefix>0.0.1-alpha</VersionPrefix>
-    <VersionSuffix>-b-$()</VersionSuffix>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
-    <Version>0.0.1</Version>
-  </PropertyGroup>
+  <!-- Version is now managed centrally in Directory.Build.props -->
 
     <!-- always copy the \libraries directory to the output directory-->
     <ItemGroup>
@@ -26,8 +19,6 @@
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
     </ItemGroup>
-
-
 
   <!--<Target Name="PostBuild" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug'">
     <Message Text="Creating NuGet package for Core..." Importance="high" />
@@ -38,8 +29,8 @@
     <PackageReference Include="Lib.Harmony" Version="2.3.5" />
     <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="2.2.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.2" />
-    <PackageReference Include="System.Text.Json" Version="9.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="[6.0,)" />
+    <PackageReference Include="System.Text.Json" Version="[6.0,)" />
     <PackageReference Include="System.Xml.XDocument" Version="4.3.0" />
   </ItemGroup>
 </Project>
