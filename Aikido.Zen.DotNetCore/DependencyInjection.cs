@@ -11,6 +11,7 @@ using Aikido.Zen.DotNetCore.Patches;
 using Microsoft.AspNetCore.Http;
 using Aikido.Zen.Core.Exceptions;
 using Microsoft.Extensions.Logging;
+using Aikido.Zen.Core.Helpers;
 
 namespace Aikido.Zen.DotNetCore
 {
@@ -22,6 +23,9 @@ namespace Aikido.Zen.DotNetCore
             {
                 return services;
             }
+
+            // set zen version
+            AgentInfoHelper.SetVersion(typeof(Zen).Assembly.GetName().Version.ToString());
 
             // register the options
             services.AddOptions();

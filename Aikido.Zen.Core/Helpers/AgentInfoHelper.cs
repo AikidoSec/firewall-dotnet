@@ -4,6 +4,8 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 [assembly: InternalsVisibleTo("Aikido.Zen.Tests")]
+[assembly: InternalsVisibleTo("Aikido.Zen.DotNetCore")]
+[assembly: InternalsVisibleTo("Aikido.Zen.DotNetFramework")]
 namespace Aikido.Zen.Core.Helpers
 {
     /// <summary>
@@ -11,6 +13,7 @@ namespace Aikido.Zen.Core.Helpers
     /// </summary>
     internal class AgentInfoHelper
     {
+        private static string ZenVersion = CleanVersion(typeof(AgentInfoHelper).Assembly.GetName().Version.ToString());
         // Cache the AgentInfo object to avoid repeated creation
         private static readonly AgentInfo _cachedAgentInfo = new AgentInfo
         {
@@ -27,7 +30,7 @@ namespace Aikido.Zen.Core.Helpers
             },
             IpAddress = IPHelper.Server,
             Library = "firewall-dotnet",
-            Version = CleanVersion(typeof(AgentInfoHelper).Assembly.GetName().Version.ToString()),
+            Version = ZenVersion,
             // Determine if running in a serverless environment
             Serverless = Environment.GetEnvironmentVariable("AWS_LAMBDA_FUNCTION_NAME") != null || Environment.GetEnvironmentVariable("WEBSITE_INSTANCE_ID") != null
         };
@@ -41,7 +44,7 @@ namespace Aikido.Zen.Core.Helpers
             // Update only the fields that can change
             _cachedAgentInfo.DryMode = EnvironmentHelper.DryMode;
             _cachedAgentInfo.Serverless = Environment.GetEnvironmentVariable("AWS_LAMBDA_FUNCTION_NAME") != null || Environment.GetEnvironmentVariable("WEBSITE_INSTANCE_ID") != null;
-
+            _cachedAgentInfo.Version = ZenVersion;
             return _cachedAgentInfo;
         }
 
@@ -54,6 +57,11 @@ namespace Aikido.Zen.Core.Helpers
             // remove the prerelease version
             version = version.Split('-')[0];
             return version;
+        }
+
+        internal static void SetVersion(string version)
+        {
+            _cachedAgentInfo.Version = CleanVersion(version);
         }
     }
 }
