@@ -15,10 +15,11 @@
         <dependency id="Lib.Harmony" version="[2.3.5,)" />
         <dependency id="Microsoft.AspNetCore.Http.Abstractions" version="[2.2.0,)" />
         <dependency id="Microsoft.AspNetCore.WebUtilities" version="[2.2.0,)" />
-        <dependency id="Microsoft.Extensions.Logging.Abstractions" version="[9.0.2,)" />
-        <dependency id="Microsoft.Extensions.Logging" version="[9.0.2,)" />
-        <dependency id="System.Text.Json" version="[9.0.2,)" />
+        <dependency id="Microsoft.Extensions.Logging.Abstractions" version="[6.0.0,)" />
+        <dependency id="Microsoft.Extensions.Logging" version="[6.0.0,)" />
+        <dependency id="System.Text.Json" version="[6.0.0,)" />
     </dependencies>
+    <readme>content\README.md</readme>
   </metadata>
   <files>
     <file src="Aikido.Zen.DotNetFramework.targets" target="Build\" />
@@ -26,5 +27,6 @@
     <file src="bin\Release\libraries\libzen_internals_x86_64-pc-windows-gnu.dll.sha256sum" target="Build\libraries\" />
     <file src="bin\Release\Aikido.Zen.Core.dll" target="lib" />
     <file src="bin\Release\Aikido.Zen.DotNetFramework.dll" target="lib" />
+    <file src="content\README.md" target="content" />
   </files>
 </package>

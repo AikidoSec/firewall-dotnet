@@ -9,6 +9,10 @@
       <Link>libraries\libzen_internals_x86_64-pc-windows-gnu.dll.sha256sum</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <!-- Ensure Aikido.Zen.Core.dll is copied to the output directory -->
+    <Reference Include="Aikido.Zen.Core">
+      <Private>True</Private>
+    </Reference>
   </ItemGroup>
 
   <Target Name="CopyLibraries" AfterTargets="Build">
