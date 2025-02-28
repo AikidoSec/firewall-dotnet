@@ -644,7 +644,7 @@ namespace Aikido.Zen.Test
             await _agent.UpdateBlockedIps();
 
             // Assert
-            _zenApiMock.Verify(x => x.Reporting.GetBlockedIps(It.IsAny<string>()), Times.Never);
+            _zenApiMock.Verify(x => x.Reporting.GetFirewallLists(It.IsAny<string>()), Times.Never);
         }
 
         [Test]
@@ -664,6 +664,324 @@ namespace Aikido.Zen.Test
             // Assert
             Assert.That(_agent.Context.Routes.Count, Is.EqualTo(1));
             Assert.That(_agent.Context.Routes.Any(r => r.Path == "/test/route"));
+        }
+
+        [Test]
+        public void UpdateConfig_ShouldUpdateBypassedIPs()
+        {
+            // Arrange
+            var block = true;
+            var blockedUsers = new[] { "user1" };
+            var bypassedIPs = new[] { "192.168.1.0/24", "10.0.0.0/8" };
+            var endpoints = new[]
+            {
+                new EndpointConfig
+                {
+                    Method = "GET",
+                    Route = "test",
+                    AllowedIPAddresses = new[] { "172.16.0.0/16" }
+                }
+            };
+            var configVersion = 123L;
+
+            // Create config response for endpoints and other settings
+            var apiResponse = new ReportingAPIResponse
+            {
+                Block = block,
+                BlockedUserIds = blockedUsers,
+                Endpoints = endpoints
+            };
+
+            // Create firewall lists response for bypassed IPs
+            var allowedIPList = new FirewallListsAPIResponse.IPList
+            {
+                Source = "test",
+                Description = "test bypassed IPs",
+                Ips = bypassedIPs
+            };
+            var firewallListsResponse = new FirewallListsAPIResponse(
+                allowedIPAddresses: new[] { allowedIPList }
+            );
+
+            // Act
+            _agent.Context.UpdateConfig(apiResponse);
+            _agent.Context.UpdateFirewallLists(firewallListsResponse);
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(_agent.Context.BlockList.IsBypassedIP("192.168.1.100"), Is.True);
+                Assert.That(_agent.Context.BlockList.IsBypassedIP("10.10.10.10"), Is.True);
+                Assert.That(_agent.Context.BlockList.IsBypassedIP("172.16.1.1"), Is.False);
+            });
+        }
+
+        [Test]
+        public void UpdateConfig_BypassedIP_ShouldBypassAllBlocking()
+        {
+            // Arrange
+            var block = true;
+            var blockedUsers = new[] { "user1" };
+            var bypassedIPs = new[] { "192.168.1.0/24" };
+            var endpoints = new[]
+            {
+                new EndpointConfig
+                {
+                    Method = "GET",
+                    Route = "test",
+                    AllowedIPAddresses = new[] { "10.0.0.0/8" }
+                }
+            };
+            var configVersion = 123L;
+            var ip = "192.168.1.100";
+            var url = "GET|test";
+
+            // Create config response for endpoints and other settings
+            var apiResponse = new ReportingAPIResponse
+            {
+                Block = block,
+                BlockedUserIds = blockedUsers,
+                Endpoints = endpoints
+            };
+
+            // Create firewall lists response for bypassed IPs
+            var allowedIPList = new FirewallListsAPIResponse.IPList
+            {
+                Source = "test",
+                Description = "test bypassed IPs",
+                Ips = bypassedIPs
+            };
+            var firewallListsResponse = new FirewallListsAPIResponse(
+                allowedIPAddresses: new[] { allowedIPList }
+            );
+
+            // Act
+            _agent.Context.UpdateConfig(apiResponse);
+            _agent.Context.UpdateFirewallLists(firewallListsResponse);
+            _agent.Context.BlockList.AddIpAddressToBlocklist(ip); // Try to block the allowed IP
+
+            // Assert
+            Assert.That(_agent.Context.BlockList.IsBlocked(ip, url), Is.False, "Bypassed IP should bypass all blocking");
+        }
+
+        [Test]
+        public void UpdateConfig_BypassedIPs_ShouldBypassEndpointRestrictions()
+        {
+            // Arrange
+            var block = true;
+            var blockedUsers = Array.Empty<string>();
+            var bypassedIPs = new[] { "192.168.1.0/24" };
+            var endpoints = new[]
+            {
+                new EndpointConfig
+                {
+                    Method = "GET",
+                    Route = "test",
+                    AllowedIPAddresses = new[] { "10.0.0.0/8" } // Different subnet
+                }
+            };
+            var configVersion = 123L;
+            var ip = "192.168.1.100";
+            var url = "GET|test";
+
+            // Create config response for endpoints and other settings
+            var apiResponse = new ReportingAPIResponse
+            {
+                Block = block,
+                BlockedUserIds = blockedUsers,
+                Endpoints = endpoints
+            };
+
+            // Create firewall lists response for bypassed IPs
+            var allowedIPList = new FirewallListsAPIResponse.IPList
+            {
+                Source = "test",
+                Description = "test bypassed IPs",
+                Ips = bypassedIPs
+            };
+            var firewallListsResponse = new FirewallListsAPIResponse(
+                allowedIPAddresses: new[] { allowedIPList }
+            );
+
+            // Act
+            _agent.Context.UpdateConfig(apiResponse);
+            _agent.Context.UpdateFirewallLists(firewallListsResponse);
+
+            // Assert
+            Assert.That(_agent.Context.BlockList.IsBypassedIP(ip), Is.True, "Bypassed IP should bypass endpoint restrictions");
+        }
+
+        [Test]
+        public void UpdateConfig_ShouldClearBypassedIPsWhenEmpty()
+        {
+            // Arrange
+            var block = true;
+            var blockedUsers = Array.Empty<string>();
+            var bypassedIPs = new[] { "192.168.1.0/24" };
+            var endpoints = Array.Empty<EndpointConfig>();
+            var configVersion = 123L;
+            var ip = "192.168.1.100";
+
+            // Create config response for endpoints and other settings
+            var apiResponse = new ReportingAPIResponse
+            {
+                Block = block,
+                BlockedUserIds = blockedUsers,
+                Endpoints = endpoints
+            };
+
+            // Create firewall lists response for bypassed IPs
+            var allowedIPList = new FirewallListsAPIResponse.IPList
+            {
+                Source = "test",
+                Description = "test bypassed IPs",
+                Ips = bypassedIPs
+            };
+            var firewallListsResponse = new FirewallListsAPIResponse(
+                allowedIPAddresses: new[] { allowedIPList }
+            );
+
+            // First update with bypassed IPs
+            _agent.Context.UpdateConfig(apiResponse);
+            _agent.Context.UpdateFirewallLists(firewallListsResponse);
+            Assert.That(_agent.Context.BlockList.IsBypassedIP(ip), Is.True, "IP should be bypassed initially");
+
+            // Act - update with empty bypassed IPs
+            _agent.Context.UpdateFirewallLists(new FirewallListsAPIResponse());
+
+            // Assert
+            Assert.That(_agent.Context.BlockList.IsBypassedIP(ip), Is.False, "Bypassed ip list should be cleared");
+        }
+
+        [Test]
+        public void UpdateConfig_ShouldHandleBypassedIpsingCorrectly()
+        {
+            // Arrange
+            var block = true;
+            var blockedUsers = new[] { "user1" };
+            var bypassedIPs = new[] { "192.168.1.0/24", "10.0.0.0/8" };
+            var endpoints = new[]
+            {
+                new EndpointConfig
+                {
+                    Method = "GET",
+                    Route = "test",
+                    AllowedIPAddresses = new[] { "172.16.0.0/24" }
+                }
+            };
+            var configVersion = 123L;
+            var ip = "192.168.1.100";
+            var url = "GET|test";
+
+            // Create config response for endpoints and other settings
+            var apiResponse = new ReportingAPIResponse
+            {
+                Block = block,
+                BlockedUserIds = blockedUsers,
+                Endpoints = endpoints
+            };
+
+            // Create firewall lists response for bypassed IPs
+            var allowedIPList = new FirewallListsAPIResponse.IPList
+            {
+                Source = "test",
+                Description = "test bypassed IPs",
+                Ips = bypassedIPs
+            };
+            var firewallListsResponse = new FirewallListsAPIResponse(
+                allowedIPAddresses: new[] { allowedIPList }
+            );
+
+            // Act - Initial config with bypassed ips
+            _agent.Context.UpdateConfig(apiResponse);
+            _agent.Context.UpdateFirewallLists(firewallListsResponse);
+
+            // Assert - Check allowed ips functionality
+            Assert.Multiple(() =>
+            {
+                // Basic allowed ips checks
+                Assert.That(_agent.Context.BlockList.IsBypassedIP("192.168.1.100"), Is.True, "IP in first subnet should be allowed");
+                Assert.That(_agent.Context.BlockList.IsBypassedIP("10.10.10.10"), Is.True, "IP in second subnet should be allowed");
+                Assert.That(_agent.Context.BlockList.IsBypassedIP("172.16.1.1"), Is.False, "IP not in any subnet should not be allowed");
+
+                // Verify allowed ips bypasses all blocking
+                _agent.Context.BlockList.AddIpAddressToBlocklist(ip);
+                Assert.That(_agent.Context.BlockList.IsBlocked(ip, url), Is.False, "Allowed IP should bypass blocklist");
+                Assert.That(_agent.Context.BlockList.IsBlocked(ip, "GET|other"), Is.False, "Allowed IP should bypass endpoint restrictions");
+                Assert.That(_agent.Context.BlockList.IsBlocked(ip, "POST|test"), Is.False, "Allowed IP should bypass method restrictions");
+
+                // Verify non-allowed IPs are still subject to blocking
+                Assert.That(_agent.Context.BlockList.IsBlocked("172.16.1.1", url), Is.True, "Non-allowed IP should still be subject to endpoint restrictions");
+            });
+
+            // Act - Update config to clear bypassed ips
+            _agent.Context.UpdateFirewallLists(new FirewallListsAPIResponse());
+
+            // Assert - Verify bypassed ips is cleared and blocking is restored
+            Assert.Multiple(() =>
+            {
+                Assert.That(_agent.Context.BlockList.IsBypassedIP(ip), Is.False, "bypassed ips should be cleared");
+                Assert.That(_agent.Context.BlockList.IsBlocked(ip, url), Is.True, "IP should be blocked after bypassed ips is cleared");
+            });
+        }
+
+        [Test]
+        public void UpdateConfig_BypassedIP_ShouldBypassAllBlockingConditions()
+        {
+            // Arrange
+            var block = true;
+            var blockedUsers = new[] { "user1" };
+            var bypassedIPs = new[] { "192.168.1.0/24" };
+            var endpoints = new[]
+            {
+                new EndpointConfig
+                {
+                    Method = "GET",
+                    Route = "test",
+                    AllowedIPAddresses = new[] { "10.0.0.0" } // Different subnet
+                }
+            };
+            var configVersion = 123L;
+            var ip = "192.168.1.100";
+            var url = "GET|test";
+
+            // Create config response for endpoints and other settings
+            var apiResponse = new ReportingAPIResponse
+            {
+                Block = block,
+                BlockedUserIds = blockedUsers,
+                Endpoints = endpoints
+            };
+
+            // Create firewall lists response for bypassed IPs
+            var allowedIPList = new FirewallListsAPIResponse.IPList
+            {
+                Source = "test",
+                Description = "test bypassed IPs",
+                Ips = bypassedIPs
+            };
+            var firewallListsResponse = new FirewallListsAPIResponse(
+                allowedIPAddresses: new[] { allowedIPList }
+            );
+
+            // Act
+            _agent.Context.UpdateConfig(apiResponse);
+            _agent.Context.UpdateFirewallLists(firewallListsResponse);
+            _agent.Context.BlockList.AddIpAddressToBlocklist(ip);
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                // Verify IP is allowed
+                Assert.That(_agent.Context.BlockList.IsBypassedIP(ip), Is.True);
+
+                // Verify allowed ip list bypasses all blocking conditions
+                Assert.That(_agent.Context.BlockList.IsBlocked(ip, url), Is.False, "Should bypass blocklist");
+                Assert.That(_agent.Context.BlockList.IsBlocked(ip, "GET|other"), Is.False, "Should bypass endpoint restrictions");
+
+                // Verify non-allowed IPs are still blocked
+                Assert.That(_agent.Context.BlockList.IsBlocked("10.0.0.1", url), Is.True, "Non-allowed IP should still be blocked if not in endpoint allowlist");
+            });
         }
     }
 }

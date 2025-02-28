@@ -48,7 +48,7 @@ namespace Aikido.Zen.Benchmarks
             }
 
             // Update blocked subnets
-            _blockList.UpdateBlockedSubnets(_ipRanges);
+            _blockList.UpdateBlockedIps(_ipRanges);
         }
 
         [Benchmark]

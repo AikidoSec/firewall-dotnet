@@ -23,7 +23,7 @@ namespace Aikido.Zen.Test
             var subnets = new[] { subnet1, subnet2 };
 
             // Act
-            _blockList.UpdateBlockedSubnets(subnets);
+            _blockList.UpdateBlockedIps(subnets);
 
             // Assert
             Assert.That(_blockList.IsIPBlocked("192.168.1.100"));
@@ -36,10 +36,10 @@ namespace Aikido.Zen.Test
         {
             // Arrange
             var subnet = "192.168.1.0/24";
-            _blockList.UpdateBlockedSubnets(new[] { subnet });
+            _blockList.UpdateBlockedIps(new[] { subnet });
 
             // Act
-            _blockList.UpdateBlockedSubnets(Array.Empty<string>());
+            _blockList.UpdateBlockedIps(Array.Empty<string>());
 
             // Assert
             Assert.That(_blockList.IsIPBlocked("192.168.1.100"), Is.False);
@@ -56,19 +56,19 @@ namespace Aikido.Zen.Test
                     AllowedIPAddresses = new[] { "192.168.1.0/24" }
                 },
                 new EndpointConfig {
-                    Method = "POST", 
+                    Method = "POST",
                     Route = "url2",
                     AllowedIPAddresses = new[] { "10.0.0.0/8" }
                 },
                 new EndpointConfig {
                     Method = "POST",
-                    Route = "url1", 
+                    Route = "url1",
                     AllowedIPAddresses = new[] { "10.0.0.0/8" }
                 }
             };
 
             // Act
-            _blockList.UpdateAllowedSubnets(endpoints);
+            _blockList.UpdateAllowedForEndpointSubnets(endpoints);
 
             // Assert
             Assert.That(_blockList.IsIPAllowed("192.168.1.100", "GET|url1"));
@@ -89,10 +89,10 @@ namespace Aikido.Zen.Test
                     AllowedIPAddresses = new[] { "192.168.1.0/24" }
                 }
             };
-            _blockList.UpdateAllowedSubnets(endpoints);
+            _blockList.UpdateAllowedForEndpointSubnets(endpoints);
 
             // Act
-            _blockList.UpdateAllowedSubnets(new List<EndpointConfig>());
+            _blockList.UpdateAllowedForEndpointSubnets(new List<EndpointConfig>());
 
             // Assert
             Assert.That(_blockList.IsIPAllowed("192.168.1.100", "GET|url1")); // Should allow when no restrictions
@@ -128,12 +128,12 @@ namespace Aikido.Zen.Test
             // Arrange
             var endpoints = new List<EndpointConfig> {
                 new EndpointConfig {
-                    Method = "GET", 
+                    Method = "GET",
                     Route = "testUrl",
                     AllowedIPAddresses = new string[] { } // Empty allowed IPs
                 }
             };
-            _blockList.UpdateAllowedSubnets(endpoints);
+            _blockList.UpdateAllowedForEndpointSubnets(endpoints);
 
             // Act & Assert
             Assert.That(_blockList.IsIPAllowed("192.168.1.100", "GET|testUrl")); // Should allow when no IP restrictions
@@ -150,7 +150,7 @@ namespace Aikido.Zen.Test
                     AllowedIPAddresses = new[] { "192.168.1.0/24" }
                 }
             };
-            _blockList.UpdateAllowedSubnets(endpoints);
+            _blockList.UpdateAllowedForEndpointSubnets(endpoints);
 
             // Act & Assert
             Assert.That(_blockList.IsIPAllowed("invalid.ip", "GET|testUrl"));
@@ -170,17 +170,20 @@ namespace Aikido.Zen.Test
                 }
             };
 
+            _blockList.UpdateBlockedIps(new[] { "192.168.1.0/24" });
+            _blockList.UpdateBypassedIps(new[] { "10.10.10.10" });
             _blockList.AddIpAddressToBlocklist("192.168.1.101");
-            _blockList.UpdateAllowedSubnets(endpoints);
+            _blockList.UpdateAllowedForEndpointSubnets(endpoints);
 
             // Act & Assert
-            Assert.That(_blockList.IsBlocked("192.168.1.101", url)); // Blocked IP
-            Assert.That(_blockList.IsBlocked(ip, url)); // Not in allowed subnet
-            Assert.That(_blockList.IsBlocked("10.0.0.1", url), Is.False); // In allowed subnet
-            Assert.That(_blockList.IsBlocked("invalid.ip", url), Is.False); // Invalid IP should not be blocked
+            Assert.That(_blockList.IsBlocked("10.10.10.10", url), Is.False);
+            Assert.That(_blockList.IsBlocked("192.168.1.101", url), Is.True);
+            Assert.That(_blockList.IsBlocked("10.0.0.1", url), Is.False);
+            Assert.That(_blockList.IsBlocked("invalid.ip", url), Is.False);
         }
 
         [Test]
+
         public void LargeBlocklistHandling_ShouldHandleLargeNumberOfIPs()
         {
             // Arrange
@@ -222,5 +225,126 @@ namespace Aikido.Zen.Test
             Assert.That(stopwatch.ElapsedMilliseconds, Is.AtMost(5)); // Ensure it completes within 5ms
         }
 
+        [Test]
+        public void UpdateAllowedSubnets_ShouldUpdateAllowedIPs()
+        {
+            // Arrange
+            var subnets = new[] { "192.168.1.0/24", "10.0.0.0/8" };
+
+            // Act
+            _blockList.UpdateBypassedIps(subnets);
+
+            // Assert
+            Assert.That(_blockList.IsBypassedIP("192.168.1.100"), Is.True);
+            Assert.That(_blockList.IsBypassedIP("10.10.10.10"), Is.True);
+            Assert.That(_blockList.IsBypassedIP("172.16.1.1"), Is.False);
+        }
+
+        [Test]
+        public void IsAllowedIp_WithInvalidIP_ShouldReturnFalse()
+        {
+            // Arrange
+            var subnets = new[] { "192.168.1.0/24" };
+            _blockList.UpdateBypassedIps(subnets);
+
+            // Act & Assert
+            Assert.That(_blockList.IsBypassedIP("invalid.ip"), Is.False);
+        }
+
+        [Test]
+        public void IsAllowedIp_WithNoAllowedSubnets_ShouldReturnFalse()
+        {
+            // Act & Assert
+            Assert.That(_blockList.IsBypassedIP("192.168.1.100"), Is.False);
+        }
+
+        [Test]
+        public void IsBlocked_AllowedIP_ShouldBypassAllBlocking()
+        {
+            // Arrange
+            var ip = "192.168.1.100";
+            var url = "GET|testUrl";
+
+            // Setup blocking conditions
+            _blockList.AddIpAddressToBlocklist(ip); // Add to blocklist
+            var endpoints = new List<EndpointConfig> {
+                new EndpointConfig {
+                    Method = "GET",
+                    Route = "testUrl",
+                    AllowedIPAddresses = new[] { "10.0.0.0/8" } // Not in allowed IPs for endpoint
+                }
+            };
+            _blockList.UpdateAllowedForEndpointSubnets(endpoints);
+
+            // Add IP to allow
+            _blockList.UpdateBypassedIps(new[] { "192.168.1.0/24" });
+
+            // Act & Assert
+            Assert.That(_blockList.IsBlocked(ip, url), Is.False, "Allowed IP should bypass all blocking");
+        }
+
+        [Test]
+        public void IsBlocked_AllowedIP_ShouldBypassEndpointRestrictions()
+        {
+            // Arrange
+            var ip = "192.168.1.100";
+            var url = "GET|testUrl";
+
+            // Setup endpoint restrictions
+            var endpoints = new List<EndpointConfig> {
+                new EndpointConfig {
+                    Method = "GET",
+                    Route = "testUrl",
+                    AllowedIPAddresses = new[] { "10.0.0.0/8" } // IP not in allowed range
+                }
+            };
+            _blockList.UpdateAllowedForEndpointSubnets(endpoints);
+
+            // Add IP to allow
+            _blockList.UpdateBypassedIps(new[] { "192.168.1.0/24" });
+
+            // Act & Assert
+            Assert.That(_blockList.IsBlocked(ip, url), Is.False, "Allowed IP should bypass endpoint restrictions");
+        }
+
+        [Test]
+        public void UpdateAllowedSubnets_WithEmptyList_ShouldClearAllowedIps()
+        {
+            // Arrange
+            var ip = "192.168.1.100";
+            _blockList.UpdateBypassedIps(new[] { "192.168.1.0/24" });
+            Assert.That(_blockList.IsBypassedIP(ip), Is.True, "IP should be allowed initially");
+
+            // Act
+            _blockList.UpdateBypassedIps(Array.Empty<string>());
+
+            // Assert
+            Assert.That(_blockList.IsBypassedIP(ip), Is.False, "AllowedIp list should be cleared");
+        }
+
+        [Test]
+        public void IsBlocked_AllowedIPWithBlockedUserAgent_ShouldBypassBlocking()
+        {
+            // Arrange
+            var ip = "192.168.1.100";
+            var url = "GET|testUrl";
+
+            // Setup blocking conditions
+            _blockList.AddIpAddressToBlocklist(ip);
+            var endpoints = new List<EndpointConfig> {
+                new EndpointConfig {
+                    Method = "GET",
+                    Route = "testUrl",
+                    AllowedIPAddresses = new[] { "10.0.0.0/8" }
+                }
+            };
+            _blockList.UpdateAllowedForEndpointSubnets(endpoints);
+
+            // Add IP to allowed
+            _blockList.UpdateBypassedIps(new[] { "192.168.1.0/24" });
+
+            // Act & Assert
+            Assert.That(_blockList.IsBlocked(ip, url), Is.False, "Allowed IP should bypass all blocking regardless of other conditions");
+        }
     }
 }

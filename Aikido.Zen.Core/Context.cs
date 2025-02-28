@@ -35,6 +35,8 @@ namespace Aikido.Zen.Core
         public bool ConsumedRateLimitForIP { get; set; }
         public bool ConsumedRateLimitForUser { get; set; }
 
+        public bool RequestIsByPassed { get; set; }
+
         public struct RedirectInfo
         {
 

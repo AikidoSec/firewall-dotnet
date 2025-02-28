@@ -1,3 +1,4 @@
+using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Helpers.OpenAPI;
 using Aikido.Zen.Core.Models.Ip;
@@ -158,24 +159,27 @@ namespace Aikido.Zen.Core.Models
             }
         }
 
-        public void UpdateConfig(bool block, IEnumerable<string> blockedUsers, IEnumerable<EndpointConfig> endpoints, Regex blockedUserAgents, long configVersion)
+        public void UpdateConfig(ReportingAPIResponse response)
         {
-            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", block ? "true" : "false");
-            UpdateBlockedUsers(blockedUsers);
-            BlockList.UpdateAllowedSubnets(endpoints);
-            UpdateRatelimitedRoutes(endpoints);
-            UpdateBlockedUserAgents(blockedUserAgents);
-            ConfigLastUpdated = configVersion;
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", response.Block ? "true" : "false");
+            UpdateBlockedUsers(response.BlockedUserIds);
+            BlockList.UpdateAllowedForEndpointSubnets(response.Endpoints);
+            UpdateRatelimitedRoutes(response.Endpoints);
+            UpdateBlockedUserAgents(response.BlockedUserAgentsRegex);
+            ConfigLastUpdated = response.ConfigUpdatedAt;
         }
 
-        public void UpdateBlockedIps(IEnumerable<string> blockedIPs)
+        public void UpdateFirewallLists(FirewallListsAPIResponse response)
         {
-            if (blockedIPs == null)
+            if (response == null)
             {
-                BlockList.UpdateBlockedSubnets(new List<string>());
+                BlockList.UpdateBlockedIps(new List<string>());
+                BlockList.UpdateBypassedIps(new List<string>());
                 return;
             }
-            BlockList.UpdateBlockedSubnets(blockedIPs);
+            BlockList.UpdateBlockedIps(response.BlockedIps);
+            BlockList.UpdateBypassedIps(response.AllowedIps);
+            UpdateBlockedUserAgents(response.BlockedUserAgents != null ? new Regex(response.BlockedUserAgents) : null);
         }
 
         public void UpdateBlockedUserAgents(Regex blockedUserAgents)

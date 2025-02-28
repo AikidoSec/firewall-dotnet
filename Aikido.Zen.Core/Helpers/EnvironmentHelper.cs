@@ -8,6 +8,11 @@ namespace Aikido.Zen.Core.Helpers
     public static class EnvironmentHelper
     {
         /// <summary>
+        /// Determines if the system is disabled by checking the environment variable.
+        /// </summary>
+        public static bool IsDisabled => GetBooleanValue("AIKIDO_DISABLE");
+
+        /// <summary>
         /// Gets the Aikido token from the environment variables.
         /// </summary>
         public static string Token => Environment.GetEnvironmentVariable("AIKIDO_TOKEN");

@@ -30,7 +30,7 @@ csharp_indent_labels = one_less_than_current
 csharp_style_expression_bodied_local_functions = false:silent
 csharp_indent_braces = false
 csharp_space_around_binary_operators = before_and_after
-csharp_space_between_method_declaration_name_and_open_parenthesis = true
+csharp_space_between_method_declaration_name_and_open_parenthesis = false
 
 [*.{cs,vb}]
 #### Naming styles ####
