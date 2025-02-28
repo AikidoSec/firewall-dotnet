@@ -9,8 +9,12 @@
       <Link>libraries\libzen_internals_x86_64-pc-windows-gnu.dll.sha256sum</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <!-- Ensure Aikido.Zen.Core.dll is copied to the output directory -->
     <Reference Include="Aikido.Zen.Core">
+      <HintPath>$(MSBuildThisFileDirectory)..\lib\Aikido.Zen.Core.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+     <Reference Include="Aikido.Zen.DotNetFramework">
+      <HintPath>$(MSBuildThisFileDirectory)..\lib\Aikido.Zen.DotNetFramework.dll</HintPath>
       <Private>True</Private>
     </Reference>
   </ItemGroup>
@@ -18,8 +22,14 @@
   <Target Name="CopyLibraries" AfterTargets="Build">
     <ItemGroup>
       <!-- Define a new item group for the specific files to copy -->
-      <LibraryFiles Include="@(None)" Condition="'%(FileName)' == 'libzen_internals_x86_64-pc-windows-gnu'" />
+      <LibraryFiles Include="$(MSBuildThisFileDirectory)libraries\libzen_internals_x86_64-pc-windows-gnu.dll">
+        <DestinationDir>libraries</DestinationDir>
+      </LibraryFiles>
+      <LibraryFiles Include="$(MSBuildThisFileDirectory)libraries\libzen_internals_x86_64-pc-windows-gnu.dll.sha256sum">
+        <DestinationDir>libraries</DestinationDir>
+      </LibraryFiles>
     </ItemGroup>
-    <Copy SourceFiles="@(LibraryFiles)" DestinationFolder="$(OutputPath)libraries\" />
+    <Message Importance="high" Text="Copying @(LibraryFiles) to bin" />
+    <Copy SourceFiles="@(LibraryFiles)" DestinationFolder="$(OutputPath)%(LibraryFiles.DestinationDir)" />
   </Target>
 </Project>

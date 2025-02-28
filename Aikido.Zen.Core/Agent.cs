@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -496,10 +497,13 @@ namespace Aikido.Zen.Core
                 _eventQueue.Enqueue(queuedItem);
                 throw;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 // Requeue on error and delay
                 _eventQueue.Enqueue(queuedItem);
+                LogHelper.DebugLog(Logger, $"AIKIDO: Error processing event: {queuedItem.Event.Type}, Error: {ex.Message}");
+                Trace.WriteLine($"AIKIDO: Error processing event: {queuedItem.Event.Type}, Error: {ex.Message}");
+                Console.WriteLine($"AIKIDO: Error processing event: {queuedItem.Event.Type}, Error: {ex.Message}");
                 await Task.Delay(RetryDelayMs, _cancellationSource.Token);
             }
             return requestsThisSecond;

@@ -22,9 +22,10 @@
     <readme>content\README.md</readme>
   </metadata>
   <files>
-    <file src="Aikido.Zen.DotNetFramework.targets" target="Build\" />
+    <file src="Aikido.Zen.DotNetFramework.targets" target="Build" />
     <file src="bin\Release\libraries\libzen_internals_x86_64-pc-windows-gnu.dll" target="Build\libraries\" />
     <file src="bin\Release\libraries\libzen_internals_x86_64-pc-windows-gnu.dll.sha256sum" target="Build\libraries\" />
+    <file src="bin\Release\Aikido.Zen.Core.dll" target="Build" />
     <file src="bin\Release\Aikido.Zen.Core.dll" target="lib" />
     <file src="bin\Release\Aikido.Zen.DotNetFramework.dll" target="lib" />
     <file src="content\README.md" target="content" />
