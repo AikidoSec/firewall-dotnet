@@ -502,6 +502,7 @@ namespace Aikido.Zen.Core
                 // Requeue on error and delay
                 _eventQueue.Enqueue(queuedItem);
                 LogHelper.DebugLog(Logger, $"AIKIDO: Error processing event: {queuedItem.Event.Type}, Error: {ex.Message}");
+                // we always want to log errors here, since the agent will continue running, but stats and events won't be sent to the server, the user should always be able to find this in logs / traces / debug out.
                 Trace.WriteLine($"AIKIDO: Error processing event: {queuedItem.Event.Type}, Error: {ex.Message}");
                 Console.WriteLine($"AIKIDO: Error processing event: {queuedItem.Event.Type}, Error: {ex.Message}");
                 await Task.Delay(RetryDelayMs, _cancellationSource.Token);
