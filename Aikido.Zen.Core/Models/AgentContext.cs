@@ -2,11 +2,9 @@ using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Helpers.OpenAPI;
 using Aikido.Zen.Core.Models.Ip;
-using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Text.RegularExpressions;
 
 namespace Aikido.Zen.Core.Models
@@ -126,6 +124,11 @@ namespace Aikido.Zen.Core.Models
 
         public bool IsBlocked(User user, string ip, string endpoint, string userAgent)
         {
+            // if the ip is bypassed, we don't block the request
+            if (BlockList.IsBypassedIP(ip))
+            {
+                return true;
+            }
             return (user != null && IsUserBlocked(user.Id)) || _blockList.IsBlocked(ip, endpoint) || IsUserAgentBlocked(userAgent);
         }
 
@@ -163,7 +166,8 @@ namespace Aikido.Zen.Core.Models
         {
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", response.Block ? "true" : "false");
             UpdateBlockedUsers(response.BlockedUserIds);
-            BlockList.UpdateAllowedForEndpointSubnets(response.Endpoints);
+            BlockList.UpdateAllowedIpsPerEndpoint(response.Endpoints);
+            BlockList.UpdateBypassedIps(response.BypassedIPAddresses);
             UpdateRatelimitedRoutes(response.Endpoints);
             UpdateBlockedUserAgents(response.BlockedUserAgentsRegex);
             ConfigLastUpdated = response.ConfigUpdatedAt;
@@ -178,7 +182,7 @@ namespace Aikido.Zen.Core.Models
                 return;
             }
             BlockList.UpdateBlockedIps(response.BlockedIps);
-            BlockList.UpdateBypassedIps(response.AllowedIps);
+            BlockList.UpdateAllowedIps(response.AllowedIps);
             UpdateBlockedUserAgents(response.BlockedUserAgents != null ? new Regex(response.BlockedUserAgents) : null);
         }
 
