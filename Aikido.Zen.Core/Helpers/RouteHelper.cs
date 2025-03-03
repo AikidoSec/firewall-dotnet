@@ -9,7 +9,7 @@ namespace Aikido.Zen.Core.Helpers
 
 
         private static readonly string[] ExcludedMethods = { "OPTIONS", "HEAD" };
-        private static readonly string[] IgnoreExtensions = { "properties", "php", "asp", "aspx", "jsp", "config" };
+        private static readonly string[] IgnoreExtensions = { "properties", "config", "webmanifest" };
         private static readonly string[] IgnoreStrings = { "cgi-bin" };
 
 
