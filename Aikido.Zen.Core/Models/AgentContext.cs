@@ -178,7 +178,7 @@ namespace Aikido.Zen.Core.Models
             if (response == null)
             {
                 BlockList.UpdateBlockedIps(new List<string>());
-                BlockList.UpdateBypassedIps(new List<string>());
+                BlockList.UpdateAllowedIps(new List<string>());
                 return;
             }
             BlockList.UpdateBlockedIps(response.BlockedIps);
