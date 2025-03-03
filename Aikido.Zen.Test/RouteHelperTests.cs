@@ -2,6 +2,7 @@ using Aikido.Zen.Core;
 using Aikido.Zen.Core.Helpers;
 using NUnit.Framework;
 using System;
+using System.Collections.Generic;
 
 namespace Aikido.Zen.Test.Helpers
 {
@@ -58,7 +59,11 @@ namespace Aikido.Zen.Test.Helpers
         [TestCase("/api/resource", "GET", 200, true)]
         [TestCase("/api/resource", "OPTIONS", 200, false)]
         [TestCase("/api/resource", "GET", 404, false)]
-        [TestCase("/api/.well-known/resource", "GET", 200, true)]
+        [TestCase("/.well-known", "GET", 200, false)]
+        [TestCase("/.well-known/change-password", "GET", 200, true)]
+        [TestCase("/.well-known/security.txt", "GET", 200, false)]
+        [TestCase("/cgi-bin/luci/;stok=/locale", "GET", 200, false)]
+        [TestCase("/whatever/cgi-bin", "GET", 200, false)]
         [TestCase("/api/.hidden/resource", "GET", 200, false)]
         [TestCase("/api/resource.php", "GET", 200, false)]
         [TestCase("/api/resource", "HEAD", 200, false)]
