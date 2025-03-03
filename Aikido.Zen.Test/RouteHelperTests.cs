@@ -2,7 +2,6 @@ using Aikido.Zen.Core;
 using Aikido.Zen.Core.Helpers;
 using NUnit.Framework;
 using System;
-using System.Collections.Generic;
 
 namespace Aikido.Zen.Test.Helpers
 {
