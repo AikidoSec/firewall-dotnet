@@ -122,14 +122,29 @@ namespace Aikido.Zen.Core.Models
             _blockedUsers.Clear();
         }
 
-        public bool IsBlocked(User user, string ip, string endpoint, string userAgent)
+        public bool IsBlocked(User user, string ip, string endpoint, string userAgent, out string reason)
         {
+            reason = null;
             // if the ip is bypassed, we don't block the request
             if (BlockList.IsBypassedIP(ip))
             {
                 return true;
             }
-            return (user != null && IsUserBlocked(user.Id)) || _blockList.IsBlocked(ip, endpoint) || IsUserAgentBlocked(userAgent);
+            if (user != null && IsUserBlocked(user.Id))
+            {
+                reason = "User is blocked";
+                return true;
+            }
+            if (_blockList.IsBlocked(ip, endpoint, out reason))
+            {
+                return true;
+            }
+            if (IsUserAgentBlocked(userAgent))
+            {
+                reason = "User agent is blocked";
+                return true;
+            }
+            return false;
         }
 
         public bool IsUserBlocked(string userId)
