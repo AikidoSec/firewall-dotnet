@@ -30,12 +30,12 @@ namespace Aikido.Zen.Core.Helpers
         /// <summary>
         /// Gets the Aikido URL from the environment variables or defaults to a predefined URL.
         /// </summary>
-        public static string AikidoUrl => Environment.GetEnvironmentVariable("AIKIDO_URL") ?? "https://guard.aikido.dev";
+        public static string AikidoUrl => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AIKIDO_URL")) ? Environment.GetEnvironmentVariable("AIKIDO_URL") : "https://guard.aikido.dev";
 
         /// <summary>
         /// Gets the Aikido real-time URL from the environment variables or defaults to a predefined URL.
         /// </summary>
-        public static string AikidoRealtimeUrl => Environment.GetEnvironmentVariable("AIKIDO_REALTIME_URL") ?? "https://runtime.aikido.dev";
+        public static string AikidoRealtimeUrl => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AIKIDO_REALTIME_URL")) ? Environment.GetEnvironmentVariable("AIKIDO_REALTIME_URL") : "https://runtime.aikido.dev";
 
         /// <summary>
         /// Determines if the system is in debugging mode by checking the environment variable.

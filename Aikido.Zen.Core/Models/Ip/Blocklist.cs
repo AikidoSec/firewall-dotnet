@@ -94,7 +94,7 @@ namespace Aikido.Zen.Core.Models.Ip
                 foreach (var ip in ips)
                 {
 
-                    foreach (var cidr in IPHelper.ToCidrString(subnet))
+                    foreach (var cidr in IPHelper.ToCidrString(ip))
                     {
                         _bypassedIps.InsertRange(cidr);
                     }
@@ -121,7 +121,7 @@ namespace Aikido.Zen.Core.Models.Ip
                 foreach (var ip in ips)
                 {
 
-                    foreach (var cidr in IPHelper.ToCidrString(subnet))
+                    foreach (var cidr in IPHelper.ToCidrString(ip))
                     {
                         _allowedIps.InsertRange(cidr);
                     }
@@ -211,6 +211,11 @@ namespace Aikido.Zen.Core.Models.Ip
             }
         }
 
+        /// <summary>
+        /// Checks if an IP is bypassed.
+        /// </summary>
+        /// <param name="ip">The IP address to check.</param>
+        /// <returns>True if the IP is bypassed, false otherwise.</returns>
         public bool IsBypassedIP(string ip)
         {
             _lock.EnterReadLock();
@@ -249,7 +254,7 @@ namespace Aikido.Zen.Core.Models.Ip
                     return _allowedIps.IsIpInRange(ip);
                 }
 
-                return false;
+                return true;
             }
             finally
             {
@@ -263,9 +268,35 @@ namespace Aikido.Zen.Core.Models.Ip
         /// <param name="ip">The IP address to check.</param>
         /// <param name="endpoint">The endpoint, e.g., GET|the/path.</param>
         /// <returns>True if access is blocked, false otherwise.</returns>
-        public bool IsBlocked(string ip, string endpoint)
+        public bool IsBlocked(string ip, string endpoint, out string reason)
         {
-            return IsIPBlocked(ip) || !IsIPAllowed(ip, endpoint) || !IsAllowedIP(ip);
+            reason = null;
+            if (IsPrivateOrLocalIp(ip) || IsBypassedIP(ip))
+            {
+                reason = "Ip is private or local";
+                return false;
+            }
+            if (IsIPBlocked(ip))
+            {
+                reason = "IP is blocked";
+                return true;
+            }
+            if (!IsIPAllowed(ip, endpoint))
+            {
+                reason = "Ip is not allowed for this endpoint";
+                return true;
+            }
+            if (!IsAllowedIP(ip))
+            {
+                reason = "Ip is not allowed";
+                return true;
+            }
+            return false;
+        }
+
+        internal bool IsPrivateOrLocalIp(string ip)
+        {
+            return IPHelper.IsPrivateOrLocalIp(ip);
         }
     }
 }
