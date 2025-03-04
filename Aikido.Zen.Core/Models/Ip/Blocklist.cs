@@ -13,15 +13,17 @@ namespace Aikido.Zen.Core.Models.Ip
     public class BlockList
     {
         // The state of our blocklist needs to be thread-safe, as incoming ASP requests can be multithreaded, and the agent, which runs on a background thread, can also update/access the state.
-        private IPRange _blockedSubnets = new IPRange();
-        private ConcurrentDictionary<string, IPRange> _allowedSubnets = new ConcurrentDictionary<string, IPRange>();
+        private IPRange _blockedIps = new IPRange();
+        private IPRange _allowedIps = new IPRange();
+        private IPRange _bypassedIps = new IPRange();
+        private ConcurrentDictionary<string, IPRange> _allowedIpsPerEndpoint = new ConcurrentDictionary<string, IPRange>();
         private readonly ReaderWriterLockSlim _lock = new ReaderWriterLockSlim();
 
         /// <summary>
         /// Updates the allowed subnet ranges per URL.
         /// </summary>
         /// <param name="endpoints">The endpoint configurations containing allowed IP addresses.</param>
-        public void UpdateAllowedSubnets(IEnumerable<EndpointConfig> endpoints)
+        public void UpdateAllowedIpsPerEndpoint (IEnumerable<EndpointConfig> endpoints)
         {
             _lock.EnterWriteLock();
             try
@@ -42,10 +44,10 @@ namespace Aikido.Zen.Core.Models.Ip
                     }
                 );
 
-                _allowedSubnets.Clear();
+                _allowedIpsPerEndpoint.Clear();
                 foreach (var subnet in subnets)
                 {
-                    _allowedSubnets.TryAdd(subnet.Key, subnet.Value);
+                    _allowedIpsPerEndpoint.TryAdd(subnet.Key, subnet.Value);
                 }
             }
             finally
@@ -58,18 +60,72 @@ namespace Aikido.Zen.Core.Models.Ip
         /// Updates the blocked subnet ranges.
         /// </summary>
         /// <param name="subnets">The subnet ranges to block.</param>
-        public void UpdateBlockedSubnets(IEnumerable<string> subnets)
+        public void UpdateBlockedIps (IEnumerable<string> subnets)
         {
             _lock.EnterWriteLock();
             try
             {
-                _blockedSubnets = new IPRange();
+                _blockedIps = new IPRange();
                 foreach (var subnet in subnets)
                 {
                     foreach (var cidr in IPHelper.ToCidrString(subnet))
                     {
-                        _blockedSubnets.InsertRange(cidr);
+                        _blockedIps.InsertRange(cidr);
                     }
+                }
+            }
+            finally
+            {
+                _lock.ExitWriteLock();
+            }
+        }
+
+        /// <summary>
+        /// Updates the allowed ip addresses or ranges, they bypass all blocking rules
+        /// </summary>
+        /// <param name="ips">The ip addresses or ranges to allow.</param>
+        public void UpdateBypassedIps (IEnumerable<string> ips)
+
+        {
+            _lock.EnterWriteLock();
+            try
+            {
+                _bypassedIps = new IPRange();
+                foreach (var ip in ips)
+                {
+
+                    foreach (var cidr in IPHelper.ToCidrString(ip))
+                    {
+                        _bypassedIps.InsertRange(cidr);
+                    }
+
+                }
+            }
+            finally
+            {
+                _lock.ExitWriteLock();
+            }
+        }
+
+        /// <summary>
+        /// Updates the allowed ip addresses or ranges, they do not bypass any blocking rules
+        /// </summary>
+        /// <param name="ips">The ip addresses or ranges to allow.</param>
+        public void UpdateAllowedIps (IEnumerable<string> ips)
+
+        {
+            _lock.EnterWriteLock();
+            try
+            {
+                _allowedIps = new IPRange();
+                foreach (var ip in ips)
+                {
+
+                    foreach (var cidr in IPHelper.ToCidrString(ip))
+                    {
+                        _allowedIps.InsertRange(cidr);
+                    }
+
                 }
             }
             finally
@@ -82,12 +138,12 @@ namespace Aikido.Zen.Core.Models.Ip
         /// Adds an IP address to the blocklist.
         /// </summary>
         /// <param name="ip">The IP address to block.</param>
-        public void AddIpAddressToBlocklist(string ip)
+        public void AddIpAddressToBlocklist (string ip)
         {
             _lock.EnterWriteLock();
             try
             {
-                _blockedSubnets.InsertRange(ip);
+                _blockedIps.InsertRange(ip);
             }
             finally
             {
@@ -96,11 +152,11 @@ namespace Aikido.Zen.Core.Models.Ip
         }
 
         /// <summary>
-        /// Checks if an IP address is blocked.
+        /// Checks if an IP address is blocked. (e.g. due to geo restrictions, known malicious IPs, etc.)
         /// </summary>
         /// <param name="ip">The IP address to check.</param>
         /// <returns>True if the IP is blocked, false otherwise.</returns>
-        public bool IsIPBlocked(string ip)
+        public bool IsIPBlocked (string ip)
         {
             _lock.EnterReadLock();
             try
@@ -110,10 +166,10 @@ namespace Aikido.Zen.Core.Models.Ip
                     return false; // Allow invalid IPs by default
                 }
 
-                if (!_blockedSubnets.HasItems)
+                if (!_blockedIps.HasItems)
                     return false; // Allow if no blocked subnets are defined
 
-                return _blockedSubnets.IsIpInRange(ip);
+                return _blockedIps.IsIpInRange(ip);
             }
             finally
             {
@@ -127,7 +183,7 @@ namespace Aikido.Zen.Core.Models.Ip
         /// <param name="ip">The IP address to check.</param>
         /// <param name="endpoint">The endpoint, e.g., GET|the/path.</param>
         /// <returns>True if the IP is allowed, false otherwise.</returns>
-        public bool IsIPAllowed(string ip, string endpoint)
+        public bool IsIPAllowed (string ip, string endpoint)
         {
             _lock.EnterReadLock();
             try
@@ -137,7 +193,7 @@ namespace Aikido.Zen.Core.Models.Ip
                     return true; // Allow invalid IPs by default
                 }
 
-                if (!_allowedSubnets.TryGetValue(endpoint, out var trie))
+                if (!_allowedIpsPerEndpoint.TryGetValue(endpoint, out var trie))
                 {
                     return true; // Allow if no specific subnets are defined for the endpoint
                 }
@@ -156,14 +212,95 @@ namespace Aikido.Zen.Core.Models.Ip
         }
 
         /// <summary>
+        /// Checks if an IP is bypassed.
+        /// </summary>
+        /// <param name="ip">The IP address to check.</param>
+        /// <returns>True if the IP is bypassed, false otherwise.</returns>
+        public bool IsBypassedIP (string ip)
+        {
+            _lock.EnterReadLock();
+            try
+            {
+                if (!IPHelper.IsValidIp(ip))
+                {
+                    return false; // Invalid IPs are not allowed, since allowing bypasses other blocking rules
+                }
+
+                if (_bypassedIps.HasItems)
+                {
+                    return _bypassedIps.IsIpInRange(ip);
+                }
+
+                return false;
+            }
+            finally
+            {
+                _lock.ExitReadLock();
+            }
+        }
+
+        public bool IsAllowedIP (string ip)
+        {
+            _lock.EnterReadLock();
+            try
+            {
+                if (!IPHelper.IsValidIp(ip))
+                {
+                    return !_allowedIps.HasItems; // Invalid IPs are not allowed if there are allowed IPs
+                }
+
+                if (_allowedIps.HasItems)
+                {
+                    return _allowedIps.IsIpInRange(ip);
+                }
+
+                return true;
+            }
+            finally
+            {
+                _lock.ExitReadLock();
+            }
+        }
+
+
+
+
+
+        /// <summary>
         /// Checks if access should be blocked based on IP and URL.
         /// </summary>
         /// <param name="ip">The IP address to check.</param>
         /// <param name="endpoint">The endpoint, e.g., GET|the/path.</param>
         /// <returns>True if access is blocked, false otherwise.</returns>
-        public bool IsBlocked(string ip, string endpoint)
+        public bool IsBlocked (string ip, string endpoint, out string reason)
         {
-            return IsIPBlocked(ip) || !IsIPAllowed(ip, endpoint);
+            reason = null;
+            if (IsPrivateOrLocalIp(ip) || IsBypassedIP(ip))
+            {
+                reason = "Ip is private or local";
+                return false;
+            }
+            if (IsIPBlocked(ip))
+            {
+                reason = "IP is blocked";
+                return true;
+            }
+            if (!IsIPAllowed(ip, endpoint))
+            {
+                reason = "Ip is not allowed for this endpoint";
+                return true;
+            }
+            if (!IsAllowedIP(ip))
+            {
+                reason = "Ip is not allowed";
+                return true;
+            }
+            return false;
+        }
+
+        internal bool IsPrivateOrLocalIp (string ip)
+        {
+            return IPHelper.IsPrivateOrLocalIp(ip);
         }
     }
 }

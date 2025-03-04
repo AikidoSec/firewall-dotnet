@@ -48,7 +48,7 @@ namespace Aikido.Zen.Core
         /// If not configured, uses NullLogger which safely does nothing.
         /// </summary>
         /// <param name="logger">The logger instance to use</param>
-        public static void ConfigureLogger(ILogger logger)
+        public static void ConfigureLogger (ILogger logger)
         {
             Logger = logger ?? NullLogger.Instance;
         }
@@ -63,7 +63,7 @@ namespace Aikido.Zen.Core
             }
         }
 
-        public static Agent NewInstance(IZenApi api, int batchTimeoutMs = 5000)
+        public static Agent NewInstance (IZenApi api, int batchTimeoutMs = 5000)
         {
             _instance = new Agent(api, batchTimeoutMs);
             return _instance;
@@ -74,7 +74,7 @@ namespace Aikido.Zen.Core
         /// </summary>
         /// <param name="api">The Zen API client for reporting events</param>
         /// <param name="batchTimeoutMs">Timeout in milliseconds for batch operations</param>
-        public Agent(IZenApi api, int batchTimeoutMs = 5000)
+        public Agent (IZenApi api, int batchTimeoutMs = 5000)
         {
             // batchTimeout should be at least 1 second
             if (batchTimeoutMs < 1000)
@@ -96,7 +96,7 @@ namespace Aikido.Zen.Core
         /// Starts the agent and schedules heartbeat events.
         /// </summary>
         /// <param name="token">The authentication token for the Zen API</param>
-        public void Start()
+        public void Start ()
         {
             // send started event
             QueueEvent(EnvironmentHelper.Token, Started.Create(),
@@ -140,7 +140,7 @@ namespace Aikido.Zen.Core
         /// <param name="token">The authentication token</param>
         /// <param name="evt">The event to queue</param>
         /// <param name="callback">Optional callback to execute when the event is processed</param>
-        public void QueueEvent(string token, IEvent evt, Action<IEvent, APIResponse> callback = null)
+        public void QueueEvent (string token, IEvent evt, Action<IEvent, APIResponse> callback = null)
         {
             if (string.IsNullOrEmpty(token)) throw new ArgumentNullException(nameof(token));
             if (evt == null) throw new ArgumentNullException(nameof(evt));
@@ -160,7 +160,7 @@ namespace Aikido.Zen.Core
         /// </summary>
         /// <param name="scheduleId">Unique identifier for the scheduled event</param>
         /// <param name="item">The item to schedule</param>
-        public void ScheduleEvent(string scheduleId, ScheduledItem item)
+        public void ScheduleEvent (string scheduleId, ScheduledItem item)
         {
             if (string.IsNullOrEmpty(item.Token)) throw new ArgumentNullException($"{nameof(item)}.{nameof(item.Token)}");
             if (string.IsNullOrEmpty(scheduleId)) throw new ArgumentNullException(nameof(scheduleId));
@@ -183,7 +183,7 @@ namespace Aikido.Zen.Core
         /// <param name="interval">The interval between event triggers</param>
         /// <param name="scheduleId">Unique identifier for the scheduled event</param>
         /// <param name="callback">Optional callback to execute when the event triggers</param>
-        public void ScheduleEvent(string token, IEvent evt, TimeSpan interval, string scheduleId, Action<IEvent, APIResponse> callback)
+        public void ScheduleEvent (string token, IEvent evt, TimeSpan interval, string scheduleId, Action<IEvent, APIResponse> callback)
         {
             if (string.IsNullOrEmpty(token)) throw new ArgumentNullException(nameof(token));
             if (evt == null) throw new ArgumentNullException(nameof(evt));
@@ -210,7 +210,7 @@ namespace Aikido.Zen.Core
         /// Removes a scheduled event.
         /// </summary>
         /// <param name="scheduleId">The ID of the scheduled event to remove</param>
-        public void RemoveScheduledEvent(string scheduleId)
+        public void RemoveScheduledEvent (string scheduleId)
         {
             if (string.IsNullOrEmpty(scheduleId)) throw new ArgumentNullException(nameof(scheduleId));
             _scheduledEvents.TryRemove(scheduleId, out _);
@@ -219,7 +219,7 @@ namespace Aikido.Zen.Core
         /// <summary>
         /// Disposes the agent, canceling any pending operations and waiting for graceful shutdown.
         /// </summary>
-        public void Dispose()
+        public void Dispose ()
         {
             try
             {
@@ -272,7 +272,7 @@ namespace Aikido.Zen.Core
         /// <summary>
         /// Clears all monitoring data from the current context.
         /// </summary>
-        public void ClearContext()
+        public void ClearContext ()
         {
             _context.Clear();
         }
@@ -281,7 +281,7 @@ namespace Aikido.Zen.Core
         /// Captures inbound requests.
         /// </summary>
         /// <param name="context">The current context</param>
-        public void CaptureInboundRequest(Context context)
+        public void CaptureInboundRequest (Context context)
         {
             if (context.User != null)
                 _context.AddUser(context.User, context.RemoteAddress);
@@ -294,7 +294,7 @@ namespace Aikido.Zen.Core
         /// Adds a route to the context
         /// </summary>
         /// <param name="context">The context of the request</param>
-        public void AddRoute(Context context)
+        public void AddRoute (Context context)
         {
             _context.AddRoute(context);
         }
@@ -304,7 +304,7 @@ namespace Aikido.Zen.Core
         /// </summary>
         /// <param name="user"></param>
         /// <param name="ipAddress"></param>
-        public void CaptureUser(User user, string ipAddress)
+        public void CaptureUser (User user, string ipAddress)
         {
             _context.AddUser(user, ipAddress);
         }
@@ -314,7 +314,7 @@ namespace Aikido.Zen.Core
         /// </summary>
         /// <param name="host"></param>
         /// <param name="port"></param>
-        public void CaptureOutboundRequest(string host, int? port)
+        public void CaptureOutboundRequest (string host, int? port)
         {
             if (string.IsNullOrEmpty(host))
                 return;
@@ -327,7 +327,7 @@ namespace Aikido.Zen.Core
         /// Sets the flag indicating whether the context middleware is installed.
         /// </summary>
         /// <param name="installed">True if the context middleware is installed; otherwise, false.</param>
-        public void SetContextMiddlewareInstalled(bool installed)
+        public void SetContextMiddlewareInstalled (bool installed)
         {
             _context.ContextMiddlewareInstalled = installed;
         }
@@ -336,7 +336,7 @@ namespace Aikido.Zen.Core
         /// Sets the flag indicating whether the blocking middleware is installed.
         /// </summary>
         /// <param name="installed">True if the blocking middleware is installed; otherwise, false.</param>
-        public void SetBlockingMiddlewareInstalled(bool installed)
+        public void SetBlockingMiddlewareInstalled (bool installed)
         {
             _context.BlockingMiddlewareInstalled = installed;
         }
@@ -353,7 +353,7 @@ namespace Aikido.Zen.Core
         /// <param name="metadata">Additional metadata for the attack</param>
         /// <param name="blocked">Whether the attack was blocked</param>
         /// <returns></returns>
-        public virtual void SendAttackEvent(AttackKind kind, Source source, string payload, string operation, Context context, string module, IDictionary<string, object> metadata, bool blocked)
+        public virtual void SendAttackEvent (AttackKind kind, Source source, string payload, string operation, Context context, string module, IDictionary<string, object> metadata, bool blocked)
         {
             LogHelper.DebugLog(Logger, $"AIKIDO: Attack detected: {kind} in {source} {operation}, blocked: {blocked}");
             Logger.LogInformation("AIKIDO: Attack detected: {kind} in {source} {operation}, blocked: {blocked}",
@@ -363,7 +363,7 @@ namespace Aikido.Zen.Core
 
 
         // Main event processing loop that handles config checks, scheduled events and queued events
-        private async Task ProcessRecurringTasksAsync()
+        private async Task ProcessRecurringTasksAsync ()
         {
             var currentSecond = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             var requestsThisSecond = 0;
@@ -408,7 +408,7 @@ namespace Aikido.Zen.Core
             }
         }
 
-        private async Task ProcessScheduledEvents()
+        private async Task ProcessScheduledEvents ()
         {
             var now = DateTime.UtcNow;
             foreach (var kvp in _scheduledEvents.ToArray()) // Avoid enumeration issues
@@ -437,7 +437,7 @@ namespace Aikido.Zen.Core
             }
         }
 
-        private async Task<(bool shouldContinue, long currentSecond, int requestCount)> HandleRateLimit(long currentSecond, int requestsThisSecond)
+        private async Task<(bool shouldContinue, long currentSecond, int requestCount)> HandleRateLimit (long currentSecond, int requestsThisSecond)
         {
             var thisSecond = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             // reset the counter if we've moved to the next second
@@ -458,7 +458,7 @@ namespace Aikido.Zen.Core
             return (false, currentSecond, requestsThisSecond);
         }
 
-        private async Task<int> ProcessQueuedEvent(int requestsThisSecond)
+        private async Task<int> ProcessQueuedEvent (int requestsThisSecond)
         {
             if (_eventQueue.TryDequeue(out var eventItem))
             {
@@ -471,7 +471,7 @@ namespace Aikido.Zen.Core
             }
         }
 
-        private async Task<int> ProcessSingleEvent(QueuedItem queuedItem, int requestsThisSecond)
+        private async Task<int> ProcessSingleEvent (QueuedItem queuedItem, int requestsThisSecond)
         {
             try
             {
@@ -505,7 +505,7 @@ namespace Aikido.Zen.Core
             return requestsThisSecond;
         }
 
-        private async Task HandleUnexpectedError()
+        private async Task HandleUnexpectedError ()
         {
             try
             {
@@ -517,14 +517,14 @@ namespace Aikido.Zen.Core
             }
         }
 
-        internal Heartbeat ConstructHeartbeat()
+        internal Heartbeat ConstructHeartbeat ()
         {
             var heartbeat = Heartbeat.Create(_context);
             ClearContext();
             return heartbeat;
         }
 
-        internal bool ConfigChanged(out ReportingAPIResponse response)
+        internal bool ConfigChanged (out ReportingAPIResponse response)
         {
 
             response = _api.Runtime.GetConfigLastUpdated(EnvironmentHelper.Token).Result;
@@ -537,20 +537,20 @@ namespace Aikido.Zen.Core
             return false;
         }
 
-        private async Task UpdateConfig(bool block, IEnumerable<string> blockedUsers, IEnumerable<EndpointConfig> endpoints, Regex blockedUserAgents, long configVersion)
+        private async Task UpdateConfig (ReportingAPIResponse response)
         {
-            _context.UpdateConfig(block, blockedUsers, endpoints, blockedUserAgents, configVersion);
+            _context.UpdateConfig(response);
             await UpdateBlockedIps();
         }
 
-        internal async Task UpdateBlockedIps()
+        internal async Task UpdateBlockedIps ()
         {
             if (string.IsNullOrEmpty(EnvironmentHelper.Token))
                 return;
-            var blockedIPsResponse = await _api.Reporting.GetBlockedIps(EnvironmentHelper.Token);
-            if (blockedIPsResponse.Success && blockedIPsResponse.BlockedIPAddresses != null)
+            var firewallListsResponse = await _api.Reporting.GetFirewallLists(EnvironmentHelper.Token);
+            if (firewallListsResponse.Success && firewallListsResponse.BlockedIPAddresses != null)
             {
-                _context.UpdateBlockedIps(blockedIPsResponse.Ips);
+                _context.UpdateFirewallLists(firewallListsResponse);
             }
         }
 
