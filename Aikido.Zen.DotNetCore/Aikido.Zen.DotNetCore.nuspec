@@ -32,6 +32,7 @@
       </group>
       <group targetFramework="net8.0">
         <dependency id="Lib.Harmony" version="[2.3.5,)" />
+        <dependency id="Lib.Harmony" version="[2.3.5,)" />
         <dependency id="Microsoft.AspNetCore.Hosting.Abstractions" version="2.2.0" />
         <dependency id="Microsoft.AspNetCore.Http" version="2.2.2" />
         <dependency id="Microsoft.AspNetCore.Routing" version="2.2.2" />
