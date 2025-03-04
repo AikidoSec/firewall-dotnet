@@ -211,29 +211,6 @@ namespace Aikido.Zen.Core.Models.Ip
             }
         }
 
-        public bool IsBypassedIP(string ip)
-        {
-            _lock.EnterReadLock();
-            try
-            {
-                if (!IPHelper.IsValidIp(ip))
-                {
-                    return false; // Invalid IPs are not allowed, since allowing bypasses other blocking rules
-                }
-
-                if (_allowedSubnets.HasItems)
-                {
-                    return _allowedSubnets.IsIpInRange(ip);
-                }
-
-                return true; // No allowed IPs means allowed
-            }
-            finally
-            {
-                _lock.ExitReadLock();
-            }
-        }
-
         /// <summary>
         /// Checks if an IP is bypassed.
         /// </summary>
@@ -285,56 +262,9 @@ namespace Aikido.Zen.Core.Models.Ip
             }
         }
 
-        /// <summary>
-        /// Checks if an IP is bypassed.
-        /// </summary>
-        /// <param name="ip">The IP address to check.</param>
-        /// <returns>True if the IP is bypassed, false otherwise.</returns>
-        public bool IsBypassedIP(string ip)
-        {
-            _lock.EnterReadLock();
-            try
-            {
-                if (!IPHelper.IsValidIp(ip))
-                {
-                    return false; // Invalid IPs are not allowed, since allowing bypasses other blocking rules
-                }
 
-                if (_bypassedIps.HasItems)
-                {
-                    return _bypassedIps.IsIpInRange(ip);
-                }
 
-                return false;
-            }
-            finally
-            {
-                _lock.ExitReadLock();
-            }
-        }
 
-        public bool IsAllowedIP(string ip)
-        {
-            _lock.EnterReadLock();
-            try
-            {
-                if (!IPHelper.IsValidIp(ip))
-                {
-                    return !_allowedIps.HasItems; // Invalid IPs are not allowed if there are allowed IPs
-                }
-
-                if (_allowedIps.HasItems)
-                {
-                    return _allowedIps.IsIpInRange(ip);
-                }
-
-                return true;
-            }
-            finally
-            {
-                _lock.ExitReadLock();
-            }
-        }
 
         /// <summary>
         /// Checks if access should be blocked based on IP and URL.
