@@ -65,6 +65,9 @@ namespace Aikido.Zen.Test.Helpers
         [TestCase("/whatever/cgi-bin", "GET", 200, false)]
         [TestCase("/api/.hidden/resource", "GET", 200, false)]
         [TestCase("/api/resource.php", "GET", 200, false)]
+        [TestCase("/test.webmanifest", "GET", 200, false)]
+        [TestCase("/api/test.config", "GET", 200, false)]
+        [TestCase("/test.properties", "GET", 200, false)]
         [TestCase("/api/resource", "HEAD", 200, false)]
         [TestCase("/api/resource", "GET", 500, false)]
         public void ShouldAddRoute_ShouldReturnExpectedResult(string route, string method, int statusCode, bool expectedResult)
