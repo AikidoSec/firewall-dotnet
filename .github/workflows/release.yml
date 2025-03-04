@@ -34,6 +34,7 @@ jobs:
                       6.0
                       7.0
                       8.0
+                      9.0
 
             - name: Add msbuild to PATH
               uses: microsoft/setup-msbuild@v2
