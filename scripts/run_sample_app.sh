@@ -8,7 +8,7 @@ fi
 
 # Build the sample app
 echo "[✓] Building the sample app..."
-dotnet build "$1" -f net8.0 > /dev/null 2>&1
+dotnet build "$1" -f net8.0 # > /dev/null 2>&1
 
 # Run the sample app
 echo "[✓] Running the sample app..."
@@ -18,7 +18,7 @@ sleep 2
 # Check if the app is running
 echo "[✓] Checking health endpoint..."
 for i in {1..5}; do
-    response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5081/health || true)
+    response=$(curl -s -w "%{http_code}" http://localhost:5081/health || true)
     if [ -z "$response" ]; then
         echo "[✗] No response received from health endpoint"
         exit 1
