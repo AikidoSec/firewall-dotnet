@@ -3,6 +3,7 @@ using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 using Microsoft.AspNetCore.Http;
+using System.Net.Mail;
 using System.Text;
 using System.Web; // Import for HTML encoding
 
@@ -31,11 +32,11 @@ namespace Aikido.Zen.DotNetCore.Middleware
             }
 
             // block the request if the user is blocked
-            if (!EnvironmentHelper.DryMode && Agent.Instance.Context.IsBlocked(user, context.Connection?.RemoteIpAddress?.ToString(), routeKey, aikidoContext.UserAgent))
+            if (!EnvironmentHelper.DryMode && Agent.Instance.Context.IsBlocked(user, context.Connection?.RemoteIpAddress?.ToString(), routeKey, aikidoContext.UserAgent, out var reason))
             {
                 Agent.Instance.Context.AddAbortedRequest();
                 context.Response.StatusCode = 403;
-                await context.Response.WriteAsync("Request blocked");
+                await context.Response.WriteAsync($"Your request is blocked: {HttpUtility.HtmlEncode(reason)}");
                 return;
             }
 

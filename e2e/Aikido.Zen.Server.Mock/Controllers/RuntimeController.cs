@@ -15,14 +15,14 @@ namespace Aikido.Zen.Server.Mock.Controllers
         private readonly EventService _eventService;
         private readonly AppService _appService;
 
-        public RuntimeController(ConfigService configService, EventService eventService, AppService appService)
+        public RuntimeController (ConfigService configService, EventService eventService, AppService appService)
         {
             _configService = configService;
             _eventService = eventService;
             _appService = appService;
         }
 
-        public void ConfigureEndpoints(WebApplication app)
+        public void ConfigureEndpoints (WebApplication app)
         {
             // Config endpoints
             app.MapGet("/api/runtime/config", async (HttpContext context) =>
@@ -62,32 +62,39 @@ namespace Aikido.Zen.Server.Mock.Controllers
             app.MapGet("/api/runtime/firewall/lists", async (HttpContext context) =>
             {
                 var appModel = context.Items["app"] as AppModel;
-                return Results.Json(new
+                var blockedIps = _configService.GetBlockedIps(appModel!.Id).ToList();
+
+                var allowedIps = _configService.GetAllowedIps(appModel.Id).ToList();
+
+                var firewallListConfig = new FirewallListConfig
                 {
-                    success = true,
-                    serviceId = appModel!.Id,
-                    blockedIPAddresses = _configService.GetBlockedIps(appModel.Id).Select(ip => new
-                    {
-                        source = "geoip",
-                        description = "geo restrictions",
-                        ips = new[] { ip }
-                    }).ToList(),
-                    blockedUserAgents = string.Join("\n", _configService.GetBlockedUserAgents(appModel.Id))
-                });
+                    Success = true,
+                    ServiceId = appModel.Id,
+                    BlockedIPAddresses = blockedIps,
+                    AllowedIPAddresses = allowedIps,
+                    BlockedUserAgents = _configService.GetBlockedUserAgents(appModel.Id)
+                };
+
+                return Results.Json(firewallListConfig);
             }).AddEndpointFilter<AuthFilter>();
 
-            app.MapPost("/api/runtime/firewall/lists", async (HttpContext context, Dictionary<string, object> lists) =>
+            app.MapPost("/api/runtime/firewall/lists", async (HttpContext context, FirewallListConfig lists) =>
             {
                 var appModel = context.Items["app"] as AppModel;
 
-                if (lists.TryGetValue("blockedIPAddresses", out var ips) && ips is List<string> ipList)
+                if (lists.BlockedIPAddresses?.Any() ?? false)
                 {
-                    _configService.UpdateBlockedIps(appModel!.Id, ipList);
+                    _configService.UpdateBlockedIps(appModel!.Id, lists.BlockedIPAddresses);
                 }
 
-                if (lists.TryGetValue("blockedUserAgents", out var uas) && uas is string userAgents)
+                if (!string.IsNullOrEmpty(lists.BlockedUserAgents))
                 {
-                    _configService.UpdateBlockedUserAgents(appModel!.Id, userAgents);
+                    _configService.UpdateBlockedUserAgents(appModel!.Id, lists.BlockedUserAgents);
+                }
+
+                if (lists.BlockedIPAddresses?.Any() ?? false)
+                {
+                    _configService.UpdateAllowedIps(appModel!.Id, lists.AllowedIPAddresses);
                 }
 
                 return Results.Json(new { success = true });

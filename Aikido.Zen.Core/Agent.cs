@@ -105,12 +105,12 @@ namespace Aikido.Zen.Core
                 if (response.Success)
                 {
                     var reportingResponse = response as ReportingAPIResponse;
-                    Task.Run(() => UpdateConfig(reportingResponse.Block, reportingResponse.BlockedUserIds, reportingResponse.Endpoints, reportingResponse.BlockedUserAgentsRegex, reportingResponse.ConfigUpdatedAt));
+                    Task.Run(() => UpdateConfig(reportingResponse));
                 }
             });
 
             // get blocked ip list and add to context
-            Task.Run(UpdateBlockedIps);
+            Task.Run(async () => await UpdateBlockedIps()).GetAwaiter().GetResult();
 
             // Schedule heartbeat event every x minutes
             var scheduledHeartBeat = new ScheduledItem
@@ -377,7 +377,7 @@ namespace Aikido.Zen.Core
                     {
                         if (ConfigChanged(out var response))
                         {
-                            await UpdateConfig(response.Block, response.BlockedUserIds, response.Endpoints, response.BlockedUserAgentsRegex, response.ConfigUpdatedAt);
+                            await UpdateConfig(response);
                         }
                         _lastConfigCheck = DateTime.UtcNow.Ticks;
                     }
@@ -548,7 +548,7 @@ namespace Aikido.Zen.Core
             if (string.IsNullOrEmpty(EnvironmentHelper.Token))
                 return;
             var firewallListsResponse = await _api.Reporting.GetFirewallLists(EnvironmentHelper.Token);
-            if (firewallListsResponse.Success && firewallListsResponse.BlockedIPAddresses != null)
+            if (firewallListsResponse.Success)
             {
                 _context.UpdateFirewallLists(firewallListsResponse);
             }

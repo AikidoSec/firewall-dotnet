@@ -13,15 +13,15 @@ namespace Aikido.Zen.Test
             // Arrange
             var response = new FirewallListsAPIResponse
             {
-                BlockedIPAddresses = new List<FirewallListsAPIResponse.BlockedIPAddressesList>
+                BlockedIPAddresses = new List<FirewallListsAPIResponse.IPList>
                 {
-                    new FirewallListsAPIResponse.BlockedIPAddressesList
+                    new FirewallListsAPIResponse.IPList
                     {
                         Source = "source1",
                         Description = "desc1",
                         Ips = new[] { "1.1.1.1", "2.2.2.2" }
                     },
-                    new FirewallListsAPIResponse.BlockedIPAddressesList
+                    new FirewallListsAPIResponse.IPList
                     {
                         Source = "source2",
                         Description = "desc2",
@@ -31,7 +31,7 @@ namespace Aikido.Zen.Test
             };
 
             // Act
-            var result = response.Ips.ToList();
+            var result = response.BlockedIps.ToList();
 
             // Assert
             Assert.That(result, Has.Count.EqualTo(4));
@@ -47,11 +47,11 @@ namespace Aikido.Zen.Test
             // Arrange
             var response = new FirewallListsAPIResponse
             {
-                BlockedIPAddresses = new List<FirewallListsAPIResponse.BlockedIPAddressesList>()
+                BlockedIPAddresses = new List<FirewallListsAPIResponse.IPList>()
             };
 
             // Act
-            var result = response.Ips;
+            var result = response.BlockedIps;
 
             // Assert
             Assert.That(result, Is.Empty);
@@ -67,7 +67,7 @@ namespace Aikido.Zen.Test
             };
 
             // Act
-            var result = response.Ips;
+            var result = response.BlockedIps;
 
             // Assert
             Assert.That(result, Is.Empty);

@@ -275,7 +275,12 @@ namespace Aikido.Zen.Core.Models.Ip
         public bool IsBlocked (string ip, string endpoint, out string reason)
         {
             reason = null;
-            if (IsPrivateOrLocalIp(ip) || IsBypassedIP(ip))
+            if (IsBypassedIP(ip))
+            {
+                reason = "IP is bypassed";
+                return false;
+            }
+            if (IsPrivateOrLocalIp(ip))
             {
                 reason = "Ip is private or local";
                 return false;
