@@ -3,20 +3,27 @@ using System.Linq;
 
 namespace Aikido.Zen.Core.Api
 {
-    public class BlockedIpsAPIResponse : APIResponse
+    public class FirewallListsAPIResponse : APIResponse
     {
-        public BlockedIpsAPIResponse(IEnumerable<BlockedIPAddressesList> blockedIPAddresses)
+
+        public FirewallListsAPIResponse ()
         {
-            BlockedIPAddresses = blockedIPAddresses ?? new List<BlockedIPAddressesList>();
+            BlockedIPAddresses = new List<IPList>();
+            AllowedIPAddresses = new List<IPList>();
+            BlockedUserAgents = string.Empty;
+        }
+        public FirewallListsAPIResponse (IEnumerable<IPList> blockedIPAddresses = null, IEnumerable<IPList> allowedIPAddresses = null, string blockedUserAgents = null)
+        {
+            BlockedIPAddresses = blockedIPAddresses ?? new List<IPList>();
+            AllowedIPAddresses = allowedIPAddresses ?? new List<IPList>();
+            BlockedUserAgents = blockedUserAgents ?? string.Empty;
+
         }
 
-        public BlockedIpsAPIResponse()
-        {
-            BlockedIPAddresses = new List<BlockedIPAddressesList>();
-        }
+        private IEnumerable<IPList> _blockedIpAddresses = new List<IPList>();
+        private IEnumerable<IPList> _allowedIPAddresses = new List<IPList>();
 
-        private IEnumerable<BlockedIPAddressesList> _blockedIpAddresses = new List<BlockedIPAddressesList>();
-        public IEnumerable<BlockedIPAddressesList> BlockedIPAddresses
+        public IEnumerable<IPList> BlockedIPAddresses
         {
             get
             {
@@ -24,14 +31,31 @@ namespace Aikido.Zen.Core.Api
             }
             set
             {
-                _blockedIpAddresses = value ?? new List<BlockedIPAddressesList>();
+                _blockedIpAddresses = value ?? new List<IPList>();
             }
         }
 
-        public IEnumerable<string> Ips => BlockedIPAddresses.Where(BlockedIPAddresses => BlockedIPAddresses != null)
+        public IEnumerable<IPList> AllowedIPAddresses
+        {
+            get
+            {
+                return _allowedIPAddresses;
+            }
+            set
+            {
+                _allowedIPAddresses = value ?? new List<IPList>();
+            }
+        }
+
+        public string BlockedUserAgents { get; set; }
+
+        public IEnumerable<string> BlockedIps => BlockedIPAddresses.Where(BlockedIPAddresses => BlockedIPAddresses != null)
                    .SelectMany(BlockedIPAddresses => BlockedIPAddresses.Ips ?? Enumerable.Empty<string>());
 
-        public class BlockedIPAddressesList
+        public IEnumerable<string> AllowedIps => AllowedIPAddresses.Where(AllowedIPAddresses => AllowedIPAddresses != null)
+                   .SelectMany(AllowedIPAddresses => AllowedIPAddresses.Ips ?? Enumerable.Empty<string>());
+
+        public class IPList
         {
             public string Source { get; set; }
             public string Description { get; set; }

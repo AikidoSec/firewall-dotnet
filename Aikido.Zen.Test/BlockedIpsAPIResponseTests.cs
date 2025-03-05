@@ -8,22 +8,22 @@ namespace Aikido.Zen.Test
     public class BlockedIpsAPIResponseTests
     {
         [Test]
-        public void Ips_WithMultipleBlockedIpLists_ReturnsAllIps()
+        public void Ips_WithMultipleBlockedIpLists_ReturnsAllIps ()
         {
             // Arrange
-            var response = new BlockedIpsAPIResponse
+            var response = new FirewallListsAPIResponse
             {
-                BlockedIPAddresses = new List<BlockedIpsAPIResponse.BlockedIPAddressesList>
+                BlockedIPAddresses = new List<FirewallListsAPIResponse.IPList>
                 {
-                    new BlockedIpsAPIResponse.BlockedIPAddressesList
+                    new FirewallListsAPIResponse.IPList
                     {
                         Source = "source1",
                         Description = "desc1",
                         Ips = new[] { "1.1.1.1", "2.2.2.2" }
                     },
-                    new BlockedIpsAPIResponse.BlockedIPAddressesList
+                    new FirewallListsAPIResponse.IPList
                     {
-                        Source = "source2", 
+                        Source = "source2",
                         Description = "desc2",
                         Ips = new[] { "3.3.3.3", "4.4.4.4" }
                     }
@@ -31,43 +31,43 @@ namespace Aikido.Zen.Test
             };
 
             // Act
-            var result = response.Ips.ToList();
+            var result = response.BlockedIps.ToList();
 
             // Assert
             Assert.That(result, Has.Count.EqualTo(4));
             Assert.That(result, Contains.Item("1.1.1.1"));
-            Assert.That(result, Contains.Item("2.2.2.2")); 
+            Assert.That(result, Contains.Item("2.2.2.2"));
             Assert.That(result, Contains.Item("3.3.3.3"));
             Assert.That(result, Contains.Item("4.4.4.4"));
         }
 
         [Test]
-        public void Ips_WithEmptyBlockedIpLists_ReturnsEmptyCollection()
+        public void Ips_WithEmptyBlockedIpLists_ReturnsEmptyCollection ()
         {
             // Arrange
-            var response = new BlockedIpsAPIResponse
+            var response = new FirewallListsAPIResponse
             {
-                BlockedIPAddresses = new List<BlockedIpsAPIResponse.BlockedIPAddressesList>()
+                BlockedIPAddresses = new List<FirewallListsAPIResponse.IPList>()
             };
 
             // Act
-            var result = response.Ips;
+            var result = response.BlockedIps;
 
             // Assert
             Assert.That(result, Is.Empty);
         }
 
         [Test]
-        public void Ips_WithNullBlockedIpLists_ReturnsEmptyCollection()
+        public void Ips_WithNullBlockedIpLists_ReturnsEmptyCollection ()
         {
             // Arrange
-            var response = new BlockedIpsAPIResponse
+            var response = new FirewallListsAPIResponse
             {
                 BlockedIPAddresses = null
             };
 
             // Act
-            var result = response.Ips;
+            var result = response.BlockedIps;
 
             // Assert
             Assert.That(result, Is.Empty);
