@@ -6,6 +6,10 @@ if [ -z "$1" ]; then
     exit 1
 fi
 
+# Build the sample app first
+echo "[✓] Building the sample app..."
+dotnet build "$1"
+
 # Check if mock server is running and ready
 echo "[✓] Checking mock server health..."
 for i in {1..5}; do
@@ -25,21 +29,16 @@ for i in {1..5}; do
     sleep 4
 done
 
-# Build the sample app
-echo "[✓] Building the sample app..."
-dotnet build "$1" # > /dev/null 2>&1
-
 # Run the sample app
 echo "[✓] Running the sample app..."
 dotnet run --project "$1" --urls "http://localhost:5081" &
 APP_PID=$!
-sleep 2
+sleep 5  # Increased sleep time to give the app more time to start
 
 # Check if the app is running
 echo "[✓] Checking health endpoint..."
 for i in {1..5}; do
     echo "[✓] Attempt $i of 5..."
-    # Add timeout to curl to prevent hanging
     response=$(curl -s --max-time 10 -w "%{http_code}" http://localhost:5081/health)
     curl_exit=$?
 
@@ -60,7 +59,9 @@ for i in {1..5}; do
 
     if [ "$response" -eq 200 ]; then
         echo "[✓] Health endpoint responded with status code $response"
-        break
+        # Export the PID so other scripts can use it
+        echo $APP_PID > .app.pid
+        exit 0
     fi
 
     if [ $i -eq 5 ]; then
