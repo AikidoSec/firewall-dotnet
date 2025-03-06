@@ -9,7 +9,7 @@ namespace Aikido.Zen.Core.Helpers
     {
         private static readonly IPRange _privateIpRanges;
 
-        static IPHelper ()
+        static IPHelper()
         {
             _privateIpRanges = new IPRange();
 
@@ -69,7 +69,7 @@ namespace Aikido.Zen.Core.Helpers
         /// </summary>
         /// <param name="ip">The IP address to check.</param>
         /// <returns>True if the IP address is valid, false otherwise.</returns>
-        public static bool IsValidIp (string ip)
+        public static bool IsValidIp(string ip)
         {
             return IPAddress.TryParse(ip, out _);
         }
@@ -80,7 +80,7 @@ namespace Aikido.Zen.Core.Helpers
         /// <param name="startIp">The start IP address.</param>
         /// <param name="endIp">The end IP address.</param>
         /// <returns>A list of CIDR string representations of the IP address range.</returns>
-        public static List<string> ToCidrString (string startIp, string endIp = null)
+        public static List<string> ToCidrString(string startIp, string endIp = null)
         {
             if (endIp == null)
             {
@@ -128,7 +128,7 @@ namespace Aikido.Zen.Core.Helpers
         /// </summary>
         /// <param name="ip">The IP address to check.</param>
         /// <returns>True if the IP address is a private or local IP address, false otherwise.</returns>
-        public static bool IsPrivateOrLocalIp (string ip)
+        public static bool IsPrivateOrLocalIp(string ip)
         {
             if (!IPAddress.TryParse(ip, out var parsedIp))
             {
@@ -142,7 +142,7 @@ namespace Aikido.Zen.Core.Helpers
         /// </summary>
         /// <param name="ipAddress">The IP address as a string.</param>
         /// <returns>The IP address as a long integer.</returns>
-        private static long IpToLong (string ipAddress)
+        private static long IpToLong(string ipAddress)
         {
             IPAddress ip;
             if (IPAddress.TryParse(ipAddress, out ip))
@@ -158,7 +158,7 @@ namespace Aikido.Zen.Core.Helpers
         /// </summary>
         /// <param name="ipAddress">The IP address as a long integer.</param>
         /// <returns>The IP address as a string.</returns>
-        private static string LongToIp (long ipAddress)
+        private static string LongToIp(long ipAddress)
         {
             // Ensure the IP address is within the valid range for IPv4
             if (ipAddress < 0 || ipAddress > 0xFFFFFFFF)
@@ -181,7 +181,7 @@ namespace Aikido.Zen.Core.Helpers
         /// </summary>
         /// <param name="s">The size of the mask.</param>
         /// <returns>The mask as a long integer.</returns>
-        private static long IMask (int s)
+        private static long IMask(int s)
         {
             return (long)(Math.Pow(2, 32) - Math.Pow(2, (32 - s)));
         }
@@ -193,7 +193,7 @@ namespace Aikido.Zen.Core.Helpers
         /// </summary>
         /// <param name="ip">The IP address to check.</param>
         /// <returns>True if the IP address is private, false otherwise.</returns>
-        private static bool IsPrivateIPAddress (IPAddress ip)
+        private static bool IsPrivateIPAddress(IPAddress ip)
         {
             return _privateIpRanges.IsIpInRange(ip.ToString());
         }

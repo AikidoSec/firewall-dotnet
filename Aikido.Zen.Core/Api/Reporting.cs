@@ -14,7 +14,7 @@ namespace Aikido.Zen.Core.Api
     {
         private readonly HttpClient _httpClient;
 
-        public ReportingAPIClient ()
+        public ReportingAPIClient()
         {
             var handler = new HttpClientHandler();
             handler.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
@@ -23,14 +23,14 @@ namespace Aikido.Zen.Core.Api
         }
 
         // used for testing purposes
-        public ReportingAPIClient (HttpClient httpClient)
+        public ReportingAPIClient(HttpClient httpClient)
         {
             _httpClient = httpClient;
             httpClient.DefaultRequestHeaders.AcceptEncoding.Add(new StringWithQualityHeaderValue("gzip"));
             httpClient.DefaultRequestHeaders.AcceptEncoding.Add(new StringWithQualityHeaderValue("deflate"));
         }
 
-        public async Task<ReportingAPIResponse> ReportAsync (string token, object @event, int timeoutInMS)
+        public async Task<ReportingAPIResponse> ReportAsync(string token, object @event, int timeoutInMS)
         {
             using (var cts = new CancellationTokenSource(timeoutInMS))
             {
@@ -58,7 +58,7 @@ namespace Aikido.Zen.Core.Api
             }
         }
 
-        public async Task<FirewallListsAPIResponse> GetFirewallLists (string token)
+        public async Task<FirewallListsAPIResponse> GetFirewallLists(string token)
         {
             using (var cts = new CancellationTokenSource(5000))
             {

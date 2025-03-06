@@ -30,34 +30,34 @@ namespace Aikido.Zen.Core.Models
         public bool BlockingMiddlewareInstalled { get; set; } = false;
 
 
-        public void AddRequest ()
+        public void AddRequest()
         {
             _requests++;
         }
 
-        public void AddAbortedRequest ()
+        public void AddAbortedRequest()
         {
             _requestsAborted++;
         }
 
-        public void AddAttackDetected ()
+        public void AddAttackDetected()
         {
             _attacksDetected++;
         }
 
-        public void AddAttackBlocked ()
+        public void AddAttackBlocked()
         {
             _attacksBlocked++;
         }
 
-        public void AddRateLimitedEndpoint (string path, RateLimitingConfig config)
+        public void AddRateLimitedEndpoint(string path, RateLimitingConfig config)
         {
             if (string.IsNullOrWhiteSpace(path) || config == null)
                 return;
             _rateLimitedRoutes[path] = config;
         }
 
-        public void AddHostname (string hostname)
+        public void AddHostname(string hostname)
         {
             if (string.IsNullOrWhiteSpace(hostname))
                 return;
@@ -72,7 +72,7 @@ namespace Aikido.Zen.Core.Models
             _hostnames[key] = host;
         }
 
-        public void AddUser (User user, string ipAddress)
+        public void AddUser(User user, string ipAddress)
         {
             if (user == null)
                 return;
@@ -88,7 +88,7 @@ namespace Aikido.Zen.Core.Models
             userExtended.LastSeenAt = DateTimeHelper.UTCNowUnixMilliseconds();
         }
 
-        public void AddRoute (Context context)
+        public void AddRoute(Context context)
         {
             if (context == null || context.Url == null) return;
             _routes.TryGetValue(context.Url, out Route route);
@@ -109,7 +109,7 @@ namespace Aikido.Zen.Core.Models
             route.Hits++;
         }
 
-        public void Clear ()
+        public void Clear()
         {
             _hostnames.Clear();
             _users.Clear();
@@ -122,7 +122,7 @@ namespace Aikido.Zen.Core.Models
             _blockedUsers.Clear();
         }
 
-        public bool IsBlocked (User user, string ip, string endpoint, string userAgent, out string reason)
+        public bool IsBlocked(User user, string ip, string endpoint, string userAgent, out string reason)
         {
             reason = null;
             // if the ip is bypassed, we don't block the request
@@ -147,23 +147,23 @@ namespace Aikido.Zen.Core.Models
             return false;
         }
 
-        public bool IsUserBlocked (string userId)
+        public bool IsUserBlocked(string userId)
         {
             return _blockedUsers.Contains(userId);
         }
 
-        public bool IsUserAgentBlocked (string userAgent)
+        public bool IsUserAgentBlocked(string userAgent)
         {
             return _blockedUserAgents?.IsMatch(userAgent) ?? false;
         }
 
-        public void UpdateBlockedUsers (IEnumerable<string> users)
+        public void UpdateBlockedUsers(IEnumerable<string> users)
         {
             _blockedUsers.Clear();
             _blockedUsers.UnionWith(users);
         }
 
-        public void UpdateRatelimitedRoutes (IEnumerable<EndpointConfig> endpoints)
+        public void UpdateRatelimitedRoutes(IEnumerable<EndpointConfig> endpoints)
         {
             _rateLimitedRoutes.Clear();
             foreach (var endpoint in endpoints)
@@ -177,7 +177,7 @@ namespace Aikido.Zen.Core.Models
             }
         }
 
-        public void UpdateConfig (ReportingAPIResponse response)
+        public void UpdateConfig(ReportingAPIResponse response)
         {
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", response.Block ? "true" : "false");
             UpdateBlockedUsers(response.BlockedUserIds);
@@ -188,7 +188,7 @@ namespace Aikido.Zen.Core.Models
             ConfigLastUpdated = response.ConfigUpdatedAt;
         }
 
-        public void UpdateFirewallLists (FirewallListsAPIResponse response)
+        public void UpdateFirewallLists(FirewallListsAPIResponse response)
         {
             if (response == null)
             {
@@ -201,7 +201,7 @@ namespace Aikido.Zen.Core.Models
             UpdateBlockedUserAgents(response.BlockedUserAgents != null ? new Regex(response.BlockedUserAgents) : null);
         }
 
-        public void UpdateBlockedUserAgents (Regex blockedUserAgents)
+        public void UpdateBlockedUserAgents(Regex blockedUserAgents)
         {
             _blockedUserAgents = blockedUserAgents;
         }

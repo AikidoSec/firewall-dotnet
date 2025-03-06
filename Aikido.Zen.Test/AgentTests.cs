@@ -16,7 +16,7 @@ namespace Aikido.Zen.Test
         private const int BatchTimeoutMs = 5000;
 
         [SetUp]
-        public void Setup ()
+        public void Setup()
         {
             Environment.SetEnvironmentVariable("AIKIDO_TOKEN", "test-token");
             _zenApiMock = ZenApiMock.CreateMock();
@@ -24,13 +24,13 @@ namespace Aikido.Zen.Test
         }
 
         [TearDown]
-        public void TearDown ()
+        public void TearDown()
         {
             _agent.Dispose();
         }
 
         [Test]
-        public void ClearContext_ResetsAllContextValues ()
+        public void ClearContext_ResetsAllContextValues()
         {
             // Arrange
             var context = new Context
@@ -54,7 +54,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void CaptureUser_WithValidUser_AddsToContext ()
+        public void CaptureUser_WithValidUser_AddsToContext()
         {
             // Arrange
             var user = new User("123", "testUser");
@@ -72,7 +72,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void CaptureUser_WithNullUser_HandlesGracefully ()
+        public void CaptureUser_WithNullUser_HandlesGracefully()
         {
             // Act
             _agent.CaptureUser(null, "127.0.0.1");
@@ -82,7 +82,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public async Task ScheduleEvent_OverloadWithEventAndInterval_AddsToScheduledEvents ()
+        public async Task ScheduleEvent_OverloadWithEventAndInterval_AddsToScheduledEvents()
         {
             // Arrange
             var token = "test-token";
@@ -109,7 +109,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void ScheduleEvent_OverloadWithEventAndInterval_ThrowsOnInvalidParams ()
+        public void ScheduleEvent_OverloadWithEventAndInterval_ThrowsOnInvalidParams()
         {
             var evt = new Started();
             var interval = TimeSpan.FromMilliseconds(100);
@@ -133,7 +133,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public async Task ScheduleEvent_OverloadWithEventAndInterval_ExecutesCallback ()
+        public async Task ScheduleEvent_OverloadWithEventAndInterval_ExecutesCallback()
         {
             // Arrange
             var token = "test-token";
@@ -142,7 +142,7 @@ namespace Aikido.Zen.Test
             var scheduleId = "test-schedule";
             var callbackExecuted = false;
 
-            void callback (IEvent e, APIResponse r)
+            void callback(IEvent e, APIResponse r)
             {
                 callbackExecuted = true;
             }
@@ -156,21 +156,21 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void Constructor_WithNullApi_ThrowsArgumentNullException ()
+        public void Constructor_WithNullApi_ThrowsArgumentNullException()
         {
             var ex = Assert.Throws<ArgumentNullException>(() => new Agent(null));
             Assert.That(ex.ParamName, Is.EqualTo("api"));
         }
 
         [Test]
-        public void Constructor_WithNegativeBatchTimeout_ThrowsArgumentException ()
+        public void Constructor_WithNegativeBatchTimeout_ThrowsArgumentException()
         {
             var ex = Assert.Throws<ArgumentException>(() => new Agent(_zenApiMock.Object, -1));
             Assert.That(ex.ParamName, Is.EqualTo("batchTimeoutMs"));
         }
 
         [Test]
-        public async Task Start_QueuesStartedEventAndSchedulesHeartbeat ()
+        public async Task Start_QueuesStartedEventAndSchedulesHeartbeat()
         {
             // Arrange
             _zenApiMock = ZenApiMock.CreateMock();
@@ -192,21 +192,21 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void QueueEvent_WithNullToken_ThrowsArgumentNullException ()
+        public void QueueEvent_WithNullToken_ThrowsArgumentNullException()
         {
             var ex = Assert.Throws<ArgumentNullException>(() => _agent.QueueEvent(null, new Started()));
             Assert.That(ex.ParamName, Is.EqualTo("token"));
         }
 
         [Test]
-        public void QueueEvent_WithNullEvent_ThrowsArgumentNullException ()
+        public void QueueEvent_WithNullEvent_ThrowsArgumentNullException()
         {
             var ex = Assert.Throws<ArgumentNullException>(() => _agent.QueueEvent("token", null));
             Assert.That(ex.ParamName, Is.EqualTo("evt"));
         }
 
         [Test]
-        public async Task QueueEvent_WithValidParameters_AddsEventToQueue ()
+        public async Task QueueEvent_WithValidParameters_AddsEventToQueue()
         {
             // Arrange
             var testEvent = new Started();
@@ -229,7 +229,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void ScheduleEvent_WithNullToken_ThrowsArgumentNullException ()
+        public void ScheduleEvent_WithNullToken_ThrowsArgumentNullException()
         {
             var item = new Agent.ScheduledItem { Token = null };
             var ex = Assert.Throws<ArgumentNullException>(() => _agent.ScheduleEvent("id", item));
@@ -237,7 +237,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void ScheduleEvent_WithNullScheduleId_ThrowsArgumentNullException ()
+        public void ScheduleEvent_WithNullScheduleId_ThrowsArgumentNullException()
         {
             var item = new Agent.ScheduledItem { Token = "token" };
             var ex = Assert.Throws<ArgumentNullException>(() => _agent.ScheduleEvent(null, item));
@@ -245,7 +245,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void ScheduleEvent_WithNonPositiveInterval_ThrowsArgumentException ()
+        public void ScheduleEvent_WithNonPositiveInterval_ThrowsArgumentException()
         {
             var item = new Agent.ScheduledItem
             {
@@ -257,7 +257,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public async Task ScheduleEvent_WithValidParameters_ExecutesEventPeriodically ()
+        public async Task ScheduleEvent_WithValidParameters_ExecutesEventPeriodically()
         {
             // Arrange
             var item = new Agent.ScheduledItem
@@ -285,14 +285,14 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void RemoveScheduledEvent_WithNullScheduleId_ThrowsArgumentNullException ()
+        public void RemoveScheduledEvent_WithNullScheduleId_ThrowsArgumentNullException()
         {
             var ex = Assert.Throws<ArgumentNullException>(() => _agent.RemoveScheduledEvent(null));
             Assert.That(ex.ParamName, Is.EqualTo("scheduleId"));
         }
 
         [Test]
-        public async Task RemoveScheduledEvent_StopsExecutingScheduledEvent ()
+        public async Task RemoveScheduledEvent_StopsExecutingScheduledEvent()
         {
             // Arrange
             var scheduleId = "test-schedule";
@@ -323,7 +323,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void CaptureInboundRequest_WithNullUser_HandlesGracefully ()
+        public void CaptureInboundRequest_WithNullUser_HandlesGracefully()
         {
             // Arrange
             var context = new Context
@@ -343,7 +343,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void CaptureInboundRequest_AddsToContext ()
+        public void CaptureInboundRequest_AddsToContext()
         {
             // Arrange
             var user = new User("123", "userName");
@@ -366,7 +366,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void CaptureOutboundRequest_WithInvalidHostname_HandlesGracefully ()
+        public void CaptureOutboundRequest_WithInvalidHostname_HandlesGracefully()
         {
             // Act
             _agent.CaptureOutboundRequest(null, 443);
@@ -376,7 +376,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void CaptureOutboundRequest_AddsHostnameToContext ()
+        public void CaptureOutboundRequest_AddsHostnameToContext()
         {
             // Arrange
             var host = "api.test.com";
@@ -391,14 +391,14 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void SendAttackEvent_WithNullContext_ThrowsArgumentNullException ()
+        public void SendAttackEvent_WithNullContext_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>(() =>
                 _agent.SendAttackEvent(AttackKind.SqlInjection, Source.Query, "payload", "operation", null, "module", null, true));
         }
 
         [Test]
-        public async Task SendAttackEvent_QueuesDetectedAttackEvent ()
+        public async Task SendAttackEvent_QueuesDetectedAttackEvent()
         {
             // Arrange
             var kind = AttackKind.SqlInjection;
@@ -451,7 +451,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void Dispose_CancelsBackgroundTaskAndDisposesResources ()
+        public void Dispose_CancelsBackgroundTaskAndDisposesResources()
         {
             // Arrange
             var testEvent = new Started();
@@ -471,7 +471,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void ConstructHeartbeat_ReturnsCorrectHeartbeatData ()
+        public void ConstructHeartbeat_ReturnsCorrectHeartbeatData()
         {
             // Arrange
             var context = new Context
@@ -508,7 +508,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void ConstructHeartbeat_WithOnlyContextMiddlewareInstalled_SetsMiddlewareInstalledToFalse ()
+        public void ConstructHeartbeat_WithOnlyContextMiddlewareInstalled_SetsMiddlewareInstalledToFalse()
         {
             // Act
             _agent.SetContextMiddlewareInstalled(true);
@@ -520,7 +520,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public async Task ConfigChanged_WhenConfigVersionDiffers_UpdatesConfig ()
+        public async Task ConfigChanged_WhenConfigVersionDiffers_UpdatesConfig()
         {
             // Arrange
             var configLastUpdated = 123L;
@@ -582,7 +582,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public async Task ConfigChanged_WhenConfigVersionSame_ReturnsFalse ()
+        public async Task ConfigChanged_WhenConfigVersionSame_ReturnsFalse()
         {
             // Arrange
             var configLastUpdated = 123L;
@@ -618,7 +618,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public async Task ProcessSingleEvent_OnException_RequeuesEventAndDelays ()
+        public async Task ProcessSingleEvent_OnException_RequeuesEventAndDelays()
         {
             // Arrange
             var testEvent = new Started();
@@ -635,7 +635,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public async Task UpdateBlockedIps_WithEmptyToken_ReturnsWithoutUpdating ()
+        public async Task UpdateBlockedIps_WithEmptyToken_ReturnsWithoutUpdating()
         {
             // Arrange
             Environment.SetEnvironmentVariable("AIKIDO_TOKEN", "");
@@ -648,7 +648,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void AddRoute_AddsRouteToContext ()
+        public void AddRoute_AddsRouteToContext()
         {
             // Arrange
             var context = new Context
