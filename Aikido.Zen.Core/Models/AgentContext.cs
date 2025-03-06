@@ -1,11 +1,10 @@
+using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Helpers.OpenAPI;
 using Aikido.Zen.Core.Models.Ip;
-using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Text.RegularExpressions;
 
 namespace Aikido.Zen.Core.Models
@@ -123,9 +122,29 @@ namespace Aikido.Zen.Core.Models
             _blockedUsers.Clear();
         }
 
-        public bool IsBlocked(User user, string ip, string endpoint, string userAgent)
+        public bool IsBlocked(User user, string ip, string endpoint, string userAgent, out string reason)
         {
-            return (user != null && IsUserBlocked(user.Id)) || _blockList.IsBlocked(ip, endpoint) || IsUserAgentBlocked(userAgent);
+            reason = null;
+            // if the ip is bypassed, we don't block the request
+            if (BlockList.IsBypassedIP(ip))
+            {
+                return true;
+            }
+            if (user != null && IsUserBlocked(user.Id))
+            {
+                reason = "User is blocked";
+                return true;
+            }
+            if (_blockList.IsBlocked(ip, endpoint, out reason))
+            {
+                return true;
+            }
+            if (IsUserAgentBlocked(userAgent))
+            {
+                reason = "User agent is blocked";
+                return true;
+            }
+            return false;
         }
 
         public bool IsUserBlocked(string userId)
@@ -158,24 +177,28 @@ namespace Aikido.Zen.Core.Models
             }
         }
 
-        public void UpdateConfig(bool block, IEnumerable<string> blockedUsers, IEnumerable<EndpointConfig> endpoints, Regex blockedUserAgents, long configVersion)
+        public void UpdateConfig(ReportingAPIResponse response)
         {
-            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", block ? "true" : "false");
-            UpdateBlockedUsers(blockedUsers);
-            BlockList.UpdateAllowedSubnets(endpoints);
-            UpdateRatelimitedRoutes(endpoints);
-            UpdateBlockedUserAgents(blockedUserAgents);
-            ConfigLastUpdated = configVersion;
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", response.Block ? "true" : "false");
+            UpdateBlockedUsers(response.BlockedUserIds);
+            BlockList.UpdateAllowedIpsPerEndpoint(response.Endpoints);
+            BlockList.UpdateBypassedIps(response.BypassedIPAddresses);
+            UpdateRatelimitedRoutes(response.Endpoints);
+            UpdateBlockedUserAgents(response.BlockedUserAgentsRegex);
+            ConfigLastUpdated = response.ConfigUpdatedAt;
         }
 
-        public void UpdateBlockedIps(IEnumerable<string> blockedIPs)
+        public void UpdateFirewallLists(FirewallListsAPIResponse response)
         {
-            if (blockedIPs == null)
+            if (response == null)
             {
-                BlockList.UpdateBlockedSubnets(new List<string>());
+                BlockList.UpdateBlockedIps(new List<string>());
+                BlockList.UpdateAllowedIps(new List<string>());
                 return;
             }
-            BlockList.UpdateBlockedSubnets(blockedIPs);
+            BlockList.UpdateBlockedIps(response.BlockedIps);
+            BlockList.UpdateAllowedIps(response.AllowedIps);
+            UpdateBlockedUserAgents(response.BlockedUserAgents != null ? new Regex(response.BlockedUserAgents) : null);
         }
 
         public void UpdateBlockedUserAgents(Regex blockedUserAgents)

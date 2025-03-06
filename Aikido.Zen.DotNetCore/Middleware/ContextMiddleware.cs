@@ -16,13 +16,18 @@ namespace Aikido.Zen.DotNetCore.Middleware
     public class ContextMiddleware : IMiddleware
     {
         private readonly IEnumerable<Endpoint> _endpoints;
-        public ContextMiddleware(IEnumerable<EndpointDataSource> endpointSources)
+        public ContextMiddleware (IEnumerable<EndpointDataSource> endpointSources)
         {
             _endpoints = endpointSources.SelectMany(s => s.Endpoints).ToList();
         }
 
-        public async Task InvokeAsync(HttpContext httpContext, RequestDelegate next)
+        public async Task InvokeAsync (HttpContext httpContext, RequestDelegate next)
         {
+            // if the ip is bypassed, skip the handling of the request
+            if (Agent.Instance.Context.BlockList.IsBypassedIP(httpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty) || EnvironmentHelper.IsDisabled)
+            {
+                return;
+            }
             // Convert headers and query parameters to thread-safe dictionaries
             var queryDictionary = new ConcurrentDictionary<string, string[]>(httpContext.Request.Query.ToDictionary(q => q.Key, q => q.Value.ToArray()));
             var headersDictionary = new ConcurrentDictionary<string, string[]>(httpContext.Request.Headers.ToDictionary(h => h.Key, h => h.Value.ToArray()));
@@ -99,7 +104,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
             }
         }
 
-        internal string GetParametrizedRoute(HttpContext context)
+        internal string GetParametrizedRoute (HttpContext context)
         {
             // Use the .NET core route collection to match against the request path,
             // ensuring the routes found by Zen match those found by the .NET core

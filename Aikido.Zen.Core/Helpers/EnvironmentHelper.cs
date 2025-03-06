@@ -38,11 +38,16 @@ namespace Aikido.Zen.Core.Helpers
         public static bool IsDebugging => GetBooleanValue("AIKIDO_DEBUG");
 
         /// <summary>
+        /// Determines if the system is disabled by checking the environment variable.
+        /// </summary>
+        public static bool IsDisabled => GetBooleanValue("AIKIDO_DISABLE");
+
+        /// <summary>
         /// Helper method to determine if an environment variable is set to "true" or "1".
         /// </summary>
         /// <param name="variableName">The name of the environment variable to check.</param>
         /// <returns>True if the environment variable is set to "true" or "1"; otherwise, false.</returns>
-        private static bool GetBooleanValue(string variableName)
+        private static bool GetBooleanValue (string variableName)
         {
             var value = Environment.GetEnvironmentVariable(variableName);
             return value == "true" || value == "1";

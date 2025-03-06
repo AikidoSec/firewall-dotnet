@@ -644,7 +644,7 @@ namespace Aikido.Zen.Test
             await _agent.UpdateBlockedIps();
 
             // Assert
-            _zenApiMock.Verify(x => x.Reporting.GetBlockedIps(It.IsAny<string>()), Times.Never);
+            _zenApiMock.Verify(x => x.Reporting.GetFirewallLists(It.IsAny<string>()), Times.Never);
         }
 
         [Test]

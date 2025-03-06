@@ -22,17 +22,18 @@ namespace Aikido.Zen.Core.Api
         /// <summary>
         /// Gets or sets the collection of endpoint configurations.
         /// </summary>
-        public IEnumerable<EndpointConfig> Endpoints { get; set; }
+        public IEnumerable<EndpointConfig> Endpoints { get; set; } = new List<EndpointConfig>();
 
         /// <summary>
         /// Gets or sets the collection of blocked user IDs.
         /// </summary>
-        public IEnumerable<string> BlockedUserIds { get; set; }
+        public IEnumerable<string> BlockedUserIds { get; set; } = new List<string>();
 
         /// <summary>
-        /// Gets or sets the collection of allowed IP addresses.
+        /// Gets or sets the collection of bypassed IP addresses.
         /// </summary>
-        public IEnumerable<string> AllowedIPAddresses { get; set; }
+        [System.Text.Json.Serialization.JsonPropertyName("allowedIPAddresses")]
+        public IEnumerable<string> BypassedIPAddresses { get; set; } = new List<string>(); // we call this bypassed ip addresses, to aovid confusion with allowed ip addresses present on the lists endpoint
 
         /// <summary>
         /// Gets or sets the blocked user agents as a comma-separated list of regex patterns.

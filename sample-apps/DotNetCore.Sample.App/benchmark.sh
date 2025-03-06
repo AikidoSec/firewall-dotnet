@@ -19,11 +19,11 @@ if ! command_exists wrk; then
     sudo apt-get install -y wrk
 fi
 
-# check if dotnet 8 is installed, if not, install it
+# check if dotnet 9 is installed, if not, install it
 if ! command_exists dotnet; then
-    echo "dotnet 8 is not installed. Installing dotnet 8..."
+    echo "dotnet 9 is not installed. Installing dotnet 9..."
     sudo apt-get update
-    sudo apt-get install -y dotnet-sdk-8.0
+    sudo apt-get install -y dotnet-sdk-9.0
 fi
 
 # Define variables
