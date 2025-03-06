@@ -32,5 +32,5 @@ for i in {1..5}; do
         kill $APP_PID
         exit 1
     fi
-    sleep 2
+    sleep 4
 done
