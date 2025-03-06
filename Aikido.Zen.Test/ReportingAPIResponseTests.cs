@@ -27,12 +27,12 @@ namespace Aikido.Zen.Test
             {
                 ConfigUpdatedAt = 1234567890,
                 HeartbeatIntervalInMS = 5000,
-                Endpoints = new List<EndpointConfig> 
-                { 
+                Endpoints = new List<EndpointConfig>
+                {
                     new EndpointConfig {
                         Route = "/test",
                         Method = "GET"
-                    } 
+                    }
                 },
                 BlockedUserIds = new[] { "user1", "user2" },
                 BypassedIPAddresses = new[] { "1.1.1.1", "2.2.2.2" },

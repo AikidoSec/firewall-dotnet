@@ -8,7 +8,7 @@ namespace Aikido.Zen.Test
     public class BlockedIpsAPIResponseTests
     {
         [Test]
-        public void Ips_WithMultipleBlockedIpLists_ReturnsAllIps ()
+        public void Ips_WithMultipleBlockedIpLists_ReturnsAllIps()
         {
             // Arrange
             var response = new FirewallListsAPIResponse
@@ -42,7 +42,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void Ips_WithEmptyBlockedIpLists_ReturnsEmptyCollection ()
+        public void Ips_WithEmptyBlockedIpLists_ReturnsEmptyCollection()
         {
             // Arrange
             var response = new FirewallListsAPIResponse
@@ -58,7 +58,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void Ips_WithNullBlockedIpLists_ReturnsEmptyCollection ()
+        public void Ips_WithNullBlockedIpLists_ReturnsEmptyCollection()
         {
             // Arrange
             var response = new FirewallListsAPIResponse

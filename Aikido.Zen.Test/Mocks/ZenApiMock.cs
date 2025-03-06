@@ -5,7 +5,7 @@ namespace Aikido.Zen.Test.Mocks
 {
     public static class ZenApiMock
     {
-        public static Mock<IZenApi> CreateMock (IReportingAPIClient reporting = null, IRuntimeAPIClient runtime = null)
+        public static Mock<IZenApi> CreateMock(IReportingAPIClient reporting = null, IRuntimeAPIClient runtime = null)
         {
             if (reporting == null)
             {
@@ -40,7 +40,7 @@ namespace Aikido.Zen.Test.Mocks
             return zenApi;
         }
 
-        public static Mock<IZenApi> CreateMockWithFailedResponses ()
+        public static Mock<IZenApi> CreateMockWithFailedResponses()
         {
             var reportingApiClient = new Mock<IReportingAPIClient>();
             reportingApiClient
@@ -67,7 +67,7 @@ namespace Aikido.Zen.Test.Mocks
             return zenApi;
         }
 
-        public static Mock<IZenApi> CreateMockWithExceptions ()
+        public static Mock<IZenApi> CreateMockWithExceptions()
         {
             var reportingApiClient = new Mock<IReportingAPIClient>();
             reportingApiClient

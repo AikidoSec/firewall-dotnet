@@ -16,7 +16,7 @@ namespace Aikido.Zen.Test
         private ReportingAPIClient _reportingApiClient;
 
         [SetUp]
-        public void Setup ()
+        public void Setup()
         {
             _handlerMock = new Mock<HttpMessageHandler>();
             var httpClient = new HttpClient(_handlerMock.Object);
@@ -26,7 +26,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public async Task ReportAsync_ShouldReturnSuccess ()
+        public async Task ReportAsync_ShouldReturnSuccess()
         {
             // Arrange
             var response = new HttpResponseMessage
@@ -60,7 +60,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void ReportAsync_ShouldThrowExceptionOnError ()
+        public void ReportAsync_ShouldThrowExceptionOnError()
         {
             // Arrange
             _handlerMock
@@ -77,7 +77,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public async Task GetBlockedIps_ShouldReturnSuccess ()
+        public async Task GetBlockedIps_ShouldReturnSuccess()
         {
             // Arrange
             var response = new HttpResponseMessage
@@ -112,7 +112,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void GetBlockedIps_ShouldThrowExceptionOnError ()
+        public void GetBlockedIps_ShouldThrowExceptionOnError()
         {
             // Arrange
             _handlerMock

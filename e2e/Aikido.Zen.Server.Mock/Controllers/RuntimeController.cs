@@ -15,14 +15,14 @@ namespace Aikido.Zen.Server.Mock.Controllers
         private readonly EventService _eventService;
         private readonly AppService _appService;
 
-        public RuntimeController (ConfigService configService, EventService eventService, AppService appService)
+        public RuntimeController(ConfigService configService, EventService eventService, AppService appService)
         {
             _configService = configService;
             _eventService = eventService;
             _appService = appService;
         }
 
-        public void ConfigureEndpoints (WebApplication app)
+        public void ConfigureEndpoints(WebApplication app)
         {
             // Config endpoints
             app.MapGet("/api/runtime/config", async (HttpContext context) =>
