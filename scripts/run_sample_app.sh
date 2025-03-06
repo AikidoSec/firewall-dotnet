@@ -6,6 +6,25 @@ if [ -z "$1" ]; then
     exit 1
 fi
 
+# Check if mock server is running and ready
+echo "[✓] Checking mock server health..."
+for i in {1..5}; do
+    echo "[✓] Checking mock server - attempt $i of 5..."
+    response=$(curl -s --max-time 10 -w "%{http_code}" http://localhost:5080/health)
+    curl_exit=$?
+
+    if [ $curl_exit -eq 0 ] && [ "$response" -eq 200 ]; then
+        echo "[✓] Mock server is ready"
+        break
+    fi
+
+    if [ $i -eq 5 ]; then
+        echo "[✗] Mock server failed to respond after 5 attempts"
+        exit 1
+    fi
+    sleep 4
+done
+
 # Build the sample app
 echo "[✓] Building the sample app..."
 dotnet build "$1" # > /dev/null 2>&1
