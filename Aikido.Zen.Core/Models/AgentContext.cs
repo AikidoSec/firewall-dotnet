@@ -153,8 +153,7 @@ namespace Aikido.Zen.Core.Models
                 {
                     continue;
                 }
-                // remove the leading slash from the route pattern, to ensure we don't distinguish for example between api/users and /api/users
-                _rateLimitedRoutes[$"{endpoint.Method}|{endpoint.Route.TrimStart('/')}"] = endpoint.RateLimiting;
+                _rateLimitedRoutes[$"{endpoint.Method}|{endpoint.Route}"] = endpoint.RateLimiting;
             }
         }
 

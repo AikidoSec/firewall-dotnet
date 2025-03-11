@@ -59,14 +59,14 @@ namespace Aikido.Zen.DotNetCore
             var contextAccessor = app.ApplicationServices.GetRequiredService<IHttpContextAccessor>();
             Zen.Initialize(app.ApplicationServices, contextAccessor);
             var options = app.ApplicationServices.GetRequiredService<IOptions<AikidoOptions>>();
-            if (options?.Value?.AikidoToken != null)
+
+            if (!string.IsNullOrEmpty(options?.Value?.AikidoToken))
             {
                 var agent = Agent.NewInstance(app.ApplicationServices.GetRequiredService<IZenApi>());
                 var agentLogger = app.ApplicationServices.GetService<ILogger<Agent>>();
                 if (agentLogger != null)
                 {
                     Agent.ConfigureLogger(agentLogger);
-
                 }
                 agent.Start();
 
