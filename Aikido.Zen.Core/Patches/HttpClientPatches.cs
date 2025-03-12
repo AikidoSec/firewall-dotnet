@@ -24,7 +24,7 @@ namespace Aikido.Zen.Core.Patches
             catch (NotImplementedException e)
             {
                 // pass through, there may be some methods that are not implemented
-                Console.WriteLine("Aikido: error patching HttpClient:" + e.Message);
+                Console.WriteLine("Aikido: error patching HttpClient: " + e.Message);
             }
 
         }
