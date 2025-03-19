@@ -3,7 +3,7 @@
   <!-- Central version management -->
   <PropertyGroup>
     <!-- Default version if not specified during build -->
-    <Version Condition="'$(Version)' == ''">1.2.0</Version>
+    <Version Condition="'$(Version)' == ''">1.2.1</Version>
 
     <!-- These properties ensure consistent versioning across all projects -->
     <AssemblyVersion>$(Version)</AssemblyVersion>
