@@ -1,3 +1,4 @@
+using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models.Ip;
 using NUnit.Framework;
 using System.Collections.Generic;
@@ -122,6 +123,63 @@ namespace Aikido.Zen.Test
         {
             // Act & Assert
             Assert.That(_ipRange.HasItems, Is.False);
+        }
+
+        [Test]
+        public void ShouldWorkWithZeroZeroZeroZero()
+        {
+            // Arrange
+            var ip = "0.0.0.0/8";
+
+            // Act
+            _ipRange.InsertRange(ip);
+
+            // Assert
+            Assert.That(_ipRange.IsIpInRange("0.0.0.0"));
+        }
+
+        [Test]
+        public void ShouldWorkWithZeroZeroZeroZeroAndMultipleRanges()
+        {
+            // Arrange
+            var ip = "0.0.0.0/8";
+            var ip2 = "10.0.0.0/8";
+            var ip3 = "::/128";
+
+            // Act
+            _ipRange.InsertRange(ip);
+            _ipRange.InsertRange(ip2);
+            _ipRange.InsertRange(ip3);
+            // Assert
+            Assert.That(_ipRange.IsIpInRange("0.0.0.0"));
+            Assert.That(_ipRange.IsIpInRange("10.0.0.0"));
+            Assert.That(_ipRange.IsIpInRange("::"));
+            Assert.That(_ipRange.IsIpInRange("192.168.1.0"), Is.False);
+            Assert.That(_ipRange.IsIpInRange("d6:3f:f8:00:00:00:00:00"), Is.False);
+        }
+
+        [Test]
+        public void IsIpInRange_ShouldWorkWithZeroAddress()
+        {
+            // Arrange
+            var ipRange = new IPRange();
+            ipRange.InsertRange("0.0.0.0/8");
+
+            // Act & Assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(ipRange.IsIpInRange("0.0.0.0"), Is.True, "Should match exact 0.0.0.0");
+                Assert.That(ipRange.IsIpInRange("0.1.2.3"), Is.True, "Should match address in 0.0.0.0/8 range");
+                Assert.That(ipRange.IsIpInRange("1.0.0.0"), Is.False, "Should not match address outside range");
+            });
+        }
+
+        [Test]
+        public void IPHelper_ShouldIdentifyZeroAddressAsPrivate()
+        {
+            // Act & Assert
+            Assert.That(IPHelper.IsPrivateOrLocalIp("0.0.0.0"), Is.True, "0.0.0.0 should be identified as private");
+            Assert.That(IPHelper.IsPrivateOrLocalIp("0.1.2.3"), Is.True, "Address in 0.0.0.0/8 should be identified as private");
         }
     }
 }

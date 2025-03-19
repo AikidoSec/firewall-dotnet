@@ -7,51 +7,55 @@ namespace Aikido.Zen.Core.Helpers
 {
     public class IPHelper
     {
-        private static readonly IPRange _privateIpRanges;
+        private static readonly IPRange _privateIpRanges = InitializePrivateRanges();
 
-        static IPHelper()
+        private static IPRange InitializePrivateRanges()
         {
-            _privateIpRanges = new IPRange();
+            var ranges = new IPRange();
 
-            // IPv4 private ranges
+            // IPv4 private ranges - updated to include all reserved ranges
             var ipv4Ranges = new[]
             {
-                "0.0.0.0/8",
-                "10.0.0.0/8",
-                "100.64.0.0/10",
-                "127.0.0.0/8",
-                "169.254.0.0/16",
-                "172.16.0.0/12",
-                "192.0.0.0/24",
-                "192.0.2.0/24",
-                "192.31.196.0/24",
-                "192.52.193.0/24",
-                "192.88.99.0/24",
-                "192.168.0.0/16",
-                "192.175.48.0/24",
-                "198.18.0.0/15",
-                "198.51.100.0/24",
-                "203.0.113.0/24",
-                "240.0.0.0/4",
-                "224.0.0.0/4",
-                "255.255.255.255/32"
+                "0.0.0.0/8",        // "This" network
+                "10.0.0.0/8",       // Private network
+                "100.64.0.0/10",    // Shared Address Space
+                "127.0.0.0/8",      // Loopback
+                "169.254.0.0/16",   // Link-local
+                "172.16.0.0/12",    // Private network
+                "192.0.0.0/24",     // IETF Protocol Assignments
+                "192.0.2.0/24",     // TEST-NET-1
+                "192.31.196.0/24",  // Additional reserved range
+                "192.52.193.0/24",  // Additional reserved range
+                "192.88.99.0/24",   // 6to4 Relay Anycast
+                "192.168.0.0/16",   // Private network
+                "192.175.48.0/24",  // Additional reserved range
+                "198.18.0.0/15",    // Network Interconnect Device Benchmark Testing
+                "198.51.100.0/24",  // TEST-NET-2
+                "203.0.113.0/24",   // TEST-NET-3
+                "224.0.0.0/4",      // Multicast
+                "240.0.0.0/4",      // Reserved for future use
+                "255.255.255.255/32" // Limited broadcast
             };
 
-            // IPv6 private ranges
+            // IPv6 private ranges - updated to be more specific
             var ipv6Ranges = new[]
             {
                 "::/128",           // Unspecified address
                 "::1/128",          // Loopback address
                 "fc00::/7",         // Unique local address (ULA)
-                "fe80::/10",        // Link-local address (LLA)
-                "::ffff:127.0.0.1/128", // IPv4-mapped address
-                "::ffff:0:0/96"     // IPv4-mapped addresses
+                "fe80::/10",        // Link-local address
+                "ff00::/8",         // Multicast
+                "::ffff:0:0/96",    // IPv4-mapped addresses
+                "100::/64",         // Discard prefix (RFC6666)
+                "2001:db8::/32"     // Documentation prefix
             };
 
             foreach (var range in ipv4Ranges.Concat(ipv6Ranges))
             {
-                _privateIpRanges.InsertRange(range);
+                ranges.InsertRange(range);
             }
+
+            return ranges;
         }
 
         public static string Server
@@ -134,7 +138,8 @@ namespace Aikido.Zen.Core.Helpers
             {
                 return false;
             }
-            return IPAddress.IsLoopback(parsedIp) || IsPrivateIPAddress(parsedIp);
+            var result = IPAddress.IsLoopback(parsedIp) || IsPrivateIPAddress(parsedIp);
+            return result;
         }
 
         /// <summary>

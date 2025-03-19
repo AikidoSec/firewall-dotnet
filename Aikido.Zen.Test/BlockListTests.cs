@@ -243,7 +243,7 @@ namespace Aikido.Zen.Test
 
             // Act & Assert
             Assert.That(_blockList.IsBlocked(ip, url, out var reason), Is.False);
-            Assert.That(reason, Is.EqualTo("Ip is private or local"));
+            Assert.That(reason, Is.EqualTo("IP is bypassed"));
         }
 
         [Test]
@@ -354,7 +354,7 @@ namespace Aikido.Zen.Test
             // 2. Bypassed IPs should be allowed second
             _blockList.UpdateBypassedIps(new[] { ip });
             Assert.That(_blockList.IsBlocked(ip, url, out reason), Is.False);
-            Assert.That(reason, Is.EqualTo("Ip is private or local"));
+            Assert.That(reason, Is.EqualTo("IP is bypassed"));
 
             // 3. Blocked IPs should be checked third
             _blockList.UpdateBypassedIps(Array.Empty<string>());
