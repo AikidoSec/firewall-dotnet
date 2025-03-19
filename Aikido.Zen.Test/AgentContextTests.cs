@@ -330,9 +330,9 @@ namespace Aikido.Zen.Test
 
             // Assert
             Assert.That(_agentContext.RateLimitedRoutes.Count, Is.EqualTo(2));
-            Assert.That(_agentContext.RateLimitedRoutes["GET|api/test1"].MaxRequests, Is.EqualTo(30));
-            Assert.That(_agentContext.RateLimitedRoutes["GET|api/test1"].WindowSizeInMS, Is.EqualTo(2000));
-            Assert.That(_agentContext.RateLimitedRoutes["POST|api/test2"].MaxRequests, Is.EqualTo(60));
+            Assert.That(_agentContext.RateLimitedRoutes["GET|/api/test1"].MaxRequests, Is.EqualTo(30));
+            Assert.That(_agentContext.RateLimitedRoutes["GET|/api/test1"].WindowSizeInMS, Is.EqualTo(2000));
+            Assert.That(_agentContext.RateLimitedRoutes["POST|/api/test2"].MaxRequests, Is.EqualTo(60));
         }
 
         [Test]
@@ -353,7 +353,7 @@ namespace Aikido.Zen.Test
 
             // Assert
             Assert.That(_agentContext.RateLimitedRoutes.Count, Is.EqualTo(1));
-            Assert.That(_agentContext.RateLimitedRoutes.ContainsKey("GET|api/new"), Is.True);
+            Assert.That(_agentContext.RateLimitedRoutes.ContainsKey("GET|/api/new"), Is.True);
             Assert.That(_agentContext.RateLimitedRoutes.ContainsKey("GET|/api/old"), Is.False);
         }
 
@@ -393,7 +393,7 @@ namespace Aikido.Zen.Test
                 Assert.That(Environment.GetEnvironmentVariable("AIKIDO_BLOCK"), Is.EqualTo("true"));
                 Assert.That(_agentContext.IsUserBlocked("user1"), Is.True);
                 Assert.That(_agentContext.IsUserBlocked("user2"), Is.True);
-                Assert.That(_agentContext.RateLimitedRoutes["GET|test"].MaxRequests, Is.EqualTo(60));
+                Assert.That(_agentContext.RateLimitedRoutes["GET|/test"].MaxRequests, Is.EqualTo(60));
                 Assert.That(_agentContext.ConfigLastUpdated, Is.EqualTo(configVersion));
             });
         }
