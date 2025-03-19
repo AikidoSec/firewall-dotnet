@@ -81,9 +81,9 @@ namespace Aikido.Zen.Core.Models.Ip
         }
 
         /// <summary>
-        /// Updates the allowed ip addresses or ranges, they bypass all blocking rules
+        /// Updates the bypassed ip addresses or ranges, they bypass all blocking rules
         /// </summary>
-        /// <param name="ips">The ip addresses or ranges to allow.</param>
+        /// <param name="ips">The ip addresses or ranges to be bypassed.</param>
         public void UpdateBypassedIps(IEnumerable<string> ips)
 
         {
@@ -109,6 +109,7 @@ namespace Aikido.Zen.Core.Models.Ip
 
         /// <summary>
         /// Updates the allowed ip addresses or ranges, they do not bypass any blocking rules
+        /// They are used for things like geo-fencing (e.g. only allow IPs from a certain country)
         /// </summary>
         /// <param name="ips">The ip addresses or ranges to allow.</param>
         public void UpdateAllowedIps(IEnumerable<string> ips)
@@ -183,7 +184,7 @@ namespace Aikido.Zen.Core.Models.Ip
         /// <param name="ip">The IP address to check.</param>
         /// <param name="endpoint">The endpoint, e.g., GET|the/path.</param>
         /// <returns>True if the IP is allowed, false otherwise.</returns>
-        public bool IsIPAllowed(string ip, string endpoint)
+        public bool IsIpAllowedForEndpoint(string ip, string endpoint)
         {
             _lock.EnterReadLock();
             try
@@ -216,7 +217,7 @@ namespace Aikido.Zen.Core.Models.Ip
         /// </summary>
         /// <param name="ip">The IP address to check.</param>
         /// <returns>True if the IP is bypassed, false otherwise.</returns>
-        public bool IsBypassedIP(string ip)
+        public bool IsIPBypassed(string ip)
         {
             _lock.EnterReadLock();
             try
@@ -239,7 +240,7 @@ namespace Aikido.Zen.Core.Models.Ip
             }
         }
 
-        public bool IsAllowedIP(string ip)
+        public bool IsIPAllowed(string ip)
         {
             _lock.EnterReadLock();
             try
@@ -280,7 +281,7 @@ namespace Aikido.Zen.Core.Models.Ip
                 reason = "Ip is private or local";
                 return false;
             }
-            if (IsBypassedIP(ip))
+            if (IsIPBypassed(ip))
             {
                 reason = "IP is bypassed";
                 return false;
@@ -290,12 +291,12 @@ namespace Aikido.Zen.Core.Models.Ip
                 reason = "IP is blocked";
                 return true;
             }
-            if (!IsIPAllowed(ip, endpoint))
+            if (!IsIpAllowedForEndpoint(ip, endpoint))
             {
                 reason = "Ip is not allowed for this endpoint";
                 return true;
             }
-            if (!IsAllowedIP(ip))
+            if (!IsIPAllowed(ip))
             {
                 reason = "Ip is not allowed";
                 return true;

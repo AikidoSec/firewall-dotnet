@@ -126,7 +126,7 @@ namespace Aikido.Zen.Core.Models
         {
             reason = null;
             // if the ip is bypassed, we don't block the request
-            if (BlockList.IsBypassedIP(ip))
+            if (BlockList.IsIPBypassed(ip))
             {
                 return true;
             }

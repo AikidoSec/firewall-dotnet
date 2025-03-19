@@ -51,7 +51,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
         {
             var httpContext = ((HttpApplication)sender).Context;
             // if the ip is bypassed, skip the handling of the request
-            if (Agent.Instance.Context.BlockList.IsBypassedIP(GetClientIp(httpContext)) || EnvironmentHelper.IsDisabled)
+            if (Agent.Instance.Context.BlockList.IsIPBypassed(GetClientIp(httpContext)) || EnvironmentHelper.IsDisabled)
             {
                 return;
             }

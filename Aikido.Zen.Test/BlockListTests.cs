@@ -71,11 +71,11 @@ namespace Aikido.Zen.Test
             _blockList.UpdateAllowedIpsPerEndpoint(endpoints);
 
             // Assert
-            Assert.That(_blockList.IsIPAllowed("192.168.1.100", "GET|url1"));
-            Assert.That(_blockList.IsIPAllowed("192.168.1.100", "POST|url1"), Is.False);
-            Assert.That(_blockList.IsIPAllowed("10.10.10.10", "POST|url2"));
-            Assert.That(_blockList.IsIPAllowed("10.10.10.10", "GET|url1"), Is.False);
-            Assert.That(_blockList.IsIPAllowed("172.16.1.1", "GET|url3")); // No restrictions for url3
+            Assert.That(_blockList.IsIpAllowedForEndpoint("192.168.1.100", "GET|url1"));
+            Assert.That(_blockList.IsIpAllowedForEndpoint("192.168.1.100", "POST|url1"), Is.False);
+            Assert.That(_blockList.IsIpAllowedForEndpoint("10.10.10.10", "POST|url2"));
+            Assert.That(_blockList.IsIpAllowedForEndpoint("10.10.10.10", "GET|url1"), Is.False);
+            Assert.That(_blockList.IsIpAllowedForEndpoint("172.16.1.1", "GET|url3")); // No restrictions for url3
         }
 
         [Test]
@@ -95,7 +95,7 @@ namespace Aikido.Zen.Test
             _blockList.UpdateAllowedIpsPerEndpoint(new List<EndpointConfig>());
 
             // Assert
-            Assert.That(_blockList.IsIPAllowed("192.168.1.100", "GET|url1")); // Should allow when no restrictions
+            Assert.That(_blockList.IsIpAllowedForEndpoint("192.168.1.100", "GET|url1")); // Should allow when no restrictions
         }
 
         [Test]
@@ -136,7 +136,7 @@ namespace Aikido.Zen.Test
             _blockList.UpdateAllowedIpsPerEndpoint(endpoints);
 
             // Act & Assert
-            Assert.That(_blockList.IsIPAllowed("192.168.1.100", "GET|testUrl")); // Should allow when no IP restrictions
+            Assert.That(_blockList.IsIpAllowedForEndpoint("192.168.1.100", "GET|testUrl")); // Should allow when no IP restrictions
         }
 
         [Test]
@@ -153,7 +153,7 @@ namespace Aikido.Zen.Test
             _blockList.UpdateAllowedIpsPerEndpoint(endpoints);
 
             // Act & Assert
-            Assert.That(_blockList.IsIPAllowed("invalid.ip", "GET|testUrl"));
+            Assert.That(_blockList.IsIpAllowedForEndpoint("invalid.ip", "GET|testUrl"));
         }
 
         [Test]
@@ -312,13 +312,13 @@ namespace Aikido.Zen.Test
 
             // Invalid IPs should not be allowed when there are allowed IPs
             _blockList.UpdateAllowedIps(new[] { "8.8.8.0/8" });
-            Assert.That(_blockList.IsAllowedIP("invalid.ip"), Is.False);
+            Assert.That(_blockList.IsIPAllowed("invalid.ip"), Is.False);
 
             // Invalid IPs should not be bypassed
-            Assert.That(_blockList.IsBypassedIP("invalid.ip"), Is.False);
+            Assert.That(_blockList.IsIPBypassed("invalid.ip"), Is.False);
 
             // Invalid IPs should be allowed for endpoints with no restrictions
-            Assert.That(_blockList.IsIPAllowed("invalid.ip", "GET|unrestricted"), Is.True);
+            Assert.That(_blockList.IsIpAllowedForEndpoint("invalid.ip", "GET|unrestricted"), Is.True);
 
             // Invalid IPs should be blocked for endpoints with restrictions
             var endpoints = new List<EndpointConfig> {
@@ -329,7 +329,7 @@ namespace Aikido.Zen.Test
                 }
             };
             _blockList.UpdateAllowedIpsPerEndpoint(endpoints);
-            Assert.That(_blockList.IsIPAllowed("invalid.ip", "GET|restricted"), Is.True);
+            Assert.That(_blockList.IsIpAllowedForEndpoint("invalid.ip", "GET|restricted"), Is.True);
         }
 
         [Test]
