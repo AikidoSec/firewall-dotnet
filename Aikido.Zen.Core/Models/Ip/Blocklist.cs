@@ -240,6 +240,11 @@ namespace Aikido.Zen.Core.Models.Ip
             }
         }
 
+        /// <summary>
+        /// Checks if an IP is allowed.
+        /// </summary>
+        /// <param name="ip">The IP address to check.</param>
+        /// <returns>True if the IP is allowed, false otherwise.</returns>
         public bool IsIPAllowed(string ip)
         {
             _lock.EnterReadLock();
@@ -262,10 +267,6 @@ namespace Aikido.Zen.Core.Models.Ip
                 _lock.ExitReadLock();
             }
         }
-
-
-
-
 
         /// <summary>
         /// Checks if access should be blocked based on IP and URL.
