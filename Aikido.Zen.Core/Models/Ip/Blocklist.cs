@@ -20,7 +20,7 @@ namespace Aikido.Zen.Core.Models.Ip
         private readonly ReaderWriterLockSlim _lock = new ReaderWriterLockSlim();
 
         /// <summary>
-        /// Updates the allowed subnet ranges per URL.
+        /// Updates the allowed ip addresses or ranges per URL.
         /// </summary>
         /// <param name="endpoints">The endpoint configurations containing allowed IP addresses.</param>
         public void UpdateAllowedIpsPerEndpoint(IEnumerable<EndpointConfig> endpoints)
