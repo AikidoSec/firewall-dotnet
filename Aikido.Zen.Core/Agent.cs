@@ -539,7 +539,7 @@ namespace Aikido.Zen.Core
 
         private async Task UpdateConfig(ReportingAPIResponse response)
         {
-            _context.UpdateConfig(response);
+            _context.UpdateFirewallLists(response);
             await UpdateBlockedIps();
         }
 

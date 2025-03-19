@@ -176,7 +176,7 @@ namespace Aikido.Zen.Core.Models
             }
         }
 
-        public void UpdateConfig(ReportingAPIResponse response)
+        public void UpdateFirewallLists(ReportingAPIResponse response)
         {
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", response.Block ? "true" : "false");
             UpdateBlockedUsers(response.BlockedUserIds);

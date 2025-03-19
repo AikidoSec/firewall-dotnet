@@ -385,7 +385,7 @@ namespace Aikido.Zen.Test
             };
 
             // Act
-            _agentContext.UpdateConfig(response);
+            _agentContext.UpdateFirewallLists(response);
 
             // Assert
             Assert.Multiple(() =>
@@ -437,7 +437,7 @@ namespace Aikido.Zen.Test
             _agentContext.UpdateFirewallLists(firewallListsAPIResponse);
 
             // Act
-            _agentContext.UpdateFirewallLists(null);
+            _agentContext.UpdateFirewallLists((FirewallListsAPIResponse?)null);
 
             // Assert
             Assert.That(_agentContext.BlockList.IsIPBlocked("192.168.1.1"), Is.False);
