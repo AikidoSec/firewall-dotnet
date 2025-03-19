@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace Aikido.Zen.Core.Api
 {
@@ -23,6 +24,9 @@ namespace Aikido.Zen.Core.Api
         private IEnumerable<IPList> _blockedIpAddresses = new List<IPList>();
         private IEnumerable<IPList> _allowedIPAddresses = new List<IPList>();
 
+        /// <summary>
+        /// Gets or sets the list of blocked IP addresses.
+        /// </summary>
         public IEnumerable<IPList> BlockedIPAddresses
         {
             get
@@ -35,6 +39,9 @@ namespace Aikido.Zen.Core.Api
             }
         }
 
+        /// <summary>
+        /// Gets or sets the list of allowed IP addresses.
+        /// </summary>
         public IEnumerable<IPList> AllowedIPAddresses
         {
             get
@@ -47,11 +54,25 @@ namespace Aikido.Zen.Core.Api
             }
         }
 
+        /// <summary>
+        /// Gets or sets the blocked user agents as a string. e.g. "googlebot|bingbot|yahoo|aibot"
+        /// </summary>
         public string BlockedUserAgents { get; set; }
 
+        /// <summary>
+        /// Gets the blocked user agents as a regex.
+        /// </summary>
+        public Regex BlockedUserAgentsRegex => new Regex(BlockedUserAgents ?? string.Empty, RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+        /// <summary>
+        /// Gets a collection of blocked IP addresses as strings.
+        /// </summary>
         public IEnumerable<string> BlockedIps => BlockedIPAddresses.Where(BlockedIPAddresses => BlockedIPAddresses != null)
                    .SelectMany(BlockedIPAddresses => BlockedIPAddresses.Ips ?? Enumerable.Empty<string>());
 
+        /// <summary>
+        /// Gets a collection of allowed IP addresses as strings.
+        /// </summary>
         public IEnumerable<string> AllowedIps => AllowedIPAddresses.Where(AllowedIPAddresses => AllowedIPAddresses != null)
                    .SelectMany(AllowedIPAddresses => AllowedIPAddresses.Ips ?? Enumerable.Empty<string>());
 

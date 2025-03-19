@@ -56,7 +56,7 @@ namespace SampleApp.Common
 
             app.UseDeveloperExceptionPage();
             app.UseZenFirewall();
-            //app.UseHttpsRedirection();
+            app.UseHttpsRedirection();
 
             // Global exception handler for AikidoExceptions
             app.Use(async (context, next) =>

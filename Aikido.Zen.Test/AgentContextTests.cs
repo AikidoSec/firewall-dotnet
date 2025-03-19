@@ -385,7 +385,7 @@ namespace Aikido.Zen.Test
             };
 
             // Act
-            _agentContext.UpdateFirewallLists(response);
+            _agentContext.UpdateConfig(response);
 
             // Assert
             Assert.Multiple(() =>
