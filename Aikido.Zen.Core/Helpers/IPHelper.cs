@@ -46,10 +46,14 @@ namespace Aikido.Zen.Core.Helpers
                 "fc00::/7",         // Unique local address (ULA)
                 "fe80::/10",        // Link-local address
                 // "ff00::/8",         // Multicast, leaving this out for now, since it can include private and public ranges --> https://datatracker.ietf.org/doc/html/rfc4291#section-2.7
-                "::ffff:0:0/96",    // IPv4-mapped addresses
                 "100::/64",         // Discard prefix (RFC6666)
                 "2001:db8::/32"     // Documentation prefix
             };
+
+            var completeList = ipv4Ranges
+                .Concat(ipv6Ranges)
+                .Concat(ipv4Ranges.Select(r => IPv4ToIPv6(r)))
+                .ToList();
 
             foreach (var range in ipv4Ranges.Concat(ipv6Ranges))
             {
@@ -141,6 +145,25 @@ namespace Aikido.Zen.Core.Helpers
             }
             var result = IPAddress.IsLoopback(parsedIp) || IsPrivateIPAddress(parsedIp);
             return result;
+        }
+
+        /// <summary>
+        /// Maps an IPv4 address to an IPv6 address.
+        /// e.g. 127.0.0.1/8 -> ::ffff:127.0.0.1/104
+        /// </summary>
+        /// <param name="ip">The IPv4 address to map.</param>
+        /// <returns>The mapped IPv6 address.</returns>
+        public static string IPv4ToIPv6(string ip)
+        {
+            if (!ip.Contains("/"))
+            {
+                // No CIDR suffix, assume /32
+                return $"::ffff:{ip}/128";
+            }
+
+            var parts = ip.Split('/');
+            var suffix = int.Parse(parts[1]);
+            return $"::ffff:{parts[0]}/{suffix + 96}";
         }
 
         /// <summary>

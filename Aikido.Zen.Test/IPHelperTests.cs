@@ -93,7 +93,7 @@ namespace Aikido.Zen.Test.Helpers
                 "64:ff9a::255.255.255.255", "99::", "99::ffff:ffff:ffff:ffff", "101::", "101::ffff:ffff:ffff:ffff",
                 "2000::", "2000::ffff:ffff:ffff:ffff:ffff:ffff", "2001:10::", "2001:1f:ffff:ffff:ffff:ffff:ffff:ffff",
                 "2001:db7::", "2001:db7:ffff:ffff:ffff:ffff:ffff:ffff", "2001:db9::", "fb00::",
-                "fbff:ffff:ffff:ffff:ffff:ffff:ffff:ffff", "fec0::"
+                "fbff:ffff:ffff:ffff:ffff:ffff:ffff:ffff", "fec0::", "::ffff:1.2.3.4", "::ffff:172.1.2.3", "::ffff:192.145.0.0"
             };
 
             // Act & Assert
@@ -127,7 +127,8 @@ namespace Aikido.Zen.Test.Helpers
                 "255.255.255.248", "255.255.255.254", "255.255.255.255", "0000:0000:0000:0000:0000:0000:0000:0000",
                 "::", "::1", "::ffff:0.0.0.0", "::ffff:127.0.0.1", "fe80::", "fe80::1", "fe80::abc:1",
                 "febf:ffff:ffff:ffff:ffff:ffff:ffff:ffff", "fc00::", "fc00::1", "fc00::abc:1",
-                "fdff:ffff:ffff:ffff:ffff:ffff:ffff:ffff", "2130706433", "0x7f000001", "fd00:ec2::254", "169.254.169.254"
+                "fdff:ffff:ffff:ffff:ffff:ffff:ffff:ffff", "2130706433", "0x7f000001", "fd00:ec2::254", "169.254.169.254",
+                  "::ffff:127.0.0.2", "::ffff:10.0.0.1", "::ffff:172.16.1.2", "::ffff:192.168.2.2"
             };
 
             // Act & Assert
@@ -151,6 +152,20 @@ namespace Aikido.Zen.Test.Helpers
             {
                 Assert.That(IPHelper.IsPrivateOrLocalIp(ip), Is.False, $"Expected {ip} to be invalid");
             }
+        }
+
+        [Test]
+        public void MapIPv4ToIPv6_ShouldReturnCorrectIPv6Mappings()
+        {
+            // Act & Assert
+            Assert.That(IPHelper.IPv4ToIPv6("127.0.0.0"), Is.EqualTo("::ffff:127.0.0.0/128"));
+            Assert.That(IPHelper.IPv4ToIPv6("127.0.0.0/8"), Is.EqualTo("::ffff:127.0.0.0/104"));
+            Assert.That(IPHelper.IPv4ToIPv6("10.0.0.0"), Is.EqualTo("::ffff:10.0.0.0/128"));
+            Assert.That(IPHelper.IPv4ToIPv6("10.0.0.0/8"), Is.EqualTo("::ffff:10.0.0.0/104"));
+            Assert.That(IPHelper.IPv4ToIPv6("10.0.0.1"), Is.EqualTo("::ffff:10.0.0.1/128"));
+            Assert.That(IPHelper.IPv4ToIPv6("10.0.0.1/8"), Is.EqualTo("::ffff:10.0.0.1/104"));
+            Assert.That(IPHelper.IPv4ToIPv6("192.168.0.0/16"), Is.EqualTo("::ffff:192.168.0.0/112"));
+            Assert.That(IPHelper.IPv4ToIPv6("172.16.0.0/12"), Is.EqualTo("::ffff:172.16.0.0/108"));
         }
     }
 }
