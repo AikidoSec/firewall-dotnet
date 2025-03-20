@@ -14,6 +14,7 @@ namespace Aikido.Zen.Core.Helpers
             var ranges = new IPRange();
 
             // IPv4 private ranges - updated to include all reserved ranges
+            // taken from https://github.com/frenchbread/private-ip/blob/master/src/index.ts
             var ipv4Ranges = new[]
             {
                 "0.0.0.0/8",        // "This" network
