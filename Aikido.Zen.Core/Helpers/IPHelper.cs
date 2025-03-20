@@ -44,7 +44,7 @@ namespace Aikido.Zen.Core.Helpers
                 "::1/128",          // Loopback address
                 "fc00::/7",         // Unique local address (ULA)
                 "fe80::/10",        // Link-local address
-                "ff00::/8",         // Multicast
+                // "ff00::/8",         // Multicast, leaving this out for now, since it can include private and public ranges --> https://datatracker.ietf.org/doc/html/rfc4291#section-2.7
                 "::ffff:0:0/96",    // IPv4-mapped addresses
                 "100::/64",         // Discard prefix (RFC6666)
                 "2001:db8::/32"     // Documentation prefix
