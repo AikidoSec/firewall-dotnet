@@ -92,7 +92,7 @@ namespace Aikido.Zen.Server.Mock.Controllers
                     _configService.UpdateBlockedUserAgents(appModel!.Id, lists.BlockedUserAgents);
                 }
 
-                if (lists.BlockedIPAddresses?.Any() ?? false)
+                if (lists.AllowedIPAddresses?.Any() ?? false)
                 {
                     _configService.UpdateAllowedIps(appModel!.Id, lists.AllowedIPAddresses);
                 }
