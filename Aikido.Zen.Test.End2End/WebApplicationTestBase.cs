@@ -31,6 +31,18 @@ namespace Aikido.Zen.Test.End2End
             ["ConnectionStrings__MySqlConnection"] = "Server=127.0.0.1;Port=3306;Database=catsdb;User=root;Password=YourStrong!Passw0rd;Allow User Variables=true",
         };
 
+        /// <summary>
+        /// Sets the Zen firewall mode by configuring environment variables and mock server
+        /// </summary>
+        /// <param name="disabled">Whether to disable the Zen firewall</param>
+        /// <param name="block">Whether to enable blocking mode</param>
+        protected async Task SetMode(bool disabled, bool block)
+        {
+            SampleAppEnvironmentVariables["AIKIDO_DISABLE"] = disabled.ToString().ToLower();
+            SampleAppEnvironmentVariables["AIKIDO_BLOCK"] = block.ToString().ToLower();
+            await MockServerClient.PostAsync("/api/runtime/config", JsonContent.Create(new { Block = block.ToString().ToLower() }));
+        }
+
         [OneTimeSetUp]
         public virtual async Task OneTimeSetUp()
         {
