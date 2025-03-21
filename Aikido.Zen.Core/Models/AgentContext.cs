@@ -154,6 +154,8 @@ namespace Aikido.Zen.Core.Models
 
         public bool IsUserAgentBlocked(string userAgent)
         {
+            if (userAgent == "")
+                return false;
             return _blockedUserAgents?.IsMatch(userAgent) ?? false;
         }
 
