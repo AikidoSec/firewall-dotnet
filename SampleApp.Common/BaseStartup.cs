@@ -42,6 +42,10 @@ namespace SampleApp.Common
             app.Use((context, next) =>
             {
                 context.Request.HttpContext.Connection.RemoteIpAddress ??= IPAddress.Parse("192.168.0.1");
+                if (context.Request.Headers.ContainsKey("X-Forwarded-For"))
+                {
+                    context.Request.HttpContext.Connection.RemoteIpAddress = IPAddress.Parse(context.Request.Headers["X-Forwarded-For"]);
+                }
                 if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("TEST_USER")))
                 {
                     context.User = new ClaimsPrincipal(new ClaimsIdentity(new Claim[]

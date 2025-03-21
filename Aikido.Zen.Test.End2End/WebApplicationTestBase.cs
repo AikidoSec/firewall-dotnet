@@ -19,7 +19,7 @@ namespace Aikido.Zen.Test.End2End
         protected HttpClient SampleAppClient { get; set; }
         protected HttpClient MockServerClient { get; private set; }
         protected WebApplicationFactory<Aikido.Zen.Server.Mock.MockServerStartup> MockServerFactory { get; private set; }
-        protected string MockServerToken => "test-token";
+        protected string MockServerToken = "test-token";
         protected const int MockServerPort = 3000;
 
         protected IDictionary<string, string> SampleAppEnvironmentVariables = new Dictionary<string, string>
@@ -30,6 +30,18 @@ namespace Aikido.Zen.Test.End2End
             ["ConnectionStrings__PostgresConnection"] = $"Host=127.0.0.1;Port=5432;Database=catsdb;Username=postgres;Password=YourStrong!Passw0rd",
             ["ConnectionStrings__MySqlConnection"] = "Server=127.0.0.1;Port=3306;Database=catsdb;User=root;Password=YourStrong!Passw0rd;Allow User Variables=true",
         };
+
+        /// <summary>
+        /// Sets the Zen firewall mode by configuring environment variables and mock server
+        /// </summary>
+        /// <param name="disabled">Whether to disable the Zen firewall</param>
+        /// <param name="block">Whether to enable blocking mode</param>
+        protected async Task SetMode(bool disabled, bool block)
+        {
+            SampleAppEnvironmentVariables["AIKIDO_DISABLE"] = disabled.ToString().ToLower();
+            SampleAppEnvironmentVariables["AIKIDO_BLOCK"] = block.ToString().ToLower();
+            await MockServerClient.PostAsync("/api/runtime/config", JsonContent.Create(new { Block = block }));
+        }
 
         [OneTimeSetUp]
         public virtual async Task OneTimeSetUp()
@@ -42,7 +54,14 @@ namespace Aikido.Zen.Test.End2End
 
             // Setup mock server
             MockServerFactory = new WebApplicationFactory<Aikido.Zen.Server.Mock.MockServerStartup>();
-            MockServerClient = MockServerFactory.CreateClient();
+            // create a client for the sample app that handles gzip decompression
+            MockServerClient = MockServerFactory.CreateDefaultClient(new DecompressionDelegatingHandler());
+
+            // Get a token from the mock server
+            var response = await MockServerClient.PostAsync("/api/runtime/apps", null);
+            response.EnsureSuccessStatusCode();
+            MockServerToken = (await response.Content.ReadFromJsonAsync<IDictionary<string, string>>())?["token"] ?? "test-token";
+            MockServerClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue(MockServerToken);
 
             // Set environment variable for the sample app
             SampleAppEnvironmentVariables["AIKIDO_TOKEN"] = MockServerToken;
@@ -135,6 +154,46 @@ namespace Aikido.Zen.Test.End2End
             await sqlServer.StartAsync();
             DbContainers.Add(sqlServer);
             return sqlServer;
+        }
+
+        /// <summary>
+        /// Response model for app creation
+        /// </summary>
+        private class AppResponse
+        {
+            /// <summary>
+            /// The token for the created app
+            /// </summary>
+            public string Token { get; set; }
+        }
+    }
+
+    public class DecompressionDelegatingHandler : DelegatingHandler
+    {
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var response = await base.SendAsync(request, cancellationToken);
+
+            if (response.Content.Headers.ContentEncoding.LastOrDefault() == "gzip")
+            {
+                response.Content = CreateGZipDecompressedContent(response.Content);
+            }
+
+            return response;
+        }
+
+        private static HttpContent CreateGZipDecompressedContent(HttpContent originalContent)
+        {
+            var assembly = typeof(HttpClient).Assembly;
+
+            const string typeName = "System.Net.Http.DecompressionHandler+GZipDecompressedContent";
+            var gZipDecompressedContentType = assembly.GetType(typeName);
+            if (gZipDecompressedContentType == null)
+            {
+                throw new InvalidOperationException($"Failed to find type '{typeName}'");
+            }
+
+            return (HttpContent)Activator.CreateInstance(gZipDecompressedContentType, originalContent);
         }
     }
 }

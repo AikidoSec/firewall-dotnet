@@ -105,12 +105,12 @@ namespace Aikido.Zen.Core
                 if (response.Success)
                 {
                     var reportingResponse = response as ReportingAPIResponse;
-                    Task.Run(() => UpdateConfig(reportingResponse.Block, reportingResponse.BlockedUserIds, reportingResponse.Endpoints, reportingResponse.BlockedUserAgentsRegex, reportingResponse.ConfigUpdatedAt));
+                    Task.Run(() => UpdateConfig(reportingResponse));
                 }
             });
 
             // get blocked ip list and add to context
-            Task.Run(UpdateBlockedIps);
+            Task.Run(async () => await UpdateFirewallLists()).GetAwaiter().GetResult();
 
             // Schedule heartbeat event every x minutes
             var scheduledHeartBeat = new ScheduledItem
@@ -124,7 +124,7 @@ namespace Aikido.Zen.Core
                     if (reportingResponse != null && reportingResponse.Success)
                     {
                         _context.UpdateBlockedUsers(reportingResponse.BlockedUserIds);
-                        _context.UpdateBlockedUserAgents(reportingResponse.BlockedUserAgentsRegex);
+                        UpdateConfig(reportingResponse);
                     }
                 }
             };
@@ -377,7 +377,7 @@ namespace Aikido.Zen.Core
                     {
                         if (ConfigChanged(out var response))
                         {
-                            await UpdateConfig(response.Block, response.BlockedUserIds, response.Endpoints, response.BlockedUserAgentsRegex, response.ConfigUpdatedAt);
+                            await UpdateConfig(response);
                         }
                         _lastConfigCheck = DateTime.UtcNow.Ticks;
                     }
@@ -537,20 +537,20 @@ namespace Aikido.Zen.Core
             return false;
         }
 
-        private async Task UpdateConfig(bool block, IEnumerable<string> blockedUsers, IEnumerable<EndpointConfig> endpoints, Regex blockedUserAgents, long configVersion)
+        private async Task UpdateConfig(ReportingAPIResponse response)
         {
-            _context.UpdateConfig(block, blockedUsers, endpoints, blockedUserAgents, configVersion);
-            await UpdateBlockedIps();
+            _context.UpdateConfig(response);
+            await UpdateFirewallLists();
         }
 
-        internal async Task UpdateBlockedIps()
+        internal async Task UpdateFirewallLists()
         {
             if (string.IsNullOrEmpty(EnvironmentHelper.Token))
                 return;
-            var blockedIPsResponse = await _api.Reporting.GetBlockedIps(EnvironmentHelper.Token);
-            if (blockedIPsResponse.Success && blockedIPsResponse.BlockedIPAddresses != null)
+            var firewallListsResponse = await _api.Reporting.GetFirewallLists(EnvironmentHelper.Token);
+            if (firewallListsResponse.Success)
             {
-                _context.UpdateBlockedIps(blockedIPsResponse.Ips);
+                _context.UpdateFirewallLists(firewallListsResponse);
             }
         }
 

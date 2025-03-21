@@ -113,7 +113,7 @@ namespace SQLiteSampleApp
                     }
                 }
             }
-            catch (SqliteException)
+            catch (SqliteException ex)
             {
                 // Handle exception
             }

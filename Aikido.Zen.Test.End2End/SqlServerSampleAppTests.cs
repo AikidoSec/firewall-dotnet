@@ -2,12 +2,9 @@ using System.Net;
 using System.Net.Http.Json;
 using Aikido.Zen.Core.Exceptions;
 using DotNet.Testcontainers.Containers;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
+using Aikido.Zen.DotNetCore;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.Configuration;
 using NUnit.Framework;
-using SampleApp.Common;
 using SqlServerSampleApp;
 
 namespace Aikido.Zen.Test.End2End;
@@ -22,7 +19,10 @@ public class SqlServerSampleAppTests : WebApplicationTestBase
         var factory = new WebApplicationFactory<SqlServerStartup>()
             .WithWebHostBuilder(builder =>
             {
-                //add env variables from base.SampleAppEnvironmentVariables
+                builder.ConfigureServices(services =>
+                {
+                    services.AddZenFirewall(options => options.UseHttpClient(MockServerClient));
+                });
                 builder.ConfigureAppConfiguration((context, config) =>
                 {
                     foreach (var envVar in SampleAppEnvironmentVariables)
@@ -56,8 +56,7 @@ public class SqlServerSampleAppTests : WebApplicationTestBase
     public async Task TestWithZen_WhenSafePayload_ShouldSucceed()
     {
         // Arrange
-        SampleAppEnvironmentVariables["AIKIDO_DISABLE"] = "false";
-        SampleAppEnvironmentVariables["AIKIDO_BLOCK"] = "true";
+        await SetMode(false, true);
         SampleAppClient = CreateSampleAppFactory().CreateClient();
 
         var safePayload = new { Name = "Bobby" };
@@ -76,8 +75,7 @@ public class SqlServerSampleAppTests : WebApplicationTestBase
     public async Task TestWithZen_WhenUnsafePayload_ShouldBlock()
     {
         // Arrange
-        SampleAppEnvironmentVariables["AIKIDO_DISABLE"] = "false";
-        SampleAppEnvironmentVariables["AIKIDO_BLOCK"] = "true";
+        await SetMode(false, true);
         SampleAppClient = CreateSampleAppFactory().CreateClient();
 
         var unsafePayload = new { Name = "Malicious Pet', 'Gru from the Minions'); -- " };
@@ -94,7 +92,6 @@ public class SqlServerSampleAppTests : WebApplicationTestBase
         {
             Assert.That(ex.Message, Does.Contain("SQL injection detected"));
         }
-
     }
 
     [Test]
@@ -102,8 +99,7 @@ public class SqlServerSampleAppTests : WebApplicationTestBase
     public async Task TestWithoutZen_WhenSafePayload_ShouldSucceed()
     {
         // Arrange
-        SampleAppEnvironmentVariables["AIKIDO_DISABLE"] = "false";
-        SampleAppEnvironmentVariables["AIKIDO_BLOCK"] = "true";
+        await SetMode(false, true);
         SampleAppClient = CreateSampleAppFactory().CreateClient();
 
         var safePayload = new { Name = "Bobby" };
@@ -122,8 +118,7 @@ public class SqlServerSampleAppTests : WebApplicationTestBase
     public async Task TestWithoutZen_WhenUnsafePayload_ShouldNotBlock()
     {
         // Arrange
-        SampleAppEnvironmentVariables["AIKIDO_DISABLE"] = "false";
-        SampleAppEnvironmentVariables["AIKIDO_BLOCK"] = "false";
+        await SetMode(false, false);
         SampleAppClient = CreateSampleAppFactory().CreateClient();
 
         var unsafePayload = new { Name = "Malicious Pet', 'Gru from the Minions'); -- " };
@@ -141,8 +136,7 @@ public class SqlServerSampleAppTests : WebApplicationTestBase
     public async Task TestWithZen_WhenUnsafePayload_AndBlockingDisabled_ShouldNotBlock()
     {
         // Arrange
-        SampleAppEnvironmentVariables["AIKIDO_DISABLE"] = "false";
-        SampleAppEnvironmentVariables["AIKIDO_BLOCK"] = "false";
+        await SetMode(false, false);
         SampleAppClient = CreateSampleAppFactory().CreateClient();
 
         var unsafePayload = new { Name = "Malicious Pet', 'Gru from the Minions'); -- " };
@@ -160,8 +154,7 @@ public class SqlServerSampleAppTests : WebApplicationTestBase
     public async Task TestWithZenDisabled_WhenUnsafePayload_ShouldNotBlock()
     {
         // Arrange
-        SampleAppEnvironmentVariables["AIKIDO_DISABLE"] = "true";
-        SampleAppEnvironmentVariables["AIKIDO_BLOCK"] = "true";
+        await SetMode(true, true);
         SampleAppClient = CreateSampleAppFactory().CreateClient();
 
         var unsafePayload = new { Name = "Malicious Pet', 'Gru from the Minions'); -- " };
@@ -174,20 +167,17 @@ public class SqlServerSampleAppTests : WebApplicationTestBase
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
     }
 
-
     [Test]
     [CancelAfter(30000)]
     public async Task TestCommandInjection_WithBlockingEnabled_ShouldBeBlocked()
     {
         // Arrange
-        SampleAppEnvironmentVariables["AIKIDO_DISABLE"] = "false";
-        SampleAppEnvironmentVariables["AIKIDO_BLOCK"] = "true";
-        var factory = CreateSampleAppFactory();
-        var client = factory.CreateClient();
+        await SetMode(false, true);
+        SampleAppClient = CreateSampleAppFactory().CreateClient();
         var maliciousCommand = "ls $(echo)";
 
         // Act
-        var response = await client.GetAsync("/api/pets/command?command=" + Uri.EscapeDataString(maliciousCommand));
+        var response = await SampleAppClient.GetAsync("/api/pets/command?command=" + Uri.EscapeDataString(maliciousCommand));
 
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
@@ -198,13 +188,12 @@ public class SqlServerSampleAppTests : WebApplicationTestBase
     public async Task TestCommandInjection_WithBlockingDisabled_ShouldNotBeBlocked()
     {
         // Arrange
-        SampleAppEnvironmentVariables["AIKIDO_BLOCK"] = "false";
-        var factory = CreateSampleAppFactory();
-        var client = factory.CreateClient();
+        await SetMode(false, false);
+        SampleAppClient = CreateSampleAppFactory().CreateClient();
         var maliciousCommand = "ls $(echo)";
 
         // Act
-        var response = await client.GetAsync("/api/pets/command?command=" + Uri.EscapeDataString(maliciousCommand));
+        var response = await SampleAppClient.GetAsync("/api/pets/command?command=" + Uri.EscapeDataString(maliciousCommand));
 
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));

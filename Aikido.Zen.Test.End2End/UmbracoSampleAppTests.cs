@@ -2,9 +2,8 @@ using System.Net;
 using System.Net.Http.Json;
 using Aikido.Zen.Core.Exceptions;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.VisualStudio.TestPlatform.TestHost;
+using Aikido.Zen.DotNetCore;
 using NUnit.Framework;
-using UmbracoSampleApp;
 
 namespace Aikido.Zen.Test.End2End;
 
@@ -19,7 +18,14 @@ public class UmbracoSampleAppTests : WebApplicationTestBase
         {
             Environment.SetEnvironmentVariable(envVar.Key, envVar.Value);
         }
-        var factory = new WebApplicationFactory<Program>();
+        var factory = new WebApplicationFactory<Program>()
+            .WithWebHostBuilder(builder =>
+            {
+                builder.ConfigureServices(services =>
+                {
+                    services.AddZenFirewall(options => options.UseHttpClient(MockServerClient));
+                });
+            });
         return factory;
     }
 
@@ -44,13 +50,12 @@ public class UmbracoSampleAppTests : WebApplicationTestBase
     [Test]
     public async Task TestRoutes_DiscoveryAndNoErrors()
     {
-        SampleAppEnvironmentVariables["AIKIDO_DISABLE"] = "false";
-        SampleAppEnvironmentVariables["AIKIDO_BLOCK"] = "true";
-        var client = CreateSampleAppFactory().CreateClient();
-        var response = await client.GetAsync("/");
+        await SetMode(false, true);
+        SampleAppClient = CreateSampleAppFactory().CreateClient();
+        var response = await SampleAppClient.GetAsync("/");
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
-        response = await client.GetAsync("/favicon.ico");
+        response = await SampleAppClient.GetAsync("/favicon.ico");
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
     }
 
@@ -59,14 +64,13 @@ public class UmbracoSampleAppTests : WebApplicationTestBase
     public async Task TestWithZen_WhenSafePayload_ShouldSucceed()
     {
         // Arrange
-        SampleAppEnvironmentVariables["AIKIDO_DISABLE"] = "false";
-        SampleAppEnvironmentVariables["AIKIDO_BLOCK"] = "true";
-        var client = CreateSampleAppFactory().CreateClient();
+        await SetMode(false, true);
+        SampleAppClient = CreateSampleAppFactory().CreateClient();
 
         var safePayload = new { Name = "Bobby" };
 
         // Act
-        var response = await client.PostAsJsonAsync("/api/pets/create", safePayload);
+        var response = await SampleAppClient.PostAsJsonAsync("/api/pets/create", safePayload);
         var content = await response.Content.ReadAsStringAsync();
 
         // Assert
@@ -79,16 +83,15 @@ public class UmbracoSampleAppTests : WebApplicationTestBase
     public async Task TestWithZen_WhenUnsafePayload_ShouldBlock()
     {
         // Arrange
-        SampleAppEnvironmentVariables["AIKIDO_DISABLE"] = "false";
-        SampleAppEnvironmentVariables["AIKIDO_BLOCK"] = "true";
-        var client = CreateSampleAppFactory().CreateClient();
+        await SetMode(false, true);
+        SampleAppClient = CreateSampleAppFactory().CreateClient();
 
         var unsafePayload = new { Name = "Malicious Pet', 'Gru from the Minions'); -- " };
 
         // Act
         try
         {
-            var response = await client.PostAsJsonAsync("/api/pets/create", unsafePayload);
+            var response = await SampleAppClient.PostAsJsonAsync("/api/pets/create", unsafePayload);
             var content = await response.Content.ReadAsStringAsync();
             // Assert
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
@@ -104,14 +107,13 @@ public class UmbracoSampleAppTests : WebApplicationTestBase
     public async Task TestWithoutZen_WhenSafePayload_ShouldSucceed()
     {
         // Arrange
-        SampleAppEnvironmentVariables["AIKIDO_DISABLE"] = "false";
-        SampleAppEnvironmentVariables["AIKIDO_BLOCK"] = "true";
-        var client = CreateSampleAppFactory().CreateClient();
+        await SetMode(false, true);
+        SampleAppClient = CreateSampleAppFactory().CreateClient();
 
         var safePayload = new { Name = "Bobby" };
 
         // Act
-        var response = await client.PostAsJsonAsync("/api/pets/create", safePayload);
+        var response = await SampleAppClient.PostAsJsonAsync("/api/pets/create", safePayload);
         var content = await response.Content.ReadAsStringAsync();
 
         // Assert
@@ -124,14 +126,13 @@ public class UmbracoSampleAppTests : WebApplicationTestBase
     public async Task TestWithoutZen_WhenUnsafePayload_ShouldNotBlock()
     {
         // Arrange
-        SampleAppEnvironmentVariables["AIKIDO_DISABLE"] = "false";
-        SampleAppEnvironmentVariables["AIKIDO_BLOCK"] = "false";
-        var client = CreateSampleAppFactory().CreateClient();
+        await SetMode(false, false);
+        SampleAppClient = CreateSampleAppFactory().CreateClient();
 
         var unsafePayload = new { Name = "Malicious Pet', 'Gru from the Minions'); -- " };
 
         // Act
-        var response = await client.PostAsJsonAsync("/api/pets/create", unsafePayload);
+        var response = await SampleAppClient.PostAsJsonAsync("/api/pets/create", unsafePayload);
         var content = await response.Content.ReadAsStringAsync();
 
         // Assert
@@ -143,14 +144,13 @@ public class UmbracoSampleAppTests : WebApplicationTestBase
     public async Task TestWithZen_WhenUnsafePayload_AndBlockingDisabled_ShouldNotBlock()
     {
         // Arrange
-        SampleAppEnvironmentVariables["AIKIDO_DISABLE"] = "false";
-        SampleAppEnvironmentVariables["AIKIDO_BLOCK"] = "false";
-        var client = CreateSampleAppFactory().CreateClient();
+        await SetMode(false, false);
+        SampleAppClient = CreateSampleAppFactory().CreateClient();
 
         var unsafePayload = new { Name = "Malicious Pet', 'Gru from the Minions'); -- " };
 
         // Act
-        var response = await client.PostAsJsonAsync("/api/pets/create", unsafePayload);
+        var response = await SampleAppClient.PostAsJsonAsync("/api/pets/create", unsafePayload);
         var content = await response.Content.ReadAsStringAsync();
 
         // Assert
@@ -162,14 +162,13 @@ public class UmbracoSampleAppTests : WebApplicationTestBase
     public async Task TestWithZenDisabled_WhenUnsafePayload_ShouldNotBlock()
     {
         // Arrange
-        SampleAppEnvironmentVariables["AIKIDO_DISABLE"] = "true";
-        SampleAppEnvironmentVariables["AIKIDO_BLOCK"] = "true";
-        var client = CreateSampleAppFactory().CreateClient();
+        await SetMode(true, true);
+        SampleAppClient = CreateSampleAppFactory().CreateClient();
 
         var unsafePayload = new { Name = "Malicious Pet', 'Gru from the Minions'); -- " };
 
         // Act
-        var response = await client.PostAsJsonAsync("/api/pets/create", unsafePayload);
+        var response = await SampleAppClient.PostAsJsonAsync("/api/pets/create", unsafePayload);
         var content = await response.Content.ReadAsStringAsync();
 
         // Assert
@@ -181,13 +180,12 @@ public class UmbracoSampleAppTests : WebApplicationTestBase
     public async Task TestCommandInjection_WithBlockingEnabled_ShouldBeBlocked()
     {
         // Arrange
-        SampleAppEnvironmentVariables["AIKIDO_DISABLE"] = "false";
-        SampleAppEnvironmentVariables["AIKIDO_BLOCK"] = "true";
-        var client = CreateSampleAppFactory().CreateClient();
+        await SetMode(false, true);
+        SampleAppClient = CreateSampleAppFactory().CreateClient();
         var maliciousCommand = "ls $(echo)";
 
         // Act
-        var response = await client.GetAsync("/api/pets/command?command=" + Uri.EscapeDataString(maliciousCommand));
+        var response = await SampleAppClient.GetAsync("/api/pets/command?command=" + Uri.EscapeDataString(maliciousCommand));
 
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
@@ -198,12 +196,12 @@ public class UmbracoSampleAppTests : WebApplicationTestBase
     public async Task TestCommandInjection_WithBlockingDisabled_ShouldNotBeBlocked()
     {
         // Arrange
-        SampleAppEnvironmentVariables["AIKIDO_BLOCK"] = "false";
-        var client = CreateSampleAppFactory().CreateClient();
+        await SetMode(false, false);
+        SampleAppClient = CreateSampleAppFactory().CreateClient();
         var maliciousCommand = "ls $(echo)";
 
         // Act
-        var response = await client.GetAsync("/api/pets/command?command=" + Uri.EscapeDataString(maliciousCommand));
+        var response = await SampleAppClient.GetAsync("/api/pets/command?command=" + Uri.EscapeDataString(maliciousCommand));
 
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));

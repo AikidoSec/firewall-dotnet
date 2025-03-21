@@ -7,20 +7,22 @@ namespace Aikido.Zen.Test.Mocks
     {
         public static Mock<IZenApi> CreateMock(IReportingAPIClient reporting = null, IRuntimeAPIClient runtime = null)
         {
-            if (reporting == null) {
+            if (reporting == null)
+            {
                 var reportingMock = new Mock<IReportingAPIClient>();
                 reportingMock
                     .Setup(r => r.ReportAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<int>()))
                     .ReturnsAsync(new ReportingAPIResponse { Success = true });
 
                 reportingMock
-                    .Setup(r => r.GetBlockedIps(It.IsAny<string>()))
-                    .ReturnsAsync(new BlockedIpsAPIResponse { Success = true });
+                    .Setup(r => r.GetFirewallLists(It.IsAny<string>()))
+                    .ReturnsAsync(new FirewallListsAPIResponse { Success = true });
                 reporting = reportingMock.Object;
             }
 
-          
-            if (runtime == null) { 
+
+            if (runtime == null)
+            {
                 var runtimeMock = new Mock<IRuntimeAPIClient>();
                 runtimeMock
                     .Setup(r => r.GetConfigLastUpdated(It.IsAny<string>()))
@@ -46,8 +48,8 @@ namespace Aikido.Zen.Test.Mocks
                 .ReturnsAsync(new ReportingAPIResponse { Success = false, Error = "Test error" });
 
             reportingApiClient
-                .Setup(r => r.GetBlockedIps(It.IsAny<string>()))
-                .ReturnsAsync(new BlockedIpsAPIResponse { Success = false, Error = "Test error" });
+                .Setup(r => r.GetFirewallLists(It.IsAny<string>()))
+                .ReturnsAsync(new FirewallListsAPIResponse { Success = false, Error = "Test error" });
 
             var runtimeApiClient = new Mock<IRuntimeAPIClient>();
             runtimeApiClient
@@ -73,7 +75,7 @@ namespace Aikido.Zen.Test.Mocks
                     .ThrowsAsync(new System.Exception("Test exception"));
 
             reportingApiClient
-                .Setup(r => r.GetBlockedIps(It.IsAny<string>()))
+                .Setup(r => r.GetFirewallLists(It.IsAny<string>()))
                 .ThrowsAsync(new System.Exception("Test exception"));
 
             var runtimeApiClient = new Mock<IRuntimeAPIClient>();

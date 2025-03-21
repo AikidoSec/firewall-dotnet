@@ -50,6 +50,11 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
         private async Task Context_BeginRequest(object sender, EventArgs e)
         {
             var httpContext = ((HttpApplication)sender).Context;
+            // if the ip is bypassed, skip the handling of the request
+            if (Agent.Instance.Context.BlockList.IsIPBypassed(GetClientIp(httpContext)) || EnvironmentHelper.IsDisabled)
+            {
+                return;
+            }
 
             var context = new Context
             {
