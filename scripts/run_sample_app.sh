@@ -39,10 +39,7 @@ sleep 5  # Increased sleep time to give the app more time to start
 echo "[✓] Checking health endpoint..."
 for i in {1..5}; do
     echo "[✓] Attempt $i of 5..."
-    response=$(curl -s --max-time 10 -w "%{http_code}" http://localhost:5081/health)
-    curl_exit=$?
-
-    echo "[✓] Curl exit code: $curl_exit"
+    response=$(curl -s --max-time 10 -o /dev/null -w "%{http_code}" http://localhost:5081/health)
 
     if [ $curl_exit -eq 28 ]; then
         echo "[✗] Request timed out"
@@ -55,6 +52,7 @@ for i in {1..5}; do
         exit 1
     fi
 
+    # Echo only the status code, which is stored in $response
     echo "[✓] Response received: $response"
 
     if [ "$response" -eq 200 ]; then
