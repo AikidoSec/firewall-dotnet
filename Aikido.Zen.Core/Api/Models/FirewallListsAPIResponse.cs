@@ -62,7 +62,9 @@ namespace Aikido.Zen.Core.Api
         /// <summary>
         /// Gets the blocked user agents as a regex.
         /// </summary>
-        public Regex BlockedUserAgentsRegex => new Regex(BlockedUserAgents ?? string.Empty, RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        public Regex BlockedUserAgentsRegex => !string.IsNullOrWhiteSpace(BlockedUserAgents)
+            ? new Regex(BlockedUserAgents, RegexOptions.Compiled | RegexOptions.IgnoreCase)
+            : null;
 
         /// <summary>
         /// Gets a collection of blocked IP addresses as strings.
