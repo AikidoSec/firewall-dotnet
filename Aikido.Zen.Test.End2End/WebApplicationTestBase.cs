@@ -40,7 +40,7 @@ namespace Aikido.Zen.Test.End2End
         {
             SampleAppEnvironmentVariables["AIKIDO_DISABLE"] = disabled.ToString().ToLower();
             SampleAppEnvironmentVariables["AIKIDO_BLOCK"] = block.ToString().ToLower();
-            await MockServerClient.PostAsync("/api/runtime/config", JsonContent.Create(new { Block = block.ToString().ToLower() }));
+            await MockServerClient.PostAsync("/api/runtime/config", JsonContent.Create(new { Block = block }));
         }
 
         [OneTimeSetUp]
