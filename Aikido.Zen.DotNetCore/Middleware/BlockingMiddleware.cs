@@ -5,6 +5,8 @@ using Aikido.Zen.Core.Models;
 using Microsoft.AspNetCore.Http;
 using System.Text;
 using System.Web; // Import for HTML encoding
+using System.Linq;
+using System.Collections.Generic;
 
 namespace Aikido.Zen.DotNetCore.Middleware
 {
@@ -39,20 +41,25 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 return;
             }
 
-            // Is rate limiting enabled for this route?
-            if (agentContext.RateLimitedRoutes.TryGetValue(routeKey, out var rateLimitConfig) && rateLimitConfig.Enabled)
+            // Check if rate limiting should be applied
+            var remoteAddress = HttpUtility.HtmlEncode(aikidoContext.RemoteAddress); // HTML escape the remote address
+            var userOrIp = user?.Id ?? remoteAddress;
+
+            // Use the helper to check all rate limiting rules
+            var (isAllowed, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(routeKey, userOrIp, agentContext.RateLimitedRoutes);
+
+            if (!isAllowed)
             {
-                // should we rate limit this request?
-                var remoteAddress = HttpUtility.HtmlEncode(aikidoContext.RemoteAddress); // HTML escape the remote address
-                var key = $"{routeKey}:user-or-ip:{user?.Id ?? remoteAddress}";
-                if (!RateLimitingHelper.IsAllowed(key, rateLimitConfig.WindowSizeInMS, rateLimitConfig.MaxRequests))
+                Agent.Instance.Context.AddAbortedRequest();
+                context.Response.StatusCode = 429;
+
+                if (effectiveConfig != null)
                 {
-                    Agent.Instance.Context.AddAbortedRequest();
-                    context.Response.StatusCode = 429;
-                    context.Response.Headers.Add("Retry-After", rateLimitConfig.WindowSizeInMS.ToString());
-                    await context.Response.WriteAsync($"You are rate limited by Aikido firewall. (Your IP: {remoteAddress})");
-                    return;
+                    context.Response.Headers.Add("Retry-After", effectiveConfig.WindowSizeInMS.ToString());
                 }
+
+                await context.Response.WriteAsync($"You are rate limited by Aikido firewall. (Your IP: {remoteAddress})");
+                return;
             }
 
             await next(context);

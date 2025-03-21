@@ -4,7 +4,7 @@ using System.IO;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Models;
 
-namespace Aikido.Zen.Test.Mocks
+namespace Aikido.Zen.Tests.Mocks
 {
     public static class ContextMock
     {
