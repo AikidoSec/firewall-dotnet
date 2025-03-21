@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Aikido.Zen.Server.Mock.Models;
 
 namespace Aikido.Zen.Server.Mock.Services;
@@ -28,7 +29,34 @@ public class ConfigService
 
         foreach (var (key, value) in newConfig)
         {
-            _configs[appId][key] = value;
+            // if value is JsonValueKind, process it
+            if (value is JsonElement jsonElement)
+            {
+                if (jsonElement.ValueKind == JsonValueKind.Array)
+                {
+                    _configs[appId][key] = jsonElement.Deserialize<List<string>>() ?? new List<string>();
+                }
+                else if (jsonElement.ValueKind == JsonValueKind.Object)
+                {
+                    _configs[appId][key] = jsonElement.Deserialize<Dictionary<string, string>>() ?? new Dictionary<string, string>();
+                }
+                else if (value?.ToString() == "True")
+                {
+                    _configs[appId][key] = true;
+                }
+                else if (value?.ToString() == "False")
+                {
+                    _configs[appId][key] = false;
+                }
+                else
+                {
+                    _configs[appId][key] = jsonElement.ToString();
+                }
+            }
+            else
+            {
+                _configs[appId][key] = value;
+            }
         }
 
         _configs[appId]["configUpdatedAt"] = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
