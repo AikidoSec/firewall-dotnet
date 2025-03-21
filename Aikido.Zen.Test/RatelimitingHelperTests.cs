@@ -1,4 +1,7 @@
 using Aikido.Zen.Core.Helpers;
+using Aikido.Zen.Core.Models;
+using System.Diagnostics;
+using System.Collections.Generic;
 
 namespace Aikido.Zen.Test.Helpers
 {
@@ -22,7 +25,7 @@ namespace Aikido.Zen.Test.Helpers
             // Act & Assert
             for (int i = 0; i < maxRequests; i++)
             {
-                Assert.That(RateLimitingHelper.IsAllowed(key, windowSize, maxRequests), Is.True, 
+                Assert.That(RateLimitingHelper.IsAllowed(key, windowSize, maxRequests), Is.True,
                     $"Request {i + 1} should be allowed");
             }
 
@@ -62,7 +65,7 @@ namespace Aikido.Zen.Test.Helpers
         {
             // Arrange
             string key1 = "user1";
-            string key2 = "user2"; 
+            string key2 = "user2";
             int windowSize = 60000; // 1 minute
             int maxRequests = 5;
 
@@ -188,15 +191,337 @@ namespace Aikido.Zen.Test.Helpers
             // Act & Assert
             // First request - should set initial count to 1
             Assert.That(RateLimitingHelper.IsAllowed(key, windowSize, maxRequests), Is.True);
-            
+
             // Second request - should increment to 2
             Assert.That(RateLimitingHelper.IsAllowed(key, windowSize, maxRequests), Is.True);
-            
+
             // Third request - should increment to 3
             Assert.That(RateLimitingHelper.IsAllowed(key, windowSize, maxRequests), Is.True);
-            
+
             // Fourth request - should be denied as count is at max
             Assert.That(RateLimitingHelper.IsAllowed(key, windowSize, maxRequests), Is.False);
+        }
+
+        [Test]
+        public void ShouldHandleTTLExpiration()
+        {
+            // Arrange
+            string key = "test_key";
+            int windowSize = 1000;
+            int maxRequests = 5;
+
+            // Act & Assert
+            for (int i = 0; i < maxRequests; i++)
+            {
+                Assert.That(RateLimitingHelper.IsAllowed(key, windowSize, maxRequests), Is.True);
+            }
+
+            System.Threading.Thread.Sleep(windowSize + 50);
+
+            Assert.That(RateLimitingHelper.IsAllowed(key, windowSize, maxRequests), Is.True,
+                "Request after TTL should be allowed");
+        }
+
+        [Test]
+        public void ShouldHandleSlidingWindowWithIntermittentRequests()
+        {
+            // Arrange
+            string key = "test_key";
+            int windowSize = 1000;
+            int maxRequests = 5;
+            int delayBetweenRequests = 100;
+
+            // Act & Assert
+            for (int i = 0; i < maxRequests; i++)
+            {
+                Assert.That(RateLimitingHelper.IsAllowed(key, windowSize, maxRequests), Is.True,
+                    $"Request {i + 1} should be allowed");
+                System.Threading.Thread.Sleep(delayBetweenRequests);
+            }
+
+            System.Threading.Thread.Sleep(windowSize + 50);
+
+            Assert.That(RateLimitingHelper.IsAllowed(key, windowSize, maxRequests), Is.True,
+                "Request after sliding window should be allowed");
+        }
+
+        [Test]
+        public void ShouldHandleSlidingWindowWithBurstRequests()
+        {
+            // Arrange
+            string key = "test_key";
+            int windowSize = 1000;
+            int maxRequests = 5;
+
+            // Initial burst of requests
+            for (int i = 0; i < maxRequests; i++)
+            {
+                Assert.That(RateLimitingHelper.IsAllowed(key, windowSize, maxRequests), Is.True,
+                    $"Initial request {i + 1} should be allowed");
+            }
+
+            // Wait for half the window
+            System.Threading.Thread.Sleep(windowSize / 2);
+
+            // These requests should be denied as we're still within the window
+            Assert.That(RateLimitingHelper.IsAllowed(key, windowSize, maxRequests), Is.False,
+                "Request should be denied during mid-window");
+            Assert.That(RateLimitingHelper.IsAllowed(key, windowSize, maxRequests), Is.False,
+                "Request should be denied during mid-window");
+            Assert.That(RateLimitingHelper.IsAllowed(key, windowSize, maxRequests), Is.False,
+                "Request should be denied during mid-window");
+
+            // Wait for the remaining window
+            System.Threading.Thread.Sleep(windowSize / 2 + 50);
+
+            // Should allow 2 requests as older ones have expired
+            Assert.That(RateLimitingHelper.IsAllowed(key, windowSize, maxRequests), Is.True,
+                "First request after partial window expiry should be allowed");
+            Assert.That(RateLimitingHelper.IsAllowed(key, windowSize, maxRequests), Is.True,
+                "Second request after partial window expiry should be allowed");
+            Assert.That(RateLimitingHelper.IsAllowed(key, windowSize, maxRequests), Is.False,
+                "Third request should be denied");
+
+            // Wait for full window
+            System.Threading.Thread.Sleep(windowSize + 50);
+
+            Assert.That(RateLimitingHelper.IsAllowed(key, windowSize, maxRequests), Is.True,
+                "Request after full window expiry should be allowed");
+        }
+
+        [Test]
+        public void ShouldHandleDifferentWindowSizes()
+        {
+            // Arrange
+            string key = "test_key";
+            int windowSize = 1000; // 1 second window
+            int maxRequests = 5;
+
+            // Act & Assert
+            for (int i = 0; i < maxRequests; i++)
+            {
+                Assert.That(RateLimitingHelper.IsAllowed(key, windowSize, maxRequests), Is.True,
+                    $"Request {i + 1} should be allowed");
+            }
+
+            Assert.That(RateLimitingHelper.IsAllowed(key, windowSize, maxRequests), Is.False,
+                $"Request {maxRequests + 1} should not be allowed");
+        }
+
+        [Test]
+        public void ShouldHandleSlidingWindowEdgeCase()
+        {
+            // Arrange
+            string key = "test_key";
+            int windowSize = 1000;
+            int maxRequests = 5;
+
+            // Act & Assert
+            for (int i = 0; i < maxRequests; i++)
+            {
+                Assert.That(RateLimitingHelper.IsAllowed(key, windowSize, maxRequests), Is.True,
+                    $"Request {i + 1} should be allowed");
+            }
+
+            System.Threading.Thread.Sleep(windowSize + 50);
+
+            Assert.That(RateLimitingHelper.IsAllowed(key, windowSize, maxRequests), Is.True,
+                "Request after first window should be allowed");
+
+            System.Threading.Thread.Sleep(windowSize + 50);
+
+            Assert.That(RateLimitingHelper.IsAllowed(key, windowSize, maxRequests), Is.True,
+                "Request after second window should be allowed");
+        }
+
+        [Test]
+        public void IsWildcardMatch_ShouldMatchExactRoutes()
+        {
+            // Arrange
+            string pattern = "GET|api/users";
+            string route = "GET|api/users";
+
+            // Act & Assert
+            Assert.That(RateLimitingHelper.IsWildcardMatch(pattern, route), Is.True);
+        }
+
+        [Test]
+        public void IsWildcardMatch_ShouldMatchWildcardRoutes()
+        {
+            // Arrange & Act & Assert
+            Assert.That(RateLimitingHelper.IsWildcardMatch("GET|api/*", "GET|api/users"), Is.True);
+            Assert.That(RateLimitingHelper.IsWildcardMatch("GET|api/*/details", "GET|api/users/details"), Is.True);
+            Assert.That(RateLimitingHelper.IsWildcardMatch("*|api/users", "GET|api/users"), Is.True);
+            Assert.That(RateLimitingHelper.IsWildcardMatch("*|api/users", "POST|api/users"), Is.True);
+            Assert.That(RateLimitingHelper.IsWildcardMatch("GET|*/users", "GET|api/users"), Is.True);
+        }
+
+        [Test]
+        public void IsWildcardMatch_ShouldNotMatchNonMatchingRoutes()
+        {
+            // Arrange & Act & Assert
+            Assert.That(RateLimitingHelper.IsWildcardMatch("GET|api/*", "POST|api/users"), Is.False);
+            Assert.That(RateLimitingHelper.IsWildcardMatch("GET|api/users/*", "GET|api/products"), Is.False);
+            Assert.That(RateLimitingHelper.IsWildcardMatch("GET|api/*/details", "GET|api/users/profile"), Is.False);
+        }
+
+        [Test]
+        public void IsWildcardMatch_ShouldHandleEmptyStrings()
+        {
+            // Arrange & Act & Assert
+            Assert.That(RateLimitingHelper.IsWildcardMatch("", "GET|api/users"), Is.False);
+            Assert.That(RateLimitingHelper.IsWildcardMatch("GET|api/*", ""), Is.False);
+            Assert.That(RateLimitingHelper.IsWildcardMatch("", ""), Is.False);
+        }
+
+        [Test]
+        public void IsRequestAllowed_ShouldRespectExactMatch()
+        {
+            // Arrange
+            string routeKey = "GET|api/users";
+            string userOrIp = "user123";
+            var rateLimitedRoutes = new Dictionary<string, RateLimitingConfig>
+            {
+                { routeKey, new RateLimitingConfig { Enabled = true, MaxRequests = 2, WindowSizeInMS = 1000 } }
+            };
+
+            // Act & Assert
+            // First two requests should be allowed
+            var (isAllowed1, _) = RateLimitingHelper.IsRequestAllowed(routeKey, userOrIp, rateLimitedRoutes);
+            var (isAllowed2, _) = RateLimitingHelper.IsRequestAllowed(routeKey, userOrIp, rateLimitedRoutes);
+            var (isAllowed3, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(routeKey, userOrIp, rateLimitedRoutes);
+
+            Assert.That(isAllowed1, Is.True);
+            Assert.That(isAllowed2, Is.True);
+            Assert.That(isAllowed3, Is.False);
+            Assert.That(effectiveConfig, Is.Not.Null);
+            Assert.That(effectiveConfig.MaxRequests, Is.EqualTo(2));
+        }
+
+        [Test]
+        public void IsRequestAllowed_ShouldRespectWildcardMatch()
+        {
+            // Arrange
+            string routeKey = "GET|api/users";
+            string userOrIp = "user123";
+            var rateLimitedRoutes = new Dictionary<string, RateLimitingConfig>
+            {
+                { "GET|api/*", new RateLimitingConfig { Enabled = true, MaxRequests = 2, WindowSizeInMS = 1000 } }
+            };
+
+            // Act & Assert
+            // First two requests should be allowed
+            var (isAllowed1, _) = RateLimitingHelper.IsRequestAllowed(routeKey, userOrIp, rateLimitedRoutes);
+            var (isAllowed2, _) = RateLimitingHelper.IsRequestAllowed(routeKey, userOrIp, rateLimitedRoutes);
+            var (isAllowed3, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(routeKey, userOrIp, rateLimitedRoutes);
+
+            Assert.That(isAllowed1, Is.True);
+            Assert.That(isAllowed2, Is.True);
+            Assert.That(isAllowed3, Is.False);
+            Assert.That(effectiveConfig, Is.Not.Null);
+            Assert.That(effectiveConfig.MaxRequests, Is.EqualTo(2));
+        }
+
+        [Test]
+        public void IsRequestAllowed_ShouldRespectBothExactAndWildcardMatches()
+        {
+            // Arrange
+            string routeKey = "GET|api/users";
+            string userOrIp = "user123";
+            var rateLimitedRoutes = new Dictionary<string, RateLimitingConfig>
+            {
+                { routeKey, new RateLimitingConfig { Enabled = true, MaxRequests = 3, WindowSizeInMS = 1000 } },
+                { "GET|api/*", new RateLimitingConfig { Enabled = true, MaxRequests = 2, WindowSizeInMS = 1000 } }
+            };
+
+            // Act & Assert
+            // First two requests should be allowed by both exact and wildcard
+            var (isAllowed1, _) = RateLimitingHelper.IsRequestAllowed(routeKey, userOrIp, rateLimitedRoutes);
+            var (isAllowed2, _) = RateLimitingHelper.IsRequestAllowed(routeKey, userOrIp, rateLimitedRoutes);
+            var (isAllowed3, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(routeKey, userOrIp, rateLimitedRoutes);
+
+            Assert.That(isAllowed1, Is.True);
+            Assert.That(isAllowed2, Is.True);
+            Assert.That(isAllowed3, Is.False);
+            Assert.That(effectiveConfig, Is.Not.Null);
+            Assert.That(effectiveConfig.MaxRequests, Is.EqualTo(2));
+        }
+
+        [Test]
+        public void IsRequestAllowed_ShouldHandleMultipleWildcardMatches()
+        {
+            // Arrange
+            string routeKey = "GET|api/users/details";
+            string userOrIp = "user123";
+            var rateLimitedRoutes = new Dictionary<string, RateLimitingConfig>
+            {
+                { "GET|api/*", new RateLimitingConfig { Enabled = true, MaxRequests = 3, WindowSizeInMS = 1000 } },
+                { "GET|*/users/*", new RateLimitingConfig { Enabled = true, MaxRequests = 2, WindowSizeInMS = 1000 } }
+            };
+
+            // Act & Assert
+            // First two requests should be allowed by both wildcards
+            var (isAllowed1, _) = RateLimitingHelper.IsRequestAllowed(routeKey, userOrIp, rateLimitedRoutes);
+            var (isAllowed2, _) = RateLimitingHelper.IsRequestAllowed(routeKey, userOrIp, rateLimitedRoutes);
+            var (isAllowed3, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(routeKey, userOrIp, rateLimitedRoutes);
+
+            Assert.That(isAllowed1, Is.True);
+            Assert.That(isAllowed2, Is.True);
+            Assert.That(isAllowed3, Is.False);
+            Assert.That(effectiveConfig, Is.Not.Null);
+            Assert.That(effectiveConfig.MaxRequests, Is.EqualTo(2));
+        }
+
+        [Test]
+        public void IsRequestAllowed_ShouldHandleDisabledConfigs()
+        {
+            // Arrange
+            string routeKey = "GET|api/users";
+            string userOrIp = "user123";
+            var rateLimitedRoutes = new Dictionary<string, RateLimitingConfig>
+            {
+                { routeKey, new RateLimitingConfig { Enabled = false, MaxRequests = 1, WindowSizeInMS = 1000 } },
+                { "GET|api/*", new RateLimitingConfig { Enabled = false, MaxRequests = 1, WindowSizeInMS = 1000 } }
+            };
+
+            // Act & Assert
+            // All requests should be allowed because both configs are disabled
+            for (int i = 0; i < 5; i++)
+            {
+                var (isAllowed, _) = RateLimitingHelper.IsRequestAllowed(routeKey, userOrIp, rateLimitedRoutes);
+                Assert.That(isAllowed, Is.True);
+            }
+        }
+
+        [Test]
+        public void IsRequestAllowed_ShouldHandleEmptyRoutes()
+        {
+            // Arrange
+            string routeKey = "GET|api/users";
+            string userOrIp = "user123";
+            var rateLimitedRoutes = new Dictionary<string, RateLimitingConfig>();
+
+            // Act
+            var (isAllowed, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(routeKey, userOrIp, rateLimitedRoutes);
+
+            // Assert
+            Assert.That(isAllowed, Is.True);
+            Assert.That(effectiveConfig, Is.Null);
+        }
+
+        [Test]
+        public void IsRequestAllowed_ShouldHandleNullRoutes()
+        {
+            // Arrange
+            string routeKey = "GET|api/users";
+            string userOrIp = "user123";
+
+            // Act
+            var (isAllowed, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(routeKey, userOrIp, null);
+
+            // Assert
+            Assert.That(isAllowed, Is.True);
+            Assert.That(effectiveConfig, Is.Null);
         }
     }
 }
