@@ -25,6 +25,13 @@ namespace Aikido.Zen.Core.Api
         // used for testing purposes
         public ReportingAPIClient(HttpClient httpClient)
         {
+            if (httpClient == null)
+            {
+                var handler = new HttpClientHandler();
+                handler.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
+
+                _httpClient = new HttpClient(handler);
+            }
             _httpClient = httpClient;
             httpClient.DefaultRequestHeaders.AcceptEncoding.Add(new StringWithQualityHeaderValue("gzip"));
             httpClient.DefaultRequestHeaders.AcceptEncoding.Add(new StringWithQualityHeaderValue("deflate"));

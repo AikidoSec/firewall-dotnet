@@ -55,7 +55,7 @@ namespace Aikido.Zen.Core.Helpers
                 .Concat(ipv4Ranges.Select(r => IPv4ToIPv6(r)))
                 .ToList();
 
-            foreach (var range in ipv4Ranges.Concat(ipv6Ranges))
+            foreach (var range in completeList)
             {
                 ranges.InsertRange(range);
             }

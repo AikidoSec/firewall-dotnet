@@ -55,7 +55,8 @@ namespace Aikido.Zen.Test.End2End
             {
                 ["allowedIPAddresses"] = new List<string> { "123.123.123.123" }
             };
-            await MockServerClient.PostAsJsonAsync("/api/runtime/config", bypassList);
+            var result = await MockServerClient.PostAsJsonAsync("/api/runtime/config", bypassList);
+
             SampleAppClient = CreateSampleAppFactory().CreateClient();
             Thread.Sleep(250);
 
