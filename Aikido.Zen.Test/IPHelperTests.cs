@@ -128,7 +128,8 @@ namespace Aikido.Zen.Test.Helpers
                 "::", "::1", "::ffff:0.0.0.0", "::ffff:127.0.0.1", "fe80::", "fe80::1", "fe80::abc:1",
                 "febf:ffff:ffff:ffff:ffff:ffff:ffff:ffff", "fc00::", "fc00::1", "fc00::abc:1",
                 "fdff:ffff:ffff:ffff:ffff:ffff:ffff:ffff", "2130706433", "0x7f000001", "fd00:ec2::254", "169.254.169.254",
-                  "::ffff:127.0.0.2", "::ffff:10.0.0.1", "::ffff:172.16.1.2", "::ffff:192.168.2.2"
+                "::", "::1", "fc00::1", "fe80::1", "100::1", "2001:db8::1", "3fff::1",
+                "::ffff:127.0.0.2", "::ffff:10.0.0.1", "::ffff:172.16.1.2", "::ffff:192.168.2.2"
             };
 
             // Act & Assert

@@ -14,7 +14,7 @@ namespace Aikido.Zen.Core.Helpers
             var ranges = new IPRange();
 
             // IPv4 private ranges - updated to include all reserved ranges
-            // taken from https://github.com/frenchbread/private-ip/blob/master/src/index.ts
+            // taken from https://github.com/AikidoSec/firewall-node/blob/main/library/vulnerabilities/ssrf/isPrivateIP.ts
             var ipv4Ranges = new[]
             {
                 "0.0.0.0/8",        // "This" network
@@ -41,13 +41,13 @@ namespace Aikido.Zen.Core.Helpers
             // IPv6 private ranges - updated to be more specific
             var ipv6Ranges = new[]
             {
-                "::/128",           // Unspecified address
-                "::1/128",          // Loopback address
-                "fc00::/7",         // Unique local address (ULA)
-                "fe80::/10",        // Link-local address
-                // "ff00::/8",         // Multicast, leaving this out for now, since it can include private and public ranges --> https://datatracker.ietf.org/doc/html/rfc4291#section-2.7
-                "100::/64",         // Discard prefix (RFC6666)
-                "2001:db8::/32"     // Documentation prefix
+                "::/128", // Unspecified address (RFC 4291)
+                "::1/128", // Loopback address (RFC 4291)
+                "fc00::/7", // Unique local address (ULA) (RFC 4193)
+                "fe80::/10", // Link-local address (LLA) (RFC 4291)
+                "100::/64", // Discard prefix (RFC 6666)
+                "2001:db8::/32", // Documentation prefix (RFC 3849)
+                "3fff::/20", // Documentation prefix (RFC 9637)
             };
 
             var completeList = ipv4Ranges
@@ -163,6 +163,7 @@ namespace Aikido.Zen.Core.Helpers
 
             var parts = ip.Split('/');
             var suffix = int.Parse(parts[1]);
+            // we add 96 to the suffix, since ::ffff: already is 96 bits, so the 32 remaining bits are decided by the IPv4 address
             return $"::ffff:{parts[0]}/{suffix + 96}";
         }
 
