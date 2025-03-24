@@ -13,14 +13,17 @@ dotnet build "$1" > /dev/null 2>&1
 # Check if mock server is running and ready
 echo "...Checking mock server health..."
 for i in {1..5}; do
-    echo "[✓] Checking mock server - attempt $i of 5..."
+    echo "... Checking mock server - attempt $i of 5..."
     response=$(curl -s --max-time 10 -w "%{http_code}" http://localhost:5080/health)
     curl_exit=$?
 
     if [ $curl_exit -eq 0 ] && [ "$response" -eq 200 ]; then
         echo "[✓] Mock server is ready"
         break
+    else
+        echo "[✗] Mock server responded with status code $response"
     fi
+
 
     if [ $i -eq 5 ]; then
         echo "[✗] Mock server failed to respond after 5 attempts"
