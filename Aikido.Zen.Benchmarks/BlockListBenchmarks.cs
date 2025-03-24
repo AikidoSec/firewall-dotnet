@@ -67,7 +67,7 @@ namespace Aikido.Zen.Benchmarks
             // Check if access is blocked based on IP and path
             foreach (var ip in _checkIps.Take(IpsToCheck))
             {
-                _blockList.IsBlocked(ip, $"GET|path/", out var reason);
+                _blockList.IsBlocked(ip, $"GET|path/", "http://localhost:80/path", out var reason);
             }
         }
     }

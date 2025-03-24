@@ -1,7 +1,6 @@
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Helpers;
-using NUnit.Framework;
-using System;
+using Aikido.Zen.Core.Models;
 
 namespace Aikido.Zen.Test.Helpers
 {
@@ -144,6 +143,451 @@ namespace Aikido.Zen.Test.Helpers
 
             // Assert
             Assert.That(expectedResult, Is.EqualTo(result));
+        }
+
+        [Test]
+        public void MatchEndpoints_InvalidUrlAndNoRoute_ShouldReturnEmptyList()
+        {
+            // Arrange
+            var context = new Context { Method = "POST", Url = "abc", Route = null };
+            var endpoints = new List<EndpointConfig>();
+
+            // Act
+            var result = RouteHelper.MatchEndpoints(context, endpoints);
+
+            // Assert
+            Assert.That(result, Is.Empty);
+        }
+
+        [Test]
+        public void MatchEndpoints_NoUrlAndNoRoute_ShouldReturnEmptyList()
+        {
+            // Arrange
+            var context = new Context { Method = "POST", Url = null, Route = null };
+            var endpoints = new List<EndpointConfig>();
+
+            // Act
+            var result = RouteHelper.MatchEndpoints(context, endpoints);
+
+            // Assert
+            Assert.That(result, Is.Empty);
+        }
+
+        [Test]
+        public void MatchEndpoints_NoMethod_ShouldReturnEmptyList()
+        {
+            // Arrange
+            var context = new Context { Method = null, Url = "http://localhost:4000/posts/3", Route = "/posts/3" };
+            var endpoints = new List<EndpointConfig>();
+
+            // Act
+            var result = RouteHelper.MatchEndpoints(context, endpoints);
+
+            // Assert
+            Assert.That(result, Is.Empty);
+        }
+
+        [Test]
+        public void MatchEndpoints_NoMatches_ShouldReturnEmptyList()
+        {
+            // Arrange
+            var context = new Context { Method = "POST", Url = "http://localhost:4000/posts/3", Route = "/posts/3" };
+            var endpoints = new List<EndpointConfig>();
+
+            // Act
+            var result = RouteHelper.MatchEndpoints(context, endpoints);
+
+            // Assert
+            Assert.That(result, Is.Empty);
+        }
+
+        [Test]
+        public void MatchEndpoints_ExactRouteMatch_ShouldReturnMatchingEndpoint()
+        {
+            // Arrange
+            var context = new Context
+            {
+                Method = "POST",
+                Url = "http://localhost:4000/posts/3",
+                Route = "/posts/:number"
+            };
+            var endpoints = new List<EndpointConfig>
+            {
+                new()
+                {
+                    Method = "POST",
+                    Route = "/posts/:number",
+                    RateLimiting = new RateLimitingConfig
+                    {
+                        Enabled = true,
+                        MaxRequests = 10,
+                        WindowSizeInMS = 1000
+                    },
+                    ForceProtectionOff = false
+                }
+            };
+
+            // Act
+            var result = RouteHelper.MatchEndpoints(context, endpoints);
+
+            // Assert
+            Assert.That(result.Count, Is.EqualTo(1));
+            Assert.That(result[0].Method, Is.EqualTo("POST"));
+            Assert.That(result[0].Route, Is.EqualTo("/posts/:number"));
+            Assert.That(result[0].RateLimiting.Enabled, Is.True);
+            Assert.That(result[0].RateLimiting.MaxRequests, Is.EqualTo(10));
+            Assert.That(result[0].RateLimiting.WindowSizeInMS, Is.EqualTo(1000));
+            Assert.That(result[0].ForceProtectionOff, Is.False);
+        }
+
+        [Test]
+        public void MatchEndpoints_RelativeUrl_ShouldMatchCorrectly()
+        {
+            // Arrange
+            var context = new Context
+            {
+                Method = "POST",
+                Url = "/posts/3",
+                Route = "/posts/:number"
+            };
+            var endpoints = new List<EndpointConfig>
+            {
+                new()
+                {
+                    Method = "POST",
+                    Route = "/posts/:number",
+                    RateLimiting = new RateLimitingConfig
+                    {
+                        Enabled = true,
+                        MaxRequests = 10,
+                        WindowSizeInMS = 1000
+                    },
+                    ForceProtectionOff = false
+                }
+            };
+
+            // Act
+            var result = RouteHelper.MatchEndpoints(context, endpoints);
+
+            // Assert
+            Assert.That(result.Count, Is.EqualTo(1));
+            Assert.That(result[0].Method, Is.EqualTo("POST"));
+            Assert.That(result[0].Route, Is.EqualTo("/posts/:number"));
+            Assert.That(result[0].RateLimiting.Enabled, Is.True);
+            Assert.That(result[0].RateLimiting.MaxRequests, Is.EqualTo(10));
+            Assert.That(result[0].RateLimiting.WindowSizeInMS, Is.EqualTo(1000));
+            Assert.That(result[0].ForceProtectionOff, Is.False);
+        }
+
+        [Test]
+        public void MatchEndpoints_WildcardRoute_ShouldMatchCorrectly()
+        {
+            // Arrange
+            var context = new Context
+            {
+                Method = "POST",
+                Url = "http://localhost:4000/posts/3",
+                Route = null
+            };
+            var endpoints = new List<EndpointConfig>
+            {
+                new()
+                {
+                    Method = "*",
+                    Route = "/posts/*",
+                    RateLimiting = new RateLimitingConfig
+                    {
+                        Enabled = true,
+                        MaxRequests = 10,
+                        WindowSizeInMS = 1000
+                    },
+                    ForceProtectionOff = false
+                }
+            };
+
+            // Act
+            var result = RouteHelper.MatchEndpoints(context, endpoints);
+
+            // Assert
+            Assert.That(result.Count, Is.EqualTo(1));
+            Assert.That(result[0].Method, Is.EqualTo("*"));
+            Assert.That(result[0].Route, Is.EqualTo("/posts/*"));
+            Assert.That(result[0].RateLimiting.Enabled, Is.True);
+            Assert.That(result[0].RateLimiting.MaxRequests, Is.EqualTo(10));
+            Assert.That(result[0].RateLimiting.WindowSizeInMS, Is.EqualTo(1000));
+            Assert.That(result[0].ForceProtectionOff, Is.False);
+        }
+
+        [Test]
+        public void MatchEndpoints_WildcardWithRelativeUrl_ShouldMatchCorrectly()
+        {
+            // Arrange
+            var context = new Context
+            {
+                Method = "POST",
+                Url = "/posts/3",
+                Route = null
+            };
+            var endpoints = new List<EndpointConfig>
+            {
+                new()
+                {
+                    Method = "*",
+                    Route = "/posts/*",
+                    RateLimiting = new RateLimitingConfig
+                    {
+                        Enabled = true,
+                        MaxRequests = 10,
+                        WindowSizeInMS = 1000
+                    },
+                    ForceProtectionOff = false
+                }
+            };
+
+            // Act
+            var result = RouteHelper.MatchEndpoints(context, endpoints);
+
+            // Assert
+            Assert.That(result.Count, Is.EqualTo(1));
+            Assert.That(result[0].Method, Is.EqualTo("*"));
+            Assert.That(result[0].Route, Is.EqualTo("/posts/*"));
+            Assert.That(result[0].RateLimiting.Enabled, Is.True);
+            Assert.That(result[0].RateLimiting.MaxRequests, Is.EqualTo(10));
+            Assert.That(result[0].RateLimiting.WindowSizeInMS, Is.EqualTo(1000));
+            Assert.That(result[0].ForceProtectionOff, Is.False);
+        }
+
+        [Test]
+        public void MatchEndpoints_MultipleWildcards_ShouldFavorMoreSpecific()
+        {
+            // Arrange
+            var context = new Context
+            {
+                Method = "POST",
+                Url = "http://localhost:4000/posts/3/comments/10",
+                Route = null
+            };
+            var endpoints = new List<EndpointConfig>
+            {
+                new()
+                {
+                    Method = "*",
+                    Route = "/posts/*",
+                    RateLimiting = new RateLimitingConfig
+                    {
+                        Enabled = true,
+                        MaxRequests = 10,
+                        WindowSizeInMS = 1000
+                    },
+                    ForceProtectionOff = false
+                },
+                new()
+                {
+                    Method = "*",
+                    Route = "/posts/*/comments/*",
+                    RateLimiting = new RateLimitingConfig
+                    {
+                        Enabled = true,
+                        MaxRequests = 10,
+                        WindowSizeInMS = 1000
+                    },
+                    ForceProtectionOff = false
+                }
+            };
+
+            // Act
+            var result = RouteHelper.MatchEndpoints(context, endpoints);
+
+            // Assert
+            Assert.That(result.Count, Is.EqualTo(2));
+            Assert.That(result[0].Route, Is.EqualTo("/posts/*/comments/*")); // More specific first
+            Assert.That(result[1].Route, Is.EqualTo("/posts/*")); // Less specific second
+        }
+
+        [Test]
+        public void MatchEndpoints_SpecificMethodWithWildcardRoute_ShouldMatch()
+        {
+            // Arrange
+            var context = new Context
+            {
+                Method = "POST",
+                Url = "http://localhost:4000/posts/3/comments/10",
+                Route = null
+            };
+            var endpoints = new List<EndpointConfig>
+            {
+                new()
+                {
+                    Method = "POST",
+                    Route = "/posts/*/comments/*",
+                    RateLimiting = new RateLimitingConfig
+                    {
+                        Enabled = true,
+                        MaxRequests = 10,
+                        WindowSizeInMS = 1000
+                    },
+                    ForceProtectionOff = false
+                }
+            };
+
+            // Act
+            var result = RouteHelper.MatchEndpoints(context, endpoints);
+
+            // Assert
+            Assert.That(result.Count, Is.EqualTo(1));
+            Assert.That(result[0].Method, Is.EqualTo("POST"));
+            Assert.That(result[0].Route, Is.EqualTo("/posts/*/comments/*"));
+            Assert.That(result[0].RateLimiting.Enabled, Is.True);
+            Assert.That(result[0].RateLimiting.MaxRequests, Is.EqualTo(10));
+            Assert.That(result[0].RateLimiting.WindowSizeInMS, Is.EqualTo(1000));
+            Assert.That(result[0].ForceProtectionOff, Is.False);
+        }
+
+        [Test]
+        public void MatchEndpoints_SpecificRouteOverWildcard_ShouldTakePrecedence()
+        {
+            // Arrange
+            var context = new Context
+            {
+                Method = "POST",
+                Url = "http://localhost:4000/api/coach",
+                Route = "/api/coach"
+            };
+            var endpoints = new List<EndpointConfig>
+            {
+                new()
+                {
+                    Method = "*",
+                    Route = "/api/*",
+                    RateLimiting = new RateLimitingConfig
+                    {
+                        Enabled = true,
+                        MaxRequests = 20,
+                        WindowSizeInMS = 60000
+                    },
+                    ForceProtectionOff = false
+                },
+                new()
+                {
+                    Method = "POST",
+                    Route = "/api/coach",
+                    RateLimiting = new RateLimitingConfig
+                    {
+                        Enabled = true,
+                        MaxRequests = 100,
+                        WindowSizeInMS = 60000
+                    },
+                    ForceProtectionOff = false
+                }
+            };
+
+            // Act
+            var result = RouteHelper.MatchEndpoints(context, endpoints);
+
+            // Assert
+            Assert.That(result.Count, Is.EqualTo(2));
+            Assert.That(result[0].Method, Is.EqualTo("POST")); // Specific method first
+            Assert.That(result[0].Route, Is.EqualTo("/api/coach")); // Specific route first
+            Assert.That(result[0].RateLimiting.MaxRequests, Is.EqualTo(100));
+            Assert.That(result[1].Method, Is.EqualTo("*")); // Wildcard method second
+            Assert.That(result[1].Route, Is.EqualTo("/api/*")); // Wildcard route second
+            Assert.That(result[1].RateLimiting.MaxRequests, Is.EqualTo(20));
+        }
+
+        [Test]
+        public void MatchEndpoints_SpecificMethodOverWildcard_ShouldTakePrecedence()
+        {
+            // Arrange
+            var context = new Context
+            {
+                Method = "POST",
+                Url = "http://localhost:4000/api/test",
+                Route = "/api/test"
+            };
+            var endpoints = new List<EndpointConfig>
+            {
+                new()
+                {
+                    Method = "*",
+                    Route = "/api/test",
+                    RateLimiting = new RateLimitingConfig
+                    {
+                        Enabled = true,
+                        MaxRequests = 20,
+                        WindowSizeInMS = 60000
+                    },
+                    ForceProtectionOff = false
+                },
+                new()
+                {
+                    Method = "POST",
+                    Route = "/api/test",
+                    RateLimiting = new RateLimitingConfig
+                    {
+                        Enabled = true,
+                        MaxRequests = 100,
+                        WindowSizeInMS = 60000
+                    },
+                    ForceProtectionOff = false
+                }
+            };
+
+            // Act
+            var result = RouteHelper.MatchEndpoints(context, endpoints);
+
+            // Assert
+            Assert.That(result.Count, Is.EqualTo(1));
+            Assert.That(result[0].Method, Is.EqualTo("POST")); // Only specific method should be returned
+            Assert.That(result[0].Route, Is.EqualTo("/api/test"));
+            Assert.That(result[0].RateLimiting.MaxRequests, Is.EqualTo(100));
+        }
+
+        [Test]
+        public void MatchEndpoints_SpecificMethodOverWildcard_ShouldTakePrecedence_ReversedOrder()
+        {
+            // Arrange
+            var context = new Context
+            {
+                Method = "POST",
+                Url = "http://localhost:4000/api/test",
+                Route = "/api/test"
+            };
+            var endpoints = new List<EndpointConfig>
+            {
+                new()
+                {
+                    Method = "POST",
+                    Route = "/api/test",
+                    RateLimiting = new RateLimitingConfig
+                    {
+                        Enabled = true,
+                        MaxRequests = 100,
+                        WindowSizeInMS = 60000
+                    },
+                    ForceProtectionOff = false
+                },
+                new()
+                {
+                    Method = "*",
+                    Route = "/api/test",
+                    RateLimiting = new RateLimitingConfig
+                    {
+                        Enabled = true,
+                        MaxRequests = 20,
+                        WindowSizeInMS = 60000
+                    },
+                    ForceProtectionOff = false
+                }
+            };
+
+            // Act
+            var result = RouteHelper.MatchEndpoints(context, endpoints);
+
+            // Assert
+            Assert.That(result.Count, Is.EqualTo(1));
+            Assert.That(result[0].Method, Is.EqualTo("POST")); // Only specific method should be returned
+            Assert.That(result[0].Route, Is.EqualTo("/api/test"));
+            Assert.That(result[0].RateLimiting.MaxRequests, Is.EqualTo(100));
         }
     }
 }

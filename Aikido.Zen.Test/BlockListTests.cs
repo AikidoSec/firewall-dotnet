@@ -71,11 +71,11 @@ namespace Aikido.Zen.Test
             _blockList.UpdateAllowedIpsPerEndpoint(endpoints);
 
             // Assert
-            Assert.That(_blockList.IsIpAllowedForEndpoint("192.168.1.100", "GET|url1"));
-            Assert.That(_blockList.IsIpAllowedForEndpoint("192.168.1.100", "POST|url1"), Is.False);
-            Assert.That(_blockList.IsIpAllowedForEndpoint("10.10.10.10", "POST|url2"));
-            Assert.That(_blockList.IsIpAllowedForEndpoint("10.10.10.10", "GET|url1"), Is.False);
-            Assert.That(_blockList.IsIpAllowedForEndpoint("172.16.1.1", "GET|url3")); // No restrictions for url3
+            Assert.That(_blockList.IsIpAllowedForEndpoint("192.168.1.100", "GET|url1", "http://localhost:80/url1"));
+            Assert.That(_blockList.IsIpAllowedForEndpoint("192.168.1.100", "POST|url1", "http://localhost:80/url1"), Is.False);
+            Assert.That(_blockList.IsIpAllowedForEndpoint("10.10.10.10", "POST|url2", "http://localhost:80/url2"));
+            Assert.That(_blockList.IsIpAllowedForEndpoint("10.10.10.10", "GET|url1", "http://localhost:80/url1"), Is.False);
+            Assert.That(_blockList.IsIpAllowedForEndpoint("172.16.1.1", "GET|url3", "http://localhost:80/url3")); // No restrictions for url3
         }
 
         [Test]
@@ -95,7 +95,7 @@ namespace Aikido.Zen.Test
             _blockList.UpdateAllowedIpsPerEndpoint(new List<EndpointConfig>());
 
             // Assert
-            Assert.That(_blockList.IsIpAllowedForEndpoint("192.168.1.100", "GET|url1")); // Should allow when no restrictions
+            Assert.That(_blockList.IsIpAllowedForEndpoint("192.168.1.100", "GET|url1", "http://localhost:80/url1")); // Should allow when no restrictions
         }
 
         [Test]
@@ -136,7 +136,7 @@ namespace Aikido.Zen.Test
             _blockList.UpdateAllowedIpsPerEndpoint(endpoints);
 
             // Act & Assert
-            Assert.That(_blockList.IsIpAllowedForEndpoint("192.168.1.100", "GET|testUrl")); // Should allow when no IP restrictions
+            Assert.That(_blockList.IsIpAllowedForEndpoint("123.123.123.123", "GET|testUrl", "http://localhost:80/testUrl")); // Should allow when no IP restrictions
         }
 
         [Test]
@@ -153,7 +153,7 @@ namespace Aikido.Zen.Test
             _blockList.UpdateAllowedIpsPerEndpoint(endpoints);
 
             // Act & Assert
-            Assert.That(_blockList.IsIpAllowedForEndpoint("invalid.ip", "GET|testUrl"));
+            Assert.That(_blockList.IsIpAllowedForEndpoint("invalid.ip", "GET|testUrl", "http://localhost:80/testUrl"));
         }
 
         [Test]
@@ -174,10 +174,10 @@ namespace Aikido.Zen.Test
             _blockList.UpdateAllowedIpsPerEndpoint(endpoints);
 
             // Act & Assert
-            Assert.That(_blockList.IsBlocked("123.123.123.101", url, out var reason)); // Blocked IP
-            Assert.That(_blockList.IsBlocked(ip, url, out reason)); // Not in allowed subnet
-            Assert.That(_blockList.IsBlocked("8.8.8.1", url, out reason), Is.False); // In allowed subnet
-            Assert.That(_blockList.IsBlocked("invalid.ip", url, out reason), Is.False); // Invalid IP should not be blocked
+            Assert.That(_blockList.IsBlocked("123.123.123.101", url, "http://localhost:80/testUrl", out var reason)); // Blocked IP
+            Assert.That(_blockList.IsBlocked(ip, url, "http://localhost:80/testUrl", out reason)); // Not in allowed subnet
+            Assert.That(_blockList.IsBlocked("8.8.8.1", url, "http://localhost:80/testUrl", out reason), Is.False); // In allowed subnet
+            Assert.That(_blockList.IsBlocked("invalid.ip", url, "http://localhost:80/testUrl", out reason), Is.False); // Invalid IP should not be blocked
         }
 
         [Test]
@@ -242,7 +242,7 @@ namespace Aikido.Zen.Test
             _blockList.UpdateBypassedIps(new[] { ip });
 
             // Act & Assert
-            Assert.That(_blockList.IsBlocked(ip, url, out var reason), Is.False);
+            Assert.That(_blockList.IsBlocked(ip, url, "http://localhost:80/testUrl", out var reason), Is.False);
             Assert.That(reason, Is.EqualTo("IP is bypassed"));
         }
 
@@ -257,7 +257,7 @@ namespace Aikido.Zen.Test
             _blockList.UpdateBypassedIps(new[] { ip });
 
             // Act & Assert
-            Assert.That(_blockList.IsBlocked(ip, url, out var reason), Is.False);
+            Assert.That(_blockList.IsBlocked(ip, url, "http://localhost:80/testUrl", out var reason), Is.False);
             Assert.That(reason, Is.EqualTo("IP is bypassed"));
         }
 
@@ -288,7 +288,7 @@ namespace Aikido.Zen.Test
             // Act & Assert
             foreach (var ip in privateIps)
             {
-                Assert.That(_blockList.IsBlocked(ip, url, out var reason), Is.False);
+                Assert.That(_blockList.IsBlocked(ip, url, "http://localhost:80/testUrl", out var reason), Is.False);
                 Assert.That(reason, Is.EqualTo("Ip is private or local"));
             }
         }
@@ -318,7 +318,7 @@ namespace Aikido.Zen.Test
             Assert.That(_blockList.IsIPBypassed("invalid.ip"), Is.False);
 
             // Invalid IPs should be allowed for endpoints with no restrictions
-            Assert.That(_blockList.IsIpAllowedForEndpoint("invalid.ip", "GET|unrestricted"), Is.True);
+            Assert.That(_blockList.IsIpAllowedForEndpoint("invalid.ip", "GET|unrestricted", "http://localhost:80/unrestricted"));
 
             // Invalid IPs should be blocked for endpoints with restrictions
             var endpoints = new List<EndpointConfig> {
@@ -329,7 +329,7 @@ namespace Aikido.Zen.Test
                 }
             };
             _blockList.UpdateAllowedIpsPerEndpoint(endpoints);
-            Assert.That(_blockList.IsIpAllowedForEndpoint("invalid.ip", "GET|restricted"), Is.True);
+            Assert.That(_blockList.IsIpAllowedForEndpoint("invalid.ip", "GET|restricted", "http://localhost:80/restricted"), Is.True);
         }
 
         [Test]
@@ -348,31 +348,177 @@ namespace Aikido.Zen.Test
 
             // Act & Assert
             // 1. Private IPs should be allowed first
-            Assert.That(_blockList.IsBlocked("192.168.1.1", url, out var reason), Is.False);
+            Assert.That(_blockList.IsBlocked("192.168.1.1", url, "http://localhost:80/testUrl", out var reason), Is.False);
             Assert.That(reason, Is.EqualTo("Ip is private or local"));
 
             // 2. Bypassed IPs should be allowed second
             _blockList.UpdateBypassedIps(new[] { ip });
-            Assert.That(_blockList.IsBlocked(ip, url, out reason), Is.False);
+            Assert.That(_blockList.IsBlocked(ip, url, "http://localhost:80/testUrl", out reason), Is.False);
             Assert.That(reason, Is.EqualTo("IP is bypassed"));
 
             // 3. Blocked IPs should be checked third
             _blockList.UpdateBypassedIps(Array.Empty<string>());
             _blockList.UpdateBlockedIps([ip]);
-            Assert.That(_blockList.IsBlocked(ip, url, out reason), Is.True);
-            Assert.That(reason, Is.EqualTo("IP is blocked"));
+            Assert.That(_blockList.IsBlocked(ip, url, "http://localhost:80/testUrl", out reason), Is.True);
+            Assert.That(reason, Is.EqualTo("IP is not allowed"));
 
             // 4. Bypassed IPs should override blocked IPs
             _blockList.UpdateBypassedIps(new[] { ip });
-            Assert.That(_blockList.IsBlocked(ip, url, out reason), Is.False);
+            Assert.That(_blockList.IsBlocked(ip, url, "http://localhost:80/testUrl", out reason), Is.False);
 
             // 5. Endpoint-specific rules should be checked last
             _blockList.UpdateAllowedIpsPerEndpoint(endpoints);
             _blockList.UpdateBlockedIps(Array.Empty<string>());
             _blockList.UpdateBypassedIps(Array.Empty<string>());
-            Assert.That(_blockList.IsBlocked(ip, url, out reason), Is.True);
-            Assert.That(reason, Is.EqualTo("Ip is not allowed for this endpoint"));
+            Assert.That(_blockList.IsBlocked(ip, url, "http://localhost:80/testUrl", out reason), Is.True);
+            Assert.That(reason, Is.EqualTo("Ip is not allowed"));
         }
 
+        [Test]
+        public void EndpointMatching_WithWildcards_ShouldMatchCorrectly()
+        {
+            // Arrange
+            var endpoints = new List<EndpointConfig> {
+                new EndpointConfig {
+                    Method = "GET",
+                    Route = "/api/users/*",
+                    AllowedIPAddresses = new[] { "192.168.1.0/24" }
+                },
+                new EndpointConfig {
+                    Method = "GET",
+                    Route = "/api/*/123",
+                    AllowedIPAddresses = new[] { "10.0.0.0/8" }
+                },
+                new EndpointConfig {
+                    Method = "GET",
+                    Route = "/api/users/123",
+                    AllowedIPAddresses = new[] { "172.16.0.0/12" }
+                }
+            };
+
+            // Act
+            _blockList.UpdateAllowedIpsPerEndpoint(endpoints);
+
+            // Assert
+            // Exact match should take precedence
+            Assert.That(_blockList.IsIpAllowedForEndpoint("172.16.1.1", "GET|/api/users/123", "http://localhost:80/api/users/123"), Is.True);
+            Assert.That(_blockList.IsIpAllowedForEndpoint("192.168.1.1", "GET|/api/users/123", "http://localhost:80/api/users/123"), Is.False);
+
+            // Wildcard matches should work
+            Assert.That(_blockList.IsIpAllowedForEndpoint("192.168.1.1", "GET|/api/users/456", "http://localhost:80/api/users/456"), Is.True);
+            Assert.That(_blockList.IsIpAllowedForEndpoint("10.0.0.1", "GET|/api/products/123", "http://localhost:80/api/products/123"), Is.True);
+
+            // No match should allow by default
+            Assert.That(_blockList.IsIpAllowedForEndpoint("8.8.8.8", "GET|/api/unknown", "http://localhost:80/api/unknown"), Is.True);
+        }
+
+        [Test]
+        public void EndpointMatching_WithWildcardMethod_ShouldMatchAnyMethod()
+        {
+            // Arrange
+            var endpoints = new List<EndpointConfig> {
+                new EndpointConfig {
+                    Method = "*",
+                    Route = "/api/users",
+                    AllowedIPAddresses = new[] { "192.168.1.0/24" }
+                },
+                new EndpointConfig {
+                    Method = "GET",
+                    Route = "/api/users",
+                    AllowedIPAddresses = new[] { "10.0.0.0/8" }
+                }
+            };
+
+            // Act
+            _blockList.UpdateAllowedIpsPerEndpoint(endpoints);
+
+            // Assert
+            // Exact method match should take precedence
+            Assert.That(_blockList.IsIpAllowedForEndpoint("10.0.0.1", "GET|/api/users", "http://localhost:80/api/users"), Is.True);
+            Assert.That(_blockList.IsIpAllowedForEndpoint("192.168.1.1", "GET|/api/users", "http://localhost:80/api/users"), Is.False);
+
+            // Wildcard method should match other methods
+            Assert.That(_blockList.IsIpAllowedForEndpoint("192.168.1.1", "POST|/api/users", "http://localhost:80/api/users"), Is.True);
+            Assert.That(_blockList.IsIpAllowedForEndpoint("192.168.1.1", "PUT|/api/users", "http://localhost:80/api/users"), Is.True);
+        }
+
+        [Test]
+        public void EndpointMatching_WithMultipleMatches_ShouldUseMostSpecificMatch()
+        {
+            // Arrange
+            var endpoints = new List<EndpointConfig> {
+                new EndpointConfig {
+                    Method = "GET",
+                    Route = "/api/*/*",
+                    AllowedIPAddresses = new[] { "192.168.1.0/24" }
+                },
+                new EndpointConfig {
+                    Method = "GET",
+                    Route = "/api/*/123",
+                    AllowedIPAddresses = new[] { "10.0.0.0/8" }
+                },
+                new EndpointConfig {
+                    Method = "GET",
+                    Route = "/api/users/*",
+                    AllowedIPAddresses = new[] { "172.16.0.0/12" }
+                }
+            };
+
+            // Act
+            _blockList.UpdateAllowedIpsPerEndpoint(endpoints);
+
+            // Assert
+            // Most specific match should be used
+            Assert.That(_blockList.IsIpAllowedForEndpoint("172.16.1.1", "GET|/api/users/123", "http://localhost:80/api/users/123"), Is.True);
+            Assert.That(_blockList.IsIpAllowedForEndpoint("10.0.0.1", "GET|/api/products/123", "http://localhost:80/api/products/123"), Is.True);
+            Assert.That(_blockList.IsIpAllowedForEndpoint("192.168.1.1", "GET|/api/other/456", "http://localhost:80/api/other/456"), Is.True);
+        }
+
+        [Test]
+        public void EndpointMatching_WithInvalidEndpointFormat_ShouldAllowAccess()
+        {
+            // Arrange
+            var endpoints = new List<EndpointConfig> {
+                new EndpointConfig {
+                    Method = "GET",
+                    Route = "/api/users",
+                    AllowedIPAddresses = new[] { "192.168.1.0/24" }
+                }
+            };
+
+            // Act
+            _blockList.UpdateAllowedIpsPerEndpoint(endpoints);
+
+            // Assert
+            Assert.That(_blockList.IsIpAllowedForEndpoint("192.168.1.1", "invalid-format", "http://localhost:80/invalid-format"), Is.True);
+            Assert.That(_blockList.IsIpAllowedForEndpoint("192.168.1.1", "GET|", "http://localhost:80/"), Is.True);
+            Assert.That(_blockList.IsIpAllowedForEndpoint("192.168.1.1", "|/api/users", "http://localhost:80/api/users"), Is.True);
+            Assert.That(_blockList.IsIpAllowedForEndpoint("192.168.1.1", "GET|/api/users|extra", "http://localhost:80/api/users|extra"), Is.True);
+        }
+
+        [Test]
+        public void EndpointMatching_WithEmptyAllowedIPs_ShouldAllowAccess()
+        {
+            // Arrange
+            var endpoints = new List<EndpointConfig> {
+                new EndpointConfig {
+                    Method = "GET",
+                    Route = "/api/users",
+                    AllowedIPAddresses = new string[] { }
+                },
+                new EndpointConfig {
+                    Method = "GET",
+                    Route = "/api/products",
+                    AllowedIPAddresses = null
+                }
+            };
+
+            // Act
+            _blockList.UpdateAllowedIpsPerEndpoint(endpoints);
+
+            // Assert
+            Assert.That(_blockList.IsIpAllowedForEndpoint("192.168.1.1", "GET|/api/users", "http://localhost:80/api/users"), Is.True);
+            Assert.That(_blockList.IsIpAllowedForEndpoint("10.0.0.1", "GET|/api/products", "http://localhost:80/api/products"), Is.True);
+        }
     }
 }

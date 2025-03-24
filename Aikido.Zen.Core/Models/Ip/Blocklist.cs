@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -16,8 +15,8 @@ namespace Aikido.Zen.Core.Models.Ip
         private IPRange _blockedIps = new IPRange();
         private IPRange _allowedIps = new IPRange();
         private IPRange _bypassedIps = new IPRange();
-        private ConcurrentDictionary<string, IPRange> _allowedIpsPerEndpoint = new ConcurrentDictionary<string, IPRange>();
-        private readonly ReaderWriterLockSlim _lock = new ReaderWriterLockSlim();
+        private List<(EndpointConfig Config, IPRange AllowedIPs)> _endpointConfigs = new List<(EndpointConfig Config, IPRange AllowedIPs)>();
+        private readonly ReaderWriterLockSlim _lock = new ReaderWriterLockSlim(); // used to make sure only one thread can write to the different parts of the blocklist at a time
 
         /// <summary>
         /// Updates the allowed ip addresses or ranges per URL.
@@ -28,27 +27,21 @@ namespace Aikido.Zen.Core.Models.Ip
             _lock.EnterWriteLock();
             try
             {
-                var subnets = endpoints.ToDictionary(
-                    x => $"{x.Method}|{x.Route.TrimStart('/')}",
-                    x =>
+                _endpointConfigs = endpoints.Select(endpoint =>
+                {
+                    var trie = new IPRange();
+                    if (endpoint.AllowedIPAddresses != null)
                     {
-                        var trie = new IPRange();
-                        foreach (var ip in x.AllowedIPAddresses)
+                        foreach (var ip in endpoint.AllowedIPAddresses)
                         {
                             foreach (var cidr in IPHelper.ToCidrString(ip))
                             {
                                 trie.InsertRange(cidr);
                             }
                         }
-                        return trie;
                     }
-                );
-
-                _allowedIpsPerEndpoint.Clear();
-                foreach (var subnet in subnets)
-                {
-                    _allowedIpsPerEndpoint.TryAdd(subnet.Key, subnet.Value);
-                }
+                    return (endpoint, trie);
+                }).ToList();
             }
             finally
             {
@@ -85,7 +78,6 @@ namespace Aikido.Zen.Core.Models.Ip
         /// </summary>
         /// <param name="ips">The ip addresses or ranges to be bypassed.</param>
         public void UpdateBypassedIps(IEnumerable<string> ips)
-
         {
             _lock.EnterWriteLock();
             try
@@ -93,12 +85,10 @@ namespace Aikido.Zen.Core.Models.Ip
                 _bypassedIps = new IPRange();
                 foreach (var ip in ips)
                 {
-
                     foreach (var cidr in IPHelper.ToCidrString(ip))
                     {
                         _bypassedIps.InsertRange(cidr);
                     }
-
                 }
             }
             finally
@@ -113,7 +103,6 @@ namespace Aikido.Zen.Core.Models.Ip
         /// </summary>
         /// <param name="ips">The ip addresses or ranges to allow.</param>
         public void UpdateAllowedIps(IEnumerable<string> ips)
-
         {
             _lock.EnterWriteLock();
             try
@@ -121,12 +110,10 @@ namespace Aikido.Zen.Core.Models.Ip
                 _allowedIps = new IPRange();
                 foreach (var ip in ips)
                 {
-
                     foreach (var cidr in IPHelper.ToCidrString(ip))
                     {
                         _allowedIps.InsertRange(cidr);
                     }
-
                 }
             }
             finally
@@ -184,7 +171,7 @@ namespace Aikido.Zen.Core.Models.Ip
         /// <param name="ip">The IP address to check.</param>
         /// <param name="endpoint">The endpoint, e.g., GET|the/path.</param>
         /// <returns>True if the IP is allowed, false otherwise.</returns>
-        public bool IsIpAllowedForEndpoint(string ip, string endpoint)
+        public bool IsIpAllowedForEndpoint(string ip, string endpoint, string url)
         {
             _lock.EnterReadLock();
             try
@@ -194,17 +181,36 @@ namespace Aikido.Zen.Core.Models.Ip
                     return true; // Allow invalid IPs by default
                 }
 
-                if (!_allowedIpsPerEndpoint.TryGetValue(endpoint, out var trie))
+                var parts = endpoint.Split('|');
+                if (parts.Length != 2)
+                {
+                    return true; // Invalid endpoint format, allow by default
+                }
+
+                var method = parts[0];
+                var path = parts[1];
+                var context = new Context { Method = method, Route = path };
+
+                var matchingEndpoints = RouteHelper.MatchEndpoints(context, _endpointConfigs.Select(x => x.Config).ToList());
+                if (!matchingEndpoints.Any())
                 {
                     return true; // Allow if no specific subnets are defined for the endpoint
                 }
 
-                if (!trie.HasItems)
+                // Check if any matching endpoint allows the IP
+                foreach (var matchingEndpoint in matchingEndpoints.Where(e => (e.AllowedIPAddresses?.Count() ?? 0) > 0))
                 {
-                    return true; // Allow if no specific subnets are defined for the endpoint
+                    var endpointConfig = _endpointConfigs.First(x => x.Config == matchingEndpoint);
+                    if (endpointConfig.AllowedIPs.HasItems)
+                    {
+                        if (!endpointConfig.AllowedIPs.IsIpInRange(ip))
+                        {
+                            return false; // If IP is not allowed for this endpoint, return false
+                        }
+                    }
                 }
 
-                return trie.IsIpInRange(ip);
+                return true; // If no endpoints disallow the IP, return true
             }
             finally
             {
@@ -274,7 +280,7 @@ namespace Aikido.Zen.Core.Models.Ip
         /// <param name="ip">The IP address to check.</param>
         /// <param name="endpoint">The endpoint, e.g., GET|the/path.</param>
         /// <returns>True if access is blocked, false otherwise.</returns>
-        public bool IsBlocked(string ip, string endpoint, out string reason)
+        public bool IsBlocked(string ip, string endpoint, string url, out string reason)
         {
             reason = null;
             if (IsPrivateOrLocalIp(ip))
@@ -289,12 +295,12 @@ namespace Aikido.Zen.Core.Models.Ip
             }
             if (IsIPBlocked(ip))
             {
-                reason = "IP is blocked";
+                reason = "IP is not allowed";
                 return true;
             }
-            if (!IsIpAllowedForEndpoint(ip, endpoint))
+            if (!IsIpAllowedForEndpoint(ip, endpoint, url))
             {
-                reason = "Ip is not allowed for this endpoint";
+                reason = "Ip is not allowed";
                 return true;
             }
             if (!IsIPAllowed(ip))

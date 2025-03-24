@@ -122,7 +122,7 @@ namespace Aikido.Zen.Core.Models
             _blockedUsers.Clear();
         }
 
-        public bool IsBlocked(User user, string ip, string endpoint, string userAgent, out string reason)
+        public bool IsBlocked(User user, string ip, string endpoint, string url, string userAgent, out string reason)
         {
             reason = null;
             // if the ip is bypassed, we don't block the request
@@ -135,13 +135,13 @@ namespace Aikido.Zen.Core.Models
                 reason = "User is blocked";
                 return true;
             }
-            if (_blockList.IsBlocked(ip, endpoint, out reason))
+            if (_blockList.IsBlocked(ip, endpoint, url, out reason))
             {
                 return true;
             }
             if (IsUserAgentBlocked(userAgent))
             {
-                reason = "User agent is blocked";
+                reason = "You are not allowed to access this resource because you have been identified as a bot.";
                 return true;
             }
             return false;
@@ -154,7 +154,7 @@ namespace Aikido.Zen.Core.Models
 
         public bool IsUserAgentBlocked(string userAgent)
         {
-            if (userAgent == "")
+            if (string.IsNullOrWhiteSpace(userAgent))
                 return false;
             return _blockedUserAgents?.IsMatch(userAgent) ?? false;
         }

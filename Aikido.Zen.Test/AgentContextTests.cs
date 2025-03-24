@@ -65,13 +65,13 @@ namespace Aikido.Zen.Test
             _agentContext.UpdateBlockedUserAgents(blockedUserAgents);
 
             // Act & Assert
-            Assert.That(_agentContext.IsBlocked(user, "8.8.8.102", url, "useragent", out var reason)); // Blocked user
-            Assert.That(_agentContext.IsBlocked(null, "8.8.8.101", url, "useragent", out reason)); // Blocked IP
-            Assert.That(_agentContext.IsBlocked(null, ip, url, "useragent", out reason)); // Not in allowed subnet
-            Assert.That(_agentContext.IsBlocked(null, "9.9.9.1", url, "useragent", out reason), Is.False); // In allowed subnet
-            Assert.That(_agentContext.IsBlocked(null, "invalid.ip", url, "useragent", out reason), Is.False); // Invalid IP should not be blocked
-            Assert.That(_agentContext.IsBlocked(new User("user2", "allowed"), "9.9.9.1", url, "useragent", out reason), Is.False); // Non-blocked user in allowed subnet
-            Assert.That(_agentContext.IsBlocked(new User("user2", "allowed"), "8.8.8.101", url, "googlebot", out reason), Is.True); // Blocked user agent
+            Assert.That(_agentContext.IsBlocked(user, "8.8.8.102", url, "http://localhost:80/testUrl", "useragent", out var reason)); // Blocked user
+            Assert.That(_agentContext.IsBlocked(null, "8.8.8.101", url, "http://localhost:80/testUrl", "useragent", out reason)); // Blocked IP
+            Assert.That(_agentContext.IsBlocked(null, ip, url, "http://localhost:80/testUrl", "useragent", out reason)); // Not in allowed subnet
+            Assert.That(_agentContext.IsBlocked(null, "9.9.9.1", url, "http://localhost:80/testUrl", "useragent", out reason), Is.False); // In allowed subnet
+            Assert.That(_agentContext.IsBlocked(null, "invalid.ip", url, "http://localhost:80/testUrl", "useragent", out reason), Is.False); // Invalid IP should not be blocked
+            Assert.That(_agentContext.IsBlocked(new User("user2", "allowed"), "9.9.9.1", url, "http://localhost:80/testUrl", "useragent", out reason), Is.False); // Non-blocked user in allowed subnet
+            Assert.That(_agentContext.IsBlocked(new User("user2", "allowed"), "8.8.8.101", url, "http://localhost:80/testUrl", "googlebot", out reason), Is.True); // Blocked user agent
         }
 
         [Test]
@@ -244,7 +244,7 @@ namespace Aikido.Zen.Test
             _agentContext.UpdateBlockedUsers(new[] { "user1" });
 
             // Act
-            var isBlocked = _agentContext.IsBlocked(user, string.Empty, string.Empty, string.Empty, out var reason);
+            var isBlocked = _agentContext.IsBlocked(user, string.Empty, string.Empty, string.Empty, string.Empty, out var reason);
 
             // Assert
             Assert.That(isBlocked);
@@ -257,7 +257,7 @@ namespace Aikido.Zen.Test
             var user = new User("user1", "User One");
 
             // Act
-            var isBlocked = _agentContext.IsBlocked(user, string.Empty, string.Empty, string.Empty, out var reason);
+            var isBlocked = _agentContext.IsBlocked(user, string.Empty, string.Empty, string.Empty, string.Empty, out var reason);
 
             // Assert
             Assert.That(isBlocked, Is.False);
