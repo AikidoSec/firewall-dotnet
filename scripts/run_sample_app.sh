@@ -20,6 +20,10 @@ for i in {1..5}; do
     if [ $curl_exit -eq 0 ] && [ "$response" -eq 200 ]; then
         echo "[✓] Mock server is ready"
         break
+    elif [ "$response" -eq 000 ]; then
+        echo "[✗] Mock server responded with status code 000. Attempting to start the mock server again..."
+        dotnet run --project e2e/Aikido.Zen.Server.Mock/Aikido.Zen.Server.Mock.csproj --urls "http://localhost:5080" > /dev/null 2>&1 &
+        sleep 5  # Give the mock server some time to start
     else
         echo "[✗] Mock server responded with status code $response"
     fi
