@@ -1,10 +1,7 @@
 using Aikido.Zen.Core;
-using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 using Microsoft.AspNetCore.Http;
-using System.Net.Mail;
-using System.Text;
 using System.Web; // Import for HTML encoding
 
 namespace Aikido.Zen.DotNetCore.Middleware
