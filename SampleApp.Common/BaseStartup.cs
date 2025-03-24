@@ -42,7 +42,7 @@ namespace SampleApp.Common
             app.Use((context, next) =>
             {
                 context.Request.HttpContext.Connection.RemoteIpAddress ??= IPAddress.Parse("192.168.0.1");
-                // we manually do some Ip setup here, because our e2e tests mock http requests and have some missing request info becuase of that (no ip address for example)
+                // we manually do some Ip setup here, because our e2e tests mock http requests and have some missing request info because of that (no ip address for example)
                 // for proper forwarding setup in real environments, see https://learn.microsoft.com/en-us/aspnet/core/host-and-deploy/proxy-load-balancer?view=aspnetcore-9.0&preserve-view=true
                 if (context.Request.Headers.ContainsKey("X-Forwarded-For"))
                 {
