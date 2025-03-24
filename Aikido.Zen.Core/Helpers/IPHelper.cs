@@ -157,7 +157,7 @@ namespace Aikido.Zen.Core.Helpers
         {
             if (!ip.Contains("/"))
             {
-                // No CIDR suffix, assume /32
+                // No CIDR suffix, assume the IPv4 suffix /32, which becomes /128 for IPv6
                 return $"::ffff:{ip}/128";
             }
 
