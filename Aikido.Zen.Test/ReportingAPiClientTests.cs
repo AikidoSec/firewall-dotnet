@@ -52,8 +52,8 @@ namespace Aikido.Zen.Test
             _handlerMock.Protected().Verify(
                 "SendAsync",
                 Times.Once(),
-                ItExpr.Is<HttpRequestMessage>(req => 
-                    req.Method == HttpMethod.Post && 
+                ItExpr.Is<HttpRequestMessage>(req =>
+                    req.Method == HttpMethod.Post &&
                     req.RequestUri.PathAndQuery.Contains("api/runtime/events")),
                 ItExpr.IsAny<CancellationToken>()
             );
@@ -96,7 +96,7 @@ namespace Aikido.Zen.Test
                 .ReturnsAsync(response);
 
             // Act
-            var result = await _reportingApiClient.GetBlockedIps("token");
+            var result = await _reportingApiClient.GetFirewallLists("token");
             await Task.Delay(100);
 
             // Assert
@@ -104,8 +104,8 @@ namespace Aikido.Zen.Test
             _handlerMock.Protected().Verify(
                 "SendAsync",
                 Times.Once(),
-                ItExpr.Is<HttpRequestMessage>(req => 
-                    req.Method == HttpMethod.Get && 
+                ItExpr.Is<HttpRequestMessage>(req =>
+                    req.Method == HttpMethod.Get &&
                     req.RequestUri.PathAndQuery.Contains("api/runtime/firewall/lists")),
                 ItExpr.IsAny<CancellationToken>()
             );
@@ -125,7 +125,7 @@ namespace Aikido.Zen.Test
                 .ThrowsAsync(new Exception("An error occurred while getting blocked IPs"));
 
             // Act & Assert
-            Assert.ThrowsAsync<Exception>(async () => await _reportingApiClient.GetBlockedIps("token"));
+            Assert.ThrowsAsync<Exception>(async () => await _reportingApiClient.GetFirewallLists("token"));
         }
     }
 }

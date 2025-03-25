@@ -27,15 +27,15 @@ namespace Aikido.Zen.Test
             {
                 ConfigUpdatedAt = 1234567890,
                 HeartbeatIntervalInMS = 5000,
-                Endpoints = new List<EndpointConfig> 
-                { 
+                Endpoints = new List<EndpointConfig>
+                {
                     new EndpointConfig {
                         Route = "/test",
                         Method = "GET"
-                    } 
+                    }
                 },
                 BlockedUserIds = new[] { "user1", "user2" },
-                AllowedIPAddresses = new[] { "1.1.1.1", "2.2.2.2" },
+                BypassedIPAddresses = new[] { "1.1.1.1", "2.2.2.2" },
                 ReceivedAnyStats = true,
                 Success = true
             };
@@ -48,9 +48,9 @@ namespace Aikido.Zen.Test
             Assert.That(response.BlockedUserIds, Has.Exactly(2).Items);
             Assert.That(response.BlockedUserIds, Contains.Item("user1"));
             Assert.That(response.BlockedUserIds, Contains.Item("user2"));
-            Assert.That(response.AllowedIPAddresses, Has.Exactly(2).Items);
-            Assert.That(response.AllowedIPAddresses, Contains.Item("1.1.1.1"));
-            Assert.That(response.AllowedIPAddresses, Contains.Item("2.2.2.2"));
+            Assert.That(response.BypassedIPAddresses, Has.Exactly(2).Items);
+            Assert.That(response.BypassedIPAddresses, Contains.Item("1.1.1.1"));
+            Assert.That(response.BypassedIPAddresses, Contains.Item("2.2.2.2"));
             Assert.That(response.ReceivedAnyStats, Is.True);
             Assert.That(response.Success, Is.True);
         }
@@ -63,13 +63,13 @@ namespace Aikido.Zen.Test
             {
                 Endpoints = null,
                 BlockedUserIds = null,
-                AllowedIPAddresses = null
+                BypassedIPAddresses = null
             };
 
             // Assert
             Assert.That(response.Endpoints, Is.Null);
             Assert.That(response.BlockedUserIds, Is.Null);
-            Assert.That(response.AllowedIPAddresses, Is.Null);
+            Assert.That(response.BypassedIPAddresses, Is.Null);
         }
     }
 }

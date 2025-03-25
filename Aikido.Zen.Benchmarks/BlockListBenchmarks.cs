@@ -4,6 +4,7 @@ using Aikido.Zen.Core.Models.Ip;
 using System.Collections.Generic;
 using BenchmarkDotNet.Columns;
 using System.Linq;
+using Aikido.Zen.Core;
 
 namespace Aikido.Zen.Benchmarks
 {
@@ -48,7 +49,7 @@ namespace Aikido.Zen.Benchmarks
             }
 
             // Update blocked subnets
-            _blockList.UpdateBlockedSubnets(_ipRanges);
+            _blockList.UpdateBlockedIps(_ipRanges);
         }
 
         [Benchmark]
@@ -67,7 +68,14 @@ namespace Aikido.Zen.Benchmarks
             // Check if access is blocked based on IP and path
             foreach (var ip in _checkIps.Take(IpsToCheck))
             {
-                _blockList.IsBlocked(ip, $"GET|path/");
+                var context = new Context
+                {
+                    Method = "GET",
+                    Route = "/path",
+                    RemoteAddress = ip,
+                    Url = "http://localhost:80/path"
+                };
+                _blockList.IsBlocked(context, out var reason);
             }
         }
     }

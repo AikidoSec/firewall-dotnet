@@ -23,6 +23,11 @@ namespace Aikido.Zen.DotNetCore.Middleware
 
         public async Task InvokeAsync(HttpContext httpContext, RequestDelegate next)
         {
+            // if the ip is bypassed, skip the handling of the request
+            if (Agent.Instance.Context.BlockList.IsIPBypassed(httpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty) || EnvironmentHelper.IsDisabled)
+            {
+                return;
+            }
             // Convert headers and query parameters to thread-safe dictionaries
             var queryDictionary = new ConcurrentDictionary<string, string[]>(httpContext.Request.Query.ToDictionary(q => q.Key, q => q.Value.ToArray()));
             var headersDictionary = new ConcurrentDictionary<string, string[]>(httpContext.Request.Headers.ToDictionary(h => h.Key, h => h.Value.ToArray()));

@@ -2,11 +2,14 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
+using Aikido.Zen.Core.Models;
 
 namespace Aikido.Zen.Core.Helpers
 {
     public static class RouteHelper
     {
+
         private static readonly string[] ExcludedMethods = { "OPTIONS", "HEAD" };
         private static readonly string[] IgnoreExtensions = { "properties", "config", "webmanifest" };
         private static readonly string[] IgnoreStrings = { "cgi-bin" };
@@ -225,6 +228,77 @@ namespace Aikido.Zen.Core.Helpers
             return segments.All(IsAllowedExtension);
         }
 
+        /// <summary>
+        /// Matches a context against a list of endpoints, finding all matching endpoints
+        /// </summary>
+        /// <param name="context">The context containing request information</param>
+        /// <param name="endpoints">The list of endpoints to match against</param>
+        /// <returns>A list of matching endpoints, sorted by specificity</returns>
+        public static List<EndpointConfig> MatchEndpoints(Context context, IEnumerable<EndpointConfig> endpoints)
+        {
+            var matches = new List<EndpointConfig>();
+
+            if (string.IsNullOrEmpty(context?.Method))
+            {
+                return matches;
+            }
+
+            // Filter endpoints by method
+            var possible = endpoints.Where(endpoint =>
+                endpoint.Method == "*" ||
+                endpoint.Method.Equals(context.Method, StringComparison.OrdinalIgnoreCase)
+            ).ToList();
+
+            // Sort so exact method matches come before wildcard matches
+            possible.Sort((a, b) =>
+            {
+                if (a.Method == b.Method)
+                    return 0;
+                if (a.Method == "*")
+                    return 1;
+                if (b.Method == "*")
+                    return -1;
+                return 0;
+            });
+
+            // Check for exact route match, since we want this one to  come first
+            var exact = possible.FirstOrDefault(endpoint =>
+                endpoint.Route.Equals(context.Route, StringComparison.OrdinalIgnoreCase));
+            if (exact != null)
+            {
+                matches.Add(exact);
+            }
+
+            // Handle wildcard routes if URL is available
+            if (!string.IsNullOrEmpty(context.Url))
+            {
+                var path = TryParseUrlPath(context.Url);
+                if (!string.IsNullOrEmpty(path))
+                {
+                    // Get wildcard routes and sort by specificity (more specific first)
+                    var wildcards = possible
+                        .Where(endpoint => endpoint.Route.Contains("*"))
+                        .OrderByDescending(endpoint => endpoint.Route.Split('*').Length)
+                        .ToList();
+
+                    foreach (var wildcard in wildcards)
+                    {
+                        var regex = new Regex(
+                            $"^{Regex.Escape(wildcard.Route).Replace("\\*", "(.*)")}/?$",
+                            RegexOptions.IgnoreCase
+                        );
+
+                        if (regex.IsMatch(path))
+                        {
+                            matches.Add(wildcard);
+                        }
+                    }
+                }
+            }
+
+            return matches;
+        }
+
         private static bool IsAllowedExtension(string segment)
         {
             string extension = Path.GetExtension(segment);
@@ -249,16 +323,22 @@ namespace Aikido.Zen.Core.Helpers
             return IgnoreStrings.Any(str => segment.Contains(str));
         }
 
-        /// <summary>
-        /// Check if a path is a well-known URI
-        /// e.g. /.well-known/acme-challenge
-        /// https://www.iana.org/assignments/well-known-uris/well-known-uris.xhtml
-        /// </summary>
-        /// <param name="path">The path to check</param>
-        /// <returns>True if the segment is a well-known URI, false otherwise</returns>
         private static bool IsWellKnownURI(string path)
         {
             return WellKnownURIs.Contains(path);
+        }
+
+        private static string TryParseUrlPath(string url)
+        {
+            try
+            {
+                var uri = new Uri(url);
+                return uri.AbsolutePath;
+            }
+            catch
+            {
+                return url;
+            }
         }
     }
 }
