@@ -261,7 +261,7 @@ namespace Aikido.Zen.Core.Helpers
                 return 0;
             });
 
-            // Check for exact route match
+            // Check for exact route match, since we want this one to  come first
             var exact = possible.FirstOrDefault(endpoint =>
                 endpoint.Route.Equals(context.Route, StringComparison.OrdinalIgnoreCase));
             if (exact != null)
