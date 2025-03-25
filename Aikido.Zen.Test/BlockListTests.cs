@@ -1,3 +1,4 @@
+using Aikido.Zen.Core;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Models.Ip;
 using System.Threading.Tasks;
@@ -71,11 +72,17 @@ namespace Aikido.Zen.Test
             _blockList.UpdateAllowedIpsPerEndpoint(endpoints);
 
             // Assert
-            Assert.That(_blockList.IsIpAllowedForEndpoint("192.168.1.100", "GET|url1", "http://localhost:80/url1"));
-            Assert.That(_blockList.IsIpAllowedForEndpoint("192.168.1.100", "POST|url1", "http://localhost:80/url1"), Is.False);
-            Assert.That(_blockList.IsIpAllowedForEndpoint("10.10.10.10", "POST|url2", "http://localhost:80/url2"));
-            Assert.That(_blockList.IsIpAllowedForEndpoint("10.10.10.10", "GET|url1", "http://localhost:80/url1"), Is.False);
-            Assert.That(_blockList.IsIpAllowedForEndpoint("172.16.1.1", "GET|url3", "http://localhost:80/url3")); // No restrictions for url3
+            var context1 = new Context { RemoteAddress = "192.168.1.100", Method = "GET", Url = "http://localhost:80/url1", Route = "url1" };
+            var context2 = new Context { RemoteAddress = "192.168.1.100", Method = "POST", Url = "http://localhost:80/url1", Route = "url1" };
+            var context3 = new Context { RemoteAddress = "10.10.10.10", Method = "POST", Url = "http://localhost:80/url2", Route = "url2" };
+            var context4 = new Context { RemoteAddress = "10.10.10.10", Method = "GET", Url = "http://localhost:80/url1", Route = "url1" };
+            var context5 = new Context { RemoteAddress = "172.16.1.1", Method = "GET", Url = "http://localhost:80/url3", Route = "url3" };
+
+            Assert.That(_blockList.IsIpAllowedForEndpoint(context1));
+            Assert.That(_blockList.IsIpAllowedForEndpoint(context2), Is.False);
+            Assert.That(_blockList.IsIpAllowedForEndpoint(context3));
+            Assert.That(_blockList.IsIpAllowedForEndpoint(context4), Is.False);
+            Assert.That(_blockList.IsIpAllowedForEndpoint(context5)); // No restrictions for url3
         }
 
         [Test]
@@ -95,7 +102,8 @@ namespace Aikido.Zen.Test
             _blockList.UpdateAllowedIpsPerEndpoint(new List<EndpointConfig>());
 
             // Assert
-            Assert.That(_blockList.IsIpAllowedForEndpoint("192.168.1.100", "GET|url1", "http://localhost:80/url1")); // Should allow when no restrictions
+            var context = new Context { RemoteAddress = "192.168.1.100", Method = "GET", Url = "http://localhost:80/url1", Route = "url1" };
+            Assert.That(_blockList.IsIpAllowedForEndpoint(context)); // Should allow when no restrictions
         }
 
         [Test]
@@ -136,7 +144,8 @@ namespace Aikido.Zen.Test
             _blockList.UpdateAllowedIpsPerEndpoint(endpoints);
 
             // Act & Assert
-            Assert.That(_blockList.IsIpAllowedForEndpoint("123.123.123.123", "GET|testUrl", "http://localhost:80/testUrl")); // Should allow when no IP restrictions
+            var context = new Context { RemoteAddress = "123.123.123.123", Method = "GET", Url = "http://localhost:80/testUrl", Route = "testUrl" };
+            Assert.That(_blockList.IsIpAllowedForEndpoint(context)); // Should allow when no IP restrictions
         }
 
         [Test]
@@ -153,7 +162,8 @@ namespace Aikido.Zen.Test
             _blockList.UpdateAllowedIpsPerEndpoint(endpoints);
 
             // Act & Assert
-            Assert.That(_blockList.IsIpAllowedForEndpoint("invalid.ip", "GET|testUrl", "http://localhost:80/testUrl"));
+            var context = new Context { RemoteAddress = "invalid.ip", Method = "GET", Url = "http://localhost:80/testUrl", Route = "testUrl" };
+            Assert.That(_blockList.IsIpAllowedForEndpoint(context));
         }
 
         [Test]
@@ -161,7 +171,7 @@ namespace Aikido.Zen.Test
         {
             // Arrange
             var ip = "123.123.123.100";
-            var url = "GET|testUrl";
+            var url = "http://localhost:80/testUrl";
             var endpoints = new List<EndpointConfig> {
                 new EndpointConfig {
                     Method = "GET",
@@ -174,10 +184,15 @@ namespace Aikido.Zen.Test
             _blockList.UpdateAllowedIpsPerEndpoint(endpoints);
 
             // Act & Assert
-            Assert.That(_blockList.IsBlocked("123.123.123.101", url, "http://localhost:80/testUrl", out var reason)); // Blocked IP
-            Assert.That(_blockList.IsBlocked(ip, url, "http://localhost:80/testUrl", out reason)); // Not in allowed subnet
-            Assert.That(_blockList.IsBlocked("8.8.8.1", url, "http://localhost:80/testUrl", out reason), Is.False); // In allowed subnet
-            Assert.That(_blockList.IsBlocked("invalid.ip", url, "http://localhost:80/testUrl", out reason), Is.False); // Invalid IP should not be blocked
+            var context1 = new Context { RemoteAddress = "123.123.123.101", Method = "GET", Url = url, Route = "testUrl" };
+            var context2 = new Context { RemoteAddress = ip, Method = "GET", Url = url, Route = "testUrl" };
+            var context3 = new Context { RemoteAddress = "8.8.8.1", Method = "GET", Url = url, Route = "testUrl" };
+            var context4 = new Context { RemoteAddress = "invalid.ip", Method = "GET", Url = url, Route = "testUrl" };
+
+            Assert.That(_blockList.IsBlocked(context1, out var reason1)); // Blocked IP
+            Assert.That(_blockList.IsBlocked(context2, out var reason2)); // Not in allowed subnet
+            Assert.That(_blockList.IsBlocked(context3, out var reason3), Is.False); // In allowed subnet
+            Assert.That(_blockList.IsBlocked(context4, out var reason4), Is.False); // Invalid IP should not be blocked
         }
 
         [Test]
@@ -227,7 +242,7 @@ namespace Aikido.Zen.Test
         {
             // Arrange
             var ip = "123.123.123.123";
-            var url = "GET|testUrl";
+            var url = "http://localhost:80/testUrl";
             var endpoints = new List<EndpointConfig> {
                 new EndpointConfig {
                     Method = "GET",
@@ -242,7 +257,8 @@ namespace Aikido.Zen.Test
             _blockList.UpdateBypassedIps(new[] { ip });
 
             // Act & Assert
-            Assert.That(_blockList.IsBlocked(ip, url, "http://localhost:80/testUrl", out var reason), Is.False);
+            var context = new Context { RemoteAddress = ip, Method = "GET", Url = url, Route = "testUrl" };
+            Assert.That(_blockList.IsBlocked(context, out var reason), Is.False);
             Assert.That(reason, Is.EqualTo("IP is bypassed"));
         }
 
@@ -251,13 +267,14 @@ namespace Aikido.Zen.Test
         {
             // Arrange
             var ip = "123.123.123.123";
-            var url = "GET|testUrl";
+            var url = "http://localhost:80/testUrl";
 
             _blockList.UpdateAllowedIps(new[] { ip });
             _blockList.UpdateBypassedIps(new[] { ip });
 
             // Act & Assert
-            Assert.That(_blockList.IsBlocked(ip, url, "http://localhost:80/testUrl", out var reason), Is.False);
+            var context = new Context { RemoteAddress = ip, Method = "GET", Url = url, Route = "testUrl" };
+            Assert.That(_blockList.IsBlocked(context, out var reason), Is.False);
             Assert.That(reason, Is.EqualTo("IP is bypassed"));
         }
 
@@ -272,7 +289,7 @@ namespace Aikido.Zen.Test
                 "127.0.0.1",
                 "169.254.0.1"
             };
-            var url = "GET|testUrl";
+            var url = "http://localhost:80/testUrl";
 
             _blockList.AddIpAddressToBlocklist("10.0.0.1");
             _blockList.UpdateAllowedIps(new[] { "8.8.8.0/8" });
@@ -288,7 +305,8 @@ namespace Aikido.Zen.Test
             // Act & Assert
             foreach (var ip in privateIps)
             {
-                Assert.That(_blockList.IsBlocked(ip, url, "http://localhost:80/testUrl", out var reason), Is.False);
+                var context = new Context { RemoteAddress = ip, Method = "GET", Url = url, Route = "testUrl" };
+                Assert.That(_blockList.IsBlocked(context, out var reason), Is.False);
                 Assert.That(reason, Is.EqualTo("Ip is private or local"));
             }
         }
@@ -304,7 +322,7 @@ namespace Aikido.Zen.Test
                 "192.168.1",
                 "192.168.1.1/33"
             };
-            var url = "GET|testUrl";
+            var url = "http://localhost:80/testUrl";
 
             // Act & Assert
             // Invalid IPs should not be blocked by default
@@ -318,7 +336,8 @@ namespace Aikido.Zen.Test
             Assert.That(_blockList.IsIPBypassed("invalid.ip"), Is.False);
 
             // Invalid IPs should be allowed for endpoints with no restrictions
-            Assert.That(_blockList.IsIpAllowedForEndpoint("invalid.ip", "GET|unrestricted", "http://localhost:80/unrestricted"));
+            var context1 = new Context { RemoteAddress = "invalid.ip", Method = "GET", Url = "http://localhost:80/unrestricted", Route = "unrestricted" };
+            Assert.That(_blockList.IsIpAllowedForEndpoint(context1));
 
             // Invalid IPs should be blocked for endpoints with restrictions
             var endpoints = new List<EndpointConfig> {
@@ -329,7 +348,8 @@ namespace Aikido.Zen.Test
                 }
             };
             _blockList.UpdateAllowedIpsPerEndpoint(endpoints);
-            Assert.That(_blockList.IsIpAllowedForEndpoint("invalid.ip", "GET|restricted", "http://localhost:80/restricted"), Is.True);
+            var context2 = new Context { RemoteAddress = "invalid.ip", Method = "GET", Url = "http://localhost:80/restricted", Route = "restricted" };
+            Assert.That(_blockList.IsIpAllowedForEndpoint(context2), Is.True);
         }
 
         [Test]
@@ -337,7 +357,7 @@ namespace Aikido.Zen.Test
         {
             // Arrange
             var ip = "123.123.123.123";
-            var url = "GET|testUrl";
+            var url = "http://localhost:80/testUrl";
             var endpoints = new List<EndpointConfig> {
                 new EndpointConfig {
                     Method = "GET",
@@ -348,30 +368,36 @@ namespace Aikido.Zen.Test
 
             // Act & Assert
             // 1. Private IPs should be allowed first
-            Assert.That(_blockList.IsBlocked("192.168.1.1", url, "http://localhost:80/testUrl", out var reason), Is.False);
-            Assert.That(reason, Is.EqualTo("Ip is private or local"));
+            var context1 = new Context { RemoteAddress = "192.168.1.1", Method = "GET", Url = url, Route = "testUrl" };
+            Assert.That(_blockList.IsBlocked(context1, out var reason1), Is.False);
+            Assert.That(reason1, Is.EqualTo("Ip is private or local"));
 
             // 2. Bypassed IPs should be allowed second
             _blockList.UpdateBypassedIps(new[] { ip });
-            Assert.That(_blockList.IsBlocked(ip, url, "http://localhost:80/testUrl", out reason), Is.False);
-            Assert.That(reason, Is.EqualTo("IP is bypassed"));
+            var context2 = new Context { RemoteAddress = ip, Method = "GET", Url = url, Route = "testUrl" };
+            Assert.That(_blockList.IsBlocked(context2, out var reason2), Is.False);
+            Assert.That(reason2, Is.EqualTo("IP is bypassed"));
 
             // 3. Blocked IPs should be checked third
             _blockList.UpdateBypassedIps(Array.Empty<string>());
             _blockList.UpdateBlockedIps([ip]);
-            Assert.That(_blockList.IsBlocked(ip, url, "http://localhost:80/testUrl", out reason), Is.True);
-            Assert.That(reason, Is.EqualTo("IP is not allowed"));
+            var context3 = new Context { RemoteAddress = ip, Method = "GET", Url = url, Route = "testUrl" };
+            Assert.That(_blockList.IsBlocked(context3, out var reason3), Is.True);
+            Assert.That(reason3, Is.EqualTo("IP is not allowed"));
 
             // 4. Bypassed IPs should override blocked IPs
             _blockList.UpdateBypassedIps(new[] { ip });
-            Assert.That(_blockList.IsBlocked(ip, url, "http://localhost:80/testUrl", out reason), Is.False);
+            var context4 = new Context { RemoteAddress = ip, Method = "GET", Url = url, Route = "testUrl" };
+            Assert.That(_blockList.IsBlocked(context4, out var reason4), Is.False);
+            Assert.That(reason4, Is.EqualTo("IP is bypassed"));
 
             // 5. Endpoint-specific rules should be checked last
             _blockList.UpdateAllowedIpsPerEndpoint(endpoints);
             _blockList.UpdateBlockedIps(Array.Empty<string>());
             _blockList.UpdateBypassedIps(Array.Empty<string>());
-            Assert.That(_blockList.IsBlocked(ip, url, "http://localhost:80/testUrl", out reason), Is.True);
-            Assert.That(reason, Is.EqualTo("Ip is not allowed"));
+            var context5 = new Context { RemoteAddress = ip, Method = "GET", Url = url, Route = "testUrl" };
+            Assert.That(_blockList.IsBlocked(context5, out var reason5), Is.True);
+            Assert.That(reason5, Is.EqualTo("Ip is not allowed"));
         }
 
         [Test]
@@ -381,17 +407,17 @@ namespace Aikido.Zen.Test
             var endpoints = new List<EndpointConfig> {
                 new EndpointConfig {
                     Method = "GET",
-                    Route = "/api/users/*",
+                    Route = "api/users/*",
                     AllowedIPAddresses = new[] { "192.168.1.0/24" }
                 },
                 new EndpointConfig {
                     Method = "GET",
-                    Route = "/api/*/123",
+                    Route = "api/*/123",
                     AllowedIPAddresses = new[] { "10.0.0.0/8" }
                 },
                 new EndpointConfig {
                     Method = "GET",
-                    Route = "/api/users/123",
+                    Route = "api/users/123",
                     AllowedIPAddresses = new[] { "172.16.0.0/12" }
                 }
             };
@@ -401,15 +427,20 @@ namespace Aikido.Zen.Test
 
             // Assert
             // Exact match should take precedence
-            Assert.That(_blockList.IsIpAllowedForEndpoint("172.16.1.1", "GET|/api/users/123", "http://localhost:80/api/users/123"), Is.True);
-            Assert.That(_blockList.IsIpAllowedForEndpoint("192.168.1.1", "GET|/api/users/123", "http://localhost:80/api/users/123"), Is.False);
+            var context1 = new Context { RemoteAddress = "172.16.1.1", Method = "GET", Url = "http://localhost:80/api/users/123", Route = "api/users/123" };
+            var context2 = new Context { RemoteAddress = "192.168.1.1", Method = "GET", Url = "http://localhost:80/api/users/123", Route = "api/users/123" };
+            Assert.That(_blockList.IsIpAllowedForEndpoint(context1), Is.True);
+            Assert.That(_blockList.IsIpAllowedForEndpoint(context2), Is.False);
 
             // Wildcard matches should work
-            Assert.That(_blockList.IsIpAllowedForEndpoint("192.168.1.1", "GET|/api/users/456", "http://localhost:80/api/users/456"), Is.True);
-            Assert.That(_blockList.IsIpAllowedForEndpoint("10.0.0.1", "GET|/api/products/123", "http://localhost:80/api/products/123"), Is.True);
+            var context3 = new Context { RemoteAddress = "192.168.1.1", Method = "GET", Url = "http://localhost:80/api/users/456", Route = "api/users/{id}" };
+            var context4 = new Context { RemoteAddress = "10.0.0.1", Method = "GET", Url = "http://localhost:80/api/products/123", Route = "api/products/{id}" };
+            Assert.That(_blockList.IsIpAllowedForEndpoint(context3), Is.True);
+            Assert.That(_blockList.IsIpAllowedForEndpoint(context4), Is.True);
 
             // No match should allow by default
-            Assert.That(_blockList.IsIpAllowedForEndpoint("8.8.8.8", "GET|/api/unknown", "http://localhost:80/api/unknown"), Is.True);
+            var context5 = new Context { RemoteAddress = "8.8.8.8", Method = "GET", Url = "http://localhost:80/api/unknown", Route = "api/unknown" };
+            Assert.That(_blockList.IsIpAllowedForEndpoint(context5), Is.True);
         }
 
         [Test]
@@ -419,12 +450,12 @@ namespace Aikido.Zen.Test
             var endpoints = new List<EndpointConfig> {
                 new EndpointConfig {
                     Method = "*",
-                    Route = "/api/users",
+                    Route = "api/users",
                     AllowedIPAddresses = new[] { "192.168.1.0/24" }
                 },
                 new EndpointConfig {
                     Method = "GET",
-                    Route = "/api/users",
+                    Route = "api/users",
                     AllowedIPAddresses = new[] { "10.0.0.0/8" }
                 }
             };
@@ -434,12 +465,16 @@ namespace Aikido.Zen.Test
 
             // Assert
             // Exact method match should take precedence
-            Assert.That(_blockList.IsIpAllowedForEndpoint("10.0.0.1", "GET|/api/users", "http://localhost:80/api/users"), Is.True);
-            Assert.That(_blockList.IsIpAllowedForEndpoint("192.168.1.1", "GET|/api/users", "http://localhost:80/api/users"), Is.False);
+            var context1 = new Context { RemoteAddress = "10.0.0.1", Method = "GET", Url = "http://localhost:80/api/users", Route = "api/users" };
+            var context2 = new Context { RemoteAddress = "192.168.1.1", Method = "GET", Url = "http://localhost:80/api/users", Route = "api/users" };
+            Assert.That(_blockList.IsIpAllowedForEndpoint(context1), Is.True);
+            Assert.That(_blockList.IsIpAllowedForEndpoint(context2), Is.False);
 
             // Wildcard method should match other methods
-            Assert.That(_blockList.IsIpAllowedForEndpoint("192.168.1.1", "POST|/api/users", "http://localhost:80/api/users"), Is.True);
-            Assert.That(_blockList.IsIpAllowedForEndpoint("192.168.1.1", "PUT|/api/users", "http://localhost:80/api/users"), Is.True);
+            var context3 = new Context { RemoteAddress = "192.168.1.1", Method = "POST", Url = "http://localhost:80/api/users", Route = "api/users" };
+            var context4 = new Context { RemoteAddress = "192.168.1.1", Method = "PUT", Url = "http://localhost:80/api/users", Route = "api/users" };
+            Assert.That(_blockList.IsIpAllowedForEndpoint(context3), Is.True);
+            Assert.That(_blockList.IsIpAllowedForEndpoint(context4), Is.True);
         }
 
         [Test]
@@ -449,17 +484,17 @@ namespace Aikido.Zen.Test
             var endpoints = new List<EndpointConfig> {
                 new EndpointConfig {
                     Method = "GET",
-                    Route = "/api/*/*",
+                    Route = "api/*/*",
                     AllowedIPAddresses = new[] { "192.168.1.0/24" }
                 },
                 new EndpointConfig {
                     Method = "GET",
-                    Route = "/api/*/123",
+                    Route = "api/*/123",
                     AllowedIPAddresses = new[] { "10.0.0.0/8" }
                 },
                 new EndpointConfig {
                     Method = "GET",
-                    Route = "/api/users/*",
+                    Route = "api/users/*",
                     AllowedIPAddresses = new[] { "172.16.0.0/12" }
                 }
             };
@@ -469,9 +504,12 @@ namespace Aikido.Zen.Test
 
             // Assert
             // Most specific match should be used
-            Assert.That(_blockList.IsIpAllowedForEndpoint("172.16.1.1", "GET|/api/users/123", "http://localhost:80/api/users/123"), Is.True);
-            Assert.That(_blockList.IsIpAllowedForEndpoint("10.0.0.1", "GET|/api/products/123", "http://localhost:80/api/products/123"), Is.True);
-            Assert.That(_blockList.IsIpAllowedForEndpoint("192.168.1.1", "GET|/api/other/456", "http://localhost:80/api/other/456"), Is.True);
+            var context1 = new Context { RemoteAddress = "172.16.1.1", Method = "GET", Url = "http://localhost:80/api/users/123", Route = "api/users/123" };
+            var context2 = new Context { RemoteAddress = "10.0.0.1", Method = "GET", Url = "http://localhost:80/api/products/123", Route = "api/products/123" };
+            var context3 = new Context { RemoteAddress = "192.168.1.1", Method = "GET", Url = "http://localhost:80/api/other/456", Route = "api/other/456" };
+            Assert.That(_blockList.IsIpAllowedForEndpoint(context1), Is.True);
+            Assert.That(_blockList.IsIpAllowedForEndpoint(context2), Is.True);
+            Assert.That(_blockList.IsIpAllowedForEndpoint(context3), Is.True);
         }
 
         [Test]
@@ -490,10 +528,14 @@ namespace Aikido.Zen.Test
             _blockList.UpdateAllowedIpsPerEndpoint(endpoints);
 
             // Assert
-            Assert.That(_blockList.IsIpAllowedForEndpoint("192.168.1.1", "invalid-format", "http://localhost:80/invalid-format"), Is.True);
-            Assert.That(_blockList.IsIpAllowedForEndpoint("192.168.1.1", "GET|", "http://localhost:80/"), Is.True);
-            Assert.That(_blockList.IsIpAllowedForEndpoint("192.168.1.1", "|/api/users", "http://localhost:80/api/users"), Is.True);
-            Assert.That(_blockList.IsIpAllowedForEndpoint("192.168.1.1", "GET|/api/users|extra", "http://localhost:80/api/users|extra"), Is.True);
+            var context1 = new Context { RemoteAddress = "192.168.1.1", Method = "invalid-format", Url = "http://localhost:80/invalid-format", Route = "invalid-format" };
+            var context2 = new Context { RemoteAddress = "192.168.1.1", Method = "GET", Url = "http://localhost:80/", Route = "" };
+            var context3 = new Context { RemoteAddress = "192.168.1.1", Method = "", Url = "http://localhost:80/api/users", Route = "api/users" };
+            var context4 = new Context { RemoteAddress = "192.168.1.1", Method = "GET", Url = "http://localhost:80/api/users|extra", Route = "api/users|extra" };
+            Assert.That(_blockList.IsIpAllowedForEndpoint(context1), Is.True);
+            Assert.That(_blockList.IsIpAllowedForEndpoint(context2), Is.True);
+            Assert.That(_blockList.IsIpAllowedForEndpoint(context3), Is.True);
+            Assert.That(_blockList.IsIpAllowedForEndpoint(context4), Is.True);
         }
 
         [Test]
@@ -517,8 +559,10 @@ namespace Aikido.Zen.Test
             _blockList.UpdateAllowedIpsPerEndpoint(endpoints);
 
             // Assert
-            Assert.That(_blockList.IsIpAllowedForEndpoint("192.168.1.1", "GET|/api/users", "http://localhost:80/api/users"), Is.True);
-            Assert.That(_blockList.IsIpAllowedForEndpoint("10.0.0.1", "GET|/api/products", "http://localhost:80/api/products"), Is.True);
+            var context1 = new Context { RemoteAddress = "192.168.1.1", Method = "GET", Url = "http://localhost:80/api/users", Route = "api/users" };
+            var context2 = new Context { RemoteAddress = "10.0.0.1", Method = "GET", Url = "http://localhost:80/api/products", Route = "api/products" };
+            Assert.That(_blockList.IsIpAllowedForEndpoint(context1), Is.True);
+            Assert.That(_blockList.IsIpAllowedForEndpoint(context2), Is.True);
         }
     }
 }

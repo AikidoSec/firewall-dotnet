@@ -122,24 +122,24 @@ namespace Aikido.Zen.Core.Models
             _blockedUsers.Clear();
         }
 
-        public bool IsBlocked(User user, string ip, string endpoint, string url, string userAgent, out string reason)
+        public bool IsBlocked(Context context, out string reason)
         {
             reason = null;
             // if the ip is bypassed, we don't block the request
-            if (BlockList.IsIPBypassed(ip))
+            if (BlockList.IsIPBypassed(context.RemoteAddress))
             {
                 return true;
             }
-            if (user != null && IsUserBlocked(user.Id))
+            if (context.User != null && IsUserBlocked(context.User.Id))
             {
                 reason = "User is blocked";
                 return true;
             }
-            if (_blockList.IsBlocked(ip, endpoint, url, out reason))
+            if (_blockList.IsBlocked(context, out reason))
             {
                 return true;
             }
-            if (IsUserAgentBlocked(userAgent))
+            if (IsUserAgentBlocked(context.UserAgent))
             {
                 reason = "You are not allowed to access this resource because you have been identified as a bot.";
                 return true;

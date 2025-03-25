@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -168,28 +169,22 @@ namespace Aikido.Zen.Core.Models.Ip
         /// <summary>
         /// Checks if an IP is allowed for a specific URL.
         /// </summary>
-        /// <param name="ip">The IP address to check.</param>
-        /// <param name="endpoint">The endpoint, e.g., GET|the/path.</param>
+        /// <param name="context">The context of the request.</param>
         /// <returns>True if the IP is allowed, false otherwise.</returns>
-        public bool IsIpAllowedForEndpoint(string ip, string endpoint, string url)
+        public bool IsIpAllowedForEndpoint(Context context)
         {
             _lock.EnterReadLock();
             try
             {
-                if (!IPAddress.TryParse(ip, out var parsedIp))
+                if (!IPAddress.TryParse(context.RemoteAddress, out var parsedIp))
                 {
                     return true; // Allow invalid IPs by default
                 }
 
-                var parts = endpoint.Split('|');
-                if (parts.Length != 2)
+                if (string.IsNullOrWhiteSpace(context.Method) || string.IsNullOrWhiteSpace(context.Url))
                 {
                     return true; // Invalid endpoint format, allow by default
                 }
-
-                var method = parts[0];
-                var path = parts[1];
-                var context = new Context { Method = method, Route = path };
 
                 var matchingEndpoints = RouteHelper.MatchEndpoints(context, _endpointConfigs.Select(x => x.Config).ToList());
                 if (!matchingEndpoints.Any())
@@ -203,7 +198,7 @@ namespace Aikido.Zen.Core.Models.Ip
                     var endpointConfig = _endpointConfigs.First(x => x.Config == matchingEndpoint);
                     if (endpointConfig.AllowedIPs.HasItems)
                     {
-                        if (!endpointConfig.AllowedIPs.IsIpInRange(ip))
+                        if (!endpointConfig.AllowedIPs.IsIpInRange(context.RemoteAddress))
                         {
                             return false; // If IP is not allowed for this endpoint, return false
                         }
@@ -256,17 +251,17 @@ namespace Aikido.Zen.Core.Models.Ip
             _lock.EnterReadLock();
             try
             {
+                if (!_allowedIps.HasItems)
+                {
+                    return true; // If no allowed IPs are defined, all IPs are allowed
+                }
+
                 if (!IPHelper.IsValidIp(ip))
                 {
-                    return !_allowedIps.HasItems; // Invalid IPs are not allowed if there are allowed IPs
+                    return false; // Invalid IPs are not allowed when there are allowed IPs
                 }
 
-                if (_allowedIps.HasItems)
-                {
-                    return _allowedIps.IsIpInRange(ip);
-                }
-
-                return true;
+                return _allowedIps.IsIpInRange(ip);
             }
             finally
             {
@@ -277,33 +272,32 @@ namespace Aikido.Zen.Core.Models.Ip
         /// <summary>
         /// Checks if access should be blocked based on IP and URL.
         /// </summary>
-        /// <param name="ip">The IP address to check.</param>
-        /// <param name="endpoint">The endpoint, e.g., GET|the/path.</param>
+        /// <param name="context">The context of the request.</param>
         /// <returns>True if access is blocked, false otherwise.</returns>
-        public bool IsBlocked(string ip, string endpoint, string url, out string reason)
+        public bool IsBlocked(Context context, out string reason)
         {
             reason = null;
-            if (IsPrivateOrLocalIp(ip))
+            if (IsPrivateOrLocalIp(context.RemoteAddress))
             {
                 reason = "Ip is private or local";
                 return false;
             }
-            if (IsIPBypassed(ip))
+            if (IsIPBypassed(context.RemoteAddress))
             {
                 reason = "IP is bypassed";
                 return false;
             }
-            if (IsIPBlocked(ip))
+            if (IsIPBlocked(context.RemoteAddress))
             {
                 reason = "IP is not allowed";
                 return true;
             }
-            if (!IsIpAllowedForEndpoint(ip, endpoint, url))
+            if (!IsIpAllowedForEndpoint(context))
             {
                 reason = "Ip is not allowed";
                 return true;
             }
-            if (!IsIPAllowed(ip))
+            if (!IsIPAllowed(context.RemoteAddress))
             {
                 reason = "Ip is not allowed";
                 return true;

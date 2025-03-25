@@ -44,7 +44,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             }
 
             // block the request if the user is blocked
-            if (Agent.Instance.Context.IsBlocked(user, aikidoContext.RemoteAddress, routeKey, aikidoContext.Url, aikidoContext.UserAgent, out var reason))
+            if (Agent.Instance.Context.IsBlocked(aikidoContext, out var reason))
             {
                 Agent.Instance.Context.AddAbortedRequest();
                 throw new HttpException(403, $"Your request is blocked: {HttpUtility.HtmlEncode(reason)}");
