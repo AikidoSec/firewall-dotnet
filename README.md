@@ -10,9 +10,9 @@
 
 Zen, your in-app firewall for peace of mind– at runtime.
 
-Zen is an embedded Web Application Firewall that autonomously protects your .NET apps against common and critical attacks.
+Zen is an embedded Web Application Firewall that autonomously protects your apps against attacks and provides advanced access controls features.
 
-Zen protects your .NET apps by preventing user input containing dangerous strings, which allow SQL injections. It runs on the same server as your .NET app for easy installation and zero maintenance.
+Zen protects your .NET apps by blocking malicious user input that could lead to security vulnerabilities. It guards against SQL injections, command injections, path traversal attacks, and more. Running directly on your .NET app's server, it offers seamless installation and low maintenance.
 
 Zen for .NET currently supports onwards of .NET 4.6. The latest tested version is .NET 8.0.
 
