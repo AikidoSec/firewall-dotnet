@@ -3,58 +3,75 @@ using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Helpers.OpenAPI;
 using Aikido.Zen.Core.Models.Ip;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading;
 
 namespace Aikido.Zen.Core.Models
 {
+    /// <summary>
+    /// Represents the context for an agent, managing hostnames, routes, users, and blocking configurations.
+    /// This class is thread-safe and can handle concurrent access to its collections.
+    /// </summary>
     public class AgentContext
     {
-        private IDictionary<string, Host> _hostnames = new Dictionary<string, Host>();
-        private IDictionary<string, Route> _routes = new Dictionary<string, Route>();
-        private IDictionary<string, UserExtended> _users = new Dictionary<string, UserExtended>();
-        private IDictionary<string, RateLimitingConfig> _rateLimitedRoutes = new Dictionary<string, RateLimitingConfig>();
+        private readonly ConcurrentDictionary<string, Host> _hostnames = new ConcurrentDictionary<string, Host>();
+        private readonly ConcurrentDictionary<string, Route> _routes = new ConcurrentDictionary<string, Route>();
+        private readonly ConcurrentDictionary<string, UserExtended> _users = new ConcurrentDictionary<string, UserExtended>();
+        private readonly ConcurrentDictionary<string, RateLimitingConfig> _rateLimitedRoutes = new ConcurrentDictionary<string, RateLimitingConfig>();
+        private readonly ConcurrentDictionary<string, string> _blockedUsers = new ConcurrentDictionary<string, string>();
         private Regex _blockedUserAgents;
 
-        private BlockList _blockList = new BlockList();
-        private HashSet<string> _blockedUsers = new HashSet<string>();
+        private readonly BlockList _blockList = new BlockList();
 
-        private int _requests = 0;
-        private int _attacksDetected = 0;
-        private int _attacksBlocked = 0;
-        private int _requestsAborted = 0;
-        private long _started = DateTimeHelper.UTCNowUnixMilliseconds();
+        private int _requests;
+        private int _attacksDetected;
+        private int _attacksBlocked;
+        private int _requestsAborted;
+        private readonly long _started = DateTimeHelper.UTCNowUnixMilliseconds();
         public long ConfigLastUpdated { get; set; } = 0;
         public bool ContextMiddlewareInstalled { get; set; } = false;
         public bool BlockingMiddlewareInstalled { get; set; } = false;
 
-
         public void AddRequest()
         {
-            _requests++;
+            // thread safe increment
+            Interlocked.Increment(ref _requests);
         }
 
         public void AddAbortedRequest()
         {
-            _requestsAborted++;
+            // thread safe increment
+            Interlocked.Increment(ref _requestsAborted);
         }
 
         public void AddAttackDetected()
         {
-            _attacksDetected++;
+            // thread safe increment
+            Interlocked.Increment(ref _attacksDetected);
         }
 
         public void AddAttackBlocked()
         {
-            _attacksBlocked++;
+            // thread safe increment
+            Interlocked.Increment(ref _attacksBlocked);
         }
 
         public void AddRateLimitedEndpoint(string path, RateLimitingConfig config)
         {
             if (string.IsNullOrWhiteSpace(path) || config == null)
                 return;
-            _rateLimitedRoutes[path] = config;
+            // thread safe add or update
+            _rateLimitedRoutes.AddOrUpdate(
+                // the dictionary key is the endpoint path
+                key: path,
+                // on add, we set the config as the value
+                (_) => config,
+                // on update, we set the config as the value
+                (_, __) => config
+            );
         }
 
         public void AddHostname(string hostname)
@@ -69,44 +86,64 @@ namespace Aikido.Zen.Core.Models
                 host.Port = portNumber;
 
             var key = $"{name}:{port}";
-            _hostnames[key] = host;
+            // thread safe add or update
+            _hostnames.AddOrUpdate(
+                // the dictionary key is the hostname
+                key: key,
+                // on add, we set the host as the value
+                (_) => host,
+                // on update, we set the host as the value
+                (_, __) => host
+            );
         }
 
         public void AddUser(User user, string ipAddress)
         {
             if (user == null)
                 return;
-            if (!_users.TryGetValue(user.Id, out UserExtended userExtended))
-            {
-                userExtended = new UserExtended(user.Id, user.Name)
+            _users.AddOrUpdate(
+                // the dictionary key is the user id
+                key: user.Id,
+                // on add, we create a new user extended object
+                (id) => new UserExtended(id, user.Name)
                 {
                     FirstSeenAt = DateTimeHelper.UTCNowUnixMilliseconds(),
-                };
-                _users.Add(user.Id, userExtended);
-            }
-            userExtended.LastIpAddress = ipAddress;
-            userExtended.LastSeenAt = DateTimeHelper.UTCNowUnixMilliseconds();
+                    LastIpAddress = ipAddress,
+                    LastSeenAt = DateTimeHelper.UTCNowUnixMilliseconds()
+                },
+                // on update, we update the last ip address and last seen at
+                (_, existing) =>
+                {
+                    existing.LastIpAddress = ipAddress;
+                    existing.LastSeenAt = DateTimeHelper.UTCNowUnixMilliseconds();
+                    return existing;
+                }
+            );
         }
 
         public void AddRoute(Context context)
         {
             if (context == null || context.Url == null) return;
-            _routes.TryGetValue(context.Url, out Route route);
-            if (route == null)
-            {
-                route = new Route
+            // thread safe add or update
+            _routes.AddOrUpdate(
+                // the dictionary key is the route url
+                key: context.Url,
+                // on add, we create a new route object
+                (url) => new Route
                 {
-                    Path = context.Url,
+                    Path = url,
                     Method = context.Method,
-                    ApiSpec = OpenAPIHelper.GetApiInfo(context)
-                };
-                _routes.Add(route.Path, route);
-            }
-            else
-            {
-                OpenAPIHelper.UpdateApiInfo(context, route, EnvironmentHelper.MaxApiDiscoverySamples);
-            }
-            route.Hits++;
+                    ApiSpec = OpenAPIHelper.GetApiInfo(context),
+                    Hits = 1
+                },
+                // on update, we update the api info and increment the hits
+                (_, existing) =>
+                {
+                    OpenAPIHelper.UpdateApiInfo(context, existing, EnvironmentHelper.MaxApiDiscoverySamples);
+                    existing.Hits++;
+                    return existing;
+                }
+            );
         }
 
         public void Clear()
@@ -114,11 +151,11 @@ namespace Aikido.Zen.Core.Models
             _hostnames.Clear();
             _users.Clear();
             _routes.Clear();
-            _requests = 0;
-            _attacksDetected = 0;
-            _attacksBlocked = 0;
-            _requestsAborted = 0;
-            _started = DateTimeHelper.UTCNowUnixMilliseconds();
+            // thread safe reset
+            Interlocked.Exchange(ref _requests, 0);
+            Interlocked.Exchange(ref _attacksDetected, 0);
+            Interlocked.Exchange(ref _attacksBlocked, 0);
+            Interlocked.Exchange(ref _requestsAborted, 0);
             _blockedUsers.Clear();
         }
 
@@ -149,7 +186,7 @@ namespace Aikido.Zen.Core.Models
 
         public bool IsUserBlocked(string userId)
         {
-            return _blockedUsers.Contains(userId);
+            return _blockedUsers.ContainsKey(userId);
         }
 
         public bool IsUserAgentBlocked(string userAgent)
@@ -162,7 +199,10 @@ namespace Aikido.Zen.Core.Models
         public void UpdateBlockedUsers(IEnumerable<string> users)
         {
             _blockedUsers.Clear();
-            _blockedUsers.UnionWith(users);
+            foreach (var user in users)
+            {
+                _blockedUsers.TryAdd(user, user);
+            }
         }
 
         public void UpdateRatelimitedRoutes(IEnumerable<EndpointConfig> endpoints)
@@ -207,9 +247,9 @@ namespace Aikido.Zen.Core.Models
             _blockedUserAgents = blockedUserAgents;
         }
 
-        public IEnumerable<Host> Hostnames => _hostnames.Select(x => x.Value);
-        public IEnumerable<UserExtended> Users => _users.Select(x => x.Value);
-        public IEnumerable<Route> Routes => _routes.Select(x => x.Value);
+        public IEnumerable<Host> Hostnames => _hostnames.Values;
+        public IEnumerable<UserExtended> Users => _users.Values;
+        public IEnumerable<Route> Routes => _routes.Values;
         public IDictionary<string, RateLimitingConfig> RateLimitedRoutes => _rateLimitedRoutes;
         public int Requests => _requests;
         public int RequestsAborted => _requestsAborted;
