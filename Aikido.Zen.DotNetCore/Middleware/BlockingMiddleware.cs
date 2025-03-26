@@ -20,6 +20,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
             // if the context is not found, skip the blocking checks, this likely means that the request is bypassed
             if (aikidoContext == null)
             {
+                // call the next middleware
                 await next(context);
                 return;
             }

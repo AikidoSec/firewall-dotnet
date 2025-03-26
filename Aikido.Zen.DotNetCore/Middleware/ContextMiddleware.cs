@@ -26,6 +26,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
             // if the ip is bypassed, skip the handling of the request
             if (Agent.Instance.Context.BlockList.IsIPBypassed(httpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty) || EnvironmentHelper.IsDisabled)
             {
+                // call the next middleware
                 await next(httpContext);
                 return;
             }
