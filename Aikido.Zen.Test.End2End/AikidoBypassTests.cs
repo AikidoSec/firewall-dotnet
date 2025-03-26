@@ -70,6 +70,8 @@ namespace Aikido.Zen.Test.End2End
 
             // Assert
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+            var responseBody = await response.Content.ReadAsStringAsync();
+            Assert.That(responseBody, Does.Contain("rows"));
         }
 
         [Test]
@@ -100,6 +102,8 @@ namespace Aikido.Zen.Test.End2End
 
             // Assert
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
+            var responseBody = await response.Content.ReadAsStringAsync();
+            Assert.That(responseBody, Does.Contain("Request blocked due to security policy."));
         }
 
         [Test]
@@ -132,6 +136,8 @@ namespace Aikido.Zen.Test.End2End
 
             // Assert
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+            var responseBody = await response.Content.ReadAsStringAsync();
+            Assert.That(responseBody, Does.Contain("["));
         }
 
         [Test]
@@ -164,6 +170,8 @@ namespace Aikido.Zen.Test.End2End
 
             // Assert
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+            var responseBody = await response.Content.ReadAsStringAsync();
+            Assert.That(responseBody, Does.Contain("["));
         }
 
         [Test]
@@ -194,6 +202,8 @@ namespace Aikido.Zen.Test.End2End
 
             // Assert
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
+            var responseBody = await response.Content.ReadAsStringAsync();
+            Assert.That(responseBody, Does.Contain("Request blocked due to security policy."));
         }
     }
 }
