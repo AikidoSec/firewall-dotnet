@@ -16,8 +16,11 @@ namespace Aikido.Zen.DotNetCore.Middleware
             var agentContext = Agent.Instance.Context;
             var aikidoContext = context.Items["Aikido.Zen.Context"] as Context;
             Agent.Instance.SetBlockingMiddlewareInstalled(true);
+
+            // if the context is not found, skip the blocking checks, this likely means that the request is bypassed
             if (aikidoContext == null)
             {
+                // call the next middleware
                 await next(context);
                 return;
             }
