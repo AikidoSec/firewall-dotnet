@@ -31,9 +31,10 @@ Zen operates autonomously on the same server as your .NET app to:
 * ✅ Secure your app like a classic web application firewall (WAF), but with none of the infrastructure or cost.
 * ✅ Rate limit specific API endpoints by IP or by user
 * ✅ Allow you to block specific users manually
-* ✅ Allow you to block traffic by country
 * ✅ Allow you to block bots and AI scrapers
 * ✅ Allow you to allow traffic by ip per endpoint
+* ✅ Allow you to bypass the firewall by ip
+* ✅ Geo-fencing to block or allow a selection of countries
 
 
 ## Supported libraries and frameworks
@@ -62,7 +63,7 @@ Zen operates autonomously on the same server as your .NET app to:
 
 ### .NET Core
 
-Ensure that your project runs on .NET Framework 6, 7 or 8.
+Ensure that your project runs on .NET Core 6, 7, 8 or 9
 
 - Install the package from NuGet:
 
