@@ -34,6 +34,7 @@ Zen operates autonomously on the same server as your .NET app to:
 * ✅ Allow you to block traffic by country
 * ✅ Allow you to block bots and AI scrapers
 * ✅ Allow you to allow traffic by ip per endpoint
+* ✅ Allow you to bypass the firewall by ip
 
 
 ## Supported libraries and frameworks
@@ -62,7 +63,7 @@ Zen operates autonomously on the same server as your .NET app to:
 
 ### .NET Core
 
-Ensure that your project runs on .NET Framework 6, 7 or 8.
+Ensure that your project runs on .NET Core 6, 7, 8 or 9
 
 - Install the package from NuGet:
 
