@@ -64,7 +64,14 @@ namespace Aikido.Zen.Core.Models
             if (string.IsNullOrWhiteSpace(path) || config == null)
                 return;
             // thread safe add or update
-            _rateLimitedRoutes.AddOrUpdate(path, config, (_, __) => config);
+            _rateLimitedRoutes.AddOrUpdate(
+                // the dictionary key is the endpoint path
+                key: path,
+                // on add, we set the config as the value
+                (_) => config,
+                // on update, we set the config as the value
+                (_, __) => config
+            );
         }
 
         public void AddHostname(string hostname)
@@ -80,7 +87,14 @@ namespace Aikido.Zen.Core.Models
 
             var key = $"{name}:{port}";
             // thread safe add or update
-            _hostnames.AddOrUpdate(key, host, (_, __) => host);
+            _hostnames.AddOrUpdate(
+                // the dictionary key is the hostname
+                key: key,
+                // on add, we set the host as the value
+                (_) => host,
+                // on update, we set the host as the value
+                (_, __) => host
+            );
         }
 
         public void AddUser(User user, string ipAddress)
