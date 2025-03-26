@@ -88,13 +88,16 @@ namespace Aikido.Zen.Core.Models
             if (user == null)
                 return;
             _users.AddOrUpdate(
-                user.Id,
-                id => new UserExtended(id, user.Name)
+                // the dictionary key is the user id
+                key: user.Id,
+                // on add, we create a new user extended object
+                (id) => new UserExtended(id, user.Name)
                 {
                     FirstSeenAt = DateTimeHelper.UTCNowUnixMilliseconds(),
                     LastIpAddress = ipAddress,
                     LastSeenAt = DateTimeHelper.UTCNowUnixMilliseconds()
                 },
+                // on update, we update the last ip address and last seen at
                 (_, existing) =>
                 {
                     existing.LastIpAddress = ipAddress;
@@ -109,14 +112,17 @@ namespace Aikido.Zen.Core.Models
             if (context == null || context.Url == null) return;
             // thread safe add or update
             _routes.AddOrUpdate(
-                context.Url,
-                url => new Route
+                // the dictionary key is the route url
+                key: context.Url,
+                // on add, we create a new route object
+                (url) => new Route
                 {
                     Path = url,
                     Method = context.Method,
                     ApiSpec = OpenAPIHelper.GetApiInfo(context),
                     Hits = 1
                 },
+                // on update, we update the api info and increment the hits
                 (_, existing) =>
                 {
                     OpenAPIHelper.UpdateApiInfo(context, existing, EnvironmentHelper.MaxApiDiscoverySamples);
