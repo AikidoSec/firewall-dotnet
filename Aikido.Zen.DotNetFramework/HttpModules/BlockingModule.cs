@@ -32,9 +32,10 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
 
             Agent.Instance.SetBlockingMiddlewareInstalled(true);
 
+            // if the context is not found, skip the blocking module, this likely means that the request is bypassed
             if (aikidoContext == null)
             {
-                throw new AikidoException("Aikido context not found in the request");
+                return;
             }
 
             var routeKey = $"{aikidoContext.Method}|{aikidoContext.Route}";
