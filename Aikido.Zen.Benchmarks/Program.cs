@@ -33,6 +33,9 @@ namespace Aikido.Zen.Benchmarks
             Console.WriteLine("Running block list benchmarks...");
             summaries.Add(BenchmarkRunner.Run<BlockListBenchmarks>());
 
+            Console.WriteLine("Running agent context benchmarks...");
+            summaries.Add(BenchmarkRunner.Run<AgentContextBenchmarks>());
+
             foreach (var summary in summaries)
             {
                 Console.WriteLine("Saving summary at " + summary.ResultsDirectoryPath);
