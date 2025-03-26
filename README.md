@@ -35,6 +35,7 @@ Zen operates autonomously on the same server as your .NET app to:
 * ✅ Allow you to block bots and AI scrapers
 * ✅ Allow you to allow traffic by ip per endpoint
 * ✅ Allow you to bypass the firewall by ip
+* ✅ Geo-fencing to block or allow a selection of countries
 
 
 ## Supported libraries and frameworks
