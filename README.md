@@ -31,7 +31,6 @@ Zen operates autonomously on the same server as your .NET app to:
 * ✅ Secure your app like a classic web application firewall (WAF), but with none of the infrastructure or cost.
 * ✅ Rate limit specific API endpoints by IP or by user
 * ✅ Allow you to block specific users manually
-* ✅ Allow you to block traffic by country
 * ✅ Allow you to block bots and AI scrapers
 * ✅ Allow you to allow traffic by ip per endpoint
 * ✅ Allow you to bypass the firewall by ip
