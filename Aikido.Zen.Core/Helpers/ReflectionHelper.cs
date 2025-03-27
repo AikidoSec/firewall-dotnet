@@ -35,9 +35,15 @@ namespace Aikido.Zen.Core.Helpers
             if (!_assemblies.TryGetValue(assemblyName, out var assembly))
             {
                 assembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.GetName().Name == assemblyName);
-                if (File.Exists($"{assemblyName}.dll") && assembly == null)
+
+                if (assembly == null)
                 {
-                    assembly = Assembly.LoadFrom($"{assemblyName}.dll");
+                    var executingDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                    var assemblyPath = Path.Combine(executingDirectory, $"{assemblyName}.dll");
+                    if (File.Exists(assemblyPath))
+                    {
+                        assembly = Assembly.LoadFrom(assemblyPath);
+                    }
                 }
                 if (assembly == null) return null;
                 _assemblies[assemblyName] = assembly;
@@ -58,6 +64,14 @@ namespace Aikido.Zen.Core.Helpers
                 .GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static)
                 .FirstOrDefault(m => m.Name == methodName &&
                                      m.GetParameters().Select(p => p.ParameterType.FullName).SequenceEqual(parameterTypeNames));
+
+            // fallback to the method with the most parameters
+            method = method ?? type
+                .GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static)
+                .Where(m => m.Name == methodName)
+                .OrderByDescending(m => m.GetParameters().Length)
+                .FirstOrDefault();
+
             return method;
         }
 
