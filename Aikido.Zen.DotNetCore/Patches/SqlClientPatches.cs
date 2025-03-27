@@ -3,6 +3,9 @@ using System.Reflection;
 using HarmonyLib;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Helpers;
+using System.Data;
+using System.Data.Common;
+using System.Text.RegularExpressions;
 
 namespace Aikido.Zen.DotNetCore.Patches
 {
@@ -51,6 +54,10 @@ namespace Aikido.Zen.DotNetCore.Patches
             PatchMethod(harmony, "NPoco", "Database", "ExecuteReaderHelper", "System.Data.Common.DbCommand");
             PatchMethod(harmony, "NPoco", "Database", "ExecuteNonQueryHelper", "System.Data.Common.DbCommand");
             PatchMethod(harmony, "NPoco", "Database", "ExecuteScalarHelper", "System.Data.Common.DbCommand");
+
+            // EF Core DatabaseFacade
+            PatchMethod(harmony, "Microsoft.EntityFrameworkCore.Relational", "RelationalDatabaseFacadeExtensions", "ExecuteSqlRaw", "Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacade", "System.String", "System.Collections.Generic.IEnumerable`1[System.Object]");
+            PatchMethod(harmony, "Microsoft.EntityFrameworkCore.Relational", "RelationalDatabaseFacadeExtensions", "ExecuteSqlRawAsync", "Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacade", "System.String", "System.Collections.Generic.IEnumerable`1[System.Object]", "System.Threading.CancellationToken");
         }
 
         private static void PatchMethod(Harmony harmony, string assemblyName, string typeName, string methodName, params string[] parameterTypeNames)
@@ -66,8 +73,27 @@ namespace Aikido.Zen.DotNetCore.Patches
         {
             var dbCommand = __instance as System.Data.Common.DbCommand
                 ?? __args[0] as System.Data.Common.DbCommand;
-            if (dbCommand == null) return true;
-            var assembly = __instance.GetType().Assembly.FullName?.Split(", Culture=")[0];
+
+            var assembly = __instance?.GetType().Assembly.FullName?.Split(", Culture=")[0] ?? string.Empty;
+            if (dbCommand == null)
+            {
+                // if the original method is ExecuteSqlRaw or ExecuteSqlRawAsync, we need to create a new DbCommand from the raw sql
+                if (__originalMethod.Name.StartsWith("ExecuteSqlRaw"))
+                {
+                    var rawSql = __args[1] as string;
+                    var parameters = __args[2] as IEnumerable<object>;
+                    // we create a dummy command with the raw sql and parameters to check for SQL injection
+                    dbCommand = new DummyCommand(rawSql);
+                    // because the executeraw methods are extension methods, we don't have an instance to get the assembly from, so we hardcode it here if null
+                    assembly = "Microsoft.EntityFrameworkCore.Relational";
+                }
+                else
+                {
+                    // if we can't get the dbCommand, we can't check for SQL injection, so we return true to continue execution
+                    return true;
+                }
+            }
+
             return Aikido.Zen.Core.Patches.SqlClientPatcher.OnCommandExecuting(__args, __originalMethod, dbCommand, assembly, Zen.GetContext());
         }
     }
