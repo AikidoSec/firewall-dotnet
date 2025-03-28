@@ -135,6 +135,16 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             }
             // Use the .NET framework route collection to match against the request path,
             // ensuring the routes found by Zen match those found by the .NET framework
+            var exactMatchRoute = RouteTable.Routes
+                .Cast<RouteBase>()
+                .Select(route => GetRoutePattern(route))
+                .FirstOrDefault(rp => rp == context.Request.Path);
+
+            if (exactMatchRoute != null)
+            {
+                return "/" + exactMatchRoute.TrimStart('/');
+            }
+
             var matchedRoutes = RouteTable.Routes
                 .Cast<RouteBase>()
                 .Select(route => GetRoutePattern(route))
