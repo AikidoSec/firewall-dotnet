@@ -123,15 +123,15 @@ namespace Aikido.Zen.Core.Models
 
         public void AddRoute(Context context)
         {
-            if (context == null || context.Url == null) return;
+            if (context == null || context.Route == null) return;
             // thread safe add or update
             _routes.AddOrUpdate(
                 // the dictionary key is the route url
-                key: context.Url,
+                key: context.Route,
                 // on add, we create a new route object
-                (url) => new Route
+                (route) => new Route
                 {
-                    Path = url,
+                    Path = route,
                     Method = context.Method,
                     ApiSpec = OpenAPIHelper.GetApiInfo(context),
                     Hits = 1
