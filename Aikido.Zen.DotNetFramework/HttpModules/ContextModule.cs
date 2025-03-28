@@ -142,6 +142,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
 
             if (exactMatchRoute != null)
             {
+                // ensure route starts with a slash
                 return "/" + exactMatchRoute.TrimStart('/');
             }
 
