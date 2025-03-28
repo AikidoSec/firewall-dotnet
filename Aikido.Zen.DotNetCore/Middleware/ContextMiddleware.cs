@@ -116,18 +116,16 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 return string.Empty;
             }
 
-            // Find the first endpoint that matches the request path
-            var endpoint = _endpoints.FirstOrDefault(e =>
-            {
-                // Check if the endpoint is a RouteEndpoint
-                if (e is RouteEndpoint routeEndpoint)
-                {
-                    // Use the RouteHelper to check if the route pattern matches the request path
-                    // e.g. /api/users/{id} will match /api/users/123
-                    return RouteHelper.MatchRoute(routeEndpoint.RoutePattern.RawText, context.Request.Path.Value);
-                }
-                return false;
-            });
+            // Find the most exact endpoint that matches the request path
+            var endpoint = _endpoints
+                .OfType<RouteEndpoint>()
+                .FirstOrDefault(e => e.RoutePattern.RawText == context.Request.Path.Value) // check for exact match first
+                ?? _endpoints
+                .OfType<RouteEndpoint>()
+                .Where(e => RouteHelper.MatchRoute(e.RoutePattern.RawText, context.Request.Path.Value))
+                .OrderByDescending(e => e.RoutePattern.RawText.Count(c => c == '/')) // prioritize more specific routes
+                .ThenBy(e => e.RoutePattern.RawText.Count(c => c == '{')) // prioritize routes with fewer parameters
+                .FirstOrDefault();
             routePattern = (endpoint as RouteEndpoint)?.RoutePattern.RawText
                 ?? context.Request.Path;
 
