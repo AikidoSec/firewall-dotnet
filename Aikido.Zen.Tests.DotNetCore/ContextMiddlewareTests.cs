@@ -137,5 +137,50 @@ namespace Aikido.Zen.Tests.DotNetCore
             // Assert
             Assert.That(route, Is.EqualTo("/api/v1/items/{id}"), "The route pattern should match the most specific route with the correct parameter");
         }
+
+        [Test]
+        public void GetParametrizedRoute_ReturnsParameterizedRoute_WhenNoRouteFound()
+        {
+            // Arrange
+            _mockHttpContext.Setup(c => c.Request.Path).Returns(new PathString("/api/users/123/posts/abc123dEf456"));
+            _mockHttpContext.Setup(c => c.Request.Scheme).Returns("http");
+            _mockHttpContext.Setup(c => c.Request.Host).Returns(new HostString("test.local"));
+
+            // Act
+            var route = _contextMiddleware.GetParametrizedRoute(_mockHttpContext.Object);
+
+            // Assert
+            Assert.That(route, Is.EqualTo("/api/users/:number/posts/:secret"));
+        }
+
+        [Test]
+        public void GetParametrizedRoute_ReturnsParameterizedRoute_ForEmailAddress()
+        {
+            // Arrange
+            _mockHttpContext.Setup(c => c.Request.Path).Returns(new PathString("/api/users/john.doe@example.com"));
+            _mockHttpContext.Setup(c => c.Request.Scheme).Returns("http");
+            _mockHttpContext.Setup(c => c.Request.Host).Returns(new HostString("test.local"));
+
+            // Act
+            var route = _contextMiddleware.GetParametrizedRoute(_mockHttpContext.Object);
+
+            // Assert
+            Assert.That(route, Is.EqualTo("/api/users/:email"));
+        }
+
+        [Test]
+        public void GetParametrizedRoute_ReturnsParameterizedRoute_ForUUID()
+        {
+            // Arrange
+            _mockHttpContext.Setup(c => c.Request.Path).Returns(new PathString("/api/users/109156be-c4fb-41ea-b1b4-efe1671c5836"));
+            _mockHttpContext.Setup(c => c.Request.Scheme).Returns("http");
+            _mockHttpContext.Setup(c => c.Request.Host).Returns(new HostString("test.local"));
+
+            // Act
+            var route = _contextMiddleware.GetParametrizedRoute(_mockHttpContext.Object);
+
+            // Assert
+            Assert.That(route, Is.EqualTo("/api/users/:uuid"));
+        }
     }
 }

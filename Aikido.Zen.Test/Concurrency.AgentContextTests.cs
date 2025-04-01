@@ -101,7 +101,8 @@ namespace Aikido.Zen.Test
                         _agentContext.AddRoute(new Context
                         {
                             Url = $"/api/test{threadId}-{j}",
-                            Method = "GET"
+                            Method = "GET",
+                            Route = $"/api/test{threadId}-{j}"
                         });
                     }
                 });
@@ -181,7 +182,8 @@ namespace Aikido.Zen.Test
                         _agentContext.AddRoute(new Context
                         {
                             Url = $"/api/test{threadId}-{j}",
-                            Method = "GET"
+                            Method = "GET",
+                            Route = $"/api/test{threadId}-{j}"
                         });
 
                         // Add rate limited endpoint

@@ -478,6 +478,7 @@ namespace Aikido.Zen.Test
             {
                 User = new User("123", "userName"),
                 Url = "/test",
+                Route = "/test",
                 Method = "GET",
                 RemoteAddress = "1.2.3.4"
             };
@@ -652,7 +653,8 @@ namespace Aikido.Zen.Test
             {
                 Url = "/test/route",
                 Method = "GET",
-                RemoteAddress = "192.168.1.1"
+                RemoteAddress = "192.168.1.1",
+                Route = "/test/route"
             };
 
             // Act

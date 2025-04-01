@@ -1,6 +1,5 @@
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Helpers;
-using Aikido.Zen.Core.Helpers.OpenAPI;
 using Aikido.Zen.Core.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
@@ -132,8 +131,23 @@ namespace Aikido.Zen.DotNetCore.Middleware
                     .ThenBy(e => e.RoutePattern.RawText.Count(c => c == '{')) // prioritize routes with fewer parameters
                     .FirstOrDefault();
             }
-            routePattern = (endpoint as RouteEndpoint)?.RoutePattern.RawText
-                ?? context.Request.Path;
+
+            routePattern = (endpoint as RouteEndpoint)?.RoutePattern.RawText;
+
+            // If no route was found, use RouteParameterHelper as fallback
+            if (string.IsNullOrEmpty(routePattern))
+            {
+                var fullUrl = $"{context.Request.Scheme}://{context.Request.Host}{context.Request.Path}{context.Request.QueryString}";
+                var parameterizedRoute = RouteParameterHelper.BuildRouteFromUrl(fullUrl);
+                if (!string.IsNullOrEmpty(parameterizedRoute))
+                {
+                    return parameterizedRoute.StartsWith("/") ? parameterizedRoute : "/" + parameterizedRoute;
+                }
+                else
+                {
+                    return "/" + context.Request.Path.Value.TrimStart('/');
+                }
+            }
 
             // Add a leading slash to the route pattern if not present
             return routePattern != null ? "/" + routePattern.TrimStart('/') : string.Empty;

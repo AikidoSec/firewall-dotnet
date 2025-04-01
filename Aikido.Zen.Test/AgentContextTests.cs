@@ -175,7 +175,8 @@ namespace Aikido.Zen.Test
             var context = new Context
             {
                 Url = "/api/test",
-                Method = "GET"
+                Method = "GET",
+                Route = "/api/test"
             };
 
             // Act
@@ -212,7 +213,7 @@ namespace Aikido.Zen.Test
             _agentContext.AddRoute(context);
 
             // Assert
-            Assert.That(_agentContext.Routes, Is.Empty);
+            Assert.That(_agentContext.Routes.Count() == 1);
         }
 
         [Test]

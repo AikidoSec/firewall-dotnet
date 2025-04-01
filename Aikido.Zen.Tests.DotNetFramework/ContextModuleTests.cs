@@ -106,5 +106,50 @@ namespace Aikido.Zen.Tests.DotNetFramework
             // Assert
             Assert.That("/api/v1/items/{id}", Is.EqualTo(route));
         }
+
+        [Test]
+        public void GetParametrizedRoute_ReturnsParameterizedRoute_WhenNoRouteFound()
+        {
+            // Arrange
+            _mockHttpContext = new HttpContext(
+                new HttpRequest(string.Empty, "http://test.local/api/users/123/posts/abc123dEf456", string.Empty),
+                new HttpResponse(null));
+
+            // Act
+            var route = _contextModule.GetParametrizedRoute(_mockHttpContext);
+
+            // Assert
+            Assert.That(route, Is.EqualTo("/api/users/:number/posts/:secret"));
+        }
+
+        [Test]
+        public void GetParametrizedRoute_ReturnsParameterizedRoute_ForEmailAddress()
+        {
+            // Arrange
+            _mockHttpContext = new HttpContext(
+                new HttpRequest(string.Empty, "http://test.local/api/users/john.doe@example.com", string.Empty),
+                new HttpResponse(null));
+
+            // Act
+            var route = _contextModule.GetParametrizedRoute(_mockHttpContext);
+
+            // Assert
+            Assert.That(route, Is.EqualTo("/api/users/:email"));
+        }
+
+        [Test]
+        public void GetParametrizedRoute_ReturnsParameterizedRoute_ForUUID()
+        {
+            // Arrange
+            _mockHttpContext = new HttpContext(
+                new HttpRequest(string.Empty, "http://test.local/api/users/109156be-c4fb-41ea-b1b4-efe1671c5836", string.Empty),
+                new HttpResponse(null));
+
+            // Act
+            var route = _contextModule.GetParametrizedRoute(_mockHttpContext);
+
+            // Assert
+            Assert.That(route, Is.EqualTo("/api/users/:uuid"));
+        }
     }
 }
