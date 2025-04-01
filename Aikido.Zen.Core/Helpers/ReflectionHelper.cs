@@ -35,9 +35,17 @@ namespace Aikido.Zen.Core.Helpers
             if (!_assemblies.TryGetValue(assemblyName, out var assembly))
             {
                 assembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.GetName().Name == assemblyName);
-                if (File.Exists($"{assemblyName}.dll") && assembly == null)
+
+                if (assembly == null)
                 {
-                    assembly = Assembly.LoadFrom($"{assemblyName}.dll");
+                    // we assume the loaded dll's are in the same directory as the executing assembly.
+                    // The current directory is not always the same as the executing assembly's directory, so we need to get the executing directory.
+                    var executingDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                    var assemblyPath = Path.Combine(executingDirectory, $"{assemblyName}.dll");
+                    if (File.Exists(assemblyPath))
+                    {
+                        assembly = Assembly.LoadFrom(assemblyPath);
+                    }
                 }
                 if (assembly == null) return null;
                 _assemblies[assemblyName] = assembly;
@@ -58,6 +66,16 @@ namespace Aikido.Zen.Core.Helpers
                 .GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static)
                 .FirstOrDefault(m => m.Name == methodName &&
                                      m.GetParameters().Select(p => p.ParameterType.FullName).SequenceEqual(parameterTypeNames));
+
+            // fallback to the method with the most parameters
+            // this is done because in case of multiple methods with the same name, they usually wrap the one with the most parameters
+            // by doing this, we reduce the risk of not being able to patch the correct method in case of library updates
+            method = method ?? type
+                .GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static)
+                .Where(m => m.Name == methodName)
+                .OrderByDescending(m => m.GetParameters().Length)
+                .FirstOrDefault();
+
             return method;
         }
 
