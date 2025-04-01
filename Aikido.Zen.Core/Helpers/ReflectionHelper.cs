@@ -38,6 +38,8 @@ namespace Aikido.Zen.Core.Helpers
 
                 if (assembly == null)
                 {
+                    // we assume the loaded dll's are in the same directory as the executing assembly.
+                    // The current directory is not always the same as the executing assembly's directory, so we need to get the executing directory.
                     var executingDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
                     var assemblyPath = Path.Combine(executingDirectory, $"{assemblyName}.dll");
                     if (File.Exists(assemblyPath))
@@ -66,6 +68,8 @@ namespace Aikido.Zen.Core.Helpers
                                      m.GetParameters().Select(p => p.ParameterType.FullName).SequenceEqual(parameterTypeNames));
 
             // fallback to the method with the most parameters
+            // this is done because in case of multiple methods with the same name, they usually wrap the one with the most parameters
+            // by doing this, we reduce the risk of not being able to patch the correct method in case of library updates
             method = method ?? type
                 .GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static)
                 .Where(m => m.Name == methodName)
