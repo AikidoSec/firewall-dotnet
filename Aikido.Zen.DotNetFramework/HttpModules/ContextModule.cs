@@ -133,8 +133,8 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             {
                 return string.Empty;
             }
-            // Use the .NET framework route collection to match against the request path,
-            // ensuring the routes found by Zen match those found by the .NET framework
+
+            // Use the .NET framework route collection to match against the request path
             var exactMatchRoute = RouteTable.Routes
                 .Cast<RouteBase>()
                 .Select(route => GetRoutePattern(route))
@@ -142,7 +142,6 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
 
             if (exactMatchRoute != null)
             {
-                // ensure route starts with a slash
                 return "/" + exactMatchRoute.TrimStart('/');
             }
 
@@ -154,9 +153,23 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 .ThenBy(rp => rp.Count(c => c == '{')) // prioritize routes with fewer parameters
                 .ToList();
 
-            routePattern = matchedRoutes.FirstOrDefault() ?? context.Request.Path;
-            // Ensure the route pattern starts with a '/'
-            return routePattern != null ? "/" + routePattern.TrimStart('/') : string.Empty;
+            routePattern = matchedRoutes.FirstOrDefault();
+
+            // If no route was found, use RouteParameterHelper as fallback
+            if (string.IsNullOrEmpty(routePattern))
+            {
+                var parameterizedRoute = RouteParameterHelper.BuildRouteFromUrl(context.Request.Url.ToString());
+                if (!string.IsNullOrEmpty(parameterizedRoute))
+                {
+                    return "/" + parameterizedRoute.TrimStart('/');
+                }
+                else
+                {
+                    return "/" + context.Request.Path.TrimStart('/');
+                }
+            }
+
+            return "/" + routePattern.TrimStart('/');
         }
 
         private string GetRoutePattern(RouteBase route)
