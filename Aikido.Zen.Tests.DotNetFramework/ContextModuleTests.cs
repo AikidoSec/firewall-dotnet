@@ -112,7 +112,7 @@ namespace Aikido.Zen.Tests.DotNetFramework
         {
             // Arrange
             _mockHttpContext = new HttpContext(
-                new HttpRequest(string.Empty, "http://test.local/api/users/123/posts/abc123def456", string.Empty),
+                new HttpRequest(string.Empty, "http://test.local/api/users/123/posts/abc123dEf456", string.Empty),
                 new HttpResponse(null));
 
             // Act

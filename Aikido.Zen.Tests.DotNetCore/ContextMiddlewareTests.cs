@@ -142,7 +142,7 @@ namespace Aikido.Zen.Tests.DotNetCore
         public void GetParametrizedRoute_ReturnsParameterizedRoute_WhenNoRouteFound()
         {
             // Arrange
-            _mockHttpContext.Setup(c => c.Request.Path).Returns(new PathString("/api/users/123/posts/abc123def456"));
+            _mockHttpContext.Setup(c => c.Request.Path).Returns(new PathString("/api/users/123/posts/abc123dEf456"));
             _mockHttpContext.Setup(c => c.Request.Scheme).Returns("http");
             _mockHttpContext.Setup(c => c.Request.Host).Returns(new HostString("test.local"));
 

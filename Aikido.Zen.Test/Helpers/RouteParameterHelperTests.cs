@@ -3,12 +3,26 @@ using System.Security.Cryptography;
 using System.Text;
 using NUnit.Framework;
 using Aikido.Zen.Core.Helpers;
+using System.Linq;
 
-namespace Aikido.Zen.Test.Core.Helpers
+namespace Aikido.Zen.Test.Helpers
 {
     [TestFixture]
     public class RouteParameterHelperTests
     {
+        private const string Lower = "abcdefghijklmnopqrstuvwxyz";
+        private const string Upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        private const string Numbers = "0123456789";
+        private const string Specials = "!#$%^&*|;:<>";
+
+        private string SecretFromCharset(int length, string charset)
+        {
+            var random = new Random();
+            return new string(Enumerable.Range(0, length)
+                .Select(_ => charset[random.Next(charset.Length)])
+                .ToArray());
+        }
+
         [Test]
         public void BuildRouteFromUrl_InvalidUrls_ReturnsNull()
         {
@@ -167,6 +181,89 @@ namespace Aikido.Zen.Test.Core.Helpers
                 Assert.That(RouteParameterHelper.BuildRouteFromUrl($"/assets/{file}"),
                     Is.EqualTo($"/assets/{file}"));
             }
+        }
+
+        [Test]
+        public void LooksLikeASecret_EmptyString_ReturnsFalse()
+        {
+            Assert.That(RouteParameterHelper.LooksLikeASecret(""), Is.False);
+        }
+
+        [TestCase("c")]
+        [TestCase("NR")]
+        [TestCase("7t3")]
+        [TestCase("4qEK")]
+        [TestCase("KJr6s")]
+        [TestCase("KXiW4a")]
+        [TestCase("Fupm2Vi")]
+        [TestCase("jiGmyGfg")]
+        [TestCase("SJPLzVQ8t")]
+        [TestCase("OmNf04j6mU")]
+        public void LooksLikeASecret_ShortStrings_ReturnsFalse(string input)
+        {
+            Assert.That(RouteParameterHelper.LooksLikeASecret(input), Is.False);
+        }
+
+        [TestCase("rsVEExrR2sVDONyeWwND")]
+        [TestCase(":2fbg;:qf$BRBc<2AG8&")]
+        public void LooksLikeASecret_LongStrings_ReturnsTrue(string input)
+        {
+            Assert.That(RouteParameterHelper.LooksLikeASecret(input), Is.True);
+        }
+
+        [Test]
+        public void LooksLikeASecret_VeryLongString_ReturnsTrue()
+        {
+            var input = "efDJHhzvkytpXoMkFUgag6shWJktYZ5QUrUCTfecFELpdvaoAT3tekI4ZhpzbqLt";
+            Assert.That(RouteParameterHelper.LooksLikeASecret(input), Is.True);
+        }
+
+        [Test]
+        public void LooksLikeASecret_ContainsWhitespace_ReturnsFalse()
+        {
+            Assert.That(RouteParameterHelper.LooksLikeASecret("rsVEExrR2sVDONyeWwND "), Is.False);
+        }
+
+        [Test]
+        public void LooksLikeASecret_SingleCharset_ReturnsFalse()
+        {
+            Assert.That(RouteParameterHelper.LooksLikeASecret(SecretFromCharset(10, Lower)), Is.False);
+            Assert.That(RouteParameterHelper.LooksLikeASecret(SecretFromCharset(10, Upper)), Is.False);
+            Assert.That(RouteParameterHelper.LooksLikeASecret(SecretFromCharset(10, Numbers)), Is.False);
+            Assert.That(RouteParameterHelper.LooksLikeASecret(SecretFromCharset(10, Specials)), Is.False);
+        }
+
+        [TestCase("development")]
+        [TestCase("programming")]
+        [TestCase("applications")]
+        [TestCase("implementation")]
+        [TestCase("environment")]
+        public void LooksLikeASecret_CommonUrlTerms_ReturnsFalse(string input)
+        {
+            Assert.That(RouteParameterHelper.LooksLikeASecret(input), Is.False);
+        }
+
+        [Test]
+        public void LooksLikeASecret_WordSeparators_ReturnsFalse()
+        {
+            Assert.That(RouteParameterHelper.LooksLikeASecret("this-is-a-secret-1"), Is.False);
+        }
+
+        [TestCase("1234567890")]
+        [TestCase("12345678901234567890")]
+        public void LooksLikeASecret_OnlyNumbers_ReturnsFalse(string input)
+        {
+            Assert.That(RouteParameterHelper.LooksLikeASecret(input), Is.False);
+        }
+
+        [TestCase("yqHYTS<agpi^aa1")]
+        [TestCase("hIofuWBifkJI5iVsSNKKKDpBfmMqJJwuXMxau6AS8WZaHVLDAMeJXo3BwsFyrIIm")]
+        [TestCase("AG7DrGi3pDDIUU1PrEsj")]
+        [TestCase("CnJ4DunhYfv2db6T1FRfciRBHtlNKOYrjoz")]
+        [TestCase("Gic*EfMq:^MQ|ZcmX:yW1")]
+        public void LooksLikeASecret_KnownSecrets_ReturnsTrue(string input)
+        {
+            Assert.That(RouteParameterHelper.LooksLikeASecret(input), Is.True);
         }
     }
 }

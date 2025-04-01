@@ -21,7 +21,7 @@ namespace Aikido.Zen.Core.Helpers
         // Cached regex patterns for better performance
         private static readonly Regex UuidRegex = new Regex(@"^(?:[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         private static readonly Regex ObjectIdRegex = new Regex(@"^[0-9a-f]{24}$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-        private static readonly Regex UlidRegex = new Regex(@"^[0-9A-HJKMNP-TV-Z]{26}$", RegexOptions.Compiled);
+        private static readonly Regex UlidRegex = new Regex(@"^[0-9A-HJKMNP-TV-Z]{26}$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         private static readonly Regex NumberRegex = new Regex(@"^\d+$", RegexOptions.Compiled);
         private static readonly Regex DateRegex = new Regex(@"^\d{4}-\d{2}-\d{2}|\d{2}-\d{2}-\d{4}$", RegexOptions.Compiled);
         private static readonly Regex EmailRegex = new Regex(@"^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$", RegexOptions.Compiled);
@@ -37,9 +37,10 @@ namespace Aikido.Zen.Core.Helpers
         {
             try
             {
-                if (!Uri.TryCreate(url, UriKind.RelativeOrAbsolute, out var uri))
+                var kind = url.StartsWith("/") ? UriKind.Relative : UriKind.Absolute;
+                if (!Uri.TryCreate(url, kind, out var uri))
                     return null;
-                var path = uri.AbsolutePath;
+                var path = uri.IsAbsoluteUri ? uri.AbsolutePath : uri.OriginalString;
 
                 if (string.IsNullOrEmpty(path))
                     return null;
@@ -54,7 +55,7 @@ namespace Aikido.Zen.Core.Helpers
 
                 if (route.EndsWith("/"))
                     route = route.Substring(0, route.Length - 1);
-                return route;
+                return "/" + route.TrimStart('/');
             }
             catch
             {
@@ -65,7 +66,7 @@ namespace Aikido.Zen.Core.Helpers
         /// <summary>
         /// Determines if a string appears to be a secret based on character composition and patterns
         /// </summary>
-        private static bool LooksLikeASecret(string str)
+        public static bool LooksLikeASecret(string str)
         {
             if (str.Length <= MinimumSecretLength)
                 return false;
@@ -78,7 +79,8 @@ namespace Aikido.Zen.Core.Helpers
             var hasSpecial = SpecialChars.Any(c => str.Contains(c));
             var charsets = new[] { hasLower, hasUpper, hasSpecial };
 
-            if (!charsets.Any(x => x))
+            // Check if at least 2 different charsets are present
+            if (charsets.Count(x => x) < 2)
                 return false;
 
             if (str.Contains(' '))
@@ -86,6 +88,15 @@ namespace Aikido.Zen.Core.Helpers
 
             if (KnownWordSeparators.Any(sep => str.Contains(sep)))
                 return false;
+
+            // Check if it's a file with extension (e.g., "index.BRaz9DSe.css")
+            var lastDotIndex = str.LastIndexOf('.');
+            if (lastDotIndex > 0)
+            {
+                var extension = str.Substring(lastDotIndex + 1);
+                if (extension.Length > 1 && extension.Length < 6)
+                    return false;
+            }
 
             // Check character uniqueness in windows
             var windowSize = MinimumSecretLength;
