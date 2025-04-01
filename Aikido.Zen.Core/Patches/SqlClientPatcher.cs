@@ -6,20 +6,22 @@ using System.Reflection;
 
 namespace Aikido.Zen.Core.Patches
 {
+    /// <summary>
+    /// Patches for SQL client operations to detect and prevent SQL injection attacks
+    /// </summary>
     public static class SqlClientPatcher
     {
-        public static bool OnCommandExecuting(object[] __args, MethodBase __originalMethod, DbCommand __instance, string assembly, Context context)
+        public static bool OnCommandExecuting(object[] __args, MethodBase __originalMethod, string sql, string assembly, Context context)
         {
-            var command = __instance
-                ?? __args[0] as DbCommand;
             var methodInfo = __originalMethod as MethodInfo;
 
             if (context == null)
             {
                 return true;
             }
-            var type = __instance.GetType().Name;
-            if (command != null && SqlCommandHelper.DetectSQLInjection(command.CommandText, GetDialect(assembly), context, assembly, $"{type}.{methodInfo.Name}"))
+
+            var type = methodInfo?.DeclaringType?.Name ?? "Unknown";
+            if (sql != null && SqlCommandHelper.DetectSQLInjection(sql, GetDialect(assembly), context, assembly, $"{type}.{methodInfo?.Name}"))
             {
                 // keep going if dry mode
                 if (EnvironmentHelper.DryMode)

@@ -75,26 +75,26 @@ namespace Aikido.Zen.DotNetCore.Patches
                 ?? __args[0] as System.Data.Common.DbCommand;
 
             var assembly = __instance?.GetType().Assembly.FullName?.Split(", Culture=")[0] ?? string.Empty;
-            if (dbCommand == null)
+            string sql = null;
+
+            if (dbCommand != null)
             {
-                // if the original method is ExecuteSqlRaw or ExecuteSqlRawAsync, we need to create a new DbCommand from the raw sql
-                if (__originalMethod.Name.StartsWith("ExecuteSqlRaw"))
-                {
-                    var rawSql = __args[1] as string;
-                    var parameters = __args[2] as IEnumerable<object>;
-                    // we create a dummy command with the raw sql and parameters to check for SQL injection
-                    dbCommand = new DummyCommand(rawSql);
-                    // because the executeraw methods are extension methods, we don't have an instance to get the assembly from, so we hardcode it here if null
-                    assembly = "Microsoft.EntityFrameworkCore.Relational";
-                }
-                else
-                {
-                    // if we can't get the dbCommand, we can't check for SQL injection, so we return true to continue execution
-                    return true;
-                }
+                sql = dbCommand.CommandText;
+            }
+            else if (__originalMethod.Name.StartsWith("ExecuteSqlRaw"))
+            {
+                // if the original method is ExecuteSqlRaw or ExecuteSqlRawAsync, we need to get the raw sql from args
+                sql = __args[1] as string;
+                // because the executeraw methods are extension methods, we don't have an instance to get the assembly from, so we hardcode it here if null
+                assembly = "Microsoft.EntityFrameworkCore.Relational";
+            }
+            else
+            {
+                // if we can't get the sql, we can't check for SQL injection, so we return true to continue execution
+                return true;
             }
 
-            return Aikido.Zen.Core.Patches.SqlClientPatcher.OnCommandExecuting(__args, __originalMethod, dbCommand, assembly, Zen.GetContext());
+            return Aikido.Zen.Core.Patches.SqlClientPatcher.OnCommandExecuting(__args, __originalMethod, sql, assembly, Zen.GetContext());
         }
     }
 }
