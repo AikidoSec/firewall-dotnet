@@ -8,6 +8,9 @@
     <owners>Aikido Security</owners>
     <description>Aikido Security Zen .NET Core Firewall</description>
     <frameworkReferences>
+      <group targetFramework="net9.0">
+        <frameworkReference name="Microsoft.AspNetCore.App" />
+      </group>
       <group targetFramework="net8.0">
         <frameworkReference name="Microsoft.AspNetCore.App" />
       </group>
