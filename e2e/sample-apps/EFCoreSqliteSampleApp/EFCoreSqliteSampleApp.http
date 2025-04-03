@@ -3,9 +3,6 @@
 ### Get all pets
 GET {{baseUrl}}/api/pets
 
-### Get pet by ID
-GET {{baseUrl}}/api/pets/1
-
 ### Create a new pet
 POST {{baseUrl}}/api/pets/create
 Content-Type: application/json
@@ -14,24 +11,21 @@ Content-Type: application/json
   "name": "Whiskers"
 }
 
-### Search pets by name (uses ExecuteRawSqlAsync with string interpolation)
-GET {{baseUrl}}/api/pets/search?name=Fl
-
-### Execute raw SQL (intentionally vulnerable for testing)
-POST {{baseUrl}}/api/pets/rawsql
+### Execute SQL injection attack (for testing purposes)
+POST {{baseUrl}}/api/pets/create
 Content-Type: application/json
-
 {
-  "sqlCommand": "SELECT * FROM pets WHERE pet_name LIKE '%F%'"
+  "name": "Malicious Pet', 'Gru from the Minions'); -- "
 }
+
 
 ### Execute SQL injection attack (for testing purposes)
-POST {{baseUrl}}/api/pets/rawsql
+GET {{baseUrl}}/api/pets/execute-raw-sql?sql=Malicious Pet', 'Gru from the Minions'); --
 Content-Type: application/json
 
-{
-  "sqlCommand": "SELECT * FROM pets; DROP TABLE pets;"
-}
+### Execute SQL injection attack (for testing purposes)
+GET {{baseUrl}}/api/pets/execute-raw-sql?sql=Malicious Pet', 'Gru from the Minions'); --
+Content-Type: application/json
 
 ### Health check
 GET {{baseUrl}}/health
