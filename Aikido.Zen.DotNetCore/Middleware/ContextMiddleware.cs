@@ -1,6 +1,6 @@
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Helpers;
-using Aikido.Zen.Core.Helpers.OpenAPI;
+using Aikido.Zen.Core.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Routing;
@@ -23,6 +23,13 @@ namespace Aikido.Zen.DotNetCore.Middleware
 
         public async Task InvokeAsync(HttpContext httpContext, RequestDelegate next)
         {
+            // if the ip is bypassed, skip the handling of the request
+            if (Agent.Instance.Context.BlockList.IsIPBypassed(httpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty) || EnvironmentHelper.IsDisabled)
+            {
+                // call the next middleware
+                await next(httpContext);
+                return;
+            }
             // Convert headers and query parameters to thread-safe dictionaries
             var queryDictionary = new ConcurrentDictionary<string, string[]>(httpContext.Request.Query.ToDictionary(q => q.Key, q => q.Value.ToArray()));
             var headersDictionary = new ConcurrentDictionary<string, string[]>(httpContext.Request.Headers.ToDictionary(h => h.Key, h => h.Value.ToArray()));
@@ -38,6 +45,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 UserAgent = headersDictionary.TryGetValue("User-Agent", out var userAgent) ? userAgent.FirstOrDefault() ?? string.Empty : string.Empty,
                 Source = Environment.Version.Major >= 5 ? "DotNetCore" : "DotNetFramework",
                 Route = GetParametrizedRoute(httpContext),
+                User = httpContext.Items["Aikido.Zen.CurrentUser"] as User
             };
 
             Agent.Instance.SetContextMiddlewareInstalled(true);
@@ -109,20 +117,37 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 return string.Empty;
             }
 
-            // Find the first endpoint that matches the request path
-            var endpoint = _endpoints.FirstOrDefault(e =>
+            // Find the most exact endpoint that matches the request path
+            var endpoint = _endpoints
+                .OfType<RouteEndpoint>()
+                .FirstOrDefault(e => e.RoutePattern.RawText == context.Request.Path.Value); // check for exact match first
+
+            if (endpoint == null)
             {
-                // Check if the endpoint is a RouteEndpoint
-                if (e is RouteEndpoint routeEndpoint)
+                endpoint = _endpoints
+                    .OfType<RouteEndpoint>()
+                    .Where(e => RouteHelper.MatchRoute(e.RoutePattern.RawText, context.Request.Path.Value))
+                    .OrderByDescending(e => e.RoutePattern.RawText.Count(c => c == '/')) // prioritize more specific routes
+                    .ThenBy(e => e.RoutePattern.RawText.Count(c => c == '{')) // prioritize routes with fewer parameters
+                    .FirstOrDefault();
+            }
+
+            routePattern = (endpoint as RouteEndpoint)?.RoutePattern.RawText;
+
+            // If no route was found, use RouteParameterHelper as fallback
+            if (string.IsNullOrEmpty(routePattern))
+            {
+                var fullUrl = $"{context.Request.Scheme}://{context.Request.Host}{context.Request.Path}{context.Request.QueryString}";
+                var parameterizedRoute = RouteParameterHelper.BuildRouteFromUrl(fullUrl);
+                if (!string.IsNullOrEmpty(parameterizedRoute))
                 {
-                    // Use the RouteHelper to check if the route pattern matches the request path
-                    // e.g. /api/users/{id} will match /api/users/123
-                    return RouteHelper.MatchRoute(routeEndpoint.RoutePattern.RawText, context.Request.Path.Value);
+                    return parameterizedRoute.StartsWith("/") ? parameterizedRoute : "/" + parameterizedRoute;
                 }
-                return false;
-            });
-            routePattern = (endpoint as RouteEndpoint)?.RoutePattern.RawText
-                ?? context.Request.Path;
+                else
+                {
+                    return "/" + context.Request.Path.Value.TrimStart('/');
+                }
+            }
 
             // Add a leading slash to the route pattern if not present
             return routePattern != null ? "/" + routePattern.TrimStart('/') : string.Empty;

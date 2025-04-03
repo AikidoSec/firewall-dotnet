@@ -1,4 +1,4 @@
-Microsoft Visual Studio Solution File, Format Version 12.00
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
@@ -48,6 +48,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aikido.Zen.Tests.DotNetCore", "Aikido.Zen.Tests.DotNetCore\Aikido.Zen.Tests.DotNetCore.csproj", "{A778053F-B458-4764-A967-C54EB05C70FE}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aikido.Zen.Tests.Mocks", "Aikido.Zen.Tests.Mocks\Aikido.Zen.Tests.Mocks.csproj", "{E9404338-175F-49B6-81FA-55ACBF93F1DE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EFCoreSqliteSampleApp", "e2e\sample-apps\EFCoreSqliteSampleApp\EFCoreSqliteSampleApp.csproj", "{5D8FB1C2-40DD-4253-9338-3BA7B3184CFA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -127,6 +129,10 @@ Global
 		{E9404338-175F-49B6-81FA-55ACBF93F1DE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E9404338-175F-49B6-81FA-55ACBF93F1DE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E9404338-175F-49B6-81FA-55ACBF93F1DE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5D8FB1C2-40DD-4253-9338-3BA7B3184CFA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5D8FB1C2-40DD-4253-9338-3BA7B3184CFA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5D8FB1C2-40DD-4253-9338-3BA7B3184CFA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5D8FB1C2-40DD-4253-9338-3BA7B3184CFA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -143,6 +149,7 @@ Global
 		{4891B10D-E986-487B-A1B4-277F18EAB185} = {2F12D7E2-3F23-469E-B94D-B36C13AC4466}
 		{94D50DC6-1261-45D4-BFC7-FA003BB053B4} = {2F12D7E2-3F23-469E-B94D-B36C13AC4466}
 		{6E200EFE-8EBC-4226-A340-EB65D3CA0AEC} = {2F12D7E2-3F23-469E-B94D-B36C13AC4466}
+		{5D8FB1C2-40DD-4253-9338-3BA7B3184CFA} = {2F12D7E2-3F23-469E-B94D-B36C13AC4466}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {2385A88D-D5F5-407D-A38E-309EAE8715FB}

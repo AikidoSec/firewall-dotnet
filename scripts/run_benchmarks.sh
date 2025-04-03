@@ -9,6 +9,17 @@ fi
 # Define sample apps
 SAMPLE_APPS=("MySqlSampleApp" "PostgresSampleApp" "SqlServerSampleApp")
 
+# Function to stop the running app
+stop_app() {
+    if [ -f .app.pid ]; then
+        APP_PID=$(cat .app.pid)
+        kill $APP_PID 2>/dev/null || true
+        rm .app.pid
+    fi
+    pkill dotnet || true
+    sleep 2
+}
+
 # Run benchmarks for each app
 for app in "${SAMPLE_APPS[@]}"; do
     # Run the sample app with AIKIDO_DISABLED=true
@@ -19,6 +30,7 @@ for app in "${SAMPLE_APPS[@]}"; do
     ./scripts/k6.sh summary_no_zen.json
     if [ ! -f "summary_no_zen.json" ]; then
         echo "[✗] k6 benchmark failed to create summary_no_zen.json."
+        stop_app
         exit 1
     fi
     no_zen_time=$(jq -r 'select(.type=="Point" and .metric=="http_req_duration") | .data.value' summary_no_zen.json | jq -s add/length)
@@ -27,12 +39,13 @@ for app in "${SAMPLE_APPS[@]}"; do
     wrk_no_zen_output=$(./scripts/wrk.sh http://localhost:5081)
     if [ -z "$wrk_no_zen_output" ]; then
         echo "[✗] wrk benchmark failed to produce output."
+        stop_app
         exit 1
     fi
     no_zen_throughput=$(echo "$wrk_no_zen_output" | grep "Requests/sec" | awk '{print $2}')
 
     # Stop the app
-    pkill dotnet || true
+    stop_app
 
     # Run the sample app with AIKIDO_DISABLED=false
     export AIKIDO_DISABLED=false
@@ -42,6 +55,7 @@ for app in "${SAMPLE_APPS[@]}"; do
     ./scripts/k6.sh summary_zen.json
     if [ ! -f "summary_zen.json" ]; then
         echo "[✗] k6 benchmark failed to create summary_zen.json."
+        stop_app
         exit 1
     fi
     zen_time=$(jq -r 'select(.type=="Point" and .metric=="http_req_duration") | .data.value' summary_zen.json | jq -s add/length)
@@ -50,6 +64,7 @@ for app in "${SAMPLE_APPS[@]}"; do
     wrk_zen_output=$(./scripts/wrk.sh http://localhost:5081)
     if [ -z "$wrk_zen_output" ]; then
         echo "[✗] wrk benchmark failed to produce output."
+        stop_app
         exit 1
     fi
     zen_throughput=$(echo "$wrk_zen_output" | grep "Requests/sec" | awk '{print $2}')
@@ -66,11 +81,12 @@ for app in "${SAMPLE_APPS[@]}"; do
     diff=$(echo "$zen_time - $no_zen_time" | bc)
     if (( $(echo "$diff > 5" | bc -l) )); then
       echo "[✗] Performance degradation is more than 5ms for $app: $diff ms"
+      stop_app
       exit 1
     else
       echo "[✓] Performance within threshold for $app: $diff ms"
     fi
 
     # Stop the app
-    pkill dotnet || true
-done 
+    stop_app
+done

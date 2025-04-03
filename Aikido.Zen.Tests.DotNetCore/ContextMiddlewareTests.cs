@@ -32,7 +32,11 @@ namespace Aikido.Zen.Tests.DotNetCore
             {
                 CreateEndpoint("api/test", "TestEndpoint"),
                 CreateEndpoint("api/items/{id}", "ParameterizedEndpoint"),
-                CreateEndpoint("static/file.js", "StaticFileEndpoint")
+                CreateEndpoint("static/file.js", "StaticFileEndpoint"),
+                CreateEndpoint("api/items/special/{id}", "SpecialParameterizedEndpoint"),
+                CreateEndpoint("api/items/special", "SpecialEndpoint"),
+                CreateEndpoint("api/{version}/items/{id}", "VersionedParameterizedEndpoint"),
+                CreateEndpoint("api/v1/items/{id}", "V1ParameterizedEndpoint")
             });
             _mockHttpContext = new Mock<HttpContext>();
             _contextMiddleware = new ContextMiddleware([_mockEndpointDataSource.Object]);
@@ -62,7 +66,7 @@ namespace Aikido.Zen.Tests.DotNetCore
             var route = _contextMiddleware.GetParametrizedRoute(_mockHttpContext.Object);
 
             // Assert
-            Assert.AreEqual("/api/test", route);
+            Assert.That("/api/test", Is.EqualTo(route));
         }
 
         [Test]
@@ -74,7 +78,7 @@ namespace Aikido.Zen.Tests.DotNetCore
             var route = _contextMiddleware.GetParametrizedRoute(_mockHttpContext.Object);
 
             // Assert
-            Assert.AreEqual("/api/items/{id}", route);
+            Assert.That("/api/items/{id}", Is.EqualTo(route));
         }
 
         [Test]
@@ -86,7 +90,7 @@ namespace Aikido.Zen.Tests.DotNetCore
             var route = _contextMiddleware.GetParametrizedRoute(_mockHttpContext.Object);
 
             // Assert
-            Assert.AreEqual("/static/file.js", route);
+            Assert.That("/static/file.js", Is.EqualTo(route));
         }
 
         [Test]
@@ -99,7 +103,91 @@ namespace Aikido.Zen.Tests.DotNetCore
             var route = _contextMiddleware.GetParametrizedRoute(_mockHttpContext.Object);
 
             // Assert
-            Assert.AreEqual(string.Empty, route);
+            Assert.That(string.Empty, Is.EqualTo(route));
+        }
+
+        [Test]
+        public void GetParametrizedRoute_ReturnsMostSpecificRoutePattern_WhenMultipleRoutesMatch()
+        {
+            // Arrange
+            _mockHttpContext.Setup(c => c.Request.Path).Returns(new PathString("/api/items/special/123"));
+
+            // Act
+            var route = _contextMiddleware.GetParametrizedRoute(_mockHttpContext.Object);
+
+            // Assert
+            Assert.That("/api/items/special/{id}", Is.EqualTo(route));
+        }
+
+        [Test]
+        public void GetParametrizedRoute_ReturnsMostSpecificRoutePattern_WhenMultipleRoutesWithAndWithoutParametersMatch()
+        {
+            // Arrange
+            _mockHttpContext.Setup(c => c.Request.Path).Returns(new PathString("/api/items/special"));
+
+            // Act
+            var route = _contextMiddleware.GetParametrizedRoute(_mockHttpContext.Object);
+
+            // Assert
+            Assert.That("/api/items/special", Is.EqualTo(route));
+        }
+
+        [Test]
+        public void GetParametrizedRoute_ReturnsMostSpecificRoutePattern_WhenMultipleRoutesWithDifferentDepthsMatch()
+        {
+            // Arrange
+            _mockHttpContext.Setup(c => c.Request.Path).Returns(new PathString("/api/v1/items/123"));
+
+            // Act
+            var route = _contextMiddleware.GetParametrizedRoute(_mockHttpContext.Object);
+
+            // Assert
+            Assert.That(route, Is.EqualTo("/api/v1/items/{id}"), "The route pattern should match the most specific route with the correct parameter");
+        }
+
+        [Test]
+        public void GetParametrizedRoute_ReturnsParameterizedRoute_WhenNoRouteFound()
+        {
+            // Arrange
+            _mockHttpContext.Setup(c => c.Request.Path).Returns(new PathString("/api/users/123/posts/abc123dEf456"));
+            _mockHttpContext.Setup(c => c.Request.Scheme).Returns("http");
+            _mockHttpContext.Setup(c => c.Request.Host).Returns(new HostString("test.local"));
+
+            // Act
+            var route = _contextMiddleware.GetParametrizedRoute(_mockHttpContext.Object);
+
+            // Assert
+            Assert.That(route, Is.EqualTo("/api/users/:number/posts/:secret"));
+        }
+
+        [Test]
+        public void GetParametrizedRoute_ReturnsParameterizedRoute_ForEmailAddress()
+        {
+            // Arrange
+            _mockHttpContext.Setup(c => c.Request.Path).Returns(new PathString("/api/users/john.doe@example.com"));
+            _mockHttpContext.Setup(c => c.Request.Scheme).Returns("http");
+            _mockHttpContext.Setup(c => c.Request.Host).Returns(new HostString("test.local"));
+
+            // Act
+            var route = _contextMiddleware.GetParametrizedRoute(_mockHttpContext.Object);
+
+            // Assert
+            Assert.That(route, Is.EqualTo("/api/users/:email"));
+        }
+
+        [Test]
+        public void GetParametrizedRoute_ReturnsParameterizedRoute_ForUUID()
+        {
+            // Arrange
+            _mockHttpContext.Setup(c => c.Request.Path).Returns(new PathString("/api/users/109156be-c4fb-41ea-b1b4-efe1671c5836"));
+            _mockHttpContext.Setup(c => c.Request.Scheme).Returns("http");
+            _mockHttpContext.Setup(c => c.Request.Host).Returns(new HostString("test.local"));
+
+            // Act
+            var route = _contextMiddleware.GetParametrizedRoute(_mockHttpContext.Object);
+
+            // Assert
+            Assert.That(route, Is.EqualTo("/api/users/:uuid"));
         }
     }
 }

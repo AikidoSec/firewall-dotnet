@@ -478,6 +478,7 @@ namespace Aikido.Zen.Test
             {
                 User = new User("123", "userName"),
                 Url = "/test",
+                Route = "/test",
                 Method = "GET",
                 RemoteAddress = "1.2.3.4"
             };
@@ -526,7 +527,6 @@ namespace Aikido.Zen.Test
             var configLastUpdated = 123L;
             var newConfigLastUpdated = 124L;
             var blockedUsers = new[] { "user1", "user2" };
-            var blockedUserAgents = "userAgent1|userAgent2";
             var endpoints = new[]
             {
                 new EndpointConfig
@@ -549,7 +549,6 @@ namespace Aikido.Zen.Test
             {
                 Success = true,
                 BlockedUserIds = blockedUsers,
-                BlockedUserAgents = blockedUserAgents,
                 Endpoints = endpoints,
                 ConfigUpdatedAt = newConfigLastUpdated
             };
@@ -573,7 +572,6 @@ namespace Aikido.Zen.Test
                 Assert.That(response.Success, Is.True);
                 Assert.That(response.ConfigUpdatedAt, Is.EqualTo(newConfigLastUpdated));
                 Assert.That(response.BlockedUserIds, Is.EquivalentTo(blockedUsers));
-                Assert.That(response.BlockedUserAgents, Is.EquivalentTo(blockedUserAgents));
                 Assert.That(response.Endpoints, Is.EquivalentTo(endpoints));
             });
 
@@ -641,10 +639,10 @@ namespace Aikido.Zen.Test
             Environment.SetEnvironmentVariable("AIKIDO_TOKEN", "");
 
             // Act
-            await _agent.UpdateBlockedIps();
+            await _agent.UpdateFirewallLists();
 
             // Assert
-            _zenApiMock.Verify(x => x.Reporting.GetBlockedIps(It.IsAny<string>()), Times.Never);
+            _zenApiMock.Verify(x => x.Reporting.GetFirewallLists(It.IsAny<string>()), Times.Never);
         }
 
         [Test]
@@ -655,7 +653,8 @@ namespace Aikido.Zen.Test
             {
                 Url = "/test/route",
                 Method = "GET",
-                RemoteAddress = "192.168.1.1"
+                RemoteAddress = "192.168.1.1",
+                Route = "/test/route"
             };
 
             // Act

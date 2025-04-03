@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Http;
 using System.Net;
 using System.Security.Claims;
 using Aikido.Zen.Core.Exceptions;
+using Aikido.Zen.Core.Models;
 
 namespace SampleApp.Common
 {
@@ -42,12 +43,27 @@ namespace SampleApp.Common
             app.Use((context, next) =>
             {
                 context.Request.HttpContext.Connection.RemoteIpAddress ??= IPAddress.Parse("192.168.0.1");
+                // we manually do some Ip setup here, because our e2e tests mock http requests and have some missing request info because of that (no ip address for example)
+                // for proper forwarding setup in real environments, see https://learn.microsoft.com/en-us/aspnet/core/host-and-deploy/proxy-load-balancer?view=aspnetcore-9.0&preserve-view=true
+                if (context.Request.Headers.ContainsKey("X-Forwarded-For"))
+                {
+                    context.Request.HttpContext.Connection.RemoteIpAddress = IPAddress.Parse(context.Request.Headers["X-Forwarded-For"]);
+                }
                 if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("TEST_USER")))
                 {
                     context.User = new ClaimsPrincipal(new ClaimsIdentity(new Claim[]
                     {
                         new Claim(ClaimTypes.Name, Environment.GetEnvironmentVariable("TEST_USER")!),
                     }));
+                    context.Items["Aikido.Zen.User"] = new User(Environment.GetEnvironmentVariable("TEST_USER"), Environment.GetEnvironmentVariable("TEST_USER"));
+                }
+                if (context.Request.Headers.ContainsKey("user"))
+                {
+                    context.User = new ClaimsPrincipal(new ClaimsIdentity(new Claim[]
+                    {
+                        new Claim(ClaimTypes.Name, context.Request.Headers["user"]!),
+                    }));
+                    context.Items["Aikido.Zen.User"] = new User(context.Request.Headers["user"], context.Request.Headers["user"]);
                 }
                 return next();
             });

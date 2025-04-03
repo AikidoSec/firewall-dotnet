@@ -1,17 +1,110 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Collections.Generic;
+using System.Text.RegularExpressions;
+using Aikido.Zen.Core.Models;
 
 namespace Aikido.Zen.Core.Helpers
 {
     public static class RouteHelper
     {
 
-
         private static readonly string[] ExcludedMethods = { "OPTIONS", "HEAD" };
-        private static readonly string[] IgnoreExtensions = { "properties", "php", "asp", "aspx", "jsp", "config" };
+        private static readonly string[] IgnoreExtensions = { "properties", "config", "webmanifest" };
         private static readonly string[] IgnoreStrings = { "cgi-bin" };
-
+        private static readonly HashSet<string> WellKnownURIs = new HashSet<string>
+        {
+            "/.well-known/acme-challenge",
+            "/.well-known/amphtml",
+            "/.well-known/api-catalog",
+            "/.well-known/appspecific",
+            "/.well-known/ashrae",
+            "/.well-known/assetlinks.json",
+            "/.well-known/broadband-labels",
+            "/.well-known/brski",
+            "/.well-known/caldav",
+            "/.well-known/carddav",
+            "/.well-known/change-password",
+            "/.well-known/cmp",
+            "/.well-known/coap",
+            "/.well-known/coap-eap",
+            "/.well-known/core",
+            "/.well-known/csaf",
+            "/.well-known/csaf-aggregator",
+            "/.well-known/csvm",
+            "/.well-known/did.json",
+            "/.well-known/did-configuration.json",
+            "/.well-known/dnt",
+            "/.well-known/dnt-policy.txt",
+            "/.well-known/dots",
+            "/.well-known/ecips",
+            "/.well-known/edhoc",
+            "/.well-known/enterprise-network-security",
+            "/.well-known/enterprise-transport-security",
+            "/.well-known/est",
+            "/.well-known/genid",
+            "/.well-known/gnap-as-rs",
+            "/.well-known/gpc.json",
+            "/.well-known/gs1resolver",
+            "/.well-known/hoba",
+            "/.well-known/host-meta",
+            "/.well-known/host-meta.json",
+            "/.well-known/hosting-provider",
+            "/.well-known/http-opportunistic",
+            "/.well-known/idp-proxy",
+            "/.well-known/jmap",
+            "/.well-known/keybase.txt",
+            "/.well-known/knx",
+            "/.well-known/looking-glass",
+            "/.well-known/masque",
+            "/.well-known/matrix",
+            "/.well-known/mercure",
+            "/.well-known/mta-sts.txt",
+            "/.well-known/mud",
+            "/.well-known/nfv-oauth-server-configuration",
+            "/.well-known/ni",
+            "/.well-known/nodeinfo",
+            "/.well-known/nostr.json",
+            "/.well-known/oauth-authorization-server",
+            "/.well-known/oauth-protected-resource",
+            "/.well-known/ohttp-gateway",
+            "/.well-known/openid-federation",
+            "/.well-known/open-resource-discovery",
+            "/.well-known/openid-configuration",
+            "/.well-known/openorg",
+            "/.well-known/oslc",
+            "/.well-known/pki-validation",
+            "/.well-known/posh",
+            "/.well-known/privacy-sandbox-attestations.json",
+            "/.well-known/private-token-issuer-directory",
+            "/.well-known/probing.txt",
+            "/.well-known/pvd",
+            "/.well-known/rd",
+            "/.well-known/related-website-set.json",
+            "/.well-known/reload-config",
+            "/.well-known/repute-template",
+            "/.well-known/resourcesync",
+            "/.well-known/sbom",
+            "/.well-known/security.txt",
+            "/.well-known/ssf-configuration",
+            "/.well-known/sshfp",
+            "/.well-known/stun-key",
+            "/.well-known/terraform.json",
+            "/.well-known/thread",
+            "/.well-known/time",
+            "/.well-known/timezone",
+            "/.well-known/tdmrep.json",
+            "/.well-known/tor-relay",
+            "/.well-known/tpcd",
+            "/.well-known/traffic-advice",
+            "/.well-known/trust.txt",
+            "/.well-known/uma2-configuration",
+            "/.well-known/void",
+            "/.well-known/webfinger",
+            "/.well-known/webweaver.json",
+            "/.well-known/wot",
+        };
 
         /// <summary>
         /// Matches a route pattern against an actual URL path
@@ -119,14 +212,91 @@ namespace Aikido.Zen.Core.Helpers
             // Split the route into segments
             var segments = context.Route.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
 
-            // Check for dot files and ignored strings
-            if (segments.Any(s => IsDotFile(s) && !ContainsIgnoredString(s)))
+            // Do not discover routes with dot files like `/path/to/.file` or `/.directory/file`
+            // We want to allow discovery of well-known URIs like `/.well-known/acme-challenge`
+            if (!IsWellKnownURI(context.Route) && segments.Any(IsDotFile))
+            {
+                return false;
+            }
+
+            if (segments.Any(ContainsIgnoredString))
             {
                 return false;
             }
 
             // Ensure all segments have allowed extensions
             return segments.All(IsAllowedExtension);
+        }
+
+        /// <summary>
+        /// Matches a context against a list of endpoints, finding all matching endpoints
+        /// </summary>
+        /// <param name="context">The context containing request information</param>
+        /// <param name="endpoints">The list of endpoints to match against</param>
+        /// <returns>A list of matching endpoints, sorted by specificity</returns>
+        public static List<EndpointConfig> MatchEndpoints(Context context, IEnumerable<EndpointConfig> endpoints)
+        {
+            var matches = new List<EndpointConfig>();
+
+            if (string.IsNullOrEmpty(context?.Method))
+            {
+                return matches;
+            }
+
+            // Filter endpoints by method
+            var possible = endpoints.Where(endpoint =>
+                endpoint.Method == "*" ||
+                endpoint.Method.Equals(context.Method, StringComparison.OrdinalIgnoreCase)
+            ).ToList();
+
+            // Sort so exact method matches come before wildcard matches
+            possible.Sort((a, b) =>
+            {
+                if (a.Method == b.Method)
+                    return 0;
+                if (a.Method == "*")
+                    return 1;
+                if (b.Method == "*")
+                    return -1;
+                return 0;
+            });
+
+            // Check for exact route match, since we want this one to  come first
+            var exact = possible.FirstOrDefault(endpoint =>
+                endpoint.Route.Equals(context.Route, StringComparison.OrdinalIgnoreCase));
+            if (exact != null)
+            {
+                matches.Add(exact);
+            }
+
+            // Handle wildcard routes if URL is available
+            if (!string.IsNullOrEmpty(context.Url))
+            {
+                var path = TryParseUrlPath(context.Url);
+                if (!string.IsNullOrEmpty(path))
+                {
+                    // Get wildcard routes and sort by specificity (more specific first)
+                    var wildcards = possible
+                        .Where(endpoint => endpoint.Route.Contains("*"))
+                        .OrderByDescending(endpoint => endpoint.Route.Split('*').Length)
+                        .ToList();
+
+                    foreach (var wildcard in wildcards)
+                    {
+                        var regex = new Regex(
+                            $"^{Regex.Escape(wildcard.Route).Replace("\\*", "(.*)")}/?$",
+                            RegexOptions.IgnoreCase
+                        );
+
+                        if (regex.IsMatch(path))
+                        {
+                            matches.Add(wildcard);
+                        }
+                    }
+                }
+            }
+
+            return matches;
         }
 
         private static bool IsAllowedExtension(string segment)
@@ -145,17 +315,30 @@ namespace Aikido.Zen.Core.Helpers
 
         private static bool IsDotFile(string segment)
         {
-            // See https://www.rfc-editor.org/rfc/rfc8615
-            if (segment == ".well-known")
-            {
-                return false;
-            }
             return segment.StartsWith(".") && segment.Length > 1;
         }
 
         private static bool ContainsIgnoredString(string segment)
         {
             return IgnoreStrings.Any(str => segment.Contains(str));
+        }
+
+        private static bool IsWellKnownURI(string path)
+        {
+            return WellKnownURIs.Contains(path);
+        }
+
+        private static string TryParseUrlPath(string url)
+        {
+            try
+            {
+                var uri = new Uri(url);
+                return uri.AbsolutePath;
+            }
+            catch
+            {
+                return url;
+            }
         }
     }
 }

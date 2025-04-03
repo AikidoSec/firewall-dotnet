@@ -1,5 +1,6 @@
 using Aikido.Zen.DotNetCore;
 using SQLitePCL;
+using Microsoft.AspNetCore.HttpOverrides;
 
 
 /// <summary>
@@ -14,6 +15,10 @@ builder.Services
     .AddXmlDataContractSerializerFormatters();
 var app = builder.Build();
 app
+    .UseForwardedHeaders(new ForwardedHeadersOptions
+    {
+        ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+    })
     // add routing
     .UseRouting()
     // authorize users

@@ -1,16 +1,40 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <!-- Include all files in the libraries directory to copy to the output directory -->
-    <None Update="$(MSBuildThisFileDirectory)libraries\**\*.*">
+    <None Update="$(MSBuildThisFileDirectory)libraries/**/*.*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 
+  <!-- Copy libraries during build -->
   <Target Name="CopyLibraries" AfterTargets="Build">
+    <!-- Output the current directory for debugging -->
+    <Message Text="MSBuildThisFileDirectory: '$(MSBuildThisFileDirectory)'" Importance="high" />
+
+    <!-- Define a new item group for all files in the libraries directory -->
     <ItemGroup>
-      <!-- Define a new item group for all files in the libraries directory -->
-      <LibraryFiles Include="$(MSBuildThisFileDirectory)libraries\**\*.*" />
+      <LibraryFiles Include="$(MSBuildThisFileDirectory)libraries/**/*.*" />
     </ItemGroup>
-    <Copy SourceFiles="@(LibraryFiles)" DestinationFolder="$(OutputPath)libraries\" />
+
+    <!-- Output the list of files found -->
+    <Message Text="Found LibraryFiles: @(LibraryFiles)" Importance="high" />
+
+    <!-- Copy the files to the output directory -->
+    <Message Text="Copying to  '$(OutputPath)'" Importance="high" />
+    <Copy SourceFiles="@(LibraryFiles)" DestinationFolder="$(OutputPath)libraries/" />
+  </Target>
+
+  <!-- Copy libraries during publish -->
+  <Target Name="CopyLibrariesToPublishDirectory" AfterTargets="Publish">
+    <!-- Define a new item group for all files in the libraries directory -->
+    <ItemGroup>
+      <LibraryFilesToPublish Include="$(MSBuildThisFileDirectory)libraries/**/*.*" />
+    </ItemGroup>
+
+    <!-- Output the list of files found for publishing -->
+    <Message Text="Found LibraryFiles for publishing: @(LibraryFilesToPublish)" Importance="high" />
+
+    <!-- Copy the files to the publish directory -->
+    <Message Text="Copying to publish directory: '$(PublishDir)'" Importance="high" />
+    <Copy SourceFiles="@(LibraryFilesToPublish)" DestinationFolder="$(PublishDir)libraries/" />
   </Target>
 </Project>

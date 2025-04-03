@@ -27,13 +27,16 @@ class TrieNode
 /// </summary>
 class IPRange
 {
-    private readonly TrieNode _root;
-    public bool HasItems => _root.Children.Any(child => child != null);
+    private readonly TrieNode _ipv4Root;
+    private readonly TrieNode _ipv6Root;
+    public bool HasItems => _ipv4Root.Children.Any(child => child != null) ||
+                           _ipv6Root.Children.Any(child => child != null);
     private readonly ReaderWriterLockSlim _lock = new ReaderWriterLockSlim();
 
     public IPRange()
     {
-        _root = new TrieNode();
+        _ipv4Root = new TrieNode();
+        _ipv6Root = new TrieNode();
     }
 
     /// <summary>
@@ -53,11 +56,10 @@ class IPRange
                 return;
             }
 
-            // Determine if the IP is IPv4 or IPv6
             bool isIPv6 = ipAddress.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6;
             int prefixLength = parts.Length > 1 ? int.Parse(parts[1]) : (isIPv6 ? 128 : 32);
 
-            var currentNode = _root;
+            var currentNode = isIPv6 ? _ipv6Root : _ipv4Root;
             var addressBytes = ipAddress.GetAddressBytes();
 
             foreach (var byteValue in addressBytes)
@@ -103,27 +105,26 @@ class IPRange
                 return false;
             }
 
-            var currentNode = _root;
+            bool isIPv6 = ipAddress.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6;
+            var currentNode = isIPv6 ? _ipv6Root : _ipv4Root;
             var addressBytes = ipAddress.GetAddressBytes();
 
             foreach (var byteValue in addressBytes)
             {
                 for (int bitIndex = 7; bitIndex >= 0; bitIndex--)
                 {
-                    int bit = (byteValue >> bitIndex) & 1;
-
-                    if (currentNode.Children[bit] != null)
-                    {
-                        currentNode = currentNode.Children[bit];
-                    }
-                    else if (currentNode.IsTerminal)
+                    if (currentNode.IsTerminal)
                     {
                         return true;
                     }
-                    else
+
+                    int bit = (byteValue >> bitIndex) & 1;
+                    if (currentNode.Children[bit] == null)
                     {
                         return false;
                     }
+
+                    currentNode = currentNode.Children[bit];
                 }
             }
 

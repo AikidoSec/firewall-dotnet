@@ -50,6 +50,11 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
         private async Task Context_BeginRequest(object sender, EventArgs e)
         {
             var httpContext = ((HttpApplication)sender).Context;
+            // if the ip is bypassed, skip the handling of the request
+            if (Agent.Instance.Context.BlockList.IsIPBypassed(GetClientIp(httpContext)) || EnvironmentHelper.IsDisabled)
+            {
+                return;
+            }
 
             var context = new Context
             {
@@ -128,16 +133,43 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             {
                 return string.Empty;
             }
-            // Use the .NET framework route collection to match against the request path,
-            // ensuring the routes found by Zen match those found by the .NET framework
-            foreach (var route in RouteTable.Routes)
+
+            // Use the .NET framework route collection to match against the request path
+            var exactMatchRoute = RouteTable.Routes
+                .Cast<RouteBase>()
+                .Select(route => GetRoutePattern(route))
+                .FirstOrDefault(rp => rp == context.Request.Path);
+
+            if (exactMatchRoute != null)
             {
-                routePattern = GetRoutePattern(route);
-                if (RouteHelper.MatchRoute(routePattern, context.Request.Path))
-                    break;
+                return "/" + exactMatchRoute.TrimStart('/');
             }
-            // Ensure the route pattern starts with a '/'
-            return routePattern != null ? "/" + routePattern.TrimStart('/') : string.Empty;
+
+            var matchedRoutes = RouteTable.Routes
+                .Cast<RouteBase>()
+                .Select(route => GetRoutePattern(route))
+                .Where(rp => RouteHelper.MatchRoute(rp, context.Request.Path))
+                .OrderByDescending(rp => rp.Count(c => c == '/')) // prioritize more specific routes
+                .ThenBy(rp => rp.Count(c => c == '{')) // prioritize routes with fewer parameters
+                .ToList();
+
+            routePattern = matchedRoutes.FirstOrDefault();
+
+            // If no route was found, use RouteParameterHelper as fallback
+            if (string.IsNullOrEmpty(routePattern))
+            {
+                var parameterizedRoute = RouteParameterHelper.BuildRouteFromUrl(context.Request.Url.ToString());
+                if (!string.IsNullOrEmpty(parameterizedRoute))
+                {
+                    return "/" + parameterizedRoute.TrimStart('/');
+                }
+                else
+                {
+                    return "/" + context.Request.Path.TrimStart('/');
+                }
+            }
+
+            return "/" + routePattern.TrimStart('/');
         }
 
         private string GetRoutePattern(RouteBase route)

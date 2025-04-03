@@ -1,9 +1,7 @@
 using Aikido.Zen.Core;
-using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 using Microsoft.AspNetCore.Http;
-using System.Text;
 using System.Web; // Import for HTML encoding
 using System.Linq;
 using System.Collections.Generic;
@@ -20,8 +18,11 @@ namespace Aikido.Zen.DotNetCore.Middleware
             var agentContext = Agent.Instance.Context;
             var aikidoContext = context.Items["Aikido.Zen.Context"] as Context;
             Agent.Instance.SetBlockingMiddlewareInstalled(true);
+
+            // if the context is not found, skip the blocking checks, this likely means that the request is bypassed
             if (aikidoContext == null)
             {
+                // call the next middleware
                 await next(context);
                 return;
             }
@@ -33,11 +34,11 @@ namespace Aikido.Zen.DotNetCore.Middleware
             }
 
             // block the request if the user is blocked
-            if (!EnvironmentHelper.DryMode && Agent.Instance.Context.IsBlocked(user, context.Connection?.RemoteIpAddress?.ToString(), routeKey, aikidoContext.UserAgent))
+            if (Agent.Instance.Context.IsBlocked(aikidoContext, out var reason))
             {
                 Agent.Instance.Context.AddAbortedRequest();
                 context.Response.StatusCode = 403;
-                await context.Response.WriteAsync("Request blocked");
+                await context.Response.WriteAsync($"Your request is blocked: {HttpUtility.HtmlEncode(reason)}");
                 return;
             }
 
