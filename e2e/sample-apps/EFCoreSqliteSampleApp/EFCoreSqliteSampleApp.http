@@ -1,0 +1,37 @@
+@baseUrl = http://localhost:5000
+
+### Get all pets
+GET {{baseUrl}}/api/pets
+
+### Get pet by ID
+GET {{baseUrl}}/api/pets/1
+
+### Create a new pet
+POST {{baseUrl}}/api/pets/create
+Content-Type: application/json
+
+{
+  "name": "Whiskers"
+}
+
+### Search pets by name (uses ExecuteRawSqlAsync with string interpolation)
+GET {{baseUrl}}/api/pets/search?name=Fl
+
+### Execute raw SQL (intentionally vulnerable for testing)
+POST {{baseUrl}}/api/pets/rawsql
+Content-Type: application/json
+
+{
+  "sqlCommand": "SELECT * FROM pets WHERE pet_name LIKE '%F%'"
+}
+
+### Execute SQL injection attack (for testing purposes)
+POST {{baseUrl}}/api/pets/rawsql
+Content-Type: application/json
+
+{
+  "sqlCommand": "SELECT * FROM pets; DROP TABLE pets;"
+}
+
+### Health check
+GET {{baseUrl}}/health

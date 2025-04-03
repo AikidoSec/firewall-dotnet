@@ -1,0 +1,15 @@
+﻿{
+    "$schema": "https://json.schemastore.org/launchsettings.json",
+    "profiles": {
+        "EFCoreSqliteSampleApp": {
+            "commandName": "Project",
+            "launchBrowser": true,
+            "launchUrl": "health",
+            "environmentVariables": {
+                "ASPNETCORE_ENVIRONMENT": "Development"
+            },
+            "applicationUrl": "http://localhost:5000",
+            "dotnetRunMessages": true
+        }
+    }
+}
