@@ -29,34 +29,9 @@ public class ConfigService
 
         foreach (var (key, value) in newConfig)
         {
-            // if value is JsonValueKind, process it
-            if (value is JsonElement jsonElement)
-            {
-                if (jsonElement.ValueKind == JsonValueKind.Array)
-                {
-                    _configs[appId][key] = jsonElement.Deserialize<List<string>>() ?? new List<string>();
-                }
-                else if (jsonElement.ValueKind == JsonValueKind.Object)
-                {
-                    _configs[appId][key] = jsonElement.Deserialize<Dictionary<string, string>>() ?? new Dictionary<string, string>();
-                }
-                else if (value?.ToString() == "True")
-                {
-                    _configs[appId][key] = true;
-                }
-                else if (value?.ToString() == "False")
-                {
-                    _configs[appId][key] = false;
-                }
-                else
-                {
-                    _configs[appId][key] = jsonElement.ToString();
-                }
-            }
-            else
-            {
-                _configs[appId][key] = value;
-            }
+            _configs[appId][key] = value is JsonElement jsonElement
+                ? ConvertJsonElement(jsonElement)
+                : value;
         }
 
         _configs[appId]["configUpdatedAt"] = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
@@ -125,4 +100,24 @@ public class ConfigService
             // Generate IPv6 addresses (last 500)
             : $"2001:db8:{((i - 500) >> 8):x}::{(i - 500) & 0xFF:x}")
         .ToList();
+
+    private object? ConvertJsonElement(JsonElement element)
+    {
+        return element.ValueKind switch
+        {
+            JsonValueKind.Array => element.EnumerateArray()
+                .Select(x => x is JsonElement je ? ConvertJsonElement(je) : x)
+                .ToList(),
+            JsonValueKind.Object => element.EnumerateObject()
+                .ToDictionary(
+                    x => x.Name,
+                    x => x.Value is JsonElement je ? ConvertJsonElement(je) : x.Value
+                ),
+            JsonValueKind.True => true,
+            JsonValueKind.False => false,
+            JsonValueKind.Number => element.TryGetInt64(out long l) ? l : element.GetDouble(),
+            JsonValueKind.Null => null,
+            _ => element.GetString()
+        };
+    }
 }
