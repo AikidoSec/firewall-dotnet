@@ -45,7 +45,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 UserAgent = headersDictionary.TryGetValue("User-Agent", out var userAgent) ? userAgent.FirstOrDefault() ?? string.Empty : string.Empty,
                 Source = Environment.Version.Major >= 5 ? "DotNetCore" : "DotNetFramework",
                 Route = GetParametrizedRoute(httpContext),
-                User = httpContext.Items["Aikido.Zen.User"] as User
+                User = httpContext.Items["Aikido.Zen.CurrentUser"] as User
             };
 
             Agent.Instance.SetContextMiddlewareInstalled(true);
