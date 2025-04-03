@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Http;
 using System.Net;
 using System.Security.Claims;
 using Aikido.Zen.Core.Exceptions;
+using Aikido.Zen.Core.Models;
 
 namespace SampleApp.Common
 {
@@ -54,6 +55,15 @@ namespace SampleApp.Common
                     {
                         new Claim(ClaimTypes.Name, Environment.GetEnvironmentVariable("TEST_USER")!),
                     }));
+                    context.Items["Aikido.Zen.User"] = new User(Environment.GetEnvironmentVariable("TEST_USER"), Environment.GetEnvironmentVariable("TEST_USER"));
+                }
+                if (context.Request.Headers.ContainsKey("user"))
+                {
+                    context.User = new ClaimsPrincipal(new ClaimsIdentity(new Claim[]
+                    {
+                        new Claim(ClaimTypes.Name, context.Request.Headers["user"]!),
+                    }));
+                    context.Items["Aikido.Zen.User"] = new User(context.Request.Headers["user"], context.Request.Headers["user"]);
                 }
                 return next();
             });
