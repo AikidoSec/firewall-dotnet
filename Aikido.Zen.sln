@@ -47,6 +47,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aikido.Zen.Tests.DotNetFram
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aikido.Zen.Tests.DotNetCore", "Aikido.Zen.Tests.DotNetCore\Aikido.Zen.Tests.DotNetCore.csproj", "{A778053F-B458-4764-A967-C54EB05C70FE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aikido.Zen.Tests.Mocks", "Aikido.Zen.Tests.Mocks\Aikido.Zen.Tests.Mocks.csproj", "{E9404338-175F-49B6-81FA-55ACBF93F1DE}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EFCoreSqliteSampleApp", "e2e\sample-apps\EFCoreSqliteSampleApp\EFCoreSqliteSampleApp.csproj", "{5D8FB1C2-40DD-4253-9338-3BA7B3184CFA}"
 EndProject
 Global
@@ -123,6 +125,10 @@ Global
 		{A778053F-B458-4764-A967-C54EB05C70FE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A778053F-B458-4764-A967-C54EB05C70FE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A778053F-B458-4764-A967-C54EB05C70FE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E9404338-175F-49B6-81FA-55ACBF93F1DE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E9404338-175F-49B6-81FA-55ACBF93F1DE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E9404338-175F-49B6-81FA-55ACBF93F1DE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E9404338-175F-49B6-81FA-55ACBF93F1DE}.Release|Any CPU.Build.0 = Release|Any CPU
 		{5D8FB1C2-40DD-4253-9338-3BA7B3184CFA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{5D8FB1C2-40DD-4253-9338-3BA7B3184CFA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5D8FB1C2-40DD-4253-9338-3BA7B3184CFA}.Release|Any CPU.ActiveCfg = Release|Any CPU

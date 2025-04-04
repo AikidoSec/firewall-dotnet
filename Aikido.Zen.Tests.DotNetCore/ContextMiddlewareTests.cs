@@ -1,4 +1,8 @@
+using Aikido.Zen.Core;
+using Aikido.Zen.Core.Helpers;
+using Aikido.Zen.Core.Models;
 using Aikido.Zen.DotNetCore.Middleware;
+using Aikido.Zen.Tests.Mocks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Routing;
@@ -6,7 +10,10 @@ using Microsoft.AspNetCore.Routing.Patterns;
 using Moq;
 using NUnit.Framework;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Aikido.Zen.Tests.DotNetCore

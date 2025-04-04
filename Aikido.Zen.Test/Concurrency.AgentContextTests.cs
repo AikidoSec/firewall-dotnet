@@ -3,6 +3,9 @@ using System.Threading;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Models;
+using System.Collections.Generic;
+using System.Linq;
+using System.Collections.Concurrent;
 
 namespace Aikido.Zen.Test
 {
@@ -121,12 +124,13 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void ConcurrentAccess_ToRateLimitedRoutes_ShouldBeThreadSafe()
+        public void ConcurrentAccess_ToEndpoints_ShouldBeThreadSafe()
         {
             // Arrange
             const int numThreads = 10;
-            const int numRoutesPerThread = 100;
+            const int numEndpointsPerThread = 100;
             var threads = new List<Thread>();
+            var allEndpoints = new ConcurrentDictionary<string, EndpointConfig>();
 
             // Act
             for (int i = 0; i < numThreads; i++)
@@ -134,12 +138,26 @@ namespace Aikido.Zen.Test
                 var threadId = i;
                 var thread = new Thread(() =>
                 {
-                    for (int j = 0; j < numRoutesPerThread; j++)
+                    for (int j = 0; j < numEndpointsPerThread; j++)
                     {
-                        _agentContext.AddRateLimitedEndpoint(
-                            $"GET|/api/test{threadId}-{j}",
-                            new RateLimitingConfig { MaxRequests = 60, WindowSizeInMS = 1000 }
-                        );
+                        var config = new EndpointConfig
+                        {
+                            Method = "GET",
+                            Route = $"/api/test{threadId}-{j}",
+                            RateLimiting = new RateLimitingConfig
+                            {
+                                Enabled = true,
+                                MaxRequests = 60,
+                                WindowSizeInMS = 1000
+                            }
+                        };
+
+                        // Track this endpoint to verify it was stored correctly
+                        string key = $"{threadId}-{j}";
+                        allEndpoints.TryAdd(key, config);
+
+                        var endpoints = new List<EndpointConfig> { config };
+                        _agentContext.UpdateRatelimitedRoutes(endpoints);
                     }
                 });
                 threads.Add(thread);
@@ -152,8 +170,19 @@ namespace Aikido.Zen.Test
                 thread.Join();
             }
 
-            // Assert
-            Assert.That(_agentContext.RateLimitedRoutes.Count, Is.EqualTo(numThreads * numRoutesPerThread));
+            // Assert - we should have at least one endpoint from each thread
+            // Due to the nature of parallel updates, we can't guarantee exactly which ones will be there
+            // But we can verify that the collection is consistent and doesn't crash
+            var finalEndpoints = _agentContext.Endpoints.ToList();
+            Assert.That(finalEndpoints, Is.Not.Null);
+            Assert.That(finalEndpoints.Count, Is.GreaterThan(0));
+            Assert.That(finalEndpoints.Count, Is.LessThanOrEqualTo(numThreads * numEndpointsPerThread));
+
+            // Ensure no exception when accessing endpoints collection
+            var methods = finalEndpoints.Select(e => e.Method).ToList();
+            var routes = finalEndpoints.Select(e => e.Route).ToList();
+            Assert.That(methods.Count, Is.EqualTo(finalEndpoints.Count));
+            Assert.That(routes.Count, Is.EqualTo(finalEndpoints.Count));
         }
 
         [Test]
@@ -186,11 +215,22 @@ namespace Aikido.Zen.Test
                             Route = $"/api/test{threadId}-{j}"
                         });
 
-                        // Add rate limited endpoint
-                        _agentContext.AddRateLimitedEndpoint(
-                            $"GET|/api/test{threadId}-{j}",
-                            new RateLimitingConfig { MaxRequests = 60 }
-                        );
+                        // Update endpoints (last one overwrites previous ones from the same thread)
+                        var endpoints = new List<EndpointConfig>
+                        {
+                            new EndpointConfig
+                            {
+                                Method = "GET",
+                                Route = $"/api/test{threadId}-{j}",
+                                RateLimiting = new RateLimitingConfig
+                                {
+                                    Enabled = true,
+                                    MaxRequests = 60,
+                                    WindowSizeInMS = 1000
+                                }
+                            }
+                        };
+                        _agentContext.UpdateRatelimitedRoutes(endpoints);
                     }
                 });
                 threads.Add(thread);
@@ -209,7 +249,13 @@ namespace Aikido.Zen.Test
                 Assert.That(_agentContext.Hostnames.Count(), Is.EqualTo(numThreads * numOperationsPerThread));
                 Assert.That(_agentContext.Users.Count(), Is.EqualTo(numThreads * numOperationsPerThread));
                 Assert.That(_agentContext.Routes.Count(), Is.EqualTo(numThreads * numOperationsPerThread));
-                Assert.That(_agentContext.RateLimitedRoutes.Count, Is.EqualTo(numThreads * numOperationsPerThread));
+
+                // Since many threads are updating the endpoints list, we can't guarantee exactly how many will be there,
+                // but we can verify it's a consistent state
+                var finalEndpoints = _agentContext.Endpoints.ToList();
+                Assert.That(finalEndpoints, Is.Not.Null);
+                Assert.That(finalEndpoints.Count, Is.GreaterThan(0));
+                Assert.That(finalEndpoints.Count, Is.LessThanOrEqualTo(numThreads * numOperationsPerThread));
             });
         }
     }

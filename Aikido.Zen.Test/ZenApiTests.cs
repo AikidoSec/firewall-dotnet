@@ -1,6 +1,6 @@
 using Aikido.Zen.Core.Api;
 using Moq;
-using Aikido.Zen.Test.Mocks;
+using Aikido.Zen.Tests.Mocks;
 
 namespace Aikido.Zen.Test
 {

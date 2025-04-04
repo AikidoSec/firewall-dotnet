@@ -1,9 +1,14 @@
 using System.Diagnostics;
 using Aikido.Zen.Core.Models;
 using System.Runtime.CompilerServices;
+using System.Collections.Generic;
+using System.Text.RegularExpressions;
+using System.Linq;
 
 [assembly: InternalsVisibleTo("Aikido.Zen.Test")]
 [assembly: InternalsVisibleTo("Aikido.Zen.Benchmarks")]
+[assembly: InternalsVisibleTo("Aikido.Zen.Tests.DotNetCore")]
+[assembly: InternalsVisibleTo("Aikido.Zen.Tests.DotNetFramework")]
 namespace Aikido.Zen.Core.Helpers
 {
     /// <summary>
@@ -11,11 +16,11 @@ namespace Aikido.Zen.Core.Helpers
     /// </summary>
     public static class RateLimitingHelper
     {
-        private static LRUCache<string, RequestInfo> RateLimitedItems = new LRUCache<string, RequestInfo>(10000, 120 * 60 * 1000); // 10000 items, 120 minutes TTL
+        private static LRUCache<string, List<long>> RateLimitedItems = new LRUCache<string, List<long>>(10000, 120 * 60 * 1000); // 10000 items, 120 minutes TTL
         private static readonly object _lock = new object();
 
         /// <summary>
-        /// Determines if a request should be allowed based on rate limiting rules
+        /// Determines if a request should be allowed based on sliding window rate limiting rules
         /// </summary>
         /// <param name="key">Unique identifier for the rate limit (typically combines route and user/IP)</param>
         /// <param name="windowSizeInMS">Time window in milliseconds for rate limiting</param>
@@ -27,36 +32,97 @@ namespace Aikido.Zen.Core.Helpers
             if (windowSizeInMS <= 0) return true;
 
             var currentTime = GetCurrentTimestamp();
-            RequestInfo requestInfo;
 
             // since http requests are handled in parallel, we need to lock the cache to prevent race conditions
             lock (_lock)
             {
-                if (!RateLimitedItems.TryGetValue(key, out requestInfo))
+                // Get or create the list of timestamps for this key
+                if (!RateLimitedItems.TryGetValue(key, out var timestamps))
                 {
-                    RateLimitedItems.Set(key, new RequestInfo(1, currentTime));
+                    timestamps = new List<long> { currentTime };
+                    RateLimitedItems.Set(key, timestamps);
                     return true;
                 }
 
-                var elapsedTime = currentTime - requestInfo.StartTime;
+                // Remove timestamps that are outside the window
+                timestamps.RemoveAll(timestamp => currentTime - timestamp > windowSizeInMS);
 
-                if (elapsedTime >= windowSizeInMS)
+                // Add current timestamp
+                timestamps.Add(currentTime);
+
+                // Update the cache with filtered timestamps
+                RateLimitedItems.Set(key, timestamps);
+
+                // Check if the number of requests is within limits
+                return timestamps.Count <= maxRequests;
+            }
+        }
+
+        /// <summary>
+        /// Determines if a request should be allowed based on all applicable rate limiting rules
+        /// </summary>
+        /// <param name="context">The context of the request</param>
+        /// <param name="endpoints">The filtered list of endpoints</param>
+        /// <returns>A tuple containing: (isAllowed, effectiveConfig) where effectiveConfig is the config that caused rate limiting (if any)</returns>
+        public static (bool isAllowed, RateLimitingConfig effectiveConfig) IsRequestAllowed(
+            Context context,
+            IEnumerable<EndpointConfig> endpoints)
+        {
+            if (string.IsNullOrEmpty(context?.Method) || string.IsNullOrEmpty(context?.Route))
+            {
+                return (true, null);
+            }
+
+            if (endpoints == null || !endpoints.Any())
+            {
+                return (true, null);
+            }
+
+            // Find endpoints that have rate limiting enabled
+            var rateLimitedEndpoints = endpoints
+                .Where(e => e.RateLimiting != null && e.RateLimiting.Enabled)
+                .ToList();
+
+            if (!rateLimitedEndpoints.Any())
+            {
+                return (true, null);
+            }
+
+            // Get the user ID or IP address for the key
+            string userOrIp = context.User?.Id ?? context.RemoteAddress ?? "unknown";
+
+            // Check exact match first if it exists
+            if (RouteHelper.HasExactMatch(context, rateLimitedEndpoints, out var exactMatch))
+            {
+                var config = exactMatch.RateLimiting;
+                var exactKey = $"{exactMatch.Method}|{exactMatch.Route}:user-or-ip:{userOrIp}";
+                if (!IsAllowed(exactKey, config.WindowSizeInMS, config.MaxRequests))
                 {
-                    // Reset the counter and timestamp if windowSizeInMS has expired
-                    RateLimitedItems.Set(key, new RequestInfo(1, currentTime));
-                    return true;
+                    return (false, config);
                 }
+                return (true, config);
+            }
 
-                if (requestInfo.Count < maxRequests)
+            // Find the best matching endpoints
+            var matchingEndpoints = RouteHelper.MatchEndpoints(context, rateLimitedEndpoints);
+
+            // Then check the best matching endpoint
+            foreach (var endpoint in matchingEndpoints)
+            {
+
+                var config = endpoint.RateLimiting;
+                if (config != null && config.Enabled)
                 {
-                    // Increment the counter if it is within the windowSizeInMS and maxRequests
-                    requestInfo.Count++;
-                    RateLimitedItems.Set(key, requestInfo); // Update the value in cache
-                    return true;
+                    var matchKey = $"{endpoint.Method}|{endpoint.Route}:user-or-ip:{userOrIp}";
+                    if (!IsAllowed(matchKey, config.WindowSizeInMS, config.MaxRequests))
+                    {
+                        return (false, config);
+                    }
                 }
             }
-            // Deny the request if the maxRequests is reached within windowSizeInMS
-            return false;
+
+            // If we get here, all checks passed
+            return (true, null);
         }
 
         private static long GetCurrentTimestamp()
@@ -66,19 +132,7 @@ namespace Aikido.Zen.Core.Helpers
 
         internal static void ResetCache(int size, int ttlInMs)
         {
-            RateLimitedItems = new LRUCache<string, RequestInfo>(size, ttlInMs);
-        }
-
-        internal struct RequestInfo
-        {
-            public int Count;
-            public long StartTime;
-
-            internal RequestInfo(int count, long startTime)
-            {
-                Count = count;
-                StartTime = startTime;
-            }
+            RateLimitedItems = new LRUCache<string, List<long>>(size, ttlInMs);
         }
     }
 }

@@ -1,7 +1,7 @@
 using Aikido.Zen.Core.Api;
 using Moq;
 
-namespace Aikido.Zen.Test.Mocks
+namespace Aikido.Zen.Tests.Mocks
 {
     public static class ZenApiMock
     {

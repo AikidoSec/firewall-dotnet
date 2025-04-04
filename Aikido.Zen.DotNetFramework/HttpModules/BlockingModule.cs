@@ -5,6 +5,8 @@ using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 using Context = Aikido.Zen.Core.Context;
+using System.Linq;
+using System.Collections.Generic;
 
 namespace Aikido.Zen.DotNetFramework.HttpModules
 {
@@ -51,16 +53,22 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 throw new HttpException(403, $"Your request is blocked: {HttpUtility.HtmlEncode(reason)}");
             }
 
-            // Is rate limiting enabled for this route?
-            if (agentContext.RateLimitedRoutes.TryGetValue(routeKey, out var rateLimitConfig) && rateLimitConfig.Enabled)
+            // Use the helper to check all rate limiting rules
+            var (isAllowed, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(aikidoContext, agentContext.Endpoints);
+
+            if (!isAllowed)
             {
-                // should we rate limit this request?
-                var key = $"{routeKey}:user-or-ip:{user?.Id ?? aikidoContext.RemoteAddress}";
-                if (!RateLimitingHelper.IsAllowed(key, rateLimitConfig.WindowSizeInMS, rateLimitConfig.MaxRequests))
+                Agent.Instance.Context.AddAbortedRequest();
+                httpContext.Response.StatusCode = 429;
+
+                if (effectiveConfig != null)
                 {
-                    Agent.Instance.Context.AddAbortedRequest();
-                    throw new HttpException(429, "Too many requests");
+                    httpContext.Response.Headers.Add("Retry-After", effectiveConfig.WindowSizeInMS.ToString());
                 }
+
+                httpContext.Response.Write($"You are rate limited by Aikido firewall. (Your IP: {aikidoContext.RemoteAddress})");
+                httpContext.Response.End();
+                return;
             }
         }
     }
