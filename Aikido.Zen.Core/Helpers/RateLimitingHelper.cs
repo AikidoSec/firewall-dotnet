@@ -58,22 +58,6 @@ namespace Aikido.Zen.Core.Helpers
         }
 
         /// <summary>
-        /// Checks if a route matches a wildcard pattern
-        /// </summary>
-        /// <param name="routePattern">The route pattern that may contain wildcards (*)</param>
-        /// <param name="actualRoute">The actual route to check against the pattern</param>
-        /// <returns>True if the route matches the pattern, false otherwise</returns>
-        public static bool IsWildcardMatch(string routePattern, string actualRoute)
-        {
-            if (string.IsNullOrEmpty(routePattern)) return false;
-            if (string.IsNullOrEmpty(actualRoute)) return false;
-
-            // Convert the wildcard pattern to a regex pattern
-            string regexPattern = "^" + Regex.Escape(routePattern).Replace("\\*", ".*") + "$";
-            return Regex.IsMatch(actualRoute, regexPattern, RegexOptions.IgnoreCase);
-        }
-
-        /// <summary>
         /// Determines if a request should be allowed based on all applicable rate limiting rules
         /// </summary>
         /// <param name="context">The context of the request</param>

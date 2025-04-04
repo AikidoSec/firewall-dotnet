@@ -1,8 +1,5 @@
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
-using System.Diagnostics;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using Aikido.Zen.Core;
 
 namespace Aikido.Zen.Test.Helpers
@@ -334,46 +331,6 @@ namespace Aikido.Zen.Test.Helpers
 
             Assert.That(RateLimitingHelper.IsAllowed(key, windowSize, maxRequests), Is.True,
                 "Request after second window should be allowed");
-        }
-
-        [Test]
-        public void IsWildcardMatch_ShouldMatchExactRoutes()
-        {
-            // Arrange
-            string pattern = "GET|api/users";
-            string route = "GET|api/users";
-
-            // Act & Assert
-            Assert.That(RateLimitingHelper.IsWildcardMatch(pattern, route), Is.True);
-        }
-
-        [Test]
-        public void IsWildcardMatch_ShouldMatchWildcardRoutes()
-        {
-            // Arrange & Act & Assert
-            Assert.That(RateLimitingHelper.IsWildcardMatch("GET|api/*", "GET|api/users"), Is.True);
-            Assert.That(RateLimitingHelper.IsWildcardMatch("GET|api/*/details", "GET|api/users/details"), Is.True);
-            Assert.That(RateLimitingHelper.IsWildcardMatch("*|api/users", "GET|api/users"), Is.True);
-            Assert.That(RateLimitingHelper.IsWildcardMatch("*|api/users", "POST|api/users"), Is.True);
-            Assert.That(RateLimitingHelper.IsWildcardMatch("GET|*/users", "GET|api/users"), Is.True);
-        }
-
-        [Test]
-        public void IsWildcardMatch_ShouldNotMatchNonMatchingRoutes()
-        {
-            // Arrange & Act & Assert
-            Assert.That(RateLimitingHelper.IsWildcardMatch("GET|api/*", "POST|api/users"), Is.False);
-            Assert.That(RateLimitingHelper.IsWildcardMatch("GET|api/users/*", "GET|api/products"), Is.False);
-            Assert.That(RateLimitingHelper.IsWildcardMatch("GET|api/*/details", "GET|api/users/profile"), Is.False);
-        }
-
-        [Test]
-        public void IsWildcardMatch_ShouldHandleEmptyStrings()
-        {
-            // Arrange & Act & Assert
-            Assert.That(RateLimitingHelper.IsWildcardMatch("", "GET|api/users"), Is.False);
-            Assert.That(RateLimitingHelper.IsWildcardMatch("GET|api/*", ""), Is.False);
-            Assert.That(RateLimitingHelper.IsWildcardMatch("", ""), Is.False);
         }
 
         [Test]
