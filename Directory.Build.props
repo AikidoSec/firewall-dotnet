@@ -5,9 +5,12 @@
     <!-- Default version if not specified during build -->
     <Version Condition="'$(Version)' == ''">1.2.5</Version>
 
+    <!-- Extract version without prerelease tag for AssemblyVersion -->
+    <VersionPrefix>$([System.Text.RegularExpressions.Regex]::Match($(Version), '\d+\.\d+\.\d+'))</VersionPrefix>
+
     <!-- These properties ensure consistent versioning across all projects -->
-    <AssemblyVersion>$(Version)</AssemblyVersion>
-    <FileVersion>$(Version)</FileVersion>
+    <AssemblyVersion>$(VersionPrefix)</AssemblyVersion>
+    <FileVersion>$(VersionPrefix)</FileVersion>
     <InformationalVersion>$(Version)</InformationalVersion>
     <PackageVersion>$(Version)</PackageVersion>
   </PropertyGroup>

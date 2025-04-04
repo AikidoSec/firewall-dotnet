@@ -85,6 +85,8 @@ Task("Build")
     {
         try
         {
+            // if the version is a prerelease, we need to remove the suffix to avoid assemblyinfo errors
+            var version = libVersion.Split('-')[0];
             var msBuildSettings = new MSBuildSettings
             {
                 Configuration = configuration,
@@ -96,7 +98,7 @@ Task("Build")
                 NodeReuse = true
             }
             .WithTarget("Build")
-            .WithProperty("version", libVersion);
+            .WithProperty("version", version);
 
             var projects = GetFiles("./**/*.csproj")
                 .Where(p => !p.FullPath.Contains("sample-apps") && !p.FullPath.Contains("Aikido.Zen.Benchmarks"));
