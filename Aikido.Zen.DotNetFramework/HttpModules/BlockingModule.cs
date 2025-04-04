@@ -53,9 +53,6 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 throw new HttpException(403, $"Your request is blocked: {HttpUtility.HtmlEncode(reason)}");
             }
 
-            // Check if rate limiting should be applied
-            var userOrIp = user?.Id ?? aikidoContext.RemoteAddress;
-
             // Use the helper to check all rate limiting rules
             var (isAllowed, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(aikidoContext, agentContext.Endpoints);
 
