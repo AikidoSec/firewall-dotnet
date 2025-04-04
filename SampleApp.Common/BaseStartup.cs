@@ -51,11 +51,7 @@ namespace SampleApp.Common
                 }
                 if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("TEST_USER")))
                 {
-                    context.User = new ClaimsPrincipal(new ClaimsIdentity(new Claim[]
-                    {
-                        new Claim(ClaimTypes.Name, Environment.GetEnvironmentVariable("TEST_USER")!),
-                    }));
-                    context.Items["Aikido.Zen.User"] = new User(Environment.GetEnvironmentVariable("TEST_USER"), Environment.GetEnvironmentVariable("TEST_USER"));
+                    Zen.SetUser(Environment.GetEnvironmentVariable("TEST_USER"), Environment.GetEnvironmentVariable("TEST_USER"), context);
                 }
                 if (context.Request.Headers.ContainsKey("user"))
                 {
@@ -63,7 +59,7 @@ namespace SampleApp.Common
                     {
                         new Claim(ClaimTypes.Name, context.Request.Headers["user"]!),
                     }));
-                    context.Items["Aikido.Zen.User"] = new User(context.Request.Headers["user"], context.Request.Headers["user"]);
+                    Zen.SetUser(context.Request.Headers["user"].ToString(), context.Request.Headers["user"].ToString(), context);
                 }
                 return next();
             });
