@@ -278,16 +278,23 @@ namespace Aikido.Zen.Core
         }
 
         /// <summary>
-        /// Captures inbound requests.
+        /// Captures the current user
         /// </summary>
         /// <param name="context">The current context</param>
-        public void CaptureInboundRequest(Context context)
+        public void CaptureRequestUser(Context context)
         {
             if (context.User != null)
                 _context.AddUser(context.User, context.RemoteAddress);
-            _context.AddRequest();
             if (context.User != null)
                 LogHelper.DebugLog(Logger, $"AIKIDO: Capturing inbound request from user: {context.User.Id}");
+        }
+
+        /// <summary>
+        /// Increments the total request count
+        /// </summary>
+        public void IncrementTotalRequestCount()
+        {
+            _context.AddRequest();
         }
 
         /// <summary>

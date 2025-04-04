@@ -88,7 +88,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 context.ParsedUserInput = httpData.FlattenedData;
                 context.Body = request.InputStream;
                 context.ParsedBody = httpData.ParsedBody;
-                Agent.Instance.CaptureInboundRequest(context);
+                Agent.Instance.CaptureRequestUser(context);
             }
             catch (Exception ex)
             {
@@ -116,6 +116,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             if (RouteHelper.ShouldAddRoute(aikidoContext, statusCode))
             {
                 Agent.Instance.AddRoute(aikidoContext);
+                Agent.Instance.IncrementTotalRequestCount();
             }
         }
 
