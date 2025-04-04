@@ -33,6 +33,7 @@ namespace Aikido.Zen.Core.Helpers
 
             var currentTime = GetCurrentTimestamp();
 
+            // since http requests are handled in parallel, we need to lock the cache to prevent race conditions
             lock (_lock)
             {
                 // Get or create the list of timestamps for this key
