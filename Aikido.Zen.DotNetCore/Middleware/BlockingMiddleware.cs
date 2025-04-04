@@ -27,7 +27,6 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 return;
             }
             var user = context.Items["Aikido.Zen.CurrentUser"] as User;
-            var routeKey = $"{aikidoContext.Method}|{aikidoContext.Route}";
             if (user != null)
             {
                 Agent.Instance.Context.AddUser(user, ipAddress: context.Connection.RemoteIpAddress?.ToString());
@@ -44,10 +43,9 @@ namespace Aikido.Zen.DotNetCore.Middleware
 
             // Check if rate limiting should be applied
             var remoteAddress = HttpUtility.HtmlEncode(aikidoContext.RemoteAddress); // HTML escape the remote address
-            var userOrIp = user?.Id ?? remoteAddress;
 
             // Use the helper to check all rate limiting rules
-            var (isAllowed, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(routeKey, userOrIp, agentContext.RateLimitedRoutes);
+            var (isAllowed, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(aikidoContext, agentContext.Endpoints);
 
             if (!isAllowed)
             {

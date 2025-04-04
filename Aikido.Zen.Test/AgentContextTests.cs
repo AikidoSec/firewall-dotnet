@@ -68,7 +68,7 @@ namespace Aikido.Zen.Test
             var context1 = new Context { User = user, RemoteAddress = "8.8.8.102", Method = "GET", Url = url, UserAgent = "useragent", Route = "testUrl" };
             var context2 = new Context { RemoteAddress = "8.8.8.101", Method = "GET", Url = url, UserAgent = "useragent", Route = "testUrl" };
             var context3 = new Context { RemoteAddress = ip, Method = "GET", Url = url, UserAgent = "useragent", Route = "testUrl" };
-            var context4 = new Context { RemoteAddress = "9.9.9.1", Method = "GET", Url = url, UserAgent = "useragent" , Route = "testUrl" };
+            var context4 = new Context { RemoteAddress = "9.9.9.1", Method = "GET", Url = url, UserAgent = "useragent", Route = "testUrl" };
             var context5 = new Context { RemoteAddress = "invalid.ip", Method = "GET", Url = url, UserAgent = "useragent", Route = "testUrl" };
             var context6 = new Context { User = new User("user2", "allowed"), RemoteAddress = "9.9.9.1", Method = "GET", Url = url, UserAgent = "useragent", Route = "testUrl" };
             var context7 = new Context { User = new User("user2", "allowed"), RemoteAddress = "8.8.8.101", Method = "GET", Url = url, UserAgent = "googlebot", Route = "testUrl" };
@@ -249,78 +249,34 @@ namespace Aikido.Zen.Test
         public void IsBlocked_ShouldReturnTrue_WhenUserIsBlocked()
         {
             // Arrange
-            var user = new User("user1", "User One");
             _agentContext.UpdateBlockedUsers(new[] { "user1" });
-            var context = new Context { User = user, RemoteAddress = string.Empty, Method = string.Empty, Url = string.Empty, UserAgent = string.Empty };
+            var context = new Context { User = new User("user1", "Blocked User"), RemoteAddress = string.Empty, Method = string.Empty, Url = string.Empty, UserAgent = string.Empty };
 
             // Act
-            var isBlocked = _agentContext.IsBlocked(context, out var reason);
+            bool isBlocked = _agentContext.IsBlocked(context, out var reason);
 
             // Assert
-            Assert.That(isBlocked);
+            Assert.That(isBlocked, Is.True);
+            Assert.That(reason, Is.EqualTo("User is blocked"));
         }
 
         [Test]
         public void IsBlocked_ShouldReturnFalse_WhenUserIsNotBlocked()
         {
             // Arrange
-            var user = new User("user1", "User One");
-            var context = new Context { User = user, RemoteAddress = string.Empty, Method = string.Empty, Url = string.Empty, UserAgent = string.Empty };
+            _agentContext.UpdateBlockedUsers(new[] { "user1" });
+            var context = new Context { User = new User("user2", "Not Blocked User"), RemoteAddress = string.Empty, Method = string.Empty, Url = string.Empty, UserAgent = string.Empty };
 
             // Act
-            var isBlocked = _agentContext.IsBlocked(context, out var reason);
+            bool isBlocked = _agentContext.IsBlocked(context, out var reason);
 
             // Assert
             Assert.That(isBlocked, Is.False);
+            Assert.That(reason, Is.Null);
         }
 
         [Test]
-        public void AddRateLimitedEndpoint_ShouldAddConfigToDictionary()
-        {
-            // Arrange
-            var path = "GET|api/test";
-            var config = new RateLimitingConfig { Enabled = true, MaxRequests = 10, WindowSizeInMS = 1000 };
-
-            // Act
-            _agentContext.AddRateLimitedEndpoint(path, config);
-
-            // Assert
-            Assert.That(_agentContext.RateLimitedRoutes.ContainsKey(path), Is.True);
-            Assert.That(_agentContext.RateLimitedRoutes[path].MaxRequests, Is.EqualTo(10));
-            Assert.That(_agentContext.RateLimitedRoutes[path].Enabled, Is.True);
-            Assert.That(_agentContext.RateLimitedRoutes[path].WindowSizeInMS, Is.EqualTo(1000));
-        }
-
-        [Test]
-        public void AddRateLimitedEndpoint_WithNullPath_ShouldNotAddToRoutes()
-        {
-            // Arrange
-            string path = null;
-            var config = new RateLimitingConfig { MaxRequests = 60 };
-
-            // Act
-            _agentContext.AddRateLimitedEndpoint(path, config);
-
-            // Assert
-            Assert.That(_agentContext.RateLimitedRoutes, Is.Empty);
-        }
-
-        [Test]
-        public void AddRateLimitedEndpoint_WithNullConfig_ShouldNotAddToRoutes()
-        {
-            // Arrange
-            var path = "GET|/api/test";
-            RateLimitingConfig config = null;
-
-            // Act
-            _agentContext.AddRateLimitedEndpoint(path, config);
-
-            // Assert
-            Assert.That(_agentContext.RateLimitedRoutes, Is.Empty);
-        }
-
-        [Test]
-        public void UpdateRatelimitedRoutes_ShouldUpdateRoutesFromEndpoints()
+        public void UpdateRatelimitedRoutes_ShouldUpdateEndpointsList()
         {
             // Arrange
             var endpoints = new List<EndpointConfig> {
@@ -340,18 +296,34 @@ namespace Aikido.Zen.Test
             _agentContext.UpdateRatelimitedRoutes(endpoints);
 
             // Assert
-            Assert.That(_agentContext.RateLimitedRoutes.Count, Is.EqualTo(2));
-            Assert.That(_agentContext.RateLimitedRoutes["GET|/api/test1"].MaxRequests, Is.EqualTo(30));
-            Assert.That(_agentContext.RateLimitedRoutes["GET|/api/test1"].WindowSizeInMS, Is.EqualTo(2000));
-            Assert.That(_agentContext.RateLimitedRoutes["POST|/api/test2"].MaxRequests, Is.EqualTo(60));
+            var endpointsList = _agentContext.Endpoints.ToList();
+            Assert.That(endpointsList.Count, Is.EqualTo(2));
+
+            var endpoint1 = endpointsList.FirstOrDefault(e => e.Method == "GET" && e.Route == "/api/test1");
+            var endpoint2 = endpointsList.FirstOrDefault(e => e.Method == "POST" && e.Route == "/api/test2");
+
+            Assert.That(endpoint1, Is.Not.Null);
+            Assert.That(endpoint1.RateLimiting.MaxRequests, Is.EqualTo(30));
+            Assert.That(endpoint1.RateLimiting.WindowSizeInMS, Is.EqualTo(2000));
+
+            Assert.That(endpoint2, Is.Not.Null);
+            Assert.That(endpoint2.RateLimiting.MaxRequests, Is.EqualTo(60));
         }
 
         [Test]
-        public void UpdateRatelimitedRoutes_ShouldClearExistingRoutes()
+        public void UpdateRatelimitedRoutes_ShouldReplaceExistingEndpoints()
         {
             // Arrange
-            _agentContext.AddRateLimitedEndpoint("GET|/api/old", new RateLimitingConfig { MaxRequests = 100 });
-            var endpoints = new List<EndpointConfig> {
+            var initialEndpoints = new List<EndpointConfig> {
+                new EndpointConfig {
+                    Method = "GET",
+                    Route = "/api/old",
+                    RateLimiting = new RateLimitingConfig { MaxRequests = 100 }
+                }
+            };
+            _agentContext.UpdateRatelimitedRoutes(initialEndpoints);
+
+            var newEndpoints = new List<EndpointConfig> {
                 new EndpointConfig {
                     Method = "GET",
                     Route = "/api/new",
@@ -360,12 +332,13 @@ namespace Aikido.Zen.Test
             };
 
             // Act
-            _agentContext.UpdateRatelimitedRoutes(endpoints);
+            _agentContext.UpdateRatelimitedRoutes(newEndpoints);
 
             // Assert
-            Assert.That(_agentContext.RateLimitedRoutes.Count, Is.EqualTo(1));
-            Assert.That(_agentContext.RateLimitedRoutes.ContainsKey("GET|/api/new"), Is.True);
-            Assert.That(_agentContext.RateLimitedRoutes.ContainsKey("GET|/api/old"), Is.False);
+            var endpointsList = _agentContext.Endpoints.ToList();
+            Assert.That(endpointsList.Count, Is.EqualTo(1));
+            Assert.That(endpointsList.Any(e => e.Method == "GET" && e.Route == "/api/new"), Is.True);
+            Assert.That(endpointsList.Any(e => e.Method == "GET" && e.Route == "/api/old"), Is.False);
         }
 
         [Test]
@@ -404,7 +377,12 @@ namespace Aikido.Zen.Test
                 Assert.That(Environment.GetEnvironmentVariable("AIKIDO_BLOCK"), Is.EqualTo("true"));
                 Assert.That(_agentContext.IsUserBlocked("user1"), Is.True);
                 Assert.That(_agentContext.IsUserBlocked("user2"), Is.True);
-                Assert.That(_agentContext.RateLimitedRoutes["GET|/test"].MaxRequests, Is.EqualTo(60));
+
+                var endpointsList = _agentContext.Endpoints.ToList();
+                var endpoint = endpointsList.FirstOrDefault(e => e.Method == "GET" && e.Route == "/test");
+                Assert.That(endpoint, Is.Not.Null);
+                Assert.That(endpoint.RateLimiting.MaxRequests, Is.EqualTo(60));
+
                 Assert.That(_agentContext.ConfigLastUpdated, Is.EqualTo(configVersion));
             });
         }

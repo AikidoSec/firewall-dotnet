@@ -57,12 +57,21 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             var userOrIp = user?.Id ?? aikidoContext.RemoteAddress;
 
             // Use the helper to check all rate limiting rules
-            var (isAllowed, _) = RateLimitingHelper.IsRequestAllowed(routeKey, userOrIp, agentContext.RateLimitedRoutes);
+            var (isAllowed, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(aikidoContext, agentContext.Endpoints);
 
             if (!isAllowed)
             {
                 Agent.Instance.Context.AddAbortedRequest();
-                throw new HttpException(429, "Too many requests");
+                httpContext.Response.StatusCode = 429;
+
+                if (effectiveConfig != null)
+                {
+                    httpContext.Response.Headers.Add("Retry-After", effectiveConfig.WindowSizeInMS.ToString());
+                }
+
+                httpContext.Response.Write($"You are rate limited by Aikido firewall. (Your IP: {aikidoContext.RemoteAddress})");
+                httpContext.Response.End();
+                return;
             }
         }
     }

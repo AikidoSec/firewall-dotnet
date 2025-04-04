@@ -76,50 +76,65 @@ namespace Aikido.Zen.Core.Helpers
         /// <summary>
         /// Determines if a request should be allowed based on all applicable rate limiting rules
         /// </summary>
-        /// <param name="routeKey">The route key (method|route)</param>
-        /// <param name="userOrIp">The user ID or IP address</param>
-        /// <param name="rateLimitedRoutes">Dictionary of all rate limited routes and their configs</param>
+        /// <param name="context">The context of the request</param>
+        /// <param name="endpoints">The filtered list of endpoints</param>
         /// <returns>A tuple containing: (isAllowed, effectiveConfig) where effectiveConfig is the config that caused rate limiting (if any)</returns>
         public static (bool isAllowed, RateLimitingConfig effectiveConfig) IsRequestAllowed(
-            string routeKey,
-            string userOrIp,
-            IDictionary<string, RateLimitingConfig> rateLimitedRoutes)
+            Context context,
+            IEnumerable<EndpointConfig> endpoints)
         {
-            if (rateLimitedRoutes == null || rateLimitedRoutes.Count == 0)
+            if (string.IsNullOrEmpty(context?.Method) || string.IsNullOrEmpty(context?.Route))
             {
                 return (true, null);
             }
 
-            // Get exact match config if it exists
-            rateLimitedRoutes.TryGetValue(routeKey, out var exactConfig);
-
-            // Get all wildcard routes
-            var wildcardRoutes = rateLimitedRoutes
-                .Where(r => r.Key.Contains("*"))
-                .ToDictionary(r => r.Key, r => r.Value);
-
-            // Check exact match first
-            if (exactConfig != null && exactConfig.Enabled)
+            if (endpoints == null || !endpoints.Any())
             {
-                var exactKey = $"{routeKey}:user-or-ip:{userOrIp}";
-                if (!IsAllowed(exactKey, exactConfig.WindowSizeInMS, exactConfig.MaxRequests))
-                {
-                    return (false, exactConfig);
-                }
+                return (true, null);
             }
 
-            // Then check all wildcard matches
-            foreach (var wildcardEntry in wildcardRoutes)
-            {
-                string wildcardRouteKey = wildcardEntry.Key;
-                RateLimitingConfig wildcardConfig = wildcardEntry.Value;
+            // Get the user ID or IP address for the key
+            string userOrIp = context.User?.Id ?? context.RemoteAddress ?? "unknown";
 
-                if (wildcardConfig.Enabled && IsWildcardMatch(wildcardRouteKey, routeKey))
+            // Find endpoints that have rate limiting enabled
+            var rateLimitedEndpoints = endpoints
+                .Where(e => e.RateLimiting != null && e.RateLimiting.Enabled)
+                .ToList();
+
+            if (!rateLimitedEndpoints.Any())
+            {
+                return (true, null);
+            }
+
+            // Find exact match first
+            var exactMatch = rateLimitedEndpoints.FirstOrDefault(e => e.Method == context.Method && e.Route == context.Route);
+
+            // Check exact match first if it exists
+            if (exactMatch != null)
+            {
+                var config = exactMatch.RateLimiting;
+                var exactKey = $"{exactMatch.Method}|{exactMatch.Route}:user-or-ip:{userOrIp}";
+                if (!IsAllowed(exactKey, config.WindowSizeInMS, config.MaxRequests))
                 {
-                    var wildcardKey = $"{wildcardRouteKey}:user-or-ip:{userOrIp}";
-                    if (!IsAllowed(wildcardKey, wildcardConfig.WindowSizeInMS, wildcardConfig.MaxRequests))
+                    return (false, config);
+                }
+                return (true, config);
+            }
+
+            // Find the best matching endpoints
+            var matchingEndpoints = RouteHelper.MatchEndpoints(context, rateLimitedEndpoints);
+
+            // Then check the best matching endpoint
+            foreach (var endpoint in matchingEndpoints)
+            {
+
+                var config = endpoint.RateLimiting;
+                if (config != null && config.Enabled)
+                {
+                    var matchKey = $"{endpoint.Method}|{endpoint.Route}:user-or-ip:{userOrIp}";
+                    if (!IsAllowed(matchKey, config.WindowSizeInMS, config.MaxRequests))
                     {
-                        return (false, wildcardConfig);
+                        return (false, config);
                     }
                 }
             }

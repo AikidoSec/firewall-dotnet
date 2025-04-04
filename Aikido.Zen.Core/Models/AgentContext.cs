@@ -20,11 +20,13 @@ namespace Aikido.Zen.Core.Models
         private readonly ConcurrentDictionary<string, Host> _hostnames = new ConcurrentDictionary<string, Host>();
         private readonly ConcurrentDictionary<string, Route> _routes = new ConcurrentDictionary<string, Route>();
         private readonly ConcurrentDictionary<string, UserExtended> _users = new ConcurrentDictionary<string, UserExtended>();
-        private readonly ConcurrentDictionary<string, RateLimitingConfig> _rateLimitedRoutes = new ConcurrentDictionary<string, RateLimitingConfig>();
         private readonly ConcurrentDictionary<string, string> _blockedUsers = new ConcurrentDictionary<string, string>();
         private Regex _blockedUserAgents;
+        private readonly object _userAgentsLock = new object();
 
         private readonly BlockList _blockList = new BlockList();
+        private List<EndpointConfig> _endpoints = new List<EndpointConfig>();
+        private readonly object _endpointsLock = new object();
 
         private int _requests;
         private int _attacksDetected;
@@ -59,20 +61,6 @@ namespace Aikido.Zen.Core.Models
             Interlocked.Increment(ref _attacksBlocked);
         }
 
-        public void AddRateLimitedEndpoint(string path, RateLimitingConfig config)
-        {
-            if (string.IsNullOrWhiteSpace(path) || config == null)
-                return;
-            // thread safe add or update
-            _rateLimitedRoutes.AddOrUpdate(
-                // the dictionary key is the endpoint path
-                key: path,
-                // on add, we set the config as the value
-                (_) => config,
-                // on update, we set the config as the value
-                (_, __) => config
-            );
-        }
 
         public void AddHostname(string hostname)
         {
@@ -193,7 +181,11 @@ namespace Aikido.Zen.Core.Models
         {
             if (string.IsNullOrWhiteSpace(userAgent))
                 return false;
-            return _blockedUserAgents?.IsMatch(userAgent) ?? false;
+
+            lock (_userAgentsLock)
+            {
+                return _blockedUserAgents?.IsMatch(userAgent) ?? false;
+            }
         }
 
         public void UpdateBlockedUsers(IEnumerable<string> users)
@@ -207,14 +199,10 @@ namespace Aikido.Zen.Core.Models
 
         public void UpdateRatelimitedRoutes(IEnumerable<EndpointConfig> endpoints)
         {
-            _rateLimitedRoutes.Clear();
-            foreach (var endpoint in endpoints)
+            var newEndpoints = endpoints?.ToList() ?? new List<EndpointConfig>();
+            lock (_endpointsLock)
             {
-                if (endpoint.GraphQL)
-                {
-                    continue;
-                }
-                _rateLimitedRoutes[$"{endpoint.Method}|{endpoint.Route}"] = endpoint.RateLimiting;
+                _endpoints = newEndpoints;
             }
         }
 
@@ -244,19 +232,40 @@ namespace Aikido.Zen.Core.Models
 
         public void UpdateBlockedUserAgents(Regex blockedUserAgents)
         {
-            _blockedUserAgents = blockedUserAgents;
+            lock (_userAgentsLock)
+            {
+                _blockedUserAgents = blockedUserAgents;
+            }
         }
 
         public IEnumerable<Host> Hostnames => _hostnames.Values;
         public IEnumerable<UserExtended> Users => _users.Values;
         public IEnumerable<Route> Routes => _routes.Values;
-        public IDictionary<string, RateLimitingConfig> RateLimitedRoutes => _rateLimitedRoutes;
+        public IEnumerable<EndpointConfig> Endpoints
+        {
+            get
+            {
+                lock (_endpointsLock)
+                {
+                    return _endpoints.ToList(); // Return a copy to avoid thread safety issues
+                }
+            }
+        }
         public int Requests => _requests;
         public int RequestsAborted => _requestsAborted;
         public int AttacksDetected => _attacksDetected;
         public int AttacksBlocked => _attacksBlocked;
         public long Started => _started;
         public BlockList BlockList => _blockList;
-        public Regex BlockedUserAgents => _blockedUserAgents;
+        public Regex BlockedUserAgents
+        {
+            get
+            {
+                lock (_userAgentsLock)
+                {
+                    return _blockedUserAgents;
+                }
+            }
+        }
     }
 }

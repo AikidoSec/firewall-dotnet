@@ -2,6 +2,8 @@ using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 using System.Diagnostics;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using Aikido.Zen.Core;
 
 namespace Aikido.Zen.Test.Helpers
 {
@@ -378,18 +380,24 @@ namespace Aikido.Zen.Test.Helpers
         public void IsRequestAllowed_ShouldRespectExactMatch()
         {
             // Arrange
-            string routeKey = "GET|api/users";
-            string userOrIp = "user123";
-            var rateLimitedRoutes = new Dictionary<string, RateLimitingConfig>
+            var context = new Context { Method = "GET", Route = "api/users" };
+            context.User = new User("user123", "Test User");
+
+            var endpoints = new List<EndpointConfig>
             {
-                { routeKey, new RateLimitingConfig { Enabled = true, MaxRequests = 2, WindowSizeInMS = 1000 } }
+                new EndpointConfig
+                {
+                    Method = "GET",
+                    Route = "api/users",
+                    RateLimiting = new RateLimitingConfig { Enabled = true, MaxRequests = 2, WindowSizeInMS = 1000 }
+                }
             };
 
             // Act & Assert
             // First two requests should be allowed
-            var (isAllowed1, _) = RateLimitingHelper.IsRequestAllowed(routeKey, userOrIp, rateLimitedRoutes);
-            var (isAllowed2, _) = RateLimitingHelper.IsRequestAllowed(routeKey, userOrIp, rateLimitedRoutes);
-            var (isAllowed3, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(routeKey, userOrIp, rateLimitedRoutes);
+            var (isAllowed1, _) = RateLimitingHelper.IsRequestAllowed(context, endpoints);
+            var (isAllowed2, _) = RateLimitingHelper.IsRequestAllowed(context, endpoints);
+            var (isAllowed3, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(context, endpoints);
 
             Assert.That(isAllowed1, Is.True);
             Assert.That(isAllowed2, Is.True);
@@ -402,18 +410,24 @@ namespace Aikido.Zen.Test.Helpers
         public void IsRequestAllowed_ShouldRespectWildcardMatch()
         {
             // Arrange
-            string routeKey = "GET|api/users";
-            string userOrIp = "user123";
-            var rateLimitedRoutes = new Dictionary<string, RateLimitingConfig>
+            var context = new Context { Method = "GET", Route = "api/users", Url = "api/users" };
+            context.User = new User("user123", "Test User");
+
+            var endpoints = new List<EndpointConfig>
             {
-                { "GET|api/*", new RateLimitingConfig { Enabled = true, MaxRequests = 2, WindowSizeInMS = 1000 } }
+                new EndpointConfig
+                {
+                    Method = "GET",
+                    Route = "api/*",
+                    RateLimiting = new RateLimitingConfig { Enabled = true, MaxRequests = 2, WindowSizeInMS = 1000 }
+                }
             };
 
             // Act & Assert
             // First two requests should be allowed
-            var (isAllowed1, _) = RateLimitingHelper.IsRequestAllowed(routeKey, userOrIp, rateLimitedRoutes);
-            var (isAllowed2, _) = RateLimitingHelper.IsRequestAllowed(routeKey, userOrIp, rateLimitedRoutes);
-            var (isAllowed3, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(routeKey, userOrIp, rateLimitedRoutes);
+            var (isAllowed1, _) = RateLimitingHelper.IsRequestAllowed(context, endpoints);
+            var (isAllowed2, _) = RateLimitingHelper.IsRequestAllowed(context, endpoints);
+            var (isAllowed3, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(context, endpoints);
 
             Assert.That(isAllowed1, Is.True);
             Assert.That(isAllowed2, Is.True);
@@ -423,47 +437,72 @@ namespace Aikido.Zen.Test.Helpers
         }
 
         [Test]
-        public void IsRequestAllowed_ShouldRespectBothExactAndWildcardMatches()
+        public void IsRequestAllowed_ShouldRespectMostExactMatch()
         {
             // Arrange
-            string routeKey = "GET|api/users";
-            string userOrIp = "user123";
-            var rateLimitedRoutes = new Dictionary<string, RateLimitingConfig>
+            var context = new Context { Method = "GET", Route = "api/users" };
+            context.User = new User("user123", "Test User");
+
+            var endpoints = new List<EndpointConfig>
             {
-                { routeKey, new RateLimitingConfig { Enabled = true, MaxRequests = 3, WindowSizeInMS = 1000 } },
-                { "GET|api/*", new RateLimitingConfig { Enabled = true, MaxRequests = 2, WindowSizeInMS = 1000 } }
+                new EndpointConfig
+                {
+                    Method = "GET",
+                    Route = "api/users",
+                    RateLimiting = new RateLimitingConfig { Enabled = true, MaxRequests = 3, WindowSizeInMS = 1000 }
+                },
+                new EndpointConfig
+                {
+                    Method = "GET",
+                    Route = "api/*",
+                    RateLimiting = new RateLimitingConfig { Enabled = true, MaxRequests = 2, WindowSizeInMS = 1000 }
+                }
             };
 
             // Act & Assert
-            // First two requests should be allowed by both exact and wildcard
-            var (isAllowed1, _) = RateLimitingHelper.IsRequestAllowed(routeKey, userOrIp, rateLimitedRoutes);
-            var (isAllowed2, _) = RateLimitingHelper.IsRequestAllowed(routeKey, userOrIp, rateLimitedRoutes);
-            var (isAllowed3, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(routeKey, userOrIp, rateLimitedRoutes);
+            // First three requests should be allowed by both exact and wildcard
+            var (isAllowed1, _) = RateLimitingHelper.IsRequestAllowed(context, endpoints);
+            var (isAllowed2, _) = RateLimitingHelper.IsRequestAllowed(context, endpoints);
+            var (isAllowed3, _) = RateLimitingHelper.IsRequestAllowed(context, endpoints);
+            var (isAllowed4, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(context, endpoints);
 
             Assert.That(isAllowed1, Is.True);
             Assert.That(isAllowed2, Is.True);
-            Assert.That(isAllowed3, Is.False);
+            Assert.That(isAllowed3, Is.True);
+            Assert.That(isAllowed4, Is.False);
             Assert.That(effectiveConfig, Is.Not.Null);
-            Assert.That(effectiveConfig.MaxRequests, Is.EqualTo(2));
+            Assert.That(effectiveConfig.MaxRequests, Is.EqualTo(3));
         }
 
         [Test]
         public void IsRequestAllowed_ShouldHandleMultipleWildcardMatches()
         {
             // Arrange
-            string routeKey = "GET|api/users/details";
-            string userOrIp = "user123";
-            var rateLimitedRoutes = new Dictionary<string, RateLimitingConfig>
+            var context = new Context { Method = "GET", Route = "api/users/details" };
+            context.User = new User("user123", "Test User");
+            context.Url = "https://example.com/api/users/details";
+
+            var endpoints = new List<EndpointConfig>
             {
-                { "GET|api/*", new RateLimitingConfig { Enabled = true, MaxRequests = 3, WindowSizeInMS = 1000 } },
-                { "GET|*/users/*", new RateLimitingConfig { Enabled = true, MaxRequests = 2, WindowSizeInMS = 1000 } }
+                new EndpointConfig
+                {
+                    Method = "GET",
+                    Route = "api/*",
+                    RateLimiting = new RateLimitingConfig { Enabled = true, MaxRequests = 3, WindowSizeInMS = 1000 }
+                },
+                new EndpointConfig
+                {
+                    Method = "GET",
+                    Route = "*/users/*",
+                    RateLimiting = new RateLimitingConfig { Enabled = true, MaxRequests = 2, WindowSizeInMS = 1000 }
+                }
             };
 
             // Act & Assert
             // First two requests should be allowed by both wildcards
-            var (isAllowed1, _) = RateLimitingHelper.IsRequestAllowed(routeKey, userOrIp, rateLimitedRoutes);
-            var (isAllowed2, _) = RateLimitingHelper.IsRequestAllowed(routeKey, userOrIp, rateLimitedRoutes);
-            var (isAllowed3, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(routeKey, userOrIp, rateLimitedRoutes);
+            var (isAllowed1, _) = RateLimitingHelper.IsRequestAllowed(context, endpoints);
+            var (isAllowed2, _) = RateLimitingHelper.IsRequestAllowed(context, endpoints);
+            var (isAllowed3, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(context, endpoints);
 
             Assert.That(isAllowed1, Is.True);
             Assert.That(isAllowed2, Is.True);
@@ -476,33 +515,45 @@ namespace Aikido.Zen.Test.Helpers
         public void IsRequestAllowed_ShouldHandleDisabledConfigs()
         {
             // Arrange
-            string routeKey = "GET|api/users";
-            string userOrIp = "user123";
-            var rateLimitedRoutes = new Dictionary<string, RateLimitingConfig>
+            var context = new Context { Method = "GET", Route = "api/users" };
+            context.User = new User("user123", "Test User");
+
+            var endpoints = new List<EndpointConfig>
             {
-                { routeKey, new RateLimitingConfig { Enabled = false, MaxRequests = 1, WindowSizeInMS = 1000 } },
-                { "GET|api/*", new RateLimitingConfig { Enabled = false, MaxRequests = 1, WindowSizeInMS = 1000 } }
+                new EndpointConfig
+                {
+                    Method = "GET",
+                    Route = "api/users",
+                    RateLimiting = new RateLimitingConfig { Enabled = false, MaxRequests = 1, WindowSizeInMS = 1000 }
+                },
+                new EndpointConfig
+                {
+                    Method = "GET",
+                    Route = "api/*",
+                    RateLimiting = new RateLimitingConfig { Enabled = false, MaxRequests = 1, WindowSizeInMS = 1000 }
+                }
             };
 
             // Act & Assert
             // All requests should be allowed because both configs are disabled
             for (int i = 0; i < 5; i++)
             {
-                var (isAllowed, _) = RateLimitingHelper.IsRequestAllowed(routeKey, userOrIp, rateLimitedRoutes);
+                var (isAllowed, _) = RateLimitingHelper.IsRequestAllowed(context, endpoints);
                 Assert.That(isAllowed, Is.True);
             }
         }
 
         [Test]
-        public void IsRequestAllowed_ShouldHandleEmptyRoutes()
+        public void IsRequestAllowed_ShouldHandleEmptyEndpoints()
         {
             // Arrange
-            string routeKey = "GET|api/users";
-            string userOrIp = "user123";
-            var rateLimitedRoutes = new Dictionary<string, RateLimitingConfig>();
+            var context = new Context { Method = "GET", Route = "api/users" };
+            context.User = new User("user123", "Test User");
+
+            var endpoints = new List<EndpointConfig>();
 
             // Act
-            var (isAllowed, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(routeKey, userOrIp, rateLimitedRoutes);
+            var (isAllowed, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(context, endpoints);
 
             // Assert
             Assert.That(isAllowed, Is.True);
@@ -510,14 +561,14 @@ namespace Aikido.Zen.Test.Helpers
         }
 
         [Test]
-        public void IsRequestAllowed_ShouldHandleNullRoutes()
+        public void IsRequestAllowed_ShouldHandleNullEndpoints()
         {
             // Arrange
-            string routeKey = "GET|api/users";
-            string userOrIp = "user123";
+            var context = new Context { Method = "GET", Route = "api/users" };
+            context.User = new User("user123", "Test User");
 
             // Act
-            var (isAllowed, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(routeKey, userOrIp, null);
+            var (isAllowed, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(context, null);
 
             // Assert
             Assert.That(isAllowed, Is.True);
