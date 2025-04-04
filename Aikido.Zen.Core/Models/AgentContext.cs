@@ -22,8 +22,6 @@ namespace Aikido.Zen.Core.Models
         private readonly ConcurrentDictionary<string, UserExtended> _users = new ConcurrentDictionary<string, UserExtended>();
         private readonly ConcurrentDictionary<string, string> _blockedUsers = new ConcurrentDictionary<string, string>();
         private Regex _blockedUserAgents;
-        private readonly object _userAgentsLock = new object();
-
         private readonly BlockList _blockList = new BlockList();
         private List<EndpointConfig> _endpoints = new List<EndpointConfig>();
         private readonly object _endpointsLock = new object();
@@ -182,10 +180,7 @@ namespace Aikido.Zen.Core.Models
             if (string.IsNullOrWhiteSpace(userAgent))
                 return false;
 
-            lock (_userAgentsLock)
-            {
-                return _blockedUserAgents?.IsMatch(userAgent) ?? false;
-            }
+            return _blockedUserAgents?.IsMatch(userAgent) ?? false;
         }
 
         public void UpdateBlockedUsers(IEnumerable<string> users)
@@ -232,10 +227,7 @@ namespace Aikido.Zen.Core.Models
 
         public void UpdateBlockedUserAgents(Regex blockedUserAgents)
         {
-            lock (_userAgentsLock)
-            {
-                _blockedUserAgents = blockedUserAgents;
-            }
+            _blockedUserAgents = blockedUserAgents;
         }
 
         public IEnumerable<Host> Hostnames => _hostnames.Values;
@@ -257,15 +249,6 @@ namespace Aikido.Zen.Core.Models
         public int AttacksBlocked => _attacksBlocked;
         public long Started => _started;
         public BlockList BlockList => _blockList;
-        public Regex BlockedUserAgents
-        {
-            get
-            {
-                lock (_userAgentsLock)
-                {
-                    return _blockedUserAgents;
-                }
-            }
-        }
+        public Regex BlockedUserAgents => _blockedUserAgents;
     }
 }
