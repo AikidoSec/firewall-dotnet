@@ -87,14 +87,11 @@ namespace Aikido.Zen.Core.Helpers
                 return (true, null);
             }
 
-            // Find exact match first
-            var exactMatch = rateLimitedEndpoints.FirstOrDefault(e => e.Method == context.Method && e.Route == context.Route);
-
             // Get the user ID or IP address for the key
             string userOrIp = context.User?.Id ?? context.RemoteAddress ?? "unknown";
 
             // Check exact match first if it exists
-            if (exactMatch != null)
+            if (RouteHelper.HasExactMatch(context, rateLimitedEndpoints, out var exactMatch))
             {
                 var config = exactMatch.RateLimiting;
                 var exactKey = $"{exactMatch.Method}|{exactMatch.Route}:user-or-ip:{userOrIp}";

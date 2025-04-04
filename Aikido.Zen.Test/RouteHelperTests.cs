@@ -589,5 +589,145 @@ namespace Aikido.Zen.Test.Helpers
             Assert.That(result[0].Route, Is.EqualTo("/api/test"));
             Assert.That(result[0].RateLimiting.MaxRequests, Is.EqualTo(100));
         }
+
+        [Test]
+        public void HasExactMatch_WithExactMatch_ShouldReturnTrue()
+        {
+            // Arrange
+            var context = new Context
+            {
+                Method = "GET",
+                Route = "/api/users/123"
+            };
+            var endpoints = new List<EndpointConfig>
+            {
+                new()
+                {
+                    Method = "GET",
+                    Route = "/api/users/123",
+                    RateLimiting = new RateLimitingConfig { Enabled = true }
+                },
+                new()
+                {
+                    Method = "POST",
+                    Route = "/api/users",
+                    RateLimiting = new RateLimitingConfig { Enabled = true }
+                }
+            };
+
+            // Act
+            bool result = RouteHelper.HasExactMatch(context, endpoints, out var matchedEndpoint);
+
+            // Assert
+            Assert.That(result, Is.True);
+            Assert.That(matchedEndpoint, Is.Not.Null);
+            Assert.That(matchedEndpoint.Method, Is.EqualTo("GET"));
+            Assert.That(matchedEndpoint.Route, Is.EqualTo("/api/users/123"));
+        }
+
+        [Test]
+        public void HasExactMatch_WithNoMatch_ShouldReturnFalse()
+        {
+            // Arrange
+            var context = new Context
+            {
+                Method = "GET",
+                Route = "/api/users/123"
+            };
+            var endpoints = new List<EndpointConfig>
+            {
+                new()
+                {
+                    Method = "GET",
+                    Route = "/api/users/456",
+                    RateLimiting = new RateLimitingConfig { Enabled = true }
+                },
+                new()
+                {
+                    Method = "POST",
+                    Route = "/api/users/123",
+                    RateLimiting = new RateLimitingConfig { Enabled = true }
+                }
+            };
+
+            // Act
+            bool result = RouteHelper.HasExactMatch(context, endpoints, out var matchedEndpoint);
+
+            // Assert
+            Assert.That(result, Is.False);
+            Assert.That(matchedEndpoint, Is.Null);
+        }
+
+        [Test]
+        public void HasExactMatch_WithCaseInsensitiveMatch_ShouldReturnTrue()
+        {
+            // Arrange
+            var context = new Context
+            {
+                Method = "get",
+                Route = "/api/USERS/123"
+            };
+            var endpoints = new List<EndpointConfig>
+            {
+                new()
+                {
+                    Method = "GET",
+                    Route = "/api/users/123",
+                    RateLimiting = new RateLimitingConfig { Enabled = true }
+                }
+            };
+
+            // Act
+            bool result = RouteHelper.HasExactMatch(context, endpoints, out var matchedEndpoint);
+
+            // Assert
+            Assert.That(result, Is.True);
+            Assert.That(matchedEndpoint, Is.Not.Null);
+            Assert.That(matchedEndpoint.Method, Is.EqualTo("GET"));
+            Assert.That(matchedEndpoint.Route, Is.EqualTo("/api/users/123"));
+        }
+
+        [Test]
+        public void HasExactMatch_WithEmptyEndpoints_ShouldReturnFalse()
+        {
+            // Arrange
+            var context = new Context
+            {
+                Method = "GET",
+                Route = "/api/users/123"
+            };
+            var endpoints = new List<EndpointConfig>();
+
+            // Act
+            bool result = RouteHelper.HasExactMatch(context, endpoints, out var matchedEndpoint);
+
+            // Assert
+            Assert.That(result, Is.False);
+            Assert.That(matchedEndpoint, Is.Null);
+        }
+
+        [Test]
+        public void HasExactMatch_WithNullContext_ShouldHandleGracefully()
+        {
+            // Arrange
+            Context context = null;
+            var endpoints = new List<EndpointConfig>
+            {
+                new()
+                {
+                    Method = "GET",
+                    Route = "/api/users/123",
+                    RateLimiting = new RateLimitingConfig { Enabled = true }
+                }
+            };
+
+            // Act & Assert
+            Assert.DoesNotThrow(() =>
+            {
+                bool result = RouteHelper.HasExactMatch(context, endpoints, out var matchedEndpoint);
+                Assert.That(result, Is.False);
+                Assert.That(matchedEndpoint, Is.Null);
+            });
+        }
     }
 }

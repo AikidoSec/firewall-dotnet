@@ -229,6 +229,25 @@ namespace Aikido.Zen.Core.Helpers
         }
 
         /// <summary>
+        /// Checks if an exact match exists for the given context in the list of endpoints
+        /// </summary>
+        /// <param name="context">The context containing request information</param>
+        /// <param name="endpoints">The list of endpoints to match against</param>
+        /// <param name="endpoint">The matching endpoint, if found</param>
+        /// <returns>True if an exact match is found, false otherwise</returns>
+        public static bool HasExactMatch(Context context, IEnumerable<EndpointConfig> endpoints, out EndpointConfig endpoint)
+        {
+            if (context == null)
+            {
+                endpoint = null;
+                return false;
+            }
+                
+            endpoint = endpoints.FirstOrDefault(e => e.Method.Equals(context.Method, StringComparison.OrdinalIgnoreCase) && e.Route.Equals(context.Route, StringComparison.OrdinalIgnoreCase));
+            return endpoint != null;
+        }
+
+        /// <summary>
         /// Matches a context against a list of endpoints, finding all matching endpoints
         /// </summary>
         /// <param name="context">The context containing request information</param>
