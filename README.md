@@ -52,12 +52,15 @@ Zen operates autonomously on the same server as your .NET app to:
 * ✅ Microsoft.Data.SqlClient
 * ✅ System.Data.SqlClient
 * ✅ System.Data.SqlServerCE (.NET Framework)
-* ✅ NPoco
 * ✅ Microsoft.Data.Sqlite
 * ✅ MySql.Data.MySqlClient
 * ✅ MySqlConnector
 * ✅ Npgsql
 * ✅ MySqlX
+
+### Supported ORM frameworks
+* ✅ NPoco
+* ✅ EF Core
 
 ## Installation
 
