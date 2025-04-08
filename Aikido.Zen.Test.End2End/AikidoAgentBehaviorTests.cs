@@ -143,6 +143,7 @@ namespace Aikido.Zen.Test.End2End
         {
             // Arrange
             await SetMode(false, false);
+            Agent.Instance.ClearContext();
             SampleAppClient = CreateSampleAppFactory().CreateClient();
 
             var unsafePayload = new { Name = "Malicious Pet', 'Gru from the Minions'); -- " };
