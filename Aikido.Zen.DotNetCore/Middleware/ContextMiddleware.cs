@@ -86,9 +86,9 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 context.ParsedUserInput = httpData.FlattenedData;
                 context.Body = request.Body;
                 context.ParsedBody = httpData.ParsedBody;
-                // Add request information to the agent, which will collect routes, users and stats
+                // Add user information to the agent
                 // every x minutes, this information will be sent to the Zen server as a heartbeat event, and the collected info will be cleared
-                Agent.Instance.CaptureInboundRequest(context);
+                Agent.Instance.CaptureRequestUser(context);
             }
             catch (Exception e)
             {
@@ -104,6 +104,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
             if (RouteHelper.ShouldAddRoute(context, statusCode))
             {
                 Agent.Instance.AddRoute(context);
+                Agent.Instance.IncrementTotalRequestCount();
             }
         }
 
