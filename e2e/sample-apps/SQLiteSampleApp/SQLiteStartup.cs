@@ -25,7 +25,13 @@ namespace SQLiteSampleApp
         protected override void ConfigureDatabase(IApplicationBuilder app)
         {
             // SQLite uses a fixed in-memory connection string
-            DatabaseService.ConnectionString = "Data Source=:memory:;Cache=Shared";
+            var connectionString = "Data Source=SharedSQLiteDB;Mode=Memory;Cache=Shared"; // Use a named shared DB
+
+            // Initialize the shared connection FIRST
+            DatabaseService.InitializeSharedConnection(connectionString);
+
+            // Ensure the database schema is set up using the now-open connection
+            EnsureDatabaseSetupAsync().GetAwaiter().GetResult();
         }
 
         protected override Task EnsureDatabaseSetupAsync()
