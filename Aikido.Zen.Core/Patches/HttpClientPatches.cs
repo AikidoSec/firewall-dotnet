@@ -62,8 +62,6 @@ namespace Aikido.Zen.Core.Patches
                     : new Uri(__instance.BaseAddress, request.RequestUri);
 
             var (hostname, port) = UriHelper.ExtractHost(uri);
-            if (hostname.EndsWith("aikido.dev"))
-                return true;
             Agent.Instance.CaptureOutboundRequest(hostname, port);
             return true;
         }

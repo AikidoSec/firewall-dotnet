@@ -3,14 +3,14 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
 using Aikido.Zen.DotNetCore;
-using Microsoft.Extensions.Hosting;
-using Microsoft.AspNetCore.Hosting;
 using SampleApp.Common.Controllers;
 using Microsoft.AspNetCore.Http;
 using System.Net;
 using System.Security.Claims;
 using Aikido.Zen.Core.Exceptions;
-using Aikido.Zen.Core.Models;
+using Aikido.Zen.Core;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Hosting;
 
 namespace SampleApp.Common
 {
@@ -29,6 +29,7 @@ namespace SampleApp.Common
         public virtual void ConfigureServices(IServiceCollection services)
         {
             services.AddZenFirewall();
+            services.AddHttpClient();
         }
 
         /// <summary>
@@ -137,6 +138,59 @@ namespace SampleApp.Common
                         Console.WriteLine($"Error in /health endpoint: {ex}");
                         throw;
                     }
+                });
+
+                // Endpoint to trigger an outbound HTTP request for testing hostname capture
+                endpoints.MapGet("/api/outboundRequest", async (HttpContext httpContext, [FromServices] IHttpClientFactory clientFactory) =>
+                {
+                    if (!httpContext.Request.Query.TryGetValue("uri", out var uriValues) ||
+                        !Uri.TryCreate(uriValues.FirstOrDefault(), UriKind.Absolute, out var targetUri))
+                    {
+                        httpContext.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                        await httpContext.Response.WriteAsync("Missing or invalid 'uri' query parameter. Please provide an absolute URI (e.g., http://example.com).");
+                        return;
+                    }
+
+                    var client = clientFactory.CreateClient("AikidoAgentTestClient"); // Use a named client for potential future config
+
+                    // Use a CancellationToken with a short timeout
+                    using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(100));
+
+                    try
+                    {
+                        // Make the request - we don't need the response or detailed error handling
+                        _ = await client.GetAsync(targetUri, cts.Token);
+                    }
+                    catch (Exception)
+                    {
+                        // Ignore exceptions (e.g., timeouts, DNS errors, connection refused)
+                        // We only care that the request attempt was made for agent capture.
+                    }
+
+                    // Always return OK, the test checks the agent context, not this response body
+                    await httpContext.Response.WriteAsync($"Attempted outbound request to {targetUri}");
+                });
+
+                // Stats endpoint
+                endpoints.MapGet("/api/getStats", () =>
+                {
+                    Thread.Sleep(100); // make sure the stats are updated
+                    var context = Agent.Instance.Context;
+                    if (context == null)
+                    {
+                        return Results.NotFound("Agent context not available.");
+                    }
+                    // Create an anonymous object with the requested stats
+                    var stats = new
+                    {
+                        Domains = string.Join(",", context.Hostnames.Select(h => $"{h.Hostname}:{h.Port}")), // Extract just the hostname strings
+                        Requests = context.Requests.ToString(),
+                        AttacksDetected = context.AttacksDetected.ToString(),
+                        AttacksBlocked = context.AttacksBlocked.ToString(),
+                        RequestsAborted = context.RequestsAborted.ToString()
+                    };
+
+                    return Results.Ok(stats); // Return HTTP 200 OK with the stats object
                 });
             });
         }
