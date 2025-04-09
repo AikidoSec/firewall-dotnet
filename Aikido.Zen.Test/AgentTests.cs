@@ -454,6 +454,74 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public async Task SendNonBlockingAttackEvent_UpdatesAttackDetectedAndNotBlocked()
+        {
+            var kind = AttackKind.SqlInjection;
+            var source = Source.Body;
+            var payload = "malicious-input";
+            var operation = "login";
+            var context = new Context
+            {
+                Url = "http://test.com/login",
+                Method = "POST",
+                Headers = new Dictionary<string, string[]>
+                {
+                    { "Content-Type", new[] { "application/json" } }
+                }
+            };
+            var module = "authentication";
+            var metadata = new Dictionary<string, object>
+            {
+                { "sql", payload }
+            };
+            var blocked = false;
+            _zenApiMock = ZenApiMock.CreateMock();
+            _agent = new Agent(_zenApiMock.Object);
+
+            // Act
+            _agent.SendAttackEvent(kind, source, payload, operation, context, module, metadata, blocked);
+            await Task.Delay(150);
+
+            // Assert
+            Assert.That(_agent.Context.AttacksDetected, Is.EqualTo(1));
+            Assert.That(_agent.Context.AttacksBlocked, Is.EqualTo(0));
+        }
+
+        [Test]
+        public async Task SendBlockingAttackEvent_UpdatesAttackDetectedAndBlocked()
+        {
+            var kind = AttackKind.SqlInjection;
+            var source = Source.Body;
+            var payload = "malicious-input";
+            var operation = "login";
+            var context = new Context
+            {
+                Url = "http://test.com/login",
+                Method = "POST",
+                Headers = new Dictionary<string, string[]>
+                {
+                    { "Content-Type", new[] { "application/json" } }
+                }
+            };
+            var module = "authentication";
+            var metadata = new Dictionary<string, object>
+            {
+                { "sql", payload }
+            };
+            var blocked = true;
+            _zenApiMock = ZenApiMock.CreateMock();
+            _agent = new Agent(_zenApiMock.Object);
+
+            // Act
+            _agent.SendAttackEvent(kind, source, payload, operation, context, module, metadata, blocked);
+            await Task.Delay(150);
+
+            // Assert
+            Assert.That(_agent.Context.AttacksDetected, Is.EqualTo(1));
+            Assert.That(_agent.Context.AttacksBlocked, Is.EqualTo(1));
+        }
+
+        [Test]
         public void Dispose_CancelsBackgroundTaskAndDisposesResources()
         {
             // Arrange
