@@ -11,8 +11,6 @@ namespace Aikido.Zen.Core.Patches
     /// </summary>
     public static class SqlClientPatcher
     {
-        private static string _lastSql = string.Empty;
-        private static string _lastContextId = string.Empty;
         public static bool OnCommandExecuting(object[] __args, MethodBase __originalMethod, string sql, string assembly, Context context)
         {
             var methodInfo = __originalMethod as MethodInfo;
@@ -21,22 +19,6 @@ namespace Aikido.Zen.Core.Patches
             {
                 return true;
             }
-
-            if (string.IsNullOrEmpty(sql) || string.IsNullOrEmpty(assembly))
-            {
-                return true;
-            }
-
-            // check if the sql and context are the same as the last one, to avoid repeated checks
-            if (sql == _lastSql && context.Id == _lastContextId)
-            {
-                return true;
-            }
-
-            // set the last sql and context id to the current ones
-            _lastSql = sql;
-            _lastContextId = context.Id;
-
 
             var type = methodInfo?.DeclaringType?.Name ?? "Unknown";
             if (sql != null && SqlCommandHelper.DetectSQLInjection(sql, GetDialect(assembly), context, assembly, $"{type}.{methodInfo?.Name}"))

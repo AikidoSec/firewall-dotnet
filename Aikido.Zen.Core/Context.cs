@@ -7,7 +7,6 @@ namespace Aikido.Zen.Core
 {
     public class Context
     {
-        public string Id { get; }
         public string Url { get; set; } = string.Empty;
         public string Method { get; set; } = string.Empty;
         public IDictionary<string, string[]> Query { get; set; } = new Dictionary<string, string[]>();
@@ -35,11 +34,6 @@ namespace Aikido.Zen.Core
 
         public bool ConsumedRateLimitForIP { get; set; }
         public bool ConsumedRateLimitForUser { get; set; }
-
-        public Context()
-        {
-            Id = Guid.NewGuid().ToString();
-        }
 
         public struct RedirectInfo
         {

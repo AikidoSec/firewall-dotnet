@@ -20,6 +20,11 @@ namespace Aikido.Zen.Core.Helpers
                     var metadata = new Dictionary<string, object> {
                         { "sql", commandText }
                     };
+                    if (context.AttackDetected)
+                    {
+                        // if attack is already detected, just return to avoid sending multiple events for the same attack
+                        return true;
+                    }
                     // send an attack event
                     Agent.Instance.SendAttackEvent(
                         kind: AttackKind.SqlInjection,
