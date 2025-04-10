@@ -1,10 +1,9 @@
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Api;
-using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Models.Events;
-using Moq;
 using Aikido.Zen.Tests.Mocks;
+using Moq;
 
 namespace Aikido.Zen.Test
 {
@@ -30,7 +29,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void ClearContext_ResetsAllContextValues()
+        public async Task ClearContext_ResetsAllContextValues()
         {
             // Arrange
             var context = new Context
@@ -43,8 +42,12 @@ namespace Aikido.Zen.Test
             _agent.CaptureRequestUser(context);
             _agent.IncrementTotalRequestCount();
             _agent.CaptureOutboundRequest("test.com", 443);
+            var startedTime = _agent.Context.Started;
 
             // Act
+            // wait a bit to make sure some ms have passed between settings the started time and clearing the context
+            var waitTimeMs = 25;
+            await Task.Delay(waitTimeMs);
             _agent.ClearContext();
 
             // Assert
@@ -52,6 +55,7 @@ namespace Aikido.Zen.Test
             Assert.That(_agent.Context.Routes.Count, Is.EqualTo(0));
             Assert.That(_agent.Context.Hostnames.Count, Is.EqualTo(0));
             Assert.That(_agent.Context.Requests, Is.EqualTo(0));
+            Assert.That(_agent.Context.Started, Is.GreaterThanOrEqualTo(startedTime + waitTimeMs));
         }
 
         [Test]

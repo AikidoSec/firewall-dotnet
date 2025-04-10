@@ -1,13 +1,13 @@
-using Aikido.Zen.Core.Api;
-using Aikido.Zen.Core.Helpers;
-using Aikido.Zen.Core.Helpers.OpenAPI;
-using Aikido.Zen.Core.Models.Ip;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
+using Aikido.Zen.Core.Api;
+using Aikido.Zen.Core.Helpers;
+using Aikido.Zen.Core.Helpers.OpenAPI;
+using Aikido.Zen.Core.Models.Ip;
 
 namespace Aikido.Zen.Core.Models
 {
@@ -30,7 +30,7 @@ namespace Aikido.Zen.Core.Models
         private int _attacksDetected;
         private int _attacksBlocked;
         private int _requestsAborted;
-        private readonly long _started = DateTimeHelper.UTCNowUnixMilliseconds();
+        private long _started = DateTimeHelper.UTCNowUnixMilliseconds();
         public long ConfigLastUpdated { get; set; } = 0;
         public bool ContextMiddlewareInstalled { get; set; } = false;
         public bool BlockingMiddlewareInstalled { get; set; } = false;
@@ -143,6 +143,8 @@ namespace Aikido.Zen.Core.Models
             Interlocked.Exchange(ref _attacksBlocked, 0);
             Interlocked.Exchange(ref _requestsAborted, 0);
             _blockedUsers.Clear();
+            // reset the started time
+            _started = DateTimeHelper.UTCNowUnixMilliseconds();
         }
 
         public bool IsBlocked(Context context, out string reason)
