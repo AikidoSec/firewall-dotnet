@@ -597,14 +597,16 @@ namespace Aikido.Zen.Test.Helpers
             var context = new Context
             {
                 Method = "GET",
-                Route = "/api/users/123"
+                Route = "/api/users/{id}",
+                Url = "/api/users/123"
             };
+
             var endpoints = new List<EndpointConfig>
             {
                 new()
                 {
                     Method = "GET",
-                    Route = "/api/users/123",
+                    Route = "/api/users/{id}",
                     RateLimiting = new RateLimitingConfig { Enabled = true }
                 },
                 new()
@@ -615,14 +617,76 @@ namespace Aikido.Zen.Test.Helpers
                 }
             };
 
+            var endpoints2 = new List<EndpointConfig>
+            {
+                new()
+                {
+                    Method = "GET",
+                    Route = "/api/users/{id}",
+                    RateLimiting = new RateLimitingConfig { Enabled = true }
+                },
+                new()
+                {
+                    Method = "GET",
+                    Route = "/api/users/123",
+                    RateLimiting = new RateLimitingConfig { Enabled = true }
+                }
+            };
+
             // Act
             bool result = RouteHelper.HasExactMatch(context, endpoints, out var matchedEndpoint);
+            bool result2 = RouteHelper.HasExactMatch(context, endpoints2, out var matchedEndpoint2);
 
             // Assert
             Assert.That(result, Is.True);
             Assert.That(matchedEndpoint, Is.Not.Null);
             Assert.That(matchedEndpoint.Method, Is.EqualTo("GET"));
-            Assert.That(matchedEndpoint.Route, Is.EqualTo("/api/users/123"));
+            Assert.That(matchedEndpoint.Route, Is.EqualTo("/api/users/{id}"));
+            Assert.That(result2, Is.True);
+            Assert.That(matchedEndpoint2, Is.Not.Null);
+            Assert.That(matchedEndpoint2.Method, Is.EqualTo("GET"));
+            Assert.That(matchedEndpoint2.Route, Is.EqualTo("/api/users/123"));
+        }
+
+        [Test]
+        public void HasExactMatch_ShouldHaveCorrectPriority()
+        {
+            // Arrange
+            var context = new Context
+            {
+                Method = "GET",
+                Route = "/api/users/{id}",
+                Url = "/api/users/123"
+            };
+
+            var endpointPrio1 = new EndpointConfig { Method = "GET", Route = "/api/users/123", RateLimiting = new RateLimitingConfig { Enabled = true } }; // Exact URL & Exact Method
+            var endpointPrio2 = new EndpointConfig { Method = "GET", Route = "/api/users/{id}", RateLimiting = new RateLimitingConfig { Enabled = true } }; // Exact Route & Exact Method
+            var endpointPrio3 = new EndpointConfig { Method = "*", Route = "/api/users/123", RateLimiting = new RateLimitingConfig { Enabled = true } };   // Exact URL & Wildcard Method
+            var endpointPrio4 = new EndpointConfig { Method = "*", Route = "/api/users/{id}", RateLimiting = new RateLimitingConfig { Enabled = true } };   // Exact Route & Wildcard Method
+
+            // Test Case 1: Priority 1 should win over all others
+            var endpoints1 = new List<EndpointConfig> { endpointPrio4, endpointPrio3, endpointPrio2, endpointPrio1 };
+            bool result1 = RouteHelper.HasExactMatch(context, endpoints1, out var matchedEndpoint1);
+            Assert.That(result1, Is.True);
+            Assert.That(matchedEndpoint1, Is.SameAs(endpointPrio1));
+
+            // Test Case 2: Priority 2 should win over Priority 3 and 4
+            var endpoints2 = new List<EndpointConfig> { endpointPrio4, endpointPrio3, endpointPrio2 };
+            bool result2 = RouteHelper.HasExactMatch(context, endpoints2, out var matchedEndpoint2);
+            Assert.That(result2, Is.True);
+            Assert.That(matchedEndpoint2, Is.SameAs(endpointPrio2));
+
+            // Test Case 3: Priority 3 should win over Priority 4
+            var endpoints3 = new List<EndpointConfig> { endpointPrio4, endpointPrio3 };
+            bool result3 = RouteHelper.HasExactMatch(context, endpoints3, out var matchedEndpoint3);
+            Assert.That(result3, Is.True);
+            Assert.That(matchedEndpoint3, Is.SameAs(endpointPrio3));
+
+            // Test Case 4: Priority 4 should match if it's the only option
+            var endpoints4 = new List<EndpointConfig> { endpointPrio4 };
+            bool result4 = RouteHelper.HasExactMatch(context, endpoints4, out var matchedEndpoint4);
+            Assert.That(result4, Is.True);
+            Assert.That(matchedEndpoint4, Is.SameAs(endpointPrio4));
         }
 
         [Test]
@@ -632,19 +696,26 @@ namespace Aikido.Zen.Test.Helpers
             var context = new Context
             {
                 Method = "GET",
-                Route = "/api/users/123"
+                Route = "/api/users/{id}",
+                Url = "/api/users/123"
             };
             var endpoints = new List<EndpointConfig>
             {
-                new()
+                new() // Method matches, but Route and URL don't
                 {
                     Method = "GET",
-                    Route = "/api/users/456",
+                    Route = "/api/products/{id}",
                     RateLimiting = new RateLimitingConfig { Enabled = true }
                 },
-                new()
+                new() // Route/URL might match, but method doesn't
                 {
                     Method = "POST",
+                    Route = "/api/users/{id}",
+                    RateLimiting = new RateLimitingConfig { Enabled = true }
+                },
+                new() // Route/URL might match, but method doesn't
+                {
+                    Method = "PUT",
                     Route = "/api/users/123",
                     RateLimiting = new RateLimitingConfig { Enabled = true }
                 }
@@ -665,7 +736,8 @@ namespace Aikido.Zen.Test.Helpers
             var context = new Context
             {
                 Method = "get",
-                Route = "/api/USERS/123"
+                Route = "/api/USERS/{id:int}",
+                Url = "/api/USERS/123"
             };
             var endpoints = new List<EndpointConfig>
             {
@@ -694,7 +766,8 @@ namespace Aikido.Zen.Test.Helpers
             var context = new Context
             {
                 Method = "GET",
-                Route = "/api/users/123"
+                Route = "/api/users/{id}",
+                Url = "/api/users/123"
             };
             var endpoints = new List<EndpointConfig>();
 

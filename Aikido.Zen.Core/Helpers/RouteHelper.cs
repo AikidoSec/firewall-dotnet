@@ -1,7 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Aikido.Zen.Core.Models;
 
@@ -229,21 +229,50 @@ namespace Aikido.Zen.Core.Helpers
         }
 
         /// <summary>
-        /// Checks if an exact match exists for the given context in the list of endpoints
+        /// Checks if an exact route/URL match exists for the given context in the list of endpoints,
+        /// following a specific priority order for method and route/URL matching.
+        /// Priority:
+        /// 1. Exact URL & Exact Method
+        /// 2. Exact Route & Exact Method
+        /// 3. Exact URL & Wildcard Method
+        /// 4. Exact Route & Wildcard Method
         /// </summary>
-        /// <param name="context">The context containing request information</param>
-        /// <param name="endpoints">The list of endpoints to match against</param>
-        /// <param name="endpoint">The matching endpoint, if found</param>
-        /// <returns>True if an exact match is found, false otherwise</returns>
+        /// <param name="context">The context containing request information.</param>
+        /// <param name="endpoints">The list of endpoints to match against.</param>
+        /// <param name="endpoint">The highest priority matching endpoint, if found.</param>
+        /// <returns>True if an exact route/URL match is found according to the priority rules, false otherwise.</returns>
         public static bool HasExactMatch(Context context, IEnumerable<EndpointConfig> endpoints, out EndpointConfig endpoint)
         {
-            if (context == null)
+            endpoint = null;
+            if (context == null || string.IsNullOrEmpty(context.Method) || endpoints == null)
             {
-                endpoint = null;
                 return false;
             }
-                
-            endpoint = endpoints.FirstOrDefault(e => e.Method.Equals(context.Method, StringComparison.OrdinalIgnoreCase) && e.Route.Equals(context.Route, StringComparison.OrdinalIgnoreCase));
+
+            var specificMethodEndpoints = endpoints.Where(e => e.Method != "*");
+            var wildcardMethodEndpoints = endpoints.Where(e => e.Method == "*");
+
+            // 1. Check for Exact URL & Exact Method
+            endpoint = specificMethodEndpoints.FirstOrDefault(e =>
+                    e.Method.Equals(context.Method, StringComparison.OrdinalIgnoreCase) &&
+                    e.Route.Equals(context.Url, StringComparison.OrdinalIgnoreCase));
+            if (endpoint != null) return true;
+
+            // 2. Check for Exact Route & Exact Method
+            endpoint = specificMethodEndpoints.FirstOrDefault(e =>
+                    e.Method.Equals(context.Method, StringComparison.OrdinalIgnoreCase) &&
+                    e.Route.Equals(context.Route, StringComparison.OrdinalIgnoreCase));
+            if (endpoint != null) return true;
+
+            // 3. Check for Exact URL & Wildcard Method
+            endpoint = wildcardMethodEndpoints.FirstOrDefault(e =>
+                    e.Route.Equals(context.Url, StringComparison.OrdinalIgnoreCase));
+            if (endpoint != null) return true;
+
+            // 4. Check for Exact Route & Wildcard Method
+            endpoint = wildcardMethodEndpoints.FirstOrDefault(e =>
+                    e.Route.Equals(context.Route, StringComparison.OrdinalIgnoreCase));
+
             return endpoint != null;
         }
 
@@ -260,6 +289,12 @@ namespace Aikido.Zen.Core.Helpers
             if (string.IsNullOrEmpty(context?.Method))
             {
                 return matches;
+            }
+
+            // Check for exact match first
+            if (HasExactMatch(context, endpoints, out var exactMatch))
+            {
+                matches.Add(exactMatch);
             }
 
             // Filter endpoints by method
@@ -279,14 +314,6 @@ namespace Aikido.Zen.Core.Helpers
                     return -1;
                 return 0;
             });
-
-            // Check for exact route match, since we want this one to  come first
-            var exact = possible.FirstOrDefault(endpoint =>
-                endpoint.Route.Equals(context.Route, StringComparison.OrdinalIgnoreCase));
-            if (exact != null)
-            {
-                matches.Add(exact);
-            }
 
             // Handle wildcard routes if URL is available
             if (!string.IsNullOrEmpty(context.Url))

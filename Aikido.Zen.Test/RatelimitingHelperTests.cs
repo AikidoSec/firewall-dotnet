@@ -1,6 +1,6 @@
+using Aikido.Zen.Core;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
-using Aikido.Zen.Core;
 
 namespace Aikido.Zen.Test.Helpers
 {
@@ -337,7 +337,7 @@ namespace Aikido.Zen.Test.Helpers
         public void IsRequestAllowed_ShouldRespectExactMatch()
         {
             // Arrange
-            var context = new Context { Method = "GET", Route = "api/users" };
+            var context = new Context { Method = "GET", Route = "api/{entity}", Url = "api/users" };
             context.User = new User("user123", "Test User");
 
             var endpoints = new List<EndpointConfig>
