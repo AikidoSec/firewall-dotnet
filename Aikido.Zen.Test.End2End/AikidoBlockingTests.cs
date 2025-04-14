@@ -1,10 +1,10 @@
+using System.Net;
+using System.Net.Http.Json;
+using Aikido.Zen.DotNetCore;
+using Aikido.Zen.Server.Mock.Models;
 using Microsoft.AspNetCore.Mvc.Testing;
 using NUnit.Framework;
-using System.Net;
-using Aikido.Zen.DotNetCore;
-using System.Net.Http.Json;
 using SQLiteSampleApp;
-using Aikido.Zen.Server.Mock.Models;
 
 namespace Aikido.Zen.Test.End2End
 {
@@ -339,6 +339,227 @@ namespace Aikido.Zen.Test.End2End
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
             var responseBody = await response.Content.ReadAsStringAsync();
             Assert.That(responseBody, Does.Contain("Your request is blocked: Ip is not allowed"));
+        }
+
+        /// <summary>
+        /// Tests that the endpoint matching logic prioritizes configurations correctly for rate limiting.
+        /// Priority Order:
+        /// 1. Exact URL & Exact Method
+        /// 2. Exact Route & Exact Method
+        /// 3. Exact URL & Wildcard Method
+        /// 4. Exact Route & Wildcard Method
+        /// This test verifies Priority 1 overrides Priority 2.
+        /// </summary>
+        [Test]
+        public async Task WhenExactUrlAndMethodMatch_RateLimit_ShouldPrioritizeOverExactRoute()
+        {
+            // Arrange
+            var config = new Dictionary<string, object>
+            {
+                ["endpoints"] = new List<EndpointConfig>
+                {
+                    // Priority 2: Exact Route & Exact Method (Less specific)
+                    new EndpointConfig {
+                        Route = "/api/prioritytest/{id}",
+                        Method = "GET",
+                        RateLimiting = new RateLimitingConfig { Enabled = true, MaxRequests = 5, WindowSizeInMS = 5000 }
+                    },
+                    // Priority 1: Exact URL & Exact Method (Most specific)
+                    new EndpointConfig {
+                        Route = "/api/prioritytest/123", // Matches the exact URL
+                        Method = "GET",
+                        RateLimiting = new RateLimitingConfig { Enabled = true, MaxRequests = 2, WindowSizeInMS = 5000 }
+                    }
+                }
+            };
+            await MockServerClient.PostAsJsonAsync("/api/runtime/config", config);
+            SampleAppClient = CreateSampleAppFactory().CreateClient();
+            Thread.Sleep(250);
+
+            // Act & Assert: Send 3 requests, expect the 3rd to be rate limited based on Priority 1 config (MaxRequests = 2)
+            for (int i = 0; i < 3; i++)
+            {
+                var request = new HttpRequestMessage(HttpMethod.Get, "/api/prioritytest/123");
+                request.Headers.Add("X-Forwarded-For", "192.168.1.1");
+                var response = await SampleAppClient.SendAsync(request);
+
+                if (i == 2) // Third request
+                {
+                    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.TooManyRequests), $"Request {i + 1} should be rate limited.");
+                    var responseBody = await response.Content.ReadAsStringAsync();
+                    Assert.That(responseBody, Does.Contain("You are rate limited by Aikido firewall."));
+                }
+                else // First two requests
+                {
+                    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK), $"Request {i + 1} should be allowed.");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Tests that the endpoint matching logic prioritizes configurations correctly for IP allow lists.
+        /// Priority Order:
+        /// 1. Exact URL & Exact Method
+        /// 2. Exact Route & Exact Method
+        /// 3. Exact URL & Wildcard Method
+        /// 4. Exact Route & Wildcard Method
+        /// This test verifies Priority 2 overrides Priority 4.
+        /// </summary>
+        [Test]
+        public async Task WhenExactRouteAndMethodMatch_IPAllowList_ShouldPrioritizeOverWildcardMethod()
+        {
+            // Arrange
+            var config = new Dictionary<string, object>
+            {
+                ["endpoints"] = new List<EndpointConfig>
+                {
+                     // Priority 4: Exact Route & Wildcard Method (Less specific) - Allows different IP
+                    new EndpointConfig {
+                        Route = "/api/prioritytest/{id}",
+                        Method = "*",
+                        AllowedIPAddresses = ["222.222.222.222"]
+                    },
+                    // Priority 2: Exact Route & Exact Method (More specific) - Allows test IP
+                    new EndpointConfig {
+                        Route = "/api/prioritytest/{id}",
+                        Method = "POST",
+                        AllowedIPAddresses = ["192.168.1.2"]
+                    }
+                }
+            };
+            await MockServerClient.PostAsJsonAsync("/api/runtime/config", config);
+            SampleAppClient = CreateSampleAppFactory().CreateClient();
+            Thread.Sleep(250);
+
+            // Act: Send request from the IP allowed by the more specific rule (Priority 2)
+            var request = new HttpRequestMessage(HttpMethod.Post, "/api/prioritytest/456");
+            request.Headers.Add("X-Forwarded-For", "192.168.1.2");
+            request.Content = JsonContent.Create(new { Name = "Priority Test" });
+            var response = await SampleAppClient.SendAsync(request);
+
+            // Assert: Request should be allowed based on Priority 2 rule
+            Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+
+            // Act: Send request from an IP not allowed by the specific rule but allowed by the wildcard rule
+            var requestBlocked = new HttpRequestMessage(HttpMethod.Post, "/api/prioritytest/789");
+            requestBlocked.Headers.Add("X-Forwarded-For", "222.222.222.222"); // Allowed by wildcard, but not by specific POST rule
+            requestBlocked.Content = JsonContent.Create(new { Name = "Priority Test Blocked" });
+            var responseBlocked = await SampleAppClient.SendAsync(requestBlocked);
+
+            // Assert: Request should be blocked because the specific rule (Priority 2) takes precedence and does not allow this IP
+            Assert.That(responseBlocked.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
+            var responseBodyBlocked = await responseBlocked.Content.ReadAsStringAsync();
+            Assert.That(responseBodyBlocked, Does.Contain("Your request is blocked: Ip is not allowed"));
+        }
+
+        /// <summary>
+        /// Verifies that rate limiting is applied correctly to routes detected as single generic parameters
+        /// using the {paramName} notation (e.g., /api/v1/{slug}).
+        /// </summary>
+        [Test]
+        public async Task RoutesWithSlugParameter_RateLimit_ShouldApplyToMatchingRequests()
+        {
+            // Arrange
+            var config = new Dictionary<string, object>
+            {
+                ["endpoints"] = new List<EndpointConfig>
+                {
+                    new EndpointConfig {
+                        Route = "/api/v1/{slug}/test", // Matches /api/v1/page-one, /api/v1/another-page etc.
+                        Method = "GET",
+                        RateLimiting = new RateLimitingConfig { Enabled = true, MaxRequests = 1, WindowSizeInMS = 1000 }
+                    },
+                    new EndpointConfig {
+                        Route = "/api/v1/test", // Matches /api/v1/page-one, /api/v1/another-page etc.
+                        Method = "GET",
+                        RateLimiting = new RateLimitingConfig { Enabled = true, MaxRequests = 2, WindowSizeInMS = 1000 }
+                    },
+                }
+            };
+            await MockServerClient.PostAsJsonAsync("/api/runtime/config", config);
+            SampleAppClient = CreateSampleAppFactory().CreateClient();
+            Thread.Sleep(250);
+
+            // Act & Assert: Send 2 requests matching the generic pattern, expect the 2nd to be rate limited
+            // First request should be allowed, subsequent requests should be rate limited
+            const string ipAddress = "10.0.0.2";
+            const int requestCount = 3;
+
+            for (int i = 0; i < requestCount; i++)
+            {
+                var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/{i}/test");
+                request.Headers.Add("X-Forwarded-For", ipAddress);
+                var response = await SampleAppClient.SendAsync(request);
+                var request2 = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/test");
+                request2.Headers.Add("X-Forwarded-For", ipAddress);
+                var response2 = await SampleAppClient.SendAsync(request2);
+
+                if (i == 0)
+                {
+                    // First request should be allowed
+                    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK),
+                        $"Request /api/v1/{i}/test should be allowed.");
+                    Assert.That(response2.StatusCode, Is.EqualTo(HttpStatusCode.OK),
+                        $"Request /api/v1/test should be allowed.");
+                }
+                else if (i == 1)
+                {
+                    // Subsequent requests should be rate limited
+                    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.TooManyRequests),
+                        $"Request /api/v1/{i}/test should be rate limited.");
+                    Assert.That(response2.StatusCode, Is.EqualTo(HttpStatusCode.OK),
+                        $"Request /api/v1/test should be allowed.");
+                }
+                else
+                {
+                    Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.TooManyRequests),
+                        $"Request /api/v1/{i}/test should be rate limited.");
+                    Assert.That(response2.StatusCode, Is.EqualTo(HttpStatusCode.TooManyRequests),
+                        $"Request /api/v1/test should be rate limited.");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Verifies that IP allow lists are applied correctly to routes detected as single generic parameters
+        /// using the {paramName} notation (e.g., /api/v1/{slug}).
+        /// </summary>
+        [Test]
+        public async Task WhenRouteIsSingleGenericSlugParameter_IPAllowList_ShouldApplyToMatchingRequests()
+        {
+            // Arrange
+            var config = new Dictionary<string, object>
+            {
+                ["endpoints"] = new List<EndpointConfig>
+                {
+                    new EndpointConfig {
+                        Route = "/api/v1/{slug}", // Matches /api/v1/<any_slug>
+                        Method = "GET",
+                        AllowedIPAddresses = ["10.10.10.11"]
+                    }
+                }
+            };
+            await MockServerClient.PostAsJsonAsync("/api/runtime/config", config);
+            SampleAppClient = CreateSampleAppFactory().CreateClient();
+            Thread.Sleep(250);
+
+            // Act: Send request from the allowed IP
+            var requestAllowed = new HttpRequestMessage(HttpMethod.Get, "/api/v1/allowed-slug");
+            requestAllowed.Headers.Add("X-Forwarded-For", "10.10.10.11");
+            var responseAllowed = await SampleAppClient.SendAsync(requestAllowed);
+
+            // Assert: Request should be allowed
+            Assert.That(responseAllowed.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+
+            // Act: Send request from a blocked IP to a different slug
+            var requestBlocked = new HttpRequestMessage(HttpMethod.Get, "/api/v1/blocked-slug");
+            requestBlocked.Headers.Add("X-Forwarded-For", "11.11.11.12");
+            var responseBlocked = await SampleAppClient.SendAsync(requestBlocked);
+
+            // Assert: Request should be blocked
+            Assert.That(responseBlocked.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
+            var responseBodyBlocked = await responseBlocked.Content.ReadAsStringAsync();
+            Assert.That(responseBodyBlocked, Does.Contain("Your request is blocked: Ip is not allowed"));
         }
     }
 }
