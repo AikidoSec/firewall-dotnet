@@ -113,9 +113,15 @@ namespace Aikido.Zen.DotNetCore.Middleware
             // Use the .NET core route collection to match against the request path,
             // ensuring the routes found by Zen match those found by the .NET core
             var routePattern = context.Request.Path.Value;
+
             if (context.Request.Path == null)
             {
-                return string.Empty;
+                return "/";
+            }
+
+            if (RouteHelper.PathIsSingleSegment(context.Request.Path.Value))
+            {
+                return "/" + context.Request.Path.Value.TrimStart('/');
             }
 
             // Find the most exact endpoint that matches the request path
@@ -149,14 +155,14 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 }
             }
 
-            // Override with raw path if it's a single route parameter
-            if (RouteParameterHelper.PathIsSingleRouteParameter(routePattern))
+            // Add a leading slash to the route pattern if not present
+            // Ensure route pattern starts with a slash and handle null case
+            if (string.IsNullOrEmpty(routePattern))
             {
-                routePattern = context.Request.Path.Value;
+                return "/";
             }
 
-            // Add a leading slash to the route pattern if not present
-            return routePattern != null ? "/" + routePattern.TrimStart('/') : string.Empty;
+            return "/" + routePattern.TrimStart('/');
         }
     }
 }

@@ -138,7 +138,12 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             var routePattern = context.Request.Path;
             if (routePattern == null)
             {
-                return string.Empty;
+                return "/";
+            }
+
+            if (RouteHelper.PathIsSingleSegment(context.Request.Path))
+            {
+                return "/" + context.Request.Path.TrimStart('/');
             }
 
             // Use the .NET framework route collection to match against the request path
@@ -176,14 +181,14 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 }
             }
 
-            // Override with raw path if it's a single route parameter
-            if (RouteParameterHelper.PathIsSingleRouteParameter(routePattern))
+            // Add a leading slash to the route pattern if not present
+            // Ensure route pattern starts with a slash and handle null case
+            if (string.IsNullOrEmpty(routePattern))
             {
-                routePattern = context.Request.Path;
+                return "/";
             }
 
-            // Add a leading slash to the route pattern if not present
-            return routePattern != null ? "/" + routePattern.TrimStart('/') : string.Empty;
+            return "/" + routePattern.TrimStart('/');
         }
 
         private string GetRoutePattern(RouteBase route)

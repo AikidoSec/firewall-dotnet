@@ -277,6 +277,17 @@ namespace Aikido.Zen.Core.Helpers
         }
 
         /// <summary>
+        /// Checks if a path is a single segment
+        /// </summary>
+        /// <param name="path">The path to check</param>
+        /// <returns>True if the path is a single segment, false otherwise</returns>
+        public static bool PathIsSingleSegment(string path)
+        {
+            var segments = path.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+            return segments.Length <=1;
+        }
+
+        /// <summary>
         /// Matches a context against a list of endpoints, finding all matching endpoints
         /// </summary>
         /// <param name="context">The context containing request information</param>

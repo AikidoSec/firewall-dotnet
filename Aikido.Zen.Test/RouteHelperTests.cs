@@ -802,5 +802,17 @@ namespace Aikido.Zen.Test.Helpers
                 Assert.That(matchedEndpoint, Is.Null);
             });
         }
+
+        [TestCase("/", true)]
+        [TestCase("", true)]
+        [TestCase("/test+something", true)]
+        [TestCase("/:email", true)]
+        [TestCase("/api/v1/test", false)]
+        [TestCase("/api/v3/users/{id}/roles", false)]
+        [TestCase("/path/with/multiple/segments", false)] // Multiple non-parameter segments
+        public void PathIsSingleRouteParameter_VariousPaths_ReturnsExpectedResult(string path, bool expectedResult)
+        {
+            Assert.That(RouteHelper.PathIsSingleSegment(path), Is.EqualTo(expectedResult));
+        }
     }
 }

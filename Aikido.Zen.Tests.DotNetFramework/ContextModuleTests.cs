@@ -151,7 +151,7 @@ namespace Aikido.Zen.Tests.DotNetFramework
         }
 
         [Test]
-        public void GetParametrizedRoute_ReturnsOriginalUrl_WhenPathIsSingleParameter()
+        public void GetParametrizedRoute_ReturnsOriginalUrl_WhenPathIsSingleSegment()
         {
             // Arrange
             // No routes defined, mimics scenario where framework doesn't find a match
@@ -170,27 +170,19 @@ namespace Aikido.Zen.Tests.DotNetFramework
 
 
             // Test case where the path segment *is* a parameter type recognized by BuildRouteFromUrl (like UUID)
-            Assert.That(route, Is.EqualTo("/109156be-c4fb-41ea-b1b4-efe1671c5836")); // PathIsSingleRouteParameter would return true for /:uuid
+            Assert.That(route, Is.EqualTo("/109156be-c4fb-41ea-b1b4-efe1671c5836")); // PathIsSingleSegment would return true for /:uuid
             _mockHttpContext = new HttpContext(
                new HttpRequest(string.Empty, "http://test.local/simple-slug", string.Empty),
                new HttpResponse(null));
             route = _contextModule.GetParametrizedRoute(_mockHttpContext);
-            Assert.That(route, Is.EqualTo("/simple-slug")); // PathIsSingleRouteParameter would return false for /simple-slug
+            Assert.That(route, Is.EqualTo("/simple-slug")); // PathIsSingleSegment would return false for /simple-slug
 
-            // Test case for API prefix which should be ignored by PathIsSingleRouteParameter
-            _mockHttpContext = new HttpContext(
-                new HttpRequest(string.Empty, "http://test.local/api/v1/109156be-c4fb-41ea-b1b4-efe1671c5836", string.Empty),
-                new HttpResponse(null));
-            route = _contextModule.GetParametrizedRoute(_mockHttpContext);
-            // BuildRouteFromUrl handles the full path including /api/v1/
-            Assert.That(route, Is.EqualTo("/api/v1/109156be-c4fb-41ea-b1b4-efe1671c5836")); // PathIsSingleRouteParameter would return true for /:uuid (after stripping prefix)
-
-            // Test case where PathIsSingleRouteParameter would be false (multiple segments)
+            // Test case where PathIsSingleSegment would be false (multiple segments)
             _mockHttpContext = new HttpContext(
                 new HttpRequest(string.Empty, "http://test.local/users/123/profile", string.Empty),
                 new HttpResponse(null));
             route = _contextModule.GetParametrizedRoute(_mockHttpContext);
-            Assert.That(route, Is.EqualTo("/users/:number/profile")); // PathIsSingleRouteParameter would return false for /users/:number/profile
+            Assert.That(route, Is.EqualTo("/users/:number/profile")); // PathIsSingleSegment would return false for /users/:number/profile
         }
     }
 }

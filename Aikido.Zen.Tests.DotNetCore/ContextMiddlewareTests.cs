@@ -94,7 +94,7 @@ namespace Aikido.Zen.Tests.DotNetCore
         }
 
         [Test]
-        public void GetParametrizedRoute_ReturnsEmptyString_ForNullPath()
+        public void GetParametrizedRoute_ReturnsForwardSlash_ForNullPath()
         {
             // Arrange
             _mockHttpContext.Setup(c => c.Request.Path).Returns((string)null);
@@ -103,7 +103,7 @@ namespace Aikido.Zen.Tests.DotNetCore
             var route = _contextMiddleware.GetParametrizedRoute(_mockHttpContext.Object);
 
             // Assert
-            Assert.That(string.Empty, Is.EqualTo(route));
+            Assert.That("/", Is.EqualTo(route));
         }
 
         [Test]
@@ -191,7 +191,7 @@ namespace Aikido.Zen.Tests.DotNetCore
         }
 
         [Test]
-        public void GetParametrizedRoute_ReturnsOriginalUrl_WhenPathIsSingleParameter()
+        public void GetParametrizedRoute_ReturnsOriginalUrl_WhenPathIsSingleSegment()
         {
             // Arrange
             // Clear specific endpoints, use only default fallback logic
@@ -204,24 +204,24 @@ namespace Aikido.Zen.Tests.DotNetCore
             // Test case where the path segment *is* a parameter type recognized by BuildRouteFromUrl (like UUID)
             _mockHttpContext.Setup(c => c.Request.Path).Returns(new PathString("/109156be-c4fb-41ea-b1b4-efe1671c5836"));
             var routeUuid = _contextMiddleware.GetParametrizedRoute(_mockHttpContext.Object);
-            Assert.That(routeUuid, Is.EqualTo("/109156be-c4fb-41ea-b1b4-efe1671c5836")); // PathIsSingleRouteParameter would return true for /:uuid
+            Assert.That(routeUuid, Is.EqualTo("/109156be-c4fb-41ea-b1b4-efe1671c5836")); // PathIsSingleSegment would return true for /:uuid
 
             // Test case where the path segment is *not* a parameter type recognized by BuildRouteFromUrl
             // but might be considered a slug
             _mockHttpContext.Setup(c => c.Request.Path).Returns(new PathString("/simple-slug"));
             var routeSlug = _contextMiddleware.GetParametrizedRoute(_mockHttpContext.Object);
-            Assert.That(routeSlug, Is.EqualTo("/simple-slug")); // PathIsSingleRouteParameter would return false for /simple-slug
+            Assert.That(routeSlug, Is.EqualTo("/simple-slug")); // PathIsSingleSegment would return false for /simple-slug
 
             // Test case where PathIsSingleRouteParameter would be false (multiple segments)
             _mockHttpContext.Setup(c => c.Request.Path).Returns(new PathString("/users/123/profile"));
             var routeMultiSegment = _contextMiddleware.GetParametrizedRoute(_mockHttpContext.Object);
-            Assert.That(routeMultiSegment, Is.EqualTo("/users/:number/profile")); // PathIsSingleRouteParameter would return false for /users/:number/profile
+            Assert.That(routeMultiSegment, Is.EqualTo("/users/:number/profile")); // PathIsSingleSegment would return false for /users/:number/profile
 
-            // Test case for API prefix which should be ignored by PathIsSingleRouteParameter
+            // Test case for API prefix which should be ignored by PathIsSingleSegment
             _mockHttpContext.Setup(c => c.Request.Path).Returns(new PathString("/api/v1/109156be-c4fb-41ea-b1b4-efe1671c5836"));
             var routeApiUuid = _contextMiddleware.GetParametrizedRoute(_mockHttpContext.Object);
             // BuildRouteFromUrl handles the full path including /api/v1/
-            Assert.That(routeApiUuid, Is.EqualTo("/api/v1/109156be-c4fb-41ea-b1b4-efe1671c5836")); // PathIsSingleRouteParameter would return true for /:uuid (after stripping prefix)
+            Assert.That(routeApiUuid, Is.EqualTo("/api/v1/:uuid")); // PathIsSingleSegment would return true for /:uuid (after stripping prefix)
 
             // Restore endpoints for other tests if needed (though Setup runs before each test)
             _mockEndpointDataSource.Setup(m => m.Endpoints).Returns(new List<Endpoint>
