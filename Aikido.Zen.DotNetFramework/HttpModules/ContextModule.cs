@@ -1,13 +1,13 @@
 using System;
-using Aikido.Zen.Core;
-using System.Web;
 using System.Linq;
-using Aikido.Zen.Core.Helpers;
-using System.Threading.Tasks;
-using Context = Aikido.Zen.Core.Context;
-using Aikido.Zen.Core.Models;
-using System.Web.Routing;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
+using System.Web;
+using System.Web.Routing;
+using Aikido.Zen.Core;
+using Aikido.Zen.Core.Helpers;
+using Aikido.Zen.Core.Models;
+using Context = Aikido.Zen.Core.Context;
 
 [assembly: InternalsVisibleTo("Aikido.Zen.Tests.DotNetFramework")]
 namespace Aikido.Zen.DotNetFramework.HttpModules
@@ -127,6 +127,12 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 : httpContext.Request.ServerVariables["REMOTE_ADDR"];
         }
 
+        /// <summary>
+        /// Gets a parameterized route from the HTTP context, matching against the route collection
+        /// and applying route parameter detection when needed.
+        /// </summary>
+        /// <param name="context">The HTTP context containing the request information</param>
+        /// <returns>A parameterized route string with a leading slash</returns>
         internal string GetParametrizedRoute(HttpContext context)
         {
             var routePattern = context.Request.Path;
@@ -162,15 +168,22 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 var parameterizedRoute = RouteParameterHelper.BuildRouteFromUrl(context.Request.Url.ToString());
                 if (!string.IsNullOrEmpty(parameterizedRoute))
                 {
-                    return "/" + parameterizedRoute.TrimStart('/');
+                    routePattern = parameterizedRoute;
                 }
                 else
                 {
-                    return "/" + context.Request.Path.TrimStart('/');
+                    routePattern = context.Request.Path;
                 }
             }
 
-            return "/" + routePattern.TrimStart('/');
+            // Override with raw path if it's a single route parameter
+            if (RouteParameterHelper.PathIsSingleRouteParameter(routePattern))
+            {
+                routePattern = context.Request.Path;
+            }
+
+            // Add a leading slash to the route pattern if not present
+            return routePattern != null ? "/" + routePattern.TrimStart('/') : string.Empty;
         }
 
         private string GetRoutePattern(RouteBase route)

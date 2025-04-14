@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Net;
+using System.Text.RegularExpressions;
 
 namespace Aikido.Zen.Core.Helpers
 {
@@ -111,6 +111,34 @@ namespace Aikido.Zen.Core.Helpers
 
             var averageRatio = ratios.Average();
             return averageRatio > 0.75;
+        }
+
+        /// <summary>
+        /// Determines if a path is a single route parameter
+        /// This sometimes happens in applications that use one route to handle all requests e.g. /{slug}
+        /// Resulting in a lot of routes getting aggregated under the same route.
+        /// </summary>
+        /// <param name="path">The path to check</param>
+        /// <returns>True if the path is a single route parameter, false otherwise</returns>
+        public static bool PathIsSingleRouteParameter(string path)
+        {
+            // regex to detect if the path starts with a parameter
+            var regex = new Regex(@"(\{[^\}]+\})|:uuid|:ulid|:objectId|:email|:hash|:secret|:number|:date", RegexOptions.Compiled);
+            var apiPrefix = new Regex(@"^/api(/v\d+)?", RegexOptions.Compiled);
+            // remove the api prefix
+            var pathWithoutApiPrefix = apiPrefix.Replace(path, string.Empty);
+
+            // If there are multiple slashes, it's not a single route parameter
+            if (pathWithoutApiPrefix.Count(c => c == '/') > 1)
+                return false;
+
+            // Check if the path starts with a slash and has content after it
+            if (pathWithoutApiPrefix.StartsWith("/") && pathWithoutApiPrefix.Length > 1)
+            {
+                string pathAfterFirstSlash = pathWithoutApiPrefix.Substring(1);
+                return regex.IsMatch(pathAfterFirstSlash);
+            }
+            return regex.IsMatch(pathWithoutApiPrefix);
         }
 
         private static string ReplaceUrlSegmentWithParam(string segment)

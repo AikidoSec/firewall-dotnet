@@ -1,11 +1,11 @@
+using System.Collections.Concurrent;
+using System.Runtime.CompilerServices;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Routing;
-using System.Collections.Concurrent;
-using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("Aikido.Zen.Tests.DotNetCore")]
 namespace Aikido.Zen.DotNetCore.Middleware
@@ -133,21 +133,26 @@ namespace Aikido.Zen.DotNetCore.Middleware
                     .FirstOrDefault();
             }
 
+            // Get route pattern from endpoint or fallback to other methods
             routePattern = (endpoint as RouteEndpoint)?.RoutePattern.RawText;
 
             // If no route was found, use RouteParameterHelper as fallback
             if (string.IsNullOrEmpty(routePattern))
             {
                 var fullUrl = $"{context.Request.Scheme}://{context.Request.Host}{context.Request.Path}{context.Request.QueryString}";
-                var parameterizedRoute = RouteParameterHelper.BuildRouteFromUrl(fullUrl);
-                if (!string.IsNullOrEmpty(parameterizedRoute))
+                routePattern = RouteParameterHelper.BuildRouteFromUrl(fullUrl);
+
+                // If parameterization failed, use the raw path
+                if (string.IsNullOrEmpty(routePattern))
                 {
-                    return parameterizedRoute.StartsWith("/") ? parameterizedRoute : "/" + parameterizedRoute;
+                    routePattern = context.Request.Path.Value;
                 }
-                else
-                {
-                    return "/" + context.Request.Path.Value.TrimStart('/');
-                }
+            }
+
+            // Override with raw path if it's a single route parameter
+            if (RouteParameterHelper.PathIsSingleRouteParameter(routePattern))
+            {
+                routePattern = context.Request.Path.Value;
             }
 
             // Add a leading slash to the route pattern if not present

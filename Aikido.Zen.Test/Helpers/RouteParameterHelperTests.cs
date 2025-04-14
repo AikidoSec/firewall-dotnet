@@ -1,9 +1,7 @@
-using System;
+
 using System.Security.Cryptography;
 using System.Text;
-using NUnit.Framework;
 using Aikido.Zen.Core.Helpers;
-using System.Linq;
 
 namespace Aikido.Zen.Test.Helpers
 {
@@ -264,6 +262,36 @@ namespace Aikido.Zen.Test.Helpers
         public void LooksLikeASecret_KnownSecrets_ReturnsTrue(string input)
         {
             Assert.That(RouteParameterHelper.LooksLikeASecret(input), Is.True);
+        }
+
+        [TestCase("/:uuid", true)]
+        [TestCase("/:ulid", true)]
+        [TestCase("/:objectId", true)]
+        [TestCase("/:email", true)]
+        [TestCase("/:hash", true)]
+        [TestCase("/:secret", true)]
+        [TestCase("/:number", true)]
+        [TestCase("/:date", true)]
+        [TestCase("/{param}", true)]
+        [TestCase("/{productId}", true)]
+        [TestCase("/api/:uuid", true)]
+        [TestCase("/api/v1/:uuid", true)]
+        [TestCase("/api/v2/:number", true)]
+        [TestCase("/api/v3/{id}", true)]
+        [TestCase("/users/:number", false)]
+        [TestCase("/api/v3/users/{id}/roles", false)]
+        [TestCase("/posts/:uuid/comments", false)] 
+        [TestCase("/api/v1/users/:number", false)] 
+        [TestCase("/api/v1/items/:id/details", false)]
+        [TestCase("/users/123", false)]
+        [TestCase("/products/some-product", false)]
+        [TestCase("/files/document.pdf", false)]
+        [TestCase("/", false)] // Root path
+        [TestCase("", false)] // Empty path
+        [TestCase("/path/with/multiple/segments", false)] // Multiple non-parameter segments
+        public void PathIsSingleRouteParameter_VariousPaths_ReturnsExpectedResult(string path, bool expectedResult)
+        {
+            Assert.That(RouteParameterHelper.PathIsSingleRouteParameter(path), Is.EqualTo(expectedResult));
         }
     }
 }
