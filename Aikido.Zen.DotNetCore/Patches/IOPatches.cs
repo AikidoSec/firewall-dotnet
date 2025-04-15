@@ -1,6 +1,7 @@
 using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.Core.Helpers;
 using HarmonyLib;
+using System;
 using System.Diagnostics;
 using System.Net;
 using System.Security.AccessControl;
@@ -29,13 +30,12 @@ namespace Aikido.Zen.DotNetCore.Patches
             // Directory operations
             PatchMethod(harmony, typeof(Directory), "CreateDirectory", new[] { typeof(string), typeof(DirectorySecurity) });
             PatchMethod(harmony, typeof(Directory), "Delete", new[] { typeof(string), typeof(bool) });
-            PatchMethod(harmony, typeof(Directory), "GetFiles", new[] { typeof(string)  });
+            PatchMethod(harmony, typeof(Directory), "GetFiles", new[] { typeof(string) });
             PatchMethod(harmony, typeof(Directory), "GetFiles", new[] { typeof(string), typeof(string) });
             PatchMethod(harmony, typeof(Directory), "GetFiles", new[] { typeof(string), typeof(string), typeof(SearchOption) });
             PatchMethod(harmony, typeof(Directory), "GetDirectories", new[] { typeof(string) });
             PatchMethod(harmony, typeof(Directory), "GetDirectories", new[] { typeof(string), typeof(string) });
             PatchMethod(harmony, typeof(Directory), "GetDirectories", new[] { typeof(string), typeof(string), typeof(SearchOption) });
-
         }
 
         private static void PatchMethod(Harmony harmony, Type type, string methodName, Type[] parameters = null)
@@ -54,9 +54,12 @@ namespace Aikido.Zen.DotNetCore.Patches
                 }
 
             }
+            catch (NotImplementedException e)
+            {
+                Console.WriteLine("Aikido: error patching " + methodName + " method: " + e.Message);
+            }
             catch (Exception e)
             {
-
                 throw;
             }
         }
