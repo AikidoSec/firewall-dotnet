@@ -1,13 +1,13 @@
 using System;
-using Aikido.Zen.Core;
-using System.Web;
 using System.Linq;
-using Aikido.Zen.Core.Helpers;
-using System.Threading.Tasks;
-using Context = Aikido.Zen.Core.Context;
-using Aikido.Zen.Core.Models;
-using System.Web.Routing;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
+using System.Web;
+using System.Web.Routing;
+using Aikido.Zen.Core;
+using Aikido.Zen.Core.Helpers;
+using Aikido.Zen.Core.Models;
+using Context = Aikido.Zen.Core.Context;
 
 [assembly: InternalsVisibleTo("Aikido.Zen.Tests.DotNetFramework")]
 namespace Aikido.Zen.DotNetFramework.HttpModules
@@ -127,50 +127,66 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 : httpContext.Request.ServerVariables["REMOTE_ADDR"];
         }
 
+        /// <summary>
+        /// Gets a parameterized route from the HTTP context, matching against the route collection
+        /// and applying route parameter detection when needed.
+        /// </summary>
+        /// <param name="context">The HTTP context containing the request information</param>
+        /// <returns>A parameterized route string with a leading slash</returns>
         internal string GetParametrizedRoute(HttpContext context)
         {
             var routePattern = context.Request.Path;
-            if (routePattern == null)
+            if (string.IsNullOrEmpty(routePattern))
             {
-                return string.Empty;
+                return "/";
             }
 
-            // Use the .NET framework route collection to match against the request path
-            var exactMatchRoute = RouteTable.Routes
-                .Cast<RouteBase>()
-                .Select(route => GetRoutePattern(route))
-                .FirstOrDefault(rp => rp == context.Request.Path);
+            // Ensure the request path starts with a slash for consistency
+            routePattern = "/" + routePattern.TrimStart('/');
 
-            if (exactMatchRoute != null)
+            // Check for an exact match endpoint
+            var frameworkRoutes = RouteTable.Routes.Cast<RouteBase>()
+                .Select(route => GetRoutePattern(route))
+                .ToList();
+
+            var exactEndpoint = frameworkRoutes.FirstOrDefault(rp => rp == routePattern);
+
+            if (exactEndpoint != null)
             {
-                return "/" + exactMatchRoute.TrimStart('/');
+                // for too generic routes, we prefer to use the exact match route
+                // since some applications create a catch-all route for all requests e.g. /{slug}
+                if (RouteHelper.PathIsSingleSegment(exactEndpoint))
+                {
+                    return routePattern;
+                }
+                return exactEndpoint;
             }
 
-            var matchedRoutes = RouteTable.Routes
-                .Cast<RouteBase>()
-                .Select(route => GetRoutePattern(route))
+            var bestMatchedRoute = frameworkRoutes
                 .Where(rp => RouteHelper.MatchRoute(rp, context.Request.Path))
                 .OrderByDescending(rp => rp.Count(c => c == '/')) // prioritize more specific routes
                 .ThenBy(rp => rp.Count(c => c == '{')) // prioritize routes with fewer parameters
-                .ToList();
+                .FirstOrDefault();
 
-            routePattern = matchedRoutes.FirstOrDefault();
-
-            // If no route was found, use RouteParameterHelper as fallback
-            if (string.IsNullOrEmpty(routePattern))
+            if (bestMatchedRoute != null)
             {
-                var parameterizedRoute = RouteParameterHelper.BuildRouteFromUrl(context.Request.Url.ToString());
-                if (!string.IsNullOrEmpty(parameterizedRoute))
+                // for too generic routes, we prefer to use the exact match route
+                // since some applications create a catch-all route for all requests e.g. /{slug}
+                if (RouteHelper.PathIsSingleSegment(bestMatchedRoute))
                 {
-                    return "/" + parameterizedRoute.TrimStart('/');
+                    return routePattern;
                 }
-                else
-                {
-                    return "/" + context.Request.Path.TrimStart('/');
-                }
+                return bestMatchedRoute;
             }
 
-            return "/" + routePattern.TrimStart('/');
+            // If no route was found, we use a custom algorithm to find parameters in the url
+            var parameterizedRoute = RouteParameterHelper.BuildRouteFromUrl(context.Request.Url.ToString());
+            if (!string.IsNullOrEmpty(parameterizedRoute))
+            {
+                routePattern = parameterizedRoute;
+            }
+
+            return routePattern;
         }
 
         private string GetRoutePattern(RouteBase route)
@@ -180,8 +196,8 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             {
                 routePattern = (route as System.Web.Routing.Route).Url;
             }
-            // remove the leading slash from the route pattern, to ensure we don't distinguish for example between api/users and /api/users
-            return routePattern?.TrimStart('/');
+            // ensure the leading slash from the route pattern, to ensure we don't distinguish for example between api/users and /api/users
+            return "/" + routePattern?.TrimStart('/');
         }
     }
 }

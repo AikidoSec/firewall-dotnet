@@ -1,16 +1,16 @@
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using System.Text.Json;
-using Aikido.Zen.DotNetCore;
-using SampleApp.Common.Controllers;
-using Microsoft.AspNetCore.Http;
 using System.Net;
 using System.Security.Claims;
-using Aikido.Zen.Core.Exceptions;
+using System.Text.Json;
 using Aikido.Zen.Core;
+using Aikido.Zen.Core.Exceptions;
+using Aikido.Zen.DotNetCore;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using SampleApp.Common.Controllers;
 
 namespace SampleApp.Common
 {
@@ -191,6 +191,27 @@ namespace SampleApp.Common
                     };
 
                     return Results.Ok(stats); // Return HTTP 200 OK with the stats object
+                });
+
+                // generic api endpoint /api/v1/{slug} using mapget
+                endpoints.MapGet("/api/v1/{slug}", (string slug) =>
+                {
+                    return Results.Ok(new { slug = slug });
+                });
+
+                // generic api endpoint /api/v1/{slug}/test using mapget
+                endpoints.MapGet("/api/v1/{slug}/test", (string slug) =>
+                {
+                    return Results.Ok(new { slug = slug });
+                });
+
+                endpoints.MapGet("/api/prioritytest/{id}", (int id) =>
+                {
+                    return Results.Ok(new { id = id });
+                });
+                endpoints.MapPost("/api/prioritytest/{id}", (int id) =>
+                {
+                    return Results.Ok(new { id = id });
                 });
             });
         }
