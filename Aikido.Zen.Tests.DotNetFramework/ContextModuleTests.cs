@@ -154,7 +154,10 @@ namespace Aikido.Zen.Tests.DotNetFramework
         public void GetParametrizedRoute_ReturnsOriginalUrl_WhenPathIsSingleSegment()
         {
             // Arrange
-            // No routes defined, mimics scenario where framework doesn't find a match
+            // Add a generic slug route to simulate a catch-all scenario
+            RouteTable.Routes.Add(new System.Web.Routing.Route("{slug}", new StopRoutingHandler()));
+
+            // Test case where the path segment *is* a parameter type recognized by BuildRouteFromUrl (like UUID)
             _mockHttpContext = new HttpContext(
                 new HttpRequest(string.Empty, "http://test.local/this-is-a-potential-slug", string.Empty),
                 new HttpResponse(null));
@@ -168,8 +171,6 @@ namespace Aikido.Zen.Tests.DotNetFramework
                 new HttpResponse(null));
             route = _contextModule.GetParametrizedRoute(_mockHttpContext);
 
-
-            // Test case where the path segment *is* a parameter type recognized by BuildRouteFromUrl (like UUID)
             Assert.That(route, Is.EqualTo("/109156be-c4fb-41ea-b1b4-efe1671c5836")); // PathIsSingleSegment would return true for /:uuid
             _mockHttpContext = new HttpContext(
                new HttpRequest(string.Empty, "http://test.local/simple-slug", string.Empty),

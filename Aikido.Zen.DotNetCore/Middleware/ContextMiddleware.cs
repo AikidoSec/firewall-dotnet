@@ -108,61 +108,87 @@ namespace Aikido.Zen.DotNetCore.Middleware
             }
         }
 
+        /// <summary>
+        /// Gets a parameterized route from the HTTP context, matching against configured endpoints
+        /// and applying route parameter detection when needed, while prioritizing specific paths
+        /// over overly generic route patterns (e.g., prefers `/users/123` over `/{slug}`).
+        /// </summary>
+        /// <param name="context">The HTTP context containing the request information</param>
+        /// <returns>A parameterized route string, always starting with a leading slash</returns>
         internal string GetParametrizedRoute(HttpContext context)
         {
-            // Use the .NET core route collection to match against the request path,
-            // ensuring the routes found by Zen match those found by the .NET core
             var routePattern = context.Request.Path.Value;
 
-            if (context.Request.Path == null)
+            if (string.IsNullOrEmpty(routePattern))
             {
                 return "/";
             }
 
-            if (RouteHelper.PathIsSingleSegment(context.Request.Path.Value))
-            {
-                return "/" + context.Request.Path.Value.TrimStart('/');
-            }
+            // Ensure the request path starts with a slash for consistency
+            routePattern = "/" + routePattern.TrimStart('/');
 
-            // Find the most exact endpoint that matches the request path
-            var endpoint = _endpoints
+            // Check for an exact match endpoint
+            var frameworkRoutes = _endpoints
                 .OfType<RouteEndpoint>()
-                .FirstOrDefault(e => e.RoutePattern.RawText == context.Request.Path.Value); // check for exact match first
+                .Select(e => GetRoutePattern(e))
+                .ToList();
 
-            if (endpoint == null)
+            var exactEndpoint = frameworkRoutes.FirstOrDefault(rp => rp == routePattern);
+
+            if (exactEndpoint != null)
             {
-                endpoint = _endpoints
-                    .OfType<RouteEndpoint>()
-                    .Where(e => RouteHelper.MatchRoute(e.RoutePattern.RawText, context.Request.Path.Value))
-                    .OrderByDescending(e => e.RoutePattern.RawText.Count(c => c == '/')) // prioritize more specific routes
-                    .ThenBy(e => e.RoutePattern.RawText.Count(c => c == '{')) // prioritize routes with fewer parameters
-                    .FirstOrDefault();
-            }
-
-            // Get route pattern from endpoint or fallback to other methods
-            routePattern = (endpoint as RouteEndpoint)?.RoutePattern.RawText;
-
-            // If no route was found, use RouteParameterHelper as fallback
-            if (string.IsNullOrEmpty(routePattern))
-            {
-                var fullUrl = $"{context.Request.Scheme}://{context.Request.Host}{context.Request.Path}{context.Request.QueryString}";
-                routePattern = RouteParameterHelper.BuildRouteFromUrl(fullUrl);
-
-                // If parameterization failed, use the raw path
-                if (string.IsNullOrEmpty(routePattern))
+                // for too generic routes, we prefer to use the exact match route
+                // since some applications create a catch-all route for all requests e.g. /{slug}
+                if (RouteHelper.PathIsSingleSegment(exactEndpoint))
                 {
-                    routePattern = context.Request.Path.Value;
+                    return routePattern;
                 }
+                return exactEndpoint;
             }
+            else
+            {
+                // 2. No exact match, find the best matching endpoint based on specificity and parameter count
+                var bestMatchedRoute = frameworkRoutes
+                    .Where(e => RouteHelper.MatchRoute(e, routePattern))
+                    .OrderByDescending(e => e.Count(c => c == '/')) // prioritize more specific routes (more '/')
+                    .ThenBy(e => e.Count(c => c == '{')) // prioritize routes with fewer parameters
+                    .FirstOrDefault();
 
-            // Add a leading slash to the route pattern if not present
-            // Ensure route pattern starts with a slash and handle null case
-            if (string.IsNullOrEmpty(routePattern))
+                if (bestMatchedRoute != null)
+                {
+                    // for too generic routes, we prefer to use the exact match route
+                    // since some applications create a catch-all route for all requests e.g. /{slug}
+                    if (RouteHelper.PathIsSingleSegment(bestMatchedRoute))
+                    {
+                        return routePattern;
+                    }
+                    return bestMatchedRoute;
+                }
+
+                var parameterizedRoute = RouteParameterHelper.BuildRouteFromUrl(routePattern);
+                if (!string.IsNullOrEmpty(parameterizedRoute))
+                {
+                    routePattern = parameterizedRoute;
+                }
+
+                return routePattern;
+            }
+        }
+
+        /// <summary>
+        /// Normalizes an endpoint route pattern string by ensuring it starts with a leading slash.
+        /// Returns "/" if the endpoint or its pattern is null/empty.
+        /// </summary>
+        /// <param name="endpoint">The RouteEndpoint to normalize.</param>
+        /// <returns>A normalized route pattern string starting with "/".</returns>
+        private static string GetRoutePattern(RouteEndpoint endpoint)
+        {
+            var pattern = endpoint?.RoutePattern.RawText;
+            if (string.IsNullOrEmpty(pattern))
             {
                 return "/";
             }
-
-            return "/" + routePattern.TrimStart('/');
+            return "/" + pattern.TrimStart('/');
         }
     }
 }

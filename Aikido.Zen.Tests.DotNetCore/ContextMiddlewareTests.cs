@@ -36,7 +36,8 @@ namespace Aikido.Zen.Tests.DotNetCore
                 CreateEndpoint("api/items/special/{id}", "SpecialParameterizedEndpoint"),
                 CreateEndpoint("api/items/special", "SpecialEndpoint"),
                 CreateEndpoint("api/{version}/items/{id}", "VersionedParameterizedEndpoint"),
-                CreateEndpoint("api/v1/items/{id}", "V1ParameterizedEndpoint")
+                CreateEndpoint("api/v1/items/{id}", "V1ParameterizedEndpoint"),
+                CreateEndpoint("{slug}", "SlugEndpoint")
             });
             _mockHttpContext = new Mock<HttpContext>();
             _contextMiddleware = new ContextMiddleware([_mockEndpointDataSource.Object]);
