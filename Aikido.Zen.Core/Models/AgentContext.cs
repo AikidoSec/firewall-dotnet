@@ -26,6 +26,8 @@ namespace Aikido.Zen.Core.Models
         private List<EndpointConfig> _endpoints = new List<EndpointConfig>();
         private readonly object _endpointsLock = new object();
 
+        private readonly Stats _stats = new Stats();
+
         private int _requests;
         private int _attacksDetected;
         private int _attacksBlocked;
@@ -137,6 +139,7 @@ namespace Aikido.Zen.Core.Models
             _hostnames.Clear();
             _users.Clear();
             _routes.Clear();
+            _stats.Reset();
             // thread safe reset
             Interlocked.Exchange(ref _requests, 0);
             Interlocked.Exchange(ref _attacksDetected, 0);
@@ -145,6 +148,11 @@ namespace Aikido.Zen.Core.Models
             _blockedUsers.Clear();
             // reset the started time
             _started = DateTimeHelper.UTCNowUnixMilliseconds();
+        }
+
+        public void OnInspectedCall(string sink, double durationInMs, bool attackDetected, bool blocked, bool withoutContext)
+        {
+            _stats.OnInspectedCall(sink, durationInMs, attackDetected, blocked, withoutContext);
         }
 
         public bool IsBlocked(Context context, out string reason)
@@ -252,5 +260,6 @@ namespace Aikido.Zen.Core.Models
         public long Started => _started;
         public BlockList BlockList => _blockList;
         public Regex BlockedUserAgents => _blockedUserAgents;
+        public Stats Stats => _stats;
     }
 }

@@ -1,7 +1,7 @@
-using Aikido.Zen.Core.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Aikido.Zen.Core.Helpers;
 
 namespace Aikido.Zen.Core.Models.Events
 {
@@ -44,9 +44,8 @@ namespace Aikido.Zen.Core.Models.Events
                 Blocked = context.AttacksBlocked,
                 Total = context.AttacksDetected
             };
-            heartbeat.Stats.StartedAt = context.Started;
-            heartbeat.Stats.EndedAt = DateTimeHelper.UTCNowUnixMilliseconds();
             heartbeat.MiddlewareInstalled = context.ContextMiddlewareInstalled && context.BlockingMiddlewareInstalled;
+            heartbeat.Stats.EndedAt = DateTimeHelper.UTCNowUnixMilliseconds();
             return heartbeat;
         }
     }

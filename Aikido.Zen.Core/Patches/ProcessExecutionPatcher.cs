@@ -1,10 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
-using System.Collections.Generic;
 using Aikido.Zen.Core.Vulnerabilities;
 
 namespace Aikido.Zen.Core.Patches
@@ -24,39 +24,70 @@ namespace Aikido.Zen.Core.Patches
         /// <returns>True if the original method should continue execution; otherwise, false.</returns>
         public static bool OnProcessStart(object[] __args, MethodBase __originalMethod, object __instance, Context context)
         {
-            var processStartInfo = (__instance as Process)?.StartInfo;
-            if (processStartInfo == null || context == null) return true;
+            var stopwatch = Stopwatch.StartNew();
+            const string sink = "process"; // Sink name for process execution
+            bool withoutContext = context == null;
+            bool attackDetected = false;
+            bool blocked = false;
+            string command = ""; // Store command for logging/stats if needed
 
-            // Inspect the FileName and Arguments for shell injection
-            foreach (var userInput in context.ParsedUserInput)
+            try
             {
-                var command = processStartInfo.FileName + " " + processStartInfo.Arguments;
-                if (ShellInjectionDetector.IsShellInjection(command, userInput.Value))
+                var processStartInfo = (__instance as Process)?.StartInfo;
+                // Only inspect if context and process info are available
+                if (processStartInfo != null && context != null)
                 {
-                    // Log or throw an exception to report the issue
-                    var metadata = new Dictionary<string, object> {
-                        { "command", command }
-                    };
-                    Agent.Instance.SendAttackEvent(
-                        kind: AttackKind.ShellInjection,
-                        source: HttpHelper.GetSourceFromUserInputPath(userInput.Key),
-                        payload: userInput.Value,
-                        operation: __originalMethod.Name,
-                        context: context,
-                        module: __originalMethod.DeclaringType?.FullName,
-                        metadata: metadata,
-                        blocked: !EnvironmentHelper.DryMode
-                    );
-                    context.AttackDetected = true;
-                    if (!EnvironmentHelper.DryMode)
-                    {
-                        throw AikidoException.ShellInjectionDetected();
-                    }
+                    command = processStartInfo.FileName + " " + processStartInfo.Arguments;
 
+                    // Inspect the FileName and Arguments for shell injection
+                    foreach (var userInput in context.ParsedUserInput)
+                    {
+                        if (ShellInjectionDetector.IsShellInjection(command, userInput.Value))
+                        {
+                            attackDetected = true;
+                            blocked = !EnvironmentHelper.DryMode;
+
+                            // Log or throw an exception to report the issue
+                            var metadata = new Dictionary<string, object> {
+                                { "command", command }
+                            };
+                            Agent.Instance.SendAttackEvent(
+                                kind: AttackKind.ShellInjection,
+                                source: HttpHelper.GetSourceFromUserInputPath(userInput.Key),
+                                payload: userInput.Value,
+                                operation: __originalMethod.Name,
+                                context: context,
+                                module: __originalMethod.DeclaringType?.FullName,
+                                metadata: metadata,
+                                blocked: blocked
+                            );
+                            context.AttackDetected = true; // Mark context
+                            // Break after first detection for this process start
+                            break;
+                        }
+                    }
                 }
             }
+            catch (Exception ex)
+            {
+                // Error during detection logic
+                try { Agent.Instance?.Context?.Stats?.InterceptorThrewError(sink); } catch {/*ignore*/}
+                try { LogHelper.DebugLog(Agent.Logger, "Error during Shell injection detection."); } catch {/*ignore*/}
+                attackDetected = false; // Reset flags as detection failed
+                blocked = false;
+            }
 
-            return true;
+            stopwatch.Stop();
+            // Record the call attempt statistics
+            try { Agent.Instance?.Context?.OnInspectedCall(sink, stopwatch.Elapsed.TotalMilliseconds, attackDetected, blocked, withoutContext); } catch (Exception statsEx) { try { LogHelper.DebugLog(Agent.Logger, "Error recording Process.Start OnInspectedCall stats."); } catch {/*ignore*/} }
+
+            // Handle blocking
+            if (blocked)
+            {
+                throw AikidoException.ShellInjectionDetected();
+            }
+
+            return true; // Allow original method execution
         }
     }
 }
