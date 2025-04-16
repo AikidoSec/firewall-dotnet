@@ -68,7 +68,7 @@ namespace Aikido.Zen.Core.Patches
                     }
                 }
             }
-            catch (Exception ex)
+            catch
             {
                 // Error during detection logic
                 try { Agent.Instance?.Context?.Stats?.InterceptorThrewError(sink); } catch {/*ignore*/}
@@ -79,7 +79,14 @@ namespace Aikido.Zen.Core.Patches
 
             stopwatch.Stop();
             // Record the call attempt statistics
-            try { Agent.Instance?.Context?.OnInspectedCall(sink, stopwatch.Elapsed.TotalMilliseconds, attackDetected, blocked, withoutContext); } catch (Exception statsEx) { try { LogHelper.DebugLog(Agent.Logger, "Error recording Process.Start OnInspectedCall stats."); } catch {/*ignore*/} }
+            try
+            {
+                Agent.Instance?.Context?.OnInspectedCall(sink, stopwatch.Elapsed.TotalMilliseconds, attackDetected, blocked, withoutContext);
+            }
+            catch
+            {
+                LogHelper.DebugLog(Agent.Logger, "Error recording Process.Start OnInspectedCall stats.");
+            }
 
             // Handle blocking
             if (blocked)

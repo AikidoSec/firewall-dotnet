@@ -47,7 +47,14 @@ namespace Aikido.Zen.Core.Patches
             }
 
             // Record the call attempt statistics
-            try { Agent.Instance.Context.OnInspectedCall(sink, stopwatch.Elapsed.TotalMilliseconds, attackDetected, blocked, withoutContext); } catch (Exception statsEx) { try { LogHelper.DebugLog(Agent.Logger, "Error recording OnInspectedCall stats."); } catch {/*ignore*/} }
+            try
+            {
+                Agent.Instance.Context.OnInspectedCall(sink, stopwatch.Elapsed.TotalMilliseconds, attackDetected, blocked, withoutContext);
+            }
+            catch
+            {
+                LogHelper.DebugLog(Agent.Logger, "Error recording OnInspectedCall stats.");
+            }
 
             // Handle blocking if an attack was detected and not in dry mode
             if (blocked)
