@@ -37,6 +37,7 @@ namespace Aikido.Zen.Core.Models.Events
                 Routes = context.Routes
                     .ToList()
             };
+            heartbeat.Stats.CopyOperations(context.Stats.Operations);
             heartbeat.Stats.Requests.Total = context.Requests;
             heartbeat.Stats.Requests.Aborted = context.RequestsAborted;
             heartbeat.Stats.Requests.AttacksDetected = new AttacksDetected

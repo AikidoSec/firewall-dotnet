@@ -32,6 +32,35 @@ namespace Aikido.Zen.Core.Models
         }
 
         /// <summary>
+        /// CopyOperations the statistics for each monitored operation.
+        /// </summary>
+        /// <param name="operations"></param>
+        public void CopyOperations(IReadOnlyDictionary<string, OperationStats> operations)
+        {
+            foreach (var operation in operations)
+            {
+                var ov = operation.Value;
+                // deep copy the operation stats
+                _operations[operation.Key] = new OperationStats
+                {
+                    AttacksDetected = ov.AttacksDetected,
+                    CompressedTimings = ov.CompressedTimings.Select(x => new CompressedTiming
+                    {
+                        AverageInMS = x.AverageInMS,
+                        Percentiles = x.Percentiles,
+                        CompressedAt = x.CompressedAt
+                    }).ToList(),
+                    Durations = ov.Durations.Count > 0 ? new List<double>(ov.Durations) : new List<double>(),
+                    InterceptorThrewError = ov.InterceptorThrewError,
+                    Total = ov.Total,
+                    WithoutContext = ov.WithoutContext,
+                    Operation = operation.Key,
+                    Kind = ov.Kind,
+                };
+            }
+        }
+
+        /// <summary>
         /// Gets the statistics collected for each monitored operation.
         /// </summary>
         public IReadOnlyDictionary<string, OperationStats> Operations => _operations;
