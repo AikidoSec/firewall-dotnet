@@ -13,12 +13,19 @@ namespace Aikido.Zen.Core.Patches
     /// </summary>
     public static class SqlClientPatcher
     {
+        private const string kind = "sql_op";
+        /// <summary>
+        /// Patches the OnCommandExecuting method to detect and prevent SQL injection attacks
+        /// </summary>
+        /// <param name="__args">The arguments passed to the method.</param>
+        /// <param name="__originalMethod">The original method being patched.</param>
+        /// <param name="sql">The SQL command to execute.</param>
         public static bool OnCommandExecuting(object[] __args, MethodBase __originalMethod, string sql, string assembly, Context context)
         {
 
             // Determine sink and context status regardless of detection outcome
             var stopwatch = Stopwatch.StartNew();
-            string sink = assembly.ToLowerInvariant();
+            var operation = __originalMethod.DeclaringType.FullName;
             bool withoutContext = context == null;
             bool attackDetected = false;
             bool blocked = false;
@@ -49,7 +56,7 @@ namespace Aikido.Zen.Core.Patches
             // Record the call attempt statistics
             try
             {
-                Agent.Instance.Context.OnInspectedCall(sink, stopwatch.Elapsed.TotalMilliseconds, attackDetected, blocked, withoutContext);
+                Agent.Instance.Context.OnInspectedCall(operation, kind, stopwatch.Elapsed.TotalMilliseconds, attackDetected, blocked, withoutContext);
             }
             catch
             {

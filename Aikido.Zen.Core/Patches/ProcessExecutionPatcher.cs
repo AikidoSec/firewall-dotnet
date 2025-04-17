@@ -6,6 +6,7 @@ using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Vulnerabilities;
+using HarmonyLib;
 
 namespace Aikido.Zen.Core.Patches
 {
@@ -14,6 +15,7 @@ namespace Aikido.Zen.Core.Patches
     /// </summary>
     public static class ProcessExecutionPatcher
     {
+        private const string kind = "exec_op";
         /// <summary>
         /// Inspects the process start arguments for potential shell injection vulnerabilities.
         /// </summary>
@@ -25,11 +27,11 @@ namespace Aikido.Zen.Core.Patches
         public static bool OnProcessStart(object[] __args, MethodBase __originalMethod, object __instance, Context context)
         {
             var stopwatch = Stopwatch.StartNew();
-            const string sink = "process"; // Sink name for process execution
+            var operation = __originalMethod.DeclaringType.FullName;
             bool withoutContext = context == null;
             bool attackDetected = false;
             bool blocked = false;
-            string command = ""; // Store command for logging/stats if needed
+            string command; // Store command for logging/stats if needed
 
             try
             {
@@ -71,8 +73,7 @@ namespace Aikido.Zen.Core.Patches
             catch
             {
                 // Error during detection logic
-                try { Agent.Instance?.Context?.Stats?.InterceptorThrewError(sink); } catch {/*ignore*/}
-                try { LogHelper.DebugLog(Agent.Logger, "Error during Shell injection detection."); } catch {/*ignore*/}
+                LogHelper.DebugLog(Agent.Logger, "Error during Shell injection detection.");
                 attackDetected = false; // Reset flags as detection failed
                 blocked = false;
             }
@@ -81,7 +82,7 @@ namespace Aikido.Zen.Core.Patches
             // Record the call attempt statistics
             try
             {
-                Agent.Instance?.Context?.OnInspectedCall(sink, stopwatch.Elapsed.TotalMilliseconds, attackDetected, blocked, withoutContext);
+                Agent.Instance?.Context?.OnInspectedCall(operation, kind, stopwatch.Elapsed.TotalMilliseconds, attackDetected, blocked, withoutContext);
             }
             catch
             {

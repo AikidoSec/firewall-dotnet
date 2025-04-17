@@ -7,17 +7,17 @@ namespace Aikido.Zen.Core.Patches
 {
     public static class IOPatcher
     {
+        private const string kind = "fs_op";
         public static bool OnFileOperation(object[] __args, System.Reflection.MethodBase __originalMethod, Context context)
         {
-            var assembly = __originalMethod.DeclaringType.Assembly.FullName?.Split(new[] { ", Culture=" }, StringSplitOptions.None)[0];
+            var operation = __originalMethod.DeclaringType.FullName;
             var stopwatch = Stopwatch.StartNew();
-            var sink = assembly;
             bool withoutContext = context == null;
             bool attackDetected = false;
             bool blocked = false;
             try
             {
-                attackDetected = PathTraversalHelper.DetectPathTraversal(__args, assembly, context, __originalMethod.Name);
+                attackDetected = PathTraversalHelper.DetectPathTraversal(__args, operation, context, __originalMethod.Name);
                 blocked = attackDetected && !EnvironmentHelper.DryMode;
             }
             catch
@@ -27,7 +27,7 @@ namespace Aikido.Zen.Core.Patches
             stopwatch.Stop();
             try
             {
-                Agent.Instance?.Context?.OnInspectedCall(sink, stopwatch.Elapsed.TotalMilliseconds, attackDetected, blocked, withoutContext);
+                Agent.Instance?.Context?.OnInspectedCall(operation, kind, stopwatch.Elapsed.TotalMilliseconds, attackDetected, blocked, withoutContext);
             }
             catch
             {
@@ -35,7 +35,7 @@ namespace Aikido.Zen.Core.Patches
             }
             if (blocked)
             {
-                throw AikidoException.PathTraversalDetected(assembly, __originalMethod.Name);
+                throw AikidoException.PathTraversalDetected(operation, __originalMethod.Name);
             }
             return true;
         }
