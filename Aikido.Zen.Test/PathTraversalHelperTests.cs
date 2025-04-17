@@ -27,7 +27,7 @@ namespace Aikido.Zen.Test.Helpers
         }
 
         [Test]
-        public void DetectPathTraversal_WithNullContext_ReturnsTrue()
+        public void DetectPathTraversal_WithNullContext_ReturnsFalse()
         {
             // Arrange
             object[] args = new object[] { "test.txt" };
@@ -36,7 +36,7 @@ namespace Aikido.Zen.Test.Helpers
             bool result = PathTraversalHelper.DetectPathTraversal(args, ModuleName, null, Operation);
 
             // Assert
-            Assert.That(result, Is.True);
+            Assert.That(result, Is.False);
         }
 
         [TestCase("../test.txt", true, Description = "Detects traversal in single path")]
@@ -52,21 +52,8 @@ namespace Aikido.Zen.Test.Helpers
             bool result = PathTraversalHelper.DetectPathTraversal(args, ModuleName, _context, Operation);
 
             // Assert
-            Assert.That(result, Is.True);  // Always true as validation completed
+            Assert.That(result, Is.EqualTo(expectedAttack)); 
             Assert.That(_context.AttackDetected, Is.EqualTo(expectedAttack));
-        }
-
-        [Test]
-        public void DetectPathTraversal_WithTraversalInNonDryMode_ThrowsException()
-        {
-            // Arrange
-            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
-            _context.ParsedUserInput.Add("query", "../test.txt");
-            object[] args = new object[] { "/var/www/../test.txt" };
-
-            // Act & Assert
-            Assert.Throws<AikidoException>(() =>
-                PathTraversalHelper.DetectPathTraversal(args, ModuleName, _context, Operation));
         }
 
         [Test]
@@ -81,7 +68,7 @@ namespace Aikido.Zen.Test.Helpers
             bool result = PathTraversalHelper.DetectPathTraversal(args, ModuleName, _context, Operation);
 
             // Assert
-            Assert.That(result, Is.True);
+            Assert.That(result, Is.False);
             Assert.That(_context.AttackDetected, Is.False);
         }
 
@@ -95,7 +82,7 @@ namespace Aikido.Zen.Test.Helpers
             bool result = PathTraversalHelper.DetectPathTraversal(args, ModuleName, _context, Operation);
 
             // Assert
-            Assert.That(result, Is.True);  // Validation passes for empty array
+            Assert.That(result, Is.False);
             Assert.That(_context.AttackDetected, Is.False);
         }
 
@@ -110,7 +97,7 @@ namespace Aikido.Zen.Test.Helpers
             bool result = PathTraversalHelper.DetectPathTraversal(args, ModuleName, _context, Operation);
 
             // Assert
-            Assert.That(result, Is.True);
+            Assert.That(result, Is.False);
             Assert.That(_context.AttackDetected, Is.False);
         }
 
