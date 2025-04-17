@@ -10,20 +10,20 @@ using Aikido.Zen.Core.Helpers;
 namespace Aikido.Zen.Core.Models
 {
     /// <summary>
-    /// Collects and manages inspection statistics for sinks and requests.
+    /// Collects and manages inspection statistics for operations and requests.
     /// </summary>
     public class Stats
     {
         private readonly int _maxPerfSamplesInMem;
         private readonly int _maxCompressedStatsInMem;
-        private Dictionary<string, MonitoredSinkStats> _sinks = new Dictionary<string, MonitoredSinkStats>();
+        private Dictionary<string, OperationStats> _operations = new Dictionary<string, OperationStats>();
         private Requests _requests = new Requests();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Stats"/> class.
         /// </summary>
-        /// <param name="maxPerfSamplesInMem">The maximum number of performance samples to keep in memory per sink before compressing.</param>
-        /// <param name="maxCompressedStatsInMem">The maximum number of compressed statistic blocks to keep in memory per sink.</param>
+        /// <param name="maxPerfSamplesInMem">The maximum number of performance samples to keep in memory per operation before compressing.</param>
+        /// <param name="maxCompressedStatsInMem">The maximum number of compressed statistic blocks to keep in memory per operation.</param>
         public Stats(int maxPerfSamplesInMem = 1000, int maxCompressedStatsInMem = 100)
         {
             _maxPerfSamplesInMem = maxPerfSamplesInMem;
@@ -32,9 +32,9 @@ namespace Aikido.Zen.Core.Models
         }
 
         /// <summary>
-        /// Gets the statistics collected for each monitored sink.
+        /// Gets the statistics collected for each monitored operation.
         /// </summary>
-        public IReadOnlyDictionary<string, MonitoredSinkStats> Sinks => _sinks;
+        public IReadOnlyDictionary<string, OperationStats> Operations => _operations;
 
         /// <summary>
         /// Gets the Unix timestamp (in milliseconds) when the statistics collection started or was last reset.
@@ -56,7 +56,7 @@ namespace Aikido.Zen.Core.Models
         /// </summary>
         public void Reset()
         {
-            _sinks = new Dictionary<string, MonitoredSinkStats>();
+            _operations = new Dictionary<string, OperationStats>();
             _requests = new Requests
             {
                 Total = 0,
@@ -71,24 +71,25 @@ namespace Aikido.Zen.Core.Models
         }
 
         /// <summary>
-        /// Checks if any sink has compressed timing statistics.
+        /// Checks if any operation has compressed timing statistics.
         /// </summary>
         /// <returns>True if compressed statistics exist, false otherwise.</returns>
         public bool HasCompressedStats()
         {
             // Ensure CompressedTimings is not null before checking Any()
-            return _sinks.Any(s => s.Value.CompressedTimings != null && s.Value.CompressedTimings.Any());
+            return _operations.Any(op => op.Value.CompressedTimings != null && op.Value.CompressedTimings.Any());
         }
 
         /// <summary>
-        /// Records that an interceptor threw an error for a specific sink.
+        /// Records that an interceptor threw an error for a specific operation.
         /// </summary>
-        /// <param name="sink">The identifier of the sink.</param>
-        public void InterceptorThrewError(string sink)
+        /// <param name="operation">The identifier of the operation.</param>
+        /// <param name="kind">The kind of the operation.</param>
+        public void InterceptorThrewError(string operation, string kind)
         {
-            EnsureSinkStats(sink);
-            _sinks[sink].Total++;
-            _sinks[sink].InterceptorThrewError++;
+            EnsureOperationStats(operation, kind);
+            _operations[operation].Total++;
+            _operations[operation].InterceptorThrewError++;
         }
 
         /// <summary>
@@ -121,90 +122,93 @@ namespace Aikido.Zen.Core.Models
         }
 
         /// <summary>
-        /// Records the details of an inspected sink call.
+        /// Records the details of an inspected operation call.
         /// </summary>
-        /// <param name="sink">The identifier of the sink.</param>
+        /// <param name="operation">The operation name.</param>
+        /// <param name="kind">The kind of operation.</param>
         /// <param name="durationInMs">The duration of the call in milliseconds.</param>
         /// <param name="attackDetected">Indicates whether an attack was detected during this call.</param>
         /// <param name="blocked">Indicates whether the call was blocked due to a detected attack.</param>
         /// <param name="withoutContext">Indicates whether the call was inspected without context.</param>
-        public void OnInspectedCall(string sink, double durationInMs, bool attackDetected, bool blocked, bool withoutContext)
+        public void OnInspectedCall(string operation, string kind, double durationInMs, bool attackDetected, bool blocked, bool withoutContext)
         {
-            EnsureSinkStats(sink);
-            var sinkStats = _sinks[sink];
-            sinkStats.Total++;
+            EnsureOperationStats(operation, kind);
+            var operationStats = _operations[operation];
+            operationStats.Total++;
 
             if (withoutContext)
             {
-                sinkStats.WithoutContext++;
+                operationStats.WithoutContext++;
                 return; // Do not record duration or attack details if without context
             }
 
             // Check if duration list needs compression before adding the new duration
-            if (sinkStats.Durations.Count >= _maxPerfSamplesInMem)
+            if (operationStats.Durations.Count >= _maxPerfSamplesInMem)
             {
-                CompressPerfSamples(sink);
+                CompressPerfSamples(operation);
             }
 
-            sinkStats.Durations.Add(durationInMs);
+            operationStats.Durations.Add(durationInMs);
 
             if (attackDetected)
             {
-                sinkStats.AttacksDetected.Total++;
+                operationStats.AttacksDetected.Total++;
                 if (blocked)
                 {
-                    sinkStats.AttacksDetected.Blocked++;
+                    operationStats.AttacksDetected.Blocked++;
                 }
             }
         }
 
         /// <summary>
-        /// Forces the compression of performance samples for all sinks that have accumulated samples.
+        /// Forces the compression of performance samples for all operations that have accumulated samples.
         /// </summary>
         public void ForceCompress()
         {
-            // Use ToList() to avoid modification during iteration if CompressPerfSamples modifies _sinks
-            foreach (var sink in _sinks.Keys.ToList())
+            // Use ToList() to avoid modification during iteration if CompressPerfSamples modifies _operations
+            foreach (var operation in _operations.Keys.ToList())
             {
                 // Only compress if there are durations to compress
-                if (_sinks.TryGetValue(sink, out var sinkStats) && sinkStats.Durations.Any())
+                if (_operations.TryGetValue(operation, out var operationStats) && operationStats.Durations.Any())
                 {
-                    CompressPerfSamples(sink);
+                    CompressPerfSamples(operation);
                 }
             }
         }
 
         /// <summary>
-        /// Ensures that a statistics entry exists for the specified sink.
+        /// Ensures that a statistics entry exists for the specified operation.
         /// </summary>
-        /// <param name="sink">The identifier of the sink.</param>
-        internal void EnsureSinkStats(string sink)
+        /// <param name="operation">The identifier of the operation.</param>
+        /// <param name="kind">The kind of the operation.</param>
+        internal void EnsureOperationStats(string operation, string kind)
         {
-            if (!_sinks.ContainsKey(sink))
+            if (!_operations.ContainsKey(operation))
             {
                 // Initialize with default values, including empty lists/dictionaries
-                _sinks[sink] = new MonitoredSinkStats
+                _operations[operation] = new OperationStats
                 {
                     AttacksDetected = new AttacksDetected(),
                     CompressedTimings = new List<CompressedTiming>(),
-                    Durations = new List<double>()
-                    // Other properties default to 0
+                    Durations = new List<double>(),
+                    Kind = kind,
+                    Operation = operation
                 };
             }
         }
 
         /// <summary>
-        /// Compresses the collected performance duration samples for a specific sink into a single entry.
+        /// Compresses the collected performance duration samples for a specific operation into a single entry.
         /// </summary>
-        /// <param name="sink">The identifier of the sink.</param>
-        private void CompressPerfSamples(string sink)
+        /// <param name="operation">The identifier of the operation.</param>
+        private void CompressPerfSamples(string operation)
         {
-            if (!_sinks.TryGetValue(sink, out var sinkStats) || !sinkStats.Durations.Any())
+            if (!_operations.TryGetValue(operation, out var operationStats) || !operationStats.Durations.Any())
             {
                 return; // Nothing to compress
             }
 
-            var timings = sinkStats.Durations;
+            var timings = operationStats.Durations;
             var averageInMs = timings.Average();
 
             var percentilesToCalculate = new List<int> { 50, 75, 90, 95, 99 };
@@ -218,16 +222,16 @@ namespace Aikido.Zen.Core.Models
             };
 
             // Add the new compressed data
-            sinkStats.CompressedTimings.Add(compressedTiming);
+            operationStats.CompressedTimings.Add(compressedTiming);
 
             // Ensure the compressed timings list does not exceed the maximum size
-            if (sinkStats.CompressedTimings.Count() > _maxCompressedStatsInMem)
+            if (operationStats.CompressedTimings.Count() > _maxCompressedStatsInMem)
             {
-                sinkStats.CompressedTimings.RemoveAt(0); // Remove the oldest entry
+                operationStats.CompressedTimings.RemoveAt(0); // Remove the oldest entry
             }
 
             // Clear the durations list now that it's compressed
-            sinkStats.Durations.Clear();
+            operationStats.Durations.Clear();
         }
 
         /// <summary>
@@ -291,12 +295,12 @@ namespace Aikido.Zen.Core.Models
         }
 
         /// <summary>
-        /// Checks if there are no statistics collected (no sinks, no requests).
+        /// Checks if there are no statistics collected (no operations, no requests).
         /// </summary>
         /// <returns>True if no statistics have been collected, false otherwise.</returns>
         public bool IsEmpty()
         {
-            return !_sinks.Any() &&
+            return !_operations.Any() &&
                    _requests.Total == 0 &&
                    _requests.AttacksDetected.Total == 0;
         }

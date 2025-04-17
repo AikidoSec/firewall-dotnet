@@ -150,11 +150,24 @@ namespace Aikido.Zen.Core.Models
             _started = DateTimeHelper.UTCNowUnixMilliseconds();
         }
 
-        public void OnInspectedCall(string sink, double durationInMs, bool attackDetected, bool blocked, bool withoutContext)
+        /// <summary>
+        /// Records the details of an inspected operation call.
+        /// </summary>
+        /// <param name="operation">The operation name.</param>
+        /// <param name="kind">The kind of operation.</param>
+        /// <param name="durationInMs">The duration of the call in milliseconds.</param>
+        /// <param name="attackDetected">Indicates whether an attack was detected during this call.</param>
+        public void OnInspectedCall(string operation, string kind, double durationInMs, bool attackDetected, bool blocked, bool withoutContext)
         {
-            _stats.OnInspectedCall(sink, durationInMs, attackDetected, blocked, withoutContext);
+            _stats.OnInspectedCall(operation, kind, durationInMs, attackDetected, blocked, withoutContext);
         }
 
+        /// <summary>
+        /// Checks if the request should be blocked based on the context and the block list.
+        /// </summary>
+        /// <param name="context">The context of the request.</param>
+        /// <param name="reason">The reason for blocking the request.</param>
+        /// <returns>True if the request should be blocked, false otherwise.</returns>
         public bool IsBlocked(Context context, out string reason)
         {
             reason = null;

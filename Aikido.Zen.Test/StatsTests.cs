@@ -12,7 +12,8 @@ namespace Aikido.Zen.Test
     {
         private const int DefaultMaxPerfSamples = 50;
         private const int DefaultMaxCompressedStats = 5;
-        private const string TestSink = "test_sink";
+        private const string TestOperation = "test_operation";
+        private const string TestOperationKind = "test_kind";
         private const double Tolerance = 0.0001; // Tolerance for double comparisons
 
         // Helper to generate a sequence of doubles 1.0, 2.0, ... length.0
@@ -56,8 +57,8 @@ namespace Aikido.Zen.Test
             var initialStartedAt = stats.StartedAt;
 
             stats.OnRequest();
-            stats.OnInspectedCall(TestSink, 10.0, false, false, false);
-            stats.InterceptorThrewError(TestSink);
+            stats.OnInspectedCall(TestOperation, TestOperationKind, 10.0, false, false, false);
+            stats.InterceptorThrewError(TestOperation, TestOperationKind);
 
             // Allow some time to pass to ensure StartedAt changes significantly
             Thread.Sleep(10); // Sleep for 10ms
@@ -66,7 +67,7 @@ namespace Aikido.Zen.Test
             var newStartedAt = stats.StartedAt;
 
             Assert.That(stats.IsEmpty(), Is.True, "Stats should be empty after reset.");
-            Assert.That(stats.Sinks, Is.Empty, "Sinks dictionary should be empty after reset.");
+            Assert.That(stats.Operations, Is.Empty, "Operations dictionary should be empty after reset.");
             Assert.That(stats.Requests.Total, Is.EqualTo(0), "Requests total should be 0 after reset.");
             Assert.That(stats.Requests.Aborted, Is.EqualTo(0), "Requests aborted should be 0 after reset.");
             Assert.That(stats.Requests.AttacksDetected.Total, Is.EqualTo(0), "Requests attacks total should be 0 after reset.");
@@ -114,19 +115,20 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void InterceptorThrewError_IncrementsSinkTotalAndErrors()
+        public void InterceptorThrewError_IncrementsOperationTotalAndErrors()
         {
             var stats = new Stats();
-            stats.InterceptorThrewError(TestSink);
+            stats.InterceptorThrewError(TestOperation, TestOperationKind);
 
-            Assert.That(stats.Sinks.ContainsKey(TestSink), Is.True);
-            var sinkStats = stats.Sinks[TestSink];
-            Assert.That(sinkStats.Total, Is.EqualTo(1));
-            Assert.That(sinkStats.InterceptorThrewError, Is.EqualTo(1));
-            Assert.That(sinkStats.WithoutContext, Is.EqualTo(0));
-            Assert.That(sinkStats.AttacksDetected.Total, Is.EqualTo(0));
-            Assert.That(sinkStats.Durations, Is.Empty);
-            Assert.That(sinkStats.CompressedTimings, Is.Empty);
+            Assert.That(stats.Operations.ContainsKey(TestOperation), Is.True);
+            var operationStats = stats.Operations[TestOperation];
+            Assert.That(operationStats.Total, Is.EqualTo(1));
+            Assert.That(operationStats.InterceptorThrewError, Is.EqualTo(1));
+            Assert.That(operationStats.WithoutContext, Is.EqualTo(0));
+            Assert.That(operationStats.AttacksDetected.Total, Is.EqualTo(0));
+            Assert.That(operationStats.Durations, Is.Empty);
+            Assert.That(operationStats.CompressedTimings, Is.Empty);
+            Assert.That(operationStats.Kind, Is.EqualTo(TestOperationKind));
             Assert.That(stats.IsEmpty(), Is.False);
         }
 
@@ -136,41 +138,42 @@ namespace Aikido.Zen.Test
             var stats = new Stats();
 
             // 1. Call without context
-            stats.OnInspectedCall(TestSink, 10.0, attackDetected: false, blocked: false, withoutContext: true);
-            Assert.That(stats.Sinks.ContainsKey(TestSink), Is.True);
-            var sinkStats = stats.Sinks[TestSink];
-            Assert.That(sinkStats.Total, Is.EqualTo(1));
-            Assert.That(sinkStats.WithoutContext, Is.EqualTo(1));
-            Assert.That(sinkStats.Durations, Is.Empty, "Duration should not be recorded for withoutContext=true");
-            Assert.That(sinkStats.AttacksDetected.Total, Is.EqualTo(0));
+            stats.OnInspectedCall(TestOperation, TestOperationKind, 10.0, attackDetected: false, blocked: false, withoutContext: true);
+            Assert.That(stats.Operations.ContainsKey(TestOperation), Is.True);
+            var operationStats = stats.Operations[TestOperation];
+            Assert.That(operationStats.Total, Is.EqualTo(1));
+            Assert.That(operationStats.WithoutContext, Is.EqualTo(1));
+            Assert.That(operationStats.Durations, Is.Empty, "Duration should not be recorded for withoutContext=true");
+            Assert.That(operationStats.AttacksDetected.Total, Is.EqualTo(0));
             Assert.That(stats.HasCompressedStats(), Is.False);
             Assert.That(stats.IsEmpty(), Is.False);
+            Assert.That(operationStats.Kind, Is.EqualTo(TestOperationKind));
 
             // 2. Call with context, no attack
-            stats.OnInspectedCall(TestSink, 20.5, attackDetected: false, blocked: false, withoutContext: false);
-            Assert.That(sinkStats.Total, Is.EqualTo(2));
-            Assert.That(sinkStats.WithoutContext, Is.EqualTo(1));
-            Assert.That(sinkStats.Durations, Has.Count.EqualTo(1));
-            Assert.That(sinkStats.Durations[0], Is.EqualTo(20.5).Within(Tolerance));
-            Assert.That(sinkStats.AttacksDetected.Total, Is.EqualTo(0));
+            stats.OnInspectedCall(TestOperation, TestOperationKind, 20.5, attackDetected: false, blocked: false, withoutContext: false);
+            Assert.That(operationStats.Total, Is.EqualTo(2));
+            Assert.That(operationStats.WithoutContext, Is.EqualTo(1));
+            Assert.That(operationStats.Durations, Has.Count.EqualTo(1));
+            Assert.That(operationStats.Durations[0], Is.EqualTo(20.5).Within(Tolerance));
+            Assert.That(operationStats.AttacksDetected.Total, Is.EqualTo(0));
 
             // 3. Call with context, attack detected, not blocked
-            stats.OnInspectedCall(TestSink, 30.0, attackDetected: true, blocked: false, withoutContext: false);
-            Assert.That(sinkStats.Total, Is.EqualTo(3));
-            Assert.That(sinkStats.WithoutContext, Is.EqualTo(1));
-            Assert.That(sinkStats.Durations, Has.Count.EqualTo(2));
-            Assert.That(sinkStats.Durations[1], Is.EqualTo(30.0).Within(Tolerance));
-            Assert.That(sinkStats.AttacksDetected.Total, Is.EqualTo(1));
-            Assert.That(sinkStats.AttacksDetected.Blocked, Is.EqualTo(0));
+            stats.OnInspectedCall(TestOperation, TestOperationKind, 30.0, attackDetected: true, blocked: false, withoutContext: false);
+            Assert.That(operationStats.Total, Is.EqualTo(3));
+            Assert.That(operationStats.WithoutContext, Is.EqualTo(1));
+            Assert.That(operationStats.Durations, Has.Count.EqualTo(2));
+            Assert.That(operationStats.Durations[1], Is.EqualTo(30.0).Within(Tolerance));
+            Assert.That(operationStats.AttacksDetected.Total, Is.EqualTo(1));
+            Assert.That(operationStats.AttacksDetected.Blocked, Is.EqualTo(0));
 
             // 4. Call with context, attack detected, blocked
-            stats.OnInspectedCall(TestSink, 40.0, attackDetected: true, blocked: true, withoutContext: false);
-            Assert.That(sinkStats.Total, Is.EqualTo(4));
-            Assert.That(sinkStats.WithoutContext, Is.EqualTo(1));
-            Assert.That(sinkStats.Durations, Has.Count.EqualTo(3));
-            Assert.That(sinkStats.Durations[2], Is.EqualTo(40.0).Within(Tolerance));
-            Assert.That(sinkStats.AttacksDetected.Total, Is.EqualTo(2));
-            Assert.That(sinkStats.AttacksDetected.Blocked, Is.EqualTo(1));
+            stats.OnInspectedCall(TestOperation, TestOperationKind, 40.0, attackDetected: true, blocked: true, withoutContext: false);
+            Assert.That(operationStats.Total, Is.EqualTo(4));
+            Assert.That(operationStats.WithoutContext, Is.EqualTo(1));
+            Assert.That(operationStats.Durations, Has.Count.EqualTo(3));
+            Assert.That(operationStats.Durations[2], Is.EqualTo(40.0).Within(Tolerance));
+            Assert.That(operationStats.AttacksDetected.Total, Is.EqualTo(2));
+            Assert.That(operationStats.AttacksDetected.Blocked, Is.EqualTo(1));
         }
 
 
@@ -184,27 +187,27 @@ namespace Aikido.Zen.Test
             // Add maxSamples durations (1 to 10)
             for (int i = 0; i < maxSamples; i++)
             {
-                stats.OnInspectedCall(TestSink, sequence[i], false, false, false);
+                stats.OnInspectedCall(TestOperation, TestOperationKind, sequence[i], false, false, false);
                 // Compression hasn't run yet, only adding
             }
 
-            var sinkStats = stats.Sinks[TestSink];
-            Assert.That(sinkStats.Durations, Has.Count.EqualTo(maxSamples), "Durations should be full before compression is triggered.");
-            Assert.That(sinkStats.CompressedTimings, Is.Empty);
+            var operationStats = stats.Operations[TestOperation];
+            Assert.That(operationStats.Durations, Has.Count.EqualTo(maxSamples), "Durations should be full before compression is triggered.");
+            Assert.That(operationStats.CompressedTimings, Is.Empty);
             Assert.That(stats.HasCompressedStats(), Is.False);
 
             // This next call will trigger the compression because the count is already >= maxSamples
             var startTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            stats.OnInspectedCall(TestSink, 999.0, false, false, false); // Add one more sample to trigger compression
+            stats.OnInspectedCall(TestOperation, TestOperationKind, 999.0, false, false, false); // Add one more sample to trigger compression
             var endTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
             // Now compression should have occurred, clearing the list before adding the 999.0
-            Assert.That(sinkStats.Durations, Has.Count.EqualTo(1), "Durations should contain only the sample added after compression");
-            Assert.That(sinkStats.Durations[0], Is.EqualTo(999.0).Within(Tolerance), "The post-compression sample should be present");
-            Assert.That(sinkStats.CompressedTimings, Has.Count.EqualTo(1), "Should have one compressed timing block");
+            Assert.That(operationStats.Durations, Has.Count.EqualTo(1), "Durations should contain only the sample added after compression");
+            Assert.That(operationStats.Durations[0], Is.EqualTo(999.0).Within(Tolerance), "The post-compression sample should be present");
+            Assert.That(operationStats.CompressedTimings, Has.Count.EqualTo(1), "Should have one compressed timing block");
             Assert.That(stats.HasCompressedStats(), Is.True);
 
-            var compressed = sinkStats.CompressedTimings[0];
+            var compressed = operationStats.CompressedTimings[0];
             // The compressed block should contain stats for the sequence 1..10
             var expectedAverage = sequence.Average(); // Average of 1 to 10 is 5.5
             Assert.That(compressed.AverageInMS, Is.EqualTo(expectedAverage).Within(Tolerance));
@@ -236,7 +239,7 @@ namespace Aikido.Zen.Test
                 for (int i = 0; i < maxSamples; i++)
                 {
                     // Use different values each cycle to ensure compressed blocks are distinct
-                    stats.OnInspectedCall(TestSink, (cycle * maxSamples) + i + 1.0, false, false, false);
+                    stats.OnInspectedCall(TestOperation, TestOperationKind, (cycle * maxSamples) + i + 1.0, false, false, false);
                 }
                 // At the end of each inner loop, the Durations list is full.
                 // Compression for cycle N happens on the first call of cycle N+1.
@@ -245,16 +248,16 @@ namespace Aikido.Zen.Test
             // After the loop (cycle 3 finishes), Durations contains 31-40.
             // CompressedTimings contains [Block0, Block1, Block2].
             // We need one more call to trigger compression of 31-40 and the removal.
-            stats.OnInspectedCall(TestSink, 999.0, false, false, false);
+            stats.OnInspectedCall(TestOperation, TestOperationKind, 999.0, false, false, false);
 
             // Now CompressedTimings should be [Block1, Block2, Block3]
-            var sinkStats = stats.Sinks[TestSink];
-            Assert.That(sinkStats.CompressedTimings, Has.Count.EqualTo(maxCompressed), "Should only keep maxCompressed blocks");
+            var operationStats = stats.Operations[TestOperation];
+            Assert.That(operationStats.CompressedTimings, Has.Count.EqualTo(maxCompressed), "Should only keep maxCompressed blocks");
 
             // Optional: Check if the oldest block was removed (e.g., check CompressedAt or Average)
             // The first block would have average related to cycle 0 (1..10)
             // The kept blocks should be related to cycles 1, 2, 3
-            double firstKeptAverage = sinkStats.CompressedTimings[0].AverageInMS;
+            double firstKeptAverage = operationStats.CompressedTimings[0].AverageInMS;
             double expectedFirstAverageCycle1 = Enumerable.Range(1 * maxSamples + 1, maxSamples).Average(x => (double)x); // Avg of 11..20
             Assert.That(firstKeptAverage, Is.EqualTo(expectedFirstAverageCycle1).Within(Tolerance), "Oldest block should have been removed");
         }
@@ -263,53 +266,50 @@ namespace Aikido.Zen.Test
         public void ForceCompress_CompressesExistingDurations()
         {
             var stats = new Stats(DefaultMaxPerfSamples, DefaultMaxCompressedStats);
-            stats.OnInspectedCall(TestSink, 10.0, false, false, false);
-            stats.OnInspectedCall(TestSink, 20.0, false, false, false);
+            stats.OnInspectedCall(TestOperation, TestOperationKind, 10.0, false, false, false);
+            stats.OnInspectedCall(TestOperation, TestOperationKind, 20.0, false, false, false);
 
-            var sinkStats = stats.Sinks[TestSink];
-            Assert.That(sinkStats.Durations, Has.Count.EqualTo(2));
-            Assert.That(sinkStats.CompressedTimings, Is.Empty);
+            var operationStats = stats.Operations[TestOperation];
+            Assert.That(operationStats.Durations, Has.Count.EqualTo(2));
+            Assert.That(operationStats.CompressedTimings, Is.Empty);
             Assert.That(stats.HasCompressedStats(), Is.False);
 
             stats.ForceCompress();
 
-            Assert.That(sinkStats.Durations, Is.Empty, "Durations should be cleared after ForceCompress");
-            Assert.That(sinkStats.CompressedTimings, Has.Count.EqualTo(1), "Should have one compressed block after ForceCompress");
+            Assert.That(operationStats.Durations, Is.Empty, "Durations should be cleared after ForceCompress");
+            Assert.That(operationStats.CompressedTimings, Has.Count.EqualTo(1), "Should have one compressed block after ForceCompress");
             Assert.That(stats.HasCompressedStats(), Is.True);
-            Assert.That(sinkStats.CompressedTimings[0].AverageInMS, Is.EqualTo(15.0).Within(Tolerance)); // Avg of 10, 20
+            Assert.That(operationStats.CompressedTimings[0].AverageInMS, Is.EqualTo(15.0).Within(Tolerance)); // Avg of 10, 20
         }
 
         [Test]
         public void ForceCompress_DoesNothing_WhenNoDurations()
         {
             var stats = new Stats();
-            // stats.EnsureSinkStats(TestSink); // Ensure sink exists but no durations -- This is done implicitly by accessing Sinks
-            // Accessing stats.Sinks doesn't create the sink automatically
-            // Let's explicitly add it if needed, though ForceCompress handles non-existent sinks gracefully.
+            // stats.EnsureOperationStats(TestOperation, TestOperationKind); // Ensure operation exists but no durations -- This is internal now
+            // Accessing stats.Operations doesn't create the operation automatically
+            // Let's explicitly add it if needed, though ForceCompress handles non-existent operations gracefully.
 
-            Assert.That(stats.Sinks.ContainsKey(TestSink), Is.False); // Sink shouldn't exist yet
-            // These properties don't exist on the Stats class itself
-            // Assert.That(stats.Durations, Is.Empty);
-            // Assert.That(stats.CompressedTimings, Is.Empty);
+            Assert.That(stats.Operations.ContainsKey(TestOperation), Is.False); // Operation shouldn't exist yet
 
-            stats.ForceCompress(); // Should do nothing as there are no sinks
+            stats.ForceCompress(); // Should do nothing as there are no operations
 
-            Assert.That(stats.Sinks.ContainsKey(TestSink), Is.False);
+            Assert.That(stats.Operations.ContainsKey(TestOperation), Is.False);
             Assert.That(stats.HasCompressedStats(), Is.False);
 
-            // Now test with an existing sink but no durations
-            stats.InterceptorThrewError(TestSink); // Creates sink with no durations
-            stats.Sinks[TestSink].InterceptorThrewError = 0; // Reset the error count just added
-            stats.Sinks[TestSink].Total = 0; // Reset total count
+            // Now test with an existing operation but no durations
+            stats.InterceptorThrewError(TestOperation, TestOperationKind); // Creates operation with no durations
+            stats.Operations[TestOperation].InterceptorThrewError = 0; // Reset the error count just added
+            stats.Operations[TestOperation].Total = 0; // Reset total count
 
-            var sinkStats = stats.Sinks[TestSink];
-            Assert.That(sinkStats.Durations, Is.Empty);
-            Assert.That(sinkStats.CompressedTimings, Is.Empty);
+            var operationStats = stats.Operations[TestOperation];
+            Assert.That(operationStats.Durations, Is.Empty);
+            Assert.That(operationStats.CompressedTimings, Is.Empty);
 
-            stats.ForceCompress(); // Should do nothing for this sink
+            stats.ForceCompress(); // Should do nothing for this operation
 
-            Assert.That(sinkStats.Durations, Is.Empty);
-            Assert.That(sinkStats.CompressedTimings, Is.Empty);
+            Assert.That(operationStats.Durations, Is.Empty);
+            Assert.That(operationStats.CompressedTimings, Is.Empty);
             Assert.That(stats.HasCompressedStats(), Is.False);
         }
 
