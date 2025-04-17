@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using Aikido.Zen.Core.Helpers;
 
 // Make internals visible to the test project
 [assembly: InternalsVisibleTo("Aikido.Zen.Test")]
@@ -213,14 +214,14 @@ namespace Aikido.Zen.Core.Models
             {
                 AverageInMS = averageInMs,
                 Percentiles = CreatePercentilesDictionary(percentilesToCalculate, calculatedPercentiles),
-                CompressedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+                CompressedAt = DateTimeHelper.UTCNowUnixMilliseconds()
             };
 
             // Add the new compressed data
             sinkStats.CompressedTimings.Add(compressedTiming);
 
             // Ensure the compressed timings list does not exceed the maximum size
-            if (sinkStats.CompressedTimings.Count > _maxCompressedStatsInMem)
+            if (sinkStats.CompressedTimings.Count() > _maxCompressedStatsInMem)
             {
                 sinkStats.CompressedTimings.RemoveAt(0); // Remove the oldest entry
             }
@@ -250,7 +251,7 @@ namespace Aikido.Zen.Core.Models
         /// <param name="values">The list of numbers to calculate percentiles from.</param>
         /// <returns>A list of calculated percentile values corresponding to the requested percentiles.</returns>
         /// <exception cref="ArgumentException">Thrown if the list is empty or if any percentile is outside the 0-100 range.</exception>
-        internal static List<double> CalculatePercentiles(List<int> percentiles, List<double> values)
+        internal static List<double> CalculatePercentiles(IList<int> percentiles, IList<double> values)
         {
             if (!values.Any())
             {

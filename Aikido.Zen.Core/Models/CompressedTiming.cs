@@ -6,6 +6,6 @@ namespace Aikido.Zen.Core.Models
     {
         public double AverageInMS { get; set; }
         public Dictionary<string, double> Percentiles { get; set; } = new Dictionary<string, double>();
-        public int CompressedAt { get; set; }
+        public long CompressedAt { get; set; }
     }
 }
