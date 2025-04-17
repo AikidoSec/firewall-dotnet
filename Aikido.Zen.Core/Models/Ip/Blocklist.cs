@@ -279,7 +279,7 @@ namespace Aikido.Zen.Core.Models.Ip
             reason = null;
             if (IsPrivateOrLocalIp(context.RemoteAddress))
             {
-                reason = "Ip is private or local";
+                reason = "IP is private or local";
                 return false;
             }
             if (IsIPBypassed(context.RemoteAddress))
@@ -289,17 +289,17 @@ namespace Aikido.Zen.Core.Models.Ip
             }
             if (IsIPBlocked(context.RemoteAddress))
             {
-                reason = "IP is not allowed";
+                reason = "IP is blocked";
                 return true;
             }
             if (!IsIpAllowedForEndpoint(context))
             {
-                reason = "Ip is not allowed";
+                reason = "IP is not allowed for this endpoint";
                 return true;
             }
             if (!IsIPAllowed(context.RemoteAddress))
             {
-                reason = "Ip is not allowed";
+                reason = "IP is not allowed";
                 return true;
             }
             return false;
