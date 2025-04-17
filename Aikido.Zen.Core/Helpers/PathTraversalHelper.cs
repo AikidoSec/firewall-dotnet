@@ -1,10 +1,8 @@
-using Aikido.Zen.Core.Exceptions;
+
+using System.Collections.Generic;
+using System.Linq;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Vulnerabilities;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Web;
 
 namespace Aikido.Zen.Core.Helpers
 {
@@ -13,15 +11,6 @@ namespace Aikido.Zen.Core.Helpers
     /// </summary>
     public class PathTraversalHelper
     {
-
-        public static bool DetectPathTraversal(IEnumerable<string> paths, Context context, string moduleName, string operation) {
-            foreach (var path in paths) {
-                if (DetectPathTraversal(path, context, moduleName, operation)) {
-                    return true;
-                }
-            }
-            return false;
-        }
 
         public static bool DetectPathTraversal(string path, Context context, string moduleName, string operation)
         {
@@ -66,21 +55,8 @@ namespace Aikido.Zen.Core.Helpers
         {
             // Skip validation if not in request context
             if (context == null)
-                return true;
-
-            // Helper function to handle path traversal detection and response
-            bool HandlePathTraversal(string path)
-            {
-                if (DetectPathTraversal(path, context, assembly, operation))
-                {
-                    if (!EnvironmentHelper.DryMode)
-                    {
-                        throw AikidoException.PathTraversalDetected(assembly, operation);
-                    }
-                    return true;
-                }
                 return false;
-            }
+
 
             // Validate each argument
             foreach (var arg in args)
@@ -88,18 +64,18 @@ namespace Aikido.Zen.Core.Helpers
                 switch (arg)
                 {
                     case string path:
-                        if (HandlePathTraversal(path))
+                        if (DetectPathTraversal(path, context, assembly, operation))
                             return true;
                         break;
 
                     case string[] paths:
-                        if (paths.Any(p => HandlePathTraversal(p)))
+                        if (paths.Any(p => DetectPathTraversal(p, context, assembly, operation)))
                             return true;
                         break;
                 }
             }
 
-            return true;
+            return false;
         }
     }
 }

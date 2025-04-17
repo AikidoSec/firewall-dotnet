@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Reflection;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Exceptions;
@@ -6,9 +9,6 @@ using Aikido.Zen.Core.Models.Events;
 using Aikido.Zen.Core.Patches;
 using Moq;
 using NUnit.Framework;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Reflection;
 
 namespace Aikido.Zen.Test
 {

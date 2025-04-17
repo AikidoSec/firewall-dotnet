@@ -1,6 +1,6 @@
 using System;
+using System.Diagnostics;
 using System.Net.Http;
-using System.Threading;
 using System.Reflection;
 using Aikido.Zen.Core.Helpers;
 using HarmonyLib;
@@ -9,6 +9,7 @@ namespace Aikido.Zen.Core.Patches
 {
     internal static class HttpClientPatches
     {
+        private const string kind = "outgoing_http_op";
         /// <summary>
         /// Applies patches to HttpClient methods using Harmony and reflection.
         /// </summary>
@@ -53,7 +54,7 @@ namespace Aikido.Zen.Core.Patches
         /// <param name="request">The HttpRequestMessage being sent.</param>
         /// <param name="__instance">The instance of HttpClient being used.</param>
         /// <returns>True if the original method should continue execution; otherwise, false.</returns>
-        internal static bool CaptureRequest(HttpRequestMessage request, HttpClient __instance)
+        internal static bool CaptureRequest(HttpRequestMessage request, HttpClient __instance, System.Reflection.MethodBase __originalMethod)
         {
             var uri = __instance.BaseAddress == null
                 ? request.RequestUri
@@ -63,6 +64,12 @@ namespace Aikido.Zen.Core.Patches
 
             var (hostname, port) = UriHelper.ExtractHost(uri);
             Agent.Instance.CaptureOutboundRequest(hostname, port);
+            var operation = __originalMethod.DeclaringType.FullName;
+            var stopwatch = Stopwatch.StartNew();
+            bool withoutContext = true;
+            bool attackDetected = false;
+            bool blocked = false;
+            Agent.Instance.Context.OnInspectedCall(operation, kind, stopwatch.Elapsed.TotalMilliseconds, attackDetected, blocked, withoutContext);
             return true;
         }
     }

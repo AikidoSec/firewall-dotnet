@@ -1,10 +1,7 @@
-using Aikido.Zen.Core.Exceptions;
-using Aikido.Zen.Core.Helpers;
-using HarmonyLib;
-using System.Diagnostics;
-using System.Net;
+
 using System.Security.AccessControl;
-using System.Web;
+using Aikido.Zen.Core.Patches;
+using HarmonyLib;
 
 namespace Aikido.Zen.DotNetCore.Patches
 {
@@ -29,7 +26,7 @@ namespace Aikido.Zen.DotNetCore.Patches
             // Directory operations
             PatchMethod(harmony, typeof(Directory), "CreateDirectory", new[] { typeof(string), typeof(DirectorySecurity) });
             PatchMethod(harmony, typeof(Directory), "Delete", new[] { typeof(string), typeof(bool) });
-            PatchMethod(harmony, typeof(Directory), "GetFiles", new[] { typeof(string)  });
+            PatchMethod(harmony, typeof(Directory), "GetFiles", new[] { typeof(string) });
             PatchMethod(harmony, typeof(Directory), "GetFiles", new[] { typeof(string), typeof(string) });
             PatchMethod(harmony, typeof(Directory), "GetFiles", new[] { typeof(string), typeof(string), typeof(SearchOption) });
             PatchMethod(harmony, typeof(Directory), "GetDirectories", new[] { typeof(string) });
@@ -63,10 +60,8 @@ namespace Aikido.Zen.DotNetCore.Patches
 
         private static bool OnFileOperation(object[] __args, System.Reflection.MethodBase __originalMethod)
         {
-            var assembly = __originalMethod.DeclaringType.Assembly.FullName?.Split(new[] { ", Culture=" }, StringSplitOptions.None)[0];
             var context = Zen.GetContext();
-
-            return PathTraversalHelper.DetectPathTraversal(__args, assembly, context, __originalMethod.Name);
+            return IOPatcher.OnFileOperation(__args, __originalMethod, context);
         }
     }
 }
