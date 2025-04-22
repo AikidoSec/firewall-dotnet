@@ -46,6 +46,7 @@ namespace Aikido.Zen.Core.Models.Events
                 Total = context.AttacksDetected
             };
             heartbeat.MiddlewareInstalled = context.ContextMiddlewareInstalled && context.BlockingMiddlewareInstalled;
+            heartbeat.Stats.StartedAt = context.Started;
             heartbeat.Stats.EndedAt = DateTimeHelper.UTCNowUnixMilliseconds();
             return heartbeat;
         }

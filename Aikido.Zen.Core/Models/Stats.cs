@@ -68,7 +68,7 @@ namespace Aikido.Zen.Core.Models
         /// <summary>
         /// Gets the Unix timestamp (in milliseconds) when the statistics collection started or was last reset.
         /// </summary>
-        public long StartedAt { get; private set; }
+        public long StartedAt { get; set; }
 
         /// <summary>
         /// Gets the Unix timestamp (in milliseconds) when the statistics collection ended.
