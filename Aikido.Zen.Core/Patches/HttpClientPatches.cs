@@ -64,7 +64,7 @@ namespace Aikido.Zen.Core.Patches
 
             var (hostname, port) = UriHelper.ExtractHost(uri);
             Agent.Instance.CaptureOutboundRequest(hostname, port);
-            var operation = __originalMethod.DeclaringType.FullName;
+            var operation = __originalMethod?.DeclaringType.FullName ?? __instance.GetType().FullName;
             var stopwatch = Stopwatch.StartNew();
             bool withoutContext = true;
             bool attackDetected = false;
