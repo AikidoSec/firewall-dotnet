@@ -17,6 +17,10 @@ namespace Aikido.Zen.Core.Models
     /// </summary>
     public class AgentContext
     {
+        private const int MaxHostnames = 200;
+        private const int MaxUsers = 1000;
+        private const int MaxRoutes = 200;
+
         private readonly ConcurrentDictionary<string, Host> _hostnames = new ConcurrentDictionary<string, Host>();
         private readonly ConcurrentDictionary<string, Route> _routes = new ConcurrentDictionary<string, Route>();
         private readonly ConcurrentDictionary<string, UserExtended> _users = new ConcurrentDictionary<string, UserExtended>();
@@ -72,6 +76,12 @@ namespace Aikido.Zen.Core.Models
                 host.Port = portNumber;
 
             var key = $"{name}:{port}";
+
+            if (_hostnames.Count >= MaxHostnames)
+            {
+                EvictLeastUsedHostname();
+            }
+
             // thread safe add or update
             _hostnames.AddOrUpdate(
                 // the dictionary key is the hostname
@@ -87,6 +97,12 @@ namespace Aikido.Zen.Core.Models
         {
             if (user == null)
                 return;
+
+            if (_users.Count >= MaxUsers)
+            {
+                EvictLeastUsedUser();
+            }
+
             _users.AddOrUpdate(
                 // the dictionary key is the user id
                 key: user.Id,
@@ -110,6 +126,12 @@ namespace Aikido.Zen.Core.Models
         public void AddRoute(Context context)
         {
             if (context == null || context.Route == null) return;
+
+            if (_routes.Count >= MaxRoutes)
+            {
+                EvictLeastUsedRoute();
+            }
+
             // thread safe add or update
             _routes.AddOrUpdate(
                 // the dictionary key is the route url
@@ -130,6 +152,24 @@ namespace Aikido.Zen.Core.Models
                     return existing;
                 }
             );
+        }
+
+        private void EvictLeastUsedHostname()
+        {
+            var firstKey = _hostnames.Keys.First();
+            _hostnames.TryRemove(firstKey, out _);
+        }
+
+        private void EvictLeastUsedUser()
+        {
+            var firstKey = _users.Keys.First();
+            _users.TryRemove(firstKey, out _);
+        }
+
+        private void EvictLeastUsedRoute()
+        {
+            var firstKey = _routes.Keys.First();
+            _routes.TryRemove(firstKey, out _);
         }
 
         public void Clear()
