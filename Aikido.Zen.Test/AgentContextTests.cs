@@ -511,5 +511,66 @@ namespace Aikido.Zen.Test
             // Assert
             Assert.That(isBlocked, Is.False);
         }
+
+        [Test]
+        public void AddHostname_ShouldEvictOldest_WhenMaxReached()
+        {
+            // Arrange
+            const int MaxHostnames = 200;
+            var firstHostname = "host0.com:80";
+
+            // Act
+            _agentContext.AddHostname(firstHostname);
+            for (int i = 1; i < MaxHostnames + 1; i++)
+            {
+                _agentContext.AddHostname($"host{i}.com:80");
+            }
+
+            // Assert
+            Assert.That(_agentContext.Hostnames.Count(), Is.EqualTo(MaxHostnames));
+            Assert.That(_agentContext.Hostnames.Any(h => h.Hostname == "host0.com"), Is.False, "First hostname should be evicted");
+            Assert.That(_agentContext.Hostnames.Any(h => h.Hostname == $"host{MaxHostnames}.com"), Is.True, "Last hostname should be present");
+        }
+
+        [Test]
+        public void AddUser_ShouldEvictOldest_WhenMaxReached()
+        {
+            // Arrange
+            const int MaxUsers = 1000;
+            var firstUser = new User("user0", "User Zero");
+            var ipAddress = "192.168.0.1";
+
+            // Act
+            _agentContext.AddUser(firstUser, ipAddress);
+            for (int i = 1; i < MaxUsers + 1; i++)
+            {
+                _agentContext.AddUser(new User($"user{i}", $"User {i}"), ipAddress);
+            }
+
+            // Assert
+            Assert.That(_agentContext.Users.Count(), Is.EqualTo(MaxUsers));
+            Assert.That(_agentContext.Users.Any(u => u.Id == "user0"), Is.False, "First user should be evicted");
+            Assert.That(_agentContext.Users.Any(u => u.Id == $"user{MaxUsers}"), Is.True, "Last user should be present");
+        }
+
+        [Test]
+        public void AddRoute_ShouldEvictOldest_WhenMaxReached()
+        {
+            // Arrange
+            const int MaxRoutes = 200;
+            var firstRouteContext = new Context { Url = "/route0", Method = "GET", Route = "/route0" };
+
+            // Act
+            _agentContext.AddRoute(firstRouteContext);
+            for (int i = 1; i < MaxRoutes + 1; i++)
+            {
+                _agentContext.AddRoute(new Context { Url = $"/route{i}", Method = "GET", Route = $"/route{i}" });
+            }
+
+            // Assert
+            Assert.That(_agentContext.Routes.Count(), Is.EqualTo(MaxRoutes));
+            Assert.That(_agentContext.Routes.Any(r => r.Path == "/route0"), Is.False, "First route should be evicted");
+            Assert.That(_agentContext.Routes.Any(r => r.Path == $"/route{MaxRoutes}"), Is.True, "Last route should be present");
+        }
     }
 }
