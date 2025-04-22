@@ -100,7 +100,7 @@ namespace Aikido.Zen.Test.End2End
             // Assert
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
             var responseBody = await response.Content.ReadAsStringAsync();
-            Assert.That(responseBody, Does.Contain("Your request is blocked: IP is not allowed"));
+            Assert.That(responseBody, Does.Contain("Your request is blocked: IP is blocked"));
         }
 
         [Test]
@@ -248,10 +248,10 @@ namespace Aikido.Zen.Test.End2End
             // Assert
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
             var responseBody = await response.Content.ReadAsStringAsync();
-            Assert.That(responseBody, Does.Contain("Your request is blocked: Ip is not allowed"));
+            Assert.That(responseBody, Does.Contain("Your request is blocked: IP is not allowed for this endpoint"));
             Assert.That(response2.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
             var responseBody2 = await response2.Content.ReadAsStringAsync();
-            Assert.That(responseBody2, Does.Contain("Your request is blocked: Ip is not allowed"));
+            Assert.That(responseBody2, Does.Contain("Your request is blocked: IP is not allowed for this endpoint"));
         }
 
         [Test]
@@ -338,7 +338,7 @@ namespace Aikido.Zen.Test.End2End
             // Assert
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
             var responseBody = await response.Content.ReadAsStringAsync();
-            Assert.That(responseBody, Does.Contain("Your request is blocked: Ip is not allowed"));
+            Assert.That(responseBody, Does.Contain("Your request is blocked: IP is not allowed"));
         }
 
         /// <summary>
@@ -449,7 +449,7 @@ namespace Aikido.Zen.Test.End2End
             // Assert: Request should be blocked because the specific rule (Priority 2) takes precedence and does not allow this IP
             Assert.That(responseBlocked.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
             var responseBodyBlocked = await responseBlocked.Content.ReadAsStringAsync();
-            Assert.That(responseBodyBlocked, Does.Contain("Your request is blocked: Ip is not allowed"));
+            Assert.That(responseBodyBlocked, Does.Contain("Your request is blocked: IP is not allowed for this endpoint"));
         }
 
         /// <summary>
@@ -559,7 +559,7 @@ namespace Aikido.Zen.Test.End2End
             // Assert: Request should be blocked
             Assert.That(responseBlocked.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
             var responseBodyBlocked = await responseBlocked.Content.ReadAsStringAsync();
-            Assert.That(responseBodyBlocked, Does.Contain("Your request is blocked: Ip is not allowed"));
+            Assert.That(responseBodyBlocked, Does.Contain("Your request is blocked: IP is not allowed for this endpoint"));
         }
     }
 }
