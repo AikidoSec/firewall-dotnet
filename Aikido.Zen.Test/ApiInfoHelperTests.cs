@@ -331,8 +331,7 @@ namespace Aikido.Zen.Test.Helpers
                             }
                         }
                     }
-                },
-                Hits = 0
+                }
             };
 
             ApiInfoHelper.UpdateApiInfo(context, existingRoute, 10);
@@ -346,7 +345,11 @@ namespace Aikido.Zen.Test.Helpers
         public void UpdateApiInfo_ExceedingMaxSamples_DoesNotUpdate()
         {
             var context = CreateTestContext();
-            var existingRoute = new Route { Hits = 11 };
+            var existingRoute = new Route();
+            for (int i = 0; i < 11; i++)
+            {
+                existingRoute.Increment();
+            }
 
             ApiInfoHelper.UpdateApiInfo(context, existingRoute, 10);
 
@@ -357,7 +360,7 @@ namespace Aikido.Zen.Test.Helpers
         public void UpdateApiInfo_NullNewInfo_DoesNotUpdate()
         {
             var context = CreateTestContext();
-            var existingRoute = new Route { ApiSpec = new APISpec(), Hits = 0 };
+            var existingRoute = new Route { ApiSpec = new APISpec() };
 
             ApiInfoHelper.UpdateApiInfo(context, existingRoute, 10);
 
@@ -370,7 +373,7 @@ namespace Aikido.Zen.Test.Helpers
         public void UpdateApiInfo_ErrorHandling_ExitsGracefully()
         {
             var context = CreateTestContext();
-            var existingRoute = new Route { ApiSpec = new APISpec(), Hits = 0 };
+            var existingRoute = new Route { ApiSpec = new APISpec() };
 
             // Simulate an error by passing a null context
             ApiInfoHelper.UpdateApiInfo(null, existingRoute, 10);
@@ -395,7 +398,7 @@ namespace Aikido.Zen.Test.Helpers
                 }
             );
 
-            var existingRoute = new Route { ApiSpec = new APISpec(), Hits = 0 };
+            var existingRoute = new Route { ApiSpec = new APISpec() };
 
             ApiInfoHelper.UpdateApiInfo(context, existingRoute, 10);
 
@@ -414,7 +417,7 @@ namespace Aikido.Zen.Test.Helpers
                 }
             );
 
-            var existingRoute = new Route { ApiSpec = new APISpec(), Hits = 0 };
+            var existingRoute = new Route { ApiSpec = new APISpec() };
 
             ApiInfoHelper.UpdateApiInfo(context, existingRoute, 10);
 
@@ -432,7 +435,7 @@ namespace Aikido.Zen.Test.Helpers
                 }
             );
 
-            var existingRoute = new Route { ApiSpec = new APISpec(), Hits = 0 };
+            var existingRoute = new Route { ApiSpec = new APISpec() };
 
             ApiInfoHelper.UpdateApiInfo(context, existingRoute, 10);
 
@@ -445,7 +448,7 @@ namespace Aikido.Zen.Test.Helpers
         public void UpdateApiInfo_NormalizeEmptySpec_SetsEmptyApiSpec()
         {
             var context = CreateTestContext();
-            var existingRoute = new Route { ApiSpec = new APISpec(), Hits = 0 };
+            var existingRoute = new Route { ApiSpec = new APISpec() };
 
             ApiInfoHelper.UpdateApiInfo(context, existingRoute, 10);
 

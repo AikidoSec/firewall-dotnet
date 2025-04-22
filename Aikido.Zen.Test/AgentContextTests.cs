@@ -217,6 +217,46 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void AddRoute_ShouldIncrementHits_ForRoutesAndHosts()
+        {
+            // Arrange
+            var context = new Context
+            {
+                Url = "/api/repeated",
+                Method = "GET",
+                Route = "/api/repeated"
+            };
+
+            // Act
+            _agentContext.Clear();
+            _agentContext.AddRoute(context); // Hit 1 (TryAdd)
+            _agentContext.AddRoute(context); // Hit 2 (TryGetValue -> Increment)
+            _agentContext.AddRoute(context); // Hit 3 (TryGetValue -> Increment)
+
+            _agentContext.AddHostname("example.com:8080"); // Hit 1 (TryAdd)
+            _agentContext.AddHostname("example.com:8080"); // Hit 2 (TryGetValue -> Increment)
+            _agentContext.AddHostname("example.com:8080"); // Hit 3 (TryGetValue -> Increment)
+            _agentContext.AddHostname("example.com:8081"); // Hit 1 (TryAdd)
+
+            // Assert
+            Assert.That(_agentContext.Routes.Count(), Is.EqualTo(1), "Should only be one route entry.");
+            var route = _agentContext.Routes.First();
+            Assert.That(route.Path, Is.EqualTo(context.Route));
+            Assert.That(route.Method, Is.EqualTo(context.Method));
+            Assert.That(route.Hits, Is.EqualTo(3), "Hits should be incremented for the same route.");
+
+            Assert.That(_agentContext.Hostnames.Count(), Is.EqualTo(2), "Should only be two hostnames entries.");
+            var host = _agentContext.Hostnames.FirstOrDefault(x => x.Port == 8080);
+            Assert.That(host.Hostname, Is.EqualTo("example.com"));
+            Assert.That(host.Hits, Is.EqualTo(3));
+
+            host = _agentContext.Hostnames.FirstOrDefault(x => x.Port == 8081);
+            Assert.That(host.Hostname, Is.EqualTo("example.com"));
+            Assert.That(host.Port, Is.EqualTo(8081));
+            Assert.That(host.Hits, Is.EqualTo(1));
+        }
+
+        [Test]
         public void Clear_ShouldResetAllProperties()
         {
             // Arrange
@@ -513,64 +553,112 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void AddHostname_ShouldEvictOldest_WhenMaxReached()
+        public void AddHostname_ShouldEvictLeastFrequentlyUsed_WhenMaxReached()
         {
             // Arrange
-            const int MaxHostnames = 200;
+            const int MaxHostnames = 2000;
             var firstHostname = "host0.com:80";
+            _agentContext.Clear();
 
             // Act
+            // Add the first hostname - this will have Hits = 1 and should be the LFU candidate
             _agentContext.AddHostname(firstHostname);
-            for (int i = 1; i < MaxHostnames + 1; i++)
+
+            // Add MaxHostnames more hostnames, each with Hits = 2
+            for (int i = 1; i <= MaxHostnames; i++)
             {
-                _agentContext.AddHostname($"host{i}.com:80");
+                var hostname = $"host{i}.com:80";
+                _agentContext.AddHostname(hostname); // Access 1: TryAdd -> Hits=1
+                _agentContext.AddHostname(hostname); // Access 2: TryGetValue -> Increment -> Hits=2
             }
 
+            // Add one more hostname to trigger eviction
+            var extraHostname = $"host{MaxHostnames + 1}.com:80";
+            _agentContext.AddHostname(extraHostname); // Hits = 1 (added)
+            _agentContext.AddHostname(extraHostname); // Hits = 2 (incremented)
+
             // Assert
-            Assert.That(_agentContext.Hostnames.Count(), Is.EqualTo(MaxHostnames));
-            Assert.That(_agentContext.Hostnames.Any(h => h.Hostname == "host0.com"), Is.False, "First hostname should be evicted");
-            Assert.That(_agentContext.Hostnames.Any(h => h.Hostname == $"host{MaxHostnames}.com"), Is.True, "Last hostname should be present");
+            Assert.That(_agentContext.Hostnames.Count(), Is.EqualTo(MaxHostnames), "Dictionary size should be at max capacity.");
+            // host0 (Hits=1) should be evicted as the LFU item.
+            Assert.That(_agentContext.Hostnames.Any(h => h.Hostname == "host0.com"), Is.False, "First hostname (host0) should be evicted as it was LFU (1 hit).");
+            // Verify one of the later added hostnames (with Hits=2) is still present.
+            // We check host1 as an example, but any host from 1 to MaxHostnames could be present.
+            Assert.That(_agentContext.Hostnames.Any(h => h.Hostname == "host1.com"), Is.True, "A hostname with higher hits (host1) should remain.");
+            // Verify the extra hostname added last (with Hits=2) is present.
+            Assert.That(_agentContext.Hostnames.Any(h => h.Hostname == extraHostname.Split(':')[0]), Is.True, "The extra hostname added to trigger eviction should remain.");
         }
 
         [Test]
-        public void AddUser_ShouldEvictOldest_WhenMaxReached()
+        public void AddUser_ShouldEvictLeastFrequentlyUsed_WhenMaxReached()
         {
             // Arrange
-            const int MaxUsers = 1000;
+            const int MaxUsers = 2000;
             var firstUser = new User("user0", "User Zero");
             var ipAddress = "192.168.0.1";
+            _agentContext.Clear();
 
             // Act
+            // Add the first user - this will have Hits = 1 and should be the LFU candidate
             _agentContext.AddUser(firstUser, ipAddress);
-            for (int i = 1; i < MaxUsers + 1; i++)
+
+            // Add MaxUsers more users, each with Hits = 2
+            for (int i = 1; i <= MaxUsers; i++)
             {
-                _agentContext.AddUser(new User($"user{i}", $"User {i}"), ipAddress);
+                var user = new User($"user{i}", $"User {i}");
+                _agentContext.AddUser(user, ipAddress); // Access 1: TryAdd -> Hits=1
+                _agentContext.AddUser(user, ipAddress); // Access 2: TryGetValue -> Increment -> Hits=2
             }
 
+            // Add one more user to trigger eviction
+            var extraUser = new User($"user{MaxUsers + 1}", $"User {MaxUsers + 1}");
+            _agentContext.AddUser(extraUser, ipAddress); // Hits = 1 (added)
+            _agentContext.AddUser(extraUser, ipAddress); // Hits = 2 (incremented)
+
             // Assert
-            Assert.That(_agentContext.Users.Count(), Is.EqualTo(MaxUsers));
-            Assert.That(_agentContext.Users.Any(u => u.Id == "user0"), Is.False, "First user should be evicted");
-            Assert.That(_agentContext.Users.Any(u => u.Id == $"user{MaxUsers}"), Is.True, "Last user should be present");
+            Assert.That(_agentContext.Users.Count(), Is.EqualTo(MaxUsers), "Dictionary size should be at max capacity.");
+            // user0 (Hits=1) should be evicted as the LFU item.
+            Assert.That(_agentContext.Users.Any(u => u.Id == "user0"), Is.False, "First user (user0) should be evicted as it was LFU (1 hit).");
+            // Verify one of the later added users (with Hits=2) is still present.
+            // We check user1 as an example.
+            Assert.That(_agentContext.Users.Any(u => u.Id == "user1"), Is.True, "A user with higher hits (user1) should remain.");
+            // Verify the extra user added last (with Hits=2) is present.
+            Assert.That(_agentContext.Users.Any(u => u.Id == extraUser.Id), Is.True, "The extra user added to trigger eviction should remain.");
         }
 
         [Test]
-        public void AddRoute_ShouldEvictOldest_WhenMaxReached()
+        public void AddRoute_ShouldEvictLeastFrequentlyUsed_WhenMaxReached()
         {
             // Arrange
-            const int MaxRoutes = 200;
+            const int MaxRoutes = 5000;
             var firstRouteContext = new Context { Url = "/route0", Method = "GET", Route = "/route0" };
+            _agentContext.Clear();
 
             // Act
+            // Add the first route - this will have Hits = 1 and should be the LFU candidate
             _agentContext.AddRoute(firstRouteContext);
-            for (int i = 1; i < MaxRoutes + 1; i++)
+
+            // Add MaxRoutes more routes, each with Hits = 2
+            for (int i = 1; i <= MaxRoutes; i++)
             {
-                _agentContext.AddRoute(new Context { Url = $"/route{i}", Method = "GET", Route = $"/route{i}" });
+                var routeContext = new Context { Url = $"/route{i}", Method = "GET", Route = $"/route{i}" };
+                _agentContext.AddRoute(routeContext); // Access 1: TryAdd -> Hits=1
+                _agentContext.AddRoute(routeContext); // Access 2: TryGetValue -> Increment -> Hits=2
             }
 
+            // Add one more route to trigger eviction
+            var extraRouteContext = new Context { Url = $"/route{MaxRoutes + 1}", Method = "GET", Route = $"/route{MaxRoutes + 1}" };
+            _agentContext.AddRoute(extraRouteContext); // Hits = 1 (added)
+            _agentContext.AddRoute(extraRouteContext); // Hits = 2 (incremented)
+
             // Assert
-            Assert.That(_agentContext.Routes.Count(), Is.EqualTo(MaxRoutes));
-            Assert.That(_agentContext.Routes.Any(r => r.Path == "/route0"), Is.False, "First route should be evicted");
-            Assert.That(_agentContext.Routes.Any(r => r.Path == $"/route{MaxRoutes}"), Is.True, "Last route should be present");
+            Assert.That(_agentContext.Routes.Count(), Is.EqualTo(MaxRoutes), "Dictionary size should be at max capacity.");
+            // route0 (Hits=1) should be evicted as the LFU item.
+            Assert.That(_agentContext.Routes.Any(r => r.Path == "/route0"), Is.False, "First route (route0) should be evicted as it was LFU (1 hit).");
+            // Verify one of the later added routes (with Hits=2) is still present.
+            // We check route1 as an example.
+            Assert.That(_agentContext.Routes.Any(r => r.Path == "/route1"), Is.True, "A route with higher hits (/route1) should remain.");
+            // Verify the extra route added last (with Hits=2) is present.
+            Assert.That(_agentContext.Routes.Any(r => r.Path == extraRouteContext.Route), Is.True, "The extra route added to trigger eviction should remain.");
         }
     }
 }
