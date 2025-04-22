@@ -67,9 +67,7 @@ namespace Aikido.Zen.Core.Models
             var hostParts = hostname.Split(':');
             var name = hostParts[0];
             var port = hostParts.Length > 1 ? hostParts[1] : "80";
-            var host = new Host { Hostname = name };
-            if (int.TryParse(port, out int portNumber))
-                host.Port = portNumber;
+            int.TryParse(port, out int portNumber);
 
             var key = $"{name}:{port}";
             // thread safe add or update
@@ -77,9 +75,13 @@ namespace Aikido.Zen.Core.Models
                 // the dictionary key is the hostname
                 key: key,
                 // on add, we set the host as the value
-                (_) => host,
+                (_) => new Host { Hostname = name, Port = portNumber },
                 // on update, we set the host as the value
-                (_, __) => host
+                (_, h) =>
+                {
+                    h.Increment();
+                    return h;
+                }
             );
         }
 
@@ -120,13 +122,12 @@ namespace Aikido.Zen.Core.Models
                     Path = route,
                     Method = context.Method,
                     ApiSpec = OpenAPIHelper.GetApiInfo(context),
-                    Hits = 1
                 },
                 // on update, we update the api info and increment the hits
                 (_, existing) =>
                 {
                     OpenAPIHelper.UpdateApiInfo(context, existing, EnvironmentHelper.MaxApiDiscoverySamples);
-                    existing.Hits++;
+                    existing.Increment();
                     return existing;
                 }
             );
