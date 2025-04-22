@@ -217,6 +217,47 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void AddRoute_ShouldIncrementHits_ForRoutesAndHosts()
+        {
+            // Arrange
+            var context = new Context
+            {
+                Url = "/api/repeated",
+                Method = "GET",
+                Route = "/api/repeated"
+            };
+
+            // Act
+            _agentContext.Clear();
+            _agentContext.AddRoute(context); // Hit 1
+            _agentContext.AddRoute(context); // Hit 2
+            _agentContext.AddRoute(context); // Hit 3
+
+            _agentContext.AddHostname("example.com:8080"); // Hit 1
+            _agentContext.AddHostname("example.com:8080"); // Hit 2
+            _agentContext.AddHostname("example.com:8080"); // Hit 3
+            _agentContext.AddHostname("example.com:8081"); // Hit 1
+
+            // Assert
+            Assert.That(_agentContext.Routes.Count(), Is.EqualTo(1), "Should only be one route entry.");
+            var route = _agentContext.Routes.First();
+            Assert.That(route.Path, Is.EqualTo(context.Route));
+            Assert.That(route.Method, Is.EqualTo(context.Method));
+            Assert.That(route.Hits, Is.EqualTo(3), "Hits should be incremented for the same route.");
+
+            Assert.That(_agentContext.Hostnames.Count(), Is.EqualTo(2), "Should only be two hostnames entries.");
+            var host = _agentContext.Hostnames.FirstOrDefault(x => x.Port == 8080);
+            Assert.That(host.Hostname, Is.EqualTo("example.com"));
+            Assert.That(host.Hits, Is.EqualTo(3));
+
+            host = _agentContext.Hostnames.FirstOrDefault(x => x.Port == 8081);
+            Assert.That(host.Hostname, Is.EqualTo("example.com"));
+            Assert.That(host.Port, Is.EqualTo(8081));
+            Assert.That(host.Hits, Is.EqualTo(1));
+
+        }
+
+        [Test]
         public void Clear_ShouldResetAllProperties()
         {
             // Arrange
