@@ -152,118 +152,45 @@ Task("Test")
             }
 
             var logFilePath = $"{coverageDir.FullPath}/test-results-{project.GetFilenameWithoutExtension()}.trx";
-            var outputLogPath = $"{coverageDir.FullPath}/test-output-{project.GetFilenameWithoutExtension()}.log";
-            var errorLogPath = $"{coverageDir.FullPath}/test-error-{project.GetFilenameWithoutExtension()}.log";
-
-            // Create or clear the log files
-            System.IO.File.WriteAllText(outputLogPath, "");
-            System.IO.File.WriteAllText(errorLogPath, "");
-
-            var stdOutput = new List<string>();
-            var stdError = new List<string>();
 
             var settings = new DotNetTestSettings
             {
-                SetupProcessSettings = processSettings =>
-                {
-                    processSettings.RedirectStandardOutput = true;
-                    processSettings.RedirectStandardError = true;
-                },
                 Configuration = configuration,
                 NoBuild = true,
                 NoRestore = true,
-                ArgumentCustomization = args =>
-                {
-                    // for now, only collect coverage for the main tests project
-                    if (project.FullPath.EndsWith("Aikido.Zen.Tests.csproj"))
-                    {
-                        args = args
-                            .Append("/p:CollectCoverage=true")
-                            .Append("/p:CoverletOutputFormat=opencover")
-                            .Append($"/p:CoverletOutput={coverageDir.FullPath}/coverage.xml")
-                            .Append("/p:Include=[Aikido.Zen.*]*")
-                            .Append("/p:Exclude=[Aikido.Zen.Test]*");
-                    }
-                    // Increase verbosity to diagnostic for more information
-                    args = args
-                        .Append("--verbosity detailed")
-                        .Append($"--logger trx;LogFileName={logFilePath}");
-
-                    // If SDK version was extracted from framework argument, use it
-                    if (!string.IsNullOrEmpty(sdkVersion))
-                    {
-                        args = args.Append($"--sdk-version {sdkVersion}");
-                    }
-
-                    return args;
-                }
+                Verbosity = DotNetVerbosity.Detailed,
+                Loggers = new[] { $"trx;LogFileName={logFilePath}" }
             };
 
-            try
+            if (project.FullPath.EndsWith("Aikido.Zen.Tests.csproj"))
             {
-                var process = StartAndReturnProcess(
-                    "dotnet",
-                    new ProcessSettings
-                    {
-                        Arguments = $"test {project.FullPath} --configuration {configuration} --no-build --no-restore --verbosity detailed --logger trx;LogFileName={logFilePath}",
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true,
-                        Silent = true
-                    }
-                );
-
-                process.GetStandardOutput().ToList().ForEach(line =>
-                {
-                    stdOutput.Add(line);
-                    System.IO.File.AppendAllText(outputLogPath, line + Environment.NewLine);
-                });
-
-                process.GetStandardError().ToList().ForEach(line =>
-                {
-                    stdError.Add(line);
-                    System.IO.File.AppendAllText(errorLogPath, line + Environment.NewLine);
-                });
-
-                process.WaitForExit();
-
-                if (process.GetExitCode() != 0)
-                {
-                    throw new Exception($"Test failed for {project.GetFilename()}. Exit code: {process.GetExitCode()}");
-                }
+                settings.ArgumentCustomization = args => args
+                    .Append("/p:CollectCoverage=true")
+                    .Append("/p:CoverletOutputFormat=opencover")
+                    .Append($"/p:CoverletOutput="{coverageDir.FullPath}/coverage.xml"")
+                    .Append("/p:Include="[Aikido.Zen.*]*"")
+                    .Append("/p:Exclude="[Aikido.Zen.Test*]*"");
             }
-            catch (Exception ex)
+
+            if (!string.IsNullOrEmpty(sdkVersion))
             {
-                Error($"Test failed for {project.GetFilename()}: {ex.Message}");
-
-                // Print the captured output
-                Information("=== Test Standard Output ===");
-                foreach (var line in stdOutput)
-                {
-                    Information(line);
-                }
-
-                Information("=== Test Standard Error ===");
-                foreach (var line in stdError)
-                {
-                    Error(line);
-                }
-
-                Information($"Full test output log: {outputLogPath}");
-                Information($"Full test error log: {errorLogPath}");
-
-                throw;
+                settings.ArgumentCustomization = args => (settings.ArgumentCustomization?.Invoke(args) ?? args)
+                    .Append($"--framework net{sdkVersion}");
             }
+
+            DotNetTest(project.FullPath, settings);
         }
         Information($"Test task completed successfully. Coverage report at: {coverageDir.FullPath}");
 
         if (!FileExists($"{coverageDir.FullPath}/coverage.xml"))
         {
-            Warning("Coverage file was not generated!");
+            Warning("Coverage file was not generated! Check test execution and coverage settings.");
         }
     })
     .OnError(ex =>
     {
         Error($"Test task failed with error: {ex.Message}");
+        throw;
     });
 
 
