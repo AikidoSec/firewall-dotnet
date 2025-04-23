@@ -273,11 +273,5 @@ namespace Aikido.Zen.Core.Models
         public long Started => _started;
         public BlockList BlockList => _blockList;
         public Regex BlockedUserAgents => _blockedUserAgents;
-
-#if DEBUG // Internal visibility for testing
-        internal ConcurrentLFUDictionary<string, Host> HostnamesInternal_ForTestingOnly => _hostnames;
-        internal ConcurrentLFUDictionary<string, Route> RoutesInternal_ForTestingOnly => _routes;
-        internal ConcurrentLFUDictionary<string, UserExtended> UsersInternal_ForTestingOnly => _users;
-#endif
     }
 }

@@ -564,7 +564,7 @@ namespace Aikido.Zen.Test
             // Add the first hostname (Hits = 1)
             _agentContext.AddHostname(firstHostname);
 
-            // Add hostnames 1 to MaxHostnames
+            // Add MaxHostnames more hostnames, ensuring they all end up with Hits = 2
             for (int i = 1; i <= MaxHostnames; i++)
             {
                 var hostname = $"host{i}.com:80";
@@ -572,47 +572,20 @@ namespace Aikido.Zen.Test
                 // When adding host[MaxHostnames], Size >= MaxHostnames triggers eviction *before* add.
                 // LFU is host0 (Hits=1). host0 is evicted.
                 _agentContext.AddHostname(hostname); // Adds host{i}(1). Size reaches MaxHostnames.
+                _agentContext.AddHostname(hostname); // Updates host{i}(2). Size remains MaxHostnames.
             }
-            // State: host1..host[MaxHostnames] (all Hits=1). Size = MaxHostnames.
-
-            // Manually increment hits for hostnames 1 to MaxHostnames to make them Hits=2
-            for (int i = 1; i <= MaxHostnames; i++)
-            {
-                var hostname = $"host{i}.com:80";
-                // Use TryGet + Increment via internal access for testing hit manipulation
-                if (_agentContext.HostnamesInternal_ForTestingOnly.TryGet(hostname, out var host))
-                {
-                    host.Increment(); // Now host1..host[MaxHostnames] have Hits = 2
-                }
-            }
-            // State: host1..host[MaxHostnames] (all Hits=2). Size = MaxHostnames.
-
-            // Add one more hostname to trigger eviction
-            var extraHostname = $"host{MaxHostnames + 1}.com:80";
-            // Size is MaxHostnames, adding a new key triggers eviction *before* add.
-            // All existing hosts have Hits=2. LFU picks one (e.g., host1 based on internal order).
-            _agentContext.AddHostname(extraHostname); // Evicts one (e.g., host1), adds host[MaxHostnames+1](1).
-            // State: host2..host[MaxHostnames+1]. Size = MaxHostnames.
-
-            // Manually increment the extra hostname to Hits=2 for consistency check (optional)
-            if (_agentContext.HostnamesInternal_ForTestingOnly.TryGet(extraHostname, out var extraHost))
-            {
-                extraHost.Increment(); // extraHost Hits=2
-            }
-            // State: host2..host[MaxHostnames+1] (all Hits=2, except maybe the evicted one's replacement?).
+            // Final state: host1..host[MaxHostnames] (all Hits=2). Size = MaxHostnames. host0 was evicted.
 
             // Assert
             Assert.Multiple(() =>
             {
                 Assert.That(_agentContext.Hostnames.Count(), Is.EqualTo(MaxHostnames), "Dictionary size should be at max capacity.");
-                // host0 was evicted earlier.
-                Assert.That(_agentContext.Hostnames.Any(h => h.Hostname == "host0.com"), Is.False, "First hostname (host0) should be evicted early.");
-                // The extra hostname added last should be present.
-                var extraHostnameName = extraHostname.Split(':')[0];
-                Assert.That(_agentContext.Hostnames.Any(h => h.Hostname == extraHostnameName), Is.True, "The extra hostname added last should remain.");
-                // Assert that *at least one* of the original LFU candidates (host1..host[MaxHostnames]) was evicted.
-                // We can't know *which* one, just that the count is correct and host0/extraHost are handled.
-                // A stronger assertion isn't easily possible without knowing the exact tie-breaking.
+                // host0 (Hits=1) should have been evicted when host[MaxHostnames] was added.
+                Assert.That(_agentContext.Hostnames.Any(h => h.Hostname == "host0.com"), Is.False, "First hostname (host0) should be evicted as LFU.");
+                // Verify one of the later added hostnames (host1) is still present.
+                Assert.That(_agentContext.Hostnames.Any(h => h.Hostname == "host1.com"), Is.True, "A hostname with higher hits (host1) should remain.");
+                // Verify the last hostname added (host[MaxHostnames]) is present.
+                Assert.That(_agentContext.Hostnames.Any(h => h.Hostname == $"host{MaxHostnames}.com"), Is.True, "The last hostname added should remain.");
             });
         }
 
