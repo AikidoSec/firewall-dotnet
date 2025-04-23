@@ -167,9 +167,9 @@ Task("Test")
                 settings.ArgumentCustomization = args => args
                     .Append("/p:CollectCoverage=true")
                     .Append("/p:CoverletOutputFormat=opencover")
-                    .Append($"/p:CoverletOutput="{coverageDir.FullPath}/coverage.xml"")
-                    .Append("/p:Include="[Aikido.Zen.*]*"")
-                    .Append("/p:Exclude="[Aikido.Zen.Test*]*"");
+                    .Append($"/p:CoverletOutput=\"{coverageDir.FullPath}/coverage.xml\"")
+                    .Append("/p:Include=\"[Aikido.Zen.*]\"")
+                    .Append("/p:Exclude=\"[Aikido.Zen.Test*]\"");
             }
 
             if (!string.IsNullOrEmpty(sdkVersion))
@@ -192,8 +192,6 @@ Task("Test")
         Error($"Test task failed with error: {ex.Message}");
         throw;
     });
-
-
 
 /// <summary>
 /// Task to run end-to-end tests.
