@@ -22,7 +22,7 @@ namespace Aikido.Zen.Core.Models
         private const int MaxUsers = 2000;
         private const int MaxRoutes = 5000;
 
-        // Use ConcurrentLFUDictionary which handles LFU eviction internally
+        // Use ConcurrentLFUDictionary which handles LFU eviction internally.
         private readonly ConcurrentLFUDictionary<string, Host> _hostnames = new ConcurrentLFUDictionary<string, Host>(MaxHostnames);
         private readonly ConcurrentLFUDictionary<string, Route> _routes = new ConcurrentLFUDictionary<string, Route>(MaxRoutes);
         private readonly ConcurrentLFUDictionary<string, UserExtended> _users = new ConcurrentLFUDictionary<string, UserExtended>(MaxUsers);
