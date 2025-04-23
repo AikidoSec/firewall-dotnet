@@ -428,6 +428,7 @@
     <Compile Include="Controllers\ContentTypeController.cs" />
     <Compile Include="Controllers\OutboundController.cs" />
     <Compile Include="Controllers\PathTraversalController.cs" />
+    <Compile Include="Controllers\ShellInjectionController.cs" />
     <Compile Include="Controllers\SIController.cs" />
     <Compile Include="DbSIConfig.cs" />
     <Compile Include="Global.asax.cs">
