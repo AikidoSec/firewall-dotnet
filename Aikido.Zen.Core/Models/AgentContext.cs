@@ -27,7 +27,6 @@ namespace Aikido.Zen.Core.Models
         private readonly ConcurrentLFUDictionary<string, Route> _routes = new ConcurrentLFUDictionary<string, Route>(MaxRoutes);
         private readonly ConcurrentLFUDictionary<string, UserExtended> _users = new ConcurrentLFUDictionary<string, UserExtended>(MaxUsers);
 
-        // Blocked users and user agents remain as before
         private readonly ConcurrentDictionary<string, string> _blockedUsers = new ConcurrentDictionary<string, string>();
         private Regex _blockedUserAgents;
         private readonly BlockList _blockList = new BlockList();
@@ -77,21 +76,19 @@ namespace Aikido.Zen.Core.Models
             int.TryParse(port, out int portNumber);
 
             var key = $"{name}:{port}";
+            _hostnames.TryGet(key, out var host);
+            if (host == null)
+            {
+                host = new Host { Hostname = name, Port = portNumber };
+            }
 
-            if (_hostnames.TryGetValue(key, out var existingHost))
-            {
-                existingHost.Increment();
-            }
-            else
-            {
-                var newHost = new Host { Hostname = name, Port = portNumber };
-                _hostnames.TryAdd(key, newHost);
-            }
+            // when updating, we keep track of hits
+            _hostnames.AddOrUpdate(key, host);
         }
 
         /// <summary>
         /// Adds or updates a user in the context, tracking their IP address and last seen time.
-        /// Increments the user's hit count upon access (update).
+        /// Increments the user's hit count upon access (add or update).
         /// Handles LFU eviction if the maximum number of users is exceeded when adding a new user.
         /// </summary>
         /// <param name="user">The user object containing Id and Name.</param>
@@ -101,43 +98,53 @@ namespace Aikido.Zen.Core.Models
             if (user == null || string.IsNullOrEmpty(user.Id))
                 return;
 
-            if (_users.TryGetValue(user.Id, out var existingUser))
+            UserExtended userExtended;
+            if (_users.TryGet(user.Id, out var existingUser))
             {
-                existingUser.Increment();
+                // User exists, update details before calling AddOrUpdate
+                existingUser.Name = user.Name; // Update name in case it changed
                 existingUser.LastIpAddress = ipAddress;
                 existingUser.LastSeenAt = DateTimeHelper.UTCNowUnixMilliseconds();
+                userExtended = existingUser;
             }
             else
             {
-                var newUser = new UserExtended(user.Id, user.Name)
+                // User does not exist, create a new one
+                userExtended = new UserExtended(user.Id, user.Name)
                 {
                     LastIpAddress = ipAddress,
                     LastSeenAt = DateTimeHelper.UTCNowUnixMilliseconds()
                 };
-                _users.TryAdd(user.Id, newUser);
             }
+
+            // AddOrUpdate handles incrementing hits and eviction
+            _users.AddOrUpdate(user.Id, userExtended);
         }
 
         public void AddRoute(Context context)
         {
-            if (context == null || context.Route == null) return;
+            if (context == null || string.IsNullOrEmpty(context.Route)) return; // Check Route null/empty
 
-            if (_routes.TryGetValue(context.Route, out var existingRoute))
+            Route route;
+            if (_routes.TryGet(context.Route, out var existingRoute))
             {
-                existingRoute.Increment();
+                // Route exists, update API info before calling AddOrUpdate
                 OpenAPIHelper.UpdateApiInfo(context, existingRoute, EnvironmentHelper.MaxApiDiscoverySamples);
+                route = existingRoute;
             }
             else
             {
-                // Route doesn't exist, create and try to add it
-                var newRoute = new Route
+                // Route does not exist, create a new one
+                route = new Route
                 {
                     Path = context.Route,
                     Method = context.Method,
                     ApiSpec = OpenAPIHelper.GetApiInfo(context),
                 };
-                _routes.TryAdd(context.Route, newRoute);
             }
+
+            // AddOrUpdate handles incrementing hits and eviction
+            _routes.AddOrUpdate(context.Route, route);
         }
 
         public void Clear()
@@ -166,9 +173,6 @@ namespace Aikido.Zen.Core.Models
             // Check if user exists and is blocked
             if (context.User != null && IsUserBlocked(context.User.Id))
             {
-                // Note: We don't need _users.TryGetValue here just to check IsUserBlocked,
-                // as IsUserBlocked checks the separate _blockedUsers dictionary.
-                // If we needed the UserExtended object itself, we'd use TryGetValue.
                 reason = "User is blocked";
                 return true;
             }
@@ -248,10 +252,9 @@ namespace Aikido.Zen.Core.Models
             _blockedUserAgents = blockedUserAgents;
         }
 
-        // Use .Values to get the collection from the dictionary
-        public IEnumerable<Host> Hostnames => _hostnames.Values;
-        public IEnumerable<UserExtended> Users => _users.Values;
-        public IEnumerable<Route> Routes => _routes.Values;
+        public IEnumerable<Host> Hostnames => _hostnames.GetValues();
+        public IEnumerable<UserExtended> Users => _users.GetValues();
+        public IEnumerable<Route> Routes => _routes.GetValues();
 
         public IEnumerable<EndpointConfig> Endpoints
         {
@@ -270,5 +273,11 @@ namespace Aikido.Zen.Core.Models
         public long Started => _started;
         public BlockList BlockList => _blockList;
         public Regex BlockedUserAgents => _blockedUserAgents;
+
+#if DEBUG // Internal visibility for testing
+        internal ConcurrentLFUDictionary<string, Host> HostnamesInternal_ForTestingOnly => _hostnames;
+        internal ConcurrentLFUDictionary<string, Route> RoutesInternal_ForTestingOnly => _routes;
+        internal ConcurrentLFUDictionary<string, UserExtended> UsersInternal_ForTestingOnly => _users;
+#endif
     }
 }

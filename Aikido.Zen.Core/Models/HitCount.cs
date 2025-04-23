@@ -21,7 +21,7 @@ namespace Aikido.Zen.Core.Models
         /// </summary>
         public HitCount()
         {
-            _hits = 1;
+            _hits = 0;
         }
 
         /// <summary>
