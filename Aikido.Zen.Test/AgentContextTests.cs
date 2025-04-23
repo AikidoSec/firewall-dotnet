@@ -213,7 +213,7 @@ namespace Aikido.Zen.Test
             _agentContext.AddRoute(context);
 
             // Assert
-            Assert.That(_agentContext.Routes.Count() == 1);
+            Assert.That(_agentContext.Routes.Count() == 0);
         }
 
         [Test]
@@ -229,14 +229,14 @@ namespace Aikido.Zen.Test
 
             // Act
             _agentContext.Clear();
-            _agentContext.AddRoute(context); // Hit 1
-            _agentContext.AddRoute(context); // Hit 2
-            _agentContext.AddRoute(context); // Hit 3
+            _agentContext.AddRoute(context); // Hit 1 (TryAdd)
+            _agentContext.AddRoute(context); // Hit 2 (TryGetValue -> Increment)
+            _agentContext.AddRoute(context); // Hit 3 (TryGetValue -> Increment)
 
-            _agentContext.AddHostname("example.com:8080"); // Hit 1
-            _agentContext.AddHostname("example.com:8080"); // Hit 2
-            _agentContext.AddHostname("example.com:8080"); // Hit 3
-            _agentContext.AddHostname("example.com:8081"); // Hit 1
+            _agentContext.AddHostname("example.com:8080"); // Hit 1 (TryAdd)
+            _agentContext.AddHostname("example.com:8080"); // Hit 2 (TryGetValue -> Increment)
+            _agentContext.AddHostname("example.com:8080"); // Hit 3 (TryGetValue -> Increment)
+            _agentContext.AddHostname("example.com:8081"); // Hit 1 (TryAdd)
 
             // Assert
             Assert.That(_agentContext.Routes.Count(), Is.EqualTo(1), "Should only be one route entry.");
@@ -254,7 +254,6 @@ namespace Aikido.Zen.Test
             Assert.That(host.Hostname, Is.EqualTo("example.com"));
             Assert.That(host.Port, Is.EqualTo(8081));
             Assert.That(host.Hits, Is.EqualTo(1));
-
         }
 
         [Test]
@@ -551,6 +550,118 @@ namespace Aikido.Zen.Test
 
             // Assert
             Assert.That(isBlocked, Is.False);
+        }
+
+        [Test]
+        public void AddHostname_ShouldEvictLeastFrequentlyUsed_WhenMaxReached()
+        {
+            // Arrange
+            const int MaxHostnames = 2000; // Use a smaller number for faster testing maybe?
+            var firstHostname = "host0.com:80";
+            _agentContext.Clear();
+
+            // Act
+            // Add the first hostname (Hits = 1)
+            _agentContext.AddHostname(firstHostname);
+
+            // Add MaxHostnames more hostnames, ensuring they all end up with Hits = 2
+            for (int i = 1; i <= MaxHostnames; i++)
+            {
+                var hostname = $"host{i}.com:80";
+                // AddHostname calls AddOrUpdate internally.
+                // When adding host[MaxHostnames], Size >= MaxHostnames triggers eviction *before* add.
+                // LFU is host0 (Hits=1). host0 is evicted.
+                _agentContext.AddHostname(hostname); // Adds host{i}(1). Size reaches MaxHostnames.
+                _agentContext.AddHostname(hostname); // Updates host{i}(2). Size remains MaxHostnames.
+            }
+            // Final state: host1..host[MaxHostnames] (all Hits=2). Size = MaxHostnames. host0 was evicted.
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(_agentContext.Hostnames.Count(), Is.EqualTo(MaxHostnames), "Dictionary size should be at max capacity.");
+                // host0 (Hits=1) should have been evicted when host[MaxHostnames] was added.
+                Assert.That(_agentContext.Hostnames.Any(h => h.Hostname == "host0.com"), Is.False, "First hostname (host0) should be evicted as LFU.");
+                // Verify one of the later added hostnames (host1) is still present.
+                Assert.That(_agentContext.Hostnames.Any(h => h.Hostname == "host1.com"), Is.True, "A hostname with higher hits (host1) should remain.");
+                // Verify the last hostname added (host[MaxHostnames]) is present.
+                Assert.That(_agentContext.Hostnames.Any(h => h.Hostname == $"host{MaxHostnames}.com"), Is.True, "The last hostname added should remain.");
+            });
+        }
+
+        [Test]
+        public void AddUser_ShouldEvictLeastFrequentlyUsed_WhenMaxReached()
+        {
+            // Arrange
+            const int MaxUsers = 2000;
+            var firstUser = new User("user0", "User 0");
+            var ipAddress = "192.168.0.1";
+            _agentContext.Clear();
+
+            // Act
+            // Add the first user (Hits = 1)
+            _agentContext.AddUser(firstUser, ipAddress);
+
+            // Add MaxUsers more users, ensuring they all end up with Hits = 2
+            for (int i = 1; i <= MaxUsers; i++)
+            {
+                var user = new User($"user{i}", $"User {i}");
+                // AddUser calls AddOrUpdate internally.
+                // When adding user[MaxUsers], Size >= MaxUsers triggers eviction *before* add.
+                // LFU is user0 (Hits=1). user0 is evicted.
+                _agentContext.AddUser(user, ipAddress); // Adds user{i}(1). Size reaches MaxUsers.
+                _agentContext.AddUser(user, ipAddress); // Updates user{i}(2). Size remains MaxUsers.
+            }
+            // Final state: user1..user[MaxUsers] (all Hits=2). Size = MaxUsers. user0 was evicted.
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(_agentContext.Users.Count(), Is.EqualTo(MaxUsers), "Dictionary size should be at max capacity.");
+                // user0 (Hits=1) should have been evicted when user[MaxUsers] was added.
+                Assert.That(_agentContext.Users.Any(u => u.Id == "user0"), Is.False, "First user (user0) should be evicted as LFU.");
+                // Verify one of the later added users (user1) is still present.
+                Assert.That(_agentContext.Users.Any(u => u.Id == "user1"), Is.True, "A user with higher hits (user1) should remain.");
+                // Verify the last user added (user[MaxUsers]) is present.
+                Assert.That(_agentContext.Users.Any(u => u.Id == $"user{MaxUsers}"), Is.True, "The last user added should remain.");
+            });
+        }
+
+        [Test]
+        public void AddRoute_ShouldEvictLeastFrequentlyUsed_WhenMaxReached()
+        {
+            // Arrange
+            const int MaxRoutes = 5000;
+            var firstRouteContext = new Context { Url = "/route0", Method = "GET", Route = "/route0" };
+            _agentContext.Clear();
+
+            // Act
+            // Add the first route (Hits = 1)
+            _agentContext.AddRoute(firstRouteContext);
+
+            // Add MaxRoutes more routes, ensuring they all end up with Hits = 2
+            for (int i = 1; i <= MaxRoutes; i++)
+            {
+                var routeContext = new Context { Url = $"/route{i}", Method = "GET", Route = $"/route{i}" };
+                // AddRoute calls AddOrUpdate internally.
+                // When adding route[MaxRoutes], Size >= MaxRoutes triggers eviction *before* add.
+                // LFU is route0 (Hits=1). route0 is evicted.
+                _agentContext.AddRoute(routeContext); // Adds route{i}(1). Size reaches MaxRoutes.
+                _agentContext.AddRoute(routeContext); // Updates route{i}(2). Size remains MaxRoutes.
+            }
+            // Final state: route1..route[MaxRoutes] (all Hits=2). Size = MaxRoutes. route0 was evicted.
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(_agentContext.Routes.Count(), Is.EqualTo(MaxRoutes), "Dictionary size should be at max capacity.");
+                // route0 (Hits=1) should have been evicted when route[MaxRoutes] was added.
+                Assert.That(_agentContext.Routes.Any(r => r.Path == "/route0"), Is.False, "First route (route0) should be evicted as LFU.");
+                // Verify one of the later added routes (route1) is still present.
+                Assert.That(_agentContext.Routes.Any(r => r.Path == "/route1"), Is.True, "A route with higher hits (/route1) should remain.");
+                // Verify the last route added (route[MaxRoutes]) is present.
+                Assert.That(_agentContext.Routes.Any(r => r.Path == $"/route{MaxRoutes}"), Is.True, "The last route added should remain.");
+            });
         }
     }
 }

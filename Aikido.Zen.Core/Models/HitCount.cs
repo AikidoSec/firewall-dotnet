@@ -17,11 +17,11 @@ namespace Aikido.Zen.Core.Models
 
         /// <summary>
         /// Initializes a new instance of the <see cref="HitCount"/> class.
-        /// Sets the initial hit count to 1.
+        /// Sets the initial hit count to 0.
         /// </summary>
         public HitCount()
         {
-            _hits = 1;
+            _hits = 0;
         }
 
         /// <summary>
