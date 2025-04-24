@@ -90,7 +90,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void CaptureRequest_WithAikidoDevHostname_SkipsCapture()
+        public void CaptureRequest_WithAikidoDevHostname_DoesNotSkipCapture()
         {
             // Arrange
             Agent.NewInstance(ZenApiMock.CreateMock().Object);
@@ -100,8 +100,8 @@ namespace Aikido.Zen.Test
             var result = HttpClientPatches.CaptureRequest(request, _httpClient);
 
             // Assert
-            Assert.That(result, Is.True);
-            Assert.That(Agent.Instance.Context.Hostnames.Count, Is.EqualTo(0));
+            Assert.That(result, Is.False);
+            Assert.That(Agent.Instance.Context.Hostnames.Count, Is.EqualTo(1));
         }
     }
 }
