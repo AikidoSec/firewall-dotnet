@@ -121,7 +121,9 @@ Task("Rebuild")
     .IsDependentOn("Build");
 
 Task("Test")
-    .IsDependentOn("Build")
+    .IsDependentOn("Clean")
+    .IsDependentOn("DownloadLibraries")
+    .IsDependentOn("Restore")
     .Does(() =>
     {
         var coverageDir = MakeAbsolute(Directory("./coverage"));
@@ -156,7 +158,6 @@ Task("Test")
             var settings = new DotNetTestSettings
             {
                 Configuration = configuration,
-                NoBuild = true,
                 NoRestore = true,
                 Verbosity = DotNetVerbosity.Detailed,
                 Loggers = new[] { $"trx;LogFileName={logFilePath}" }
