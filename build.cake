@@ -158,7 +158,6 @@ Task("Test")
             var settings = new DotNetTestSettings
             {
                 Configuration = configuration,
-                NoRestore = true,
                 Verbosity = DotNetVerbosity.Detailed,
                 Loggers = new[] { $"trx;LogFileName={logFilePath}" }
             };
