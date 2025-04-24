@@ -162,21 +162,26 @@ Task("Test")
                 Loggers = new[] { $"trx;LogFileName={logFilePath}" }
             };
 
-            if (project.FullPath.EndsWith("Aikido.Zen.Tests.csproj"))
-            {
-                settings.ArgumentCustomization = args => args
-                    .Append("/p:CollectCoverage=true")
-                    .Append("/p:CoverletOutputFormat=opencover")
-                    .Append($"/p:CoverletOutput=\"{coverageDir.FullPath}/coverage.xml\"")
-                    .Append("/p:Include=\"[Aikido.Zen.*]\"")
-                    .Append("/p:Exclude=\"[Aikido.Zen.Test*]\"");
-            }
+            settings.ArgumentCustomization = args => {
+                var arguments = args;
 
-            if (!string.IsNullOrEmpty(sdkVersion))
-            {
-                settings.ArgumentCustomization = args => (settings.ArgumentCustomization?.Invoke(args) ?? args)
-                    .Append($"--framework net{sdkVersion}");
-            }
+                if (project.FullPath.EndsWith("Aikido.Zen.Tests.csproj"))
+                {
+                    arguments = arguments
+                        .Append("/p:CollectCoverage=true")
+                        .Append("/p:CoverletOutputFormat=opencover")
+                        .Append($"/p:CoverletOutput=\"{coverageDir.FullPath}/coverage.xml\"")
+                        .Append("/p:Include=\"[Aikido.Zen.*]\"")
+                        .Append("/p:Exclude=\"[Aikido.Zen.Test*]\"");
+                }
+
+                if (!string.IsNullOrEmpty(sdkVersion))
+                {
+                    arguments = arguments.Append($"--framework net{sdkVersion}");
+                }
+
+                return arguments;
+            };
 
             DotNetTest(project.FullPath, settings);
         }
@@ -190,7 +195,7 @@ Task("Test")
     .OnError(ex =>
     {
         Error($"Test task failed with error: {ex.Message}");
-        throw;
+        throw ex;
     });
 
 /// <summary>
