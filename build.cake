@@ -159,6 +159,8 @@ Task("Test")
             {
                 Configuration = configuration,
                 Verbosity = DotNetVerbosity.Detailed,
+                NoRestore = true,
+                NoBuild = true,
                 Loggers = new[] { $"trx;LogFileName={logFilePath}" }
             };
 
