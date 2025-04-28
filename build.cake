@@ -203,26 +203,22 @@ Task("Test")
                     }
                 );
 
-                // Capture and log output in real-time (or near real-time)
-                process.OutputDataReceived += (sender, e) => {
-                    if (e.Data != null) {
-                        stdOutput.Add(e.Data);
-                        FileAppendText(outputLogPath, e.Data + Environment.NewLine);
-                        // Optionally log to Cake console immediately: Information(e.Data);
-                    }
-                };
-                process.ErrorDataReceived += (sender, e) => {
-                     if (e.Data != null) {
-                        stdError.Add(e.Data);
-                        FileAppendText(errorLogPath, e.Data + Environment.NewLine);
-                        // Optionally log to Cake console immediately: Error(e.Data);
-                    }
-                };
-
-                process.BeginOutputReadLine();
-                process.BeginErrorReadLine();
-
+                // Wait for the process to complete before getting output
                 process.WaitForExit();
+
+                // Capture standard output after process exit
+                process.GetStandardOutput().ToList().ForEach(line =>
+                {
+                    stdOutput.Add(line);
+                    FileAppendText(outputLogPath, line + Environment.NewLine);
+                });
+
+                // Capture standard error after process exit
+                process.GetStandardError().ToList().ForEach(line =>
+                {
+                    stdError.Add(line);
+                    FileAppendText(errorLogPath, line + Environment.NewLine);
+                });
 
                 if (process.GetExitCode() != 0)
                 {
