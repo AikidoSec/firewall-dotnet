@@ -168,7 +168,7 @@ Task("Test")
                 .Append("--no-build")
                 .Append("--no-restore")
                 .Append("--verbosity").Append("detailed")
-                .Append($"--logger "trx;LogFileName={logFilePath}"");
+                .Append($"--logger \"trx;LogFileName={logFilePath}\"");
 
             // Add coverage arguments only for the main tests project
             if (project.FullPath.EndsWith("Aikido.Zen.Tests.csproj"))
@@ -176,9 +176,9 @@ Task("Test")
                 arguments = arguments
                     .Append("/p:CollectCoverage=true")
                     .Append("/p:CoverletOutputFormat=opencover")
-                    .Append($"/p:CoverletOutput="{coverageDir.FullPath}/coverage.xml"")
-                    .Append("/p:Include="[Aikido.Zen.*]*"")
-                    .Append("/p:Exclude="[Aikido.Zen.Test*]*"");
+                    .Append($"/p:CoverletOutput=\"{coverageDir.FullPath}/coverage.xml\"")
+                    .Append("/p:Include=\"[Aikido.Zen.*]*\"")
+                    .Append("/p:Exclude=\"[Aikido.Zen.Test*]*\"");
             }
 
             // If SDK version was extracted from framework argument, use it
@@ -281,7 +281,7 @@ Task("TestE2E")
                 .Append("--no-build")
                 .Append("--no-restore")
                 .Append("--verbosity").Append("detailed")
-                .Append("--logger "console;verbosity=detailed""); // Log directly to console
+                .Append("--logger \"console;verbosity=detailed\""); // Log directly to console
 
              if (!string.IsNullOrEmpty(sdkVersion))
             {
