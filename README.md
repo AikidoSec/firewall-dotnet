@@ -68,6 +68,9 @@ Zen operates autonomously on the same server as your .NET app to:
 
 Ensure that your project runs on .NET Core 6, 7, 8 or 9
 
+> [!IMPORTANT]
+> [ARM is not supported at this time](https://github.com/AikidoSec/firewall-dotnet/issues/113)
+
 - Install the package from NuGet:
 
 ``` shell
