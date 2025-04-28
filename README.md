@@ -139,6 +139,9 @@ using Microsoft.AspNet.Identity;
 
 Ensure that your project runs on .NET Framework 4.6 or higher.
 
+> [!IMPORTANT]
+> [ARM is not supported at this time](https://github.com/AikidoSec/firewall-dotnet/issues/113)
+
 - Install the package from NuGet:
 
 ``` shell
