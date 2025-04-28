@@ -313,34 +313,17 @@ Task("Pack")
                 "./Aikido.Zen.DotNetCore/Aikido.Zen.DotNetCore.csproj"
             };
 
-            var outputDir = MakeAbsolute(Directory("./artifacts"));
-             EnsureDirectoryExists(outputDir);
-
-            foreach (var projectPath in projects)
+            foreach (var project in projects)
             {
-                var project = ParseProject(projectPath);
-                var nuspecPath = projectPath.Replace(".csproj", ".nuspec");
-
-                 if (!FileExists(nuspecPath)) {
-                     Warning($"Nuspec file not found for project {projectPath}, attempting to pack project directly.");
-                     // Pack project directly if nuspec is missing
-                     DotNetPack(projectPath, new DotNetPackSettings {
-                        Configuration = configuration,
-                        OutputDirectory = outputDir,
-                        ArgumentCustomization = args => args.Append($"/p:PackageVersion={libVersion}")
-                     });
-                 } else {
-                     // Pack using nuspec file
-                     NuGetPack(nuspecPath, new NuGetPackSettings
-                     {
-                        OutputDirectory = outputDir,
-                        Version = libVersion,
-                        Configuration = configuration, // Pass configuration to potentially use properties
-                        Properties = new Dictionary<string, string> { {"Configuration", configuration} } // Ensure configuration is available in nuspec
-                     });
-                 }
+                var specFile = project.Replace(".csproj", ".nuspec");
+                var nugetPackSettings = new NuGetPackSettings
+                {
+                    OutputDirectory = "./artifacts",
+                    Version = libVersion,
+                };
+                NuGetPack(specFile, nugetPackSettings);
             }
-            Information($"Pack task completed successfully. Packages in: {outputDir}");
+            Information("Pack task completed successfully.");
         }
         else
         {
