@@ -234,8 +234,59 @@ Task("Test")
                 Information("=== Test Standard Output Log Summary (Last 20 lines) ===");
                 stdOutput.TakeLast(20).ToList().ForEach(line => Information(line)); // Log summary
 
-                Information("=== Test Standard Error Log Summary (Last 20 lines) ===");
-                stdError.TakeLast(20).ToList().ForEach(line => Error(line)); // Log summary
+                // --- Regex-based error extraction logic ---
+                Information("=== Relevant Test Standard Error Log Summary === ");
+                try
+                {
+                    // --- Process stdOutput for detailed failures ---
+                    var outputLogContent = string.Join(Environment.NewLine, stdOutput);
+                    // Regex explanation:
+                    // (?m)       : Multi-line mode (^ matches start of line)
+                    // ^\s*Failed : Match lines starting with optional whitespace + "Failed"
+                    // [\s\S]*?   : Match all characters (including newlines) non-greedily
+                    // (?=        : Positive lookahead
+                    //   (?:      : Non-capturing group for OR
+                    //     ^\s*Failed : Next line starting with optional whitespace + "Failed"
+                    //     |       : OR
+                    //     ^\s*Passed : Next line starting with optional whitespace + "Passed"
+                    //     |       : OR
+                    //     \\z      : Absolute end of the string
+                    //   )
+                    // )
+                    // Using [\s\S] instead of . with RegexOptions.Singleline
+                    // Added (?!:) negative lookahead to exclude summary lines like "Failed: 1"
+                    var regex = new System.Text.RegularExpressions.Regex("(?m)^\\s*Failed(?!:)[\\s\\S]*?(?=(?:^\\s*Failed(?!:)|^\\s*Passed|\\z))");
+                    var matches = regex.Matches(outputLogContent); // Apply regex to stdOutput content
+
+                    if (matches.Count > 0)
+                    {
+                        Error("Detailed failures found in test output:"); // Clarify source
+                        bool firstMatch = true;
+                        foreach (System.Text.RegularExpressions.Match match in matches)
+                        {
+                            if (!firstMatch)
+                            {
+                                Error("--------------------"); // Separator
+                            }
+                            // Log the matched block, trimming trailing newlines/whitespace
+                            Error(match.Value.TrimEnd());
+                            firstMatch = false;
+                        }
+                    }
+                    else
+                    {
+                         // Fallback if regex finds no matches in stdOutput
+                        Error("Could not find specific blocks starting with 'Failed' in standard output. Showing last 20 lines of standard error:");
+                        stdError.TakeLast(20).ToList().ForEach(line => Error(line)); // Fallback to stdError
+                    }
+                }
+                catch (Exception logEx)
+                {
+                    Error($"An error occurred while processing the test output logs: {logEx.Message}");
+                    Error("Falling back to showing last 20 lines of standard error:");
+                    stdError.TakeLast(20).ToList().ForEach(line => Error(line)); // Fallback to stdError
+                }
+                // --- End of regex logic ---
 
                 Information($"Full test output log: {outputLogPath}");
                 Information($"Full test error log: {errorLogPath}");
