@@ -40,7 +40,7 @@ namespace Aikido.Zen.Core.Patches
             // for linux or windows arm64, we have a more specific message
             if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64 || RuntimeInformation.ProcessArchitecture == Architecture.Arm)
             {
-                message = "AIKIDO: Zen is currently not compatible with ARM64 or ARM.";
+                message = "AIKIDO: ARM/ARM64 is currently not supported.";
                 return false;
             }
             message = "";
