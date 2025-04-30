@@ -30,7 +30,7 @@ namespace Aikido.Zen.DotNetFramework.Patches
             }
             catch (Exception ex)
             {
-                LogHelper.DebugLog(Agent.Logger, $"AIKIDO: Error patching: {ex.Message}");
+                LogHelper.ErrorLog(Agent.Logger, $"AIKIDO: Error patching: {ex.Message}");
             }
         }
 
