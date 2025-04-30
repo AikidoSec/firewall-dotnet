@@ -34,7 +34,7 @@ namespace Aikido.Zen.Core.Patches
                 (RuntimeInformation.ProcessArchitecture == Architecture.Arm64 || RuntimeInformation.ProcessArchitecture == Architecture.Arm)
             )
             {
-                message = "AIKIDO: Patching is not supported on Apple silicon.";
+                message = "AIKIDO: Apple silicon is currently not supported.";
                 return false;
             }
             // for linux or windows arm64, we have a more specific message
