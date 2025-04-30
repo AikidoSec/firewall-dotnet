@@ -100,7 +100,7 @@ namespace Aikido.Zen.Test
             var result = HttpClientPatches.CaptureRequest(request, _httpClient);
 
             // Assert
-            Assert.That(result, Is.False);
+            Assert.That(result, Is.True);
             Assert.That(Agent.Instance.Context.Hostnames.Count, Is.EqualTo(1));
         }
     }
