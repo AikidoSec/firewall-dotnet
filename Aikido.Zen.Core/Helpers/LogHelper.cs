@@ -32,6 +32,52 @@ namespace Aikido.Zen.Core.Helpers
         }
 
         /// <summary>
+        /// Logs an error message.
+        /// </summary>
+        /// <param name="logger">The logger instance to use.</param>
+        /// <param name="message">The message to log.</param>
+        /// <summary>
+        /// Logs a debug message if debugging is enabled, after sanitizing the message to prevent log injection.
+        /// </summary>
+        /// <param name="logger">The logger instance to use.</param>
+        /// <param name="message">The message to log.</param>
+        public static void ErrorLog(ILogger logger, string message)
+        {
+            if (EnvironmentHelper.IsDebugging)
+            {
+                // Sanitize the message to prevent log injection
+                string sanitizedMessage = SanitizeMessage(message);
+                // we log the message to the outputs defined by the application
+                logger.LogError(sanitizedMessage);
+                // we also log the message to the debug output in case the application is running in a debugger
+                Debug.WriteLine(sanitizedMessage);
+            }
+        }
+
+        /// <summary>
+        /// Logs an information message.
+        /// </summary>
+        /// <param name="logger">The logger instance to use.</param>
+        /// <param name="message">The message to log.</param>
+        /// <summary>
+        /// Logs a debug message if debugging is enabled, after sanitizing the message to prevent log injection.
+        /// </summary>
+        /// <param name="logger">The logger instance to use.</param>
+        /// <param name="message">The message to log.</param>
+        public static void InfoLog(ILogger logger, string message)
+        {
+            if (EnvironmentHelper.IsDebugging)
+            {
+                // Sanitize the message to prevent log injection
+                string sanitizedMessage = SanitizeMessage(message);
+                // we log the message to the outputs defined by the application
+                logger.LogInformation(sanitizedMessage);
+                // we also log the message to the debug output in case the application is running in a debugger
+                Debug.WriteLine(sanitizedMessage);
+            }
+        }
+
+        /// <summary>
         /// Sanitizes a log message to prevent log injection.
         /// </summary>
         /// <param name="message">The message to sanitize.</param>

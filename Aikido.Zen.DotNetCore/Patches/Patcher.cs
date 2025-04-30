@@ -11,7 +11,7 @@ namespace Aikido.Zen.DotNetCore.Patches
         {
             if (!CorePatcher.CanPatch(out var message))
             {
-                LogHelper.DebugLog(Agent.Logger, message);
+                LogHelper.ErrorLog(Agent.Logger, message);
                 return;
             }
             try
