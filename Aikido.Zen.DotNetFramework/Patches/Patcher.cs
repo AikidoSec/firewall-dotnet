@@ -1,3 +1,6 @@
+using System;
+using Aikido.Zen.Core;
+using Aikido.Zen.Core.Helpers;
 using HarmonyLib;
 using CorePatcher = Aikido.Zen.Core.Patches.Patcher;
 
@@ -7,16 +10,28 @@ namespace Aikido.Zen.DotNetFramework.Patches
     {
         public static void Patch()
         {
-            CorePatcher.Patch();
-            var harmony = new Harmony("aikido.zen.dotnetframework");
-            // we need to patch the sqlClient patches outside of the Aikido.Zen.Core package, becasue we need to pass the context, which is different for dotnetcore / dotnetframework
-            SqlClientPatches.ApplyPatches(harmony);
+            if (!CorePatcher.CanPatch(out var message))
+            {
+                LogHelper.DebugLog(Agent.Logger, message);
+                return;
+            }
+            try
+            {
+                CorePatcher.Patch();
+                var harmony = new Harmony("aikido.zen.dotnetframework");
+                // we need to patch the sqlClient patches outside of the Aikido.Zen.Core package, becasue we need to pass the context, which is different for dotnetcore / dotnetframework
+                SqlClientPatches.ApplyPatches(harmony);
 
-            // we need to patch the io patches outside of the Aikido.Zen.Core package, becasue we need to pass the context, which is different for dotnetcore / dotnetframework
-            IOPatches.ApplyPatches(harmony);
+                // we need to patch the io patches outside of the Aikido.Zen.Core package, becasue we need to pass the context, which is different for dotnetcore / dotnetframework
+                IOPatches.ApplyPatches(harmony);
 
-            // Patch process execution methods to prevent shell injection
-            ProcessPatches.ApplyPatches(harmony);
+                // Patch process execution methods to prevent shell injection
+                ProcessPatches.ApplyPatches(harmony);
+            }
+            catch (Exception ex)
+            {
+                LogHelper.DebugLog(Agent.Logger, $"AIKIDO: Error patching: {ex.Message}");
+            }
         }
 
         public static void Unpatch()
