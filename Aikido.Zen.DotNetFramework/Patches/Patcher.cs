@@ -22,7 +22,7 @@ namespace Aikido.Zen.DotNetFramework.Patches
                 // we need to patch the sqlClient patches outside of the Aikido.Zen.Core package, because we need to pass the context, which is different for dotnetcore / dotnetframework
                 SqlClientPatches.ApplyPatches(harmony);
 
-                // we need to patch the io patches outside of the Aikido.Zen.Core package, becasue we need to pass the context, which is different for dotnetcore / dotnetframework
+                // we need to patch the io patches outside of the Aikido.Zen.Core package, because we need to pass the context, which is different for dotnetcore / dotnetframework
                 IOPatches.ApplyPatches(harmony);
 
                 // Patch process execution methods to prevent shell injection
