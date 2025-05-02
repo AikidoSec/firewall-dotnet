@@ -154,7 +154,7 @@ namespace Aikido.Zen.Core.Patches
                 if (requestStates.TryGetValue(request, out var state))
                 {
                     state.Stopwatch.Stop();
-                    // TODO: Determine actual values for these based on response or other factors
+                    // TODO: Determine actual values once ssrf attack detection is implemented
                     bool withoutContext = true;
                     bool attackDetected = false;
                     bool blocked = false;
