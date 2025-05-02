@@ -96,7 +96,7 @@ namespace Aikido.Zen.Core.Models
                     Blocked = 0
                 }
             };
-            StartedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            StartedAt = DateTimeHelper.UTCNowUnixMilliseconds();
         }
 
         /// <summary>
