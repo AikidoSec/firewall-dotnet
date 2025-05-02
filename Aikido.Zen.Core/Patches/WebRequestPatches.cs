@@ -43,17 +43,16 @@ namespace Aikido.Zen.Core.Patches
             var (hostname, port) = UriHelper.ExtractHost(__instance.RequestUri);
             Agent.Instance.CaptureOutboundRequest(hostname, port);
             var operation = __originalMethod?.DeclaringType.FullName ?? __instance.GetType().FullName;
-            var stopwatch = Stopwatch.StartNew();
             bool withoutContext = true;
             bool attackDetected = false;
             bool blocked = false;
             Agent.Instance.Context.OnInspectedCall(
-                        state.Operation,
-operationKind,
-                        state.Stopwatch.Elapsed.TotalMilliseconds,
-attackDetected,
-blocked,
-withoutContext);
+                        operation,
+                        operationKind,
+                        0, // once ssrf attack detection is implemented, we can measure the algorithm's performance
+                        attackDetected,
+                        blocked,
+                        withoutContext);
             return true;
         }
     }

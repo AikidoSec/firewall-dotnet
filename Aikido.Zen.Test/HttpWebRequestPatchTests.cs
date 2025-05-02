@@ -1,9 +1,9 @@
+using System.Net;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Patches;
 using Aikido.Zen.Tests.Mocks;
 using Moq;
-using System.Net;
 
 namespace Aikido.Zen.Test
 {
@@ -27,7 +27,7 @@ namespace Aikido.Zen.Test
         public void CaptureRequest_ExtractsHostAndPort_ReturnsTrue()
         {
             // Act
-            var result = WebRequestPatches.CaptureRequestStart(_requestMock.Object, null);
+            var result = WebRequestPatches.CaptureRequest(_requestMock.Object, null);
 
             // Assert
             Assert.That(result, Is.True);
@@ -41,7 +41,7 @@ namespace Aikido.Zen.Test
             _requestMock.Setup(r => r.RequestUri).Returns(httpsUri);
 
             // Act
-            var result = WebRequestPatches.CaptureRequestStart(_requestMock.Object, null);
+            var result = WebRequestPatches.CaptureRequest(_requestMock.Object, null);
 
             // Assert
             Assert.That(result, Is.True);
@@ -55,7 +55,7 @@ namespace Aikido.Zen.Test
             _requestMock.Setup(r => r.RequestUri).Returns(defaultPortUri);
 
             // Act
-            var result = WebRequestPatches.CaptureRequestStart(_requestMock.Object, null);
+            var result = WebRequestPatches.CaptureRequest(_requestMock.Object, null);
 
             // Assert
             Assert.That(result, Is.True);
@@ -68,8 +68,8 @@ namespace Aikido.Zen.Test
             _requestMock.Setup(r => r.RequestUri).Returns((Uri)null);
 
             // Act & Assert
-            Assert.Throws<NullReferenceException>(() => 
-                WebRequestPatches.CaptureRequestStart(_requestMock.Object, null)
+            Assert.Throws<NullReferenceException>(() =>
+                WebRequestPatches.CaptureRequest(_requestMock.Object, null)
             );
         }
     }
