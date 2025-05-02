@@ -12,7 +12,7 @@ namespace Aikido.Zen.Core.Patches
 {
     internal static class WebRequestPatches
     {
-        private const string kind = "outgoing_http_op";
+        private const string operationKind = "outgoing_http_op";
         public static void ApplyPatches(Harmony harmony)
         {
             PatchMethod(harmony, typeof(WebRequest), "GetResponse", nameof(CaptureRequest));
@@ -47,7 +47,13 @@ namespace Aikido.Zen.Core.Patches
             bool withoutContext = true;
             bool attackDetected = false;
             bool blocked = false;
-            Agent.Instance.Context.OnInspectedCall(operation, kind, stopwatch.Elapsed.TotalMilliseconds, attackDetected, blocked, withoutContext);
+            Agent.Instance.Context.OnInspectedCall(
+                        state.Operation,
+operationKind,
+                        state.Stopwatch.Elapsed.TotalMilliseconds,
+attackDetected,
+blocked,
+withoutContext);
             return true;
         }
     }

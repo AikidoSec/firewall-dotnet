@@ -7,7 +7,7 @@ namespace Aikido.Zen.Core.Patches
 {
     public static class IOPatcher
     {
-        private const string kind = "fs_op";
+        private const string operationKind = "fs_op";
         public static bool OnFileOperation(object[] __args, System.Reflection.MethodBase __originalMethod, Context context)
         {
             var operation = __originalMethod.DeclaringType.FullName;
@@ -27,7 +27,7 @@ namespace Aikido.Zen.Core.Patches
             stopwatch.Stop();
             try
             {
-                Agent.Instance?.Context?.OnInspectedCall(operation, kind, stopwatch.Elapsed.TotalMilliseconds, attackDetected, blocked, withoutContext);
+                Agent.Instance?.Context?.OnInspectedCall(operation, operationKind, stopwatch.Elapsed.TotalMilliseconds, attackDetected, blocked, withoutContext);
             }
             catch
             {

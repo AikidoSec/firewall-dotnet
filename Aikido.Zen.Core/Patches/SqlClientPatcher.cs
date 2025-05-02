@@ -13,7 +13,7 @@ namespace Aikido.Zen.Core.Patches
     /// </summary>
     public static class SqlClientPatcher
     {
-        private const string kind = "sql_op";
+        private const string operationKind = "sql_op";
         /// <summary>
         /// Patches the OnCommandExecuting method to detect and prevent SQL injection attacks
         /// </summary>
@@ -56,7 +56,7 @@ namespace Aikido.Zen.Core.Patches
             // Record the call attempt statistics
             try
             {
-                Agent.Instance.Context.OnInspectedCall(operation, kind, stopwatch.Elapsed.TotalMilliseconds, attackDetected, blocked, withoutContext);
+                Agent.Instance.Context.OnInspectedCall(operation, operationKind, stopwatch.Elapsed.TotalMilliseconds, attackDetected, blocked, withoutContext);
             }
             catch
             {
