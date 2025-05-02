@@ -104,10 +104,10 @@ namespace Aikido.Zen.Core.Patches
         /// <param name="request">The HttpRequestMessage being sent.</param>
         /// <param name="__instance">The instance of HttpClient being used.</param>
         /// <param name="__originalMethod">The original method being patched.</param>
-        internal static void CaptureRequestStart(HttpRequestMessage request, HttpClient __instance, MethodBase __originalMethod)
+        internal static bool CaptureRequestStart(HttpRequestMessage request, HttpClient __instance, MethodBase __originalMethod)
         {
             // If request is null, we cannot track it. This might happen in edge cases or misuse of HttpClient.
-            if (request == null) return;
+            if (request == null) return true;
 
             try
             {
@@ -118,7 +118,7 @@ namespace Aikido.Zen.Core.Patches
                         : request.RequestUri;
 
                 // If URI is still null after trying combinations, we cannot proceed.
-                if (uri == null) return;
+                if (uri == null) return true;
 
                 var (hostname, port) = UriHelper.ExtractHost(uri);
                 Agent.Instance.CaptureOutboundRequest(hostname, port); // Capture the attempt immediately
@@ -135,6 +135,7 @@ namespace Aikido.Zen.Core.Patches
             {
                 // pass through - avoid crashing the host application due to instrumentation errors
             }
+            return true;
         }
 
 

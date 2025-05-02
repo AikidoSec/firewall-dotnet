@@ -98,7 +98,7 @@ namespace Aikido.Zen.Core.Patches
         /// </summary>
         /// <param name="__instance">The WebRequest instance.</param>
         /// <param name="__originalMethod">The original method being patched.</param>
-        internal static void CaptureRequestStart(WebRequest __instance, MethodBase __originalMethod)
+        internal static bool CaptureRequestStart(WebRequest __instance, MethodBase __originalMethod)
         {
             try
             {
@@ -115,6 +115,7 @@ namespace Aikido.Zen.Core.Patches
             {
                 // pass through
             }
+            return true;
 
         }
 
