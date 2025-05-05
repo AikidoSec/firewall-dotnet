@@ -1,5 +1,5 @@
+using System.Text.Json.Serialization;
 using System.Threading;
-
 namespace Aikido.Zen.Core.Models
 {
     /// <summary>
@@ -13,6 +13,7 @@ namespace Aikido.Zen.Core.Models
         /// <summary>
         /// Gets the current number of hits.
         /// </summary>
+        [JsonPropertyName("hits")]
         public int Hits => _hits;
 
         /// <summary>

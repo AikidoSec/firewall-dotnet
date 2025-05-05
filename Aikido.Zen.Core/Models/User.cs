@@ -1,7 +1,12 @@
-namespace Aikido.Zen.Core.Models {
+using System.Text.Json.Serialization;
+
+namespace Aikido.Zen.Core.Models
+{
     public class User
     {
-        public string Id { get;}
+        [JsonPropertyName("id")]
+        public string Id { get; }
+        [JsonPropertyName("name")]
         public string Name { get; }
 
         public User(string id, string name)

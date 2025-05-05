@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-
+using System.Text.Json.Serialization;
 namespace Aikido.Zen.Core.Models
 {
     /// <summary>
@@ -8,7 +8,9 @@ namespace Aikido.Zen.Core.Models
     /// </summary>
     public class Host : HitCount
     {
+        [JsonPropertyName("hostname")]
         public string Hostname { get; set; }
+        [JsonPropertyName("port")]
         public int? Port { get; set; }
 
         public Host() : base() { }

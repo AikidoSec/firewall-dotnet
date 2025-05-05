@@ -1,20 +1,28 @@
-using Aikido.Zen.Core.Helpers;
-using System.Diagnostics;
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Text.Json.Serialization;
+using Aikido.Zen.Core.Helpers;
 
-namespace Aikido.Zen.Core.Models.Events {
+namespace Aikido.Zen.Core.Models.Events
+{
     public class DetectedAttack : IEvent
     {
+        [JsonPropertyName("type")]
         public string Type => "detected_attack";
+        [JsonPropertyName("request")]
         public RequestInfo Request { get; set; }
+        [JsonPropertyName("attack")]
         public Attack Attack { get; set; }
+        [JsonPropertyName("agent")]
         public AgentInfo Agent { get; set; }
+        [JsonPropertyName("time")]
         public long Time => DateTimeHelper.UTCNowUnixMilliseconds();
 
-        public static DetectedAttack Create(AttackKind kind, Source source, string payload, string operation, Context context, string module, IDictionary<string, object> metadata, bool blocked) {
+        public static DetectedAttack Create(AttackKind kind, Source source, string payload, string operation, Context context, string module, IDictionary<string, object> metadata, bool blocked)
+        {
 
             // if the context is null, throw an argument null exception
             if (context == null)

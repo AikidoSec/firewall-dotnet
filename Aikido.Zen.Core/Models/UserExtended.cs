@@ -1,5 +1,5 @@
+using System.Text.Json.Serialization;
 using Aikido.Zen.Core.Helpers;
-
 namespace Aikido.Zen.Core.Models
 {
     /// <summary>
@@ -8,10 +8,15 @@ namespace Aikido.Zen.Core.Models
     /// </summary>
     public class UserExtended : HitCount
     {
+        [JsonPropertyName("id")]
         public string Id { get; set; }
+        [JsonPropertyName("name")]
         public string Name { get; set; }
+        [JsonPropertyName("lastIpAddress")]
         public string LastIpAddress { get; set; }
+        [JsonPropertyName("lastSeenAt")]
         public long LastSeenAt { get; set; }
+        [JsonPropertyName("firstSeenAt")]
         public long FirstSeenAt { get; set; }
 
         /// <summary>

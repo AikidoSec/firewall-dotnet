@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Aikido.Zen.Core.Models
 {
     /// <summary>
@@ -6,10 +8,12 @@ namespace Aikido.Zen.Core.Models
     /// </summary>
     public class Route : HitCount
     {
+        [JsonPropertyName("path")]
         public string Path { get; set; }
+        [JsonPropertyName("method")]
         public string Method { get; set; }
 
-        [System.Text.Json.Serialization.JsonPropertyName("apispec")]
+        [JsonPropertyName("apispec")]
         public APISpec ApiSpec { get; set; }
 
         public Route() : base() { }
