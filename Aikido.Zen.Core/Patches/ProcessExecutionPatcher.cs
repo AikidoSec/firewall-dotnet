@@ -29,6 +29,7 @@ namespace Aikido.Zen.Core.Patches
             var stopwatch = Stopwatch.StartNew();
             var methodInfo = __originalMethod as MethodInfo;
             var operation = $"{methodInfo?.DeclaringType?.Name}.{methodInfo?.Name}";
+            var assemblyName = methodInfo?.DeclaringType?.Assembly.GetName().Name;
             bool withoutContext = context == null;
             bool attackDetected = false;
             bool blocked = false;
@@ -60,7 +61,7 @@ namespace Aikido.Zen.Core.Patches
                                 payload: userInput.Value,
                                 operation: operation,
                                 context: context,
-                                module: methodInfo?.DeclaringType?.FullName,
+                                module: assemblyName,
                                 metadata: metadata,
                                 blocked: blocked
                             );

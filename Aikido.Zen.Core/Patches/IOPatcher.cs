@@ -13,13 +13,14 @@ namespace Aikido.Zen.Core.Patches
         {
             var methodInfo = __originalMethod as MethodInfo;
             var operation = $"{methodInfo?.DeclaringType?.Name}.{methodInfo?.Name}";
+            var assemblyName = methodInfo?.DeclaringType?.Assembly.GetName().Name;
             var stopwatch = Stopwatch.StartNew();
             bool withoutContext = context == null;
             bool attackDetected = false;
             bool blocked = false;
             try
             {
-                attackDetected = PathTraversalHelper.DetectPathTraversal(__args, operation, context, __originalMethod.Name);
+                attackDetected = PathTraversalHelper.DetectPathTraversal(__args, assemblyName, context, operation);
                 blocked = attackDetected && !EnvironmentHelper.DryMode;
             }
             catch
