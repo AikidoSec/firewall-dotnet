@@ -1,7 +1,7 @@
-using Aikido.Zen.Core.Api;
 using System;
 using System.Net.Http;
 using System.Text.Json;
+using Aikido.Zen.Core.Api;
 
 namespace Aikido.Zen.Core.Helpers
 {
@@ -38,7 +38,7 @@ namespace Aikido.Zen.Core.Helpers
                 try
                 {
                     var data = response.Content.ReadAsStringAsync().Result;
-                    var result = JsonSerializer.Deserialize<T>(data, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+                    var result = JsonSerializer.Deserialize<T>(data, ZenApi.JsonSerializerOptions);
                     result.Success = true;
                     return result;
                 }
