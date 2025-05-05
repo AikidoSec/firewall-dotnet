@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Aikido.Zen.Core.Models
 {
     /// <summary>
@@ -8,11 +10,13 @@ namespace Aikido.Zen.Core.Models
         /// <summary>
         /// Type of the body data
         /// </summary>
+        [JsonPropertyName("type")]
         public string Type { get; set; } = string.Empty;
 
         /// <summary>
         /// Schema of the body data
         /// </summary>
+        [JsonPropertyName("schema")]
         public DataSchema Schema { get; set; } = new DataSchema();
     }
 }
