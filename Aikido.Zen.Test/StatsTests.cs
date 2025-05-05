@@ -1,9 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading; // For Task.Delay
+
 using Aikido.Zen.Core.Models;
-using NUnit.Framework;
+
 
 namespace Aikido.Zen.Test
 {
@@ -384,6 +381,137 @@ namespace Aikido.Zen.Test
 
             Assert.Throws<ArgumentOutOfRangeException>(() => Stats.CalculatePercentiles(percentilesLess, validList));
             Assert.Throws<ArgumentOutOfRangeException>(() => Stats.CalculatePercentiles(percentilesMore, validList));
+        }
+
+        /// <summary>
+        /// Tests that the Stats class handles concurrent operations correctly,
+        /// ensuring that counters are updated atomically and consistently across threads.
+        /// </summary>
+        [Test]
+        public async Task ConcurrentOperations_ProduceConsistentResults()
+        {
+            // Arrange
+            var stats = new Stats(maxPerfSamplesInMem: 50, maxCompressedStatsInMem: 5); // Use reasonably small limits for perf samples
+            int numThreads = 10;
+            int opsPerThread = 1000; // Increase ops for better chance of races if they exist
+
+            // Expected counts - must be updated atomically (using long for safety with Interlocked)
+            long expectedRequests = 0;
+            long expectedAborted = 0;
+            long expectedGlobalAttacks = 0;
+            long expectedGlobalBlocked = 0;
+            long expectedOp1Total = 0;
+            long expectedOp1ContextCalls = 0; // calls *with* context that recorded duration
+            long expectedOp1NoContext = 0;
+            long expectedOp1Attacks = 0;
+            long expectedOp1Blocked = 0;
+            long expectedOp2Total = 0;
+            long expectedOp2Errors = 0;
+
+            var tasks = new List<Task>();
+            // Use ThreadLocal for thread-safe random number generation
+            using var threadLocalRandom = new ThreadLocal<Random>(() => new Random(Guid.NewGuid().GetHashCode()));
+
+            // Act
+            for (int i = 0; i < numThreads; i++)
+            {
+                tasks.Add(Task.Run(() =>
+                {
+                    Random random = threadLocalRandom.Value; // Get thread-specific Random instance
+                    for (int j = 0; j < opsPerThread; j++)
+                    {
+                        int choice = random.Next(5); // Randomly choose an operation
+
+                        switch (choice)
+                        {
+                            case 0: // OnRequest
+                                stats.OnRequest();
+                                Interlocked.Increment(ref expectedRequests);
+                                break;
+                            case 1: // OnAbortedRequest
+                                stats.OnAbortedRequest();
+                                Interlocked.Increment(ref expectedAborted);
+                                // Aborted requests do not count towards Requests.Total based on existing tests
+                                break;
+                            case 2: // OnDetectedAttack (Global)
+                                bool blocked = random.Next(2) == 0;
+                                stats.OnDetectedAttack(blocked);
+                                Interlocked.Increment(ref expectedGlobalAttacks);
+                                if (blocked) Interlocked.Increment(ref expectedGlobalBlocked);
+                                break;
+                            case 3: // OnInspectedCall for "Op1"
+                                const string opName = "Op1";
+                                const string opKind = "KindA";
+                                bool op1WithoutContext = random.Next(4) == 0; // 25% chance no context
+                                bool op1Attack = !op1WithoutContext && random.Next(5) == 0; // 20% chance attack (if context)
+                                bool op1Blocked = op1Attack && random.Next(2) == 0; // 50% chance blocked (if attack)
+                                double duration = op1WithoutContext ? 0 : random.NextDouble() * 100;
+
+                                stats.OnInspectedCall(opName, opKind, duration, op1Attack, op1Blocked, op1WithoutContext);
+
+                                Interlocked.Increment(ref expectedOp1Total);
+                                if (op1WithoutContext)
+                                {
+                                    Interlocked.Increment(ref expectedOp1NoContext);
+                                }
+                                else
+                                {
+                                    Interlocked.Increment(ref expectedOp1ContextCalls);
+                                    if (op1Attack) Interlocked.Increment(ref expectedOp1Attacks);
+                                    if (op1Blocked) Interlocked.Increment(ref expectedOp1Blocked);
+                                }
+                                break;
+                            case 4: // InterceptorThrewError for "Op2"
+                                const string opName2 = "Op2";
+                                const string opKind2 = "KindB";
+                                stats.InterceptorThrewError(opName2, opKind2);
+                                Interlocked.Increment(ref expectedOp2Total);
+                                Interlocked.Increment(ref expectedOp2Errors);
+                                break;
+                        }
+                        // Small sleep can sometimes help expose race conditions, but makes test slower.
+                        // Thread.Sleep(random.Next(0, 2));
+                    }
+                }));
+            }
+
+            await Task.WhenAll(tasks);
+
+            // Assert
+            // Note: Use Assert.Multiple for clearer failure reporting
+            Assert.Multiple(() =>
+            {
+                Assert.That(stats.Requests.Total, Is.EqualTo(expectedRequests), "Total Requests mismatch");
+                Assert.That(stats.Requests.Aborted, Is.EqualTo(expectedAborted), "Aborted Requests mismatch");
+                Assert.That(stats.Requests.AttacksDetected.Total, Is.EqualTo(expectedGlobalAttacks), "Global Attacks Total mismatch");
+                Assert.That(stats.Requests.AttacksDetected.Blocked, Is.EqualTo(expectedGlobalBlocked), "Global Attacks Blocked mismatch");
+
+                // Check Op1 stats
+                Assert.That(stats.Operations.ContainsKey("Op1"), Is.True, "Op1 stats should exist after concurrent calls");
+                if (stats.Operations.TryGetValue("Op1", out var op1Stats))
+                {
+                    Assert.That(op1Stats.Total, Is.EqualTo(expectedOp1Total), "Op1 Total mismatch");
+                    Assert.That(op1Stats.WithoutContext, Is.EqualTo(expectedOp1NoContext), "Op1 WithoutContext mismatch");
+                    Assert.That(op1Stats.AttacksDetected.Total, Is.EqualTo(expectedOp1Attacks), "Op1 Attacks Total mismatch");
+                    Assert.That(op1Stats.AttacksDetected.Blocked, Is.EqualTo(expectedOp1Blocked), "Op1 Attacks Blocked mismatch");
+                    // We cannot reliably assert the count of items in Durations or CompressedTimings
+                    // due to the non-deterministic nature of when compression occurs across threads.
+                    Assert.That(op1Stats.Kind, Is.EqualTo("KindA"), "Op1 Kind mismatch");
+                }
+
+                // Check Op2 stats
+                Assert.That(stats.Operations.ContainsKey("Op2"), Is.True, "Op2 stats should exist after concurrent calls");
+                if (stats.Operations.TryGetValue("Op2", out var op2Stats))
+                {
+                    Assert.That(op2Stats.Total, Is.EqualTo(expectedOp2Total), "Op2 Total mismatch");
+                    Assert.That(op2Stats.InterceptorThrewError, Is.EqualTo(expectedOp2Errors), "Op2 Errors mismatch");
+                    Assert.That(op2Stats.Kind, Is.EqualTo("KindB"), "Op2 Kind mismatch");
+                }
+
+                // Optional: Force compression and check results if needed, but adds complexity.
+                // stats.ForceCompress();
+                // // Add assertions based on compressed data if required
+            });
         }
     }
 }

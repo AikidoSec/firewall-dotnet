@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using Aikido.Zen.Core.Helpers;
 
 // Make internals visible to the test project
@@ -16,7 +18,7 @@ namespace Aikido.Zen.Core.Models
     {
         private readonly int _maxPerfSamplesInMem;
         private readonly int _maxCompressedStatsInMem;
-        private Dictionary<string, OperationStats> _operations = new Dictionary<string, OperationStats>();
+        private ConcurrentDictionary<string, OperationStats> _operations = new ConcurrentDictionary<string, OperationStats>();
         private Requests _requests = new Requests();
 
         /// <summary>
@@ -85,7 +87,7 @@ namespace Aikido.Zen.Core.Models
         /// </summary>
         public void Reset()
         {
-            _operations = new Dictionary<string, OperationStats>();
+            _operations = new ConcurrentDictionary<string, OperationStats>();
             _requests = new Requests
             {
                 Total = 0,
@@ -117,8 +119,9 @@ namespace Aikido.Zen.Core.Models
         public void InterceptorThrewError(string operation, string kind)
         {
             EnsureOperationStats(operation, kind);
-            _operations[operation].Total++;
-            _operations[operation].InterceptorThrewError++;
+            var operationStats = _operations[operation];
+            Interlocked.Increment(ref operationStats.Total);
+            Interlocked.Increment(ref operationStats.InterceptorThrewError);
         }
 
         /// <summary>
@@ -127,10 +130,10 @@ namespace Aikido.Zen.Core.Models
         /// <param name="blocked">Indicates whether the detected attack was blocked.</param>
         public void OnDetectedAttack(bool blocked)
         {
-            _requests.AttacksDetected.Total++;
+            Interlocked.Increment(ref _requests.AttacksDetected.Total);
             if (blocked)
             {
-                _requests.AttacksDetected.Blocked++;
+                Interlocked.Increment(ref _requests.AttacksDetected.Blocked);
             }
         }
 
@@ -139,7 +142,7 @@ namespace Aikido.Zen.Core.Models
         /// </summary>
         public void OnRequest()
         {
-            _requests.Total++;
+            Interlocked.Increment(ref _requests.Total);
         }
 
         /// <summary>
@@ -147,7 +150,7 @@ namespace Aikido.Zen.Core.Models
         /// </summary>
         public void OnAbortedRequest()
         {
-            _requests.Aborted++;
+            Interlocked.Increment(ref _requests.Aborted);
         }
 
         /// <summary>
@@ -163,28 +166,31 @@ namespace Aikido.Zen.Core.Models
         {
             EnsureOperationStats(operation, kind);
             var operationStats = _operations[operation];
-            operationStats.Total++;
+            Interlocked.Increment(ref operationStats.Total);
 
             if (withoutContext)
             {
-                operationStats.WithoutContext++;
+                Interlocked.Increment(ref operationStats.WithoutContext);
                 return; // Do not record duration or attack details if without context
             }
 
             // Check if duration list needs compression before adding the new duration
-            if (operationStats.Durations.Count >= _maxPerfSamplesInMem)
+            lock (operationStats)
             {
-                CompressPerfSamples(operation);
-            }
-
-            operationStats.Durations.Add(durationInMs);
-
-            if (attackDetected)
-            {
-                operationStats.AttacksDetected.Total++;
-                if (blocked)
+                if (operationStats.Durations.Count >= _maxPerfSamplesInMem)
                 {
-                    operationStats.AttacksDetected.Blocked++;
+                    CompressPerfSamples(operation);
+                }
+
+                operationStats.Durations.Add(durationInMs);
+
+                if (attackDetected)
+                {
+                    Interlocked.Increment(ref operationStats.AttacksDetected.Total);
+                    if (blocked)
+                    {
+                        Interlocked.Increment(ref operationStats.AttacksDetected.Blocked);
+                    }
                 }
             }
         }
@@ -212,18 +218,18 @@ namespace Aikido.Zen.Core.Models
         /// <param name="kind">The kind of the operation.</param>
         internal void EnsureOperationStats(string operation, string kind)
         {
-            if (!_operations.ContainsKey(operation))
-            {
-                // Initialize with default values, including empty lists/dictionaries
-                _operations[operation] = new OperationStats
+            _operations.AddOrUpdate(operation,
+                // Add function - creates new stats if key doesn't exist
+                _ => new OperationStats
                 {
                     AttacksDetected = new AttacksDetected(),
                     CompressedTimings = new List<CompressedTiming>(),
                     Durations = new List<double>(),
                     Kind = kind,
                     Operation = operation
-                };
-            }
+                },
+                // Update function - keeps existing stats if key exists
+                (_, existingStats) => existingStats);
         }
 
         /// <summary>
