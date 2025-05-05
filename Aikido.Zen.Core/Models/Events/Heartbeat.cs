@@ -1,20 +1,29 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json.Serialization;
 using Aikido.Zen.Core.Helpers;
 
 namespace Aikido.Zen.Core.Models.Events
 {
     public class Heartbeat : IEvent
     {
+        [JsonPropertyName("type")]
         public string Type => "heartbeat";
 
+        [JsonPropertyName("stats")]
         public Stats Stats { get; set; } = new Stats();
+        [JsonPropertyName("hostnames")]
         public IEnumerable<Host> Hostnames { get; set; }
+        [JsonPropertyName("routes")]
         public IEnumerable<Route> Routes { get; set; }
+        [JsonPropertyName("users")]
         public IEnumerable<UserExtended> Users { get; set; }
+        [JsonPropertyName("agent")]
         public AgentInfo Agent { get; set; }
+        [JsonPropertyName("time")]
         public long Time => DateTimeHelper.UTCNowUnixMilliseconds();
+        [JsonPropertyName("middlewareInstalled")]
         public bool MiddlewareInstalled { get; set; }
 
         // Constants for the heartbeat event

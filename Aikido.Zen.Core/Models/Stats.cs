@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text.Json.Serialization;
 using System.Threading;
 using Aikido.Zen.Core.Helpers;
 
@@ -70,16 +71,19 @@ namespace Aikido.Zen.Core.Models
         /// <summary>
         /// Gets the Unix timestamp (in milliseconds) when the statistics collection started or was last reset.
         /// </summary>
+        [JsonPropertyName("startedAt")]
         public long StartedAt { get; set; }
 
         /// <summary>
         /// Gets the Unix timestamp (in milliseconds) when the statistics collection ended.
         /// </summary>
+        [JsonPropertyName("endedAt")]
         public long EndedAt { get; set; }
 
         /// <summary>
         /// Gets the statistics related to incoming requests.
         /// </summary>
+        [JsonPropertyName("requests")]
         public Requests Requests => _requests;
 
         /// <summary>
