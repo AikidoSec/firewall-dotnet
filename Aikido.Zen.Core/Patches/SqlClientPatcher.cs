@@ -25,7 +25,8 @@ namespace Aikido.Zen.Core.Patches
 
             // Determine sink and context status regardless of detection outcome
             var stopwatch = Stopwatch.StartNew();
-            var operation = __originalMethod.DeclaringType.FullName;
+            var methodInfo = __originalMethod as MethodInfo;
+            var operation = $"{methodInfo?.DeclaringType?.Name}.{methodInfo?.Name}";
             bool withoutContext = context == null;
             bool attackDetected = false;
             bool blocked = false;
@@ -35,11 +36,9 @@ namespace Aikido.Zen.Core.Patches
                 // Perform detection only if context and sql are available
                 if (context != null && sql != null)
                 {
-                    var methodInfo = __originalMethod as MethodInfo;
-                    var type = methodInfo?.DeclaringType?.Name ?? "Unknown";
                     var dialect = GetDialect(assembly);
 
-                    attackDetected = SqlCommandHelper.DetectSQLInjection(sql, dialect, context, assembly, $"{type}.{methodInfo?.Name}");
+                    attackDetected = SqlCommandHelper.DetectSQLInjection(sql, dialect, context, assembly, operation);
                     blocked = attackDetected && !EnvironmentHelper.DryMode;
                 }
             }
