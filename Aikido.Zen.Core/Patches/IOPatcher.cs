@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Reflection;
 using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.Core.Helpers;
 
@@ -10,7 +11,8 @@ namespace Aikido.Zen.Core.Patches
         private const string operationKind = "fs_op";
         public static bool OnFileOperation(object[] __args, System.Reflection.MethodBase __originalMethod, Context context)
         {
-            var operation = __originalMethod.DeclaringType.FullName;
+            var methodInfo = __originalMethod as MethodInfo;
+            var operation = $"{methodInfo?.DeclaringType?.Name}.{methodInfo?.Name}";
             var stopwatch = Stopwatch.StartNew();
             bool withoutContext = context == null;
             bool attackDetected = false;

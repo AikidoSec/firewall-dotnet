@@ -27,7 +27,8 @@ namespace Aikido.Zen.Core.Patches
         public static bool OnProcessStart(object[] __args, MethodBase __originalMethod, object __instance, Context context)
         {
             var stopwatch = Stopwatch.StartNew();
-            var operation = __originalMethod.DeclaringType.FullName;
+            var methodInfo = __originalMethod as MethodInfo;
+            var operation = $"{methodInfo?.DeclaringType?.Name}.{methodInfo?.Name}";
             bool withoutContext = context == null;
             bool attackDetected = false;
             bool blocked = false;
@@ -57,9 +58,9 @@ namespace Aikido.Zen.Core.Patches
                                 kind: AttackKind.ShellInjection,
                                 source: HttpHelper.GetSourceFromUserInputPath(userInput.Key),
                                 payload: userInput.Value,
-                                operation: __originalMethod.Name,
+                                operation: operation,
                                 context: context,
-                                module: __originalMethod.DeclaringType?.FullName,
+                                module: methodInfo?.DeclaringType?.FullName,
                                 metadata: metadata,
                                 blocked: blocked
                             );
