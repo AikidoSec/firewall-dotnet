@@ -33,6 +33,8 @@ namespace Aikido.Zen.Core.Models
         private List<EndpointConfig> _endpoints = new List<EndpointConfig>();
         private readonly object _endpointsLock = new object();
 
+        private readonly Stats _stats = new Stats();
+
         private int _requests;
         private int _attacksDetected;
         private int _attacksBlocked;
@@ -152,6 +154,7 @@ namespace Aikido.Zen.Core.Models
             _hostnames.Clear();
             _users.Clear();
             _routes.Clear();
+            _stats.Reset();
             // thread safe reset
             Interlocked.Exchange(ref _requests, 0);
             Interlocked.Exchange(ref _attacksDetected, 0);
@@ -162,6 +165,24 @@ namespace Aikido.Zen.Core.Models
             _started = DateTimeHelper.UTCNowUnixMilliseconds();
         }
 
+        /// <summary>
+        /// Records the details of an inspected operation call.
+        /// </summary>
+        /// <param name="operation">The operation name.</param>
+        /// <param name="kind">The kind of operation.</param>
+        /// <param name="durationInMs">The duration of the call in milliseconds.</param>
+        /// <param name="attackDetected">Indicates whether an attack was detected during this call.</param>
+        public void OnInspectedCall(string operation, string kind, double durationInMs, bool attackDetected, bool blocked, bool withoutContext)
+        {
+            _stats.OnInspectedCall(operation, kind, durationInMs, attackDetected, blocked, withoutContext);
+        }
+
+        /// <summary>
+        /// Checks if the request should be blocked based on the context and the block list.
+        /// </summary>
+        /// <param name="context">The context of the request.</param>
+        /// <param name="reason">The reason for blocking the request.</param>
+        /// <returns>True if the request should be blocked, false otherwise.</returns>
         public bool IsBlocked(Context context, out string reason)
         {
             reason = null;
@@ -273,5 +294,6 @@ namespace Aikido.Zen.Core.Models
         public long Started => _started;
         public BlockList BlockList => _blockList;
         public Regex BlockedUserAgents => _blockedUserAgents;
+        public Stats Stats => _stats;
     }
 }

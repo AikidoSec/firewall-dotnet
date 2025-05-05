@@ -1,7 +1,7 @@
-using Aikido.Zen.Core.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Aikido.Zen.Core.Helpers;
 
 namespace Aikido.Zen.Core.Models.Events
 {
@@ -37,6 +37,7 @@ namespace Aikido.Zen.Core.Models.Events
                 Routes = context.Routes
                     .ToList()
             };
+            heartbeat.Stats.CopyOperations(context.Stats.Operations);
             heartbeat.Stats.Requests.Total = context.Requests;
             heartbeat.Stats.Requests.Aborted = context.RequestsAborted;
             heartbeat.Stats.Requests.AttacksDetected = new AttacksDetected
@@ -44,9 +45,9 @@ namespace Aikido.Zen.Core.Models.Events
                 Blocked = context.AttacksBlocked,
                 Total = context.AttacksDetected
             };
+            heartbeat.MiddlewareInstalled = context.ContextMiddlewareInstalled && context.BlockingMiddlewareInstalled;
             heartbeat.Stats.StartedAt = context.Started;
             heartbeat.Stats.EndedAt = DateTimeHelper.UTCNowUnixMilliseconds();
-            heartbeat.MiddlewareInstalled = context.ContextMiddlewareInstalled && context.BlockingMiddlewareInstalled;
             return heartbeat;
         }
     }

@@ -2,7 +2,7 @@ namespace Aikido.Zen.Core.Models
 {
     public class AttacksDetected
     {
-        public int Total { get; set; }
-        public int Blocked { get; set; }
+        public int Total; // must be a field to be thread safe
+        public int Blocked; // must be a field to be thread safe
     }
 }
