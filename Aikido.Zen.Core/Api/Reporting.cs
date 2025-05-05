@@ -1,4 +1,3 @@
-using Aikido.Zen.Core.Helpers;
 using System;
 using System.Net;
 using System.Net.Http;
@@ -7,6 +6,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Aikido.Zen.Core.Helpers;
 
 namespace Aikido.Zen.Core.Api
 {
@@ -44,7 +44,7 @@ namespace Aikido.Zen.Core.Api
                 try
                 {
                     // make sure the json string does not use unicode the escape characters
-                    var eventAsJson = JsonSerializer.Serialize(@event, options: new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
+                    var eventAsJson = JsonSerializer.Serialize(@event, ZenApi.JsonSerializerOptions);
                     var requestContent = new StringContent(eventAsJson, Encoding.UTF8, "application/json");
                     var request = APIHelper.CreateRequest(token, new Uri(EnvironmentHelper.AikidoUrl), "api/runtime/events", HttpMethod.Post, requestContent);
 
