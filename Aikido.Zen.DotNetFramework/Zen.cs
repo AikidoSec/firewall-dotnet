@@ -1,11 +1,11 @@
+using System;
+using System.Web;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Api;
-using System;
-using Aikido.Zen.DotNetFramework.Patches;
-using System.Web;
+using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.DotNetFramework.Configuration;
-using Aikido.Zen.Core.Helpers;
+using Aikido.Zen.DotNetFramework.Patches;
 
 namespace Aikido.Zen.DotNetFramework
 {
@@ -34,6 +34,7 @@ namespace Aikido.Zen.DotNetFramework
                 Agent.NewInstance(zenApi);
             }
             Agent.Instance.Start();
+            EnvironmentHelper.ReportValues();
         }
 
         internal static Func<HttpContext, User> SetUserAction { get; set; } = (context) => !string.IsNullOrEmpty(context.User.Identity?.Name)

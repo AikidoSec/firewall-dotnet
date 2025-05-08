@@ -25,7 +25,7 @@ namespace Aikido.Zen.Core.Patches
             }
             catch
             {
-                LogHelper.DebugLog(Agent.Logger, "Error during Path Traversal detection.");
+                LogHelper.ErrorLog(Agent.Logger, "Error during Path Traversal detection.");
             }
             stopwatch.Stop();
             try
@@ -34,7 +34,7 @@ namespace Aikido.Zen.Core.Patches
             }
             catch
             {
-                LogHelper.DebugLog(Agent.Logger, "Error recording OnInspectedCall stats.");
+                LogHelper.ErrorLog(Agent.Logger, "Error recording OnInspectedCall stats.");
             }
             if (blocked)
             {

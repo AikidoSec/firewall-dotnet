@@ -75,7 +75,7 @@ namespace Aikido.Zen.Core.Patches
             catch
             {
                 // Error during detection logic
-                LogHelper.DebugLog(Agent.Logger, "Error during Shell injection detection.");
+                LogHelper.ErrorLog(Agent.Logger, "Error during Shell injection detection.");
                 attackDetected = false; // Reset flags as detection failed
                 blocked = false;
             }
@@ -88,7 +88,7 @@ namespace Aikido.Zen.Core.Patches
             }
             catch
             {
-                LogHelper.DebugLog(Agent.Logger, "Error recording Process.Start OnInspectedCall stats.");
+                LogHelper.ErrorLog(Agent.Logger, "Error recording Process.Start OnInspectedCall stats.");
             }
 
             // Handle blocking

@@ -60,6 +60,7 @@ namespace Aikido.Zen.Core.Api
                 }
                 catch (Exception ex)
                 {
+                    LogHelper.ErrorLog(Agent.Logger, ex.Message);
                     throw new Exception("An error occurred while reporting", ex);
                 }
             }

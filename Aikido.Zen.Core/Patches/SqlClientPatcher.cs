@@ -46,7 +46,7 @@ namespace Aikido.Zen.Core.Patches
             catch
             {
                 // Use Agent.Logger (assuming static logger)
-                try { LogHelper.DebugLog(Agent.Logger, "Error during SQL injection detection."); } catch {/*ignore*/}
+                try { LogHelper.ErrorLog(Agent.Logger, "Error during SQL injection detection."); } catch {/*ignore*/}
                 // Reset flags as detection failed
                 attackDetected = false;
                 blocked = false;
@@ -60,7 +60,7 @@ namespace Aikido.Zen.Core.Patches
             }
             catch
             {
-                LogHelper.DebugLog(Agent.Logger, "Error recording OnInspectedCall stats.");
+                LogHelper.ErrorLog(Agent.Logger, "Error recording OnInspectedCall stats.");
             }
 
             // Handle blocking if an attack was detected and not in dry mode
