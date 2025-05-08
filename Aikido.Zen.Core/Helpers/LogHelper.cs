@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 
@@ -8,13 +10,34 @@ namespace Aikido.Zen.Core.Helpers
     /// </summary>
     public static class LogHelper
     {
+        private static readonly int MaxLogs = 1000;
+        private static readonly TimeSpan LogTimeSpan = TimeSpan.FromMinutes(60);
+        private static readonly Queue<DateTime> _logTimestamps = new Queue<DateTime>();
+        private static readonly object _logLock = new object();
+
+        private static bool ShouldLog()
+        {
+            lock (_logLock)
+            {
+                // Remove timestamps older than the timespan
+                while (_logTimestamps.Count > 0 && _logTimestamps.Peek() < DateTime.UtcNow - LogTimeSpan)
+                {
+                    _logTimestamps.Dequeue();
+                }
+
+                // Check if we've exceeded the log limit
+                if (_logTimestamps.Count >= MaxLogs)
+                {
+                    return false; // Rate limit exceeded
+                }
+
+                _logTimestamps.Enqueue(DateTime.UtcNow);
+                return true;
+            }
+        }
+
         /// <summary>
-        /// Logs a debug message if debugging is enabled.
-        /// </summary>
-        /// <param name="logger">The logger instance to use.</param>
-        /// <param name="message">The message to log.</param>
-        /// <summary>
-        /// Logs a debug message if debugging is enabled, after sanitizing the message to prevent log injection.
+        /// Logs a debug message if debugging is enabled, after sanitizing the message and applying rate limiting.
         /// </summary>
         /// <param name="logger">The logger instance to use.</param>
         /// <param name="message">The message to log.</param>
@@ -32,12 +55,7 @@ namespace Aikido.Zen.Core.Helpers
         }
 
         /// <summary>
-        /// Logs an error message.
-        /// </summary>
-        /// <param name="logger">The logger instance to use.</param>
-        /// <param name="message">The message to log.</param>
-        /// <summary>
-        /// Logs a debug message if debugging is enabled, after sanitizing the message to prevent log injection.
+        /// Logs an error message, after sanitizing the message and applying rate limiting.
         /// </summary>
         /// <param name="logger">The logger instance to use.</param>
         /// <param name="message">The message to log.</param>
@@ -52,12 +70,7 @@ namespace Aikido.Zen.Core.Helpers
         }
 
         /// <summary>
-        /// Logs an information message.
-        /// </summary>
-        /// <param name="logger">The logger instance to use.</param>
-        /// <param name="message">The message to log.</param>
-        /// <summary>
-        /// Logs a debug message if debugging is enabled, after sanitizing the message to prevent log injection.
+        /// Logs an information message, after sanitizing the message and applying rate limiting.
         /// </summary>
         /// <param name="logger">The logger instance to use.</param>
         /// <param name="message">The message to log.</param>
@@ -72,14 +85,42 @@ namespace Aikido.Zen.Core.Helpers
         }
 
         /// <summary>
+        /// Logs an attack-related information message, after sanitizing the message and applying rate limiting.
+        /// This method wraps the InfoLog method.
+        /// </summary>
+        /// <param name="logger">The logger instance to use.</param>
+        /// <param name="message">The message to log, typically detailing an attack attempt or security event.</param>
+        public static void AttackLog(ILogger logger, string message)
+        {
+            if (ShouldLog())
+            {
+                InfoLog(logger, message);
+            }
+        }
+
+        /// <summary>
         /// Sanitizes a log message to prevent log injection.
         /// </summary>
         /// <param name="message">The message to sanitize.</param>
         /// <returns>The sanitized message.</returns>
         public static string SanitizeMessage(string message)
         {
+            // if log does not start with "AIKIDO: " then add it
+            if (!message.StartsWith("AIKIDO: "))
+            {
+                message = $"AIKIDO: {message}";
+            }
             // Replace any potentially dangerous characters or patterns
             return message.Replace("\r", "").Replace("\n", "").Replace("\t", "");
+        }
+
+        // mainly used for testing
+        internal static void ClearQueue()
+        {
+            lock (_logLock)
+            {
+                _logTimestamps.Clear();
+            }
         }
     }
 }
