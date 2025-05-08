@@ -66,7 +66,7 @@ namespace Aikido.Zen.Core.Helpers
             // we log the message to the outputs defined by the application
             logger.LogError(sanitizedMessage);
             // we also log the message to the debug output in case the application is running in a debugger
-            Debug.WriteLine(sanitizedMessage);
+            Console.Error.WriteLine(sanitizedMessage);
         }
 
         /// <summary>

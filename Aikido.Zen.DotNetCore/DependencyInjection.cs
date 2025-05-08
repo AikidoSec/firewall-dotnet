@@ -85,6 +85,9 @@ namespace Aikido.Zen.DotNetCore
             // set zen version
             AgentInfoHelper.SetVersion(typeof(Zen).Assembly.GetName().Version.ToString());
 
+            // register basic logging
+            services.AddLogging(builder => builder.AddConsole());
+
             // register the options
             services.AddOptions();
 

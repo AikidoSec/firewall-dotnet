@@ -71,6 +71,10 @@ namespace Aikido.Zen.Core.Helpers
             {
                 LogHelper.InfoLog(Agent.Logger, "Zen is running in dry mode. Attacks are not blocked, but firewall rules are applied.");
             }
+            else
+            {
+                LogHelper.InfoLog(Agent.Logger, "Zen is running in blocking mode. Attacks are blocked.");
+            }
             if (IsDisabled)
             {
                 LogHelper.InfoLog(Agent.Logger, "Zen is disabled.");

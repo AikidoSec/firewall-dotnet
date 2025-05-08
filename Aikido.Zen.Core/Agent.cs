@@ -89,7 +89,7 @@ namespace Aikido.Zen.Core
             _batchTimeoutMs = batchTimeoutMs;
             _backgroundTask = Task.Run(ProcessRecurringTasksAsync);
             _context = new AgentContext();
-            LogHelper.DebugLog(Logger, "Agent started");
+            LogHelper.InfoLog(Logger, "Zen Agent started");
         }
 
         /// <summary>
