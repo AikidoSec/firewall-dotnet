@@ -31,7 +31,7 @@ namespace Aikido.Zen.Test
 
             // Assert
             var hostnames = _config.Hostnames;
-            Assert.That(hostnames, Has.Count.EqualTo(1));
+            Assert.That(hostnames.Count(), Is.EqualTo(1));
             var host = hostnames.First();
             Assert.That(host.Hostname, Is.EqualTo("example.com"));
             Assert.That(host.Port, Is.EqualTo(8080));
@@ -62,7 +62,7 @@ namespace Aikido.Zen.Test
 
             // Assert
             var users = _config.Users;
-            Assert.That(users, Has.Count.EqualTo(1));
+            Assert.That(users?.Count(), Is.EqualTo(1));
             var addedUser = users.First();
             Assert.That(addedUser.Id, Is.EqualTo("123"));
             Assert.That(addedUser.Name, Is.EqualTo("Test User"));
@@ -99,7 +99,7 @@ namespace Aikido.Zen.Test
 
             // Assert
             var routes = _config.Routes;
-            Assert.That(routes, Has.Count.EqualTo(1));
+            Assert.That(routes.Count(), Is.EqualTo(1));
             var route = routes.First();
             Assert.That(route.Path, Is.EqualTo("/api/test"));
             Assert.That(route.Method, Is.EqualTo("GET"));
