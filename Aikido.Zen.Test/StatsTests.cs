@@ -1,5 +1,6 @@
 
 using Aikido.Zen.Core.Models;
+using NUnit.Framework.Interfaces;
 
 
 namespace Aikido.Zen.Test
@@ -101,12 +102,13 @@ namespace Aikido.Zen.Test
         {
             var stats = new AgentStats();
 
-            stats.OnDetectedAttack(blocked: false);
+            stats.OnDetectedAttack();
             Assert.That(stats.Requests.AttacksDetected.Total, Is.EqualTo(1));
             Assert.That(stats.Requests.AttacksDetected.Blocked, Is.EqualTo(0));
             Assert.That(stats.IsEmpty(), Is.False); // Detecting attack makes it non-empty
 
-            stats.OnDetectedAttack(blocked: true);
+            stats.OnDetectedAttack();
+            stats.OnBlockedAttack();
             Assert.That(stats.Requests.AttacksDetected.Total, Is.EqualTo(2));
             Assert.That(stats.Requests.AttacksDetected.Blocked, Is.EqualTo(1));
         }
@@ -435,9 +437,13 @@ namespace Aikido.Zen.Test
                                 break;
                             case 2: // OnDetectedAttack (Global)
                                 bool blocked = random.Next(2) == 0;
-                                stats.OnDetectedAttack(blocked);
+                                stats.OnDetectedAttack();
                                 Interlocked.Increment(ref expectedGlobalAttacks);
-                                if (blocked) Interlocked.Increment(ref expectedGlobalBlocked);
+                                if (blocked)
+                                {
+                                    stats.OnBlockedAttack();
+                                    Interlocked.Increment(ref expectedGlobalBlocked);
+                                }
                                 break;
                             case 3: // OnInspectedCall for "Op1"
                                 const string opName = "Op1";

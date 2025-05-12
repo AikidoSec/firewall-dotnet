@@ -11,8 +11,6 @@ namespace Aikido.Zen.Core.Models
     /// </summary>
     public class AgentContext
     {
-        private Regex _blockedUserAgents;
-
         private readonly AgentStats _stats = new AgentStats();
         private readonly AgentConfiguration _config = new AgentConfiguration();
 
@@ -32,12 +30,12 @@ namespace Aikido.Zen.Core.Models
 
         public void AddAttackDetected()
         {
-            _stats.OnDetectedAttack(false);
+            _stats.OnDetectedAttack();
         }
 
         public void AddAttackBlocked()
         {
-            _stats.OnDetectedAttack(true);
+            _stats.OnBlockedAttack();
         }
 
         public void AddHostname(string hostname)
@@ -121,7 +119,7 @@ namespace Aikido.Zen.Core.Models
             if (string.IsNullOrWhiteSpace(userAgent))
                 return false;
 
-            return _blockedUserAgents?.IsMatch(userAgent) ?? false;
+            return Config.IsUserAgentBlocked(userAgent);
         }
 
         public void UpdateBlockedUsers(IEnumerable<string> users)

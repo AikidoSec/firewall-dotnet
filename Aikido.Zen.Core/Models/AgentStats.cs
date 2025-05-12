@@ -155,14 +155,17 @@ namespace Aikido.Zen.Core.Models
         /// <summary>
         /// Records a detected attack during request processing.
         /// </summary>
-        /// <param name="blocked">Indicates whether the detected attack was blocked.</param>
-        public void OnDetectedAttack(bool blocked)
+        public void OnDetectedAttack()
         {
             Interlocked.Increment(ref _requests.AttacksDetected.Total);
-            if (blocked)
-            {
-                Interlocked.Increment(ref _requests.AttacksDetected.Blocked);
-            }
+        }
+
+        /// <summary>
+        /// Records a blocked attack during request processing.
+        /// </summary>
+        public void OnBlockedAttack()
+        {
+            Interlocked.Increment(ref _requests.AttacksDetected.Blocked);
         }
 
         /// <summary>
