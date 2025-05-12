@@ -35,14 +35,14 @@ namespace Aikido.Zen.Test
         [Test]
         public void IsEmpty_ShouldBeTrue_ForNewStats()
         {
-            var stats = new Stats();
+            var stats = new AgentStats();
             Assert.That(stats.IsEmpty(), Is.True);
         }
 
         [Test]
         public void HasCompressedStats_ShouldBeFalse_ForNewStats()
         {
-            var stats = new Stats();
+            var stats = new AgentStats();
             Assert.That(stats.HasCompressedStats(), Is.False);
         }
 
@@ -50,7 +50,7 @@ namespace Aikido.Zen.Test
         [Test]
         public void Reset_ClearsStatsAndUpdatesStartedAt()
         {
-            var stats = new Stats(DefaultMaxPerfSamples, DefaultMaxCompressedStats);
+            var stats = new AgentStats(DefaultMaxPerfSamples, DefaultMaxCompressedStats);
             var initialStartedAt = stats.StartedAt;
 
             stats.OnRequest();
@@ -76,7 +76,7 @@ namespace Aikido.Zen.Test
         [Test]
         public void OnRequest_IncrementsRequestTotal()
         {
-            var stats = new Stats();
+            var stats = new AgentStats();
             stats.OnRequest();
             stats.OnRequest();
             Assert.That(stats.Requests.Total, Is.EqualTo(2));
@@ -86,7 +86,7 @@ namespace Aikido.Zen.Test
         [Test]
         public void OnAbortedRequest_IncrementsRequestAborted()
         {
-            var stats = new Stats();
+            var stats = new AgentStats();
             stats.OnAbortedRequest();
             Assert.That(stats.Requests.Aborted, Is.EqualTo(1));
             // Aborted requests don't make stats non-empty by themselves if total is 0
@@ -99,7 +99,7 @@ namespace Aikido.Zen.Test
         [Test]
         public void OnDetectedAttack_IncrementsRequestAttacks()
         {
-            var stats = new Stats();
+            var stats = new AgentStats();
 
             stats.OnDetectedAttack(blocked: false);
             Assert.That(stats.Requests.AttacksDetected.Total, Is.EqualTo(1));
@@ -114,7 +114,7 @@ namespace Aikido.Zen.Test
         [Test]
         public void InterceptorThrewError_IncrementsOperationTotalAndErrors()
         {
-            var stats = new Stats();
+            var stats = new AgentStats();
             stats.InterceptorThrewError(TestOperation, TestOperationKind);
 
             Assert.That(stats.Operations.ContainsKey(TestOperation), Is.True);
@@ -132,7 +132,7 @@ namespace Aikido.Zen.Test
         [Test]
         public void OnInspectedCall_TracksTotalsAndDurations()
         {
-            var stats = new Stats();
+            var stats = new AgentStats();
 
             // 1. Call without context
             stats.OnInspectedCall(TestOperation, TestOperationKind, 10.0, attackDetected: false, blocked: false, withoutContext: true);
@@ -178,7 +178,7 @@ namespace Aikido.Zen.Test
         public void OnInspectedCall_TriggersCompressionWhenMaxSamplesReached()
         {
             int maxSamples = 10;
-            var stats = new Stats(maxPerfSamplesInMem: maxSamples, maxCompressedStatsInMem: DefaultMaxCompressedStats);
+            var stats = new AgentStats(maxPerfSamplesInMem: maxSamples, maxCompressedStatsInMem: DefaultMaxCompressedStats);
             var sequence = GenerateSequence(maxSamples); // 1.0 to 10.0
 
             // Add maxSamples durations (1 to 10)
@@ -228,7 +228,7 @@ namespace Aikido.Zen.Test
         {
             int maxSamples = 10;
             int maxCompressed = 3;
-            var stats = new Stats(maxPerfSamplesInMem: maxSamples, maxCompressedStatsInMem: maxCompressed);
+            var stats = new AgentStats(maxPerfSamplesInMem: maxSamples, maxCompressedStatsInMem: maxCompressed);
 
             // Trigger compression maxCompressed + 1 times (4 times: cycles 0, 1, 2, 3)
             for (int cycle = 0; cycle < maxCompressed + 1; cycle++)
@@ -262,7 +262,7 @@ namespace Aikido.Zen.Test
         [Test]
         public void ForceCompress_CompressesExistingDurations()
         {
-            var stats = new Stats(DefaultMaxPerfSamples, DefaultMaxCompressedStats);
+            var stats = new AgentStats(DefaultMaxPerfSamples, DefaultMaxCompressedStats);
             stats.OnInspectedCall(TestOperation, TestOperationKind, 10.0, false, false, false);
             stats.OnInspectedCall(TestOperation, TestOperationKind, 20.0, false, false, false);
 
@@ -282,7 +282,7 @@ namespace Aikido.Zen.Test
         [Test]
         public void ForceCompress_DoesNothing_WhenNoDurations()
         {
-            var stats = new Stats();
+            var stats = new AgentStats();
             // stats.EnsureOperationStats(TestOperation, TestOperationKind); // Ensure operation exists but no durations -- This is internal now
             // Accessing stats.Operations doesn't create the operation automatically
             // Let's explicitly add it if needed, though ForceCompress handles non-existent operations gracefully.
@@ -320,11 +320,11 @@ namespace Aikido.Zen.Test
             var shuffledList = Shuffle(list);
 
             // Mimic stubsSimple from Node test
-            Assert.That(Stats.CalculatePercentiles(new List<int> { 0 }, shuffledList)[0], Is.EqualTo(1.0).Within(Tolerance));
-            Assert.That(Stats.CalculatePercentiles(new List<int> { 25 }, shuffledList)[0], Is.EqualTo(25.0).Within(Tolerance));
-            Assert.That(Stats.CalculatePercentiles(new List<int> { 50 }, shuffledList)[0], Is.EqualTo(50.0).Within(Tolerance));
-            Assert.That(Stats.CalculatePercentiles(new List<int> { 75 }, shuffledList)[0], Is.EqualTo(75.0).Within(Tolerance));
-            Assert.That(Stats.CalculatePercentiles(new List<int> { 100 }, shuffledList)[0], Is.EqualTo(100.0).Within(Tolerance));
+            Assert.That(AgentStats.CalculatePercentiles(new List<int> { 0 }, shuffledList)[0], Is.EqualTo(1.0).Within(Tolerance));
+            Assert.That(AgentStats.CalculatePercentiles(new List<int> { 25 }, shuffledList)[0], Is.EqualTo(25.0).Within(Tolerance));
+            Assert.That(AgentStats.CalculatePercentiles(new List<int> { 50 }, shuffledList)[0], Is.EqualTo(50.0).Within(Tolerance));
+            Assert.That(AgentStats.CalculatePercentiles(new List<int> { 75 }, shuffledList)[0], Is.EqualTo(75.0).Within(Tolerance));
+            Assert.That(AgentStats.CalculatePercentiles(new List<int> { 100 }, shuffledList)[0], Is.EqualTo(100.0).Within(Tolerance));
 
             // Mimic Node test: { percentile: 75, list: shuffleArray(generateArraySimple(100).concat(generateArraySimple(30))), result: 68 }
             var combinedList = GenerateSequence(100).Concat(GenerateSequence(30)).ToList();
@@ -336,7 +336,7 @@ namespace Aikido.Zen.Test
                                                               // Let's sort the actual combined list to find the value at index 97.
             combinedList.Sort();
             double expectedValueAtIndex97 = combinedList[97]; // Should be 68 based on Node test
-            Assert.That(Stats.CalculatePercentiles(new List<int> { 75 }, shuffledCombinedList)[0], Is.EqualTo(expectedValueAtIndex97).Within(Tolerance), "P75 for combined list");
+            Assert.That(AgentStats.CalculatePercentiles(new List<int> { 75 }, shuffledCombinedList)[0], Is.EqualTo(expectedValueAtIndex97).Within(Tolerance), "P75 for combined list");
             // Let's double-check the value 68 logic. Sorted list has 1..30, then 1..100. So it's [1,1, 2,2, ..., 30,30, 31, 32, ..., 100]
             // Indices 0-59 are pairs 1-30. Indices 60-129 are 31-100.
             // Index 97 is within 60-129 range. Value = (97-60) + 31 = 37 + 31 = 68. Yes, logic is correct.
@@ -347,10 +347,10 @@ namespace Aikido.Zen.Test
         public void CalculatePercentiles_NegativeValues()
         {
             var list1 = Shuffle(new List<double> { -1, -2, -3, -4, -5 });
-            Assert.That(Stats.CalculatePercentiles(new List<int> { 50 }, list1)[0], Is.EqualTo(-3.0).Within(Tolerance));
+            Assert.That(AgentStats.CalculatePercentiles(new List<int> { 50 }, list1)[0], Is.EqualTo(-3.0).Within(Tolerance));
 
             var list2 = Shuffle(new List<double> { 7, 6, -1, -2, -3, -4, -5 });
-            Assert.That(Stats.CalculatePercentiles(new List<int> { 50 }, list2)[0], Is.EqualTo(-2.0).Within(Tolerance));
+            Assert.That(AgentStats.CalculatePercentiles(new List<int> { 50 }, list2)[0], Is.EqualTo(-2.0).Within(Tolerance));
         }
 
         [Test]
@@ -358,7 +358,7 @@ namespace Aikido.Zen.Test
         {
             var list = Shuffle(GenerateSequence(100)); // 1 to 100
             var percentilesToCalc = new List<int> { 0, 25, 50, 75, 100 };
-            var results = Stats.CalculatePercentiles(percentilesToCalc, list);
+            var results = AgentStats.CalculatePercentiles(percentilesToCalc, list);
             var expectedResults = new List<double> { 1.0, 25.0, 50.0, 75.0, 100.0 };
 
             Assert.That(results, Is.EqualTo(expectedResults).Within(Tolerance));
@@ -369,7 +369,7 @@ namespace Aikido.Zen.Test
         {
             var emptyList = new List<double>();
             var percentilesToCalc = new List<int> { 50 };
-            Assert.Throws<ArgumentException>(() => Stats.CalculatePercentiles(percentilesToCalc, emptyList));
+            Assert.Throws<ArgumentException>(() => AgentStats.CalculatePercentiles(percentilesToCalc, emptyList));
         }
 
         [Test]
@@ -379,8 +379,8 @@ namespace Aikido.Zen.Test
             var percentilesLess = new List<int> { -1 };
             var percentilesMore = new List<int> { 101 };
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => Stats.CalculatePercentiles(percentilesLess, validList));
-            Assert.Throws<ArgumentOutOfRangeException>(() => Stats.CalculatePercentiles(percentilesMore, validList));
+            Assert.Throws<ArgumentOutOfRangeException>(() => AgentStats.CalculatePercentiles(percentilesLess, validList));
+            Assert.Throws<ArgumentOutOfRangeException>(() => AgentStats.CalculatePercentiles(percentilesMore, validList));
         }
 
         /// <summary>
@@ -391,7 +391,7 @@ namespace Aikido.Zen.Test
         public async Task ConcurrentOperations_ProduceConsistentResults()
         {
             // Arrange
-            var stats = new Stats(maxPerfSamplesInMem: 50, maxCompressedStatsInMem: 5); // Use reasonably small limits for perf samples
+            var stats = new AgentStats(maxPerfSamplesInMem: 50, maxCompressedStatsInMem: 5); // Use reasonably small limits for perf samples
             int numThreads = 10;
             int opsPerThread = 1000; // Increase ops for better chance of races if they exist
 

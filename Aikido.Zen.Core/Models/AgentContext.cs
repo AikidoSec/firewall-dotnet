@@ -1,91 +1,48 @@
-using System;
-using System.Collections.Concurrent;
+
 using System.Collections.Generic;
-using System.Linq;
 using System.Text.RegularExpressions;
-using System.Threading;
 using Aikido.Zen.Core.Api;
-using Aikido.Zen.Core.Helpers;
-using Aikido.Zen.Core.Helpers.OpenAPI;
 using Aikido.Zen.Core.Models.Ip;
 
 namespace Aikido.Zen.Core.Models
 {
     /// <summary>
-    /// Represents the context for an agent, managing hostnames, routes, users, and blocking configurations.
-    /// Uses ConcurrentLruDictionary for hostnames, routes, and users to enable LFU eviction.
-    /// This class is thread-safe and can handle concurrent access to its collections.
+    /// This class holds the state and configuration for the agent.
     /// </summary>
     public class AgentContext
     {
-        private const int MaxHostnames = 2000;
-        private const int MaxUsers = 2000;
-        private const int MaxRoutes = 5000;
-
-        // Use ConcurrentLFUDictionary which handles LFU eviction internally.
-        private readonly ConcurrentLFUDictionary<string, Host> _hostnames = new ConcurrentLFUDictionary<string, Host>(MaxHostnames);
-        private readonly ConcurrentLFUDictionary<string, Route> _routes = new ConcurrentLFUDictionary<string, Route>(MaxRoutes);
-        private readonly ConcurrentLFUDictionary<string, UserExtended> _users = new ConcurrentLFUDictionary<string, UserExtended>(MaxUsers);
-
-        private readonly ConcurrentDictionary<string, string> _blockedUsers = new ConcurrentDictionary<string, string>();
         private Regex _blockedUserAgents;
-        private readonly BlockList _blockList = new BlockList();
-        private List<EndpointConfig> _endpoints = new List<EndpointConfig>();
-        private readonly object _endpointsLock = new object();
 
-        private readonly Stats _stats = new Stats();
+        private readonly AgentStats _stats = new AgentStats();
+        private readonly AgentConfiguration _config = new AgentConfiguration();
 
-        private int _requests;
-        private int _attacksDetected;
-        private int _attacksBlocked;
-        private int _requestsAborted;
-        private long _started = DateTimeHelper.UTCNowUnixMilliseconds();
         public long ConfigLastUpdated { get; set; } = 0;
         public bool ContextMiddlewareInstalled { get; set; } = false;
         public bool BlockingMiddlewareInstalled { get; set; } = false;
 
         public void AddRequest()
         {
-            // thread safe increment
-            Interlocked.Increment(ref _requests);
+            _stats.OnRequest();
         }
 
         public void AddAbortedRequest()
         {
-            // thread safe increment
-            Interlocked.Increment(ref _requestsAborted);
+            _stats.OnAbortedRequest();
         }
 
         public void AddAttackDetected()
         {
-            // thread safe increment
-            Interlocked.Increment(ref _attacksDetected);
+            _stats.OnDetectedAttack(false);
         }
 
         public void AddAttackBlocked()
         {
-            // thread safe increment
-            Interlocked.Increment(ref _attacksBlocked);
+            _stats.OnDetectedAttack(true);
         }
 
         public void AddHostname(string hostname)
         {
-            if (string.IsNullOrWhiteSpace(hostname))
-                return;
-            var hostParts = hostname.Split(':');
-            var name = hostParts[0];
-            var port = hostParts.Length > 1 ? hostParts[1] : "80";
-            int.TryParse(port, out int portNumber);
-
-            var key = $"{name}:{port}";
-            _hostnames.TryGet(key, out var host);
-            if (host == null)
-            {
-                host = new Host { Hostname = name, Port = portNumber };
-            }
-
-            // when updating, we keep track of hits
-            _hostnames.AddOrUpdate(key, host);
+            _stats.AddHostname(hostname);
         }
 
         /// <summary>
@@ -97,72 +54,17 @@ namespace Aikido.Zen.Core.Models
         /// <param name="ipAddress">The IP address associated with this user access.</param>
         public void AddUser(User user, string ipAddress)
         {
-            if (user == null || string.IsNullOrEmpty(user.Id))
-                return;
-
-            UserExtended userExtended;
-            if (_users.TryGet(user.Id, out var existingUser))
-            {
-                // User exists, update details before calling AddOrUpdate
-                existingUser.Name = user.Name; // Update name in case it changed
-                existingUser.LastIpAddress = ipAddress;
-                existingUser.LastSeenAt = DateTimeHelper.UTCNowUnixMilliseconds();
-                userExtended = existingUser;
-            }
-            else
-            {
-                // User does not exist, create a new one
-                userExtended = new UserExtended(user.Id, user.Name)
-                {
-                    LastIpAddress = ipAddress,
-                    LastSeenAt = DateTimeHelper.UTCNowUnixMilliseconds()
-                };
-            }
-
-            // AddOrUpdate handles incrementing hits and eviction
-            _users.AddOrUpdate(user.Id, userExtended);
+            _stats.AddUser(user, ipAddress);
         }
 
         public void AddRoute(Context context)
         {
-            if (context == null || string.IsNullOrEmpty(context.Route)) return; // Check Route null/empty
-
-            Route route;
-            if (_routes.TryGet(context.Route, out var existingRoute))
-            {
-                // Route exists, update API info before calling AddOrUpdate
-                OpenAPIHelper.UpdateApiInfo(context, existingRoute, EnvironmentHelper.MaxApiDiscoverySamples);
-                route = existingRoute;
-            }
-            else
-            {
-                // Route does not exist, create a new one
-                route = new Route
-                {
-                    Path = context.Route,
-                    Method = context.Method,
-                    ApiSpec = OpenAPIHelper.GetApiInfo(context),
-                };
-            }
-
-            // AddOrUpdate handles incrementing hits and eviction
-            _routes.AddOrUpdate(context.Route, route);
+            _stats.AddRoute(context);
         }
 
         public void Clear()
         {
-            _hostnames.Clear();
-            _users.Clear();
-            _routes.Clear();
             _stats.Reset();
-            // thread safe reset
-            Interlocked.Exchange(ref _requests, 0);
-            Interlocked.Exchange(ref _attacksDetected, 0);
-            Interlocked.Exchange(ref _attacksBlocked, 0);
-            Interlocked.Exchange(ref _requestsAborted, 0);
-            _blockedUsers.Clear();
-            // reset the started time
-            _started = DateTimeHelper.UTCNowUnixMilliseconds();
         }
 
         /// <summary>
@@ -197,7 +99,7 @@ namespace Aikido.Zen.Core.Models
                 reason = "User is blocked";
                 return true;
             }
-            if (_blockList.IsBlocked(context, out reason))
+            if (_config.BlockList.IsBlocked(context, out reason))
             {
                 return true;
             }
@@ -211,7 +113,7 @@ namespace Aikido.Zen.Core.Models
 
         public bool IsUserBlocked(string userId)
         {
-            return _blockedUsers.ContainsKey(userId);
+            return _config.IsUserBlocked(userId);
         }
 
         public bool IsUserAgentBlocked(string userAgent)
@@ -224,76 +126,43 @@ namespace Aikido.Zen.Core.Models
 
         public void UpdateBlockedUsers(IEnumerable<string> users)
         {
-            _blockedUsers.Clear();
-            if (users != null)
-            {
-                foreach (var user in users)
-                {
-                    _blockedUsers.TryAdd(user, user);
-                }
-            }
+            _config.UpdateBlockedUsers(users);
         }
 
         public void UpdateRatelimitedRoutes(IEnumerable<EndpointConfig> endpoints)
         {
-            var newEndpoints = endpoints?.ToList() ?? new List<EndpointConfig>();
-            lock (_endpointsLock)
-            {
-                _endpoints = newEndpoints;
-            }
+            _config.UpdateRatelimitedRoutes(endpoints);
         }
 
         public void UpdateConfig(ReportingAPIResponse response)
         {
-            if (response == null) return;
-            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", response.Block ? "true" : "false");
-            UpdateBlockedUsers(response.BlockedUserIds);
-            BlockList.UpdateAllowedIpsPerEndpoint(response.Endpoints);
-            BlockList.UpdateBypassedIps(response.BypassedIPAddresses);
-            UpdateRatelimitedRoutes(response.Endpoints);
-            ConfigLastUpdated = response.ConfigUpdatedAt;
+            _config.UpdateConfig(response);
+            ConfigLastUpdated = response?.ConfigUpdatedAt ?? 0;
         }
 
         public void UpdateFirewallLists(FirewallListsAPIResponse response)
         {
-            if (response == null)
-            {
-                BlockList.UpdateBlockedIps(new List<string>());
-                BlockList.UpdateAllowedIps(new List<string>());
-                UpdateBlockedUserAgents(null);
-                return;
-            }
-            BlockList.UpdateBlockedIps(response.BlockedIps);
-            BlockList.UpdateAllowedIps(response.AllowedIps);
-            UpdateBlockedUserAgents(response.BlockedUserAgentsRegex);
+            _config.UpdateFirewallLists(response);
         }
 
         public void UpdateBlockedUserAgents(Regex blockedUserAgents)
         {
-            _blockedUserAgents = blockedUserAgents;
+            _config.UpdateBlockedUserAgents(blockedUserAgents);
         }
 
-        public IEnumerable<Host> Hostnames => _hostnames.GetValues();
-        public IEnumerable<UserExtended> Users => _users.GetValues();
-        public IEnumerable<Route> Routes => _routes.GetValues();
+        public IEnumerable<Host> Hostnames => _stats.Hostnames;
+        public IEnumerable<UserExtended> Users => _stats.Users;
+        public IEnumerable<Route> Routes => _stats.Routes;
 
-        public IEnumerable<EndpointConfig> Endpoints
-        {
-            get
-            {
-                lock (_endpointsLock)
-                {
-                    return _endpoints?.ToList() ?? new List<EndpointConfig>();
-                }
-            }
-        }
-        public int Requests => _requests;
-        public int RequestsAborted => _requestsAborted;
-        public int AttacksDetected => _attacksDetected;
-        public int AttacksBlocked => _attacksBlocked;
-        public long Started => _started;
-        public BlockList BlockList => _blockList;
-        public Regex BlockedUserAgents => _blockedUserAgents;
-        public Stats Stats => _stats;
+        public IEnumerable<EndpointConfig> Endpoints => _config.Endpoints;
+        public int Requests => _stats.Requests.Total;
+        public int RequestsAborted => _stats.Requests.Aborted;
+        public int AttacksDetected => _stats.Requests.AttacksDetected.Total;
+        public int AttacksBlocked => _stats.Requests.AttacksDetected.Blocked;
+        public long Started => _stats.StartedAt;
+        public BlockList BlockList => _config.BlockList;
+        public Regex BlockedUserAgents => _config.BlockedUserAgents;
+        public AgentStats Stats => _stats;
+        public AgentConfiguration Config => _config;
     }
 }

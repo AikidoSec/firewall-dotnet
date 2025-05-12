@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using Aikido.Zen.Core.Helpers;
+using Aikido.Zen.Core.Helpers.OpenAPI;
 
 // Make internals visible to the test project
 [assembly: InternalsVisibleTo("Aikido.Zen.Test")]
@@ -14,22 +15,31 @@ namespace Aikido.Zen.Core.Models
     /// <summary>
     /// Collects and manages inspection statistics for operations and requests.
     /// </summary>
-    public class Stats
+    public class AgentStats
     {
         private readonly int _maxPerfSamplesInMem;
         private readonly int _maxCompressedStatsInMem;
         private ConcurrentDictionary<string, OperationStats> _operations = new ConcurrentDictionary<string, OperationStats>();
         private Requests _requests = new Requests();
+        private readonly ConcurrentLFUDictionary<string, Host> _hostnames;
+        private readonly ConcurrentLFUDictionary<string, UserExtended> _users;
+        private readonly ConcurrentLFUDictionary<string, Route> _routes;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Stats"/> class.
+        /// Initializes a new instance of the <see cref="AgentStats"/> class.
         /// </summary>
         /// <param name="maxPerfSamplesInMem">The maximum number of performance samples to keep in memory per operation before compressing.</param>
         /// <param name="maxCompressedStatsInMem">The maximum number of compressed statistic blocks to keep in memory per operation.</param>
-        public Stats(int maxPerfSamplesInMem = 1000, int maxCompressedStatsInMem = 100)
+        /// <param name="maxHostnames">The maximum number of hostnames to track.</param>
+        /// <param name="maxUsers">The maximum number of users to track.</param>
+        /// <param name="maxRoutes">The maximum number of routes to track.</param>
+        public AgentStats(int maxPerfSamplesInMem = 1000, int maxCompressedStatsInMem = 100, int maxHostnames = 2000, int maxUsers = 2000, int maxRoutes = 5000)
         {
             _maxPerfSamplesInMem = maxPerfSamplesInMem;
             _maxCompressedStatsInMem = maxCompressedStatsInMem;
+            _hostnames = new ConcurrentLFUDictionary<string, Host>(maxHostnames);
+            _users = new ConcurrentLFUDictionary<string, UserExtended>(maxUsers);
+            _routes = new ConcurrentLFUDictionary<string, Route>(maxRoutes);
             Reset();
         }
 
@@ -83,6 +93,21 @@ namespace Aikido.Zen.Core.Models
         public Requests Requests => _requests;
 
         /// <summary>
+        /// Gets the collection of tracked hostnames.
+        /// </summary>
+        public IEnumerable<Host> Hostnames => _hostnames.GetValues();
+
+        /// <summary>
+        /// Gets the collection of tracked users.
+        /// </summary>
+        public IEnumerable<UserExtended> Users => _users.GetValues();
+
+        /// <summary>
+        /// Gets the collection of tracked routes.
+        /// </summary>
+        public IEnumerable<Route> Routes => _routes.GetValues();
+
+        /// <summary>
         /// Resets all collected statistics and updates the start time.
         /// </summary>
         public void Reset()
@@ -98,6 +123,9 @@ namespace Aikido.Zen.Core.Models
                     Blocked = 0
                 }
             };
+            _hostnames.Clear();
+            _users.Clear();
+            _routes.Clear();
             StartedAt = DateTimeHelper.UTCNowUnixMilliseconds();
         }
 
@@ -338,6 +366,93 @@ namespace Aikido.Zen.Core.Models
             return !_operations.Any() &&
                    _requests.Total == 0 &&
                    _requests.AttacksDetected.Total == 0;
+        }
+
+        /// <summary>
+        /// Adds or updates a hostname in the statistics.
+        /// </summary>
+        /// <param name="hostname">The hostname to add or update.</param>
+        public void AddHostname(string hostname)
+        {
+            if (string.IsNullOrWhiteSpace(hostname))
+                return;
+            var hostParts = hostname.Split(':');
+            var name = hostParts[0];
+            var port = hostParts.Length > 1 ? hostParts[1] : "80";
+            int.TryParse(port, out int portNumber);
+
+            var key = $"{name}:{port}";
+            _hostnames.TryGet(key, out var host);
+            if (host == null)
+            {
+                host = new Host { Hostname = name, Port = portNumber };
+            }
+
+            // when updating, we keep track of hits
+            _hostnames.AddOrUpdate(key, host);
+        }
+
+        /// <summary>
+        /// Adds or updates a user in the statistics.
+        /// </summary>
+        /// <param name="user">The user to add or update.</param>
+        /// <param name="ipAddress">The IP address associated with this user access.</param>
+        public void AddUser(User user, string ipAddress)
+        {
+            if (user == null || string.IsNullOrEmpty(user.Id))
+                return;
+
+            UserExtended userExtended;
+            if (_users.TryGet(user.Id, out var existingUser))
+            {
+                // User exists, update details before calling AddOrUpdate
+                existingUser.Name = user.Name; // Update name in case it changed
+                existingUser.LastIpAddress = ipAddress;
+                existingUser.LastSeenAt = DateTimeHelper.UTCNowUnixMilliseconds();
+                userExtended = existingUser;
+            }
+            else
+            {
+                // User does not exist, create a new one
+                userExtended = new UserExtended(user.Id, user.Name)
+                {
+                    LastIpAddress = ipAddress,
+                    LastSeenAt = DateTimeHelper.UTCNowUnixMilliseconds()
+                };
+            }
+
+            // AddOrUpdate handles incrementing hits and eviction
+            _users.AddOrUpdate(user.Id, userExtended);
+        }
+
+        /// <summary>
+        /// Adds or updates a route in the statistics.
+        /// </summary>
+        /// <param name="context">The context containing the route information.</param>
+        public void AddRoute(Context context)
+        {
+            if (context == null || string.IsNullOrEmpty(context.Route)) return; // Check Route null/empty
+
+            Route route;
+            if (_routes.TryGet(context.Route, out var existingRoute))
+            {
+                // Route exists, update API info before calling AddOrUpdate
+                OpenAPIHelper.UpdateApiInfo(context, existingRoute, EnvironmentHelper.MaxApiDiscoverySamples);
+                route = existingRoute;
+            }
+            else
+            {
+                // Route does not exist, create a new one
+                route = new Route
+                {
+                    Path = context.Route,
+                    Method = context.Method,
+                    ApiSpec = OpenAPIHelper.GetApiInfo(context),
+                };
+            }
+
+            // AddOrUpdate handles incrementing hits and eviction
+            _routes.AddOrUpdate(context.Route, route);
         }
     }
 }

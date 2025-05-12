@@ -1,6 +1,6 @@
+using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Models.Events;
 using NUnit;
-using Aikido.Zen.Core.Models;
 
 namespace Aikido.Zen.Test
 {
@@ -27,7 +27,7 @@ namespace Aikido.Zen.Test
         public void Properties_SetAndGetCorrectly()
         {
             // Arrange
-            var stats = new Stats();
+            var stats = new AgentStats();
             var hostnames = new List<Host> { new Host() };
             var routes = new List<Route> { new Route() };
             var users = new List<UserExtended> { new UserExtended("123", "username") };
