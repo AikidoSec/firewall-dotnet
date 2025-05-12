@@ -47,10 +47,38 @@ namespace Aikido.Zen.Core.Helpers
         /// </summary>
         /// <param name="variableName">The name of the environment variable to check.</param>
         /// <returns>True if the environment variable is set to "true" or "1"; otherwise, false.</returns>
-        private static bool GetBooleanValue (string variableName)
+        private static bool GetBooleanValue(string variableName)
         {
             var value = Environment.GetEnvironmentVariable(variableName);
             return value == "true" || value == "1";
+        }
+
+        public static void ReportValues()
+        {
+            if (string.IsNullOrEmpty(Token))
+            {
+                LogHelper.InfoLog(Agent.Logger, "Aikido token not set, Zen will not report any events and receive no configuration updates.");
+            }
+            if (string.IsNullOrEmpty(AikidoUrl))
+            {
+                LogHelper.InfoLog(Agent.Logger, "Aikido URL not set, Zen will not report any events and receive no configuration updates.");
+            }
+            if (string.IsNullOrEmpty(AikidoRealtimeUrl))
+            {
+                LogHelper.InfoLog(Agent.Logger, "Aikido realtime URL not set");
+            }
+            if (DryMode)
+            {
+                LogHelper.InfoLog(Agent.Logger, "Zen is running in dry mode. Attacks are not blocked, but firewall rules are applied.");
+            }
+            else
+            {
+                LogHelper.InfoLog(Agent.Logger, "Zen is running in blocking mode. Attacks are blocked.");
+            }
+            if (IsDisabled)
+            {
+                LogHelper.InfoLog(Agent.Logger, "Zen is disabled.");
+            }
         }
     }
 }

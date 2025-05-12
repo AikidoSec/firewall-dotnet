@@ -93,7 +93,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             catch (Exception ex)
             {
                 // pass through
-                LogHelper.DebugLog(Agent.Logger, $"AIKIDO: Error capturing request {ex.Message}");
+                LogHelper.ErrorLog(Agent.Logger, $"Error capturing request {ex.Message}");
             }
             finally
             {

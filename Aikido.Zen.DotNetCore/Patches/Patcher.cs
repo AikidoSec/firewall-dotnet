@@ -30,7 +30,7 @@ namespace Aikido.Zen.DotNetCore.Patches
             }
             catch (Exception ex)
             {
-                LogHelper.ErrorLog(Agent.Logger, $"AIKIDO: Error patching: {ex.Message}");
+                LogHelper.ErrorLog(Agent.Logger, $"Error patching: {ex.Message}");
             }
         }
 

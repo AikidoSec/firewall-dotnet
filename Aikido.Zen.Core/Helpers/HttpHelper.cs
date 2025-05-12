@@ -1,16 +1,16 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Threading.Tasks;
-using System.Xml;
-using System.Text.Json;
-using Microsoft.AspNetCore.WebUtilities;
-using Microsoft.Net.Http.Headers;
-using Aikido.Zen.Core.Models;
-using Microsoft.Extensions.Logging;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
+using System.Threading.Tasks;
+using System.Xml;
 using Aikido.Zen.Core.Helpers;
+using Aikido.Zen.Core.Models;
+using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Logging;
+using Microsoft.Net.Http.Headers;
 
 [assembly: InternalsVisibleTo("Aikido.Zen.Tests")]
 namespace Aikido.Zen.Core.Helpers
@@ -52,8 +52,7 @@ namespace Aikido.Zen.Core.Helpers
             IDictionary<string, string> cookies,
             Stream body,
             string contentType,
-            long contentLength,
-            ILogger logger = null)
+            long contentLength)
         {
             var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             object parsedBody = null;
@@ -77,7 +76,7 @@ namespace Aikido.Zen.Core.Helpers
             }
             catch (Exception e)
             {
-                logger?.LogError($"Aikido: caught error while parsing body: {e.Message}");
+                LogHelper.ErrorLog(Agent.Logger, $"caught error while parsing body: {e.Message}");
             }
 
             return new HttpDataResult
@@ -184,7 +183,7 @@ namespace Aikido.Zen.Core.Helpers
             {
                 if (EnvironmentHelper.IsDebugging)
                 {
-                    Console.WriteLine($"Aikido: error while parsing body: {e.Message}");
+                    LogHelper.ErrorLog(Agent.Logger, $"Error while parsing body: {e.Message}");
                 }
             }
             finally

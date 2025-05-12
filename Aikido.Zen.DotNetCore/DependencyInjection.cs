@@ -1,15 +1,15 @@
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Api;
-using Microsoft.Extensions.Options;
+using Aikido.Zen.Core.Exceptions;
+using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.DotNetCore.Middleware;
 using Aikido.Zen.DotNetCore.Patches;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
-using Aikido.Zen.Core.Exceptions;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Aikido.Zen.Core.Helpers;
+using Microsoft.Extensions.Options;
 
 namespace Aikido.Zen.DotNetCore
 {
@@ -85,6 +85,9 @@ namespace Aikido.Zen.DotNetCore
             // set zen version
             AgentInfoHelper.SetVersion(typeof(Zen).Assembly.GetName().Version.ToString());
 
+            // register basic logging
+            services.AddLogging(builder => builder.AddConsole());
+
             // register the options
             services.AddOptions();
 
@@ -139,6 +142,7 @@ namespace Aikido.Zen.DotNetCore
                 {
                     AikidoException.ConfigureLogger(exceptionLogger);
                 }
+                EnvironmentHelper.ReportValues();
             }
             Patcher.Patch();
             app.UseMiddleware<ContextMiddleware>();

@@ -34,13 +34,13 @@ namespace Aikido.Zen.Core.Patches
                 (RuntimeInformation.ProcessArchitecture == Architecture.Arm64 || RuntimeInformation.ProcessArchitecture == Architecture.Arm)
             )
             {
-                message = "AIKIDO: Apple silicon is currently not supported.";
+                message = "Apple silicon is currently not supported.";
                 return false;
             }
             // for linux or windows arm64, we have a more specific message
             if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64 || RuntimeInformation.ProcessArchitecture == Architecture.Arm)
             {
-                message = "AIKIDO: ARM/ARM64 is currently not supported.";
+                message = "ARM/ARM64 is currently not supported.";
                 return false;
             }
             message = "";
