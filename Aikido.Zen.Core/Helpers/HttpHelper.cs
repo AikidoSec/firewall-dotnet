@@ -77,7 +77,7 @@ namespace Aikido.Zen.Core.Helpers
             }
             catch (Exception e)
             {
-                logger?.LogError($"caught error while parsing body: {e.Message}");
+                LogHelper.ErrorLog(Agent.Logger, $"caught error while parsing body: {e.Message}");
             }
 
             return new HttpDataResult
