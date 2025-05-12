@@ -52,8 +52,7 @@ namespace Aikido.Zen.Core.Helpers
             IDictionary<string, string> cookies,
             Stream body,
             string contentType,
-            long contentLength,
-            ILogger logger = null)
+            long contentLength)
         {
             var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             object parsedBody = null;
