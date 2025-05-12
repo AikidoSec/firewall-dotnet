@@ -13,7 +13,7 @@ namespace Aikido.Zen.Core.Helpers
     /// </summary>
     internal class AgentInfoHelper
     {
-        private static string ZenVersion = CleanVersion(typeof(AgentInfoHelper).Assembly.GetName().Version.ToString());
+        public static string ZenVersion => CleanVersion(typeof(AgentInfoHelper).Assembly.GetName().Version.ToString());
         // Cache the AgentInfo object to avoid repeated creation
         private static readonly AgentInfo _cachedAgentInfo = new AgentInfo
         {
