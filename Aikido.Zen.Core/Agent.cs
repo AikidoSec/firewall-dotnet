@@ -2,7 +2,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Aikido.Zen.Core.Api;
@@ -89,7 +88,6 @@ namespace Aikido.Zen.Core
             _batchTimeoutMs = batchTimeoutMs;
             _backgroundTask = Task.Run(ProcessRecurringTasksAsync);
             _context = new AgentContext();
-            LogHelper.InfoLog(Logger, $"Zen Agent v{AgentInfoHelper.ZenVersion} started");
         }
 
         /// <summary>
@@ -132,6 +130,8 @@ namespace Aikido.Zen.Core
                 Heartbeat.ScheduleId,
                 scheduledHeartBeat
             );
+            LogHelper.InfoLog(Logger, $"Zen Agent v{AgentInfoHelper.ZenVersion} started");
+
         }
 
         /// <summary>
