@@ -17,29 +17,27 @@ namespace Aikido.Zen.Core.Models
     /// </summary>
     public class AgentStats
     {
+        private const int MaxHostnames = 2000;
+        private const int MaxUsers = 2000;
+        private const int MaxRoutes = 5000;
+
         private readonly int _maxPerfSamplesInMem;
         private readonly int _maxCompressedStatsInMem;
         private ConcurrentDictionary<string, OperationStats> _operations = new ConcurrentDictionary<string, OperationStats>();
         private Requests _requests = new Requests();
-        private readonly ConcurrentLFUDictionary<string, Host> _hostnames;
-        private readonly ConcurrentLFUDictionary<string, UserExtended> _users;
-        private readonly ConcurrentLFUDictionary<string, Route> _routes;
+        private readonly ConcurrentLFUDictionary<string, Host> _hostnames = new ConcurrentLFUDictionary<string, Host>(MaxHostnames);
+        private readonly ConcurrentLFUDictionary<string, UserExtended> _users = new ConcurrentLFUDictionary<string, UserExtended>(MaxUsers);
+        private readonly ConcurrentLFUDictionary<string, Route> _routes = new ConcurrentLFUDictionary<string, Route>(MaxRoutes);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AgentStats"/> class.
         /// </summary>
         /// <param name="maxPerfSamplesInMem">The maximum number of performance samples to keep in memory per operation before compressing.</param>
         /// <param name="maxCompressedStatsInMem">The maximum number of compressed statistic blocks to keep in memory per operation.</param>
-        /// <param name="maxHostnames">The maximum number of hostnames to track.</param>
-        /// <param name="maxUsers">The maximum number of users to track.</param>
-        /// <param name="maxRoutes">The maximum number of routes to track.</param>
-        public AgentStats(int maxPerfSamplesInMem = 1000, int maxCompressedStatsInMem = 100, int maxHostnames = 2000, int maxUsers = 2000, int maxRoutes = 5000)
+        public AgentStats(int maxPerfSamplesInMem = 1000, int maxCompressedStatsInMem = 100)
         {
             _maxPerfSamplesInMem = maxPerfSamplesInMem;
             _maxCompressedStatsInMem = maxCompressedStatsInMem;
-            _hostnames = new ConcurrentLFUDictionary<string, Host>(maxHostnames);
-            _users = new ConcurrentLFUDictionary<string, UserExtended>(maxUsers);
-            _routes = new ConcurrentLFUDictionary<string, Route>(maxRoutes);
             Reset();
         }
 
@@ -438,7 +436,7 @@ namespace Aikido.Zen.Core.Models
         /// <param name="context">The context containing the route information.</param>
         public void AddRoute(Context context)
         {
-            if (context == null || string.IsNullOrEmpty(context.Route)) return; // Check Route null/empty
+            if (context == null || string.IsNullOrEmpty(context.Route)) return;
 
             Route route;
             if (_routes.TryGet(context.Route, out var existingRoute))

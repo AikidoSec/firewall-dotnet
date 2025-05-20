@@ -1,4 +1,3 @@
-
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Aikido.Zen.Core.Api;
@@ -28,14 +27,9 @@ namespace Aikido.Zen.Core.Models
             _stats.OnAbortedRequest();
         }
 
-        public void AddAttackDetected()
+        public void AddAttackDetected(bool blocked = false)
         {
-            _stats.OnDetectedAttack();
-        }
-
-        public void AddAttackBlocked()
-        {
-            _stats.OnBlockedAttack();
+            _stats.OnDetectedAttack(blocked);
         }
 
         public void AddHostname(string hostname)
@@ -62,7 +56,9 @@ namespace Aikido.Zen.Core.Models
 
         public void Clear()
         {
+            _config.Clear();
             _stats.Reset();
+            ConfigLastUpdated = 0;
         }
 
         /// <summary>

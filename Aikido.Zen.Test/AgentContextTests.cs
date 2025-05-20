@@ -113,13 +113,17 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void AddAttackBlocked_ShouldIncrementAttacksBlocked()
+        public void AddAttackDetectedAndBlocked_ShouldIncrementAttacksBlocked()
         {
             // Act
-            _agentContext.AddAttackBlocked();
+            _agentContext.AddAttackDetected(true);
 
             // Assert
-            Assert.That(_agentContext.AttacksBlocked, Is.EqualTo(1));
+            Assert.Multiple(() =>
+            {
+                Assert.That(_agentContext.AttacksDetected, Is.EqualTo(1));
+                Assert.That(_agentContext.AttacksBlocked, Is.EqualTo(1));
+            });
         }
 
         [Test]
@@ -262,8 +266,7 @@ namespace Aikido.Zen.Test
             // Arrange
             _agentContext.AddRequest();
             _agentContext.AddAbortedRequest();
-            _agentContext.AddAttackDetected();
-            _agentContext.AddAttackBlocked();
+            _agentContext.AddAttackDetected(true);
             _agentContext.AddHostname("example.com:8080");
             _agentContext.AddUser(new User("user1", "User One"), "192.168.1.1");
             _agentContext.AddRoute(new Context
