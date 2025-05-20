@@ -78,11 +78,12 @@ namespace Aikido.Zen.Core.Api
         public IEnumerable<string> AllowedIps => AllowedIPAddresses.Where(AllowedIPAddresses => AllowedIPAddresses != null)
                    .SelectMany(AllowedIPAddresses => AllowedIPAddresses.Ips ?? Enumerable.Empty<string>());
 
-        public class IPList
-        {
-            public string Source { get; set; }
-            public string Description { get; set; }
-            public IEnumerable<string> Ips { get; set; }
-        }
+    }
+    public class IPList
+    {
+        public string Key { get; set; }
+        public string Source { get; set; }
+        public string Description { get; set; }
+        public IEnumerable<string> Ips { get; set; }
     }
 }

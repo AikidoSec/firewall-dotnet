@@ -6,7 +6,7 @@ namespace Aikido.Zen.Core.Models
     /// Abstract base class that tracks the number of hits for derived objects.
     /// Provides thread-safe hit counting functionality.
     /// </summary>
-    public abstract class HitCount
+    public class HitCount
     {
         private int _hits;
 

@@ -97,7 +97,7 @@ namespace Aikido.Zen.Core.Models
                 reason = "User is blocked";
                 return true;
             }
-            if (_config.BlockList.IsBlocked(context, out reason))
+            if (_config.BlockList.IsBlocked(context, out reason, out var matchedLists))
             {
                 return true;
             }

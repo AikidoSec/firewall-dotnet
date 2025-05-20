@@ -1,7 +1,7 @@
 using System;
+using System.Collections; // Added for IEnumerable
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 
 namespace Aikido.Zen.Core.Models
@@ -15,7 +15,7 @@ namespace Aikido.Zen.Core.Models
     /// </summary>
     /// <typeparam name="K">The type of the keys in the dictionary.</typeparam>
     /// <typeparam name="V">The type of the values in the dictionary, which must inherit from <see cref="HitCount"/>.</typeparam>
-    public class ConcurrentLFUDictionary<K, V> where V : HitCount
+    public class ConcurrentLFUDictionary<K, V> : IEnumerable<KeyValuePair<K, V>> where V : HitCount // Implemented IEnumerable
     {
         private readonly ConcurrentDictionary<K, V> _dictionary;
         private readonly int _maxItems;
@@ -167,6 +167,25 @@ namespace Aikido.Zen.Core.Models
                 _dictionary.TryRemove(keyToRemove, out _);
             }
             // No finally block needed as we didn't acquire the lock here (caller holds it)
+        }
+
+
+        /// <summary>
+        /// Returns an enumerator that iterates through the key-value pairs in the dictionary.
+        /// </summary>
+        /// <returns>An enumerator for the <see cref="ConcurrentLFUDictionary{K,V}"/>.</returns>
+        public IEnumerator<KeyValuePair<K, V>> GetEnumerator()
+        {
+            return _dictionary.GetEnumerator();
+        }
+
+        /// <summary>
+        /// Returns an enumerator that iterates through the collection.
+        /// </summary>
+        /// <returns>An <see cref="IEnumerator"/> object that can be used to iterate through the collection.</returns>
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
         }
     }
 }

@@ -25,6 +25,9 @@ namespace Aikido.Zen.Core.Models
         private readonly ConcurrentLFUDictionary<string, UserExtended> _users;
         private readonly ConcurrentLFUDictionary<string, Route> _routes;
 
+        private readonly ConcurrentLFUDictionary<string, HitCount> _IPAddressStats;
+        private readonly ConcurrentLFUDictionary<string, HitCount> _userAgentStats;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="AgentStats"/> class.
         /// </summary>
@@ -33,13 +36,15 @@ namespace Aikido.Zen.Core.Models
         /// <param name="maxHostnames">The maximum number of hostnames to track.</param>
         /// <param name="maxUsers">The maximum number of users to track.</param>
         /// <param name="maxRoutes">The maximum number of routes to track.</param>
-        public AgentStats(int maxPerfSamplesInMem = 1000, int maxCompressedStatsInMem = 100, int maxHostnames = 2000, int maxUsers = 2000, int maxRoutes = 5000)
+        public AgentStats(int maxPerfSamplesInMem = 1000, int maxCompressedStatsInMem = 100, int maxHostnames = 2000, int maxUsers = 2000, int maxRoutes = 5000, int maxIPAddressStats = 10000, int maxUserAgentStats = 10000)
         {
             _maxPerfSamplesInMem = maxPerfSamplesInMem;
             _maxCompressedStatsInMem = maxCompressedStatsInMem;
             _hostnames = new ConcurrentLFUDictionary<string, Host>(maxHostnames);
             _users = new ConcurrentLFUDictionary<string, UserExtended>(maxUsers);
             _routes = new ConcurrentLFUDictionary<string, Route>(maxRoutes);
+            _IPAddressStats = new ConcurrentLFUDictionary<string, HitCount>(maxIPAddressStats);
+            _userAgentStats = new ConcurrentLFUDictionary<string, HitCount>(maxUserAgentStats);
             Reset();
         }
 
@@ -108,6 +113,16 @@ namespace Aikido.Zen.Core.Models
         public IEnumerable<Route> Routes => _routes.GetValues();
 
         /// <summary>
+        /// Gets the IP adress stats
+        /// </summary>
+        public BreakdownStat IPAddresses => new BreakdownStat(_IPAddressStats.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Hits));
+
+        /// <summary>
+        /// Gets the user agent stats
+        /// </summary>
+        public BreakdownStat UserAgents => new BreakdownStat(_userAgentStats.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Hits));
+
+        /// <summary>
         /// Resets all collected statistics and updates the start time.
         /// </summary>
         public void Reset()
@@ -126,6 +141,8 @@ namespace Aikido.Zen.Core.Models
             _hostnames.Clear();
             _users.Clear();
             _routes.Clear();
+            _IPAddressStats.Clear();
+            _userAgentStats.Clear();
             StartedAt = DateTimeHelper.UTCNowUnixMilliseconds();
         }
 
