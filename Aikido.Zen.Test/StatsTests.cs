@@ -1,6 +1,6 @@
 
+using Aikido.Zen.Core;
 using Aikido.Zen.Core.Models;
-
 
 namespace Aikido.Zen.Test
 {
@@ -35,14 +35,14 @@ namespace Aikido.Zen.Test
         [Test]
         public void IsEmpty_ShouldBeTrue_ForNewStats()
         {
-            var stats = new Stats();
+            var stats = new AgentStats();
             Assert.That(stats.IsEmpty(), Is.True);
         }
 
         [Test]
         public void HasCompressedStats_ShouldBeFalse_ForNewStats()
         {
-            var stats = new Stats();
+            var stats = new AgentStats();
             Assert.That(stats.HasCompressedStats(), Is.False);
         }
 
@@ -50,7 +50,7 @@ namespace Aikido.Zen.Test
         [Test]
         public void Reset_ClearsStatsAndUpdatesStartedAt()
         {
-            var stats = new Stats(DefaultMaxPerfSamples, DefaultMaxCompressedStats);
+            var stats = new AgentStats(DefaultMaxPerfSamples, DefaultMaxCompressedStats);
             var initialStartedAt = stats.StartedAt;
 
             stats.OnRequest();
@@ -76,7 +76,7 @@ namespace Aikido.Zen.Test
         [Test]
         public void OnRequest_IncrementsRequestTotal()
         {
-            var stats = new Stats();
+            var stats = new AgentStats();
             stats.OnRequest();
             stats.OnRequest();
             Assert.That(stats.Requests.Total, Is.EqualTo(2));
@@ -86,7 +86,7 @@ namespace Aikido.Zen.Test
         [Test]
         public void OnAbortedRequest_IncrementsRequestAborted()
         {
-            var stats = new Stats();
+            var stats = new AgentStats();
             stats.OnAbortedRequest();
             Assert.That(stats.Requests.Aborted, Is.EqualTo(1));
             // Aborted requests don't make stats non-empty by themselves if total is 0
@@ -99,14 +99,15 @@ namespace Aikido.Zen.Test
         [Test]
         public void OnDetectedAttack_IncrementsRequestAttacks()
         {
-            var stats = new Stats();
+            var stats = new AgentStats();
 
-            stats.OnDetectedAttack(blocked: false);
+            stats.OnDetectedAttack();
             Assert.That(stats.Requests.AttacksDetected.Total, Is.EqualTo(1));
             Assert.That(stats.Requests.AttacksDetected.Blocked, Is.EqualTo(0));
             Assert.That(stats.IsEmpty(), Is.False); // Detecting attack makes it non-empty
 
-            stats.OnDetectedAttack(blocked: true);
+            stats.OnDetectedAttack();
+            stats.OnBlockedAttack();
             Assert.That(stats.Requests.AttacksDetected.Total, Is.EqualTo(2));
             Assert.That(stats.Requests.AttacksDetected.Blocked, Is.EqualTo(1));
         }
@@ -114,7 +115,7 @@ namespace Aikido.Zen.Test
         [Test]
         public void InterceptorThrewError_IncrementsOperationTotalAndErrors()
         {
-            var stats = new Stats();
+            var stats = new AgentStats();
             stats.InterceptorThrewError(TestOperation, TestOperationKind);
 
             Assert.That(stats.Operations.ContainsKey(TestOperation), Is.True);
@@ -132,7 +133,7 @@ namespace Aikido.Zen.Test
         [Test]
         public void OnInspectedCall_TracksTotalsAndDurations()
         {
-            var stats = new Stats();
+            var stats = new AgentStats();
 
             // 1. Call without context
             stats.OnInspectedCall(TestOperation, TestOperationKind, 10.0, attackDetected: false, blocked: false, withoutContext: true);
@@ -178,7 +179,7 @@ namespace Aikido.Zen.Test
         public void OnInspectedCall_TriggersCompressionWhenMaxSamplesReached()
         {
             int maxSamples = 10;
-            var stats = new Stats(maxPerfSamplesInMem: maxSamples, maxCompressedStatsInMem: DefaultMaxCompressedStats);
+            var stats = new AgentStats(maxPerfSamplesInMem: maxSamples, maxCompressedStatsInMem: DefaultMaxCompressedStats);
             var sequence = GenerateSequence(maxSamples); // 1.0 to 10.0
 
             // Add maxSamples durations (1 to 10)
@@ -228,7 +229,7 @@ namespace Aikido.Zen.Test
         {
             int maxSamples = 10;
             int maxCompressed = 3;
-            var stats = new Stats(maxPerfSamplesInMem: maxSamples, maxCompressedStatsInMem: maxCompressed);
+            var stats = new AgentStats(maxPerfSamplesInMem: maxSamples, maxCompressedStatsInMem: maxCompressed);
 
             // Trigger compression maxCompressed + 1 times (4 times: cycles 0, 1, 2, 3)
             for (int cycle = 0; cycle < maxCompressed + 1; cycle++)
@@ -262,7 +263,7 @@ namespace Aikido.Zen.Test
         [Test]
         public void ForceCompress_CompressesExistingDurations()
         {
-            var stats = new Stats(DefaultMaxPerfSamples, DefaultMaxCompressedStats);
+            var stats = new AgentStats(DefaultMaxPerfSamples, DefaultMaxCompressedStats);
             stats.OnInspectedCall(TestOperation, TestOperationKind, 10.0, false, false, false);
             stats.OnInspectedCall(TestOperation, TestOperationKind, 20.0, false, false, false);
 
@@ -282,7 +283,7 @@ namespace Aikido.Zen.Test
         [Test]
         public void ForceCompress_DoesNothing_WhenNoDurations()
         {
-            var stats = new Stats();
+            var stats = new AgentStats();
             // stats.EnsureOperationStats(TestOperation, TestOperationKind); // Ensure operation exists but no durations -- This is internal now
             // Accessing stats.Operations doesn't create the operation automatically
             // Let's explicitly add it if needed, though ForceCompress handles non-existent operations gracefully.
@@ -320,11 +321,11 @@ namespace Aikido.Zen.Test
             var shuffledList = Shuffle(list);
 
             // Mimic stubsSimple from Node test
-            Assert.That(Stats.CalculatePercentiles(new List<int> { 0 }, shuffledList)[0], Is.EqualTo(1.0).Within(Tolerance));
-            Assert.That(Stats.CalculatePercentiles(new List<int> { 25 }, shuffledList)[0], Is.EqualTo(25.0).Within(Tolerance));
-            Assert.That(Stats.CalculatePercentiles(new List<int> { 50 }, shuffledList)[0], Is.EqualTo(50.0).Within(Tolerance));
-            Assert.That(Stats.CalculatePercentiles(new List<int> { 75 }, shuffledList)[0], Is.EqualTo(75.0).Within(Tolerance));
-            Assert.That(Stats.CalculatePercentiles(new List<int> { 100 }, shuffledList)[0], Is.EqualTo(100.0).Within(Tolerance));
+            Assert.That(AgentStats.CalculatePercentiles(new List<int> { 0 }, shuffledList)[0], Is.EqualTo(1.0).Within(Tolerance));
+            Assert.That(AgentStats.CalculatePercentiles(new List<int> { 25 }, shuffledList)[0], Is.EqualTo(25.0).Within(Tolerance));
+            Assert.That(AgentStats.CalculatePercentiles(new List<int> { 50 }, shuffledList)[0], Is.EqualTo(50.0).Within(Tolerance));
+            Assert.That(AgentStats.CalculatePercentiles(new List<int> { 75 }, shuffledList)[0], Is.EqualTo(75.0).Within(Tolerance));
+            Assert.That(AgentStats.CalculatePercentiles(new List<int> { 100 }, shuffledList)[0], Is.EqualTo(100.0).Within(Tolerance));
 
             // Mimic Node test: { percentile: 75, list: shuffleArray(generateArraySimple(100).concat(generateArraySimple(30))), result: 68 }
             var combinedList = GenerateSequence(100).Concat(GenerateSequence(30)).ToList();
@@ -336,7 +337,7 @@ namespace Aikido.Zen.Test
                                                               // Let's sort the actual combined list to find the value at index 97.
             combinedList.Sort();
             double expectedValueAtIndex97 = combinedList[97]; // Should be 68 based on Node test
-            Assert.That(Stats.CalculatePercentiles(new List<int> { 75 }, shuffledCombinedList)[0], Is.EqualTo(expectedValueAtIndex97).Within(Tolerance), "P75 for combined list");
+            Assert.That(AgentStats.CalculatePercentiles(new List<int> { 75 }, shuffledCombinedList)[0], Is.EqualTo(expectedValueAtIndex97).Within(Tolerance), "P75 for combined list");
             // Let's double-check the value 68 logic. Sorted list has 1..30, then 1..100. So it's [1,1, 2,2, ..., 30,30, 31, 32, ..., 100]
             // Indices 0-59 are pairs 1-30. Indices 60-129 are 31-100.
             // Index 97 is within 60-129 range. Value = (97-60) + 31 = 37 + 31 = 68. Yes, logic is correct.
@@ -347,10 +348,10 @@ namespace Aikido.Zen.Test
         public void CalculatePercentiles_NegativeValues()
         {
             var list1 = Shuffle(new List<double> { -1, -2, -3, -4, -5 });
-            Assert.That(Stats.CalculatePercentiles(new List<int> { 50 }, list1)[0], Is.EqualTo(-3.0).Within(Tolerance));
+            Assert.That(AgentStats.CalculatePercentiles(new List<int> { 50 }, list1)[0], Is.EqualTo(-3.0).Within(Tolerance));
 
             var list2 = Shuffle(new List<double> { 7, 6, -1, -2, -3, -4, -5 });
-            Assert.That(Stats.CalculatePercentiles(new List<int> { 50 }, list2)[0], Is.EqualTo(-2.0).Within(Tolerance));
+            Assert.That(AgentStats.CalculatePercentiles(new List<int> { 50 }, list2)[0], Is.EqualTo(-2.0).Within(Tolerance));
         }
 
         [Test]
@@ -358,7 +359,7 @@ namespace Aikido.Zen.Test
         {
             var list = Shuffle(GenerateSequence(100)); // 1 to 100
             var percentilesToCalc = new List<int> { 0, 25, 50, 75, 100 };
-            var results = Stats.CalculatePercentiles(percentilesToCalc, list);
+            var results = AgentStats.CalculatePercentiles(percentilesToCalc, list);
             var expectedResults = new List<double> { 1.0, 25.0, 50.0, 75.0, 100.0 };
 
             Assert.That(results, Is.EqualTo(expectedResults).Within(Tolerance));
@@ -369,7 +370,7 @@ namespace Aikido.Zen.Test
         {
             var emptyList = new List<double>();
             var percentilesToCalc = new List<int> { 50 };
-            Assert.Throws<ArgumentException>(() => Stats.CalculatePercentiles(percentilesToCalc, emptyList));
+            Assert.Throws<ArgumentException>(() => AgentStats.CalculatePercentiles(percentilesToCalc, emptyList));
         }
 
         [Test]
@@ -379,8 +380,8 @@ namespace Aikido.Zen.Test
             var percentilesLess = new List<int> { -1 };
             var percentilesMore = new List<int> { 101 };
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => Stats.CalculatePercentiles(percentilesLess, validList));
-            Assert.Throws<ArgumentOutOfRangeException>(() => Stats.CalculatePercentiles(percentilesMore, validList));
+            Assert.Throws<ArgumentOutOfRangeException>(() => AgentStats.CalculatePercentiles(percentilesLess, validList));
+            Assert.Throws<ArgumentOutOfRangeException>(() => AgentStats.CalculatePercentiles(percentilesMore, validList));
         }
 
         /// <summary>
@@ -391,7 +392,7 @@ namespace Aikido.Zen.Test
         public async Task ConcurrentOperations_ProduceConsistentResults()
         {
             // Arrange
-            var stats = new Stats(maxPerfSamplesInMem: 50, maxCompressedStatsInMem: 5); // Use reasonably small limits for perf samples
+            var stats = new AgentStats(maxPerfSamplesInMem: 50, maxCompressedStatsInMem: 5); // Use reasonably small limits for perf samples
             int numThreads = 10;
             int opsPerThread = 1000; // Increase ops for better chance of races if they exist
 
@@ -435,9 +436,13 @@ namespace Aikido.Zen.Test
                                 break;
                             case 2: // OnDetectedAttack (Global)
                                 bool blocked = random.Next(2) == 0;
-                                stats.OnDetectedAttack(blocked);
+                                stats.OnDetectedAttack();
                                 Interlocked.Increment(ref expectedGlobalAttacks);
-                                if (blocked) Interlocked.Increment(ref expectedGlobalBlocked);
+                                if (blocked)
+                                {
+                                    stats.OnBlockedAttack();
+                                    Interlocked.Increment(ref expectedGlobalBlocked);
+                                }
                                 break;
                             case 3: // OnInspectedCall for "Op1"
                                 const string opName = "Op1";
@@ -511,6 +516,225 @@ namespace Aikido.Zen.Test
                 // Optional: Force compression and check results if needed, but adds complexity.
                 // stats.ForceCompress();
                 // // Add assertions based on compressed data if required
+            });
+        }
+
+        [Test]
+        public void AddHostname_WithValidHostname_AddsToHostnames()
+        {
+            // Arrange
+            var stats = new AgentStats();
+            var hostname = "example.com:8080";
+
+            // Act
+            stats.AddHostname(hostname);
+
+            // Assert
+            var hostnames = stats.Hostnames;
+            Assert.That(hostnames.Count(), Is.EqualTo(1));
+            var host = hostnames.First();
+            Assert.That(host.Hostname, Is.EqualTo("example.com"));
+            Assert.That(host.Port, Is.EqualTo(8080));
+        }
+
+        [Test]
+        public void AddHostname_WithInvalidHostname_DoesNotAddToHostnames()
+        {
+            // Arrange
+            var stats = new AgentStats();
+            var hostname = "";
+
+            // Act
+            stats.AddHostname(hostname);
+
+            // Assert
+            Assert.That(stats.Hostnames, Is.Empty);
+        }
+
+        [Test]
+        public void AddUser_WithValidUser_AddsToUsers()
+        {
+            // Arrange
+            var stats = new AgentStats();
+            var user = new User("123", "Test User");
+            var ipAddress = "192.168.1.1";
+
+            // Act
+            stats.AddUser(user, ipAddress);
+
+            // Assert
+            var users = stats.Users;
+            Assert.That(users?.Count(), Is.EqualTo(1));
+            var addedUser = users.First();
+            Assert.That(addedUser.Id, Is.EqualTo("123"));
+            Assert.That(addedUser.Name, Is.EqualTo("Test User"));
+            Assert.That(addedUser.LastIpAddress, Is.EqualTo(ipAddress));
+            Assert.That(addedUser.LastSeenAt, Is.GreaterThan(0));
+        }
+
+        [Test]
+        public void AddUser_WithInvalidUser_DoesNotAddToUsers()
+        {
+            // Arrange
+            var stats = new AgentStats();
+            User user = null;
+            var ipAddress = "192.168.1.1";
+
+            // Act
+            stats.AddUser(user, ipAddress);
+
+            // Assert
+            Assert.That(stats.Users, Is.Empty);
+        }
+
+        [Test]
+        public void AddRoute_WithValidContext_AddsToRoutes()
+        {
+            // Arrange
+            var stats = new AgentStats();
+            var context = new Aikido.Zen.Core.Context
+            {
+                Route = "/api/test",
+                Method = "GET"
+            };
+
+            // Act
+            stats.AddRoute(context);
+
+            // Assert
+            var routes = stats.Routes;
+            Assert.That(routes.Count(), Is.EqualTo(1));
+            var route = routes.First();
+            Assert.That(route.Path, Is.EqualTo("/api/test"));
+            Assert.That(route.Method, Is.EqualTo("GET"));
+        }
+
+        [Test]
+        public void AddRoute_WithInvalidContext_DoesNotAddToRoutes()
+        {
+            // Arrange
+            var stats = new AgentStats();
+            Aikido.Zen.Core.Context context = null;
+
+            // Act
+            stats.AddRoute(context);
+
+            // Assert
+            Assert.That(stats.Routes, Is.Empty);
+        }
+
+        [Test]
+        public void AddHostname_ShouldEvictLeastFrequentlyUsed_WhenMaxReached()
+        {
+            // Arrange
+            const int MaxHostnames = 2000; // Use a smaller number for faster testing maybe?
+            var stats = new AgentStats();
+            var firstHostname = "host0.com:80";
+            stats.Reset();
+
+            // Act
+            // Add the first hostname (Hits = 1)
+            stats.AddHostname(firstHostname);
+
+            // Add MaxHostnames more hostnames, ensuring they all end up with Hits = 2
+            for (int i = 1; i <= MaxHostnames; i++)
+            {
+                var hostname = $"host{i}.com:80";
+                // AddHostname calls AddOrUpdate internally.
+                // When adding host[MaxHostnames], Size >= MaxHostnames triggers eviction *before* add.
+                // LFU is host0 (Hits=1). host0 is evicted.
+                stats.AddHostname(hostname); // Adds host{i}(1). Size reaches MaxHostnames.
+                stats.AddHostname(hostname); // Updates host{i}(2). Size remains MaxHostnames.
+            }
+            // Final state: host1..host[MaxHostnames] (all Hits=2). Size = MaxHostnames. host0 was evicted.
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(stats.Hostnames.Count(), Is.EqualTo(MaxHostnames), "Dictionary size should be at max capacity.");
+                // host0 (Hits=1) should have been evicted when host[MaxHostnames] was added.
+                Assert.That(stats.Hostnames.Any(h => h.Hostname == "host0.com"), Is.False, "First hostname (host0) should be evicted as LFU.");
+                // Verify one of the later added hostnames (host1) is still present.
+                Assert.That(stats.Hostnames.Any(h => h.Hostname == "host1.com"), Is.True, "A hostname with higher hits (host1) should remain.");
+                // Verify the last hostname added (host[MaxHostnames]) is present.
+                Assert.That(stats.Hostnames.Any(h => h.Hostname == $"host{MaxHostnames}.com"), Is.True, "The last hostname added should remain.");
+            });
+        }
+
+        [Test]
+        public void AddUser_ShouldEvictLeastFrequentlyUsed_WhenMaxReached()
+        {
+            // Arrange
+            const int MaxUsers = 2000;
+            var stats = new AgentStats();
+            var firstUser = new User("user0", "User 0");
+            var ipAddress = "192.168.0.1";
+            stats.Reset();
+
+            // Act
+            // Add the first user (Hits = 1)
+            stats.AddUser(firstUser, ipAddress);
+
+            // Add MaxUsers more users, ensuring they all end up with Hits = 2
+            for (int i = 1; i <= MaxUsers; i++)
+            {
+                var user = new User($"user{i}", $"User {i}");
+                // AddUser calls AddOrUpdate internally.
+                // When adding user[MaxUsers], Size >= MaxUsers triggers eviction *before* add.
+                // LFU is user0 (Hits=1). user0 is evicted.
+                stats.AddUser(user, ipAddress); // Adds user{i}(1). Size reaches MaxUsers.
+                stats.AddUser(user, ipAddress); // Updates user{i}(2). Size remains MaxUsers.
+            }
+            // Final state: user1..user[MaxUsers] (all Hits=2). Size = MaxUsers. user0 was evicted.
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(stats.Users.Count(), Is.EqualTo(MaxUsers), "Dictionary size should be at max capacity.");
+                // user0 (Hits=1) should have been evicted when user[MaxUsers] was added.
+                Assert.That(stats.Users.Any(u => u.Id == "user0"), Is.False, "First user (user0) should be evicted as LFU.");
+                // Verify one of the later added users (user1) is still present.
+                Assert.That(stats.Users.Any(u => u.Id == "user1"), Is.True, "A user with higher hits (user1) should remain.");
+                // Verify the last user added (user[MaxUsers]) is present.
+                Assert.That(stats.Users.Any(u => u.Id == $"user{MaxUsers}"), Is.True, "The last user added should remain.");
+            });
+        }
+
+        [Test]
+        public void AddRoute_ShouldEvictLeastFrequentlyUsed_WhenMaxReached()
+        {
+            // Arrange
+            const int MaxRoutes = 5000;
+            var stats = new AgentStats();
+            var firstRouteContext = new Context { Url = "/route0", Method = "GET", Route = "/route0" };
+            stats.Reset();
+
+            // Act
+            // Add the first route (Hits = 1)
+            stats.AddRoute(firstRouteContext);
+
+            // Add MaxRoutes more routes, ensuring they all end up with Hits = 2
+            for (int i = 1; i <= MaxRoutes; i++)
+            {
+                var routeContext = new Context { Url = $"/route{i}", Method = "GET", Route = $"/route{i}" };
+                // AddRoute calls AddOrUpdate internally.
+                // When adding route[MaxRoutes], Size >= MaxRoutes triggers eviction *before* add.
+                // LFU is route0 (Hits=1). route0 is evicted.
+                stats.AddRoute(routeContext); // Adds route{i}(1). Size reaches MaxRoutes.
+                stats.AddRoute(routeContext); // Updates route{i}(2). Size remains MaxRoutes.
+            }
+            // Final state: route1..route[MaxRoutes] (all Hits=2). Size = MaxRoutes. route0 was evicted.
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(stats.Routes.Count(), Is.EqualTo(MaxRoutes), "Dictionary size should be at max capacity.");
+                // route0 (Hits=1) should have been evicted when route[MaxRoutes] was added.
+                Assert.That(stats.Routes.Any(r => r.Path == "/route0"), Is.False, "First route (route0) should be evicted as LFU.");
+                // Verify one of the later added routes (route1) is still present.
+                Assert.That(stats.Routes.Any(r => r.Path == "/route1"), Is.True, "A route with higher hits (/route1) should remain.");
+                // Verify the last route added (route[MaxRoutes]) is present.
+                Assert.That(stats.Routes.Any(r => r.Path == $"/route{MaxRoutes}"), Is.True, "The last route added should remain.");
             });
         }
     }
