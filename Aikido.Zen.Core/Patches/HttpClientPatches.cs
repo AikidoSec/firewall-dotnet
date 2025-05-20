@@ -19,15 +19,19 @@ namespace Aikido.Zen.Core.Patches
             // Use reflection to get the methods dynamically
             try
             {
+                // Patch the main request methods
                 PatchMethod(harmony, "System.Net.Http", "HttpClient", "SendAsync", "System.Net.Http.HttpRequestMessage", "System.Net.Http.HttpCompletionOption", "System.Threading.CancellationToken");
                 PatchMethod(harmony, "System.Net.Http", "HttpClient", "Send", "System.Net.Http.HttpRequestMessage", "System.Threading.CancellationToken");
+
+                // Patch the internal methods that handle redirects
+                PatchMethod(harmony, "System.Net.Http", "HttpClientHandler", "SendAsync", "System.Net.Http.HttpRequestMessage", "System.Threading.CancellationToken");
+                PatchMethod(harmony, "System.Net.Http", "HttpClientHandler", "Send", "System.Net.Http.HttpRequestMessage", "System.Threading.CancellationToken");
             }
             catch (NotImplementedException e)
             {
                 // pass through, there may be some methods that are not implemented
                 LogHelper.ErrorLog(Agent.Logger, "Error patching HttpClient:" + e.Message);
             }
-
         }
 
         /// <summary>
@@ -54,15 +58,25 @@ namespace Aikido.Zen.Core.Patches
         /// <param name="request">The HttpRequestMessage being sent.</param>
         /// <param name="__instance">The instance of HttpClient being used.</param>
         /// <returns>True if the original method should continue execution; otherwise, false.</returns>
-        internal static bool CaptureRequest(HttpRequestMessage request, HttpClient __instance, System.Reflection.MethodBase __originalMethod)
+        internal static bool CaptureRequest(HttpRequestMessage request, object __instance, System.Reflection.MethodBase __originalMethod)
         {
-            var uri = __instance.BaseAddress == null
-                ? request.RequestUri
-                : request.RequestUri == null
-                    ? __instance.BaseAddress
-                    : new Uri(__instance.BaseAddress, request.RequestUri);
+            if (request == null || request.RequestUri == null)
+                return true;
+
+            var uri = __instance is HttpClient client && client.BaseAddress != null
+                ? request.RequestUri == null
+                    ? client.BaseAddress
+                    : new Uri(client.BaseAddress, request.RequestUri)
+                : request.RequestUri;
 
             var (hostname, port) = UriHelper.ExtractHost(uri);
+
+            // Disable automatic redirects if this is a HttpClientHandler
+            if (__instance is HttpClientHandler handler)
+            {
+                handler.AllowAutoRedirect = false;
+            }
+
             Agent.Instance.CaptureOutboundRequest(hostname, port);
             var methodInfo = __originalMethod as MethodInfo;
             var operation = $"{methodInfo?.DeclaringType?.Name}.{methodInfo?.Name}";
@@ -70,12 +84,12 @@ namespace Aikido.Zen.Core.Patches
             bool attackDetected = false;
             bool blocked = false;
             Agent.Instance.Context.OnInspectedCall(
-                       operation,
-                       operationKind,
-                       0, // once ssrf attack detection is implemented, we can measure the algorithm's performance
-                       attackDetected,
-                       blocked,
-                       withoutContext);
+                operation,
+                operationKind,
+                0, // once ssrf attack detection is implemented, we can measure the algorithm's performance
+                attackDetected,
+                blocked,
+                withoutContext);
             return true;
         }
     }
