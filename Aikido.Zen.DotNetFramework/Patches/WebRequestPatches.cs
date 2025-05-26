@@ -38,16 +38,15 @@ namespace Aikido.Zen.DotNetFramework.Patches
             var method = ReflectionHelper.GetMethodFromAssembly(assemblyName, typeName, methodName, parameterTypeNames);
             if (method != null && !method.IsAbstract)
             {
-                var patchMethod = new HarmonyMethod(typeof(WebRequestPatches).GetMethod(nameof(OnWebRequest),
-                    System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic));
+                var patchMethod = new HarmonyMethod(typeof(WebRequestPatches).GetMethod(nameof(OnWebRequest), BindingFlags.Static | BindingFlags.NonPublic));
                 harmony.Patch(method, patchMethod);
             }
         }
 
-        private static bool OnWebRequest(WebRequest __instance, System.Reflection.MethodBase __originalMethod)
+        private static bool OnWebRequest(WebRequest __instance, MethodBase __originalMethod)
         {
             var context = Zen.GetContext();
-            return Core.Patches.WebRequestPatches.CaptureRequest(__instance, __originalMethod, context);
+            return WebRequestPatcher.OnWebRequest(__instance, __originalMethod, context);
         }
     }
 }

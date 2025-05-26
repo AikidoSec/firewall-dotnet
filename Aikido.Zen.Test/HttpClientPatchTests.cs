@@ -1,6 +1,10 @@
+using System;
+using System.Net.Http;
+using System.Threading.Tasks;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Patches;
 using Aikido.Zen.Tests.Mocks;
+using NUnit.Framework;
 
 namespace Aikido.Zen.Test
 {
@@ -20,16 +24,23 @@ namespace Aikido.Zen.Test
             _httpClient.Dispose();
         }
 
+        private Context CreateContext()
+        {
+            // Create a new Context for each test
+            return new Context();
+        }
+
         [Test]
-        public void CaptureRequest_WithNullBaseAddress_UsesRequestUri()
+        public void OnHttpClient_WithNullBaseAddress_UsesRequestUri()
         {
             // Arrange
             Agent.NewInstance(ZenApiMock.CreateMock().Object);
             Agent.Instance.ClearContext();
             var request = new HttpRequestMessage(HttpMethod.Get, "http://test.com:8080/path");
+            var context = CreateContext();
 
             // Act
-            var result = HttpClientPatches.CaptureRequest(request, _httpClient, null);
+            var result = HttpClientPatcher.OnHttpClient(request, _httpClient, null, context);
 
             // Assert
             Assert.That(result, Is.True);
@@ -43,15 +54,16 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public async Task CaptureRequest_WithBaseAddressAndNullRequestUri_UsesBaseAddress()
+        public async Task OnHttpClient_WithBaseAddressAndNullRequestUri_UsesBaseAddress()
         {
             // Arrange
             Agent.NewInstance(ZenApiMock.CreateMock().Object);
             _httpClient.BaseAddress = new Uri("http://example.com:9090/");
             var request = new HttpRequestMessage();
+            var context = CreateContext();
 
             // Act
-            var result = HttpClientPatches.CaptureRequest(request, _httpClient, null);
+            var result = HttpClientPatcher.OnHttpClient(request, _httpClient, null, context);
             await Task.Delay(100);
 
             // Assert
@@ -66,16 +78,17 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public async Task CaptureRequest_WithBaseAddressAndRequestUri_CombinesUris()
+        public async Task OnHttpClient_WithBaseAddressAndRequestUri_CombinesUris()
         {
             // Arrange
             Agent.NewInstance(ZenApiMock.CreateMock().Object);
             Agent.Instance.ClearContext();
             _httpClient.BaseAddress = new Uri("http://base.com:8080/");
             var request = new HttpRequestMessage(HttpMethod.Get, "api/endpoint");
+            var context = CreateContext();
 
             // Act
-            var result = HttpClientPatches.CaptureRequest(request, _httpClient, null);
+            var result = HttpClientPatcher.OnHttpClient(request, _httpClient, null, context);
             await Task.Delay(100);
 
             // Assert
@@ -90,14 +103,15 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void CaptureRequest_WithAikidoDevHostname_SkipsCapture()
+        public void OnHttpClient_WithAikidoDevHostname_SkipsCapture()
         {
             // Arrange
             Agent.NewInstance(ZenApiMock.CreateMock().Object);
             var request = new HttpRequestMessage(HttpMethod.Get, "https://api.aikido.dev/endpoint");
+            var context = CreateContext();
 
             // Act
-            var result = HttpClientPatches.CaptureRequest(request, _httpClient, null);
+            var result = HttpClientPatcher.OnHttpClient(request, _httpClient, null, context);
 
             // Assert
             Assert.That(result, Is.True);
