@@ -126,7 +126,23 @@ namespace Aikido.Zen.Core.Helpers
             {
                 return Source.RouteParams;
             }
-            return UserInputHelper.GetSourceFromUserInputPath(path);
+            else if (path.StartsWith("body"))
+            {
+                return Source.Body;
+            }
+            else if (path.StartsWith("graphql"))
+            {
+                return Source.Graphql;
+            }
+            else if (path.StartsWith("xml"))
+            {
+                return Source.Xml;
+            }
+            else if (path.StartsWith("subdomains"))
+            {
+                return Source.Subdomains;
+            }
+            throw new ArgumentOutOfRangeException(nameof(path), $"Unknown source: {path}.");
         }
 
         private static async Task<object> ProcessRequestBodyAsync(Stream body, string contentType, IDictionary<string, string> result)

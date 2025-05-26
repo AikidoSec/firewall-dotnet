@@ -179,5 +179,79 @@ namespace Aikido.Zen.Core.Helpers
             // Otherwise just look for the hostname
             return value.IndexOf(hostname, StringComparison.OrdinalIgnoreCase) >= 0;
         }
+
+        /// <summary>
+        /// Checks if a hostname exists in user input.
+        /// </summary>
+        /// <param name="userInput">The user input to check.</param>
+        /// <param name="hostname">The hostname to look for.</param>
+        /// <param name="port">The port to look for.</param>
+        /// <returns>True if the hostname is found in the user input, false otherwise.</returns>
+        public static bool FindHostnameInUserInput(string userInput, string hostname, int? port)
+        {
+            // early return if our userInput clearly is not a URL
+            if (string.IsNullOrEmpty(userInput) || string.IsNullOrEmpty(hostname) || userInput.Length <= 1)
+                return false;
+
+            // Try parsing with http:// prefix
+            if (!Uri.TryCreate($"http://{hostname}" + (port.HasValue ? $":{port}" : ""), UriKind.Absolute, out _))
+                return false;
+
+            // Create variants to check
+            var variants = new[]
+            {
+                userInput,
+                $"http://{userInput}",
+                $"https://{userInput}"
+            };
+
+            foreach (var variant in variants)
+            {
+                if (!Uri.TryCreate(variant, UriKind.Absolute, out var variantUri))
+                    continue;
+
+                if (!port.HasValue)
+                    return true;
+
+                if (variantUri.Port == port.Value)
+                    return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Gets the origin URL of a redirect chain.
+        /// </summary>
+        /// <param name="context">The current request context.</param>
+        /// <param name="url">The URL to find the origin for.</param>
+        /// <returns>The origin URL of the redirect chain, or null if not found.</returns>
+        public static Uri GetRedirectOrigin(Context context, Uri url)
+        {
+            if (context?.OutgoingRequestRedirects == null || url == null)
+                return null;
+
+            var currentUrl = url;
+            var visited = new HashSet<string>();
+
+            while (true)
+            {
+                var currentUrlStr = currentUrl.ToString();
+                if (visited.Contains(currentUrlStr))
+                    break;
+
+                visited.Add(currentUrlStr);
+
+                var matchingRedirect = context.OutgoingRequestRedirects
+                    .FirstOrDefault(r => r.Destination.ToString().Equals(currentUrlStr, StringComparison.OrdinalIgnoreCase));
+
+                if (matchingRedirect.Source == null)
+                    break;
+
+                currentUrl = matchingRedirect.Source;
+            }
+
+            return currentUrl;
+        }
     }
 }
