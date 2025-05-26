@@ -1,7 +1,9 @@
-
+using System;
+using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Models;
+using NUnit.Framework;
 
 namespace Aikido.Zen.Test
 {
@@ -17,142 +19,173 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void Clear_ClearsAllCollections()
+        public void UpdateBlockedUsers_WithNullList_ClearsBlockedUsers()
         {
             // Arrange
-            _config.UpdateBlockedUsers(new List<string> { "123" });
+            _config.UpdateBlockedUsers(new[] { "user1", "user2" });
 
             // Act
-            _config.Clear();
+            _config.UpdateBlockedUsers(null);
 
             // Assert
-            Assert.That(_config.IsUserBlocked("123"), Is.False);
+            Assert.That(_config.IsUserBlocked("user1"), Is.False);
+            Assert.That(_config.IsUserBlocked("user2"), Is.False);
         }
 
         [Test]
-        public void IsUserBlocked_WithBlockedUser_ReturnsTrue()
+        public void UpdateBlockedUsers_WithNewList_UpdatesBlockedUsers()
         {
             // Arrange
-            var userId = "123";
-            _config.UpdateBlockedUsers(new List<string> { userId });
+            var blockedUsers = new[] { "user1", "user2" };
 
-            // Act & Assert
-            Assert.That(_config.IsUserBlocked(userId), Is.True);
+            // Act
+            _config.UpdateBlockedUsers(blockedUsers);
+
+            // Assert
+            Assert.That(_config.IsUserBlocked("user1"), Is.True);
+            Assert.That(_config.IsUserBlocked("user2"), Is.True);
+            Assert.That(_config.IsUserBlocked("user3"), Is.False);
         }
 
         [Test]
-        public void IsUserBlocked_WithNonBlockedUser_ReturnsFalse()
+        public void UpdateBlockedUserAgents_WithNullRegex_ClearsBlockedUserAgents()
         {
             // Arrange
-            var userId = "123";
-            _config.UpdateBlockedUsers(new List<string> { "456" });
+            _config.UpdateBlockedUserAgents(new Regex("Mozilla/5.0"));
 
-            // Act & Assert
-            Assert.That(_config.IsUserBlocked(userId), Is.False);
+            // Act
+            _config.UpdateBlockedUserAgents(null);
+
+            // Assert
+            Assert.That(_config.IsUserAgentBlocked("Mozilla/5.0"), Is.False);
         }
 
         [Test]
-        public void IsUserAgentBlocked_WithBlockedUserAgent_ReturnsTrue()
+        public void UpdateBlockedUserAgents_WithNewRegex_UpdatesBlockedUserAgents()
         {
             // Arrange
-            var blockedPattern = new Regex("bot", RegexOptions.IgnoreCase);
-            _config.UpdateBlockedUserAgents(blockedPattern);
+            var userAgentRegex = new Regex("Mozilla/5.0");
 
-            // Act & Assert
-            Assert.That(_config.IsUserAgentBlocked("Mozilla/5.0 (compatible; Bot/1.0)"), Is.True);
+            // Act
+            _config.UpdateBlockedUserAgents(userAgentRegex);
+
+            // Assert
+            Assert.That(_config.IsUserAgentBlocked("Mozilla/5.0"), Is.True);
+            Assert.That(_config.IsUserAgentBlocked("Chrome/91.0"), Is.False);
         }
 
         [Test]
-        public void IsUserAgentBlocked_WithNonBlockedUserAgent_ReturnsFalse()
+        public void UpdateRatelimitedRoutes_WithNullList_ClearsRatelimitedRoutes()
         {
             // Arrange
-            var blockedPattern = new Regex("bot", RegexOptions.IgnoreCase);
-            _config.UpdateBlockedUserAgents(blockedPattern);
-
-            // Act & Assert
-            Assert.That(_config.IsUserAgentBlocked("Mozilla/5.0 (Windows NT 10.0; Win64; x64)"), Is.False);
-        }
-
-        [Test]
-        public void UpdateConfig_WithValidResponse_UpdatesConfiguration()
-        {
-            // Arrange
-            var response = new ReportingAPIResponse
+            var endpoints = new List<EndpointConfig>
             {
-                Block = true,
-                BlockedUserIds = new List<string> { "123" },
-                Endpoints = new List<EndpointConfig>(),
-                BypassedIPAddresses = new List<string>(),
-                ConfigUpdatedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+                new EndpointConfig { Method = "GET", Route = "/api/test" }
+            };
+            _config.UpdateRatelimitedRoutes(endpoints);
+
+            // Act
+            _config.UpdateRatelimitedRoutes(null);
+
+            // Assert
+            Assert.That(_config.Endpoints, Is.Empty);
+        }
+
+        [Test]
+        public void UpdateRatelimitedRoutes_WithNewList_UpdatesRatelimitedRoutes()
+        {
+            // Arrange
+            var endpoints = new List<EndpointConfig>
+            {
+                new EndpointConfig { Method = "GET", Route = "/api/test1" },
+                new EndpointConfig { Method = "POST", Route = "/api/test2" }
             };
 
             // Act
-            _config.UpdateConfig(response);
+            _config.UpdateRatelimitedRoutes(endpoints);
 
             // Assert
-            Assert.That(_config.ConfigLastUpdated, Is.EqualTo(response.ConfigUpdatedAt));
-            Assert.That(_config.IsUserBlocked("123"), Is.True);
-        }
-
-        [Test]
-        public void UpdateFirewallLists_WithValidResponse_UpdatesFirewallLists()
-        {
-            // Arrange
-            var blockedIpList = new FirewallListsAPIResponse.IPList
-            {
-                Source = "test",
-                Description = "Test blocked IPs",
-                Ips = new List<string> { "192.168.1.1" }
-            };
-            var allowedIpList = new FirewallListsAPIResponse.IPList
-            {
-                Source = "test",
-                Description = "Test allowed IPs",
-                Ips = new List<string> { "10.0.0.1" }
-            };
-            var response = new FirewallListsAPIResponse(
-                blockedIPAddresses: new[] { blockedIpList },
-                allowedIPAddresses: new[] { allowedIpList },
-                blockedUserAgents: "bot"
-            );
-
-            // Act
-            _config.UpdateFirewallLists(response);
-
-            // Assert
-            Assert.That(_config.BlockedUserAgents, Is.Not.Null);
-            Assert.That(_config.IsUserAgentBlocked("Mozilla/5.0 (compatible; Bot/1.0)"), Is.True);
+            var result = _config.Endpoints.ToList();
+            Assert.That(result.Count, Is.EqualTo(2));
+            Assert.That(result[0].Method, Is.EqualTo("GET"));
+            Assert.That(result[0].Route, Is.EqualTo("/api/test1"));
+            Assert.That(result[1].Method, Is.EqualTo("POST"));
+            Assert.That(result[1].Route, Is.EqualTo("/api/test2"));
         }
 
         [Test]
         public void UpdateFirewallLists_WithNullResponse_ClearsFirewallLists()
         {
             // Arrange
-            var blockedIpList = new FirewallListsAPIResponse.IPList
-            {
-                Source = "test",
-                Description = "Test blocked IPs",
-                Ips = new List<string> { "192.168.1.1" }
-            };
-            var allowedIpList = new FirewallListsAPIResponse.IPList
-            {
-                Source = "test",
-                Description = "Test allowed IPs",
-                Ips = new List<string> { "10.0.0.1" }
-            };
-            var initialResponse = new FirewallListsAPIResponse(
-                blockedIPAddresses: new[] { blockedIpList },
-                allowedIPAddresses: new[] { allowedIpList },
-                blockedUserAgents: "bot"
+            var response = new FirewallListsAPIResponse(
+                blockedIPAddresses: new[] { new FirewallListsAPIResponse.IPList { Ips = new[] { "192.168.1.1" } } },
+                allowedIPAddresses: new[] { new FirewallListsAPIResponse.IPList { Ips = new[] { "example.com" } } },
+                blockedUserAgents: "Mozilla/5.0"
             );
-            _config.UpdateFirewallLists(initialResponse);
+            _config.UpdateFirewallLists(response);
 
             // Act
             _config.UpdateFirewallLists(null);
 
             // Assert
-            Assert.That(_config.BlockedUserAgents, Is.Null);
-            Assert.That(_config.IsUserAgentBlocked("Mozilla/5.0 (compatible; Bot/1.0)"), Is.False);
+            Assert.That(_config.BlockList.IsIPBlocked("192.168.1.1"), Is.False);
+            Assert.That(_config.IsUserAgentBlocked("Mozilla/5.0"), Is.False);
+        }
+
+        [Test]
+        public void UpdateFirewallLists_WithNewResponse_UpdatesFirewallLists()
+        {
+            // Arrange
+            var response = new FirewallListsAPIResponse(
+                blockedIPAddresses: new[] { new FirewallListsAPIResponse.IPList { Ips = new[] { "192.168.1.1", "10.0.0.1" } } },
+                allowedIPAddresses: new[] { new FirewallListsAPIResponse.IPList { Ips = new[] { "example.com", "test.com" } } },
+                blockedUserAgents: "Mozilla/5.0"
+            );
+
+            // Act
+            _config.UpdateFirewallLists(response);
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(_config.BlockList.IsIPBlocked("192.168.1.1"), Is.True);
+                Assert.That(_config.BlockList.IsIPBlocked("10.0.0.1"), Is.True);
+                Assert.That(_config.BlockList.IsIPBlocked("192.168.1.2"), Is.False);
+
+                Assert.That(_config.IsUserAgentBlocked("Mozilla/5.0"), Is.True);
+                Assert.That(_config.IsUserAgentBlocked("Chrome/91.0"), Is.False);
+            });
+        }
+
+        [Test]
+        public void Clear_ResetsAllConfiguration()
+        {
+            // Arrange
+            _config.UpdateBlockedUsers(new[] { "user1" });
+            _config.UpdateBlockedUserAgents(new Regex("Mozilla/5.0"));
+            var endpoints = new List<EndpointConfig>
+            {
+                new EndpointConfig { Method = "GET", Route = "/api/test" }
+            };
+            _config.UpdateRatelimitedRoutes(endpoints);
+            var response = new FirewallListsAPIResponse(
+                blockedIPAddresses: new[] { new FirewallListsAPIResponse.IPList { Ips = new[] { "192.168.1.1" } } },
+                allowedIPAddresses: new[] { new FirewallListsAPIResponse.IPList { Ips = new[] { "example.com" } } },
+                blockedUserAgents: "Mozilla/5.0"
+            );
+            _config.UpdateFirewallLists(response);
+
+            // Act
+            _config.Clear();
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(_config.IsUserBlocked("user1"), Is.False);
+                Assert.That(_config.IsUserAgentBlocked("Mozilla/5.0"), Is.False);
+                Assert.That(_config.Endpoints, Is.Empty);
+                Assert.That(_config.BlockList.IsIPBlocked("192.168.1.1"), Is.False);
+            });
         }
     }
 }

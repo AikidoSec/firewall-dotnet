@@ -171,6 +171,64 @@ namespace SampleApp.Common
                     await httpContext.Response.WriteAsync($"Attempted outbound request to {targetUri}");
                 });
 
+                // Endpoint to test WebRequest SSRF detection
+                endpoints.MapGet("/api/webRequestTest", async (HttpContext httpContext) =>
+                {
+                    if (!httpContext.Request.Query.TryGetValue("uri", out var uriValues) ||
+                        !Uri.TryCreate(uriValues.FirstOrDefault(), UriKind.Absolute, out var targetUri))
+                    {
+                        httpContext.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                        await httpContext.Response.WriteAsync("Missing or invalid 'uri' query parameter. Please provide an absolute URI (e.g., http://example.com).");
+                        return;
+                    }
+
+                    try
+                    {
+                        var request = WebRequest.Create(targetUri);
+                        using var response = await request.GetResponseAsync();
+                        await httpContext.Response.WriteAsync($"WebRequest succeeded to {targetUri}");
+                    }
+                    catch (Exception ex)
+                    {
+                        if (ex is AikidoException)
+                        {
+                            throw; // Let the global exception handler deal with AikidoException
+                        }
+                        // For other exceptions, return a 500 error
+                        httpContext.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                        await httpContext.Response.WriteAsync($"WebRequest failed: {ex.Message}");
+                    }
+                });
+
+                // Endpoint to test HttpClient SSRF detection
+                endpoints.MapGet("/api/httpClientTest", async (HttpContext httpContext, [FromServices] IHttpClientFactory clientFactory) =>
+                {
+                    if (!httpContext.Request.Query.TryGetValue("uri", out var uriValues) ||
+                        !Uri.TryCreate(uriValues.FirstOrDefault(), UriKind.Absolute, out var targetUri))
+                    {
+                        httpContext.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                        await httpContext.Response.WriteAsync("Missing or invalid 'uri' query parameter. Please provide an absolute URI (e.g., http://example.com).");
+                        return;
+                    }
+
+                    try
+                    {
+                        var client = clientFactory.CreateClient("AikidoAgentTestClient");
+                        using var response = await client.GetAsync(targetUri);
+                        await httpContext.Response.WriteAsync($"HttpClient succeeded to {targetUri}");
+                    }
+                    catch (Exception ex)
+                    {
+                        if (ex is AikidoException)
+                        {
+                            throw; // Let the global exception handler deal with AikidoException
+                        }
+                        // For other exceptions, return a 500 error
+                        httpContext.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                        await httpContext.Response.WriteAsync($"HttpClient failed: {ex.Message}");
+                    }
+                });
+
                 // Stats endpoint
                 endpoints.MapGet("/api/getStats", () =>
                 {
