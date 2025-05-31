@@ -39,7 +39,7 @@ namespace Aikido.Zen.Test
             var uri = new Uri("http://localhost:8080");
 
             // Act
-            var result = SSRFDetector.IsSSRFVulnerable(uri, _context);
+            var result = SSRFDetector.IsSSRFVulnerable(uri, _context, "module", "operation");
 
             // Assert
             Assert.That(result, Is.True);
@@ -52,7 +52,7 @@ namespace Aikido.Zen.Test
             var uri = new Uri("http://192.168.1.1:8080");
 
             // Act
-            var result = SSRFDetector.IsSSRFVulnerable(uri, _context);
+            var result = SSRFDetector.IsSSRFVulnerable(uri, _context, "module", "operation");
 
             // Assert
             Assert.That(result, Is.True);
@@ -69,7 +69,7 @@ namespace Aikido.Zen.Test
             ));
 
             // Act
-            var result = SSRFDetector.IsSSRFVulnerable(uri, _context);
+            var result = SSRFDetector.IsSSRFVulnerable(uri, _context, "module", "operation");
 
             // Assert
             Assert.That(result, Is.True);
@@ -90,7 +90,7 @@ namespace Aikido.Zen.Test
             ));
 
             // Act
-            var result = SSRFDetector.IsSSRFVulnerable(uri, _context);
+            var result = SSRFDetector.IsSSRFVulnerable(uri, _context, "module", "operation");
 
             // Assert
             Assert.That(result, Is.True);
@@ -110,7 +110,7 @@ namespace Aikido.Zen.Test
             }
 
             // Act
-            var result = SSRFDetector.IsSSRFVulnerable(uri, _context);
+            var result = SSRFDetector.IsSSRFVulnerable(uri, _context, "module", "operation");
 
             // Assert
             Assert.That(result, Is.True);
@@ -126,7 +126,7 @@ namespace Aikido.Zen.Test
             var uri = new Uri($"http://{host}");
 
             // Act
-            var result = SSRFDetector.IsSSRFVulnerable(uri, _context);
+            var result = SSRFDetector.IsSSRFVulnerable(uri, _context, "module", "operation");
 
             // Assert
             Assert.That(result, Is.True);
@@ -139,7 +139,7 @@ namespace Aikido.Zen.Test
             var uri = new Uri("http://[::1]:8080");
 
             // Act
-            var result = SSRFDetector.IsSSRFVulnerable(uri, _context);
+            var result = SSRFDetector.IsSSRFVulnerable(uri, _context, "module", "operation");
 
             // Assert
             Assert.That(result, Is.True);
@@ -156,7 +156,7 @@ namespace Aikido.Zen.Test
             };
 
             // Act
-            var result = SSRFDetector.IsSSRFVulnerable(uri, _context);
+            var result = SSRFDetector.IsSSRFVulnerable(uri, _context, "module", "operation");
 
             // Assert
             Assert.That(result, Is.True);
@@ -166,7 +166,7 @@ namespace Aikido.Zen.Test
         public void IsSSRFVulnerable_WithNullUri_ReturnsFalse()
         {
             // Act
-            var result = SSRFDetector.IsSSRFVulnerable(null, _context);
+            var result = SSRFDetector.IsSSRFVulnerable(null, _context, "module", "operation");
 
             // Assert
             Assert.That(result, Is.False);
@@ -179,7 +179,7 @@ namespace Aikido.Zen.Test
             var uri = new Uri("http://example.com");
 
             // Act
-            var result = SSRFDetector.IsSSRFVulnerable(uri, null);
+            var result = SSRFDetector.IsSSRFVulnerable(uri, null, "module", "operation");
 
             // Assert
             Assert.That(result, Is.False);

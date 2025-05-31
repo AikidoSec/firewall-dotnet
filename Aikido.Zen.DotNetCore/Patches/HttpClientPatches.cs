@@ -45,5 +45,11 @@ namespace Aikido.Zen.DotNetCore.Patches
             var context = Zen.GetContext();
             return HttpClientPatcher.OnHttpClient(request, __instance, __originalMethod, context);
         }
+
+        private static bool OnRequestFinished(HttpRequestMessage request, object __instance, HttpResponseMessage __result)
+        {
+            var context = Zen.GetContext();
+            return HttpClientPatcher.OnRequestFinished(__instance as HttpClient, request, __result, context);
+        }
     }
 }

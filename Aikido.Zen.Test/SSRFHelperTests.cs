@@ -115,7 +115,7 @@ namespace Aikido.Zen.Test
         public void DetectSSRF_WithRedirectToLocalhost_DetectsAttack()
         {
             // Arrange
-            var uri = new Uri("https://example.com");
+            var uri = new Uri("https://localhost:8080");
             _context.OutgoingRequestRedirects.Add(new Context.RedirectInfo(
                 uri,
                 new Uri("http://localhost:8080")

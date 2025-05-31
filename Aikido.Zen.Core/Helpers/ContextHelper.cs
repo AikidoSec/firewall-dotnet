@@ -56,101 +56,22 @@ namespace Aikido.Zen.Core.Helpers
             if (context == null || string.IsNullOrEmpty(hostname))
                 return null;
 
-            // Check query parameters
-            if (context.Query != null)
+            // Check parsed user input
+            if (context.ParsedUserInput != null)
             {
-                foreach (var param in context.Query)
+                foreach (var input in context.ParsedUserInput)
                 {
-                    foreach (var value in param.Value)
-                    {
-                        if (ContainsHostname(value, hostname, port))
-                        {
-                            return new HostnameLocation
-                            {
-                                Source = "query",
-                                PathToPayload = $"query.{param.Key}",
-                                Payload = value,
-                                Hostname = hostname,
-                                Port = port
-                            };
-                        }
-                    }
-                }
-            }
-
-            // Check headers
-            if (context.Headers != null)
-            {
-                foreach (var header in context.Headers)
-                {
-                    foreach (var value in header.Value)
-                    {
-                        if (ContainsHostname(value, hostname, port))
-                        {
-                            return new HostnameLocation
-                            {
-                                Source = "headers",
-                                PathToPayload = $"headers.{header.Key}",
-                                Payload = value,
-                                Hostname = hostname,
-                                Port = port
-                            };
-                        }
-                    }
-                }
-            }
-
-            // Check route parameters
-            if (context.RouteParams != null)
-            {
-                foreach (var param in context.RouteParams)
-                {
-                    if (ContainsHostname(param.Value, hostname, port))
+                    if (ContainsHostname(input.Value, hostname, port))
                     {
                         return new HostnameLocation
                         {
-                            Source = "routeParams",
-                            PathToPayload = $"routeParams.{param.Key}",
-                            Payload = param.Value,
+                            Source = input.Key.Split('.')[0],
+                            PathToPayload = input.Key,
+                            Payload = input.Value,
                             Hostname = hostname,
                             Port = port
                         };
                     }
-                }
-            }
-
-            // Check cookies
-            if (context.Cookies != null)
-            {
-                foreach (var cookie in context.Cookies)
-                {
-                    if (ContainsHostname(cookie.Value, hostname, port))
-                    {
-                        return new HostnameLocation
-                        {
-                            Source = "cookies",
-                            PathToPayload = $"cookies.{cookie.Key}",
-                            Payload = cookie.Value,
-                            Hostname = hostname,
-                            Port = port
-                        };
-                    }
-                }
-            }
-
-            // Check body if it's a string
-            if (context.ParsedBody is string bodyStr)
-            {
-                if (ContainsHostname(bodyStr, hostname, port))
-                {
-                    return new HostnameLocation
-                    {
-                        Source = "body",
-                        PathToPayload = "body",
-                        Payload = bodyStr,
-                        Hostname = hostname,
-                        Port = port
-                    };
                 }
             }
 

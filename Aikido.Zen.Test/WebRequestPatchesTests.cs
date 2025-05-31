@@ -56,13 +56,13 @@ namespace Aikido.Zen.Test
             if (expectBlocked)
             {
                 Assert.Throws<AikidoException>(
-                    () => WebRequestPatches.CaptureRequest(request, methodInfo, context),
+                    () => WebRequestPatcher.OnWebRequest(request, methodInfo, context),
                     "Expected AikidoException for blocked SSRF attack."
                 );
             }
             else
             {
-                var result = WebRequestPatches.CaptureRequest(request, methodInfo, context);
+                var result = WebRequestPatcher.OnWebRequest(request, methodInfo, context);
                 Assert.That(result, Is.True, "CaptureRequest should return true when not blocking.");
             }
 
@@ -84,7 +84,7 @@ namespace Aikido.Zen.Test
             var request = WebRequest.Create("https://example.com");
 
             // Act
-            var result = WebRequestPatches.CaptureRequest(request, _methodInfo, null);
+            var result = WebRequestPatcher.OnWebRequest(request, _methodInfo, null);
 
             // Assert
             Assert.That(result, Is.True);
@@ -94,7 +94,7 @@ namespace Aikido.Zen.Test
         public void CaptureRequest_WithNullRequest_ReturnsTrue()
         {
             // Act
-            var result = WebRequestPatches.CaptureRequest(null, _methodInfo, _mockContext.Object);
+            var result = WebRequestPatcher.OnWebRequest(null, _methodInfo, _mockContext.Object);
 
             // Assert
             Assert.That(result, Is.True);

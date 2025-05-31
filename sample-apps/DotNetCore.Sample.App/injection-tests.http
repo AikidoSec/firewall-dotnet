@@ -1,3 +1,14 @@
+### Test SSRF
+
+# direct Test
+GET https://localhost:7086/ssrf/direct
+
+### Test SSRF
+
+# redirect Test
+GET https://localhost:7086/ssrf/redirect
+
+
 ### Test SQL Injection against SqlServer
 
 # Baseline Test
