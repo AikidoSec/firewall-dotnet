@@ -61,16 +61,36 @@ namespace Aikido.Zen.Core.Helpers
             {
                 foreach (var input in context.ParsedUserInput)
                 {
-                    if (ContainsHostname(input.Value, hostname, port))
+                    var source = HttpHelper.GetSourceFromUserInputPath(input.Key);
+                    var location = new HostnameLocation
                     {
-                        return new HostnameLocation
-                        {
-                            Source = input.Key.Split('.')[0],
-                            PathToPayload = input.Key,
-                            Payload = input.Value,
-                            Hostname = hostname,
-                            Port = port
-                        };
+                        Source = source,
+                        PathToPayload = input.Key,
+                        Payload = input.Value
+                    };
+
+                    Uri uri;
+                    if (!Uri.TryCreate(input.Value, UriKind.Absolute, out uri))
+                    {
+                        // If that fails, try with http:// prefix
+                        if (!Uri.TryCreate($"http://{input.Value}", UriKind.Absolute, out uri))
+                            continue;
+
+                    }
+
+                    if (FindHostnameInUserInput(uri, hostname, port))
+                    {
+                        location.Hostname = hostname;
+                        location.Port = port;
+                        return location;
+                    }
+
+                    var redirectOrigin = GetRedirectOrigin(context, uri);
+                    if (redirectOrigin != null)
+                    {
+                        location.Hostname = redirectOrigin.Host;
+                        location.Port = redirectOrigin.Port;
+                        return location;
                     }
                 }
             }
@@ -78,67 +98,29 @@ namespace Aikido.Zen.Core.Helpers
             return null;
         }
 
-        /// <summary>
-        /// Checks if a value contains the specified hostname and port.
-        /// </summary>
-        /// <param name="value">The value to check.</param>
-        /// <param name="hostname">The hostname to look for.</param>
-        /// <param name="port">The port to look for.</param>
-        /// <returns>True if the value contains the hostname and port, false otherwise.</returns>
-        private static bool ContainsHostname(string value, string hostname, int? port)
-        {
-            if (string.IsNullOrEmpty(value) || string.IsNullOrEmpty(hostname))
-                return false;
-
-            // If port is specified, look for hostname:port
-            if (port.HasValue)
-            {
-                var hostnameWithPort = $"{hostname}:{port.Value}";
-                return value.IndexOf(hostnameWithPort, StringComparison.OrdinalIgnoreCase) >= 0;
-            }
-
-            // Otherwise just look for the hostname
-            return value.IndexOf(hostname, StringComparison.OrdinalIgnoreCase) >= 0;
-        }
 
         /// <summary>
         /// Checks if a hostname exists in user input.
         /// </summary>
-        /// <param name="userInput">The user input to check.</param>
+        /// <param name="uri">The uri to check.</param>
         /// <param name="hostname">The hostname to look for.</param>
         /// <param name="port">The port to look for.</param>
         /// <returns>True if the hostname is found in the user input, false otherwise.</returns>
-        public static bool FindHostnameInUserInput(string userInput, string hostname, int? port)
+        public static bool FindHostnameInUserInput(Uri uri, string hostname, int? port)
         {
             // early return if our userInput clearly is not a URL
-            if (string.IsNullOrEmpty(userInput) || string.IsNullOrEmpty(hostname) || userInput.Length <= 1)
+            if (string.IsNullOrEmpty(uri.ToString()) || string.IsNullOrEmpty(hostname) || uri.ToString().Length <= 1)
                 return false;
 
-            // Try parsing with http:// prefix
-            if (!Uri.TryCreate($"http://{hostname}" + (port.HasValue ? $":{port}" : ""), UriKind.Absolute, out _))
+            // Check if hostname matches
+            if (!uri.Host.Equals(hostname, StringComparison.OrdinalIgnoreCase))
                 return false;
 
-            // Create variants to check
-            var variants = new[]
-            {
-                userInput,
-                $"http://{userInput}",
-                $"https://{userInput}"
-            };
+            // If port is specified, check if it matches
+            if (port.HasValue && uri.Port != port.Value)
+                return false;
 
-            foreach (var variant in variants)
-            {
-                if (!Uri.TryCreate(variant, UriKind.Absolute, out var variantUri))
-                    continue;
-
-                if (!port.HasValue)
-                    return true;
-
-                if (variantUri.Port == port.Value)
-                    return true;
-            }
-
-            return false;
+            return true;
         }
 
         /// <summary>
