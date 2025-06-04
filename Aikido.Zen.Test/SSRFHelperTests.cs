@@ -3,6 +3,7 @@ using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Models.Events;
+using Aikido.Zen.Tests.Mocks;
 using Moq;
 
 namespace Aikido.Zen.Test
@@ -17,8 +18,9 @@ namespace Aikido.Zen.Test
         public void Setup()
         {
             _context = new Context();
-            _mockZenApi = new Mock<IZenApi>();
+            _mockZenApi = ZenApiMock.CreateMock();
             Agent.NewInstance(_mockZenApi.Object);
+            Environment.SetEnvironmentVariable("AIKIDO_TOKEN", "<token>");
         }
 
         [Test]
@@ -115,15 +117,19 @@ namespace Aikido.Zen.Test
         public void DetectSSRF_WithRedirectToLocalhost_DetectsAttack()
         {
             // Arrange
-            var uri = new Uri("https://localhost:8080");
+            var src = new Uri("https://example.com");
+            var dest = new Uri("http://localhost:8080");
+            _context.AbsoluteUrl = "https://localhost:1234";
+            _context.Url = "/";
             _context.OutgoingRequestRedirects.Add(new Context.RedirectInfo(
-                uri,
-                new Uri("http://localhost:8080")
+                src: src,
+                dest: dest
             ));
-            _context.ParsedUserInput = new Dictionary<string, string> { { "url", "https://example.com" } };
+            _context.ParsedUserInput = new Dictionary<string, string> { { "query.url", src.ToString() } };
 
             // Act
-            var result = SSRFHelper.DetectSSRF(uri, _context, "test_module", "test_operation");
+            var result = SSRFHelper.DetectSSRF(dest, _context, "test_module", "test_operation");
+            Task.Delay(100).Wait(); // Simulate async delay for reporting
 
             // Assert
             Assert.That(result, Is.True);

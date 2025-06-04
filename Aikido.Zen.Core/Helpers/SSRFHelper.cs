@@ -50,6 +50,10 @@ namespace Aikido.Zen.Core.Helpers
                     metadata: metadata,
                     blocked: !EnvironmentHelper.DryMode
                 );
+
+                // Set attack detected to true
+                context.AttackDetected = true;
+
                 return true;
             }
             return false;
