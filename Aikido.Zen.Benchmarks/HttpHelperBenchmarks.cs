@@ -126,6 +126,8 @@ namespace Aikido.Zen.Benchmarks
         public async Task ProcessJsonRequest()
         {
             var result = await HttpHelper.ReadAndFlattenHttpDataAsync(
+                "/request/path",
+                "/request/{route}",
                 _queryParams,
                 _headers,
                 _cookies,
@@ -140,6 +142,8 @@ namespace Aikido.Zen.Benchmarks
         public async Task ProcessXmlRequest()
         {
             var result = await HttpHelper.ReadAndFlattenHttpDataAsync(
+                "/request/path",
+                "/request/{route}",
                 _queryParams,
                 _headers,
                 _cookies,
@@ -154,6 +158,8 @@ namespace Aikido.Zen.Benchmarks
         public async Task ProcessFormRequest()
         {
             var result = await HttpHelper.ReadAndFlattenHttpDataAsync(
+                "/request/path",
+                "/request/{route}",
                 _queryParams,
                 _headers,
                 _cookies,
@@ -168,6 +174,8 @@ namespace Aikido.Zen.Benchmarks
         public async Task ProcessMultipartFormDataRequest()
         {
             var result = await HttpHelper.ReadAndFlattenHttpDataAsync(
+                "/request/path",
+                "/request/{route}",
                 _queryParams,
                 _headers,
                 _cookies,

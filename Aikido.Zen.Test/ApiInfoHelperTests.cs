@@ -71,7 +71,7 @@ namespace Aikido.Zen.Test.Helpers
 
             var queryParams = query?.ToDictionary(x => x.Key, x => string.Join(",", x.Value)) ?? new Dictionary<string, string>();
             var headerDict = headers?.ToDictionary(x => x.Key, x => string.Join(",", x.Value)) ?? new Dictionary<string, string>();
-            var parsed = HttpHelper.ReadAndFlattenHttpDataAsync(queryParams, headerDict, new Dictionary<string, string>(), bodyStream, contentType, bodyStream?.Length ?? 0).Result;
+            var parsed = HttpHelper.ReadAndFlattenHttpDataAsync("/request/path", "/request/{route}", queryParams, headerDict, new Dictionary<string, string>(), bodyStream, contentType, bodyStream?.Length ?? 0).Result;
 
             return new Context
             {
