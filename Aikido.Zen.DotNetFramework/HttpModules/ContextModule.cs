@@ -59,6 +59,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             var context = new Context
             {
                 Url = httpContext.Request.Path,
+                AbsoluteUrl = httpContext.Request.Url.ToString(),
                 Method = httpContext.Request.HttpMethod,
                 Query = httpContext.Request.QueryString.AllKeys.ToDictionary(k => k, k => httpContext.Request.QueryString.GetValues(k)),
                 Headers = httpContext.Request.Headers.AllKeys.ToDictionary(k => k, k => httpContext.Request.Headers.GetValues(k)),
