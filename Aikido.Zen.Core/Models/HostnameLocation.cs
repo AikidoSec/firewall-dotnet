@@ -9,7 +9,7 @@ namespace Aikido.Zen.Core.Models
         /// <summary>
         /// The source where the hostname was found (e.g., "query", "headers", "body").
         /// </summary>
-        public string Source { get; set; }
+        public Source Source { get; set; }
 
         /// <summary>
         /// The path to the payload in the source.

@@ -28,33 +28,29 @@ namespace Aikido.Zen.Core.Helpers
             if (!IPHelper.IsPrivateOrLocalIp(hostname) && !hostname.Equals("localhost", StringComparison.OrdinalIgnoreCase))
                 return false;
 
-            if (UrlHelper.IsRequestToItself(context.Url, hostname, port))
+            if (UrlHelper.IsRequestToItself(context.AbsoluteUrl, hostname, port))
                 return false;
-            foreach (var userInput in context.ParsedUserInput)
+
+            var hostnameLocation = ContextHelper.FindHostnameInContext(context, hostname, port);
+            if (hostnameLocation != null)
             {
-                if (ContextHelper.FindHostnameInUserInput(userInput.Value, hostname, port))
+                var metadata = new Dictionary<string, object>
                 {
-                    var metadata = new Dictionary<string, object>
-                    {
-                        { "hostname", hostname },
-                        { "port", port },
-                    };
-                    var source = userInput.Key.Split('.')[0].ToSource();
-                    // send an attack event
-                    Agent.Instance.SendAttackEvent(
-                        kind: AttackKind.Ssrf,
-                        source: HttpHelper.GetSourceFromUserInputPath(userInput.Key),
-                        payload: userInput.Value,
-                        operation: operation,
-                        context: context,
-                        module: moduleName,
-                        metadata: metadata,
-                        blocked: !EnvironmentHelper.DryMode
-                    );
-                    // set attack detected to true
-                    context.AttackDetected = true;
-                    return true;
-                }
+                    { "hostname", hostname },
+                    { "port", port },
+                };
+                // send an attack event
+                Agent.Instance.SendAttackEvent(
+                    kind: AttackKind.Ssrf,
+                    source: hostnameLocation.Source,
+                    payload: hostnameLocation.Payload,
+                    operation: operation,
+                    context: context,
+                    module: moduleName,
+                    metadata: metadata,
+                    blocked: !EnvironmentHelper.DryMode
+                );
+                return true;
             }
             return false;
         }

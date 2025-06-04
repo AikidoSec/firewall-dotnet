@@ -49,6 +49,8 @@ namespace Aikido.Zen.Core.Models
                     return Source.Query;
                 case "body":
                     return Source.Body;
+                case "route":
+                    return Source.RouteParams;
                 case "headers":
                     return Source.Headers;
                 case "cookies":
