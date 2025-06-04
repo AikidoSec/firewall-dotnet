@@ -11,16 +11,15 @@ namespace Aikido.Zen.Core.Patches
     {
         private const string operationKind = "outgoing_http_op";
 
-        public static bool OnHttpClient(HttpRequestMessage request, object instance, MethodBase originalMethod, Context context)
+        public static bool OnRequestStarted(HttpRequestMessage request, MethodBase originalMethod, Context context)
         {
             if (request == null || request.RequestUri == null || context == null)
                 return true;
 
-            var uri = instance is HttpClient client && client.BaseAddress != null
-                ? request.RequestUri == null
-                    ? client.BaseAddress
-                    : new Uri(client.BaseAddress, request.RequestUri)
-                : request.RequestUri;
+            var uri = request.RequestUri;
+
+            var (hostname, port) = UriHelper.ExtractHost(uri);
+            Agent.Instance.CaptureOutboundRequest(hostname, port);
 
             var methodInfo = originalMethod as MethodInfo;
             var operation = $"{methodInfo?.DeclaringType?.Name}.{methodInfo?.Name}";
@@ -31,11 +30,6 @@ namespace Aikido.Zen.Core.Patches
 
             try
             {
-                context.OutgoingRequestRedirects.Add(new Context.RedirectInfo
-                {
-                    Destination = uri,
-                    Source = request.RequestUri,
-                });
                 attackDetected = SSRFHelper.DetectSSRF(uri, context, "HttpClient", operation);
                 blocked = attackDetected && !EnvironmentHelper.DryMode;
             }
@@ -68,23 +62,22 @@ namespace Aikido.Zen.Core.Patches
             return true;
         }
 
-        public static bool OnRequestFinished(HttpClient client, HttpRequestMessage request, HttpResponseMessage response, Context context)
+        public static void OnRequestFinished(HttpRequestMessage request, HttpResponseMessage response, Context context)
         {
-            if (client == null || request == null || response == null || context == null)
-                return true;
+            if (request == null || response == null || context == null)
+                return;
 
             if (response.StatusCode == System.Net.HttpStatusCode.Redirect ||
                 response.StatusCode == System.Net.HttpStatusCode.MovedPermanently ||
                 response.StatusCode == System.Net.HttpStatusCode.TemporaryRedirect)
             {
+                // Add the redirect info to the context so we can follow redirect chains to check for ssrf against the final destination
                 context.OutgoingRequestRedirects.Add(new Context.RedirectInfo
                 {
                     Source = request.RequestUri,
                     Destination = response.Headers.Location
                 });
-                return !SSRFHelper.DetectSSRF(response.Headers.Location, context, "HttpClient", request.Method.ToString());
             }
-            return true;
         }
     }
 }
