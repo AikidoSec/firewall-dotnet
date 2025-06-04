@@ -15,7 +15,7 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Configuration" Version="9.0.2" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.2" />
     <PackageReference Include="System.Text.Json" Version="9.0.2" />
-    <PackageReference Include="Umbraco.Cms" Version="15.2.1" />
+    <PackageReference Include="Umbraco.Cms" Version="15.4.2" />
     <ProjectReference Include="..\..\..\Aikido.Zen.DotNetCore\Aikido.Zen.DotNetCore.csproj" />
     <ProjectReference Include="..\..\..\SampleApp.Common\SampleApp.Common.csproj" />
   </ItemGroup>
