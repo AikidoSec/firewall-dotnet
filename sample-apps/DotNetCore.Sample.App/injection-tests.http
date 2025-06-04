@@ -1,12 +1,17 @@
 ### Test SSRF
 
 # direct Test
-GET https://localhost:7086/ssrf/direct
+GET https://localhost:7086/images/https%3A%2F%2Flocalhost%3A1234%2Fadmin
 
 ### Test SSRF
 
 # redirect Test
-GET https://localhost:7086/ssrf/redirect
+GET https://localhost:7086/images/https%3A%2F%2Fhttpbin.org%2Fredirect-to%3Furl%3Dhttps%3A%2F%2Flocalhost%3A1234%2Fadmin
+
+### Test SSRF
+
+# safe redirect Test
+GET https://localhost:7086/images/https%3A%2F%2Fhttpbin.org%2Fredirect-to%3Furl%3Dhttps%3A%2F%2Fwww.google.com
 
 
 ### Test SQL Injection against SqlServer
@@ -97,17 +102,17 @@ GET https://localhost:7086/database/inject/MySql?name=NotAdmin' OR '1'='1
 ### Test SQL Injection against MySql
 
 # Union-based injection
-GET https://localhost:7086/database/inject/MySql?name=NotAdmin' UNION SELECT null, version() -- 
+GET https://localhost:7086/database/inject/MySql?name=NotAdmin' UNION SELECT null, version() --
 
 ### Test SQL Injection against MySql
 
 # Error-based injection
-GET https://localhost:7086/database/inject/MySql?name=NotAdmin' AND EXTRACTVALUE(1,CONCAT(0x7e,(SELECT version()),0x7e)) -- 
+GET https://localhost:7086/database/inject/MySql?name=NotAdmin' AND EXTRACTVALUE(1,CONCAT(0x7e,(SELECT version()),0x7e)) --
 
 ### Test SQL Injection against MySql
 
 # Time-based Blind SQL injection
-GET https://localhost:7086/database/inject/MySql?name=NotAdmin' AND SLEEP(10) -- 
+GET https://localhost:7086/database/inject/MySql?name=NotAdmin' AND SLEEP(10) --
 
 ### Test Outbound HTTP Requests
 
@@ -116,12 +121,12 @@ GET https://localhost:7086/outbound/httpclient/https%3A%2F%2Fwww.google.com
 
 ### Test Outbound HTTP Requests
 
-# Test WebRequest endpoint 
+# Test WebRequest endpoint
 GET https://localhost:7086/outbound/webrequest/https%3A%2F%2Fwww.google.com
 
 ### Test Outbound HTTP Requests
 
-# Test RestSharp endpoint 
+# Test RestSharp endpoint
 GET https://localhost:7086/outbound/restsharp/https%3A%2F%2Fwww.google.com
 
 ### Test Content Types

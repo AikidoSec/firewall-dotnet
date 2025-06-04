@@ -40,7 +40,7 @@ namespace Aikido.Zen.Test
             var context = CreateContext();
 
             // Act
-            var result = HttpClientPatcher.OnHttpClient(request, _httpClient, null, context);
+            var result = HttpClientPatcher.OnRequestStarted(request, _httpClient, null, context);
 
             // Assert
             Assert.That(result, Is.True);
@@ -63,7 +63,7 @@ namespace Aikido.Zen.Test
             var context = CreateContext();
 
             // Act
-            var result = HttpClientPatcher.OnHttpClient(request, _httpClient, null, context);
+            var result = HttpClientPatcher.OnRequestStarted(request, _httpClient, null, context);
             await Task.Delay(100);
 
             // Assert
@@ -88,7 +88,7 @@ namespace Aikido.Zen.Test
             var context = CreateContext();
 
             // Act
-            var result = HttpClientPatcher.OnHttpClient(request, _httpClient, null, context);
+            var result = HttpClientPatcher.OnRequestStarted(request, _httpClient, null, context);
             await Task.Delay(100);
 
             // Assert
@@ -111,7 +111,7 @@ namespace Aikido.Zen.Test
             var context = CreateContext();
 
             // Act
-            var result = HttpClientPatcher.OnHttpClient(request, _httpClient, null, context);
+            var result = HttpClientPatcher.OnRequestStarted(request, _httpClient, null, context);
 
             // Assert
             Assert.That(result, Is.True);
