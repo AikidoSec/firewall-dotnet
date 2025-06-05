@@ -38,15 +38,40 @@ namespace Aikido.Zen.DotNetCore.Patches
             var method = ReflectionHelper.GetMethodFromAssembly(assemblyName, typeName, methodName, parameterTypeNames);
             if (method != null && !method.IsAbstract)
             {
-                var patchMethod = new HarmonyMethod(typeof(WebRequestPatches).GetMethod(nameof(OnWebRequest), BindingFlags.Static | BindingFlags.NonPublic));
-                harmony.Patch(method, patchMethod);
+                var onStarted = new HarmonyMethod(typeof(WebRequestPatches).GetMethod(nameof(OnWebRequestStarted), BindingFlags.Static | BindingFlags.NonPublic));
+                var onFinished = new HarmonyMethod(typeof(WebRequestPatches).GetMethod(nameof(OnWebRequestFinished), BindingFlags.Static | BindingFlags.NonPublic));
+                harmony.Patch(method, prefix: onStarted, postfix: onFinished);
             }
         }
 
-        private static bool OnWebRequest(WebRequest __instance, MethodBase __originalMethod)
+        private static bool OnWebRequestStarted(WebRequest __instance, MethodBase __originalMethod)
         {
             var context = Zen.GetContext();
-            return WebRequestPatcher.OnWebRequest(__instance, __originalMethod, context);
+            return WebRequestPatcher.OnWebRequestStarted(__instance, __originalMethod, context);
+        }
+
+        private static void OnWebRequestFinished(WebRequest __instance, object __result)
+        {
+            var context = Zen.GetContext();
+            if (context == null) return;
+
+            WebResponse webResponse = null;
+            if (__result is System.Threading.Tasks.Task<WebResponse> taskWithWebResponse)
+            {
+                webResponse = taskWithWebResponse.Result;
+            }
+            else if (__result is WebResponse directWebResponse)
+            {
+                webResponse = directWebResponse;
+            }
+            // For BeginGetResponse/EndGetResponse pattern, __result of BeginGetResponse is IAsyncResult
+            // and EndGetResponse is where the actual WebResponse is obtained. We'll handle EndGetResponse separately if needed,
+            // but often the other patched methods like GetResponseAsyncInternal cover these paths.
+
+            if (webResponse != null)
+            {
+                WebRequestPatcher.OnWebRequestFinished(__instance, webResponse, context);
+            }
         }
     }
 }
