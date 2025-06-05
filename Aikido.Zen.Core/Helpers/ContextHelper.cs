@@ -70,12 +70,14 @@ namespace Aikido.Zen.Core.Helpers
                     };
 
                     Uri uri;
-                    if (!Uri.TryCreate(input.Value, UriKind.Absolute, out uri))
+                    var val = input.Value.Trim();
+                    if (!val.StartsWith("http://") && !val.StartsWith("https://"))
                     {
-                        // If that fails, try with http:// prefix
-                        if (!Uri.TryCreate($"http://{input.Value}", UriKind.Absolute, out uri))
-                            continue;
-
+                        val = $"https://{val}";
+                    }
+                    if (!Uri.TryCreate(val, UriKind.Absolute, out uri))
+                    {
+                        continue; // Skip if the value is not a valid URI
                     }
 
                     if (FindHostnameInUserInput(uri, hostname, port))

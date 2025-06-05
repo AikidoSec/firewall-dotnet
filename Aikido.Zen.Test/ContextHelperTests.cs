@@ -45,10 +45,10 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void FindHostnameInContext_WithHostnameInQuery_ReturnsLocation()
+        public void FindHostnameInContext_WithHostnameInForm_ReturnsBody()
         {
             // Arrange
-            _context.Query["url"] = new[] { "http://example.com:8080/path" };
+            _context.ParsedUserInput.Add("form.url", "http://example.com:8080/path");
 
             // Act
             var result = ContextHelper.FindHostnameInContext(_context, "example.com", 8080);
@@ -57,8 +57,8 @@ namespace Aikido.Zen.Test
             Assert.That(result, Is.Not.Null);
             Assert.Multiple(() =>
             {
-                Assert.That(result.Source, Is.EqualTo("query"));
-                Assert.That(result.PathToPayload, Is.EqualTo("query.url"));
+                Assert.That(result.Source, Is.EqualTo(Source.Body));
+                Assert.That(result.PathToPayload, Is.EqualTo("form.url"));
                 Assert.That(result.Payload, Is.EqualTo("http://example.com:8080/path"));
                 Assert.That(result.Hostname, Is.EqualTo("example.com"));
                 Assert.That(result.Port, Is.EqualTo(8080));
@@ -66,10 +66,10 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void FindHostnameInContext_WithHostnameInHeaders_ReturnsLocation()
+        public void FindHostnameInContext_WithHostnameInHeaders_ReturnsHeaders()
         {
             // Arrange
-            _context.Headers["Host"] = new[] { "example.com:8080" };
+            _context.ParsedUserInput["headers.host"] = "example.com:8080";
 
             // Act
             var result = ContextHelper.FindHostnameInContext(_context, "example.com", 8080);
@@ -78,8 +78,8 @@ namespace Aikido.Zen.Test
             Assert.That(result, Is.Not.Null);
             Assert.Multiple(() =>
             {
-                Assert.That(result.Source, Is.EqualTo("headers"));
-                Assert.That(result.PathToPayload, Is.EqualTo("headers.Host"));
+                Assert.That(result.Source, Is.EqualTo(Source.Headers));
+                Assert.That(result.PathToPayload, Is.EqualTo("headers.host"));
                 Assert.That(result.Payload, Is.EqualTo("example.com:8080"));
                 Assert.That(result.Hostname, Is.EqualTo("example.com"));
                 Assert.That(result.Port, Is.EqualTo(8080));
@@ -87,10 +87,10 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void FindHostnameInContext_WithHostnameInRouteParams_ReturnsLocation()
+        public void FindHostnameInContext_WithHostnameInRouteParams_ReturnsRouteParams()
         {
             // Arrange
-            _context.RouteParams["domain"] = "example.com:8080";
+            _context.ParsedUserInput.Add("route.domain", "example.com:8080");
 
             // Act
             var result = ContextHelper.FindHostnameInContext(_context, "example.com", 8080);
@@ -99,7 +99,7 @@ namespace Aikido.Zen.Test
             Assert.That(result, Is.Not.Null);
             Assert.Multiple(() =>
             {
-                Assert.That(result.Source, Is.EqualTo("route"));
+                Assert.That(result.Source, Is.EqualTo(Source.RouteParams));
                 Assert.That(result.PathToPayload, Is.EqualTo("route.domain"));
                 Assert.That(result.Payload, Is.EqualTo("example.com:8080"));
                 Assert.That(result.Hostname, Is.EqualTo("example.com"));
@@ -108,10 +108,10 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void FindHostnameInContext_WithHostnameInUserInput_ReturnsLocation()
+        public void FindHostnameInContext_WithHostnameInQuery_ReturnsQuery()
         {
             // Arrange
-            _context.ParsedUserInput["url"] = "http://example.com:8080/path";
+            _context.ParsedUserInput["query.url"] = "http://example.com:8080/path";
 
             // Act
             var result = ContextHelper.FindHostnameInContext(_context, "example.com", 8080);
@@ -120,8 +120,8 @@ namespace Aikido.Zen.Test
             Assert.That(result, Is.Not.Null);
             Assert.Multiple(() =>
             {
-                Assert.That(result.Source, Is.EqualTo("user_input"));
-                Assert.That(result.PathToPayload, Is.EqualTo("user_input.url"));
+                Assert.That(result.Source, Is.EqualTo(Source.Query));
+                Assert.That(result.PathToPayload, Is.EqualTo("query.url"));
                 Assert.That(result.Payload, Is.EqualTo("http://example.com:8080/path"));
                 Assert.That(result.Hostname, Is.EqualTo("example.com"));
                 Assert.That(result.Port, Is.EqualTo(8080));
@@ -158,8 +158,8 @@ namespace Aikido.Zen.Test
         public void FindHostnameInContext_WithMultipleMatches_ReturnsFirstMatch()
         {
             // Arrange
-            _context.Query["url1"] = new[] { "http://example.com:8080/path1" };
-            _context.Query["url2"] = new[] { "http://example.com:8080/path2" };
+            _context.ParsedUserInput.Add("query.url1", "http://example.com:8080/path1");
+            _context.ParsedUserInput.Add("query.url2", "http://example.com:8080/path2");
 
             // Act
             var result = ContextHelper.FindHostnameInContext(_context, "example.com", 8080);

@@ -125,11 +125,11 @@ namespace Aikido.Zen.Core.Helpers
             {
                 return Source.Cookies;
             }
-            else if (path.StartsWith("route"))
+            else if (path.StartsWith("route") || path.StartsWith("url") || path.StartsWith("path"))
             {
                 return Source.RouteParams;
             }
-            else if (path.StartsWith("body"))
+            else if (path.StartsWith("body") || path.StartsWith("form"))
             {
                 return Source.Body;
             }

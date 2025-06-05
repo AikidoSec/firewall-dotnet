@@ -4,6 +4,7 @@ using System.Net.Http;
 using System.Reflection;
 using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.Core.Helpers;
+using Microsoft.AspNetCore.Http;
 
 namespace Aikido.Zen.Core.Patches
 {
@@ -69,14 +70,19 @@ namespace Aikido.Zen.Core.Patches
 
             if (response.StatusCode == System.Net.HttpStatusCode.Redirect ||
                 response.StatusCode == System.Net.HttpStatusCode.MovedPermanently ||
-                response.StatusCode == System.Net.HttpStatusCode.TemporaryRedirect)
+                response.StatusCode == System.Net.HttpStatusCode.TemporaryRedirect ||
+                (int)response.StatusCode == 307 ||
+                (int)response.StatusCode == 308)
             {
                 // Add the redirect info to the context so we can follow redirect chains to check for ssrf against the final destination
-                context.OutgoingRequestRedirects.Add(new Context.RedirectInfo
+                if (response.Headers.Location != null && !string.IsNullOrEmpty(response.Headers.Location.Host))
                 {
-                    Source = request.RequestUri,
-                    Destination = response.Headers.Location
-                });
+                    context.OutgoingRequestRedirects.Add(new Context.RedirectInfo
+                    {
+                        Source = request.RequestUri,
+                        Destination = response.Headers.Location
+                    });
+                }
             }
         }
     }

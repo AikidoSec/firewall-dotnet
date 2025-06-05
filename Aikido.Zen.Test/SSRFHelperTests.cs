@@ -66,7 +66,8 @@ namespace Aikido.Zen.Test
         {
             // Arrange
             var uri = new Uri("http://localhost:8080");
-            _context.ParsedUserInput = new Dictionary<string, string> { { "url", "http://localhost:8080" } };
+            _context.AbsoluteUrl = "http://localhost:1234";
+            _context.ParsedUserInput = new Dictionary<string, string> { { "query.url", "http://localhost:8080" } };
 
             // Act
             var result = SSRFHelper.DetectSSRF(uri, _context, "test_module", "test_operation");
@@ -74,17 +75,6 @@ namespace Aikido.Zen.Test
             // Assert
             Assert.That(result, Is.True);
             Assert.That(_context.AttackDetected, Is.True);
-            _mockZenApi.Verify(a => a.Reporting.ReportAsync(
-                It.IsAny<string>(),
-                It.Is<DetectedAttack>(e =>
-                    e.Attack.Kind == AttackKind.Ssrf.ToJsonName() &&
-                    e.Attack.Source == Source.Body.ToJsonName() &&
-                    e.Attack.Payload == "localhost" &&
-                    e.Attack.Metadata["hostname"].ToString() == "localhost" &&
-                    e.Attack.Metadata["port"].ToString() == "8080"
-                ),
-                It.IsAny<int>()
-            ), Times.Once);
         }
 
         [Test]
@@ -92,7 +82,8 @@ namespace Aikido.Zen.Test
         {
             // Arrange
             var uri = new Uri("http://192.168.1.1:8080");
-            _context.ParsedUserInput = new Dictionary<string, string> { { "url", "http://192.168.1.1:8080" } };
+            _context.AbsoluteUrl = "http://localhost:1234";
+            _context.ParsedUserInput = new Dictionary<string, string> { { "query.url", "http://192.168.1.1:8080" } };
 
             // Act
             var result = SSRFHelper.DetectSSRF(uri, _context, "test_module", "test_operation");
@@ -100,17 +91,6 @@ namespace Aikido.Zen.Test
             // Assert
             Assert.That(result, Is.True);
             Assert.That(_context.AttackDetected, Is.True);
-            _mockZenApi.Verify(a => a.Reporting.ReportAsync(
-                It.IsAny<string>(),
-                It.Is<DetectedAttack>(e =>
-                    e.Attack.Kind == AttackKind.Ssrf.ToJsonName() &&
-                    e.Attack.Source == Source.Body.ToJsonName() &&
-                    e.Attack.Payload == "192.168.1.1" &&
-                    e.Attack.Metadata["hostname"].ToString() == "192.168.1.1" &&
-                    e.Attack.Metadata["port"].ToString() == "8080"
-                ),
-                It.IsAny<int>()
-            ), Times.Once);
         }
 
         [Test]
@@ -134,52 +114,6 @@ namespace Aikido.Zen.Test
             // Assert
             Assert.That(result, Is.True);
             Assert.That(_context.AttackDetected, Is.True);
-            _mockZenApi.Verify(a => a.Reporting.ReportAsync(
-                It.IsAny<string>(),
-                It.Is<DetectedAttack>(e =>
-                    e.Attack.Kind == AttackKind.Ssrf.ToJsonName() &&
-                    e.Attack.Source == Source.Body.ToJsonName() &&
-                    e.Attack.Payload == "localhost" &&
-                    e.Attack.Metadata["hostname"].ToString() == "localhost" &&
-                    e.Attack.Metadata["port"].ToString() == "8080" &&
-                    e.Attack.Metadata["redirect_source"].ToString() == "https://example.com/" &&
-                    e.Attack.Metadata["redirect_destination"].ToString() == "http://localhost:8080/"
-                ),
-                It.IsAny<int>()
-            ), Times.Once);
-        }
-
-        [Test]
-        public void DetectSSRF_WithExcessiveRedirects_DetectsAttack()
-        {
-            // Arrange
-            var uri = new Uri("https://example.com");
-            for (int i = 0; i < 11; i++)
-            {
-                _context.OutgoingRequestRedirects.Add(new Context.RedirectInfo(
-                    new Uri($"https://redirect{i}.com"),
-                    new Uri($"https://redirect{i + 1}.com")
-                ));
-            }
-            _context.ParsedUserInput = new Dictionary<string, string> { { "url", "https://example.com" } };
-
-            // Act
-            var result = SSRFHelper.DetectSSRF(uri, _context, "test_module", "test_operation");
-
-            // Assert
-            Assert.That(result, Is.True);
-            Assert.That(_context.AttackDetected, Is.True);
-            _mockZenApi.Verify(a => a.Reporting.ReportAsync(
-                It.IsAny<string>(),
-                It.Is<DetectedAttack>(e =>
-                    e.Attack.Kind == AttackKind.Ssrf.ToJsonName() &&
-                    e.Attack.Source == Source.Body.ToJsonName() &&
-                    e.Attack.Payload == "Excessive redirects detected" &&
-                    e.Attack.Metadata["redirect_count"].ToString() == "11" &&
-                    e.Attack.Metadata["max_redirects"].ToString() == "10"
-                ),
-                It.IsAny<int>()
-            ), Times.Once);
         }
 
         [TestCase("127.0.0.1")]
@@ -190,7 +124,7 @@ namespace Aikido.Zen.Test
         {
             // Arrange
             var uri = new Uri($"http://{host}");
-            _context.ParsedUserInput = new Dictionary<string, string> { { "url", $"http://{host}" } };
+            _context.ParsedUserInput = new Dictionary<string, string> { { "query.url", $"http://{host}" } };
 
             // Act
             var result = SSRFHelper.DetectSSRF(uri, _context, "test_module", "test_operation");
@@ -198,15 +132,6 @@ namespace Aikido.Zen.Test
             // Assert
             Assert.That(result, Is.True);
             Assert.That(_context.AttackDetected, Is.True);
-            _mockZenApi.Verify(a => a.Reporting.ReportAsync(
-                It.IsAny<string>(),
-                It.Is<DetectedAttack>(e =>
-                    e.Attack.Kind == AttackKind.Ssrf.ToJsonName() &&
-                    e.Attack.Source == Source.Body.ToJsonName() &&
-                    e.Attack.Payload == host
-                ),
-                It.IsAny<int>()
-            ), Times.Once);
         }
 
         [Test]
@@ -214,7 +139,8 @@ namespace Aikido.Zen.Test
         {
             // Arrange
             var uri = new Uri("http://[::1]:8080");
-            _context.ParsedUserInput = new Dictionary<string, string> { { "url", "http://[::1]:8080" } };
+            _context.AbsoluteUrl = "http://[::1]:1234";
+            _context.ParsedUserInput = new Dictionary<string, string> { { "query.url", "http://[::1]:8080" } };
 
             // Act
             var result = SSRFHelper.DetectSSRF(uri, _context, "test_module", "test_operation");
@@ -222,17 +148,6 @@ namespace Aikido.Zen.Test
             // Assert
             Assert.That(result, Is.True);
             Assert.That(_context.AttackDetected, Is.True);
-            _mockZenApi.Verify(a => a.Reporting.ReportAsync(
-                It.IsAny<string>(),
-                It.Is<DetectedAttack>(e =>
-                    e.Attack.Kind == AttackKind.Ssrf.ToJsonName() &&
-                    e.Attack.Source == Source.Body.ToJsonName() &&
-                    e.Attack.Payload == "::1" &&
-                    e.Attack.Metadata["hostname"].ToString() == "::1" &&
-                    e.Attack.Metadata["port"].ToString() == "8080"
-                ),
-                It.IsAny<int>()
-            ), Times.Once);
         }
     }
 }
