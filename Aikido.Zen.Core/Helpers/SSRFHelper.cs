@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using Aikido.Zen.Core.Models;
 
 namespace Aikido.Zen.Core.Helpers
@@ -19,24 +20,43 @@ namespace Aikido.Zen.Core.Helpers
         /// <returns>True if an SSRF attack is detected, false otherwise</returns>
         public static bool DetectSSRF(Uri uri, Context context, string moduleName, string operation)
         {
-            if (uri == null || context == null)
+            if (uri == null || context == null || !uri.IsWellFormedOriginalString())
                 return false;
 
-            var hostname = uri.Host;
+            string originalHost = uri.Host;
+            string normalizedHostname;
+
+            try
+            {
+                var idn = new IdnMapping();
+                normalizedHostname = idn.GetAscii(originalHost);
+                normalizedHostname = normalizedHostname.ToLowerInvariant();
+            }
+            catch (ArgumentException ex)
+            {
+                LogHelper.ErrorLog(Agent.Logger, $"Hostname normalization failed for '{originalHost}': {ex.Message}. Using ToLowerInvariant as fallback.");
+                normalizedHostname = originalHost.ToLowerInvariant();
+            }
+
             var port = uri.Port;
 
-            if (!IPHelper.IsPrivateOrLocalIp(hostname) && !hostname.Equals("localhost", StringComparison.OrdinalIgnoreCase))
+            if (!IPHelper.IsPrivateOrLocalIp(normalizedHostname) &&
+                !normalizedHostname.Equals("localhost", StringComparison.OrdinalIgnoreCase))
+            {
                 return false;
+            }
 
-            if (UrlHelper.IsRequestToItself(context.AbsoluteUrl, hostname, port))
+            if (UrlHelper.IsRequestToItself(context.AbsoluteUrl, normalizedHostname, port))
+            {
                 return false;
+            }
 
-            var hostnameLocation = ContextHelper.FindHostnameInContext(context, hostname, port);
+            var hostnameLocation = ContextHelper.FindHostnameInContext(context, normalizedHostname, port);
             if (hostnameLocation != null)
             {
                 var metadata = new Dictionary<string, object>
                 {
-                    { "hostname", hostname },
+                    { "hostname", hostnameLocation.Hostname },
                     { "port", port },
                 };
                 // send an attack event
@@ -51,7 +71,6 @@ namespace Aikido.Zen.Core.Helpers
                     blocked: !EnvironmentHelper.DryMode
                 );
 
-                // Set attack detected to true
                 context.AttackDetected = true;
 
                 return true;

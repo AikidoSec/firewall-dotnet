@@ -50,7 +50,7 @@ namespace Aikido.Zen.Core.Helpers
             var pathParts = path.Split('/');
             var routeParts = route.Split('/');
 
-            for (int i = 0; i < routeParts.Length; i++)
+            for (int i = 0; i < routeParts.Length && i < pathParts.Length; i++)
             {
                 if (pathParts[i] != routeParts[i])
                 {
