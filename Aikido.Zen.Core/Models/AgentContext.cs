@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Aikido.Zen.Core.Api;
+using Aikido.Zen.Core.Helpers;
+using Aikido.Zen.Core.Helpers.OpenAPI;
 using Aikido.Zen.Core.Models.Ip;
 
 namespace Aikido.Zen.Core.Models
@@ -10,8 +12,15 @@ namespace Aikido.Zen.Core.Models
     /// </summary>
     public class AgentContext
     {
+        private const int MaxHostnames = 2000;
+        private const int MaxUsers = 2000;
+        private const int MaxRoutes = 5000;
+
         private readonly AgentStats _stats = new AgentStats();
         private readonly AgentConfiguration _config = new AgentConfiguration();
+        private readonly ConcurrentLFUDictionary<string, Host> _hostnames = new ConcurrentLFUDictionary<string, Host>(MaxHostnames);
+        private readonly ConcurrentLFUDictionary<string, UserExtended> _users = new ConcurrentLFUDictionary<string, UserExtended>(MaxUsers);
+        private readonly ConcurrentLFUDictionary<string, Route> _routes = new ConcurrentLFUDictionary<string, Route>(MaxRoutes);
 
         public long ConfigLastUpdated { get; set; } = 0;
         public bool ContextMiddlewareInstalled { get; set; } = false;
@@ -34,7 +43,22 @@ namespace Aikido.Zen.Core.Models
 
         public void AddHostname(string hostname)
         {
-            _stats.AddHostname(hostname);
+            if (string.IsNullOrWhiteSpace(hostname))
+                return;
+            var hostParts = hostname.Split(':');
+            var name = hostParts[0];
+            var port = hostParts.Length > 1 ? hostParts[1] : "80";
+            int.TryParse(port, out int portNumber);
+
+            var key = $"{name}:{port}";
+            _hostnames.TryGet(key, out var host);
+            if (host == null)
+            {
+                host = new Host { Hostname = name, Port = portNumber };
+            }
+
+            // when updating, we keep track of hits
+            _hostnames.AddOrUpdate(key, host);
         }
 
         /// <summary>
@@ -46,18 +70,65 @@ namespace Aikido.Zen.Core.Models
         /// <param name="ipAddress">The IP address associated with this user access.</param>
         public void AddUser(User user, string ipAddress)
         {
-            _stats.AddUser(user, ipAddress);
+            if (user == null || string.IsNullOrEmpty(user.Id))
+                return;
+
+            UserExtended userExtended;
+            if (_users.TryGet(user.Id, out var existingUser))
+            {
+                // User exists, update details before calling AddOrUpdate
+                existingUser.Name = user.Name; // Update name in case it changed
+                existingUser.LastIpAddress = ipAddress;
+                existingUser.LastSeenAt = DateTimeHelper.UTCNowUnixMilliseconds();
+                userExtended = existingUser;
+            }
+            else
+            {
+                // User does not exist, create a new one
+                userExtended = new UserExtended(user.Id, user.Name)
+                {
+                    LastIpAddress = ipAddress,
+                    LastSeenAt = DateTimeHelper.UTCNowUnixMilliseconds()
+                };
+            }
+
+            // AddOrUpdate handles incrementing hits and eviction
+            _users.AddOrUpdate(user.Id, userExtended);
         }
 
         public void AddRoute(Context context)
         {
-            _stats.AddRoute(context);
+            if (context == null || string.IsNullOrEmpty(context.Route)) return;
+
+            Route route;
+            if (_routes.TryGet(context.Route, out var existingRoute))
+            {
+                // Route exists, update API info before calling AddOrUpdate
+                OpenAPIHelper.UpdateApiInfo(context, existingRoute, EnvironmentHelper.MaxApiDiscoverySamples);
+                route = existingRoute;
+            }
+            else
+            {
+                // Route does not exist, create a new one
+                route = new Route
+                {
+                    Path = context.Route,
+                    Method = context.Method,
+                    ApiSpec = OpenAPIHelper.GetApiInfo(context),
+                };
+            }
+
+            // AddOrUpdate handles incrementing hits and eviction
+            _routes.AddOrUpdate(context.Route, route);
         }
 
         public void Clear()
         {
             _config.Clear();
             _stats.Reset();
+            _hostnames.Clear();
+            _users.Clear();
+            _routes.Clear();
             ConfigLastUpdated = 0;
         }
 
@@ -144,9 +215,9 @@ namespace Aikido.Zen.Core.Models
             _config.UpdateBlockedUserAgents(blockedUserAgents);
         }
 
-        public IEnumerable<Host> Hostnames => _stats.Hostnames;
-        public IEnumerable<UserExtended> Users => _stats.Users;
-        public IEnumerable<Route> Routes => _stats.Routes;
+        public IEnumerable<Host> Hostnames => _hostnames.GetValues();
+        public IEnumerable<UserExtended> Users => _users.GetValues();
+        public IEnumerable<Route> Routes => _routes.GetValues();
 
         public IEnumerable<EndpointConfig> Endpoints => _config.Endpoints;
         public int Requests => _stats.Requests.Total;

@@ -142,10 +142,37 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void AddHostname_WithInvalidHostname_DoesNotAddToHostnames()
+        {
+            // Arrange
+            var hostname = "";
+
+            // Act
+            _agentContext.AddHostname(hostname);
+
+            // Assert
+            Assert.That(_agentContext.Hostnames, Is.Empty);
+        }
+
+        [Test]
         public void AddUser_ShouldHandleNullGracefully()
         {
             // Arrange
             User user = null;
+            var ipAddress = "192.168.1.1";
+
+            // Act
+            _agentContext.AddUser(user, ipAddress);
+
+            // Assert
+            Assert.That(_agentContext.Users, Is.Empty);
+        }
+
+        [Test]
+        public void AddUser_WithInvalidId_DoesNotAddToUsers()
+        {
+            // Arrange
+            var user = new User("", "Test User");
             var ipAddress = "192.168.1.1";
 
             // Act
@@ -218,6 +245,19 @@ namespace Aikido.Zen.Test
 
             // Assert
             Assert.That(_agentContext.Routes.Count() == 0);
+        }
+
+        [Test]
+        public void AddRoute_WithInvalidContext_DoesNotAddToRoutes()
+        {
+            // Arrange
+            Context context = null;
+
+            // Act
+            _agentContext.AddRoute(context);
+
+            // Assert
+            Assert.That(_agentContext.Routes, Is.Empty);
         }
 
         [Test]
