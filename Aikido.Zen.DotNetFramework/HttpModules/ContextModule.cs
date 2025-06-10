@@ -49,6 +49,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
 
         private async Task Context_BeginRequest(object sender, EventArgs e)
         {
+            LogHelper.DebugLog(Agent.Logger, "Capturing request context");
             var httpContext = ((HttpApplication)sender).Context;
             // if the ip is bypassed, skip the handling of the request
             if (Agent.Instance.Context.BlockList.IsIPBypassed(GetClientIp(httpContext)) || EnvironmentHelper.IsDisabled)
@@ -115,6 +116,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             int statusCode = httpContext.Response.StatusCode;
             if (RouteHelper.ShouldAddRoute(aikidoContext, statusCode))
             {
+                LogHelper.DebugLog(Agent.Logger, "Adding route");
                 Agent.Instance.AddRoute(aikidoContext);
                 Agent.Instance.IncrementTotalRequestCount();
             }

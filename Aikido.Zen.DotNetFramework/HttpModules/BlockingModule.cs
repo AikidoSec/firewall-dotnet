@@ -1,12 +1,9 @@
 using System;
 using System.Web;
 using Aikido.Zen.Core;
-using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 using Context = Aikido.Zen.Core.Context;
-using System.Linq;
-using System.Collections.Generic;
 
 namespace Aikido.Zen.DotNetFramework.HttpModules
 {
@@ -22,6 +19,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
 
         public void Init(HttpApplication context)
         {
+            LogHelper.DebugLog(Agent.Logger, "BlockingModule initialized");
             context.PostAuthenticateRequest += Context_PostAuthenticateRequest;
         }
 
@@ -50,6 +48,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             if (Agent.Instance.Context.IsBlocked(aikidoContext, out var reason))
             {
                 Agent.Instance.Context.AddAbortedRequest();
+                LogHelper.DebugLog(Agent.Logger, $"Request blocked: {HttpUtility.HtmlEncode(reason)}");
                 throw new HttpException(403, $"Your request is blocked: {HttpUtility.HtmlEncode(reason)}");
             }
 

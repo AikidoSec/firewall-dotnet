@@ -121,8 +121,13 @@ namespace Aikido.Zen.Core
                     var reportingResponse = response as ReportingAPIResponse;
                     if (reportingResponse != null && reportingResponse.Success)
                     {
+                        LogHelper.DebugLog(Logger, "Heartbeat was sent successfully");
                         _context.UpdateBlockedUsers(reportingResponse.BlockedUserIds);
                         UpdateConfig(reportingResponse);
+                    }
+                    else
+                    {
+                        LogHelper.ErrorLog(Logger, $"Heartbeat was not sent successfully: {response.Error}");
                     }
                 }
             };
@@ -486,6 +491,7 @@ namespace Aikido.Zen.Core
             try
             {
                 requestsThisSecond++;
+                LogHelper.DebugLog(Logger, $"Sending event: {queuedItem.Event.Type}");
                 var response = await _api.Reporting.ReportAsync(queuedItem.Token, queuedItem.Event, _batchTimeoutMs)
                     .ConfigureAwait(false);
 
@@ -497,6 +503,7 @@ namespace Aikido.Zen.Core
                         await Task.Delay(RetryDelayMs, _cancellationSource.Token);
                     }
                     // Other errors are dropped to avoid infinite retries
+                    LogHelper.ErrorLog(Logger, $"Event was not sent successfully: {response.Error}");
                 }
                 queuedItem.Callback?.Invoke(queuedItem.Event, response);
             }
@@ -504,12 +511,14 @@ namespace Aikido.Zen.Core
             {
                 // Graceful shutdown
                 _eventQueue.Enqueue(queuedItem);
+                LogHelper.ErrorLog(Logger, "Error sending event: Operation canceled");
                 throw;
             }
             catch (Exception)
             {
                 // Requeue on error and delay
                 _eventQueue.Enqueue(queuedItem);
+                LogHelper.ErrorLog(Logger, "Error sending event");
                 await Task.Delay(RetryDelayMs, _cancellationSource.Token);
             }
             return requestsThisSecond;
