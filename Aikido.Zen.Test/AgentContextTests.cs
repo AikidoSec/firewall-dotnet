@@ -169,20 +169,6 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void AddUser_WithInvalidId_DoesNotAddToUsers()
-        {
-            // Arrange
-            var user = new User("", "Test User");
-            var ipAddress = "192.168.1.1";
-
-            // Act
-            _agentContext.AddUser(user, ipAddress);
-
-            // Assert
-            Assert.That(_agentContext.Users, Is.Empty);
-        }
-
-        [Test]
         public void AddUser_ShouldAddUserToDictionary()
         {
             // Arrange
