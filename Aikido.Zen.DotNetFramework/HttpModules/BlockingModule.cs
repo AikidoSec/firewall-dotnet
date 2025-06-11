@@ -25,6 +25,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
 
         private void Context_PostAuthenticateRequest(object sender, EventArgs e)
         {
+            LogHelper.DebugLog(Agent.Logger, "Checking if request needs to be blocked");
             var httpContext = ((HttpApplication)sender).Context;
             var user = (User)httpContext.Items["Aikido.Zen.CurrentUser"];
             var aikidoContext = (Context)httpContext.Items["Aikido.Zen.Context"];

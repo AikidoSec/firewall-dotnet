@@ -27,6 +27,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
 
         public void Init(HttpApplication context)
         {
+            LogHelper.DebugLog(Agent.Logger, "ContextModule initialized");
             context.PostAuthenticateRequest += Context_PostAuthenticateRequest;
             // we add the .Wait(), because we want our module to handle exceptions properly
             context.BeginRequest += (sender, e) => Task.Run(() => Context_BeginRequest(sender, e)).Wait();
