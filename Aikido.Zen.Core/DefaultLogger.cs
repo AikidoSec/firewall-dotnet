@@ -18,7 +18,7 @@ namespace Aikido.Zen.Core
             // log to console, by default it works for .Net core web apps
             Console.WriteLine(message);
             // log to debug, by default it works for .Net framework web apps
-            Debug.WriteLine(message);
+            Trace.WriteLine(message);
         }
     }
 }
