@@ -243,12 +243,12 @@ namespace Aikido.Zen.Core
                                 .GetAwaiter()
                                 .GetResult();
                             eventItem.Callback?.Invoke(eventItem.Event, response);
-                            LogHelper.ErrorLog(Logger, $"Event processed: {eventItem.Event.Type}");
+                            LogHelper.DebugLog(Logger, $"Event processed: {eventItem.Event.Type}");
                         }
                         catch (Exception ex)
                         {
                             // pass through
-                            LogHelper.ErrorLog(Logger, $"Error processing event: {eventItem.Event.Type}");
+                            LogHelper.DebugLog(Logger, $"Error processing event: {eventItem.Event.Type}");
                         }
                     }
                 }
@@ -503,7 +503,7 @@ namespace Aikido.Zen.Core
                         await Task.Delay(RetryDelayMs, _cancellationSource.Token);
                     }
                     // Other errors are dropped to avoid infinite retries
-                    LogHelper.ErrorLog(Logger, $"Event was not sent successfully: {response.Error}");
+                    LogHelper.DebugLog(Logger, $"Event was not sent successfully: {response.Error}");
                 }
                 queuedItem.Callback?.Invoke(queuedItem.Event, response);
             }
@@ -511,14 +511,14 @@ namespace Aikido.Zen.Core
             {
                 // Graceful shutdown
                 _eventQueue.Enqueue(queuedItem);
-                LogHelper.ErrorLog(Logger, "Error sending event: Operation canceled");
+                LogHelper.DebugLog(Logger, "Error sending event: Operation canceled");
                 throw;
             }
             catch (Exception)
             {
                 // Requeue on error and delay
                 _eventQueue.Enqueue(queuedItem);
-                LogHelper.ErrorLog(Logger, "Error sending event");
+                LogHelper.DebugLog(Logger, "Error sending event");
                 await Task.Delay(RetryDelayMs, _cancellationSource.Token);
             }
             return requestsThisSecond;
