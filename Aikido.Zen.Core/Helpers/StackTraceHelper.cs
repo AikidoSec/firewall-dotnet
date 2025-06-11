@@ -34,7 +34,7 @@ namespace Aikido.Zen.Core.Helpers
             }
             if (stackTrace.Length > maxLength - 3)
             {
-                return stackTrace.Substring(0, maxLength) + "...";
+                return stackTrace.Substring(0, maxLength - 3) + "...";
             }
             return stackTrace;
         }
