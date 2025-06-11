@@ -27,7 +27,7 @@ namespace Aikido.Zen.Core
         private readonly int _batchTimeoutMs;
         private readonly ConcurrentDictionary<string, ScheduledItem> _scheduledEvents;
         private long _lastConfigCheck = DateTime.UtcNow.Ticks;
-        public static ILogger Logger = NullLogger.Instance;
+        public static ILogger Logger = new DefaultLogger();
 
         // Rate limiting and timing constants for the event processing loop
         private const int RateLimitPerSecond = 10;
@@ -49,7 +49,7 @@ namespace Aikido.Zen.Core
         /// <param name="logger">The logger instance to use</param>
         public static void ConfigureLogger(ILogger logger)
         {
-            Logger = logger ?? NullLogger.Instance;
+            Logger = logger ?? new DefaultLogger();
         }
 
         public static Agent Instance

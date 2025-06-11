@@ -64,8 +64,8 @@ namespace Aikido.Zen.DotNetFramework
 
         internal static void CheckModules()
         {
-            var isContextModuleInstalled = HttpContext.Current.ApplicationInstance.Modules.AllKeys.Any(key => key == "Aikido.Zen.ContextModule");
-            var isBlockingModuleInstalled = HttpContext.Current.ApplicationInstance.Modules.AllKeys.Any(key => key == "Aikido.Zen.BlockingModule");
+            var isContextModuleInstalled = HttpContext.Current.ApplicationInstance.Modules.AllKeys.Any(key => key.Contains("Aikido.Zen.DotNetFramework.HttpModules.ContextModule"));
+            var isBlockingModuleInstalled = HttpContext.Current.ApplicationInstance.Modules.AllKeys.Any(key => key.Contains("Aikido.Zen.DotNetFramework.HttpModules.BlockingModule"));
 
             if (!isContextModuleInstalled)
             {
