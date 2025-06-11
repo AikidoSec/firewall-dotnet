@@ -43,7 +43,7 @@ namespace Aikido.Zen.Test
         {
             // Arrange
             var longStackTrace = new string('a', 100);
-            var expected = new string('a', 50) + "...";
+            var expected = new string('a', 47) + "...";
 
             // Act
             var result = StackTraceHelper.TruncateStackTrace(longStackTrace, 50);
