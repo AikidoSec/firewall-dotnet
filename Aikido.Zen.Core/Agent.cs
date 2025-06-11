@@ -27,7 +27,7 @@ namespace Aikido.Zen.Core
         private readonly int _batchTimeoutMs;
         private readonly ConcurrentDictionary<string, ScheduledItem> _scheduledEvents;
         private long _lastConfigCheck = DateTime.UtcNow.Ticks;
-        public static ILogger Logger = NullLogger.Instance;
+        public static ILogger Logger = new DefaultLogger();
 
         // Rate limiting and timing constants for the event processing loop
         private const int RateLimitPerSecond = 10;
@@ -49,7 +49,7 @@ namespace Aikido.Zen.Core
         /// <param name="logger">The logger instance to use</param>
         public static void ConfigureLogger(ILogger logger)
         {
-            Logger = logger ?? NullLogger.Instance;
+            Logger = logger ?? new DefaultLogger();
         }
 
         public static Agent Instance
@@ -121,8 +121,13 @@ namespace Aikido.Zen.Core
                     var reportingResponse = response as ReportingAPIResponse;
                     if (reportingResponse != null && reportingResponse.Success)
                     {
+                        LogHelper.DebugLog(Logger, "Heartbeat was sent successfully");
                         _context.UpdateBlockedUsers(reportingResponse.BlockedUserIds);
                         UpdateConfig(reportingResponse);
+                    }
+                    else
+                    {
+                        LogHelper.ErrorLog(Logger, $"Heartbeat was not sent successfully: {response.Error}");
                     }
                 }
             };
@@ -238,12 +243,12 @@ namespace Aikido.Zen.Core
                                 .GetAwaiter()
                                 .GetResult();
                             eventItem.Callback?.Invoke(eventItem.Event, response);
-                            LogHelper.ErrorLog(Logger, $"Event processed: {eventItem.Event.Type}");
+                            LogHelper.DebugLog(Logger, $"Event processed: {eventItem.Event.Type}");
                         }
                         catch (Exception ex)
                         {
                             // pass through
-                            LogHelper.ErrorLog(Logger, $"Error processing event: {eventItem.Event.Type}");
+                            LogHelper.DebugLog(Logger, $"Error processing event: {eventItem.Event.Type}");
                         }
                     }
                 }
@@ -486,6 +491,7 @@ namespace Aikido.Zen.Core
             try
             {
                 requestsThisSecond++;
+                LogHelper.DebugLog(Logger, $"Sending event: {queuedItem.Event.Type}");
                 var response = await _api.Reporting.ReportAsync(queuedItem.Token, queuedItem.Event, _batchTimeoutMs)
                     .ConfigureAwait(false);
 
@@ -497,6 +503,7 @@ namespace Aikido.Zen.Core
                         await Task.Delay(RetryDelayMs, _cancellationSource.Token);
                     }
                     // Other errors are dropped to avoid infinite retries
+                    LogHelper.DebugLog(Logger, $"Event was not sent successfully: {response.Error}");
                 }
                 queuedItem.Callback?.Invoke(queuedItem.Event, response);
             }
@@ -504,12 +511,14 @@ namespace Aikido.Zen.Core
             {
                 // Graceful shutdown
                 _eventQueue.Enqueue(queuedItem);
+                LogHelper.DebugLog(Logger, "Error sending event: Operation canceled");
                 throw;
             }
             catch (Exception)
             {
                 // Requeue on error and delay
                 _eventQueue.Enqueue(queuedItem);
+                LogHelper.DebugLog(Logger, "Error sending event");
                 await Task.Delay(RetryDelayMs, _cancellationSource.Token);
             }
             return requestsThisSecond;
