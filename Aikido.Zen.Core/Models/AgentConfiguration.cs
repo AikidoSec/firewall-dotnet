@@ -16,7 +16,7 @@ namespace Aikido.Zen.Core.Models
     {
         private readonly ConcurrentDictionary<string, string> _blockedUsers = new ConcurrentDictionary<string, string>();
         private Regex _blockedUserAgents;
-        private readonly BlockList _blockList = new BlockList();
+        private BlockList _blockList = new BlockList();
         private List<EndpointConfig> _endpoints = new List<EndpointConfig>();
         private readonly object _endpointsLock = new object();
 
@@ -30,6 +30,9 @@ namespace Aikido.Zen.Core.Models
         public void Clear()
         {
             _blockedUsers.Clear();
+            _endpoints.Clear();
+            _blockedUserAgents = null;
+            _blockList = new BlockList();
         }
 
         /// <summary>
