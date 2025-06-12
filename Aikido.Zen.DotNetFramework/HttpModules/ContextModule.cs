@@ -34,9 +34,10 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             context.PostAuthenticateRequest += Context_PostAuthenticateRequest;
             // we add the .Wait(), because we want our module to handle exceptions properly
             context.BeginRequest += (sender, e) => Task.Run(() => Context_BeginRequest(sender, e)).Wait();
-            // we try to discover the route as early as possible (we just need a statuscode), but we fallback to endrequest.
+            // we try to discover the route as early as possible (we just need a statuscode), but we fallback to other listeners in case some are skipped.
             context.PreSendRequestHeaders += Context_EndRequest;
             context.EndRequest += Context_EndRequest;
+            context.PostRequestHandlerExecute += Context_EndRequest;
         }
 
         private void Context_PostAuthenticateRequest(object sender, EventArgs e)
