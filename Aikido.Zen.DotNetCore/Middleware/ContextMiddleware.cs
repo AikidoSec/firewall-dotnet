@@ -38,6 +38,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
             var context = new Context
             {
                 Url = httpContext.Request.Path.ToString(),
+                AbsoluteUrl = $"{httpContext.Request.Scheme}://{httpContext.Request.Host}{httpContext.Request.Path}",
                 Method = httpContext.Request.Method,
                 Query = queryDictionary,
                 Headers = headersDictionary,
@@ -70,6 +71,8 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 }
 
                 var httpData = await HttpHelper.ReadAndFlattenHttpDataAsync(
+                    path: context.Url,
+                    route: context.Route,
                     queryParams: queryDictionary.ToDictionary(h => h.Key, h => string.Join(',', h.Value)),
                     headers: headersDictionary.ToDictionary(h => h.Key, h => string.Join(',', h.Value)),
                     cookies: context.Cookies,

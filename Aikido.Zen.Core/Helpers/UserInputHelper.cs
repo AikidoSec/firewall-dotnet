@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Web;
 using Aikido.Zen.Core.Models;
 using Microsoft.Net.Http.Headers;
 
@@ -36,6 +37,34 @@ namespace Aikido.Zen.Core.Helpers
                 return Source.RouteParams;
             }
             return Source.Body;
+        }
+
+        /// <summary>
+        /// Processes the path of the request
+        /// </summary>
+        /// <param name="path">The path</param>
+        /// <param name="result">The dictionary to store processed data.</param>
+        public static void ProcessPath(string path, string route, IDictionary<string, string> result)
+        {
+            result[$"route"] = path;
+            var pathParts = path.Split('/');
+            var routeParts = route.Split('/');
+
+            for (int i = 0; i < routeParts.Length && i < pathParts.Length; i++)
+            {
+                if (pathParts[i] != routeParts[i])
+                {
+                    var paramName = StripRouteParams(routeParts[i]);
+                    if (pathParts.Length == routeParts.Length)
+                    {
+                        result[$"route.{paramName}"] = HttpUtility.UrlDecode(pathParts[i]);
+                    }
+                    else
+                    {
+                        result[$"route.{paramName}"] = HttpUtility.UrlDecode(PathTillNextParam(pathParts, i));
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -94,5 +123,24 @@ namespace Aikido.Zen.Core.Helpers
             boundary = parsedContentType.Boundary.Value;
             return isMultipart;
         }
+
+        private static string StripRouteParams(string part)
+        {
+            return part.Replace("{", "").Replace("}", "");
+        }
+
+        private static string PathTillNextParam(string[] pathParts, int startIndex)
+        {
+            // take all next parts untill the next param or the end of the array
+            for (int i = startIndex; i < pathParts.Length; i++)
+            {
+                if (pathParts[i].Contains("{") || pathParts[i].Contains(":"))
+                {
+                    return string.Join("/", pathParts, startIndex, i - startIndex);
+                }
+            }
+            return string.Join("/", pathParts, startIndex, pathParts.Length - startIndex);
+        }
+
     }
 }
