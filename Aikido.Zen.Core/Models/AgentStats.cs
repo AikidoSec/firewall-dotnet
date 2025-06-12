@@ -17,17 +17,10 @@ namespace Aikido.Zen.Core.Models
     /// </summary>
     public class AgentStats
     {
-        private const int MaxHostnames = 2000;
-        private const int MaxUsers = 2000;
-        private const int MaxRoutes = 5000;
-
         private readonly int _maxPerfSamplesInMem;
         private readonly int _maxCompressedStatsInMem;
         private ConcurrentDictionary<string, OperationStats> _operations = new ConcurrentDictionary<string, OperationStats>();
         private Requests _requests = new Requests();
-        private readonly ConcurrentLFUDictionary<string, Host> _hostnames = new ConcurrentLFUDictionary<string, Host>(MaxHostnames);
-        private readonly ConcurrentLFUDictionary<string, UserExtended> _users = new ConcurrentLFUDictionary<string, UserExtended>(MaxUsers);
-        private readonly ConcurrentLFUDictionary<string, Route> _routes = new ConcurrentLFUDictionary<string, Route>(MaxRoutes);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AgentStats"/> class.
@@ -91,21 +84,6 @@ namespace Aikido.Zen.Core.Models
         public Requests Requests => _requests;
 
         /// <summary>
-        /// Gets the collection of tracked hostnames.
-        /// </summary>
-        public IEnumerable<Host> Hostnames => _hostnames.GetValues();
-
-        /// <summary>
-        /// Gets the collection of tracked users.
-        /// </summary>
-        public IEnumerable<UserExtended> Users => _users.GetValues();
-
-        /// <summary>
-        /// Gets the collection of tracked routes.
-        /// </summary>
-        public IEnumerable<Route> Routes => _routes.GetValues();
-
-        /// <summary>
         /// Resets all collected statistics and updates the start time.
         /// </summary>
         public void Reset()
@@ -121,9 +99,6 @@ namespace Aikido.Zen.Core.Models
                     Blocked = 0
                 }
             };
-            _hostnames.Clear();
-            _users.Clear();
-            _routes.Clear();
             StartedAt = DateTimeHelper.UTCNowUnixMilliseconds();
         }
 
@@ -160,14 +135,6 @@ namespace Aikido.Zen.Core.Models
             {
                 Interlocked.Increment(ref _requests.AttacksDetected.Blocked);
             }
-        }
-
-        /// <summary>
-        /// Records a blocked attack during request processing.
-        /// </summary>
-        internal void OnBlockedAttack()
-        {
-            Interlocked.Increment(ref _requests.AttacksDetected.Blocked);
         }
 
         /// <summary>
@@ -371,93 +338,6 @@ namespace Aikido.Zen.Core.Models
             return !_operations.Any() &&
                    _requests.Total == 0 &&
                    _requests.AttacksDetected.Total == 0;
-        }
-
-        /// <summary>
-        /// Adds or updates a hostname in the statistics.
-        /// </summary>
-        /// <param name="hostname">The hostname to add or update.</param>
-        public void AddHostname(string hostname)
-        {
-            if (string.IsNullOrWhiteSpace(hostname))
-                return;
-            var hostParts = hostname.Split(':');
-            var name = hostParts[0];
-            var port = hostParts.Length > 1 ? hostParts[1] : "80";
-            int.TryParse(port, out int portNumber);
-
-            var key = $"{name}:{port}";
-            _hostnames.TryGet(key, out var host);
-            if (host == null)
-            {
-                host = new Host { Hostname = name, Port = portNumber };
-            }
-
-            // when updating, we keep track of hits
-            _hostnames.AddOrUpdate(key, host);
-        }
-
-        /// <summary>
-        /// Adds or updates a user in the statistics.
-        /// </summary>
-        /// <param name="user">The user to add or update.</param>
-        /// <param name="ipAddress">The IP address associated with this user access.</param>
-        public void AddUser(User user, string ipAddress)
-        {
-            if (user == null || string.IsNullOrEmpty(user.Id))
-                return;
-
-            UserExtended userExtended;
-            if (_users.TryGet(user.Id, out var existingUser))
-            {
-                // User exists, update details before calling AddOrUpdate
-                existingUser.Name = user.Name; // Update name in case it changed
-                existingUser.LastIpAddress = ipAddress;
-                existingUser.LastSeenAt = DateTimeHelper.UTCNowUnixMilliseconds();
-                userExtended = existingUser;
-            }
-            else
-            {
-                // User does not exist, create a new one
-                userExtended = new UserExtended(user.Id, user.Name)
-                {
-                    LastIpAddress = ipAddress,
-                    LastSeenAt = DateTimeHelper.UTCNowUnixMilliseconds()
-                };
-            }
-
-            // AddOrUpdate handles incrementing hits and eviction
-            _users.AddOrUpdate(user.Id, userExtended);
-        }
-
-        /// <summary>
-        /// Adds or updates a route in the statistics.
-        /// </summary>
-        /// <param name="context">The context containing the route information.</param>
-        public void AddRoute(Context context)
-        {
-            if (context == null || string.IsNullOrEmpty(context.Route)) return;
-
-            Route route;
-            if (_routes.TryGet(context.Route, out var existingRoute))
-            {
-                // Route exists, update API info before calling AddOrUpdate
-                OpenAPIHelper.UpdateApiInfo(context, existingRoute, EnvironmentHelper.MaxApiDiscoverySamples);
-                route = existingRoute;
-            }
-            else
-            {
-                // Route does not exist, create a new one
-                route = new Route
-                {
-                    Path = context.Route,
-                    Method = context.Method,
-                    ApiSpec = OpenAPIHelper.GetApiInfo(context),
-                };
-            }
-
-            // AddOrUpdate handles incrementing hits and eviction
-            _routes.AddOrUpdate(context.Route, route);
         }
     }
 }

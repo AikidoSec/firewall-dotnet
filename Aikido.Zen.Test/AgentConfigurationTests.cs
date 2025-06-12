@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using Aikido.Zen.Core;
 using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Models;
 using NUnit.Framework;
@@ -19,17 +20,51 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void Clear_ClearsAllCollections()
+        {
+            // Arrange
+            _config.UpdateBlockedUserAgents(new Regex("bot", RegexOptions.IgnoreCase));
+            _config.UpdateConfig(new ReportingAPIResponse
+            {
+                Block = true,
+                BlockedUserIds = new List<string> { "123" },
+                Endpoints = [ new EndpointConfig {
+                    AllowedIPAddresses = ["234.234.234.234"],
+                    Route = "/test",
+                }],
+                BypassedIPAddresses = ["123.123.123.123"],
+                ConfigUpdatedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+            });
+            var context = new Context
+            {
+                Method = "GET",
+                Route = "/test",
+                Url = "/test",
+                RemoteAddress = "234.234.234.234"
+            };
+
+            // Act
+            _config.Clear();
+
+            // Assert
+            Assert.That(_config.IsUserBlocked("123"), Is.False);
+            Assert.That(_config.BlockedUserAgents, Is.Null);
+            Assert.That(_config.Endpoints, Is.Empty);
+            Assert.That(_config.BlockList.IsIPBypassed("123.123.123.123"), Is.False);
+            Assert.That(_config.BlockList.IsEmpty(), Is.True);
+        }
+
+        [Test]
         public void UpdateBlockedUsers_WithNullList_ClearsBlockedUsers()
         {
             // Arrange
-            _config.UpdateBlockedUsers(new[] { "user1", "user2" });
+            _config.UpdateBlockedUsers(new List<string> { "123" });
 
             // Act
             _config.UpdateBlockedUsers(null);
 
             // Assert
-            Assert.That(_config.IsUserBlocked("user1"), Is.False);
-            Assert.That(_config.IsUserBlocked("user2"), Is.False);
+            Assert.That(_config.IsUserBlocked("123"), Is.False);
         }
 
         [Test]

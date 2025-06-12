@@ -23,6 +23,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
 
         public async Task InvokeAsync(HttpContext httpContext, RequestDelegate next)
         {
+            LogHelper.DebugLog(Agent.Logger, "Capturing request context");
             // if the ip is bypassed, skip the handling of the request
             if (Agent.Instance.Context.BlockList.IsIPBypassed(httpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty) || EnvironmentHelper.IsDisabled)
             {
@@ -106,6 +107,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
             int statusCode = httpContext.Response.StatusCode;
             if (RouteHelper.ShouldAddRoute(context, statusCode))
             {
+                LogHelper.DebugLog(Agent.Logger, "Adding route");
                 Agent.Instance.AddRoute(context);
                 Agent.Instance.IncrementTotalRequestCount();
             }

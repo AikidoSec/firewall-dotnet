@@ -2,9 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using Aikido.Zen.Core.Helpers;
 
+[assembly: InternalsVisibleTo("Aikido.Zen.Tests")]
 namespace Aikido.Zen.Core.Models.Ip
 {
     /// <summary>
@@ -308,6 +310,16 @@ namespace Aikido.Zen.Core.Models.Ip
         internal bool IsPrivateOrLocalIp(string ip)
         {
             return IPHelper.IsPrivateOrLocalIp(ip);
+        }
+
+        internal bool IsEmpty()
+        {
+            return
+                _allowedIps.HasItems == false &&
+                _blockedIps.HasItems == false &&
+                _bypassedIps.HasItems == false &&
+                _endpointConfigs.Any() == false;
+                
         }
     }
 }

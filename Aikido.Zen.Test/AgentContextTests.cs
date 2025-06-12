@@ -142,6 +142,19 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void AddHostname_WithInvalidHostname_DoesNotAddToHostnames()
+        {
+            // Arrange
+            var hostname = "";
+
+            // Act
+            _agentContext.AddHostname(hostname);
+
+            // Assert
+            Assert.That(_agentContext.Hostnames, Is.Empty);
+        }
+
+        [Test]
         public void AddUser_ShouldHandleNullGracefully()
         {
             // Arrange
@@ -218,6 +231,19 @@ namespace Aikido.Zen.Test
 
             // Assert
             Assert.That(_agentContext.Routes.Count() == 0);
+        }
+
+        [Test]
+        public void AddRoute_WithInvalidContext_DoesNotAddToRoutes()
+        {
+            // Arrange
+            Context context = null;
+
+            // Act
+            _agentContext.AddRoute(context);
+
+            // Assert
+            Assert.That(_agentContext.Routes, Is.Empty);
         }
 
         [Test]
