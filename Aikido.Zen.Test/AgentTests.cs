@@ -55,7 +55,7 @@ namespace Aikido.Zen.Test
             Assert.That(_agent.Context.Routes.Count, Is.EqualTo(0));
             Assert.That(_agent.Context.Hostnames.Count, Is.EqualTo(0));
             Assert.That(_agent.Context.Requests, Is.EqualTo(0));
-            Assert.That(_agent.Context.Started, Is.GreaterThanOrEqualTo(startedTime + waitTimeMs));
+            Assert.That(_agent.Context.Started, Is.GreaterThan(startedTime + waitTimeMs));
         }
 
         [Test]
@@ -561,8 +561,7 @@ namespace Aikido.Zen.Test
             _agent.Context.AddUser(context.User, context.RemoteAddress);
             _agent.Context.AddRoute(context);
             _agent.Context.AddRequest();
-            _agent.Context.AddAttackBlocked();
-            _agent.Context.AddAttackDetected();
+            _agent.Context.AddAttackDetected(true);
             _agent.SetContextMiddlewareInstalled(true);
             _agent.SetBlockingMiddlewareInstalled(true);
             // Act

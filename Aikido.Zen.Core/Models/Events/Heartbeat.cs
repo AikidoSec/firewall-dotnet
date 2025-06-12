@@ -9,7 +9,7 @@ namespace Aikido.Zen.Core.Models.Events
     {
         public string Type => "heartbeat";
 
-        public Stats Stats { get; set; } = new Stats();
+        public AgentStats Stats { get; set; } = new AgentStats();
         public IEnumerable<Host> Hostnames { get; set; }
         public IEnumerable<Route> Routes { get; set; }
         public IEnumerable<UserExtended> Users { get; set; }

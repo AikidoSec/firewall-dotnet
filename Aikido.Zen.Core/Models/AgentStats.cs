@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using Aikido.Zen.Core.Helpers;
+using Aikido.Zen.Core.Helpers.OpenAPI;
 
 // Make internals visible to the test project
 [assembly: InternalsVisibleTo("Aikido.Zen.Test")]
@@ -14,7 +15,7 @@ namespace Aikido.Zen.Core.Models
     /// <summary>
     /// Collects and manages inspection statistics for operations and requests.
     /// </summary>
-    public class Stats
+    public class AgentStats
     {
         private readonly int _maxPerfSamplesInMem;
         private readonly int _maxCompressedStatsInMem;
@@ -22,11 +23,11 @@ namespace Aikido.Zen.Core.Models
         private Requests _requests = new Requests();
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Stats"/> class.
+        /// Initializes a new instance of the <see cref="AgentStats"/> class.
         /// </summary>
         /// <param name="maxPerfSamplesInMem">The maximum number of performance samples to keep in memory per operation before compressing.</param>
         /// <param name="maxCompressedStatsInMem">The maximum number of compressed statistic blocks to keep in memory per operation.</param>
-        public Stats(int maxPerfSamplesInMem = 1000, int maxCompressedStatsInMem = 100)
+        public AgentStats(int maxPerfSamplesInMem = 1000, int maxCompressedStatsInMem = 100)
         {
             _maxPerfSamplesInMem = maxPerfSamplesInMem;
             _maxCompressedStatsInMem = maxCompressedStatsInMem;
@@ -127,8 +128,7 @@ namespace Aikido.Zen.Core.Models
         /// <summary>
         /// Records a detected attack during request processing.
         /// </summary>
-        /// <param name="blocked">Indicates whether the detected attack was blocked.</param>
-        public void OnDetectedAttack(bool blocked)
+        public void OnDetectedAttack(bool blocked = false)
         {
             Interlocked.Increment(ref _requests.AttacksDetected.Total);
             if (blocked)

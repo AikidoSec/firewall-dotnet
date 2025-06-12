@@ -113,13 +113,17 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void AddAttackBlocked_ShouldIncrementAttacksBlocked()
+        public void AddAttackDetectedAndBlocked_ShouldIncrementAttacksBlocked()
         {
             // Act
-            _agentContext.AddAttackBlocked();
+            _agentContext.AddAttackDetected(true);
 
             // Assert
-            Assert.That(_agentContext.AttacksBlocked, Is.EqualTo(1));
+            Assert.Multiple(() =>
+            {
+                Assert.That(_agentContext.AttacksDetected, Is.EqualTo(1));
+                Assert.That(_agentContext.AttacksBlocked, Is.EqualTo(1));
+            });
         }
 
         [Test]
@@ -135,6 +139,19 @@ namespace Aikido.Zen.Test
             var host = _agentContext.Hostnames.FirstOrDefault(h => h.Hostname == "example.com");
             Assert.That(host == null, Is.False);
             Assert.That(host.Port, Is.EqualTo(8080));
+        }
+
+        [Test]
+        public void AddHostname_WithInvalidHostname_DoesNotAddToHostnames()
+        {
+            // Arrange
+            var hostname = "";
+
+            // Act
+            _agentContext.AddHostname(hostname);
+
+            // Assert
+            Assert.That(_agentContext.Hostnames, Is.Empty);
         }
 
         [Test]
@@ -217,6 +234,19 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void AddRoute_WithInvalidContext_DoesNotAddToRoutes()
+        {
+            // Arrange
+            Context context = null;
+
+            // Act
+            _agentContext.AddRoute(context);
+
+            // Assert
+            Assert.That(_agentContext.Routes, Is.Empty);
+        }
+
+        [Test]
         public void AddRoute_ShouldIncrementHits_ForRoutesAndHosts()
         {
             // Arrange
@@ -262,8 +292,7 @@ namespace Aikido.Zen.Test
             // Arrange
             _agentContext.AddRequest();
             _agentContext.AddAbortedRequest();
-            _agentContext.AddAttackDetected();
-            _agentContext.AddAttackBlocked();
+            _agentContext.AddAttackDetected(true);
             _agentContext.AddHostname("example.com:8080");
             _agentContext.AddUser(new User("user1", "User One"), "192.168.1.1");
             _agentContext.AddRoute(new Context
