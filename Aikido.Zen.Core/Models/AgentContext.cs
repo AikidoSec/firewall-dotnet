@@ -98,6 +98,7 @@ namespace Aikido.Zen.Core.Models
 
         public void AddRoute(Context context)
         {
+            // return if context or route are empty
             if (context == null || string.IsNullOrEmpty(context.Route)) return;
 
             Route route;
