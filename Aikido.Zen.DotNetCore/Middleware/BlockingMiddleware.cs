@@ -1,10 +1,10 @@
+using System.Collections.Generic;
+using System.Linq;
+using System.Web; // Import for HTML encoding
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 using Microsoft.AspNetCore.Http;
-using System.Web; // Import for HTML encoding
-using System.Linq;
-using System.Collections.Generic;
 
 namespace Aikido.Zen.DotNetCore.Middleware
 {
@@ -15,6 +15,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
     {
         public async Task InvokeAsync(HttpContext context, RequestDelegate next)
         {
+            LogHelper.DebugLog(Agent.Logger, "Checking if request should be blocked");
             var agentContext = Agent.Instance.Context;
             var aikidoContext = context.Items["Aikido.Zen.Context"] as Context;
             Agent.Instance.SetBlockingMiddlewareInstalled(true);
@@ -37,6 +38,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
             {
                 Agent.Instance.Context.AddAbortedRequest();
                 context.Response.StatusCode = 403;
+                LogHelper.DebugLog(Agent.Logger, $"Request blocked: {HttpUtility.HtmlEncode(reason)}");
                 await context.Response.WriteAsync($"Your request is blocked: {HttpUtility.HtmlEncode(reason)}");
                 return;
             }

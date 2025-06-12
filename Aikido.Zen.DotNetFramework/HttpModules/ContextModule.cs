@@ -27,6 +27,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
 
         public void Init(HttpApplication context)
         {
+            LogHelper.DebugLog(Agent.Logger, "ContextModule initialized");
             context.PostAuthenticateRequest += Context_PostAuthenticateRequest;
             // we add the .Wait(), because we want our module to handle exceptions properly
             context.BeginRequest += (sender, e) => Task.Run(() => Context_BeginRequest(sender, e)).Wait();
@@ -49,6 +50,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
 
         private async Task Context_BeginRequest(object sender, EventArgs e)
         {
+            LogHelper.DebugLog(Agent.Logger, "Capturing request context");
             var httpContext = ((HttpApplication)sender).Context;
             // if the ip is bypassed, skip the handling of the request
             if (Agent.Instance.Context.BlockList.IsIPBypassed(GetClientIp(httpContext)) || EnvironmentHelper.IsDisabled)
@@ -115,6 +117,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             int statusCode = httpContext.Response.StatusCode;
             if (RouteHelper.ShouldAddRoute(aikidoContext, statusCode))
             {
+                LogHelper.DebugLog(Agent.Logger, "Adding route");
                 Agent.Instance.AddRoute(aikidoContext);
                 Agent.Instance.IncrementTotalRequestCount();
             }

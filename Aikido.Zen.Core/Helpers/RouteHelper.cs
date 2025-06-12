@@ -187,6 +187,7 @@ namespace Aikido.Zen.Core.Helpers
             // Check for null context
             if (context == null)
             {
+                LogHelper.DebugLog(Agent.Logger, "Context is null, skipping route");
                 return false;
             }
 
@@ -194,18 +195,21 @@ namespace Aikido.Zen.Core.Helpers
             bool validStatusCode = httpStatusCode >= 200 && httpStatusCode <= 399;
             if (!validStatusCode)
             {
+                LogHelper.DebugLog(Agent.Logger, $"Invalid status code: {httpStatusCode}, skipping route");
                 return false;
             }
 
             // Check if the method is excluded
             if (context.Method == null || ExcludedMethods.Contains(context.Method))
             {
+                LogHelper.DebugLog(Agent.Logger, $"Method is null or excluded: {context.Method}, skipping route");
                 return false;
             }
 
             // Check for null or empty route
             if (string.IsNullOrEmpty(context.Route))
             {
+                LogHelper.DebugLog(Agent.Logger, "Route is null or empty, skipping route");
                 return false;
             }
 
@@ -216,11 +220,13 @@ namespace Aikido.Zen.Core.Helpers
             // We want to allow discovery of well-known URIs like `/.well-known/acme-challenge`
             if (!IsWellKnownURI(context.Route) && segments.Any(IsDotFile))
             {
+                LogHelper.DebugLog(Agent.Logger, "Route contains dot file, skipping route");
                 return false;
             }
 
             if (segments.Any(ContainsIgnoredString))
             {
+                LogHelper.DebugLog(Agent.Logger, "Route contains ignored string, skipping route");
                 return false;
             }
 
@@ -284,7 +290,7 @@ namespace Aikido.Zen.Core.Helpers
         public static bool PathIsSingleSegment(string path)
         {
             var segments = path.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
-            return segments.Length <=1;
+            return segments.Length <= 1;
         }
 
         /// <summary>
@@ -362,7 +368,12 @@ namespace Aikido.Zen.Core.Helpers
             if (!string.IsNullOrEmpty(extension))
             {
                 extension = extension.TrimStart('.');
-                if (extension.Length >= 2 && extension.Length <= 5 || IgnoreExtensions.Contains(extension))
+                if (extension.StartsWith("asp", StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+
+                if (extension.Length >= 2 && extension.Length <= 5 || IgnoreExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase))
                 {
                     return false;
                 }

@@ -66,7 +66,7 @@
         <dependency id="Microsoft.AspNetCore.Routing.Abstractions" version="2.2.0" />
         <dependency id="Microsoft.Extensions.DependencyInjection" version="[6.0,)" />
         <dependency id="Microsoft.Extensions.Options" version="[6.0,)" />
-        <dependency id="System.Text.Json" version="[6.0.11,)" />
+        <dependency id="System.Text.Json" version="[6.0,)" />
         <dependency id="Microsoft.Extensions.Logging" version="[6.0,)" />
         <dependency id="Microsoft.Extensions.Logging.Console" version="[6.0,)" />
       </group>

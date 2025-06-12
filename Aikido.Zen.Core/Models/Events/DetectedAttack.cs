@@ -1,11 +1,12 @@
-using Aikido.Zen.Core.Helpers;
-using System.Diagnostics;
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using Aikido.Zen.Core.Helpers;
 
-namespace Aikido.Zen.Core.Models.Events {
+namespace Aikido.Zen.Core.Models.Events
+{
     public class DetectedAttack : IEvent
     {
         public string Type => "detected_attack";
@@ -14,7 +15,8 @@ namespace Aikido.Zen.Core.Models.Events {
         public AgentInfo Agent { get; set; }
         public long Time => DateTimeHelper.UTCNowUnixMilliseconds();
 
-        public static DetectedAttack Create(AttackKind kind, Source source, string payload, string operation, Context context, string module, IDictionary<string, object> metadata, bool blocked) {
+        public static DetectedAttack Create(AttackKind kind, Source source, string payload, string operation, Context context, string module, IDictionary<string, object> metadata, bool blocked)
+        {
 
             // if the context is null, throw an argument null exception
             if (context == null)
@@ -29,8 +31,7 @@ namespace Aikido.Zen.Core.Models.Events {
             else
                 path = context.Url;
 
-            var stackTrace = new StackTrace().ToString();
-            stackTrace = stackTrace.Substring(0, Math.Min(stackTrace.Length, 4096));
+            var stackTrace = StackTraceHelper.CleanedStackTrace();
             var attack = new Attack
             {
                 Blocked = blocked,
