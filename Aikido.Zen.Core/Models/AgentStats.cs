@@ -138,14 +138,6 @@ namespace Aikido.Zen.Core.Models
         }
 
         /// <summary>
-        /// Records a blocked attack during request processing.
-        /// </summary>
-        internal void OnBlockedAttack()
-        {
-            Interlocked.Increment(ref _requests.AttacksDetected.Blocked);
-        }
-
-        /// <summary>
         /// Records the occurrence of a new request.
         /// </summary>
         public void OnRequest()

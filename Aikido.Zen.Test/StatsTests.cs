@@ -105,8 +105,7 @@ namespace Aikido.Zen.Test
             Assert.That(stats.Requests.AttacksDetected.Blocked, Is.EqualTo(0));
             Assert.That(stats.IsEmpty(), Is.False); // Detecting attack makes it non-empty
 
-            stats.OnDetectedAttack();
-            stats.OnBlockedAttack();
+            stats.OnDetectedAttack(blocked: true);
             Assert.That(stats.Requests.AttacksDetected.Total, Is.EqualTo(2));
             Assert.That(stats.Requests.AttacksDetected.Blocked, Is.EqualTo(1));
         }
@@ -435,11 +434,10 @@ namespace Aikido.Zen.Test
                                 break;
                             case 2: // OnDetectedAttack (Global)
                                 bool blocked = random.Next(2) == 0;
-                                stats.OnDetectedAttack();
+                                stats.OnDetectedAttack(blocked);
                                 Interlocked.Increment(ref expectedGlobalAttacks);
                                 if (blocked)
                                 {
-                                    stats.OnBlockedAttack();
                                     Interlocked.Increment(ref expectedGlobalBlocked);
                                 }
                                 break;
