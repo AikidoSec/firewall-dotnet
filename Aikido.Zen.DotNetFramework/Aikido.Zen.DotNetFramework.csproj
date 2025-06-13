@@ -58,11 +58,16 @@
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.4" />
     <PackageReference Include="System.ValueTuple" Version="4.5.0" />
     <PackageReference Include="ZstdSharp.Port" Version="0.8.0" />
+    <PackageReference Include="Fody" Version="6.9.0" PrivateAssets="All" />
+    <PackageReference Include="Costura.Fody" Version="6.0.0" PrivateAssets="All" />
     <Reference Include="System.Web" />
   </ItemGroup>
 
   <ItemGroup>
     <None Update="app.config">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="FodyWeavers.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

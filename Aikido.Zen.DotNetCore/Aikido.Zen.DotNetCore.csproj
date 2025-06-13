@@ -31,6 +31,8 @@
     <PackageReference Include="System.Text.Json" Version="8.0.5" Condition="'$(TargetFramework)' == 'net7.0'" />
     <PackageReference Include="System.Text.Json" Version="8.0.5" Condition="'$(TargetFramework)' == 'net8.0'" />
     <PackageReference Include="System.Text.Json" Version="9.0.1" Condition="'$(TargetFramework)' == 'net9.0'" />
+    <PackageReference Include="Fody" Version="6.9.0" PrivateAssets="All" />
+    <PackageReference Include="Costura.Fody" Version="6.0.0" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>
