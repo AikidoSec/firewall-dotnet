@@ -25,13 +25,19 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             // Nothing to dispose
         }
 
+        private bool responseHandled = false;
+
         public void Init(HttpApplication context)
         {
+            responseHandled = false;
             LogHelper.DebugLog(Agent.Logger, "ContextModule initialized");
             context.PostAuthenticateRequest += Context_PostAuthenticateRequest;
             // we add the .Wait(), because we want our module to handle exceptions properly
             context.BeginRequest += (sender, e) => Task.Run(() => Context_BeginRequest(sender, e)).Wait();
-            context.EndRequest += Context_EndRequest; // Subscribe to EndRequest event
+            // we try to discover the route as early as possible (we just need a statuscode), but we fallback to other listeners in case some are skipped.
+            context.PreSendRequestHeaders += Context_EndRequest;
+            context.EndRequest += Context_EndRequest;
+            context.PostRequestHandlerExecute += Context_EndRequest;
         }
 
         private void Context_PostAuthenticateRequest(object sender, EventArgs e)
@@ -50,6 +56,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
 
         private async Task Context_BeginRequest(object sender, EventArgs e)
         {
+            responseHandled = false;
             LogHelper.DebugLog(Agent.Logger, "Capturing request context");
             var httpContext = ((HttpApplication)sender).Context;
             // if the ip is bypassed, skip the handling of the request
@@ -107,18 +114,26 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
 
         private void Context_EndRequest(object sender, EventArgs e)
         {
-            var httpContext = ((HttpApplication)sender).Context;
-            var aikidoContext = (Context)httpContext.Items["Aikido.Zen.Context"];
-            if (aikidoContext == null)
+            if (responseHandled)
             {
                 return;
             }
 
+            var httpContext = ((HttpApplication)sender).Context;
+            var aikidoContext = (Context)httpContext.Items["Aikido.Zen.Context"];
+            if (aikidoContext == null)
+            {
+                LogHelper.DebugLog(Agent.Logger, "Aikido context is null, skipping route addition");
+                return;
+            }
+            responseHandled = true;
+
             int statusCode = httpContext.Response.StatusCode;
+            LogHelper.DebugLog(Agent.Logger, $"Checking if we should discover route with status code {statusCode}");
             if (RouteHelper.ShouldAddRoute(aikidoContext, statusCode))
             {
-                LogHelper.DebugLog(Agent.Logger, "Adding route");
                 Agent.Instance.AddRoute(aikidoContext);
+                LogHelper.DebugLog(Agent.Logger, "Route added");
                 Agent.Instance.IncrementTotalRequestCount();
             }
         }
