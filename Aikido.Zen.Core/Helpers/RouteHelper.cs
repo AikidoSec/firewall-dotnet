@@ -104,7 +104,7 @@ namespace Aikido.Zen.Core.Helpers
             "/.well-known/void",
             "/.well-known/webfinger",
             "/.well-known/webweaver.json",
-            "/.well-known/wot"
+            "/.well-known/wot",
         };
 
         /// <summary>
