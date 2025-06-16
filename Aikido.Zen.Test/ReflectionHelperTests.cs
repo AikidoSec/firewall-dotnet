@@ -1,8 +1,8 @@
-using Aikido.Zen.Core.Helpers;
-using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using Aikido.Zen.Core.Helpers;
+using NUnit.Framework;
 
 namespace Aikido.Zen.Test.Helpers
 {
@@ -101,6 +101,22 @@ namespace Aikido.Zen.Test.Helpers
             Assert.That(methodInfo, Is.Not.Null);
             Assert.That(methodInfoAfterClear, Is.Not.Null);
             Assert.That(methodInfo, Is.EqualTo(methodInfoAfterClear));
+        }
+
+        [Test]
+        public void GetMethodFromAssembly_PatchTraversal_ReturnsNull()
+        {
+            // Arrange
+            var assemblyName = "..\\Aikido.Zen.DotNetFramework\\bin\\Debug\\net48\\Aikido.Zen.DotNetFramework.dll";
+            var typeName = "Aikido.Zen.DotNetFramework.ContextModule";
+            var methodName = "Init";
+            var parameterTypeNames = new[] { "System.Web.HttpApplication" };
+
+            // Act
+            var methodInfo = ReflectionHelper.GetMethodFromAssembly(assemblyName, typeName, methodName, parameterTypeNames);
+
+            // Assert
+            Assert.That(methodInfo, Is.Null);
         }
     }
 }
