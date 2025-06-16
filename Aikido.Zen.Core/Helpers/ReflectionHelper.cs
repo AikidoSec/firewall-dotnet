@@ -31,10 +31,23 @@ namespace Aikido.Zen.Core.Helpers
         /// <returns>The MethodInfo of the specified method, or null if not found.</returns>
         public static MethodInfo GetMethodFromAssembly(string assemblyName, string typeName, string methodName, params string[] parameterTypeNames)
         {
+            // Check if assembly name is null or empty
+            if (string.IsNullOrEmpty(assemblyName))
+            {
+                return null;
+            }
+
+            // Check if assembly name could be a path traversal attempt
+            if (assemblyName.Contains(".."))
+            {
+                return null;
+            }
+
             // Attempt to load the assembly
             if (!_assemblies.TryGetValue(assemblyName, out var assembly))
             {
                 assembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.GetName().Name == assemblyName);
+
 
                 if (assembly == null)
                 {
