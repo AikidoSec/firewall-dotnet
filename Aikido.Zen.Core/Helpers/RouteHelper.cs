@@ -372,19 +372,23 @@ namespace Aikido.Zen.Core.Helpers
 
                 if (AllowedExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase))
                 {
+                    LogHelper.DebugLog(Agent.Logger, $"Allowed extension: {extension} for route: {segment}, adding route");
                     return true;
                 }
 
                 if (IgnoreExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase))
                 {
+                    LogHelper.DebugLog(Agent.Logger, $"Ignoring extension: {extension} for route: {segment}, skipping route");
                     return false;
                 }
 
                 if (extension.Length > 1 && extension.Length < 6)
                 {
+                    LogHelper.DebugLog(Agent.Logger, $"Ignoring extension: {extension} for route: {segment}, skipping route");
                     return false;
                 }
             }
+            LogHelper.DebugLog(Agent.Logger, $"No extension found for route: {segment}, adding route");
             return true;
         }
 
