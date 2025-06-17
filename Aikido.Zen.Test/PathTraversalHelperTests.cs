@@ -1,7 +1,7 @@
-using Aikido.Zen.Core.Helpers;
-using Aikido.Zen.Core.Exceptions;
 using System.Web;
 using Aikido.Zen.Core;
+using Aikido.Zen.Core.Exceptions;
+using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Tests.Mocks;
 
 namespace Aikido.Zen.Test.Helpers
@@ -52,7 +52,7 @@ namespace Aikido.Zen.Test.Helpers
             bool result = PathTraversalHelper.DetectPathTraversal(args, ModuleName, _context, Operation);
 
             // Assert
-            Assert.That(result, Is.EqualTo(expectedAttack)); 
+            Assert.That(result, Is.EqualTo(expectedAttack));
             Assert.That(_context.AttackDetected, Is.EqualTo(expectedAttack));
         }
 
