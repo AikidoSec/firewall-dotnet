@@ -216,13 +216,9 @@ namespace Aikido.Zen.Core.Helpers
 
             // Do not discover routes with dot files like `/path/to/.file` or `/.directory/file`
             // We want to allow discovery of well-known URIs like `/.well-known/acme-challenge`
-            // in .net dots in route segments are quite common, so we don't check form them, unlike we do for
+
+            // in .net dots in route segments are quite common, so we don't check for them, unlike we do for
             // https://github.com/AikidoSec/firewall-node/blob/a8d2541181d21dbb2b00aa1db17709afc197c74b/library/sources/http-server/shouldDiscoverRoute.ts
-            // if (!IsWellKnownURI(context.Route) && segments.Any(IsDotFile))
-            // {
-            //     LogHelper.DebugLog(Agent.Logger, "Route contains dot file, skipping route");
-            //     return false;
-            // }
 
             if (segments.Any(ContainsIgnoredString))
             {
