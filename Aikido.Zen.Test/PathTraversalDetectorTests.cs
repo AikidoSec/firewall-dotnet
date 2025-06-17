@@ -14,6 +14,7 @@ namespace Aikido.Zen.Test
 
             // Assert
             Assert.That(result, Is.EqualTo(expectedResult), description);
+
         }
 
         [Test]
