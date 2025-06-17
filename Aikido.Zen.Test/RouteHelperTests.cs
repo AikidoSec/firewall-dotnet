@@ -69,6 +69,13 @@ namespace Aikido.Zen.Test.Helpers
         [TestCase("/test.properties", "GET", 200, false)]
         [TestCase("/api/resource", "HEAD", 200, false)]
         [TestCase("/api/resource", "GET", 500, false)]
+        [TestCase("/api/resource.asp", "GET", 200, true)]
+        [TestCase("/api/resource.aspx", "GET", 200, true)]
+        [TestCase("/api/resource.ashx", "GET", 200, true)]
+        [TestCase("/api/resource.asmx", "GET", 200, true)]
+        [TestCase("/api/resource.axd", "GET", 200, true)]
+        [TestCase("/api/resource.asx", "GET", 200, true)]
+        [TestCase("/api/resource.asx", "GET", 200, true)]
         public void ShouldAddRoute_ShouldReturnExpectedResult(string route, string method, int statusCode, bool expectedResult)
         {
             // Arrange
@@ -78,7 +85,7 @@ namespace Aikido.Zen.Test.Helpers
             var result = RouteHelper.ShouldAddRoute(context, statusCode);
 
             // Assert
-            Assert.That(expectedResult, Is.EqualTo(result));
+            Assert.That(expectedResult, Is.EqualTo(result), $"Route: {route}, Method: {method}, StatusCode: {statusCode}, Expected: {expectedResult}, Result: {result}");
         }
 
 

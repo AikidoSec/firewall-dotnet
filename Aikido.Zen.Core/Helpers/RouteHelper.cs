@@ -12,6 +12,7 @@ namespace Aikido.Zen.Core.Helpers
 
         private static readonly string[] ExcludedMethods = { "OPTIONS", "HEAD" };
         private static readonly string[] IgnoreExtensions = { "properties", "config", "webmanifest" };
+        private static readonly string[] AllowedExtensions = { "asp", "aspx", "ashx", "asmx", "axd", "asx" };
         private static readonly string[] IgnoreStrings = { "cgi-bin" };
         private static readonly HashSet<string> WellKnownURIs = new HashSet<string>
         {
@@ -368,16 +369,26 @@ namespace Aikido.Zen.Core.Helpers
             if (!string.IsNullOrEmpty(extension))
             {
                 extension = extension.TrimStart('.');
-                if (extension.StartsWith("asp", StringComparison.OrdinalIgnoreCase))
+
+                if (AllowedExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase))
                 {
+                    LogHelper.DebugLog(Agent.Logger, $"Allowed extension: {extension} for route: {segment}, adding route");
                     return true;
                 }
 
-                if (extension.Length >= 2 && extension.Length <= 5 || IgnoreExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase))
+                if (IgnoreExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase))
                 {
+                    LogHelper.DebugLog(Agent.Logger, $"Ignoring extension: {extension} for route: {segment}, skipping route");
+                    return false;
+                }
+
+                if (extension.Length > 1 && extension.Length < 6)
+                {
+                    LogHelper.DebugLog(Agent.Logger, $"Ignoring extension: {extension} for route: {segment}, skipping route");
                     return false;
                 }
             }
+            LogHelper.DebugLog(Agent.Logger, $"No extension found for route: {segment}, adding route");
             return true;
         }
 
