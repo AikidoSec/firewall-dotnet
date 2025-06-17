@@ -76,6 +76,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
         /// <returns>True if potential path traversal is detected, false otherwise</returns>
         public static bool DetectPathTraversal(string input, string path, bool checkPathStart = true)
         {
+
             // return if path or input is null or empty
             if (string.IsNullOrEmpty(input) || string.IsNullOrEmpty(path))
                 return false;

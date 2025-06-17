@@ -198,10 +198,28 @@
     "isTraversal": true
   },
   {
+    "input": "/home/user/file1.txt",
+    "path": "/home/user/file2.txt",
+    "description": "Absolute path different files",
+    "isTraversal": false
+  },
+  {
     "input": "/home/user/file.txt",
     "path": "/home/user/file.txt",
-    "description": "Linux user directory",
+    "description": "Absolute path same files",
     "isTraversal": true
+  },
+  {
+    "input": "/home/user",
+    "path": "/home/user/file.txt",
+    "description": "Absolute path with directory input and file path",
+    "isTraversal": true
+  },
+  {
+    "input": "/home/user/file.txt",
+    "path": "/home/user",
+    "description": "Absolute path with file input and file directory",
+    "isTraversal": false
   },
   {
       "input": "123456",
