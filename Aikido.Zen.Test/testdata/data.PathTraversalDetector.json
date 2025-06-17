@@ -93,13 +93,13 @@
     "input": "/etc/passwd",
     "path": "C:\\files\\/etc/passwd",
     "description": "Absolute Linux path",
-    "isTraversal": true
+    "isTraversal": false
   },
   {
     "input": "/home/user/file.txt",
     "path": "C:\\files\\/home/user/file.txt",
     "description": "Linux user directory",
-    "isTraversal": true
+    "isTraversal": false
   },
   {
     "input": "/./etc/passwd",
@@ -141,13 +141,13 @@
     "input": "%USERPROFILE%\\Documents\\file.txt",
     "path": "C:\\files\\%USERPROFILE%\\Documents\\file.txt",
     "description": "Windows environment variable path",
-    "isTraversal": true
+    "isTraversal": false
   },
   {
     "input": "%PROGRAMFILES%\\app\\config.ini",
     "path": "C:\\files\\%PROGRAMFILES%\\app\\config.ini",
     "description": "Program Files environment variable",
-    "isTraversal": true
+    "isTraversal": false
   },
   {
     "input": "web.config:stream",
@@ -178,5 +178,60 @@
     "path": "C:\\files\\\\\\.\\test.txt",
     "description": "Windows device namespace syntax (backslash)",
     "isTraversal": false
+  },
+  {
+    "input": "%PROGRAMFILES%",
+    "path": "%PROGRAMFILES%\\app\\config.ini",
+    "description": "Program Files environment variable",
+    "isTraversal": true
+  },
+  {
+    "input": "%USERPROFILE%\\Documents\\file.txt",
+    "path": "%USERPROFILE%\\Documents\\file.txt",
+    "description": "Windows environment variable path",
+    "isTraversal": true
+  },
+  {
+    "input": "/etc/passwd",
+    "path": "/etc/passwd",
+    "description": "Absolute Linux path",
+    "isTraversal": true
+  },
+  {
+    "input": "/home/user/file1.txt",
+    "path": "/home/user/file2.txt",
+    "description": "Absolute path different files",
+    "isTraversal": false
+  },
+  {
+    "input": "/home/user/file.txt",
+    "path": "/home/user/file.txt",
+    "description": "Absolute path same files",
+    "isTraversal": true
+  },
+  {
+    "input": "/home/user",
+    "path": "/home/user/file.txt",
+    "description": "Absolute path with directory input and file path",
+    "isTraversal": true
+  },
+  {
+    "input": "/home/user/file.txt",
+    "path": "/home/user",
+    "description": "Absolute path with file input and file directory",
+    "isTraversal": false
+  },
+  {
+      "input": "123456",
+      "path": "D:\\path\\to\\%PROGRAMFILES%\\app\\config.ini\\..\\123456.txt",
+      "description": "Integer input is not a traversal",
+      "isTraversal": false
+  },
+  {
+    "input": "%PROGRAMFILES%\\app\\config.ini",
+    "path": "D:\\path\\to\\%PROGRAMFILES%\\app\\config.ini\\some-other-file.txt",
+    "description": "Path that doesn't start with an unsafe path is not a traversal",
+    "isTraversal": false
+
   }
 ]

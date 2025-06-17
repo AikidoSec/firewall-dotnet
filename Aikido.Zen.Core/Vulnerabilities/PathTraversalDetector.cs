@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Web;
 
 namespace Aikido.Zen.Core.Vulnerabilities
@@ -75,6 +76,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
         /// <returns>True if potential path traversal is detected, false otherwise</returns>
         public static bool DetectPathTraversal(string input, string path, bool checkPathStart = true)
         {
+
             // return if path or input is null or empty
             if (string.IsNullOrEmpty(input) || string.IsNullOrEmpty(path))
                 return false;
@@ -94,6 +96,9 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 // could be a double encoded path traversal
                 input = HttpUtility.UrlDecode(input);
                 input = HttpUtility.UrlDecode(input);
+                // same for the path
+                path = HttpUtility.UrlDecode(path);
+                path = HttpUtility.UrlDecode(path);
             }
             catch
             {
@@ -105,14 +110,9 @@ namespace Aikido.Zen.Core.Vulnerabilities
             ReadOnlySpan<char> pathSpan = path.ToLowerInvariant().AsSpan();
 
 
-            // Check for dangerous patterns in input
             bool inputHasUnsafeParts = ContainsUnsafePathParts(inputSpan);
-            if (inputHasUnsafeParts)
-                return true;
-
-            // Check for dangerous patterns in path
             bool pathHasUnsafeParts = ContainsUnsafePathParts(pathSpan);
-            if (pathHasUnsafeParts)
+            if (inputHasUnsafeParts && pathHasUnsafeParts)
                 return true;
 
             if (checkPathStart)
@@ -121,7 +121,9 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 foreach (var start in DangerousPathStarts)
                 {
                     ReadOnlySpan<char> startSpan = start.AsSpan();
-                    if (inputSpan.StartsWith(startSpan, StringComparison.OrdinalIgnoreCase))
+
+                    if (inputSpan.StartsWith(startSpan, StringComparison.OrdinalIgnoreCase) &&
+                        pathSpan.StartsWith(startSpan, StringComparison.OrdinalIgnoreCase))
                         return true;
                 }
             }
