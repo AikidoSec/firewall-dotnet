@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using Aikido.Zen.Core.Exceptions;
@@ -20,7 +21,32 @@ namespace Aikido.Zen.Core.Patches
             bool blocked = false;
             try
             {
-                attackDetected = PathTraversalHelper.DetectPathTraversal(__args, __originalMethod, assemblyName, context, operation);
+                var arguments = ArgumentHelper.BuildArgumentDictionary(__args, __originalMethod);
+                var paths = new List<string>();
+
+                foreach (var arg in arguments)
+                {
+                    // Heuristic to identify path arguments. Most are named "path", some are "sourceFileName" or "destFileName"
+                    var paramName = arg.Key.ToLowerInvariant();
+                    if (paramName != "path" && paramName != "paths" && !paramName.EndsWith("filename"))
+                        continue;
+
+                    switch (arg.Value)
+                    {
+                        case string p when !string.IsNullOrEmpty(p):
+                            paths.Add(p);
+                            break;
+                        case string[] ps:
+                            paths.AddRange(ps);
+                            break;
+                    }
+                }
+
+                if (paths.Count > 0)
+                {
+                    attackDetected = PathTraversalHelper.DetectPathTraversal(paths.ToArray(), assemblyName, context, operation);
+                }
+
                 blocked = attackDetected && !EnvironmentHelper.DryMode;
             }
             catch

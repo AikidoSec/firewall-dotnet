@@ -28,12 +28,6 @@ namespace Aikido.Zen.Core.Helpers
                 var param = parameters[i];
                 var paramName = param.Name;
 
-                if (param.IsOut)
-                {
-                    argumentDictionary[paramName] = null; // 'out' parameters are not in __args
-                    continue;
-                }
-
                 if (param.IsDefined(typeof(ParamArrayAttribute), false))
                 {
                     int paramArrayLength = __args.Length - argIndex;

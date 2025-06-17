@@ -25,6 +25,18 @@ namespace Aikido.Zen.Test
         private Mock<IRuntimeAPIClient> _runtimeMock;
         private Mock<ZenApi> _zenApiMock;
 
+        public class TestMethods
+        {
+            public void MethodWithPath(string path) { }
+            public void MethodWithPathArray(string[] paths) { }
+            public void MethodWithNonPathArg(string someArg) { }
+            public void MethodWithMixedArgs(string path, string someArg) { }
+            public void MethodWithRefParam(string name, ref string path) { }
+            public void MethodWithOutParam(string name, out string path) { path = "../secrets.txt"; }
+            public void MethodWithParams(string name, params string[] paths) { }
+            public void MethodWithOptional(string name, string path = "default.txt") { }
+        }
+
         [SetUp]
         public void Setup()
         {
@@ -195,6 +207,45 @@ namespace Aikido.Zen.Test
 
             // Act & Assert
             RunAndVerifyAttackFlag(args, openMethodInfo, expectAttack: false, expectBlocked: false);
+        }
+
+        [Test]
+        public void HandlesParamsCorrectly()
+        {
+            // Arrange
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
+            var unsafeInput = "../secrets.txt";
+            _realContext.ParsedUserInput = new Dictionary<string, string> { { "form.path", unsafeInput } };
+
+            // Test params array
+            var methodWithParams = typeof(TestMethods).GetMethod("MethodWithParams");
+            var methodWithParamsArgs = new object[] { "safe.txt", unsafeInput };
+            RunAndVerifyAttackFlag(methodWithParamsArgs, methodWithParams, expectAttack: true, expectBlocked: true);
+
+            // Test optional parameter
+            var methodWithOptional = typeof(TestMethods).GetMethod("MethodWithOptional");
+            var methodWithOptionalArgs = new object[] { "safe.txt", unsafeInput };
+            RunAndVerifyAttackFlag(methodWithOptionalArgs, methodWithOptional, expectAttack: true, expectBlocked: true);
+
+            // Test ref parameter
+            var methodWithRefParam = typeof(TestMethods).GetMethod("MethodWithRefParam");
+            var methodWithRefParamArgs = new object[] { "safe.txt", unsafeInput };
+            RunAndVerifyAttackFlag(methodWithRefParamArgs, methodWithRefParam, expectAttack: true, expectBlocked: true);
+
+            // Test out parameter
+            var methodWithOutParam = typeof(TestMethods).GetMethod("MethodWithOutParam");
+            var methodWithOutParamArgs = new object[] { "safe.txt", unsafeInput };
+            RunAndVerifyAttackFlag(methodWithOutParamArgs, methodWithOutParam, expectAttack: true, expectBlocked: true);
+
+            // Test array parameter
+            var methodWithPathArray = typeof(TestMethods).GetMethod("MethodWithPathArray");
+            var methodWithPathArrayArgs = new object[] { new string[] { "safe.txt", unsafeInput } };
+            RunAndVerifyAttackFlag(methodWithPathArrayArgs, methodWithPathArray, expectAttack: true, expectBlocked: true);
+
+            // Test mixed parameters
+            var methodWithMixedArgs = typeof(TestMethods).GetMethod("MethodWithMixedArgs");
+            var methodWithMixedArgsArgs = new object[] { unsafeInput, "safe.txt" };
+            RunAndVerifyAttackFlag(methodWithMixedArgsArgs, methodWithMixedArgs, expectAttack: true, expectBlocked: true);
         }
 
         [TestCase("/etc/shadow")]

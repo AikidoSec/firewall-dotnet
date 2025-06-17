@@ -14,7 +14,7 @@ namespace Aikido.Zen.Test.Helpers
             public void WithRef(ref int a, string b) { }
             public void WithOut(out int a, string b) { a = 1; }
             public void WithParams(int a, params string[] b) { }
-            public void WithMixed(int a, ref int b, out int c, string d = "d_val", params object[] e) { c = 3; }
+            public void WithMixed(int a, ref int b, string c = "d_val", params object[] d) { }
             public static void StaticMethod(int a, string b) { }
         }
 
@@ -67,18 +67,6 @@ namespace Aikido.Zen.Test.Helpers
         }
 
         [Test]
-        public void BuildArgumentDictionary_WithOut_BuildsCorrectDictionary()
-        {
-            var method = typeof(TestMethods).GetMethod(nameof(TestMethods.WithOut));
-            var args = new object[] { "hello" }; // 'out' param is not in args
-            var result = ArgumentHelper.BuildArgumentDictionary(args, method);
-
-            Assert.That(result.Count, Is.EqualTo(2));
-            Assert.That(result["a"], Is.Null);
-            Assert.That(result["b"], Is.EqualTo("hello"));
-        }
-
-        [Test]
         public void BuildArgumentDictionary_WithParams_ParamsProvided_BuildsCorrectDictionary()
         {
             var method = typeof(TestMethods).GetMethod(nameof(TestMethods.WithParams));
@@ -113,15 +101,14 @@ namespace Aikido.Zen.Test.Helpers
             var args = new object[] { 1, 2, "hello", 100, 200.5 }; // a, b, d, e...
             var result = ArgumentHelper.BuildArgumentDictionary(args, method);
 
-            Assert.That(result.Count, Is.EqualTo(5));
+            Assert.That(result.Count, Is.EqualTo(4));
             Assert.That(result["a"], Is.EqualTo(1));
             Assert.That(result["b"], Is.EqualTo(2)); // ref
-            Assert.That(result["c"], Is.Null); // out
-            Assert.That(result["d"], Is.EqualTo("hello")); // optional provided
-            Assert.That(result["e"], Is.TypeOf<object[]>());
-            var eArray = (object[])result["e"];
-            Assert.That(eArray.Length, Is.EqualTo(2));
-            Assert.That(eArray[0], Is.EqualTo(100));
+            Assert.That(result["c"], Is.EqualTo("hello")); // optional provided
+            Assert.That(result["d"], Is.TypeOf<object[]>());
+            var dArray = (object[])result["d"];
+            Assert.That(dArray.Length, Is.EqualTo(2));
+            Assert.That(dArray[0], Is.EqualTo(100));
         }
 
         [Test]
