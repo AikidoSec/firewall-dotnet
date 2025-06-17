@@ -20,7 +20,7 @@ namespace Aikido.Zen.Core.Patches
             bool blocked = false;
             try
             {
-                attackDetected = PathTraversalHelper.DetectPathTraversal(__args, assemblyName, context, operation);
+                attackDetected = PathTraversalHelper.DetectPathTraversal(__args, __originalMethod, assemblyName, context, operation);
                 blocked = attackDetected && !EnvironmentHelper.DryMode;
             }
             catch
