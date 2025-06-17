@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using Aikido.Zen.Core.Exceptions;
@@ -7,44 +6,35 @@ using Aikido.Zen.Core.Helpers;
 
 namespace Aikido.Zen.Core.Patches
 {
+    /// <summary>
+    /// Provides the core logic for handling patched file system operations.
+    /// </summary>
     public static class IOPatcher
     {
-        private const string operationKind = "fs_op";
-        public static bool OnFileOperation(object[] __args, System.Reflection.MethodBase __originalMethod, Context context)
+        private const string OperationKind = "fs_op";
+
+        /// <summary>
+        /// A generic handler for file operations that checks for path traversal attacks.
+        /// </summary>
+        /// <param name="paths">The file or directory paths involved in the operation.</param>
+        /// <param name="originalMethod">The original method being patched.</param>
+        /// <param name="context">The context for the current operation.</param>
+        /// <returns>Always returns true. Throws an exception if a blocked attack is detected.</returns>
+        public static bool OnFileOperation(string[] paths, MethodBase originalMethod, Context context)
         {
-            var methodInfo = __originalMethod as MethodInfo;
+            var methodInfo = originalMethod as MethodInfo;
             var operation = $"{methodInfo?.DeclaringType?.Name}.{methodInfo?.Name}";
             var assemblyName = methodInfo?.DeclaringType?.Assembly.GetName().Name;
             var stopwatch = Stopwatch.StartNew();
-            bool withoutContext = context == null;
-            bool attackDetected = false;
-            bool blocked = false;
+            var withoutContext = context == null;
+            var attackDetected = false;
+            var blocked = false;
+
             try
             {
-                var arguments = ArgumentHelper.BuildArgumentDictionary(__args, __originalMethod);
-                var paths = new List<string>();
-
-                foreach (var arg in arguments)
+                if (paths != null && paths.Length > 0)
                 {
-                    // Heuristic to identify path arguments. Most are named "path", some are "sourceFileName" or "destFileName"
-                    var paramName = arg.Key.ToLowerInvariant();
-                    if (paramName != "path" && paramName != "paths" && !paramName.EndsWith("filename"))
-                        continue;
-
-                    switch (arg.Value)
-                    {
-                        case string p when !string.IsNullOrEmpty(p):
-                            paths.Add(p);
-                            break;
-                        case string[] ps:
-                            paths.AddRange(ps);
-                            break;
-                    }
-                }
-
-                if (paths.Count > 0)
-                {
-                    attackDetected = PathTraversalHelper.DetectPathTraversal(paths.ToArray(), assemblyName, context, operation);
+                    attackDetected = PathTraversalHelper.DetectPathTraversal(paths, assemblyName, context, operation);
                 }
 
                 blocked = attackDetected && !EnvironmentHelper.DryMode;
@@ -53,18 +43,22 @@ namespace Aikido.Zen.Core.Patches
             {
                 LogHelper.ErrorLog(Agent.Logger, "Error during Path Traversal detection.");
             }
-            stopwatch.Stop();
-            try
+            finally
             {
-                Agent.Instance?.Context?.OnInspectedCall(operation, operationKind, stopwatch.Elapsed.TotalMilliseconds, attackDetected, blocked, withoutContext);
+                stopwatch.Stop();
+                try
+                {
+                    Agent.Instance?.Context?.OnInspectedCall(operation, OperationKind, stopwatch.Elapsed.TotalMilliseconds, attackDetected, blocked, withoutContext);
+                }
+                catch
+                {
+                    LogHelper.ErrorLog(Agent.Logger, "Error recording OnInspectedCall stats.");
+                }
             }
-            catch
-            {
-                LogHelper.ErrorLog(Agent.Logger, "Error recording OnInspectedCall stats.");
-            }
+
             if (blocked)
             {
-                throw AikidoException.PathTraversalDetected(operation, __originalMethod.Name);
+                throw AikidoException.PathTraversalDetected(operation, originalMethod.Name);
             }
             return true;
         }
