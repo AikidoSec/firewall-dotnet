@@ -123,17 +123,15 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             var aikidoContext = (Context)httpContext.Items["Aikido.Zen.Context"];
             if (aikidoContext == null)
             {
-                LogHelper.DebugLog(Agent.Logger, "Aikido context is null, skipping route addition");
+                LogHelper.DebugLog(Agent.Logger, "Aikido context is null, skipping route");
                 return;
             }
             responseHandled = true;
 
             int statusCode = httpContext.Response.StatusCode;
-            LogHelper.DebugLog(Agent.Logger, $"Checking if we should discover route with status code {statusCode}");
             if (RouteHelper.ShouldAddRoute(aikidoContext, statusCode))
             {
                 Agent.Instance.AddRoute(aikidoContext);
-                LogHelper.DebugLog(Agent.Logger, "Route added");
                 Agent.Instance.IncrementTotalRequestCount();
             }
         }

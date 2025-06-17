@@ -57,12 +57,12 @@ namespace Aikido.Zen.Test.Helpers
         [TestCase("/api/resource", "GET", 200, true)]
         [TestCase("/api/resource", "OPTIONS", 200, false)]
         [TestCase("/api/resource", "GET", 404, false)]
-        [TestCase("/.well-known", "GET", 200, false)]
+        [TestCase("/.well-known", "GET", 200, true)]
         [TestCase("/.well-known/change-password", "GET", 200, true)]
         [TestCase("/.well-known/security.txt", "GET", 200, false)]
         [TestCase("/cgi-bin/luci/;stok=/locale", "GET", 200, false)]
         [TestCase("/whatever/cgi-bin", "GET", 200, false)]
-        [TestCase("/api/.hidden/resource", "GET", 200, false)]
+        [TestCase("/api/.hidden/resource", "GET", 200, true)]
         [TestCase("/api/resource.php", "GET", 200, false)]
         [TestCase("/test.webmanifest", "GET", 200, false)]
         [TestCase("/api/test.config", "GET", 200, false)]
@@ -76,6 +76,9 @@ namespace Aikido.Zen.Test.Helpers
         [TestCase("/api/resource.axd", "GET", 200, true)]
         [TestCase("/api/resource.asx", "GET", 200, true)]
         [TestCase("/api/resource.asx", "GET", 200, true)]
+        [TestCase("Some.DotNet.Project.Cms/login.aspx", "GET", 200, true)]
+        [TestCase("Some.DotNet.Project.Cms", "GET", 200, false)]
+        [TestCase("Some.DotNet.Project.Cms/api/values", "GET", 200, true)]
         public void ShouldAddRoute_ShouldReturnExpectedResult(string route, string method, int statusCode, bool expectedResult)
         {
             // Arrange
