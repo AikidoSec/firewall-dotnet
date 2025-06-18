@@ -23,5 +23,8 @@
     <file src="bin\Release\net461\Aikido.Zen.DotNetFramework.dll" target="lib\net461" />
     <file src="bin\Release\net47\Aikido.Zen.DotNetFramework.dll" target="lib\net47" />
     <file src="bin\Release\net48\Aikido.Zen.DotNetFramework.dll" target="lib\net48" />
+    <file src="bin\Release\net461\Aikido.Zen.Core.dll" target="lib\net461" />
+    <file src="bin\Release\net47\Aikido.Zen.Core.dll" target="lib\net47" />
+    <file src="bin\Release\net48\Aikido.Zen.Core.dll" target="lib\net48" />
   </files>
 </package>
