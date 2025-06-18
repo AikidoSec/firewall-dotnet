@@ -13,11 +13,8 @@
     <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.2" />
     <PackageReference Include="System.Text.Json" Version="9.0.2" />
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
-  </ItemGroup>
+    <PackageReference Include="Aikido.Zen.DotNetCore" Version="$(E2ETestPackageVersion)" />
 
-  <ItemGroup>
-    <ProjectReference Include="..\Aikido.Zen.DotNetCore\Aikido.Zen.DotNetCore.csproj" />
-    <ProjectReference Include="..\Aikido.Zen.Core\Aikido.Zen.Core.csproj" />
   </ItemGroup>
 
 </Project>
