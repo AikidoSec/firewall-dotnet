@@ -23,4 +23,11 @@
       <PrivateAssets>all</PrivateAssets>
     </ProjectReference>
   </ItemGroup>
+
+  <Target Name="RemoveConflict" BeforeTargets="ResolveAssemblyReferences">
+    <ItemGroup>
+      <ReferencePath Remove="@(ReferencePath)" Condition="'%(ReferencePath.Filename)' == 'Aikido.Zen.Core' and '%(ReferencePath.NuGetPackageId)' == 'Aikido.Zen.DotNetCore'" />
+    </ItemGroup>
+  </Target>
+
 </Project>
