@@ -21,7 +21,7 @@
         <frameworkReference name="Microsoft.AspNetCore.App" />
       </group>
     </frameworkReferences>
-    <<dependencies>
+    <dependencies>
         <dependency id="Lib.Harmony" version="[2.3.5,)" />
     </dependencies>
   </metadata>
