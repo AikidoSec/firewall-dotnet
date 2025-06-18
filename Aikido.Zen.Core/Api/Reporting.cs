@@ -32,9 +32,13 @@ namespace Aikido.Zen.Core.Api
 
                 _httpClient = new HttpClient(handler);
             }
-            _httpClient = httpClient;
-            httpClient.DefaultRequestHeaders.AcceptEncoding.Add(new StringWithQualityHeaderValue("gzip"));
-            httpClient.DefaultRequestHeaders.AcceptEncoding.Add(new StringWithQualityHeaderValue("deflate"));
+            else
+            {
+                _httpClient = httpClient;
+            }
+
+            _httpClient.DefaultRequestHeaders.AcceptEncoding.Add(new StringWithQualityHeaderValue("gzip"));
+            _httpClient.DefaultRequestHeaders.AcceptEncoding.Add(new StringWithQualityHeaderValue("deflate"));
         }
 
         public async Task<ReportingAPIResponse> ReportAsync(string token, object @event, int timeoutInMS)
