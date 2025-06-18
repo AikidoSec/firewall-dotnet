@@ -23,6 +23,11 @@ namespace Aikido.Zen.DotNetCore.Middleware
 
         public async Task InvokeAsync(HttpContext httpContext, RequestDelegate next)
         {
+            if (!TryPrepareContext(httpContext, out var queryDictionary, out var headersDictionary, out var context))
+            {
+                // if preparing the context failed, we can't capture the request, so we just call the next middleware
+                await next(httpContext);
+            }
             try
             {
                 LogHelper.DebugLog(Agent.Logger, "Capturing request context");
@@ -33,23 +38,6 @@ namespace Aikido.Zen.DotNetCore.Middleware
                     await next(httpContext);
                     return;
                 }
-                // Convert headers and query parameters to thread-safe dictionaries
-                var queryDictionary = new ConcurrentDictionary<string, string[]>(httpContext.Request.Query.ToDictionary(q => q.Key, q => q.Value.ToArray()));
-                var headersDictionary = new ConcurrentDictionary<string, string[]>(httpContext.Request.Headers.ToDictionary(h => h.Key, h => h.Value.ToArray()));
-
-                var context = new Context
-                {
-                    Url = httpContext.Request.Path.ToString(),
-                    Method = httpContext.Request.Method,
-                    Query = queryDictionary,
-                    Headers = headersDictionary,
-                    RemoteAddress = httpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty, // no need to use X-FORWARDED-FOR, .NET Core already handles this
-                    Cookies = httpContext.Request.Cookies.ToDictionary(c => c.Key, c => c.Value),
-                    UserAgent = headersDictionary.TryGetValue("User-Agent", out var userAgent) ? userAgent.FirstOrDefault() ?? string.Empty : string.Empty,
-                    Source = Environment.Version.Major >= 5 ? "DotNetCore" : "DotNetFramework",
-                    Route = GetParametrizedRoute(httpContext),
-                    User = httpContext.Items["Aikido.Zen.CurrentUser"] as User
-                };
 
                 Agent.Instance.SetContextMiddlewareInstalled(true);
 
@@ -96,7 +84,6 @@ namespace Aikido.Zen.DotNetCore.Middleware
             catch (Exception e)
             {
                 LogHelper.ErrorLog(Agent.Logger, $"Error capturing request: {e.Message}");
-                throw;
             }
 
             await next(httpContext);
@@ -116,6 +103,39 @@ namespace Aikido.Zen.DotNetCore.Middleware
             {
                 LogHelper.ErrorLog(Agent.Logger, $"Error adding route: {ex.Message}");
             }
+        }
+
+        private bool TryPrepareContext(HttpContext httpContext, out ConcurrentDictionary<string, string[]> queryDictionary, out ConcurrentDictionary<string, string[]> headersDictionary, out Context context)
+        {
+            try
+            {
+                // Convert headers and query parameters to thread-safe dictionaries
+                queryDictionary = new ConcurrentDictionary<string, string[]>(httpContext.Request.Query.ToDictionary(q => q.Key, q => q.Value.ToArray()));
+                headersDictionary = new ConcurrentDictionary<string, string[]>(httpContext.Request.Headers.ToDictionary(h => h.Key, h => h.Value.ToArray()));
+                context = new Context
+                {
+                    Url = httpContext.Request.Path.ToString(),
+                    Method = httpContext.Request.Method,
+                    Query = queryDictionary,
+                    Headers = headersDictionary,
+                    RemoteAddress = httpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty, // no need to use X-FORWARDED-FOR, .NET Core already handles this
+                    Cookies = httpContext.Request.Cookies.ToDictionary(c => c.Key, c => c.Value),
+                    UserAgent = headersDictionary.TryGetValue("User-Agent", out var userAgent) ? userAgent.FirstOrDefault() ?? string.Empty : string.Empty,
+                    Source = Environment.Version.Major >= 5 ? "DotNetCore" : "DotNetFramework",
+                    Route = GetParametrizedRoute(httpContext),
+                    User = httpContext.Items["Aikido.Zen.CurrentUser"] as User
+                };
+                return true;
+            }
+            catch (Exception ex)
+            {
+                LogHelper.ErrorLog(Agent.Logger, $"Error preparing context: {ex.Message}");
+                queryDictionary = null;
+                headersDictionary = null;
+                context = null;
+                return false;
+            }
+
         }
 
         /// <summary>

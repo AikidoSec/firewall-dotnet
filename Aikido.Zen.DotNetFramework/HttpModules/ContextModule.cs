@@ -56,10 +56,10 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
 
         private async Task Context_BeginRequest(object sender, EventArgs e)
         {
+            LogHelper.DebugLog(Agent.Logger, "Capturing request context");
+            var httpContext = ((HttpApplication)sender).Context;
             try
             {
-                LogHelper.DebugLog(Agent.Logger, "Capturing request context");
-                var httpContext = ((HttpApplication)sender).Context;
                 responseHandled = false;
                 // if the ip is bypassed, skip the handling of the request
                 if (Agent.Instance.Context.BlockList.IsIPBypassed(GetClientIp(httpContext)) || EnvironmentHelper.IsDisabled)
