@@ -23,8 +23,8 @@
     <MakeDir Directories="$(TargetDir)" Condition="!Exists('$(TargetDir)')" />
     <WriteLinesToFile File="$(VersionPropsFile)" Lines="@(VersionPropsLines)" Overwrite="true" />
     <Message Importance="High" Text="Packing Aikido.Zen.DotNetCore before E2E test run (version $(PackVersion))..." />
-    <!-- before packing, we need to remove the local-packages directory to remove any stale packages -->
-    <RemoveDir Directories="$(LocalNuGetDir)" />
+    <!-- before packing, we need to empty the local-packages directory (ecxept for the readme.md file) to remove any stale packages -->
+    <Delete Files="$(LocalNuGetDir)\**\*.*" Exclude="$(LocalNuGetDir)\readme.md" />
     <MakeDir Directories="$(LocalNuGetDir)" />
     <!-- pack the Aikido.Zen.DotNetCore project and put the package in the local-packages directory -->
     <Exec Command="dotnet pack &quot;$(MainProjectPath)&quot; -c Release -o &quot;$(LocalNuGetDir)&quot; /p:PackageVersion=$(PackVersion)" />
