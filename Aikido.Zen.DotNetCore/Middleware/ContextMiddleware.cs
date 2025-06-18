@@ -23,36 +23,37 @@ namespace Aikido.Zen.DotNetCore.Middleware
 
         public async Task InvokeAsync(HttpContext httpContext, RequestDelegate next)
         {
-            LogHelper.DebugLog(Agent.Logger, "Capturing request context");
-            // if the ip is bypassed, skip the handling of the request
-            if (Agent.Instance.Context.BlockList.IsIPBypassed(httpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty) || EnvironmentHelper.IsDisabled)
-            {
-                // call the next middleware
-                await next(httpContext);
-                return;
-            }
-            // Convert headers and query parameters to thread-safe dictionaries
-            var queryDictionary = new ConcurrentDictionary<string, string[]>(httpContext.Request.Query.ToDictionary(q => q.Key, q => q.Value.ToArray()));
-            var headersDictionary = new ConcurrentDictionary<string, string[]>(httpContext.Request.Headers.ToDictionary(h => h.Key, h => h.Value.ToArray()));
-
-            var context = new Context
-            {
-                Url = httpContext.Request.Path.ToString(),
-                Method = httpContext.Request.Method,
-                Query = queryDictionary,
-                Headers = headersDictionary,
-                RemoteAddress = httpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty, // no need to use X-FORWARDED-FOR, .NET Core already handles this
-                Cookies = httpContext.Request.Cookies.ToDictionary(c => c.Key, c => c.Value),
-                UserAgent = headersDictionary.TryGetValue("User-Agent", out var userAgent) ? userAgent.FirstOrDefault() ?? string.Empty : string.Empty,
-                Source = Environment.Version.Major >= 5 ? "DotNetCore" : "DotNetFramework",
-                Route = GetParametrizedRoute(httpContext),
-                User = httpContext.Items["Aikido.Zen.CurrentUser"] as User
-            };
-
-            Agent.Instance.SetContextMiddlewareInstalled(true);
-
             try
             {
+                LogHelper.DebugLog(Agent.Logger, "Capturing request context");
+                // if the ip is bypassed, skip the handling of the request
+                if (Agent.Instance.Context.BlockList.IsIPBypassed(httpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty) || EnvironmentHelper.IsDisabled)
+                {
+                    // call the next middleware
+                    await next(httpContext);
+                    return;
+                }
+                // Convert headers and query parameters to thread-safe dictionaries
+                var queryDictionary = new ConcurrentDictionary<string, string[]>(httpContext.Request.Query.ToDictionary(q => q.Key, q => q.Value.ToArray()));
+                var headersDictionary = new ConcurrentDictionary<string, string[]>(httpContext.Request.Headers.ToDictionary(h => h.Key, h => h.Value.ToArray()));
+
+                var context = new Context
+                {
+                    Url = httpContext.Request.Path.ToString(),
+                    Method = httpContext.Request.Method,
+                    Query = queryDictionary,
+                    Headers = headersDictionary,
+                    RemoteAddress = httpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty, // no need to use X-FORWARDED-FOR, .NET Core already handles this
+                    Cookies = httpContext.Request.Cookies.ToDictionary(c => c.Key, c => c.Value),
+                    UserAgent = headersDictionary.TryGetValue("User-Agent", out var userAgent) ? userAgent.FirstOrDefault() ?? string.Empty : string.Empty,
+                    Source = Environment.Version.Major >= 5 ? "DotNetCore" : "DotNetFramework",
+                    Route = GetParametrizedRoute(httpContext),
+                    User = httpContext.Items["Aikido.Zen.CurrentUser"] as User
+                };
+
+                Agent.Instance.SetContextMiddlewareInstalled(true);
+
+
                 var request = httpContext.Request;
                 request.EnableBuffering();
 
@@ -90,6 +91,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 // Add user information to the agent
                 // every x minutes, this information will be sent to the Zen server as a heartbeat event, and the collected info will be cleared
                 Agent.Instance.CaptureRequestUser(context);
+                httpContext.Items["Aikido.Zen.Context"] = context;
             }
             catch (Exception e)
             {
@@ -97,16 +99,22 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 throw;
             }
 
-            httpContext.Items["Aikido.Zen.Context"] = context;
             await next(httpContext);
 
             // Capture the response status code and check if the route should be added
             int statusCode = httpContext.Response.StatusCode;
-            if (RouteHelper.ShouldAddRoute(context, statusCode))
+            try
             {
-                LogHelper.DebugLog(Agent.Logger, "Adding route");
-                Agent.Instance.AddRoute(context);
-                Agent.Instance.IncrementTotalRequestCount();
+                if (RouteHelper.ShouldAddRoute(context, statusCode))
+                {
+                    LogHelper.DebugLog(Agent.Logger, "Adding route");
+                    Agent.Instance.AddRoute(context);
+                    Agent.Instance.IncrementTotalRequestCount();
+                }
+            }
+            catch (Exception ex)
+            {
+                LogHelper.ErrorLog(Agent.Logger, $"Error adding route: {ex.Message}");
             }
         }
 
