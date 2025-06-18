@@ -16,7 +16,11 @@
     <PackageReference Include="System.Text.Json" Version="9.0.2" />
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Aikido.Zen.DotNetCore" Version="$(E2ETestPackageVersion)" />
-
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Aikido.Zen.Core\Aikido.Zen.Core.csproj">
+      <PrivateAssets>all</PrivateAssets>
+    </ProjectReference>
+  </ItemGroup>
 </Project>
