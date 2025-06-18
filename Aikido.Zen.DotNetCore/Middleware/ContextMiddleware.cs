@@ -23,6 +23,20 @@ namespace Aikido.Zen.DotNetCore.Middleware
 
         public async Task InvokeAsync(HttpContext httpContext, RequestDelegate next)
         {
+            try
+            {
+                // if the ip is bypassed, skip the handling of the request
+                if (Agent.Instance.Context.BlockList.IsIPBypassed(httpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty) || EnvironmentHelper.IsDisabled)
+                {
+                    // call the next middleware
+                    await next(httpContext);
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                LogHelper.ErrorLog(Agent.Logger, $"Error while checking if the ip is bypassed: {ex.Message}");
+            }
             if (!TryPrepareContext(httpContext, out var queryDictionary, out var headersDictionary, out var context))
             {
                 // if preparing the context failed, we can't capture the request, so we just call the next middleware
@@ -31,13 +45,6 @@ namespace Aikido.Zen.DotNetCore.Middleware
             try
             {
                 LogHelper.DebugLog(Agent.Logger, "Capturing request context");
-                // if the ip is bypassed, skip the handling of the request
-                if (Agent.Instance.Context.BlockList.IsIPBypassed(httpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty) || EnvironmentHelper.IsDisabled)
-                {
-                    // call the next middleware
-                    await next(httpContext);
-                    return;
-                }
 
                 Agent.Instance.SetContextMiddlewareInstalled(true);
 
