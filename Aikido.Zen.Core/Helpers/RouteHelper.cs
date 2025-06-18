@@ -214,6 +214,12 @@ namespace Aikido.Zen.Core.Helpers
             var segments = context.Route
                 .Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
 
+            // If the route is empty, we can allow it.
+            if (segments.Length == 0)
+            {
+                return true;
+            }
+
             // Do not discover routes with dot files like `/path/to/.file` or `/.directory/file`
             // We want to allow discovery of well-known URIs like `/.well-known/acme-challenge`
 

@@ -141,8 +141,10 @@ namespace Aikido.Zen.Test.Helpers
         [TestCase("/api/resource", null, 200, false)] // Null route
         [TestCase("/api/resource", "GET", 199, false)] // Invalid status code below 200
         [TestCase("/api/resource", "GET", 400, false)] // Invalid status code above 399
-        [TestCase("/.hidden/resource", "GET", 200, false)] // Dot file not .well-known
+        [TestCase("/.hidden/resource", "GET", 200, true)] // Dot file not .well-known
+        [TestCase("/.hidden/resource/file.css", "GET", 200, false)] // Dot file not .well-known
         [TestCase("/api/cgi-bin/resource", "GET", 200, false)] // Ignored string in route
+        [TestCase("", "GET", 200, true)] // Empty route
         public void ShouldAddRoute_EdgeCases_ShouldReturnExpectedResult(string? route, string? method, int statusCode, bool expectedResult)
         {
             // Arrange
