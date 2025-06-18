@@ -70,6 +70,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 var context = new Context
                 {
                     Url = httpContext.Request.Path,
+                    AbsoluteUrl = httpContext.Request.Url.ToString(),
                     Method = httpContext.Request.HttpMethod,
                     Query = httpContext.Request.QueryString.AllKeys.ToDictionary(k => k, k => httpContext.Request.QueryString.GetValues(k)),
                     Headers = httpContext.Request.Headers.AllKeys.ToDictionary(k => k, k => httpContext.Request.Headers.GetValues(k)),
@@ -87,6 +88,8 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
 
                 var request = httpContext.Request;
                 var httpData = await HttpHelper.ReadAndFlattenHttpDataAsync(
+                    path: context.Url,
+                    route: context.Route,
                     queryParams: request.QueryString.AllKeys.ToDictionary(k => k, k => request.QueryString.Get(k)),
                     headers: request.Headers.AllKeys.ToDictionary(k => k, k => request.Headers.Get(k)),
                     cookies: request.Cookies.AllKeys.ToDictionary(k => k, k => request.Cookies[k].Value),

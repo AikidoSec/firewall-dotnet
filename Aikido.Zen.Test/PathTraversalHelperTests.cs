@@ -45,7 +45,7 @@ namespace Aikido.Zen.Test.Helpers
         {
             // Arrange
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "false");
-            _context.ParsedUserInput.Add("test", path);
+            _context.ParsedUserInput.Add("body", path);
             object[] args = new object[] { path };
 
             // Act
