@@ -22,58 +22,12 @@
       </group>
     </frameworkReferences>
     <dependencies>
-      <group targetFramework="net9.0">
         <dependency id="Lib.Harmony" version="[2.3.5,)" />
-        <dependency id="Microsoft.AspNetCore.Hosting.Abstractions" version="2.2.0" />
-        <dependency id="Microsoft.AspNetCore.Http" version="2.2.2" />
-        <dependency id="Microsoft.AspNetCore.Routing" version="2.2.2" />
-        <dependency id="Microsoft.AspNetCore.Routing.Abstractions" version="2.2.0" />
-        <dependency id="Microsoft.Extensions.DependencyInjection" version="[9.0,)" />
-        <dependency id="Microsoft.Extensions.Options" version="[9.0,)" />
-        <dependency id="System.Text.Json" version="[9.0.1,)" />
-        <dependency id="Microsoft.Extensions.Logging" version="[9.0,)" />
-        <dependency id="Microsoft.Extensions.Logging.Console" version="[9.0,)" />
-      </group>
-      <group targetFramework="net8.0">
-        <dependency id="Lib.Harmony" version="[2.3.5,)" />
-        <dependency id="Microsoft.AspNetCore.Hosting.Abstractions" version="2.2.0" />
-        <dependency id="Microsoft.AspNetCore.Http" version="2.2.2" />
-        <dependency id="Microsoft.AspNetCore.Routing" version="2.2.2" />
-        <dependency id="Microsoft.AspNetCore.Routing.Abstractions" version="2.2.0" />
-        <dependency id="Microsoft.Extensions.DependencyInjection" version="[8.0,)" />
-        <dependency id="Microsoft.Extensions.Options" version="[8.0,)" />
-        <dependency id="System.Text.Json" version="[8.0.5,)" />
-        <dependency id="Microsoft.Extensions.Logging" version="[8.0,)" />
-          <dependency id="Microsoft.Extensions.Logging.Console" version="[8.0,)" />
-      </group>
-      <group targetFramework="net7.0">
-        <dependency id="Lib.Harmony" version="[2.3.5,)" />
-        <dependency id="Microsoft.AspNetCore.Hosting.Abstractions" version="2.2.0" />
-        <dependency id="Microsoft.AspNetCore.Http" version="2.2.2" />
-        <dependency id="Microsoft.AspNetCore.Routing" version="2.2.2" />
-        <dependency id="Microsoft.AspNetCore.Routing.Abstractions" version="2.2.0" />
-        <dependency id="Microsoft.Extensions.DependencyInjection" version="[7.0,)" />
-        <dependency id="Microsoft.Extensions.Options" version="[7.0,)" />
-        <dependency id="System.Text.Json" version="[8.0.5,)" />
-        <dependency id="Microsoft.Extensions.Logging" version="[7.0,)" />
-          <dependency id="Microsoft.Extensions.Logging.Console" version="[7.0,)" />
-      </group>
-      <group targetFramework="net6.0">
-        <dependency id="Lib.Harmony" version="[2.3.5,)" />
-        <dependency id="Microsoft.AspNetCore.Hosting.Abstractions" version="2.2.0" />
-        <dependency id="Microsoft.AspNetCore.Http" version="2.2.2" />
-        <dependency id="Microsoft.AspNetCore.Routing" version="2.2.2" />
-        <dependency id="Microsoft.AspNetCore.Routing.Abstractions" version="2.2.0" />
-        <dependency id="Microsoft.Extensions.DependencyInjection" version="[6.0,)" />
-        <dependency id="Microsoft.Extensions.Options" version="[6.0,)" />
-        <dependency id="System.Text.Json" version="[6.0,)" />
-        <dependency id="Microsoft.Extensions.Logging" version="[6.0,)" />
-        <dependency id="Microsoft.Extensions.Logging.Console" version="[6.0,)" />
-      </group>
     </dependencies>
   </metadata>
   <files>
     <file src="Aikido.Zen.DotNetCore.targets" target="Build\" />
+    <file src="FodyWeavers.xml" target="Build\" />
     <file src="bin\Release\net9.0\Aikido.Zen.Core.dll" target="lib\net9.0" />
     <file src="bin\Release\net8.0\Aikido.Zen.Core.dll" target="lib\net8.0" />
     <file src="bin\Release\net7.0\Aikido.Zen.Core.dll" target="lib\net7.0" />

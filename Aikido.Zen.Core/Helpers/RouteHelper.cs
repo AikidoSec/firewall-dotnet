@@ -12,6 +12,7 @@ namespace Aikido.Zen.Core.Helpers
 
         private static readonly string[] ExcludedMethods = { "OPTIONS", "HEAD" };
         private static readonly string[] IgnoreExtensions = { "properties", "config", "webmanifest" };
+        private static readonly string[] AllowedExtensions = { "asp", "aspx", "ashx", "asmx", "axd", "asx", "web" };
         private static readonly string[] IgnoreStrings = { "cgi-bin" };
         private static readonly HashSet<string> WellKnownURIs = new HashSet<string>
         {
@@ -184,45 +185,46 @@ namespace Aikido.Zen.Core.Helpers
         /// <returns>True if the route should be added, false otherwise.</returns>
         public static bool ShouldAddRoute(Context context, int httpStatusCode)
         {
+            var logMessage = "Not enough context, skipping route";
             // Check for null context
-            if (context == null)
+            if (context == null || context.Route == null || context.Method == null)
             {
-                LogHelper.DebugLog(Agent.Logger, "Context is null, skipping route");
+                LogHelper.DebugLog(Agent.Logger, logMessage);
                 return false;
             }
+
+            logMessage = $"Status code not valid or method is excluded, skipping route";
 
             // Check if the status code is valid
             bool validStatusCode = httpStatusCode >= 200 && httpStatusCode <= 399;
             if (!validStatusCode)
             {
-                LogHelper.DebugLog(Agent.Logger, $"Invalid status code: {httpStatusCode}, skipping route");
+                LogHelper.DebugLog(Agent.Logger, logMessage);
                 return false;
             }
 
             // Check if the method is excluded
-            if (context.Method == null || ExcludedMethods.Contains(context.Method))
+            if (ExcludedMethods.Contains(context.Method))
             {
-                LogHelper.DebugLog(Agent.Logger, $"Method is null or excluded: {context.Method}, skipping route");
-                return false;
-            }
-
-            // Check for null or empty route
-            if (string.IsNullOrEmpty(context.Route))
-            {
-                LogHelper.DebugLog(Agent.Logger, "Route is null or empty, skipping route");
+                LogHelper.DebugLog(Agent.Logger, logMessage);
                 return false;
             }
 
             // Split the route into segments
-            var segments = context.Route.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+            var segments = context.Route
+                .Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+
+            // If the route is empty, we can allow it.
+            if (segments.Length == 0)
+            {
+                return true;
+            }
 
             // Do not discover routes with dot files like `/path/to/.file` or `/.directory/file`
             // We want to allow discovery of well-known URIs like `/.well-known/acme-challenge`
-            if (!IsWellKnownURI(context.Route) && segments.Any(IsDotFile))
-            {
-                LogHelper.DebugLog(Agent.Logger, "Route contains dot file, skipping route");
-                return false;
-            }
+
+            // in .net dots in route segments are quite common, so we don't check for them, unlike we do for
+            // https://github.com/AikidoSec/firewall-node/blob/a8d2541181d21dbb2b00aa1db17709afc197c74b/library/sources/http-server/shouldDiscoverRoute.ts
 
             if (segments.Any(ContainsIgnoredString))
             {
@@ -230,8 +232,15 @@ namespace Aikido.Zen.Core.Helpers
                 return false;
             }
 
-            // Ensure all segments have allowed extensions
-            return segments.All(IsAllowedExtension);
+            // Ensure the last segment has an allowed extension
+            var isAllowedExtension = IsAllowedExtension(segments.Last());
+            logMessage = $"Extension not allowed, skipping route";
+            if (!isAllowedExtension)
+            {
+                LogHelper.DebugLog(Agent.Logger, logMessage);
+            }
+
+            return isAllowedExtension;
         }
 
         /// <summary>
@@ -368,12 +377,18 @@ namespace Aikido.Zen.Core.Helpers
             if (!string.IsNullOrEmpty(extension))
             {
                 extension = extension.TrimStart('.');
-                if (extension.StartsWith("asp", StringComparison.OrdinalIgnoreCase))
+
+                if (AllowedExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase))
                 {
                     return true;
                 }
 
-                if (extension.Length >= 2 && extension.Length <= 5 || IgnoreExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase))
+                if (IgnoreExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
+
+                if (extension.Length > 1 && extension.Length < 6)
                 {
                     return false;
                 }

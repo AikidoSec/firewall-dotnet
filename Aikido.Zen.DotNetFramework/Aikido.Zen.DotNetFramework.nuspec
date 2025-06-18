@@ -13,22 +13,18 @@
     <tags>firewall .NET</tags>
     <dependencies>
         <dependency id="Lib.Harmony" version="[2.3.5,)" />
-        <dependency id="Microsoft.AspNetCore.Http.Abstractions" version="[2.2.0,)" />
-        <dependency id="Microsoft.AspNetCore.WebUtilities" version="[2.2.0,)" />
-        <dependency id="Microsoft.Extensions.Logging.Abstractions" version="[6.0.0,)" />
-        <dependency id="Microsoft.Extensions.Logging.Console" version="[6.0.0,)" />
-        <dependency id="System.Text.Json" version="[6.0.0,)" />
     </dependencies>
   </metadata>
   <files>
     <file src="Aikido.Zen.DotNetFramework.targets" target="Build\" />
+    <file src="FodyWeavers.xml" target="Build\" />
     <file src="bin\Release\net48\libraries\libzen_internals_x86_64-pc-windows-gnu.dll" target="Build\libraries\" />
     <file src="bin\Release\net48\libraries\libzen_internals_x86_64-pc-windows-gnu.dll.sha256sum" target="Build\libraries\" />
-    <file src="bin\Release\net461\Aikido.Zen.Core.dll" target="lib\net461" />
-    <file src="bin\Release\net47\Aikido.Zen.Core.dll" target="lib\net47" />
-    <file src="bin\Release\net48\Aikido.Zen.Core.dll" target="lib\net48" />
     <file src="bin\Release\net461\Aikido.Zen.DotNetFramework.dll" target="lib\net461" />
     <file src="bin\Release\net47\Aikido.Zen.DotNetFramework.dll" target="lib\net47" />
     <file src="bin\Release\net48\Aikido.Zen.DotNetFramework.dll" target="lib\net48" />
+    <file src="bin\Release\net461\Aikido.Zen.Core.dll" target="lib\net461" />
+    <file src="bin\Release\net47\Aikido.Zen.Core.dll" target="lib\net47" />
+    <file src="bin\Release\net48\Aikido.Zen.Core.dll" target="lib\net48" />
   </files>
 </package>

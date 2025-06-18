@@ -15,54 +15,60 @@ namespace Aikido.Zen.DotNetCore.Middleware
     {
         public async Task InvokeAsync(HttpContext context, RequestDelegate next)
         {
-            LogHelper.DebugLog(Agent.Logger, "Checking if request should be blocked");
-            var agentContext = Agent.Instance.Context;
-            var aikidoContext = context.Items["Aikido.Zen.Context"] as Context;
-            Agent.Instance.SetBlockingMiddlewareInstalled(true);
-
-            // if the context is not found, skip the blocking checks, this likely means that the request is bypassed
-            if (aikidoContext == null)
+            try
             {
-                // call the next middleware
-                await next(context);
-                return;
-            }
-            var user = context.Items["Aikido.Zen.CurrentUser"] as User;
-            if (user != null)
-            {
-                Agent.Instance.Context.AddUser(user, ipAddress: context.Connection.RemoteIpAddress?.ToString());
-            }
+                LogHelper.DebugLog(Agent.Logger, "Checking if request should be blocked");
+                var agentContext = Agent.Instance.Context;
+                var aikidoContext = context.Items["Aikido.Zen.Context"] as Context;
+                Agent.Instance.SetBlockingMiddlewareInstalled(true);
 
-            // block the request if the user is blocked
-            if (Agent.Instance.Context.IsBlocked(aikidoContext, out var reason))
-            {
-                Agent.Instance.Context.AddAbortedRequest();
-                context.Response.StatusCode = 403;
-                LogHelper.DebugLog(Agent.Logger, $"Request blocked: {HttpUtility.HtmlEncode(reason)}");
-                await context.Response.WriteAsync($"Your request is blocked: {HttpUtility.HtmlEncode(reason)}");
-                return;
-            }
-
-            // Check if rate limiting should be applied
-            var remoteAddress = HttpUtility.HtmlEncode(aikidoContext.RemoteAddress); // HTML escape the remote address
-
-            // Use the helper to check all rate limiting rules
-            var (isAllowed, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(aikidoContext, agentContext.Endpoints);
-
-            if (!isAllowed)
-            {
-                Agent.Instance.Context.AddAbortedRequest();
-                context.Response.StatusCode = 429;
-
-                if (effectiveConfig != null)
+                // if the context is not found, skip the blocking checks, this likely means that the request is bypassed
+                if (aikidoContext == null)
                 {
-                    context.Response.Headers.Add("Retry-After", effectiveConfig.WindowSizeInMS.ToString());
+                    // call the next middleware
+                    await next(context);
+                    return;
+                }
+                var user = context.Items["Aikido.Zen.CurrentUser"] as User;
+                if (user != null)
+                {
+                    Agent.Instance.Context.AddUser(user, ipAddress: context.Connection.RemoteIpAddress?.ToString());
                 }
 
-                await context.Response.WriteAsync($"You are rate limited by Aikido firewall. (Your IP: {remoteAddress})");
-                return;
-            }
+                // block the request if the user is blocked
+                if (Agent.Instance.Context.IsBlocked(aikidoContext, out var reason))
+                {
+                    Agent.Instance.Context.AddAbortedRequest();
+                    context.Response.StatusCode = 403;
+                    LogHelper.DebugLog(Agent.Logger, $"Request blocked: {HttpUtility.HtmlEncode(reason)}");
+                    await context.Response.WriteAsync($"Your request is blocked: {HttpUtility.HtmlEncode(reason)}");
+                    return;
+                }
 
+                // Check if rate limiting should be applied
+                var remoteAddress = HttpUtility.HtmlEncode(aikidoContext.RemoteAddress); // HTML escape the remote address
+
+                // Use the helper to check all rate limiting rules
+                var (isAllowed, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(aikidoContext, agentContext.Endpoints);
+
+                if (!isAllowed)
+                {
+                    Agent.Instance.Context.AddAbortedRequest();
+                    context.Response.StatusCode = 429;
+
+                    if (effectiveConfig != null)
+                    {
+                        context.Response.Headers.Add("Retry-After", effectiveConfig.WindowSizeInMS.ToString());
+                    }
+
+                    await context.Response.WriteAsync($"You are rate limited by Aikido firewall. (Your IP: {remoteAddress})");
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                LogHelper.ErrorLog(Agent.Logger, $"Error blocking request: {ex.Message}");
+            }
             await next(context);
         }
     }

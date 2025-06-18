@@ -57,18 +57,28 @@ namespace Aikido.Zen.Test.Helpers
         [TestCase("/api/resource", "GET", 200, true)]
         [TestCase("/api/resource", "OPTIONS", 200, false)]
         [TestCase("/api/resource", "GET", 404, false)]
-        [TestCase("/.well-known", "GET", 200, false)]
+        [TestCase("/.well-known", "GET", 200, true)]
         [TestCase("/.well-known/change-password", "GET", 200, true)]
         [TestCase("/.well-known/security.txt", "GET", 200, false)]
         [TestCase("/cgi-bin/luci/;stok=/locale", "GET", 200, false)]
         [TestCase("/whatever/cgi-bin", "GET", 200, false)]
-        [TestCase("/api/.hidden/resource", "GET", 200, false)]
+        [TestCase("/api/.hidden/resource", "GET", 200, true)]
         [TestCase("/api/resource.php", "GET", 200, false)]
         [TestCase("/test.webmanifest", "GET", 200, false)]
         [TestCase("/api/test.config", "GET", 200, false)]
         [TestCase("/test.properties", "GET", 200, false)]
         [TestCase("/api/resource", "HEAD", 200, false)]
         [TestCase("/api/resource", "GET", 500, false)]
+        [TestCase("/api/resource.asp", "GET", 200, true)]
+        [TestCase("/api/resource.aspx", "GET", 200, true)]
+        [TestCase("/api/resource.ashx", "GET", 200, true)]
+        [TestCase("/api/resource.asmx", "GET", 200, true)]
+        [TestCase("/api/resource.axd", "GET", 200, true)]
+        [TestCase("/api/resource.asx", "GET", 200, true)]
+        [TestCase("/api/resource.asx", "GET", 200, true)]
+        [TestCase("Some.DotNet.Project.Cms/login.aspx", "GET", 200, true)]
+        [TestCase("Some.DotNet.Project.Cms", "GET", 200, false)]
+        [TestCase("Some.DotNet.Project.Cms/api/values", "GET", 200, true)]
         public void ShouldAddRoute_ShouldReturnExpectedResult(string route, string method, int statusCode, bool expectedResult)
         {
             // Arrange
@@ -78,7 +88,7 @@ namespace Aikido.Zen.Test.Helpers
             var result = RouteHelper.ShouldAddRoute(context, statusCode);
 
             // Assert
-            Assert.That(expectedResult, Is.EqualTo(result));
+            Assert.That(expectedResult, Is.EqualTo(result), $"Route: {route}, Method: {method}, StatusCode: {statusCode}, Expected: {expectedResult}, Result: {result}");
         }
 
 
@@ -131,8 +141,10 @@ namespace Aikido.Zen.Test.Helpers
         [TestCase("/api/resource", null, 200, false)] // Null route
         [TestCase("/api/resource", "GET", 199, false)] // Invalid status code below 200
         [TestCase("/api/resource", "GET", 400, false)] // Invalid status code above 399
-        [TestCase("/.hidden/resource", "GET", 200, false)] // Dot file not .well-known
+        [TestCase("/.hidden/resource", "GET", 200, true)] // Dot file not .well-known
+        [TestCase("/.hidden/resource/file.css", "GET", 200, false)] // Dot file not .well-known
         [TestCase("/api/cgi-bin/resource", "GET", 200, false)] // Ignored string in route
+        [TestCase("", "GET", 200, true)] // Empty route
         public void ShouldAddRoute_EdgeCases_ShouldReturnExpectedResult(string? route, string? method, int statusCode, bool expectedResult)
         {
             // Arrange
