@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Weavers xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="FodyWeavers.xsd">
   <Costura>
+    <!-- We can't embed the harmony assembly because it's not a managed assembly -->
+    <!-- Unmanaged32Assemblies and Unmanaged64Assemblies are only supported on windows -->
+    <!-- This means Harmony.Lib will be added as a transient nuget package as an external dependency -->
     <ExcludeAssemblies>
       Lib.Harmony
     </ExcludeAssemblies>
