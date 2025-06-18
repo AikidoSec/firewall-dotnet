@@ -11,12 +11,9 @@
     <license type="expression">MIT</license>
     <copyright>Copyright 2024 Aikido</copyright>
     <tags>firewall .NET</tags>
-    <!--<dependencies>
+    <dependencies>
         <dependency id="Lib.Harmony" version="[2.3.5,)" />
-        <dependency id="Microsoft.AspNetCore.WebUtilities" version="[2.2.0,)" />
-        <dependency id="Microsoft.Extensions.Logging.Abstractions" version="[6.0.0,)" />
-        <dependency id="Microsoft.Extensions.Logging.Console" version="[6.0.0,)" />
-    </dependencies>-->
+    </dependencies>
   </metadata>
   <files>
     <file src="Aikido.Zen.DotNetFramework.targets" target="Build\" />
