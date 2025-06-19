@@ -6,7 +6,7 @@
     <VersionPropsFile>$(MSBuildThisFileDirectory)\..\obj\version.props</VersionPropsFile>
   </PropertyGroup>
 
-  <Target Name="PackMainProject">
+  <Target Name="PackMainProject" Condition="!Exists('$(VersionPropsFile)')">
     <PropertyGroup>
       <Ticks>$([System.DateTime]::UtcNow.Ticks)</Ticks>
       <!-- by using this high version number with a timestamp, we ensure that the package is always newer than the previous one -->
