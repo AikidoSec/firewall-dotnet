@@ -1,0 +1,16 @@
+<Project>
+  <!-- This file is automatically imported by MSBuild before the solution's build process begins. -->
+
+  <!-- Import the targets file that defines the packing logic. -->
+  <Import Project="build/PackAikidoZenBeforeTest.targets" />
+
+  <!--
+    This target runs before the main 'Restore' target for the solution.
+    It calls the 'PackMainProject' target to ensure the local NuGet package is created
+    before any projects that depend on it are restored.
+    The 'PackMainProject' target itself has a condition to only run once.
+  -->
+  <Target Name="PackPackageBeforeSolutionRestore" BeforeTargets="Restore">
+    <CallTarget Targets="PackMainProject" />
+  </Target>
+</Project>
