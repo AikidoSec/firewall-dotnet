@@ -36,8 +36,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Aikido.Zen.Core\Aikido.Zen.Core.csproj">
-      <PrivateAssets>all</PrivateAssets>
-    </ProjectReference>
+    <ProjectReference Include="..\Aikido.Zen.Core\Aikido.Zen.Core.csproj" />
   </ItemGroup>
 </Project>

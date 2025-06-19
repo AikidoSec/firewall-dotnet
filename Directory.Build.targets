@@ -7,4 +7,5 @@
   <Target Name="EnsureLocalPackageSourceExists" BeforeTargets="Restore">
     <MakeDir Directories="$(MSBuildThisFileDirectory)local-packages" />
   </Target>
+  <Import Project=".\build\PackAikidoZenBeforeTest.targets" />
 </Project>

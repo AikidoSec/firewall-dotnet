@@ -41,8 +41,14 @@ jobs:
             dotnet tool install --global Cake.Tool
             dotnet cake --target DownloadLibraries
       - run:
+          name: Pack main project for E2E tests
+          command: dotnet build -t:PackMainProject Aikido.Zen.DotNetCore/Aikido.Zen.DotNetCore.csproj
+      - run:
           name: Restore NuGet Packages
           command: dotnet restore
+      - run:
+          name: Build in release mode
+          command: dotnet build -c Release
       - run:
           name: Run E2E Tests
           command: |
