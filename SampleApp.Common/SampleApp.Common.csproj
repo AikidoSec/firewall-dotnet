@@ -18,16 +18,4 @@
     <PackageReference Include="Aikido.Zen.DotNetCore" Version="$(E2ETestPackageVersion)" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Aikido.Zen.Core\Aikido.Zen.Core.csproj">
-      <PrivateAssets>all</PrivateAssets>
-    </ProjectReference>
-  </ItemGroup>
-
-  <Target Name="RemoveConflict" BeforeTargets="ResolveAssemblyReferences">
-    <ItemGroup>
-      <ReferencePath Remove="@(ReferencePath)" Condition="'%(ReferencePath.Filename)' == 'Aikido.Zen.Core' and '%(ReferencePath.NuGetPackageId)' == 'Aikido.Zen.DotNetCore'" />
-    </ItemGroup>
-  </Target>
-
 </Project>

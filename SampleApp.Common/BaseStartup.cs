@@ -1,8 +1,6 @@
 using System.Net;
 using System.Security.Claims;
 using System.Text.Json;
-using Aikido.Zen.Core;
-using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.DotNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -78,8 +76,12 @@ namespace SampleApp.Common
                 {
                     await next();
                 }
-                catch (AikidoException ex)
+                catch (Exception ex)
                 {
+                    if (!ex.Message.StartsWith("AIKIDO:"))
+                    {
+                        throw;
+                    }
                     context.Response.StatusCode = (int)HttpStatusCode.Forbidden;
                     await context.Response.WriteAsync("Request blocked due to security policy.");
                 }
@@ -172,26 +174,26 @@ namespace SampleApp.Common
                 });
 
                 // Stats endpoint
-                endpoints.MapGet("/api/getStats", () =>
-                {
-                    Thread.Sleep(100); // make sure the stats are updated
-                    var context = Agent.Instance.Context;
-                    if (context == null)
-                    {
-                        return Results.NotFound("Agent context not available.");
-                    }
-                    // Create an anonymous object with the requested stats
-                    var stats = new
-                    {
-                        Domains = string.Join(",", context.Hostnames.Select(h => $"{h.Hostname}:{h.Port}")), // Extract just the hostname strings
-                        Requests = context.Requests.ToString(),
-                        AttacksDetected = context.AttacksDetected.ToString(),
-                        AttacksBlocked = context.AttacksBlocked.ToString(),
-                        RequestsAborted = context.RequestsAborted.ToString()
-                    };
-
-                    return Results.Ok(stats); // Return HTTP 200 OK with the stats object
-                });
+                // endpoints.MapGet("/api/getStats", () =>
+                // {
+                //     Thread.Sleep(100); // make sure the stats are updated
+                //     var context = Agent.Instance.Context;
+                //     if (context == null)
+                //     {
+                //         return Results.NotFound("Agent context not available.");
+                //     }
+                //     // Create an anonymous object with the requested stats
+                //     var stats = new
+                //     {
+                //         Domains = string.Join(",", context.Hostnames.Select(h => $"{h.Hostname}:{h.Port}")), // Extract just the hostname strings
+                //         Requests = context.Requests.ToString(),
+                //         AttacksDetected = context.AttacksDetected.ToString(),
+                //         AttacksBlocked = context.AttacksBlocked.ToString(),
+                //         RequestsAborted = context.RequestsAborted.ToString()
+                //     };
+                //
+                //     return Results.Ok(stats); // Return HTTP 200 OK with the stats object
+                // });
 
                 // generic api endpoint /api/v1/{slug} using mapget
                 endpoints.MapGet("/api/v1/{slug}", (string slug) =>
