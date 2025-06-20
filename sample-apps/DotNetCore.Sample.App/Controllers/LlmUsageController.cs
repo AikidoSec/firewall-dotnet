@@ -36,6 +36,7 @@ namespace DotNetCore.Sample.App.Controllers
         {
             switch (provider)
             {
+                case "anthropic":
                 case "openai":
                     return Ok(OpenaiRequest(provider, model, input));
                 case "azure":
@@ -138,6 +139,7 @@ namespace DotNetCore.Sample.App.Controllers
             var token = _apiKeys["OpenAI"];
             switch (provider)
             {
+                case "rystem":
                 case "openai":
                     token = _apiKeys["OpenAI"];
                     break;
@@ -152,12 +154,18 @@ namespace DotNetCore.Sample.App.Controllers
             var azureClientSecret = configuration["AI:AzureOpenAIClientSecret"]!;
             OpenAiServiceLocator.Configuration.AddOpenAi(settings =>
             {
-                settings.ApiKey = token;
-                settings.Azure.ResourceName = azureResourceName;
-                settings.Azure.ManagedIdentity.Id = azureManagedIdentityClientId;
-                settings.Azure.AppRegistration.ClientId = azureClientId;
-                settings.Azure.AppRegistration.TenantId = azureTenantId;
-                settings.Azure.AppRegistration.ClientSecret = azureClientSecret;
+                if (!string.IsNullOrEmpty(token))
+                    settings.ApiKey = token;
+                if (!string.IsNullOrEmpty(azureResourceName))
+                    settings.Azure.ResourceName = azureResourceName;
+                if (!string.IsNullOrEmpty(azureManagedIdentityClientId))
+                    settings.Azure.ManagedIdentity.Id = azureManagedIdentityClientId;
+                if (!string.IsNullOrEmpty(azureClientId))
+                    settings.Azure.AppRegistration.ClientId = azureClientId;
+                if (!string.IsNullOrEmpty(azureTenantId))
+                    settings.Azure.AppRegistration.TenantId = azureTenantId;
+                if (!string.IsNullOrEmpty(azureClientSecret))
+                    settings.Azure.AppRegistration.ClientSecret = azureClientSecret;
             }, "client");
             return OpenAiServiceLocator.Instance.Create("client");
         }

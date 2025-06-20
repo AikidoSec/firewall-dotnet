@@ -8,10 +8,15 @@ GET https://localhost:7086/llm-usage/request/provider/openai/model/gpt-4o?input=
 # Basic Azure OpenAI request
 GET https://localhost:7086/llm-usage/request/provider/azure/model/gpt-4?input=What%20is%20the%20capital%20of%20France%3F
 
+
+### Basic Rystem.OpenAi request
+# Basic Rystem request
+GET https://localhost:7086/llm-usage/request/provider/rystem/model/gpt-4?input=What%20is%20the%20capital%20of%20France%3F
+
 ### Test LLM Usage - Anthropic
 
 # Basic Anthropic request
-GET https://localhost:7086/llm-usage/request/provider/anthropic/model/claude-3-sonnet?input=Explain%20quantum%20computing
+GET https://localhost:7086/llm-usage/request/provider/anthropic/model/claude-3-5-haiku-latest?input=Explain%20quantum%20computing
 
 ### Test LLM Usage - Gemini
 
@@ -21,7 +26,7 @@ GET https://localhost:7086/llm-usage/request/provider/gemini/model/gemini-pro?in
 ### Test LLM Usage - Bedrock
 
 # Basic AWS Bedrock request
-GET https://localhost:7086/llm-usage/request/provider/bedrock/model/anthropic.claude-3.5-sonnet?input=What%20are%20the%20benefits%20of%20cloud%20computing%3F
+GET https://localhost:7086/llm-usage/request/provider/bedrock/model/anthropic.claude-3-5-haiku-latest?input=What%20are%20the%20benefits%20of%20cloud%20computing%3F
 
 ### Test LLM Usage - Different Models
 
