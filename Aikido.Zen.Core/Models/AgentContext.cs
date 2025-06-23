@@ -17,6 +17,7 @@ namespace Aikido.Zen.Core.Models
         private const int MaxRoutes = 5000;
 
         private readonly AgentStats _stats = new AgentStats();
+        private readonly AiStats _aiStats = new AiStats();
         private readonly AgentConfiguration _config = new AgentConfiguration();
         private readonly ConcurrentLFUDictionary<string, Host> _hostnames = new ConcurrentLFUDictionary<string, Host>(MaxHostnames);
         private readonly ConcurrentLFUDictionary<string, UserExtended> _users = new ConcurrentLFUDictionary<string, UserExtended>(MaxUsers);
@@ -127,6 +128,7 @@ namespace Aikido.Zen.Core.Models
         {
             _config.Clear();
             _stats.Reset();
+            _aiStats.Reset();
             _hostnames.Clear();
             _users.Clear();
             _routes.Clear();
@@ -143,6 +145,19 @@ namespace Aikido.Zen.Core.Models
         public void OnInspectedCall(string operation, string kind, double durationInMs, bool attackDetected, bool blocked, bool withoutContext)
         {
             _stats.OnInspectedCall(operation, kind, durationInMs, attackDetected, blocked, withoutContext);
+        }
+
+        /// <summary>
+        /// Records an AI call with token usage.
+        /// </summary>
+        /// <param name="provider">The AI provider name.</param>
+        /// <param name="model">The AI model name.</param>
+        /// <param name="inputTokens">Number of input tokens used.</param>
+        /// <param name="outputTokens">Number of output tokens generated.</param>
+        /// <param name="route">Optional route information.</param>
+        public void OnAiCall(string provider, string model, long inputTokens = 0, long outputTokens = 0, string route = null)
+        {
+            _aiStats.OnAiCall(provider, model, inputTokens, outputTokens, route);
         }
 
         /// <summary>
@@ -229,6 +244,7 @@ namespace Aikido.Zen.Core.Models
         public BlockList BlockList => _config.BlockList;
         public Regex BlockedUserAgents => _config.BlockedUserAgents;
         public AgentStats Stats => _stats;
+        public AiStats AiStats => _aiStats;
         public AgentConfiguration Config => _config;
     }
 }

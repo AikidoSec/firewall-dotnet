@@ -10,6 +10,7 @@ namespace Aikido.Zen.Core.Models.Events
         public string Type => "heartbeat";
 
         public AgentStats Stats { get; set; } = new AgentStats();
+        public IEnumerable<AiInfo> Ai { get; set; }
         public IEnumerable<Host> Hostnames { get; set; }
         public IEnumerable<Route> Routes { get; set; }
         public IEnumerable<UserExtended> Users { get; set; }
@@ -35,8 +36,10 @@ namespace Aikido.Zen.Core.Models.Events
                 Users = context.Users
                     .ToList(),
                 Routes = context.Routes
-                    .ToList()
+                    .ToList(),
+                Ai = new List<AiInfo>()
             };
+            context.AiStats.CopyProviders((ICollection<AiInfo>)heartbeat.Ai);
             heartbeat.Stats.CopyOperations(context.Stats.Operations);
             heartbeat.Stats.Requests.Total = context.Requests;
             heartbeat.Stats.Requests.Aborted = context.RequestsAborted;
