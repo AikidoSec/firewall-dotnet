@@ -41,7 +41,7 @@ namespace Aikido.Zen.Core.Patches
 
                 if (!TryExtractTokensFromResult(result, out var tokens))
                 {
-                    LogHelper.ErrorLog(Agent.Logger, $"Failed to extract token usage from LLM result for provider: {provider}, model: {model}");
+                    LogHelper.ErrorLog(Agent.Logger, $"Failed to extract token usage from LLM result for provider: {assembly}, model: {model}");
                 }
 
                 // Record AI statistics
