@@ -2,8 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
+
+[assembly: InternalsVisibleTo("Aikido.Zen.Test")]
 
 namespace Aikido.Zen.Core.Patches
 {
@@ -13,21 +16,6 @@ namespace Aikido.Zen.Core.Patches
     public static class LLMPatcher
     {
         private const string operationKind = "llm_op";
-
-        /// <summary>
-        /// Patches the OnLLMCallExecuting method to track and monitor LLM API calls
-        /// </summary>
-        /// <param name="__args">The arguments passed to the method.</param>
-        /// <param name="__originalMethod">The original method being patched.</param>
-        /// <param name="messages">The chat messages being sent to the LLM.</param>
-        /// <param name="assembly">The assembly name containing the LLM client.</param>
-        /// <param name="context">The current Aikido context.</param>
-        /// <returns>True to allow the original method to execute, false to block it.</returns>
-        public static bool OnLLMCallExecuting(object[] __args, MethodBase __originalMethod, object messages, string assembly, Context context)
-        {
-            // TODO: Implement LLM call monitoring
-            return true;
-        }
 
         /// <summary>
         /// Handles completed LLM API calls to extract token usage and track statistics
@@ -42,6 +30,7 @@ namespace Aikido.Zen.Core.Patches
         {
             try
             {
+                var stopWatch = Stopwatch.StartNew();
                 if (context == null || result == null) return;
 
 
@@ -62,18 +51,29 @@ namespace Aikido.Zen.Core.Patches
 
                 // Record AI statistics
                 Agent.Instance.Context.OnAiCall(provider, model, tokens.inputTokens, tokens.outputTokens, context.Route);
+
+
+                // record sink statistics
+                Agent.Instance.Context.OnInspectedCall(
+                    operation: $"{__originalMethod.DeclaringType.Namespace}.{__originalMethod.DeclaringType.Name}.{__originalMethod.Name}",
+                    kind: operationKind,
+                    durationInMs: stopWatch.ElapsedMilliseconds,
+                    attackDetected: false,
+                    blocked: false,
+                    withoutContext: context != null
+                );
             }
             catch
             {
                 // Silently handle any errors to avoid affecting the original LLM call
-                try { LogHelper.ErrorLog(Agent.Logger, "Error tracking LLM call statistics."); } catch {/*ignore*/}
+                LogHelper.ErrorLog(Agent.Logger, "Error tracking LLM call statistics.");
             }
         }
 
         /// <summary>
         /// Extracts the provider name
         /// </summary>
-        private static bool TryGetProvider(string searchString, out string provider)
+        internal static bool TryGetProvider(string searchString, out string provider)
         {
             provider = "unknown";
             searchString = searchString.ToLower();
@@ -111,7 +111,7 @@ namespace Aikido.Zen.Core.Patches
         /// <summary>
         /// Converts a dynamic object to a dictionary using reflection
         /// </summary>
-        private static Dictionary<string, object> ConvertObjectToDictionary(object obj)
+        internal static Dictionary<string, object> ConvertObjectToDictionary(object obj)
         {
             var dictionary = new Dictionary<string, object>();
 
@@ -146,7 +146,7 @@ namespace Aikido.Zen.Core.Patches
         /// <summary>
         /// Extracts the model name from the result based on the provider
         /// </summary>
-        private static bool TryExtractModelFromResult(object result, out string model)
+        internal static bool TryExtractModelFromResult(object result, out string model)
         {
             model = "unknown";
             try
@@ -169,7 +169,7 @@ namespace Aikido.Zen.Core.Patches
             }
         }
 
-        private static bool TryExtractTokensFromResult(object result, out (long inputTokens, long outputTokens) tokens)
+        internal static bool TryExtractTokensFromResult(object result, out (long inputTokens, long outputTokens) tokens)
         {
             try
             {
@@ -182,26 +182,40 @@ namespace Aikido.Zen.Core.Patches
 
                 if (resultAsDictionary.TryGetValue("Usage", out object usage))
                 {
+                    var iTokensFound = false;
+                    var oTokensFound = false;
                     var usageAsDictionary = ConvertObjectToDictionary(usage);
                     long? inputTokens = null;
                     long? outputTokens = null;
 
                     // OpenAI / Azure OpenAI client
                     if (usageAsDictionary.TryGetValue("InputTokenCount", out var input))
+                    {
                         inputTokens = Convert.ToInt64(input);
+                        iTokensFound = true;
+                    }
                     // Rystem.OpenAi client
                     else if (usageAsDictionary.TryGetValue("PromptTokens", out var prompt))
+                    {
                         inputTokens = Convert.ToInt64(prompt);
+                        iTokensFound = true;
+                    }
 
                     // OpenAI / Azure OpenAI client
                     if (usageAsDictionary.TryGetValue("OutputTokenCount", out var output))
+                    {
                         outputTokens = Convert.ToInt64(output);
+                        oTokensFound = true;
+                    }
                     // Rystem.OpenAi client
                     else if (usageAsDictionary.TryGetValue("CompletionTokens", out var completion))
+                    {
                         outputTokens = Convert.ToInt64(completion);
+                        oTokensFound = true;
+                    }
 
                     tokens = (inputTokens ?? 0, outputTokens ?? 0);
-                    return true;
+                    return iTokensFound && oTokensFound;
                 }
 
             }

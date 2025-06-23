@@ -30,13 +30,13 @@ namespace Aikido.Zen.Core.Helpers
                 if (typeName.StartsWith("ValueTask`") && resultType.IsGenericType)
                 {
                     var resultProperty = resultType.GetProperty("Result");
-                    resolvedResult = resultProperty?.GetValue(result) ?? result;
+                    resolvedResult = resultProperty?.GetValue(result);
                 }
                 // Handle Task<T>
                 else if (typeName.StartsWith("Task`") && resultType.IsGenericType)
                 {
                     var resultProperty = resultType.GetProperty("Result");
-                    resolvedResult = resultProperty?.GetValue(result) ?? result;
+                    resolvedResult = resultProperty?.GetValue(result);
                 }
                 // Handle IAsyncEnumerable<T>
                 else if (typeFullName?.Contains("IAsyncEnumerable") == true)
@@ -47,7 +47,7 @@ namespace Aikido.Zen.Core.Helpers
                 else if (typeName.StartsWith("ClientResult`") && resultType.IsGenericType)
                 {
                     var resultProperty = resultType.GetProperty("Value");
-                    resolvedResult = resultProperty?.GetValue(result) ?? result;
+                    resolvedResult = resultProperty?.GetValue(result);
                 }
             }
             catch
