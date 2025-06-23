@@ -39,18 +39,13 @@ namespace Aikido.Zen.Core.Patches
                     LogHelper.ErrorLog(Agent.Logger, $"Failed to extract model from LLM result for model: {model}");
                 }
 
-                if (!TryGetProvider($"{model} {assembly} {result.GetType().ToString()}", out var provider))
-                {
-                    LogHelper.ErrorLog(Agent.Logger, $"Failed to extract provider from LLM for model: {model}, provider: {provider}");
-                }
-
                 if (!TryExtractTokensFromResult(result, out var tokens))
                 {
                     LogHelper.ErrorLog(Agent.Logger, $"Failed to extract token usage from LLM result for provider: {provider}, model: {model}");
                 }
 
                 // Record AI statistics
-                Agent.Instance.Context.OnAiCall(provider, model, tokens.inputTokens, tokens.outputTokens, context.Route);
+                Agent.Instance.Context.OnAiCall(assembly, model, tokens.inputTokens, tokens.outputTokens, context.Route);
 
 
                 // record sink statistics
@@ -71,9 +66,12 @@ namespace Aikido.Zen.Core.Patches
         }
 
         /// <summary>
-        /// Extracts the provider name
+        /// Extracts the cloud provider name
         /// </summary>
-        internal static bool TryGetProvider(string searchString, out string provider)
+        /// <param name="searchString">The search string to extract the provider from.</param>
+        /// <param name="provider">The extracted provider name.</param>
+        /// <returns>True if the provider was extracted successfully, false otherwise. Not being used at the moment.</returns>
+        internal static bool TryGetCloudProvider(string searchString, out string provider)
         {
             provider = "unknown";
             searchString = searchString.ToLower();

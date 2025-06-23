@@ -217,7 +217,7 @@ namespace Aikido.Zen.Test
         public void TryGetProvider_WithKnownProviders_ReturnsCorrectProvider(string searchString, string expectedProvider)
         {
             // Act
-            var result = LLMPatcher.TryGetProvider(searchString, out var actualProvider);
+            var result = LLMPatcher.TryGetCloudProvider(searchString, out var actualProvider);
 
             // Assert
             Assert.That(result, Is.True);
@@ -231,7 +231,7 @@ namespace Aikido.Zen.Test
         public void TryGetProvider_WithUnknownProviders_ReturnsFalse(string searchString)
         {
             // Act
-            var result = LLMPatcher.TryGetProvider(searchString, out var actualProvider);
+            var result = LLMPatcher.TryGetCloudProvider(searchString, out var actualProvider);
 
             // Assert
             Assert.That(result, Is.False);
@@ -242,7 +242,7 @@ namespace Aikido.Zen.Test
         public void TryGetProvider_WithMultipleProviders_ReturnsFirstMatch()
         {
             // Azure should take precedence over OpenAI
-            var result = LLMPatcher.TryGetProvider("gpt-4o Azure.OpenAI.ChatClient", out var actualProvider);
+            var result = LLMPatcher.TryGetCloudProvider("gpt-4o Azure.OpenAI.ChatClient", out var actualProvider);
 
             Assert.That(result, Is.True);
             Assert.That(actualProvider, Is.EqualTo("azure"));
@@ -252,7 +252,7 @@ namespace Aikido.Zen.Test
         public void TryGetProvider_WithCaseInsensitivity_ReturnsCorrectProvider()
         {
             // Test case insensitivity
-            var result = LLMPatcher.TryGetProvider("GPT-4O AZURE.AI.OPENAI.CHATCLIENT", out var actualProvider);
+            var result = LLMPatcher.TryGetCloudProvider("GPT-4O AZURE.AI.OPENAI.CHATCLIENT", out var actualProvider);
 
             Assert.That(result, Is.True);
             Assert.That(actualProvider, Is.EqualTo("azure"));
@@ -262,7 +262,7 @@ namespace Aikido.Zen.Test
         public void TryGetProvider_WithClaudeInModelName_ReturnsAnthropic()
         {
             // Test that "claude" in model name correctly identifies Anthropic
-            var result = LLMPatcher.TryGetProvider("claude-3-sonnet OpenAI.Chat.ChatClient", out var actualProvider);
+            var result = LLMPatcher.TryGetCloudProvider("claude-3-sonnet OpenAI.Chat.ChatClient", out var actualProvider);
 
             Assert.That(result, Is.True);
             Assert.That(actualProvider, Is.EqualTo("anthropic"));
