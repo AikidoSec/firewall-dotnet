@@ -444,3 +444,4 @@ summary_no_zen.json
 # Local packages for testing. See /local-packages/README.md for details.
 /local-packages/*
 !/local-packages/README.md
+/temp-extract

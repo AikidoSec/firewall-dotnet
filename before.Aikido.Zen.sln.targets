@@ -5,12 +5,7 @@
   <Import Project="build/PackAikidoZenBeforeTest.targets" />
 
   <!--
-    This target runs before the main 'Restore' target for the solution.
-    It calls the 'PackMainProject' target to ensure the local NuGet package is created
-    before any projects that depend on it are restored.
-    The 'PackMainProject' target itself has a condition to only run once.
+    E2E packaging is now triggered after DotNetCore project builds via TriggerE2EPackaging target
+    in the Aikido.Zen.DotNetCore.csproj file, so this is no longer needed.
   -->
-  <Target Name="PackPackageBeforeSolutionRestore" BeforeTargets="Restore">
-    <CallTarget Targets="PackMainProject" />
-  </Target>
 </Project>

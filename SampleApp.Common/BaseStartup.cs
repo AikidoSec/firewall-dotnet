@@ -9,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using SampleApp.Common.Controllers;
+using Aikido.Zen.Core;
 
 namespace SampleApp.Common
 {
@@ -78,7 +79,7 @@ namespace SampleApp.Common
                 }
                 catch (Exception ex)
                 {
-                    if (!ex.Message.StartsWith("AIKIDO:"))
+                    if (!ex.GetType().Assembly.FullName!.StartsWith("Aikido.Zen") && !ex.Source!.StartsWith("Aikido.Zen"))
                     {
                         throw;
                     }
@@ -174,26 +175,26 @@ namespace SampleApp.Common
                 });
 
                 // Stats endpoint
-                // endpoints.MapGet("/api/getStats", () =>
-                // {
-                //     Thread.Sleep(100); // make sure the stats are updated
-                //     var context = Agent.Instance.Context;
-                //     if (context == null)
-                //     {
-                //         return Results.NotFound("Agent context not available.");
-                //     }
-                //     // Create an anonymous object with the requested stats
-                //     var stats = new
-                //     {
-                //         Domains = string.Join(",", context.Hostnames.Select(h => $"{h.Hostname}:{h.Port}")), // Extract just the hostname strings
-                //         Requests = context.Requests.ToString(),
-                //         AttacksDetected = context.AttacksDetected.ToString(),
-                //         AttacksBlocked = context.AttacksBlocked.ToString(),
-                //         RequestsAborted = context.RequestsAborted.ToString()
-                //     };
-                //
-                //     return Results.Ok(stats); // Return HTTP 200 OK with the stats object
-                // });
+                endpoints.MapGet("/api/getStats", () =>
+                {
+                    Thread.Sleep(100); // make sure the stats are updated
+                    var context = Agent.Instance.Context;
+                    if (context == null)
+                    {
+                        return Results.NotFound("Agent context not available.");
+                    }
+                    // Create an anonymous object with the requested stats
+                    var stats = new
+                    {
+                        Domains = string.Join(",", context.Hostnames.Select(h => $"{h.Hostname}:{h.Port}")), // Extract just the hostname strings
+                        Requests = context.Requests.ToString(),
+                        AttacksDetected = context.AttacksDetected.ToString(),
+                        AttacksBlocked = context.AttacksBlocked.ToString(),
+                        RequestsAborted = context.RequestsAborted.ToString()
+                    };
+
+                    return Results.Ok(stats); // Return HTTP 200 OK with the stats object
+                });
 
                 // generic api endpoint /api/v1/{slug} using mapget
                 endpoints.MapGet("/api/v1/{slug}", (string slug) =>

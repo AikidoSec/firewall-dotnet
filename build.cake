@@ -305,13 +305,19 @@ Task("Pack")
 
             foreach (var project in projects)
             {
-                var specFile = project.Replace(".csproj", ".nuspec");
-                var nugetPackSettings = new NuGetPackSettings
+                var packSettings = new DotNetPackSettings
                 {
+                    Configuration = configuration,
                     OutputDirectory = "./artifacts",
-                    Version = libVersion,
+                    NoBuild = false,
+                    NoRestore = false,
+                    ArgumentCustomization = args => args
+                        .Append($"/p:PackageVersion={libVersion}")
+                        .Append($"/p:Version={libVersion}")
+                        .Append($"/p:AssemblyVersion={libVersion}")
+                        .Append($"/p:FileVersion={libVersion}")
                 };
-                NuGetPack(specFile, nugetPackSettings);
+                DotNetPack(project, packSettings);
             }
             Information("Pack task completed successfully.");
         }
