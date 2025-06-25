@@ -115,28 +115,7 @@ Task("Build")
                 MSBuild(project, msBuildSettings);
             }
 
-            // Build test projects in the specified configuration
-            var testProjects = GetFiles("./**/Aikido.Zen.Test*.csproj")
-                .Where(p => !p.FullPath.Contains("End2End"));
 
-            var testBuildSettings = new MSBuildSettings
-            {
-                Configuration = configuration, // Use the specified configuration for tests
-                ToolVersion = MSBuildToolVersion.VS2022,
-                Verbosity = Verbosity.Quiet,
-                PlatformTarget = PlatformTarget.MSIL,
-                MaxCpuCount = 1,
-                DetailedSummary = false,
-                NodeReuse = true
-            }
-            .WithTarget("Build")
-            .WithProperty("version", version);
-
-            foreach (var project in testProjects)
-            {
-                Information($"Building test project {project} in {configuration} mode...");
-                MSBuild(project, testBuildSettings);
-            }
 
             Information("Build task completed successfully.");
         }
@@ -158,8 +137,30 @@ Task("Test")
         var coverageDir = MakeAbsolute(Directory("./coverage"));
         EnsureDirectoryExists(coverageDir);
 
-        // Get test projects from Aikido.Zen.Test directory
-        var testProjects = GetFiles("./**/Aikido.Zen.Test*.csproj") as IEnumerable<FilePath>;
+        // Get unit test projects (exclude E2E tests)
+        var testProjects = GetFiles("./**/Aikido.Zen.Test*.csproj")
+            .Where(p => !p.FullPath.Contains("End2End")) as IEnumerable<FilePath>;
+
+        // Build test projects first
+        var version = libVersion.Split('-')[0];
+        var testBuildSettings = new MSBuildSettings
+        {
+            Configuration = configuration,
+            ToolVersion = MSBuildToolVersion.VS2022,
+            Verbosity = Verbosity.Quiet,
+            PlatformTarget = PlatformTarget.MSIL,
+            MaxCpuCount = 1,
+            DetailedSummary = false,
+            NodeReuse = true
+        }
+        .WithTarget("Build")
+        .WithProperty("version", version);
+
+        foreach (var project in testProjects)
+        {
+            Information($"Building test project {project} in {configuration} mode...");
+            MSBuild(project, testBuildSettings);
+        }
         foreach (var project in testProjects)
         {
             // skip the e2e tests
@@ -306,9 +307,40 @@ Task("TestE2E")
     .IsDependentOn("Build")
     .Does(() =>
     {
-        // Get test projects from Aikido.Zen.Test.End2End directory
-        var testProjects = GetFiles("./Aikido.Zen.Test.End2End/*.csproj");
-        foreach (var project in testProjects)
+        // Build E2E test projects and sample apps first
+        var version = libVersion.Split('-')[0];
+        var e2eBuildSettings = new MSBuildSettings
+        {
+            Configuration = configuration,
+            ToolVersion = MSBuildToolVersion.VS2022,
+            Verbosity = Verbosity.Quiet,
+            PlatformTarget = PlatformTarget.MSIL,
+            MaxCpuCount = 1,
+            DetailedSummary = false,
+            NodeReuse = true
+        }
+        .WithTarget("Build")
+        .WithProperty("version", version);
+
+        // Build E2E test project
+        var e2eTestProjects = GetFiles("./Aikido.Zen.Test.End2End/*.csproj");
+        foreach (var project in e2eTestProjects)
+        {
+            Information($"Building E2E test project {project} in {configuration} mode...");
+            MSBuild(project, e2eBuildSettings);
+        }
+
+        // Build sample apps and mock server
+        var sampleProjects = GetFiles("./e2e/**/*.csproj")
+            .Concat(GetFiles("./SampleApp.Common/*.csproj"));
+        foreach (var project in sampleProjects)
+        {
+            Information($"Building sample/mock project {project} in {configuration} mode...");
+            MSBuild(project, e2eBuildSettings);
+        }
+
+        // Run E2E tests
+        foreach (var project in e2eTestProjects)
         {
             DotNetTest(project.FullPath, new DotNetTestSettings
             {
