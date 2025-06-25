@@ -330,10 +330,13 @@ Task("TestE2E")
             MSBuild(project, e2eBuildSettings);
         }
 
-        // Build sample apps and mock server
-        var sampleProjects = GetFiles("./e2e/**/*.csproj")
-            .Concat(GetFiles("./SampleApp.Common/*.csproj"));
-        foreach (var project in sampleProjects)
+        // Build sample apps and mock server from e2e directory
+        var e2eSampleProjects = GetFiles("./e2e/sample-apps/**/*.csproj");
+        var mockProject = GetFiles("./e2e/Aikido.Zen.Server.Mock/*.csproj");
+        var commonProject = GetFiles("./SampleApp.Common/*.csproj");
+        var projectsToBuild = e2eSampleProjects.Concat(mockProject).Concat(commonProject);
+
+        foreach (var project in projectsToBuild)
         {
             Information($"Building sample/mock project {project} in {configuration} mode...");
             MSBuild(project, e2eBuildSettings);
