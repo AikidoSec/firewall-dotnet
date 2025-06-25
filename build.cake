@@ -87,9 +87,18 @@ Task("Build")
         {
             // if the version is a prerelease, we need to remove the suffix to avoid assemblyinfo errors
             var version = libVersion.Split('-')[0];
+
+            // Build only the main projects (Core, DotNetCore, DotNetFramework) in Release mode
+            // This avoids dependency issues with sample apps and E2E tests
+            var mainProjects = new[] {
+                "./Aikido.Zen.Core/Aikido.Zen.Core.csproj",
+                "./Aikido.Zen.DotNetCore/Aikido.Zen.DotNetCore.csproj",
+                "./Aikido.Zen.DotNetFramework/Aikido.Zen.DotNetFramework.csproj"
+            };
+
             var msBuildSettings = new MSBuildSettings
             {
-                Configuration = configuration,
+                Configuration = "Release", // Always build in Release mode
                 ToolVersion = MSBuildToolVersion.VS2022,
                 Verbosity = Verbosity.Quiet,
                 PlatformTarget = PlatformTarget.MSIL,
@@ -100,13 +109,35 @@ Task("Build")
             .WithTarget("Build")
             .WithProperty("version", version);
 
-            var projects = GetFiles("./**/*.csproj")
-                .Where(p => !p.FullPath.Contains("sample-apps") && !p.FullPath.Contains("Aikido.Zen.Benchmarks"));
-
-            foreach (var project in projects)
+            foreach (var project in mainProjects)
             {
+                Information($"Building {project} in Release mode...");
                 MSBuild(project, msBuildSettings);
             }
+
+            // Build test projects in the specified configuration
+            var testProjects = GetFiles("./**/Aikido.Zen.Test*.csproj")
+                .Where(p => !p.FullPath.Contains("End2End"));
+
+            var testBuildSettings = new MSBuildSettings
+            {
+                Configuration = configuration, // Use the specified configuration for tests
+                ToolVersion = MSBuildToolVersion.VS2022,
+                Verbosity = Verbosity.Quiet,
+                PlatformTarget = PlatformTarget.MSIL,
+                MaxCpuCount = 1,
+                DetailedSummary = false,
+                NodeReuse = true
+            }
+            .WithTarget("Build")
+            .WithProperty("version", version);
+
+            foreach (var project in testProjects)
+            {
+                Information($"Building test project {project} in {configuration} mode...");
+                MSBuild(project, testBuildSettings);
+            }
+
             Information("Build task completed successfully.");
         }
         catch (Exception ex)

@@ -71,12 +71,10 @@
     <None Include="$(OutputPath)libraries\**\*.*" Pack="true" PackagePath="build\libraries\" />
   </ItemGroup>
 
-  <Target Name="CopyProjectReferencesToPackage" DependsOnTargets="ResolveReferences">
+    <Target Name="CopyProjectReferencesToPackage" DependsOnTargets="ResolveReferences">
     <ItemGroup>
-      <!-- Force include the Core assembly in the package -->
-      <TfmSpecificPackageFile Include="@(ReferenceCopyLocalPaths)"
-                              Condition="'%(ReferenceCopyLocalPaths.ReferenceSourceTarget)' == 'ProjectReference'"
-                              PackagePath="lib/$(TargetFramework)/%(FileName)%(Extension)" />
+      <!-- Include Core project assemblies in the package -->
+      <BuildOutputInPackage Include="@(ReferenceCopyLocalPaths->WithMetadataValue('ReferenceSourceTarget', 'ProjectReference'))" />
     </ItemGroup>
   </Target>
 
