@@ -96,23 +96,25 @@ Task("Build")
                 "./Aikido.Zen.DotNetFramework/Aikido.Zen.DotNetFramework.csproj"
             };
 
-            var msBuildSettings = new MSBuildSettings
+            var buildSettings = new DotNetBuildSettings
             {
                 Configuration = "Release", // Always build in Release mode
-                ToolVersion = MSBuildToolVersion.VS2022,
-                Verbosity = Verbosity.Quiet,
-                PlatformTarget = PlatformTarget.MSIL,
-                MaxCpuCount = 1,
-                DetailedSummary = false,
-                NodeReuse = true
-            }
-            .WithTarget("Build")
-            .WithProperty("version", version);
+                Verbosity = DotNetVerbosity.Quiet,
+                ArgumentCustomization = args => args
+                    .Append($"/p:version={version}")
+                    .Append("/p:MaxCpuCount=1")
+                    .Append("/p:NodeReuse=true")
+            };
 
             foreach (var project in mainProjects)
             {
+                if (!IsRunningOnWindows() && project.Contains("DotNetFramework"))
+                {
+                    Information($"Skipping .NET Framework project {project} on a non-Windows OS.");
+                    continue;
+                }
                 Information($"Building {project} in Release mode...");
-                MSBuild(project, msBuildSettings);
+                DotNetBuild(project, buildSettings);
             }
 
 
@@ -143,23 +145,25 @@ Task("Test")
 
         // Build test projects first
         var version = libVersion.Split('-')[0];
-        var testBuildSettings = new MSBuildSettings
+        var testBuildSettings = new DotNetBuildSettings
         {
             Configuration = configuration,
-            ToolVersion = MSBuildToolVersion.VS2022,
-            Verbosity = Verbosity.Quiet,
-            PlatformTarget = PlatformTarget.MSIL,
-            MaxCpuCount = 1,
-            DetailedSummary = false,
-            NodeReuse = true
-        }
-        .WithTarget("Build")
-        .WithProperty("version", version);
+            Verbosity = DotNetVerbosity.Quiet,
+            ArgumentCustomization = args => args
+                .Append($"/p:version={version}")
+                .Append("/p:MaxCpuCount=1")
+                .Append("/p:NodeReuse=true")
+        };
 
         foreach (var project in testProjects)
         {
+            if (!IsRunningOnWindows() && project.FullPath.Contains("DotNetFramework"))
+            {
+                Information($"Skipping .NET Framework test project {project.FullPath} on a non-Windows OS.");
+                continue;
+            }
             Information($"Building test project {project} in {configuration} mode...");
-            MSBuild(project, testBuildSettings);
+            DotNetBuild(project.FullPath, testBuildSettings);
         }
         foreach (var project in testProjects)
         {
@@ -309,25 +313,27 @@ Task("TestE2E")
     {
         // Build E2E test projects and sample apps first
         var version = libVersion.Split('-')[0];
-        var e2eBuildSettings = new MSBuildSettings
+        var e2eBuildSettings = new DotNetBuildSettings
         {
             Configuration = configuration,
-            ToolVersion = MSBuildToolVersion.VS2022,
-            Verbosity = Verbosity.Quiet,
-            PlatformTarget = PlatformTarget.MSIL,
-            MaxCpuCount = 1,
-            DetailedSummary = false,
-            NodeReuse = true
-        }
-        .WithTarget("Build")
-        .WithProperty("version", version);
+            Verbosity = DotNetVerbosity.Quiet,
+            ArgumentCustomization = args => args
+                .Append($"/p:version={version}")
+                .Append("/p:MaxCpuCount=1")
+                .Append("/p:NodeReuse=true")
+        };
 
         // Build E2E test project
         var e2eTestProjects = GetFiles("./Aikido.Zen.Test.End2End/*.csproj");
         foreach (var project in e2eTestProjects)
         {
+            if (!IsRunningOnWindows() && project.FullPath.Contains("DotNetFramework"))
+            {
+                Information($"Skipping .NET Framework E2E test project {project} on a non-Windows OS.");
+                continue;
+            }
             Information($"Building E2E test project {project} in {configuration} mode...");
-            MSBuild(project, e2eBuildSettings);
+            DotNetBuild(project.FullPath, e2eBuildSettings);
         }
 
         // Build sample apps and mock server from e2e directory
@@ -338,8 +344,13 @@ Task("TestE2E")
 
         foreach (var project in projectsToBuild)
         {
+            if (!IsRunningOnWindows() && project.FullPath.Contains("DotNetFramework"))
+            {
+                Information($"Skipping .NET Framework sample/mock project {project} on a non-Windows OS.");
+                continue;
+            }
             Information($"Building sample/mock project {project} in {configuration} mode...");
-            MSBuild(project, e2eBuildSettings);
+            DotNetBuild(project.FullPath, e2eBuildSettings);
         }
 
         // Run E2E tests
