@@ -1,0 +1,11 @@
+<Project>
+  <!-- This file is automatically imported by MSBuild before the solution's build process begins. -->
+
+  <!-- Import the targets file that defines the packing logic. -->
+  <Import Project="build/PackAikidoZenBeforeTest.targets" />
+
+  <!--
+    E2E packaging is now triggered after DotNetCore project builds via TriggerE2EPackaging target
+    in the Aikido.Zen.DotNetCore.csproj file, so this is no longer needed.
+  -->
+</Project>

@@ -6,10 +6,24 @@
     <AssemblyName>Aikido.Zen.DotNetFramework</AssemblyName>
     <Deterministic>true</Deterministic>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+
+    <!-- Package Metadata -->
+    <PackageId>Aikido.Zen.DotNetFramework</PackageId>
+    <Authors>Aikido Security</Authors>
+    <Company>Aikido Security</Company>
+    <Product>Aikido Security Zen .NET Framework Firewall</Product>
+    <Description>Aikido Security Zen .NET Framework Firewall</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <Copyright>Copyright 2024 Aikido</Copyright>
+    <PackageTags>firewall .NET</PackageTags>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <IsPackable>true</IsPackable>
+    <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);CopyProjectReferencesToPackage</TargetsForTfmSpecificBuildOutput>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Aikido.Zen.Core\Aikido.Zen.Core.csproj" />
+    <ProjectReference Include="..\Aikido.Zen.Core\Aikido.Zen.Core.csproj" PrivateAssets="none" />
   </ItemGroup>
 
   <ItemGroup>
@@ -63,6 +77,18 @@
     <Reference Include="System.Web" />
   </ItemGroup>
 
+  <!-- Include build targets and FodyWeavers.xml in package -->
+  <ItemGroup>
+    <None Include="Aikido.Zen.DotNetFramework.targets" Pack="true" PackagePath="build\Aikido.Zen.DotNetFramework.targets" />
+    <None Include="FodyWeavers.xml" Pack="true" PackagePath="build\FodyWeavers.xml" />
+  </ItemGroup>
+
+  <!-- Include libraries in package for net48 target framework -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
+    <None Include="$(OutputPath)libraries\libzen_internals_x86_64-pc-windows-gnu.dll" Pack="true" PackagePath="build\libraries\libzen_internals_x86_64-pc-windows-gnu.dll" />
+    <None Include="$(OutputPath)libraries\libzen_internals_x86_64-pc-windows-gnu.dll.sha256sum" Pack="true" PackagePath="build\libraries\libzen_internals_x86_64-pc-windows-gnu.dll.sha256sum" />
+  </ItemGroup>
+
   <ItemGroup>
     <None Update="app.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -71,4 +97,10 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
+
+  <Target Name="CopyProjectReferencesToPackage" DependsOnTargets="ResolveReferences">
+    <ItemGroup>
+      <BuildOutputInPackage Include="@(ReferenceCopyLocalPaths->WithMetadataValue('ReferenceSourceTarget', 'ProjectReference'))" />
+    </ItemGroup>
+  </Target>
 </Project>

@@ -1,5 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <Import Project="..\obj\version.props" Condition="Exists('..\obj\version.props')" />
+
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -13,11 +15,7 @@
     <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.2" />
     <PackageReference Include="System.Text.Json" Version="9.0.2" />
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Aikido.Zen.DotNetCore\Aikido.Zen.DotNetCore.csproj" />
-    <ProjectReference Include="..\Aikido.Zen.Core\Aikido.Zen.Core.csproj" />
+    <PackageReference Include="Aikido.Zen.DotNetCore" Version="$(E2ETestPackageVersion)" />
   </ItemGroup>
 
 </Project>

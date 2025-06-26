@@ -8,7 +8,7 @@ fi
 
 # Build the sample app first
 echo "...Building the sample app..."
-dotnet build "$1" > /dev/null 2>&1
+dotnet build "$1" --configuration Release > /dev/null 2>&1
 
 # Check if mock server is running and ready
 echo "...Checking mock server health..."

@@ -1,0 +1,18 @@
+<Project>
+  <!--
+    This target ensures that the local-packages directory exists before NuGet tries to restore packages.
+    This is necessary for CI environments where a solution-level restore is performed, as NuGet checks for
+    the existence of local sources before any project-specific targets have a chance to run.
+  -->
+  <Target Name="EnsureLocalPackageSourceExists" BeforeTargets="Restore">
+    <MakeDir Directories="$(MSBuildThisFileDirectory)local-packages" />
+  </Target>
+  <Import Project=".\build\PackAikidoZenBeforeTest.targets" />
+  <!--
+    This target runs after 'Clean' and removes the version.props file.
+    This ensures that the packing logic runs again on the next build after a clean.
+  -->
+  <Target Name="CleanVersionProps" AfterTargets="Clean">
+    <Delete Files="$(MSBuildThisFileDirectory)obj\version.props" ContinueOnError="true" />
+  </Target>
+</Project>

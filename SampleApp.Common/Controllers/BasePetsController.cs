@@ -1,11 +1,12 @@
+using System.Diagnostics;
+using System.Text.Json;
+using Aikido.Zen.Core;
+using Aikido.Zen.Core.Helpers;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
-using System.Text.Json;
-using SampleApp.Common.Models;
-using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Mvc;
-using System.Diagnostics;
-using Aikido.Zen.Core.Exceptions;
+using Microsoft.AspNetCore.Routing;
+using SampleApp.Common.Models;
 
 namespace SampleApp.Common.Controllers
 {
@@ -54,13 +55,11 @@ namespace SampleApp.Common.Controllers
                     var result = ExecuteCommand(command!);
                     return Results.Ok("command executed");
                 }
-                catch (AikidoException ex)
+                catch (Exception ex)
                 {
-                    //throw
-                    throw;
-                }
-                catch
-                {
+                    var aikidoContext = context.Items["Aikido.Zen.Context"] as Aikido.Zen.Core.Context;
+                    if (aikidoContext == null || aikidoContext.AttackDetected == false || !EnvironmentHelper.DryMode)
+                        throw;
                     // this command doesn't work on windows, so let's pretend it worked
                     return Results.Ok("command executed");
                 }

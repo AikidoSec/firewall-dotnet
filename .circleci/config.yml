@@ -36,23 +36,14 @@ jobs:
           name: Install dotnet tools
           command: dotnet tool restore
       - run:
-          name: Download zen binaries
+          name: Run E2E tests via Cake script
           command: |
             dotnet tool install --global Cake.Tool
-            dotnet cake --target DownloadLibraries
-      - run:
-          name: Restore NuGet Packages
-          command: dotnet restore
-      - run:
-          name: Run E2E Tests
-          command: |
             # Set terminal size to avoid logger failure
             # https://github.com/dotnet/msbuild/issues/11213
             stty cols 120
             stty rows 50
-            dotnet test "Aikido.Zen.Test.End2End/Aikido.Zen.Test.End2End.csproj" \
-              --configuration Release \
-              --logger "console;"
+            dotnet cake --target=TestE2E --configuration=Release --framework=<< parameters.dotnet_version >>
 
 workflows:
   test_on_pr:
