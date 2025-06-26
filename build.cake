@@ -74,7 +74,7 @@ Task("DownloadLibraries")
 Task("Restore")
     .Does(() =>
     {
-        NuGetRestore(solution);
+        DotNetRestore(solution);
     });
 
 Task("Build")
