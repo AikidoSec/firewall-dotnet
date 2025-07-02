@@ -7,7 +7,25 @@
     <PackageOutputPath>..\nupkgs</PackageOutputPath>
     <UserSecretsId>97bd5157-97c6-4825-833a-933ce895cbc0</UserSecretsId>
     <NoWarn>NU1605</NoWarn>
+    <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);CopyProjectReferencesToPackage</TargetsForTfmSpecificBuildOutput>
+
+    <!-- Package Metadata -->
+    <PackageId>Aikido.Zen.DotNetCore</PackageId>
+    <Authors>Aikido Security</Authors>
+    <Company>Aikido Security</Company>
+    <Product>Aikido Security Zen .NET Core Firewall</Product>
+    <Description>Aikido Security Zen .NET Core Firewall</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Copyright>Copyright 2024 Aikido</Copyright>
+    <PackageTags>firewall .NET</PackageTags>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <IsPackable>true</IsPackable>
   </PropertyGroup>
+
+  <!-- Framework References for ASP.NET Core -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net6.0' OR '$(TargetFramework)' == 'net7.0' OR '$(TargetFramework)' == 'net8.0' OR '$(TargetFramework)' == 'net9.0'">
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Lib.Harmony" Version="2.3.5" />
@@ -38,6 +56,32 @@
   <ItemGroup>
     <ProjectReference Include="..\Aikido.Zen.Core\Aikido.Zen.Core.csproj">
       <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </ProjectReference>
   </ItemGroup>
+
+  <!-- Include build targets and FodyWeavers.xml in package -->
+  <ItemGroup>
+    <None Include="Aikido.Zen.DotNetCore.targets" Pack="true" PackagePath="build\Aikido.Zen.DotNetCore.targets" />
+    <None Include="FodyWeavers.xml" Pack="true" PackagePath="build\FodyWeavers.xml" />
+  </ItemGroup>
+
+  <!-- Include libraries in package from the highest target framework that has them -->
+  <ItemGroup Condition="Exists('$(OutputPath)libraries')">
+    <None Include="$(OutputPath)libraries\**\*.*" Pack="true" PackagePath="build\libraries\" />
+  </ItemGroup>
+
+    <Target Name="CopyProjectReferencesToPackage" DependsOnTargets="ResolveReferences">
+    <ItemGroup>
+      <!-- Include Core project assemblies in the package -->
+      <BuildOutputInPackage Include="@(ReferenceCopyLocalPaths->WithMetadataValue('ReferenceSourceTarget', 'ProjectReference'))" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Run the E2E packaging target after build (targets file is imported via Directory.Build.targets) -->
+  <!-- Don't run during pack operations to avoid infinite loop -->
+  <Target Name="TriggerE2EPackaging" AfterTargets="Build" Condition="'$(IsE2EPackaging)' != 'true'">
+    <CallTarget Targets="PackMainProject" />
+  </Target>
+
 </Project>

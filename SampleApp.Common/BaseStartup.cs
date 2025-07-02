@@ -1,8 +1,6 @@
 using System.Net;
 using System.Security.Claims;
 using System.Text.Json;
-using Aikido.Zen.Core;
-using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.DotNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -11,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using SampleApp.Common.Controllers;
+using Aikido.Zen.Core;
 
 namespace SampleApp.Common
 {
@@ -78,8 +77,12 @@ namespace SampleApp.Common
                 {
                     await next();
                 }
-                catch (AikidoException ex)
+                catch (Exception ex)
                 {
+                    if (!ex.GetType().Assembly.FullName!.StartsWith("Aikido.Zen") && !ex.Source!.StartsWith("Aikido.Zen"))
+                    {
+                        throw;
+                    }
                     context.Response.StatusCode = (int)HttpStatusCode.Forbidden;
                     await context.Response.WriteAsync("Request blocked due to security policy.");
                 }

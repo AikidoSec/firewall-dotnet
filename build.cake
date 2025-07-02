@@ -74,7 +74,7 @@ Task("DownloadLibraries")
 Task("Restore")
     .Does(() =>
     {
-        NuGetRestore(solution);
+        DotNetRestore(solution);
     });
 
 Task("Build")
@@ -87,26 +87,38 @@ Task("Build")
         {
             // if the version is a prerelease, we need to remove the suffix to avoid assemblyinfo errors
             var version = libVersion.Split('-')[0];
-            var msBuildSettings = new MSBuildSettings
-            {
-                Configuration = configuration,
-                ToolVersion = MSBuildToolVersion.VS2022,
-                Verbosity = Verbosity.Quiet,
-                PlatformTarget = PlatformTarget.MSIL,
-                MaxCpuCount = 1,
-                DetailedSummary = false,
-                NodeReuse = true
-            }
-            .WithTarget("Build")
-            .WithProperty("version", version);
 
-            var projects = GetFiles("./**/*.csproj")
-                .Where(p => !p.FullPath.Contains("sample-apps") && !p.FullPath.Contains("Aikido.Zen.Benchmarks"));
+            // Build only the main projects (Core, DotNetCore, DotNetFramework) in Release mode
+            // This avoids dependency issues with sample apps and E2E tests
+            var mainProjects = new[] {
+                "./Aikido.Zen.Core/Aikido.Zen.Core.csproj",
+                "./Aikido.Zen.DotNetCore/Aikido.Zen.DotNetCore.csproj",
+                "./Aikido.Zen.DotNetFramework/Aikido.Zen.DotNetFramework.csproj"
+            };
 
-            foreach (var project in projects)
+            var buildSettings = new DotNetBuildSettings
             {
-                MSBuild(project, msBuildSettings);
+                Configuration = "Release", // Always build in Release mode
+                Verbosity = DotNetVerbosity.Quiet,
+                ArgumentCustomization = args => args
+                    .Append($"/p:version={version}")
+                    .Append("/p:MaxCpuCount=1")
+                    .Append("/p:NodeReuse=true")
+            };
+
+            foreach (var project in mainProjects)
+            {
+                if (!IsRunningOnWindows() && project.Contains("DotNetFramework"))
+                {
+                    Information($"Skipping .NET Framework project {project} on a non-Windows OS.");
+                    continue;
+                }
+                Information($"Building {project} in Release mode...");
+                DotNetBuild(project, buildSettings);
             }
+
+
+
             Information("Build task completed successfully.");
         }
         catch (Exception ex)
@@ -127,8 +139,32 @@ Task("Test")
         var coverageDir = MakeAbsolute(Directory("./coverage"));
         EnsureDirectoryExists(coverageDir);
 
-        // Get test projects from Aikido.Zen.Test directory
-        var testProjects = GetFiles("./**/Aikido.Zen.Test*.csproj") as IEnumerable<FilePath>;
+        // Get unit test projects (exclude E2E tests)
+        var testProjects = GetFiles("./**/Aikido.Zen.Test*.csproj")
+            .Where(p => !p.FullPath.Contains("End2End")) as IEnumerable<FilePath>;
+
+        // Build test projects first
+        var version = libVersion.Split('-')[0];
+        var testBuildSettings = new DotNetBuildSettings
+        {
+            Configuration = configuration,
+            Verbosity = DotNetVerbosity.Quiet,
+            ArgumentCustomization = args => args
+                .Append($"/p:version={version}")
+                .Append("/p:MaxCpuCount=1")
+                .Append("/p:NodeReuse=true")
+        };
+
+        foreach (var project in testProjects)
+        {
+            if (!IsRunningOnWindows() && project.FullPath.Contains("DotNetFramework"))
+            {
+                Information($"Skipping .NET Framework test project {project.FullPath} on a non-Windows OS.");
+                continue;
+            }
+            Information($"Building test project {project} in {configuration} mode...");
+            DotNetBuild(project.FullPath, testBuildSettings);
+        }
         foreach (var project in testProjects)
         {
             // skip the e2e tests
@@ -275,9 +311,50 @@ Task("TestE2E")
     .IsDependentOn("Build")
     .Does(() =>
     {
-        // Get test projects from Aikido.Zen.Test.End2End directory
-        var testProjects = GetFiles("./Aikido.Zen.Test.End2End/*.csproj");
-        foreach (var project in testProjects)
+        // Build E2E test projects and sample apps first
+        var version = libVersion.Split('-')[0];
+        var e2eBuildSettings = new DotNetBuildSettings
+        {
+            Configuration = configuration,
+            Verbosity = DotNetVerbosity.Quiet,
+            ArgumentCustomization = args => args
+                .Append($"/p:version={version}")
+                .Append("/p:MaxCpuCount=1")
+                .Append("/p:NodeReuse=true")
+        };
+
+        // Build E2E test project
+        var e2eTestProjects = GetFiles("./Aikido.Zen.Test.End2End/*.csproj");
+        foreach (var project in e2eTestProjects)
+        {
+            if (!IsRunningOnWindows() && project.FullPath.Contains("DotNetFramework"))
+            {
+                Information($"Skipping .NET Framework E2E test project {project} on a non-Windows OS.");
+                continue;
+            }
+            Information($"Building E2E test project {project} in {configuration} mode...");
+            DotNetBuild(project.FullPath, e2eBuildSettings);
+        }
+
+        // Build sample apps and mock server from e2e directory
+        var e2eSampleProjects = GetFiles("./e2e/sample-apps/**/*.csproj");
+        var mockProject = GetFiles("./e2e/Aikido.Zen.Server.Mock/*.csproj");
+        var commonProject = GetFiles("./SampleApp.Common/*.csproj");
+        var projectsToBuild = e2eSampleProjects.Concat(mockProject).Concat(commonProject);
+
+        foreach (var project in projectsToBuild)
+        {
+            if (!IsRunningOnWindows() && project.FullPath.Contains("DotNetFramework"))
+            {
+                Information($"Skipping .NET Framework sample/mock project {project} on a non-Windows OS.");
+                continue;
+            }
+            Information($"Building sample/mock project {project} in {configuration} mode...");
+            DotNetBuild(project.FullPath, e2eBuildSettings);
+        }
+
+        // Run E2E tests
+        foreach (var project in e2eTestProjects)
         {
             DotNetTest(project.FullPath, new DotNetTestSettings
             {
@@ -305,13 +382,19 @@ Task("Pack")
 
             foreach (var project in projects)
             {
-                var specFile = project.Replace(".csproj", ".nuspec");
-                var nugetPackSettings = new NuGetPackSettings
+                var packSettings = new DotNetPackSettings
                 {
+                    Configuration = configuration,
                     OutputDirectory = "./artifacts",
-                    Version = libVersion,
+                    NoBuild = false,
+                    NoRestore = false,
+                    ArgumentCustomization = args => args
+                        .Append($"/p:PackageVersion={libVersion}")
+                        .Append($"/p:Version={libVersion}")
+                        .Append($"/p:AssemblyVersion={libVersion}")
+                        .Append($"/p:FileVersion={libVersion}")
                 };
-                NuGetPack(specFile, nugetPackSettings);
+                DotNetPack(project, packSettings);
             }
             Information("Pack task completed successfully.");
         }

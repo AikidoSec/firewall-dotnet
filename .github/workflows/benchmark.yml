@@ -55,7 +55,7 @@ jobs:
 
             - name: Build mock server
               run: |
-                  dotnet build e2e/Aikido.Zen.Server.Mock/Aikido.Zen.Server.Mock.csproj
+                  dotnet build e2e/Aikido.Zen.Server.Mock/Aikido.Zen.Server.Mock.csproj --configuration Release
 
             - name: Run mock server
               run: |

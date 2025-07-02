@@ -1,0 +1,37 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <LocalNuGetDir>$(MSBuildThisFileDirectory)\..\local-packages</LocalNuGetDir>
+    <MainProjectPath>$(MSBuildThisFileDirectory)\..\Aikido.Zen.DotNetCore\Aikido.Zen.DotNetCore.csproj</MainProjectPath>
+    <CoreProjectPath>$(MSBuildThisFileDirectory)\..\Aikido.Zen.Core\Aikido.Zen.Core.csproj</CoreProjectPath>
+    <VersionPropsFile>$(MSBuildThisFileDirectory)\..\obj\version.props</VersionPropsFile>
+  </PropertyGroup>
+
+  <Target Name="PackMainProject">
+    <PropertyGroup>
+      <Ticks>$([System.DateTime]::UtcNow.Ticks)</Ticks>
+      <!-- by using this high version number with a timestamp, we ensure that the package is always newer than the previous one -->
+      <PackVersion>99.99.99-$(Ticks)</PackVersion>
+    </PropertyGroup>
+    <ItemGroup>
+      <VersionPropsLines Include="&lt;Project&gt;" />
+      <VersionPropsLines Include="  &lt;PropertyGroup&gt;" />
+      <VersionPropsLines Include="    &lt;E2ETestPackageVersion&gt;$(PackVersion)&lt;/E2ETestPackageVersion&gt;" />
+      <VersionPropsLines Include="  &lt;/PropertyGroup&gt;" />
+      <VersionPropsLines Include="&lt;/Project&gt;" />
+    </ItemGroup>
+    <!-- Before building our e2e tests, we need to pack the Aikido.Zen.DotNetCore project -->
+    <MakeDir Directories="$(TargetDir)" Condition="!Exists('$(TargetDir)')" />
+    <WriteLinesToFile File="$(VersionPropsFile)" Lines="@(VersionPropsLines)" Overwrite="true" />
+    <Message Importance="High" Text="Packing Aikido.Zen.DotNetCore before E2E test run (version $(PackVersion))..." />
+    <!-- before packing, we need to empty the local-packages directory (ecxept for the readme.md file) to remove any stale packages -->
+    <MakeDir Directories="$(LocalNuGetDir)" Condition="!Exists('$(LocalNuGetDir)')" />
+    <ItemGroup>
+      <OldPackages Include="$(LocalNuGetDir)\*.nupkg" />
+    </ItemGroup>
+    <Delete Files="@(OldPackages)" />
+    <!-- Pack the Aikido.Zen.DotNetCore project (which should include Core assemblies) -->
+    <Exec Command="dotnet pack &quot;$(MainProjectPath)&quot; -c Release -o &quot;$(LocalNuGetDir)&quot; /p:PackageVersion=$(PackVersion) /p:IsE2EPackaging=true" />
+  </Target>
+
+</Project>

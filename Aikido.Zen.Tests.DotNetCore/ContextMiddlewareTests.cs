@@ -52,7 +52,7 @@ namespace Aikido.Zen.Tests.DotNetCore
                 new EndpointMetadataCollection
                 (
                     new HttpMethodMetadata(new[] { "GET" }),
-                    new RouteValuesAddressMetadata(pattern)
+                    new RouteNameMetadata(pattern)
                 ),
                 name);
         }
