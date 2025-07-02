@@ -80,7 +80,7 @@
 
   <!-- Run the E2E packaging target after build (targets file is imported via Directory.Build.targets) -->
   <!-- Don't run during pack operations to avoid infinite loop -->
-  <Target Name="TriggerE2EPackaging" AfterTargets="Build" Condition="'$(Configuration)' == 'Release' AND '$(IsE2EPackaging)' != 'true'">
+  <Target Name="TriggerE2EPackaging" AfterTargets="Build" Condition="'$(IsE2EPackaging)' != 'true'">
     <CallTarget Targets="PackMainProject" />
   </Target>
 
