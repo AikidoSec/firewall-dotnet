@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.Core.Helpers;
@@ -22,6 +23,13 @@ namespace Aikido.Zen.Core.Patches
         /// <returns>Always returns true. Throws an exception if a blocked attack is detected.</returns>
         public static bool OnFileOperation(string[] paths, MethodBase originalMethod, Context context)
         {
+            // Exclude certain assemblies to avoid stack overflow issues
+            var callingAssembly = GetCallingAssembly();
+            if (ShouldExcludeAssembly(callingAssembly))
+            {
+                return true; // Skip processing for excluded assemblies
+            }
+
             var methodInfo = originalMethod as MethodInfo;
             var operation = $"{methodInfo?.DeclaringType?.Name}.{methodInfo?.Name}";
             var assemblyName = methodInfo?.DeclaringType?.Assembly.GetName().Name;
@@ -61,6 +69,51 @@ namespace Aikido.Zen.Core.Patches
                 throw AikidoException.PathTraversalDetected(operation, originalMethod.Name);
             }
             return true;
+        }
+
+        private static bool ShouldExcludeAssembly(string assemblyFullName)
+        {
+            if (string.IsNullOrEmpty(assemblyFullName))
+            {
+                return false;
+            }
+
+            // Exclude assemblies that are known to cause issues
+            // Using FullName which includes version info, so we check if it contains the assembly name
+            var excludedAssemblies = new[]
+            {
+                "Costura", // Assembly weaver that embeds dependencies
+                "Harmony", // Harmony patching library
+                "Fody", // IL weaving framework
+            };
+
+            return excludedAssemblies.Any(excluded => assemblyFullName.Contains(excluded));
+        }
+
+        private static string GetCallingAssembly()
+        {
+            try
+            {
+                var stackTrace = new StackTrace();
+                var frames = stackTrace.GetFrames();
+
+                // Skip the first few frames which are our patch methods
+                for (int i = 2; i < frames.Length; i++)
+                {
+                    var method = frames[i].GetMethod();
+                    var assembly = method?.DeclaringType?.Assembly;
+                    if (assembly != null)
+                    {
+                        return assembly.FullName;
+                    }
+                }
+            }
+            catch
+            {
+                // If we can't get the calling assembly, don't exclude
+            }
+
+            return null;
         }
     }
 }

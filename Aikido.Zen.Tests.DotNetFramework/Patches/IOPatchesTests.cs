@@ -54,8 +54,71 @@ namespace Aikido.Zen.Tests.DotNetFramework.Patches
             Assert.That(method, Is.Not.Null, $"Method {methodName} not found on type {type.Name} with specified parameters.");
 
             var patches = Harmony.GetPatchInfo(method);
-            Assert.That(patches, Is.Not.Null,"Harmony patches should exist.");
+            Assert.That(patches, Is.Not.Null, "Harmony patches should exist.");
             Assert.That(patches.Prefixes.Any(p => p.owner == HarmonyId), Is.True, "Our prefix should be applied.");
+        }
+
+        [Test]
+        public void Patched_Method_Does_Not_Throw()
+        {
+            var testDirPath = Path.Combine(Path.GetTempPath(), "test-dir-" + Guid.NewGuid().ToString("N").Substring(0, 8));
+            var testFilePath = Path.Combine(testDirPath, "test-");
+
+            try
+            {
+                // Create test directory first
+                Directory.CreateDirectory(testDirPath);
+
+                // file creation
+                File.Create(testFilePath + "1.txt").Dispose();
+                File.CreateText(testFilePath + "2.txt").Dispose();
+
+                // open file
+                File.Open(testFilePath + "1.txt", FileMode.Open).Dispose();
+                File.OpenRead(testFilePath + "1.txt").Dispose();
+                File.OpenWrite(testFilePath + "1.txt").Dispose();
+
+                // read file (before deleting)
+                File.ReadAllText(testFilePath + "1.txt");
+                File.ReadAllBytes(testFilePath + "1.txt");
+
+                // write file operations
+                File.WriteAllText(testFilePath + "1.txt", "test content");
+                File.WriteAllBytes(testFilePath + "1.txt", new byte[] { 1, 2, 3 });
+
+                // append file
+                File.AppendAllText(testFilePath + "1.txt", " appended text");
+
+                // copy file
+                File.Copy(testFilePath + "2.txt", testFilePath + "2.txt.copy");
+                File.Delete(testFilePath + "2.txt.copy");
+
+                // move file
+                File.Move(testFilePath + "2.txt", testFilePath + "2.txt.move");
+
+                // delete files
+                File.Delete(testFilePath + "1.txt");
+                File.Delete(testFilePath + "2.txt.move");
+
+                // Directory operations
+                Directory.CreateDirectory(Path.Combine(testDirPath, "subdir"));
+                Directory.GetDirectories(testDirPath);
+                Directory.GetFiles(testDirPath, "test-*");
+                Directory.GetDirectories(testDirPath, "sub*");
+                // Directory deletion
+                Directory.Delete(Path.Combine(testDirPath, "subdir"));
+                Directory.Exists(Path.Combine(testDirPath, "subdir"));
+                // Directory exists
+                Directory.Exists(testDirPath);
+            }
+            finally
+            {
+                // cleanup - delete the entire test directory and all contents
+                if (Directory.Exists(testDirPath))
+                {
+                    Directory.Delete(testDirPath, true);
+                }
+            }
         }
     }
 }
