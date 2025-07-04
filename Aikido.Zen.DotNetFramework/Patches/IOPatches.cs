@@ -1,7 +1,10 @@
 using System;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Security.AccessControl;
+using System.Threading;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Patches;
 using HarmonyLib;
@@ -13,6 +16,8 @@ namespace Aikido.Zen.DotNetFramework.Patches
     /// </summary>
     internal static class IOPatches
     {
+        // Thread-local flag to prevent re-entrancy during assembly loading
+        private static readonly ThreadLocal<bool> _isProcessing = new ThreadLocal<bool>(() => false);
         /// <summary>
         /// Applies all IO patches using the provided Harmony instance.
         /// </summary>
@@ -26,7 +31,7 @@ namespace Aikido.Zen.DotNetFramework.Patches
             Patch(harmony, typeof(File).GetMethod("Create", new[] { typeof(string), typeof(int), typeof(FileOptions) }), nameof(PrefixFileCreate));
             Patch(harmony, AccessTools.Method(typeof(File), "Delete"), nameof(PrefixFileDelete));
             Patch(harmony, typeof(File).GetMethod("Copy", new[] { typeof(string), typeof(string), typeof(bool) }), nameof(PrefixFileCopy));
-            Patch(harmony, AccessTools.Method(typeof(File), "Move", new[] { typeof(string), typeof(string) }), nameof(PrefixFileMove));
+            Patch(harmony, typeof(File).GetMethod("Move", new[] { typeof(string), typeof(string) }), nameof(PrefixFileMove));
             Patch(harmony, AccessTools.Method(typeof(File), "ReadAllText", new[] { typeof(string) }), nameof(PrefixFileReadAllText));
             Patch(harmony, AccessTools.Method(typeof(File), "ReadAllBytes", new[] { typeof(string) }), nameof(PrefixFileReadAllBytes));
             Patch(harmony, typeof(File).GetMethod("WriteAllText", new[] { typeof(string), typeof(string) }), nameof(PrefixFileWriteAllText));
@@ -79,8 +84,27 @@ namespace Aikido.Zen.DotNetFramework.Patches
 
         private static bool OnFileOperation(string[] paths, MethodBase originalMethod)
         {
-            var context = Zen.GetContext();
-            return IOPatcher.OnFileOperation(paths, originalMethod, context);
+            // Prevent re-entrancy that can occur during Costura assembly loading
+            if (_isProcessing.Value)
+            {
+                return true; // Continue with original method execution
+            }
+
+
+
+            try
+            {
+                _isProcessing.Value = true;
+                var context = Zen.GetContext();
+
+                return IOPatcher.OnFileOperation(paths, originalMethod, context);
+            }
+            finally
+            {
+                _isProcessing.Value = false;
+            }
         }
+
+
     }
 }
