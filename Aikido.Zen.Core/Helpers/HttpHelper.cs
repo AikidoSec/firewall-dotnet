@@ -47,6 +47,8 @@ namespace Aikido.Zen.Core.Helpers
         /// <param name="contentLength">The content length of the request body.</param>
         /// <returns>A HttpDataResult containing both flattened data and parsed body.</returns>
         public static async Task<HttpDataResult> ReadAndFlattenHttpDataAsync(
+            string path,
+            string route,
             IDictionary<string, string> queryParams,
             IDictionary<string, string> headers,
             IDictionary<string, string> cookies,
@@ -56,7 +58,8 @@ namespace Aikido.Zen.Core.Helpers
         {
             var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             object parsedBody = null;
-
+            // Process Route
+            UserInputHelper.ProcessPath(path, route, result);
             // Process Query Parameters
             UserInputHelper.ProcessQueryParameters(queryParams, result);
 
@@ -122,11 +125,27 @@ namespace Aikido.Zen.Core.Helpers
             {
                 return Source.Cookies;
             }
-            else if (path.StartsWith("route"))
+            else if (path.StartsWith("route") || path.StartsWith("url") || path.StartsWith("path"))
             {
                 return Source.RouteParams;
             }
-            return UserInputHelper.GetSourceFromUserInputPath(path);
+            else if (path.StartsWith("body") || path.StartsWith("form"))
+            {
+                return Source.Body;
+            }
+            else if (path.StartsWith("graphql"))
+            {
+                return Source.Graphql;
+            }
+            else if (path.StartsWith("xml"))
+            {
+                return Source.Xml;
+            }
+            else if (path.StartsWith("subdomains"))
+            {
+                return Source.Subdomains;
+            }
+            throw new ArgumentOutOfRangeException(nameof(path), $"Unknown source: {path}.");
         }
 
         private static async Task<object> ProcessRequestBodyAsync(Stream body, string contentType, IDictionary<string, string> result)
