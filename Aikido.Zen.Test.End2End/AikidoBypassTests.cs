@@ -1,10 +1,10 @@
+using System.Net;
+using System.Net.Http.Json;
+using Aikido.Zen.DotNetCore;
+using Aikido.Zen.Server.Mock.Models;
 using Microsoft.AspNetCore.Mvc.Testing;
 using NUnit.Framework;
-using System.Net;
-using Aikido.Zen.DotNetCore;
-using System.Net.Http.Json;
 using SQLiteSampleApp;
-using Aikido.Zen.Server.Mock.Models;
 
 namespace Aikido.Zen.Test.End2End
 {
@@ -204,6 +204,112 @@ namespace Aikido.Zen.Test.End2End
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
             var responseBody = await response.Content.ReadAsStringAsync();
             Assert.That(responseBody, Does.Contain("Request blocked due to security policy."));
+        }
+
+        /// <summary>
+        /// Tests that path traversal attacks are bypassed when coming from a bypassed IP address,
+        /// even when using multiple query parameters with the flattened query parameter functionality.
+        /// </summary>
+        [Test]
+        public async Task WhenPathTraversalFromBypassedIP_ShouldAllowRequest()
+        {
+            // Arrange
+            // Configure mock server to return config with bypass IP
+            var bypassList = new Dictionary<string, object>
+            {
+                ["allowedIPAddresses"] = new List<string> { "10.0.0.100" }
+            };
+            await MockServerClient.PostAsJsonAsync("/api/runtime/config", bypassList);
+            SampleAppClient = CreateSampleAppFactory().CreateClient();
+            Thread.Sleep(250);
+
+            // Create a request with path traversal attack from bypassed IP
+            var maliciousPath = "/../../../etc/passwd";
+            var safePath = "/safe.txt";
+            var queryString = $"path={Uri.EscapeDataString(maliciousPath)}&path={Uri.EscapeDataString(safePath)}";
+
+            var request = new HttpRequestMessage(HttpMethod.Get, $"/api/path-traversal?{queryString}");
+            request.Headers.Add("X-Forwarded-For", "10.0.0.100"); // Bypassed IP
+
+            // Act
+            var response = await SampleAppClient.SendAsync(request);
+
+            // Assert - Request should be allowed because IP is bypassed
+            // Even though path traversal is present, the bypass should take precedence
+            Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest),
+                "Path traversal attack should be bypassed for allowed IP, returning BadRequest from endpoint logic rather than Forbidden from firewall");
+        }
+
+        /// <summary>
+        /// Tests that path traversal attacks are blocked when NOT coming from a bypassed IP address,
+        /// verifying that the flattened query parameters are properly checked for attacks.
+        /// </summary>
+        [Test]
+        public async Task WhenPathTraversalFromNonBypassedIP_ShouldBlockRequest()
+        {
+            // Arrange
+            // Configure mock server to return config with bypass IP (different from test IP)
+            var bypassList = new Dictionary<string, object>
+            {
+                ["allowedIPAddresses"] = new List<string> { "10.0.0.100" }
+            };
+            await MockServerClient.PostAsJsonAsync("/api/runtime/config", bypassList);
+            SampleAppClient = CreateSampleAppFactory().CreateClient();
+            Thread.Sleep(250);
+
+            // Create a request with path traversal attack from non-bypassed IP
+            var maliciousPath = "../../../etc/passwd";
+            var anotherMaliciousPath = "/../secret.txt";
+            var queryString = $"file={Uri.EscapeDataString(maliciousPath)}&path={Uri.EscapeDataString(anotherMaliciousPath)}";
+
+            var request = new HttpRequestMessage(HttpMethod.Get, $"/api/path-traversal?{queryString}");
+            request.Headers.Add("X-Forwarded-For", "192.168.1.50"); // Non-bypassed IP
+
+            // Act
+            var response = await SampleAppClient.SendAsync(request);
+
+            // Assert - Request should be blocked because IP is not bypassed and path traversal is detected
+            // With flattening: file="../../../etc/passwd", path="/../secret.txt"
+            // The firewall should detect the "../" pattern in both parameters
+            Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
+            var responseBody = await response.Content.ReadAsStringAsync();
+            Assert.That(responseBody, Does.Contain("Request blocked due to security policy."));
+        }
+
+        /// <summary>
+        /// Tests that path traversal attacks in indexed query parameters are bypassed
+        /// when coming from an IP range that is configured for bypass.
+        /// </summary>
+        [Test]
+        public async Task WhenPathTraversalFromBypassedIPRange_ShouldAllowRequest()
+        {
+            // Arrange
+            // Configure mock server to return config with bypass IP range
+            var bypassList = new Dictionary<string, object>
+            {
+                ["allowedIPAddresses"] = new List<string> { "172.16.0.0/16" }
+            };
+            await MockServerClient.PostAsJsonAsync("/api/runtime/config", bypassList);
+            SampleAppClient = CreateSampleAppFactory().CreateClient();
+            Thread.Sleep(250);
+
+            // Create a request with multiple query parameters containing path traversal
+            var safePath = "/safe.txt";
+            var maliciousPath = "/../../../etc/passwd";
+            var queryString = $"path={Uri.EscapeDataString(safePath)}&path={Uri.EscapeDataString(maliciousPath)}&path=another_safe_path";
+
+            var request = new HttpRequestMessage(HttpMethod.Get, $"/api/path-traversal?{queryString}");
+            request.Headers.Add("X-Forwarded-For", "172.16.123.45"); // IP within the bypassed range
+
+            // Act
+            var response = await SampleAppClient.SendAsync(request);
+
+            // Assert - Request should be allowed because IP is within bypassed range
+            // With flattening: path="/safe.txt", path[1]="/../../../etc/passwd", path[2]="another_safe_path"
+            // Even though the second parameter contains path traversal, the bypass should take precedence
+            // The endpoint only uses the first parameter (safe.txt) so it will succeed
+            Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK),
+                "Path traversal attack should be bypassed for IP within allowed range, and endpoint should process the safe first parameter successfully");
         }
     }
 }

@@ -561,5 +561,127 @@ namespace Aikido.Zen.Test.End2End
             var responseBodyBlocked = await responseBlocked.Content.ReadAsStringAsync();
             Assert.That(responseBodyBlocked, Does.Contain("Your request is blocked: IP is not allowed for this endpoint"));
         }
+
+        /// <summary>
+        /// Tests that query parameter flattening works correctly with multiple parameters
+        /// and verifies the endpoint can process them successfully.
+        /// </summary>
+        [Test]
+        public async Task WhenQueryParameterFlattening_WithMultipleParameters_ShouldWorkCorrectly()
+        {
+            // Arrange
+            SampleAppClient = CreateSampleAppFactory().CreateClient();
+            Thread.Sleep(250);
+
+            // Create a request with multiple safe path parameters to test flattening
+            var safePath1 = "safe.txt";
+            var safePath2 = "another-safe.txt";
+            var safePath3 = "third-safe.txt";
+            var queryString = $"path={Uri.EscapeDataString(safePath1)}&path={Uri.EscapeDataString(safePath2)}&path={Uri.EscapeDataString(safePath3)}";
+
+            var request = new HttpRequestMessage(HttpMethod.Get, $"/api/path-traversal?{queryString}");
+            request.Headers.Add("X-Forwarded-For", "192.168.1.1");
+
+            // Act
+            var response = await SampleAppClient.SendAsync(request);
+
+            // Assert - The request should succeed and demonstrate flattening is working
+            // With flattening: path="safe.txt", path[1]="another-safe.txt", path[2]="third-safe.txt"
+            // The endpoint uses the first parameter (safe.txt) for file reading
+            Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+            var responseBody = await response.Content.ReadAsStringAsync();
+            Assert.That(responseBody, Does.Contain("allPaths"), "Response should contain the flattened paths array");
+            Assert.That(responseBody, Does.Contain("safe.txt"), "Response should contain the first path used for file reading");
+        }
+
+        /// <summary>
+        /// Tests that query parameter flattening works correctly with multiple parameters
+        /// and verifies the endpoint can process them successfully.
+        /// </summary>
+        [Test]
+        public async Task WhenMultipleQueryParametersWithSafeValues_ShouldProcessCorrectly()
+        {
+            // Arrange
+            SampleAppClient = CreateSampleAppFactory().CreateClient();
+            Thread.Sleep(250);
+
+            // Create a request with multiple safe path parameters
+            var safePath1 = "safe.txt";
+            var safePath2 = "another-safe.txt";
+            var queryString = $"path={Uri.EscapeDataString(safePath1)}&path={Uri.EscapeDataString(safePath2)}";
+
+            var request = new HttpRequestMessage(HttpMethod.Get, $"/api/path-traversal?{queryString}");
+            request.Headers.Add("X-Forwarded-For", "192.168.1.1");
+
+            // Act
+            var response = await SampleAppClient.SendAsync(request);
+
+            // Assert - The request should succeed and the flattened parameters should be processed
+            // With flattening: path="safe.txt", path[1]="another-safe.txt"
+            // The endpoint uses the first parameter (safe.txt) for file reading
+            Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+            var responseBody = await response.Content.ReadAsStringAsync();
+            Assert.That(responseBody, Does.Contain("allPaths"), "Response should contain the flattened paths array");
+        }
+
+        /// <summary>
+        /// Tests that path traversal detection works with the path parameter
+        /// when using the flattened query parameter functionality.
+        /// </summary>
+        [Test]
+        public async Task WhenPathTraversalInPathParameter_ShouldDetectAndBlockAttack()
+        {
+            // Arrange
+            SampleAppClient = CreateSampleAppFactory().CreateClient();
+            Thread.Sleep(250);
+
+            // Create a request with path parameter containing path traversal
+            var maliciousPath = "../../../etc/passwd";
+            var queryString = $"path={Uri.EscapeDataString(maliciousPath)}";
+
+            var request = new HttpRequestMessage(HttpMethod.Get, $"/api/path-traversal?{queryString}");
+            request.Headers.Add("X-Forwarded-For", "192.168.1.1");
+
+            // Act
+            var response = await SampleAppClient.SendAsync(request);
+
+            // Assert - The path traversal should be detected in the flattened query parameters
+            // With flattening: path="../../../etc/passwd"
+            // The firewall should detect the "../" pattern when File.ReadAllText is called
+            Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
+            var responseBody = await response.Content.ReadAsStringAsync();
+            Assert.That(responseBody, Does.Contain("Request blocked due to security policy."));
+        }
+
+        /// <summary>
+        /// Tests that path traversal detection works correctly when mixing unsafe and safe query parameters
+        /// with the same parameter name, verifying that the firewall detects the attack in the flattened parameters.
+        /// </summary>
+        [Test]
+        public async Task WhenMixedSafeAndUnsafePathParameters_ShouldDetectAndBlockAttack()
+        {
+            // Arrange
+            SampleAppClient = CreateSampleAppFactory().CreateClient();
+            Thread.Sleep(250);
+
+            // Create a request with mixed safe and unsafe path parameters
+            // The first parameter contains path traversal (unsafe), the second is safe
+            var unsafePath = "../../../etc/passwd";  // Use the same pattern as the working test
+            var safePath = "./safe";
+            var queryString = $"path={Uri.EscapeDataString(unsafePath)}&path={Uri.EscapeDataString(safePath)}";
+
+            var request = new HttpRequestMessage(HttpMethod.Get, $"/api/path-traversal?{queryString}");
+            request.Headers.Add("X-Forwarded-For", "192.168.1.1");
+
+            // Act
+            var response = await SampleAppClient.SendAsync(request);
+
+            // Assert - The path traversal should be detected in the flattened query parameters
+            // With flattening: path="/../secret.txt", path[1]="./safe"
+            // The firewall should detect the "../" pattern in the first parameter when File.ReadAllText is called
+            Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
+            var responseBody = await response.Content.ReadAsStringAsync();
+            Assert.That(responseBody, Does.Contain("Request blocked due to security policy."));
+        }
     }
 }
