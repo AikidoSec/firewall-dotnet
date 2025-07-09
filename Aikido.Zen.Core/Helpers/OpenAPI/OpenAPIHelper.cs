@@ -30,7 +30,7 @@ namespace Aikido.Zen.Core.Helpers.OpenAPI
         /// </summary>
         /// <param name="headers">Dictionary of HTTP headers</param>
         /// <returns>The data type as a string, or null if not determined</returns>
-        public static string GetBodyDataType(Dictionary<string, string[]> headers) => ApiDataTypeHelper.GetBodyDataType(headers);
+        public static string GetBodyDataType(Dictionary<string, string> headers) => ApiDataTypeHelper.GetBodyDataType(headers);
 
         /// <summary>
         /// Get API information from a context

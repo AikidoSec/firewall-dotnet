@@ -123,11 +123,11 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 {
                     Url = httpContext.Request.Path.ToString(),
                     Method = httpContext.Request.Method,
-                    Query = queryDictionary,
-                    Headers = headersDictionary,
+                    Query = FlattenQueryParameters(httpContext.Request.Query),
+                    Headers = FlattenHeaders(httpContext.Request.Headers),
                     RemoteAddress = httpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty, // no need to use X-FORWARDED-FOR, .NET Core already handles this
                     Cookies = httpContext.Request.Cookies.ToDictionary(c => c.Key, c => c.Value),
-                    UserAgent = headersDictionary.TryGetValue("User-Agent", out var userAgent) ? userAgent.FirstOrDefault() ?? string.Empty : string.Empty,
+                    UserAgent = httpContext.Request.Headers.TryGetValue("User-Agent", out var userAgent) ? userAgent.FirstOrDefault() ?? string.Empty : string.Empty,
                     Source = Environment.Version.Major >= 5 ? "DotNetCore" : "DotNetFramework",
                     Route = GetParametrizedRoute(httpContext),
                     User = httpContext.Items["Aikido.Zen.CurrentUser"] as User
@@ -143,6 +143,64 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 return false;
             }
 
+        }
+
+        /// <summary>
+        /// Flattens query parameters into individual dictionary entries with indexing for multiple values.
+        /// </summary>
+        /// <param name="query">The query collection</param>
+        /// <returns>A dictionary with flattened query parameters</returns>
+        private static IDictionary<string, string> FlattenQueryParameters(IQueryCollection query)
+        {
+            var result = new Dictionary<string, string>();
+
+            foreach (var kvp in query)
+            {
+                var values = kvp.Value;
+                if (values.Count == 1)
+                {
+                    result[kvp.Key] = values[0];
+                }
+                else
+                {
+                    for (int i = 0; i < values.Count; i++)
+                    {
+                        string dictKey = i == 0 ? kvp.Key : $"{kvp.Key}[{i}]";
+                        result[dictKey] = values[i];
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Flattens headers into individual dictionary entries with indexing for multiple values.
+        /// </summary>
+        /// <param name="headers">The headers collection</param>
+        /// <returns>A dictionary with flattened headers</returns>
+        private static IDictionary<string, string> FlattenHeaders(IHeaderDictionary headers)
+        {
+            var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var kvp in headers)
+            {
+                var values = kvp.Value;
+                if (values.Count == 1)
+                {
+                    result[kvp.Key] = values[0];
+                }
+                else
+                {
+                    for (int i = 0; i < values.Count; i++)
+                    {
+                        string dictKey = i == 0 ? kvp.Key : $"{kvp.Key}[{i}]";
+                        result[dictKey] = values[i];
+                    }
+                }
+            }
+
+            return result;
         }
 
         /// <summary>

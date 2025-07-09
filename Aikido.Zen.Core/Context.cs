@@ -1,7 +1,7 @@
-using Aikido.Zen.Core.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Aikido.Zen.Core.Models;
 
 namespace Aikido.Zen.Core
 {
@@ -9,8 +9,8 @@ namespace Aikido.Zen.Core
     {
         public string Url { get; set; } = string.Empty;
         public string Method { get; set; } = string.Empty;
-        public IDictionary<string, string[]> Query { get; set; } = new Dictionary<string, string[]>();
-        public IDictionary<string, string[]> Headers { get; set; } = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
+        public IDictionary<string, string> Query { get; set; } = new Dictionary<string, string>();
+        public IDictionary<string, string> Headers { get; set; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         public IDictionary<string, string> RouteParams { get; set; } = new Dictionary<string, string>();
         public string RemoteAddress { get; set; } = string.Empty;
         public Stream Body { get; set; }
