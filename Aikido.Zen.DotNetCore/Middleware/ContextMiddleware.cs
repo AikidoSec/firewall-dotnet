@@ -66,7 +66,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 }
 
                 var httpData = await HttpHelper.ReadAndFlattenHttpDataAsync(
-                    queryParams: queryDictionary.ToDictionary(h => h.Key, h => string.Join(',', h.Value)),
+                    queryParams: context.Query,
                     headers: headersDictionary.ToDictionary(h => h.Key, h => string.Join(',', h.Value)),
                     cookies: context.Cookies,
                     body: request.Body,

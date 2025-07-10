@@ -247,15 +247,9 @@ namespace SampleApp.Common
                         System.IO.File.WriteAllText(secretFile, "This is a secret file that should not be accessible!");
                         System.IO.File.WriteAllText(safeFile, "This is a safe file.");
 
-                        // Debug: Log what parameters we're working with
-                        Console.WriteLine($"DEBUG: filePath = '{filePath}'");
-                        Console.WriteLine($"DEBUG: All flattened params: {string.Join(", ", aikidoContext.Query.Select(kvp => $"{kvp.Key}={kvp.Value}"))}");
-
                         // Instead of using Path.Combine which sanitizes the path, construct a raw path
                         // This allows the path traversal detection to work properly
                         var fullPath = tempDir + "\\" + filePath;
-
-                        Console.WriteLine($"DEBUG: Attempting to read file: {fullPath}");
 
                         // Attempt to read the file - this will trigger the path traversal detection
                         var content = System.IO.File.ReadAllText(fullPath);

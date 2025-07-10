@@ -676,11 +676,48 @@ namespace Aikido.Zen.Test.End2End
             // Act
             var response = await SampleAppClient.SendAsync(request);
 
+            // Debug - capture the response body to understand what's happening
+            var responseBody = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"DEBUG: Response status: {response.StatusCode}");
+            Console.WriteLine($"DEBUG: Response body: {responseBody}");
+            Console.WriteLine($"DEBUG: Query string used: {queryString}");
+            Console.WriteLine($"DEBUG: Full URL: /api/path-traversal?{queryString}");
+
             // Assert - The path traversal should be detected in the flattened query parameters
             // With flattening: path="/../secret.txt", path[1]="./safe"
             // The firewall should detect the "../" pattern in the first parameter when File.ReadAllText is called
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
+            Assert.That(responseBody, Does.Contain("Request blocked due to security policy."));
+        }
+
+        /// <summary>
+        /// Simplified test - same as working test but with different name to compare behavior
+        /// </summary>
+        [Test]
+        public async Task WhenSingleUnsafePathParameter_ShouldDetectAndBlockAttack_Comparison()
+        {
+            // Arrange
+            SampleAppClient = CreateSampleAppFactory().CreateClient();
+            Thread.Sleep(250);
+
+            // Create a request with a single path parameter containing path traversal
+            var unsafePath = "../../../etc/passwd";  // Exact same pattern as working test
+            var queryString = $"path={Uri.EscapeDataString(unsafePath)}";
+
+            var request = new HttpRequestMessage(HttpMethod.Get, $"/api/path-traversal?{queryString}");
+            request.Headers.Add("X-Forwarded-For", "192.168.1.1");
+
+            // Act
+            var response = await SampleAppClient.SendAsync(request);
+
+            // Debug - capture the response body to understand what's happening
             var responseBody = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"DEBUG SINGLE: Response status: {response.StatusCode}");
+            Console.WriteLine($"DEBUG SINGLE: Response body: {responseBody}");
+            Console.WriteLine($"DEBUG SINGLE: Query string used: {queryString}");
+
+            // Assert - The path traversal should be detected
+            Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
             Assert.That(responseBody, Does.Contain("Request blocked due to security policy."));
         }
     }
