@@ -247,14 +247,18 @@ namespace SampleApp.Common
 
                         var secretFile = Path.Combine(tempDir, "secret.txt");
                         var safeFile = Path.Combine(tempDir, "safe.txt");
+                        var anotherSafeFile = Path.Combine(tempDir, "another-safe.txt");
+                        var thirdSafeFile = Path.Combine(tempDir, "third-safe.txt");
 
                         // Create test files
                         System.IO.File.WriteAllText(secretFile, "This is a secret file that should not be accessible!");
                         System.IO.File.WriteAllText(safeFile, "This is a safe file.");
+                        System.IO.File.WriteAllText(anotherSafeFile, "This is another safe file.");
+                        System.IO.File.WriteAllText(thirdSafeFile, "This is a third safe file.");
 
                         // Instead of using Path.Combine which sanitizes the path, construct a raw path
                         // This allows the path traversal detection to work properly
-                        var fullPath = tempDir + "\\" + filePath;
+                        var fullPath = tempDir + Path.DirectorySeparatorChar + filePath;
 
                         // Attempt to read the file - this will trigger the path traversal detection
                         var content = System.IO.File.ReadAllText(fullPath);
