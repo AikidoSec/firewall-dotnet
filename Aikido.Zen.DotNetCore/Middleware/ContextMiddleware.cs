@@ -26,7 +26,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
             try
             {
                 // if the ip is bypassed, skip the handling of the request
-                if (Agent.Instance.Context.BlockList.IsIPBypassed(httpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty) || EnvironmentHelper.IsDisabled)
+                if (Agent.Instance.Context.BlockList.IsIPBypassed(GetClientIp(httpContext)) || EnvironmentHelper.IsDisabled)
                 {
                     // call the next middleware
                     await next(httpContext);
@@ -125,7 +125,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
                     Method = httpContext.Request.Method,
                     Query = FlattenQueryParameters(httpContext.Request.Query),
                     Headers = FlattenHeaders(httpContext.Request.Headers),
-                    RemoteAddress = httpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty, // no need to use X-FORWARDED-FOR, .NET Core already handles this
+                    RemoteAddress = GetClientIp(httpContext),
                     Cookies = httpContext.Request.Cookies.ToDictionary(c => c.Key, c => c.Value),
                     UserAgent = httpContext.Request.Headers.TryGetValue("User-Agent", out var userAgent) ? userAgent.FirstOrDefault() ?? string.Empty : string.Empty,
                     Source = Environment.Version.Major >= 5 ? "DotNetCore" : "DotNetFramework",
@@ -201,6 +201,28 @@ namespace Aikido.Zen.DotNetCore.Middleware
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Gets the client IP address, considering X-Forwarded-For headers for proxied requests.
+        /// </summary>
+        /// <param name="httpContext">The HTTP context containing the request information</param>
+        /// <returns>The client IP address as a string</returns>
+        private static string GetClientIp(HttpContext httpContext)
+        {
+            // Check for X-Forwarded-For header first (for proxied requests)
+            if (httpContext.Request.Headers.TryGetValue("X-Forwarded-For", out var forwardedFor))
+            {
+                var firstIp = forwardedFor.FirstOrDefault();
+                if (!string.IsNullOrEmpty(firstIp))
+                {
+                    // X-Forwarded-For can contain multiple IPs, take the first one
+                    return firstIp.Split(',')[0].Trim();
+                }
+            }
+
+            // Fall back to the connection's remote IP address
+            return httpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty;
         }
 
         /// <summary>

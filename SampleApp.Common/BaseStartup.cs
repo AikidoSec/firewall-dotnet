@@ -219,15 +219,20 @@ namespace SampleApp.Common
                 // Path traversal endpoint that reads files based on query parameters
                 endpoints.MapGet("/api/path-traversal", (HttpContext httpContext) =>
                 {
-                    // Get the flattened parameters from the Aikido context
+                    // Get the flattened parameters from the Aikido context if available
                     var aikidoContext = httpContext.Items["Aikido.Zen.Context"] as Context;
-                    if (aikidoContext?.Query == null)
-                    {
-                        return Results.BadRequest("Aikido context not available");
-                    }
+                    string filePath = null;
 
-                    // Try to get the path from the flattened parameters
-                    var filePath = aikidoContext.Query.TryGetValue("path", out var pathValue) ? pathValue : null;
+                    if (aikidoContext?.Query != null)
+                    {
+                        // Use Aikido context (flattened parameters) if available
+                        filePath = aikidoContext.Query.TryGetValue("path", out var pathValue) ? pathValue : null;
+                    }
+                    else
+                    {
+                        // Fall back to direct query parameters when context is not available (e.g., IP bypass)
+                        filePath = httpContext.Request.Query.TryGetValue("path", out var pathValues) ? pathValues.FirstOrDefault() : null;
+                    }
 
                     if (string.IsNullOrEmpty(filePath))
                     {
@@ -259,7 +264,7 @@ namespace SampleApp.Common
                             content = content,
                             requestedPath = filePath,
                             resolvedPath = fullPath,
-                            allFlattenedParams = aikidoContext.Query
+                            allFlattenedParams = aikidoContext?.Query ?? new Dictionary<string, string>()
                         });
                     }
                     catch (AikidoException)
