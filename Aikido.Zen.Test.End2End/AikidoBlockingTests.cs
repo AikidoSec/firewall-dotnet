@@ -590,7 +590,7 @@ namespace Aikido.Zen.Test.End2End
             // The endpoint uses the first parameter (safe.txt) for file reading
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
             var responseBody = await response.Content.ReadAsStringAsync();
-            Assert.That(responseBody, Does.Contain("allPaths"), "Response should contain the flattened paths array");
+            Assert.That(responseBody, Does.Contain("allFlattenedParams"), "Response should contain the flattened paths array");
             Assert.That(responseBody, Does.Contain("safe.txt"), "Response should contain the first path used for file reading");
         }
 
@@ -621,7 +621,7 @@ namespace Aikido.Zen.Test.End2End
             // The endpoint uses the first parameter (safe.txt) for file reading
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
             var responseBody = await response.Content.ReadAsStringAsync();
-            Assert.That(responseBody, Does.Contain("allPaths"), "Response should contain the flattened paths array");
+            Assert.That(responseBody, Does.Contain("allFlattenedParams"), "Response should contain the flattened paths array");
         }
 
         /// <summary>

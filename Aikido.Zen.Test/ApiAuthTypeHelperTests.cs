@@ -1,27 +1,27 @@
-using NUnit.Framework;
-using Aikido.Zen.Core.Helpers;
-using Aikido.Zen.Core.Models;
 using System.Collections.Generic;
 using Aikido.Zen.Core;
+using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Helpers.OpenAPI;
+using Aikido.Zen.Core.Models;
+using NUnit.Framework;
 
 namespace Aikido.Zen.Test.Helpers
 {
     [TestFixture]
     public class ApiAuthTypeHelperTests
     {
-        private Context CreateTestContext(Dictionary<string, string[]>? headers = null, Dictionary<string, string>? cookies = null)
+        private Context CreateTestContext(Dictionary<string, string>? headers = null, Dictionary<string, string>? cookies = null)
         {
             return new Context
             {
                 Method = "GET",
                 Route = "/test",
-                Headers = headers ?? new Dictionary<string, string[]>(),
+                Headers = headers ?? new Dictionary<string, string>(),
                 Body = null,
                 RemoteAddress = "",
                 Url = "http://localhost/test",
                 RouteParams = new Dictionary<string, string>(),
-                Query = new Dictionary<string, string[]>(),
+                Query = new Dictionary<string, string>(),
                 Cookies = cookies ?? new Dictionary<string, string>(),
                 Source = "test"
             };
@@ -30,9 +30,9 @@ namespace Aikido.Zen.Test.Helpers
         [Test]
         public void GetApiAuthType_WithBearerToken_ReturnsHttpBearer()
         {
-            var context = CreateTestContext(new Dictionary<string, string[]>
+            var context = CreateTestContext(new Dictionary<string, string>
             {
-                { "authorization", ["Bearer token123"] }
+                { "authorization", "Bearer token123" }
             });
 
             var result = OpenAPIHelper.GetApiAuthType(context);
@@ -45,9 +45,9 @@ namespace Aikido.Zen.Test.Helpers
         [Test]
         public void GetApiAuthType_WithBasicAuth_ReturnsHttpBasic()
         {
-            var context = CreateTestContext(new Dictionary<string, string[]>
+            var context = CreateTestContext(new Dictionary<string, string>
             {
-                { "authorization", ["Basic base64encoded"] }
+                { "authorization", "Basic base64encoded" }
             });
 
             var result = ApiAuthTypeHelper.GetApiAuthType(context);
@@ -60,9 +60,9 @@ namespace Aikido.Zen.Test.Helpers
         [Test]
         public void GetApiAuthType_WithApiKey_ReturnsApiKeyType()
         {
-            var context = CreateTestContext(new Dictionary<string, string[]>
+            var context = CreateTestContext(new Dictionary<string, string>
             {
-                { "x-api-key", ["apikey123"] }
+                { "x-api-key", "apikey123" }
             });
 
             var result = ApiAuthTypeHelper.GetApiAuthType(context);
@@ -100,10 +100,10 @@ namespace Aikido.Zen.Test.Helpers
         public void GetApiAuthType_WithMultipleAuth_ReturnsAllTypes()
         {
             var context = CreateTestContext(
-                headers: new Dictionary<string, string[]>
+                headers: new Dictionary<string, string>
                 {
-                    { "authorization", ["Bearer token123"] },
-                    { "x-api-key", ["apikey123"] }
+                    { "authorization", "Bearer token123" },
+                    { "x-api-key", "apikey123" }
                 },
                 cookies: new Dictionary<string, string>
                 {
@@ -129,9 +129,9 @@ namespace Aikido.Zen.Test.Helpers
         [Test]
         public void GetApiAuthType_WithApiKeyWithoutBearer_ReturnsApiKeyType()
         {
-            var context = CreateTestContext(new Dictionary<string, string[]>
+            var context = CreateTestContext(new Dictionary<string, string>
             {
-                { "x-api-key", ["apikey123"] }
+                { "x-api-key", "apikey123" }
             });
 
             var result = ApiAuthTypeHelper.GetApiAuthType(context);
@@ -145,9 +145,9 @@ namespace Aikido.Zen.Test.Helpers
         [Test]
         public void GetApiAuthType_WithEmptyAuthHeader_ReturnsNull()
         {
-            var context = CreateTestContext(new Dictionary<string, string[]>
+            var context = CreateTestContext(new Dictionary<string, string>
             {
-                { "authorization", [""] }
+                { "authorization", "" }
             });
 
             var result = ApiAuthTypeHelper.GetApiAuthType(context);
