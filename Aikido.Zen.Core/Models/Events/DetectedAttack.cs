@@ -48,7 +48,7 @@ namespace Aikido.Zen.Core.Models.Events
 
             var request = new RequestInfo
             {
-                Headers = context.Headers.ToDictionary(h => h.Key, h => string.Join(",", h.Value)),
+                Headers = context.Headers.ToDictionary(h => h.Key, h => h.Value),
                 Method = context.Method,
                 Source = context.Source,
                 Url = context.Url,

@@ -14,8 +14,8 @@ namespace Aikido.Zen.Tests.Mocks
             {
                 Url = "https://example.com",
                 Method = "GET",
-                Query = new Dictionary<string, string[]>(),
-                Headers = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase),
+                Query = new Dictionary<string, string>(),
+                Headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase),
                 RouteParams = new Dictionary<string, string>(),
                 RemoteAddress = "127.0.0.1",
                 Body = new MemoryStream(),
@@ -38,8 +38,8 @@ namespace Aikido.Zen.Tests.Mocks
 
         public static Context CreateMockWithData(
             string url = null,
-            string method = null, 
-            IDictionary<string, string[]> headers = null,
+            string method = null,
+            IDictionary<string, string> headers = null,
             IDictionary<string, string> cookies = null,
             Stream body = null,
             User user = null,

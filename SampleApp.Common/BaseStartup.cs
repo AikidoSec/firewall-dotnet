@@ -1,3 +1,4 @@
+using System.IO;
 using System.Net;
 using System.Security.Claims;
 using System.Text.Json;
@@ -11,6 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using SampleApp.Common.Controllers;
+using Context = Aikido.Zen.Core.Context;
 
 namespace SampleApp.Common
 {
@@ -212,6 +214,72 @@ namespace SampleApp.Common
                 endpoints.MapPost("/api/prioritytest/{id}", (int id) =>
                 {
                     return Results.Ok(new { id = id });
+                });
+
+                // Path traversal endpoint that reads files based on query parameters
+                endpoints.MapGet("/api/path-traversal", (HttpContext httpContext) =>
+                {
+                    // Get the flattened parameters from the Aikido context if available
+                    var aikidoContext = httpContext.Items["Aikido.Zen.Context"] as Context;
+                    string filePath = null;
+
+                    if (aikidoContext?.Query != null)
+                    {
+                        // Use Aikido context (flattened parameters) if available
+                        filePath = aikidoContext.Query.TryGetValue("path", out var pathValue) ? pathValue : null;
+                    }
+                    else
+                    {
+                        // Fall back to direct query parameters when context is not available (e.g., IP bypass)
+                        filePath = httpContext.Request.Query.TryGetValue("path", out var pathValues) ? pathValues.FirstOrDefault() : null;
+                    }
+
+                    if (string.IsNullOrEmpty(filePath))
+                    {
+                        return Results.BadRequest("Path parameter is required");
+                    }
+
+                    try
+                    {
+                        // Create a temporary directory and file for testing
+                        var tempDir = Path.Combine(Path.GetTempPath(), "aikido-test");
+                        Directory.CreateDirectory(tempDir);
+
+                        var secretFile = Path.Combine(tempDir, "secret.txt");
+                        var safeFile = Path.Combine(tempDir, "safe.txt");
+                        var anotherSafeFile = Path.Combine(tempDir, "another-safe.txt");
+                        var thirdSafeFile = Path.Combine(tempDir, "third-safe.txt");
+
+                        // Create test files
+                        System.IO.File.WriteAllText(secretFile, "This is a secret file that should not be accessible!");
+                        System.IO.File.WriteAllText(safeFile, "This is a safe file.");
+                        System.IO.File.WriteAllText(anotherSafeFile, "This is another safe file.");
+                        System.IO.File.WriteAllText(thirdSafeFile, "This is a third safe file.");
+
+                        // Instead of using Path.Combine which sanitizes the path, construct a raw path
+                        // This allows the path traversal detection to work properly
+                        var fullPath = tempDir + Path.DirectorySeparatorChar + filePath;
+
+                        // Attempt to read the file - this will trigger the path traversal detection
+                        var content = System.IO.File.ReadAllText(fullPath);
+
+                        return Results.Ok(new
+                        {
+                            content = content,
+                            requestedPath = filePath,
+                            resolvedPath = fullPath,
+                            allFlattenedParams = aikidoContext?.Query ?? new Dictionary<string, string>()
+                        });
+                    }
+                    catch (AikidoException)
+                    {
+                        // Re-throw AikidoException to let the global exception handler return Forbidden
+                        throw;
+                    }
+                    catch (Exception ex)
+                    {
+                        return Results.BadRequest($"Error reading file: {ex.Message}");
+                    }
                 });
             });
         }

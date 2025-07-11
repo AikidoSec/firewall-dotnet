@@ -44,9 +44,9 @@ namespace Aikido.Zen.Core.Helpers.OpenAPI
             var result = new List<APIAuthType>();
 
             // Check Authorization header
-            if (context.Headers.TryGetValue("authorization", out var authHeaderValues))
+            if (context.Headers.TryGetValue("authorization", out var authHeaderValue))
             {
-                var authType = GetAuthorizationHeaderType(string.Join(",", authHeaderValues));
+                var authType = GetAuthorizationHeaderType(authHeaderValue);
                 if (authType != null)
                     result.Add(authType);
             }

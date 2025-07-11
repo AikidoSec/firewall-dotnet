@@ -3,8 +3,8 @@ using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Models.Events;
-using Moq;
 using Aikido.Zen.Tests.Mocks;
+using Moq;
 
 namespace Aikido.Zen.Test.Helpers
 {
@@ -29,9 +29,9 @@ namespace Aikido.Zen.Test.Helpers
                 {
                     { "session", "123" }
                 },
-                Headers = new Dictionary<string, string[]>
+                Headers = new Dictionary<string, string>
                 {
-                    { "auth", ["token123"] }
+                    { "auth", "token123" }
                 },
                 ParsedUserInput = new Dictionary<string, string>
                 {
@@ -57,10 +57,10 @@ namespace Aikido.Zen.Test.Helpers
 
             // Act
             bool result = SqlCommandHelper.DetectSQLInjection(
-                sqlCommand, 
-                SQLDialect.MicrosoftSQL, 
-                _context, 
-                moduleName, 
+                sqlCommand,
+                SQLDialect.MicrosoftSQL,
+                _context,
+                moduleName,
                 operation
             );
 
@@ -84,10 +84,10 @@ namespace Aikido.Zen.Test.Helpers
 
             // Act
             bool result = SqlCommandHelper.DetectSQLInjection(
-                sqlCommand, 
-                SQLDialect.MicrosoftSQL, 
-                _context, 
-                moduleName, 
+                sqlCommand,
+                SQLDialect.MicrosoftSQL,
+                _context,
+                moduleName,
                 operation
             );
 

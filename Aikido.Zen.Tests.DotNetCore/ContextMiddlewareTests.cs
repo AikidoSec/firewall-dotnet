@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Aikido.Zen.Core;
@@ -230,6 +231,94 @@ namespace Aikido.Zen.Tests.DotNetCore
                 CreateEndpoint("api/test", "TestEndpoint"),
                 // ... potentially add back other endpoints if needed for subsequent tests in the same run, though usually not necessary with [SetUp]
             });
+        }
+
+        [Test]
+        public void FlattenQueryParameters_FlattensSingleParameter()
+        {
+            // Arrange
+            var mockQuery = new Mock<IQueryCollection>();
+            var queryDict = new Dictionary<string, Microsoft.Extensions.Primitives.StringValues>
+            {
+                { "param1", "value1" }
+            };
+            mockQuery.Setup(x => x.GetEnumerator()).Returns(queryDict.GetEnumerator());
+
+            // Act
+            var method = typeof(ContextMiddleware).GetMethod("FlattenQueryParameters", BindingFlags.NonPublic | BindingFlags.Static);
+            var result = (IDictionary<string, string>)method.Invoke(null, new object[] { mockQuery.Object });
+
+            // Assert
+            Assert.That(result.ContainsKey("param1"), Is.True);
+            Assert.That(result["param1"], Is.EqualTo("value1"));
+        }
+
+        [Test]
+        public void FlattenQueryParameters_FlattensMultipleParameters()
+        {
+            // Arrange
+            var mockQuery = new Mock<IQueryCollection>();
+            var queryDict = new Dictionary<string, Microsoft.Extensions.Primitives.StringValues>
+            {
+                { "param1", new Microsoft.Extensions.Primitives.StringValues(new[] { "value1", "value2", "value3" }) }
+            };
+            mockQuery.Setup(x => x.GetEnumerator()).Returns(queryDict.GetEnumerator());
+
+            // Act
+            var method = typeof(ContextMiddleware).GetMethod("FlattenQueryParameters", BindingFlags.NonPublic | BindingFlags.Static);
+            var result = (IDictionary<string, string>)method.Invoke(null, new object[] { mockQuery.Object });
+
+            // Assert
+            Assert.That(result.ContainsKey("param1"), Is.True);
+            Assert.That(result["param1"], Is.EqualTo("value1"));
+            Assert.That(result.ContainsKey("param1[1]"), Is.True);
+            Assert.That(result["param1[1]"], Is.EqualTo("value2"));
+            Assert.That(result.ContainsKey("param1[2]"), Is.True);
+            Assert.That(result["param1[2]"], Is.EqualTo("value3"));
+        }
+
+        [Test]
+        public void FlattenHeaders_FlattensSingleHeader()
+        {
+            // Arrange
+            var mockHeaders = new Mock<IHeaderDictionary>();
+            var headerDict = new Dictionary<string, Microsoft.Extensions.Primitives.StringValues>
+            {
+                { "X-Custom-Header", "custom-value" }
+            };
+            mockHeaders.Setup(x => x.GetEnumerator()).Returns(headerDict.GetEnumerator());
+
+            // Act
+            var method = typeof(ContextMiddleware).GetMethod("FlattenHeaders", BindingFlags.NonPublic | BindingFlags.Static);
+            var result = (IDictionary<string, string>)method.Invoke(null, new object[] { mockHeaders.Object });
+
+            // Assert
+            Assert.That(result.ContainsKey("X-Custom-Header"), Is.True);
+            Assert.That(result["X-Custom-Header"], Is.EqualTo("custom-value"));
+        }
+
+        [Test]
+        public void FlattenHeaders_FlattensMultipleHeaders()
+        {
+            // Arrange
+            var mockHeaders = new Mock<IHeaderDictionary>();
+            var headerDict = new Dictionary<string, Microsoft.Extensions.Primitives.StringValues>
+            {
+                { "Accept", new Microsoft.Extensions.Primitives.StringValues(new[] { "text/html", "application/json", "application/xml" }) }
+            };
+            mockHeaders.Setup(x => x.GetEnumerator()).Returns(headerDict.GetEnumerator());
+
+            // Act
+            var method = typeof(ContextMiddleware).GetMethod("FlattenHeaders", BindingFlags.NonPublic | BindingFlags.Static);
+            var result = (IDictionary<string, string>)method.Invoke(null, new object[] { mockHeaders.Object });
+
+            // Assert
+            Assert.That(result.ContainsKey("Accept"), Is.True);
+            Assert.That(result["Accept"], Is.EqualTo("text/html"));
+            Assert.That(result.ContainsKey("Accept[1]"), Is.True);
+            Assert.That(result["Accept[1]"], Is.EqualTo("application/json"));
+            Assert.That(result.ContainsKey("Accept[2]"), Is.True);
+            Assert.That(result["Accept[2]"], Is.EqualTo("application/xml"));
         }
     }
 }

@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
-using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Helpers.OpenAPI;
+using Aikido.Zen.Core.Models;
 
 namespace Aikido.Zen.Core.Helpers.OpenAPI
 {
@@ -33,8 +33,9 @@ namespace Aikido.Zen.Core.Helpers.OpenAPI
 
                 if (context.Query != null && context.Query.Any())
                 {
-                    var queryInfoProperties = context.Query?
-                        .Select(x => new KeyValuePair<string, DataSchema>(x.Key, OpenAPIHelper.GetDataSchema(x.Value?.FirstOrDefault() ?? string.Empty)))
+                    var queryInfoProperties = context.Query
+                        .Where(x => !x.Key.Contains("[")) // Only include the base parameters, not indexed ones
+                        .Select(x => new KeyValuePair<string, DataSchema>(x.Key, OpenAPIHelper.GetDataSchema(x.Value ?? string.Empty)))
                         .ToDictionary(x => x.Key, x => x.Value);
                     queryInfo = new DataSchema
                     {

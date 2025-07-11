@@ -416,9 +416,9 @@ namespace Aikido.Zen.Test
             {
                 Url = "http://test.com/login",
                 Method = "POST",
-                Headers = new Dictionary<string, string[]>
+                Headers = new Dictionary<string, string>
                 {
-                    { "Content-Type", new[] { "application/json" } }
+                    { "Content-Type", "application/json" }
                 }
             };
             var module = "authentication";
@@ -468,9 +468,9 @@ namespace Aikido.Zen.Test
             {
                 Url = "http://test.com/login",
                 Method = "POST",
-                Headers = new Dictionary<string, string[]>
+                Headers = new Dictionary<string, string>
                 {
-                    { "Content-Type", new[] { "application/json" } }
+                    { "Content-Type", "application/json" }
                 }
             };
             var module = "authentication";
@@ -502,9 +502,9 @@ namespace Aikido.Zen.Test
             {
                 Url = "http://test.com/login",
                 Method = "POST",
-                Headers = new Dictionary<string, string[]>
+                Headers = new Dictionary<string, string>
                 {
-                    { "Content-Type", new[] { "application/json" } }
+                    { "Content-Type", "application/json" }
                 }
             };
             var module = "authentication";
