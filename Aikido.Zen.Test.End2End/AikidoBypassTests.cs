@@ -224,7 +224,7 @@ namespace Aikido.Zen.Test.End2End
             Thread.Sleep(250);
 
             // Create a request with path traversal attack from bypassed IP
-            var maliciousPath = "/../../../etc/passwd";
+            var maliciousPath = "/../../../nonexistent/file/that/will/fail.txt";
             var safePath = "/safe.txt";
             var queryString = $"path={Uri.EscapeDataString(maliciousPath)}&path={Uri.EscapeDataString(safePath)}";
 
