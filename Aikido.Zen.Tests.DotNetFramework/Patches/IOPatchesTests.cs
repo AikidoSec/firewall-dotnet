@@ -54,7 +54,7 @@ namespace Aikido.Zen.Tests.DotNetFramework.Patches
             Assert.That(method, Is.Not.Null, $"Method {methodName} not found on type {type.Name} with specified parameters.");
 
             var patches = Harmony.GetPatchInfo(method);
-            Assert.That(patches, Is.Not.Null,"Harmony patches should exist.");
+            Assert.That(patches, Is.Not.Null, "Harmony patches should exist.");
             Assert.That(patches.Prefixes.Any(p => p.owner == HarmonyId), Is.True, "Our prefix should be applied.");
         }
     }
