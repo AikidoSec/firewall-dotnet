@@ -292,6 +292,7 @@ namespace Aikido.Zen.Core
                 _context.AddUser(context.User, context.RemoteAddress);
             if (context.User != null)
                 LogHelper.DebugLog(Logger, $"Capturing inbound request from user: {context.User.Id}");
+            _context.UpdateRequestStats(context);
         }
 
         /// <summary>

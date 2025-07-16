@@ -15,8 +15,7 @@ namespace Aikido.Zen.Core.Models.Ip
     public class BlockList
     {
         // The state of our blocklist needs to be thread-safe, as incoming ASP requests can be multithreaded, and the agent, which runs on a background thread, can also update/access the state.
-        private IPRange _blockedIps = new IPRange();
-        private IPRange _allowedIps = new IPRange();
+        private Dictionary<string, IPRange> _ipLists = new Dictionary<string, IPRange>();
         private IPRange _bypassedIps = new IPRange();
         private List<(EndpointConfig Config, IPRange AllowedIPs)> _endpointConfigs = new List<(EndpointConfig Config, IPRange AllowedIPs)>();
         private readonly ReaderWriterLockSlim _lock = new ReaderWriterLockSlim(); // used to make sure only one thread can write to the different parts of the blocklist at a time
@@ -53,20 +52,46 @@ namespace Aikido.Zen.Core.Models.Ip
         }
 
         /// <summary>
-        /// Updates the blocked subnet ranges.
+        /// Updates the blocked subnet ranges from a flattened list of IPs.
         /// </summary>
         /// <param name="subnets">The subnet ranges to block.</param>
         public void UpdateBlockedIps(IEnumerable<string> subnets)
         {
+            UpdateIpsFromFlattenedList(subnets, "default-blocked");
+        }
+
+        public void UpdateAllowedIps(IEnumerable<string> subnets)
+        {
+            UpdateIpsFromFlattenedList(subnets, "default-allowed");
+        }
+
+        private void UpdateIpsFromFlattenedList(IEnumerable<string> subnets, string key)
+        {
             _lock.EnterWriteLock();
             try
             {
-                _blockedIps = new IPRange();
-                foreach (var subnet in subnets)
+                _ipLists[key] = CreateRangeFromIps(subnets);
+            }
+            finally
+            {
+                _lock.ExitWriteLock();
+            }
+        }
+
+        public void UpdateIPLists(IEnumerable<Core.Api.FirewallListsAPIResponse.IPList> ipLists)
+        {
+            _lock.EnterWriteLock();
+            try
+            {
+                _ipLists.Clear();
+                if (ipLists != null)
                 {
-                    foreach (var cidr in IPHelper.ToCidrString(subnet))
+                    foreach (var list in ipLists)
                     {
-                        _blockedIps.InsertRange(cidr);
+                        if (!string.IsNullOrEmpty(list.Key))
+                        {
+                            _ipLists[list.Key] = CreateRangeFromIps(list.Ips);
+                        }
                     }
                 }
             }
@@ -85,39 +110,7 @@ namespace Aikido.Zen.Core.Models.Ip
             _lock.EnterWriteLock();
             try
             {
-                _bypassedIps = new IPRange();
-                foreach (var ip in ips)
-                {
-                    foreach (var cidr in IPHelper.ToCidrString(ip))
-                    {
-                        _bypassedIps.InsertRange(cidr);
-                    }
-                }
-            }
-            finally
-            {
-                _lock.ExitWriteLock();
-            }
-        }
-
-        /// <summary>
-        /// Updates the allowed ip addresses or ranges, they do not bypass any blocking rules
-        /// They are used for things like geo-fencing (e.g. only allow IPs from a certain country)
-        /// </summary>
-        /// <param name="ips">The ip addresses or ranges to allow.</param>
-        public void UpdateAllowedIps(IEnumerable<string> ips)
-        {
-            _lock.EnterWriteLock();
-            try
-            {
-                _allowedIps = new IPRange();
-                foreach (var ip in ips)
-                {
-                    foreach (var cidr in IPHelper.ToCidrString(ip))
-                    {
-                        _allowedIps.InsertRange(cidr);
-                    }
-                }
+                _bypassedIps = CreateRangeFromIps(ips);
             }
             finally
             {
@@ -134,7 +127,12 @@ namespace Aikido.Zen.Core.Models.Ip
             _lock.EnterWriteLock();
             try
             {
-                _blockedIps.InsertRange(ip);
+                if (!_ipLists.TryGetValue("default-blocked", out var range))
+                {
+                    range = new IPRange();
+                    _ipLists["default-blocked"] = range;
+                }
+                range.InsertRange(ip);
             }
             finally
             {
@@ -157,10 +155,12 @@ namespace Aikido.Zen.Core.Models.Ip
                     return false; // Allow invalid IPs by default
                 }
 
-                if (!_blockedIps.HasItems)
-                    return false; // Allow if no blocked subnets are defined
+                if (_ipLists.TryGetValue("default-blocked", out var blockedRange) && blockedRange.HasItems)
+                {
+                    return blockedRange.IsIpInRange(ip);
+                }
 
-                return _blockedIps.IsIpInRange(ip);
+                return false;
             }
             finally
             {
@@ -248,14 +248,19 @@ namespace Aikido.Zen.Core.Models.Ip
         /// </summary>
         /// <param name="ip">The IP address to check.</param>
         /// <returns>True if the IP is allowed, false otherwise.</returns>
-        public bool IsIPAllowed(string ip)
+        public bool IsIpAllowed(string ip)
         {
             _lock.EnterReadLock();
             try
             {
-                if (!_allowedIps.HasItems)
+                if (!_ipLists.TryGetValue("default-allowed", out var allowedIps) || !allowedIps.HasItems)
                 {
                     return true; // If no allowed IPs are defined, all IPs are allowed
+                }
+
+                if (IsPrivateOrLocalIp(ip))
+                {
+                    return true; // Private or local IPs are allowed by default
                 }
 
                 if (!IPHelper.IsValidIp(ip))
@@ -263,7 +268,7 @@ namespace Aikido.Zen.Core.Models.Ip
                     return false; // Invalid IPs are not allowed when there are allowed IPs
                 }
 
-                return _allowedIps.IsIpInRange(ip);
+                return allowedIps.IsIpInRange(ip);
             }
             finally
             {
@@ -272,10 +277,11 @@ namespace Aikido.Zen.Core.Models.Ip
         }
 
         /// <summary>
-        /// Checks if access should be blocked based on IP and URL.
+        /// Checks if the request should be blocked based on the context and the block list.
         /// </summary>
         /// <param name="context">The context of the request.</param>
-        /// <returns>True if access is blocked, false otherwise.</returns>
+        /// <param name="reason">The reason for blocking the request.</param>
+        /// <returns>True if the request should be blocked, false otherwise.</returns>
         public bool IsBlocked(Context context, out string reason)
         {
             reason = null;
@@ -299,12 +305,51 @@ namespace Aikido.Zen.Core.Models.Ip
                 reason = "IP is not allowed for this endpoint";
                 return true;
             }
-            if (!IsIPAllowed(context.RemoteAddress))
+            if (!IsIpAllowed(context.RemoteAddress))
             {
                 reason = "IP is not allowed";
                 return true;
             }
             return false;
+        }
+
+        public IEnumerable<string> GetMatchingIPListKeys(string ip)
+        {
+            _lock.EnterReadLock();
+            try
+            {
+                if (!IPHelper.IsValidIp(ip))
+                {
+                    return Enumerable.Empty<string>();
+                }
+
+                return _ipLists
+                    .Where(kvp => kvp.Value.IsIpInRange(ip))
+                    .Select(kvp => kvp.Key)
+                    .ToList();
+            }
+            finally
+            {
+                _lock.ExitReadLock();
+            }
+        }
+
+        private IPRange CreateRangeFromIps(IEnumerable<string> ips)
+        {
+            var range = new IPRange();
+            if (ips == null)
+            {
+                return range;
+            }
+
+            foreach (var ip in ips)
+            {
+                foreach (var cidr in IPHelper.ToCidrString(ip))
+                {
+                    range.InsertRange(cidr);
+                }
+            }
+            return range;
         }
 
         internal bool IsPrivateOrLocalIp(string ip)
@@ -315,11 +360,10 @@ namespace Aikido.Zen.Core.Models.Ip
         internal bool IsEmpty()
         {
             return
-                _allowedIps.HasItems == false &&
-                _blockedIps.HasItems == false &&
+                _ipLists.Any(i => i.Value?.HasItems ?? false) == false &&
                 _bypassedIps.HasItems == false &&
                 _endpointConfigs.Any() == false;
-                
+
         }
     }
 }

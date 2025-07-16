@@ -1,88 +1,87 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
+using Aikido.Zen.Core.Models;
 
 namespace Aikido.Zen.Core.Api
 {
+    /// <summary>
+    /// Represents the response from the firewall lists API endpoint.
+    /// </summary>
     public class FirewallListsAPIResponse : APIResponse
     {
-
-        public FirewallListsAPIResponse()
-        {
-            BlockedIPAddresses = new List<IPList>();
-            AllowedIPAddresses = new List<IPList>();
-            BlockedUserAgents = string.Empty;
-        }
-        public FirewallListsAPIResponse(IEnumerable<IPList> blockedIPAddresses = null, IEnumerable<IPList> allowedIPAddresses = null, string blockedUserAgents = null)
-        {
-            BlockedIPAddresses = blockedIPAddresses ?? new List<IPList>();
-            AllowedIPAddresses = allowedIPAddresses ?? new List<IPList>();
-            BlockedUserAgents = blockedUserAgents ?? string.Empty;
-
-        }
-
-        private IEnumerable<IPList> _blockedIpAddresses = new List<IPList>();
-        private IEnumerable<IPList> _allowedIPAddresses = new List<IPList>();
-
-        /// <summary>
-        /// Gets or sets the list of blocked IP addresses.
-        /// </summary>
-        public IEnumerable<IPList> BlockedIPAddresses
-        {
-            get
-            {
-                return _blockedIpAddresses;
-            }
-            set
-            {
-                _blockedIpAddresses = value ?? new List<IPList>();
-            }
-        }
-
-        /// <summary>
-        /// Gets or sets the list of allowed IP addresses.
-        /// </summary>
-        public IEnumerable<IPList> AllowedIPAddresses
-        {
-            get
-            {
-                return _allowedIPAddresses;
-            }
-            set
-            {
-                _allowedIPAddresses = value ?? new List<IPList>();
-            }
-        }
-
-        /// <summary>
-        /// Gets or sets the blocked user agents as a string. e.g. "googlebot|bingbot|yahoo|aibot"
-        /// </summary>
+        public IEnumerable<IPList> BlockedIPAddresses { get; set; }
+        public IEnumerable<IPList> AllowedIPAddresses { get; set; }
+        public IEnumerable<IPList> BypassedIPAddresses { get; set; }
         public string BlockedUserAgents { get; set; }
 
+        public IEnumerable<IPList> MonitoredIPAddresses { get; set; }
+        public string MonitoredUserAgents { get; set; }
+        public IEnumerable<UserAgentDetails> UserAgentDetails { get; set; }
+
         /// <summary>
-        /// Gets the blocked user agents as a regex.
+        /// Gets all blocked IPs from all lists.
         /// </summary>
+        [JsonIgnore]
+        public IEnumerable<string> BlockedIps => (BlockedIPAddresses ?? Enumerable.Empty<IPList>())
+                                .Where(l => l.Ips != null)
+                                .SelectMany(l => l.Ips);
+
+        /// <summary>
+        /// Gets all allowed IPs from all lists.
+        /// </summary>
+        [JsonIgnore]
+        public IEnumerable<string> AllowedIps => (AllowedIPAddresses ?? Enumerable.Empty<IPList>())
+                                .Where(l => l.Ips != null)
+                                .SelectMany(l => l.Ips);
+
+        /// <summary>
+        /// Gets all bypassed IPs from all lists.
+        /// </summary>
+        [JsonIgnore]
+        public IEnumerable<string> BypassedIps => (BypassedIPAddresses ?? Enumerable.Empty<IPList>())
+                                .Where(l => l.Ips != null)
+                                .SelectMany(l => l.Ips);
+
+        /// <summary>
+        /// Gets the compiled regex for blocked user agents.
+        /// </summary>
+        [JsonIgnore]
         public Regex BlockedUserAgentsRegex => !string.IsNullOrWhiteSpace(BlockedUserAgents)
             ? new Regex(BlockedUserAgents, RegexOptions.Compiled | RegexOptions.IgnoreCase)
             : null;
 
         /// <summary>
-        /// Gets a collection of blocked IP addresses as strings.
+        /// Represents a list of IPs.
         /// </summary>
-        public IEnumerable<string> BlockedIps => BlockedIPAddresses.Where(BlockedIPAddresses => BlockedIPAddresses != null)
-                   .SelectMany(BlockedIPAddresses => BlockedIPAddresses.Ips ?? Enumerable.Empty<string>());
-
-        /// <summary>
-        /// Gets a collection of allowed IP addresses as strings.
-        /// </summary>
-        public IEnumerable<string> AllowedIps => AllowedIPAddresses.Where(AllowedIPAddresses => AllowedIPAddresses != null)
-                   .SelectMany(AllowedIPAddresses => AllowedIPAddresses.Ips ?? Enumerable.Empty<string>());
-
         public class IPList
         {
             public string Source { get; set; }
             public string Description { get; set; }
             public IEnumerable<string> Ips { get; set; }
+            public string Key { get; set; }
         }
+
+        [JsonConstructor]
+        public FirewallListsAPIResponse(
+            IEnumerable<IPList> blockedIPAddresses = null,
+            IEnumerable<IPList> bypassedIPAddresses = null,
+            IEnumerable<IPList> allowedIPAddresses = null,
+            string blockedUserAgents = null,
+            IEnumerable<IPList> monitoredIPAddresses = null,
+            string monitoredUserAgents = null,
+            IEnumerable<UserAgentDetails> userAgentDetails = null)
+        {
+            BlockedIPAddresses = blockedIPAddresses;
+            BypassedIPAddresses = bypassedIPAddresses;
+            AllowedIPAddresses = allowedIPAddresses;
+            BlockedUserAgents = blockedUserAgents;
+            MonitoredIPAddresses = monitoredIPAddresses;
+            MonitoredUserAgents = monitoredUserAgents;
+            UserAgentDetails = userAgentDetails;
+        }
+
+        public FirewallListsAPIResponse() { }
     }
 }
