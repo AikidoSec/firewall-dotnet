@@ -515,5 +515,37 @@ namespace Aikido.Zen.Test
                 // // Add assertions based on compressed data if required
             });
         }
+
+        [Test]
+        public void OnIPAddressMatches_ShouldIncrementCounts()
+        {
+            // Arrange
+            var stats = new AgentStats();
+            var matches = new[] { "list1", "list2", "list1" };
+
+            // Act
+            stats.OnIPAddressMatches(matches);
+
+            // Assert
+            Assert.That(stats.IPAddresses.Breakdown.Count, Is.EqualTo(2));
+            Assert.That(stats.IPAddresses.Breakdown["list1"], Is.EqualTo(2));
+            Assert.That(stats.IPAddresses.Breakdown["list2"], Is.EqualTo(1));
+        }
+
+        [Test]
+        public void OnUserAgentMatches_ShouldIncrementCounts()
+        {
+            // Arrange
+            var stats = new AgentStats();
+            var matches = new[] { "bot1", "bot2", "bot1" };
+
+            // Act
+            stats.OnUserAgentMatches(matches);
+
+            // Assert
+            Assert.That(stats.UserAgents.Breakdown.Count, Is.EqualTo(2));
+            Assert.That(stats.UserAgents.Breakdown["bot1"], Is.EqualTo(2));
+            Assert.That(stats.UserAgents.Breakdown["bot2"], Is.EqualTo(1));
+        }
     }
 }

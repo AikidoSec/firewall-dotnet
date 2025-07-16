@@ -7,8 +7,12 @@ public class ConfigService
 {
     private readonly Dictionary<int, Dictionary<string, object>> _configs = new();
     private readonly Dictionary<int, IEnumerable<FirewallListConfig.IPList>> _blockedIps = new();
+    private readonly Dictionary<int, IEnumerable<FirewallListConfig.IPList>> _bypassedIps = new();
     private readonly Dictionary<int, string> _blockedUserAgents = new();
     private readonly Dictionary<int, IEnumerable<FirewallListConfig.IPList>> _allowedIps = new();
+    private readonly Dictionary<int, IEnumerable<FirewallListConfig.IPList>> _monitoredIps = new();
+    private readonly Dictionary<int, string> _monitoredUserAgents = new();
+    private readonly Dictionary<int, IEnumerable<UserAgentDetails>> _userAgentDetails = new();
 
     public Dictionary<string, object> GetConfig(int appId)
     {
@@ -49,6 +53,12 @@ public class ConfigService
         UpdateConfigTimestamp(appId);
     }
 
+    public void UpdateBypassedIps(int appId, IEnumerable<FirewallListConfig.IPList> ips)
+    {
+        _bypassedIps[appId] = ips;
+        UpdateConfigTimestamp(appId);
+    }
+
     public IEnumerable<FirewallListConfig.IPList> GetBlockedIps(int appId)
     {
         return _blockedIps.TryGetValue(appId, out var ips) ? ips : new List<FirewallListConfig.IPList>();
@@ -57,6 +67,11 @@ public class ConfigService
     public IEnumerable<FirewallListConfig.IPList> GetAllowedIps(int appId)
     {
         return _allowedIps.TryGetValue(appId, out var ips) ? ips : new List<FirewallListConfig.IPList>();
+    }
+
+    public IEnumerable<FirewallListConfig.IPList> GetBypassedIps(int appId)
+    {
+        return _bypassedIps.TryGetValue(appId, out var ips) ? ips : new List<FirewallListConfig.IPList>();
     }
 
     public void UpdateBlockedUserAgents(int appId, string userAgents)
@@ -68,6 +83,39 @@ public class ConfigService
     public string GetBlockedUserAgents(int appId)
     {
         return _blockedUserAgents.TryGetValue(appId, out var agents) ? agents : string.Empty;
+    }
+
+    public void UpdateMonitoredIps(int appId, IEnumerable<FirewallListConfig.IPList> ips)
+    {
+        _monitoredIps[appId] = ips;
+        UpdateConfigTimestamp(appId);
+    }
+
+    public IEnumerable<FirewallListConfig.IPList> GetMonitoredIps(int appId)
+    {
+        return _monitoredIps.TryGetValue(appId, out var ips) ? ips : new List<FirewallListConfig.IPList>();
+    }
+
+    public void UpdateMonitoredUserAgents(int appId, string userAgents)
+    {
+        _monitoredUserAgents[appId] = userAgents;
+        UpdateConfigTimestamp(appId);
+    }
+
+    public string GetMonitoredUserAgents(int appId)
+    {
+        return _monitoredUserAgents.TryGetValue(appId, out var agents) ? agents : string.Empty;
+    }
+
+    public void UpdateUserAgentDetails(int appId, IEnumerable<UserAgentDetails> details)
+    {
+        _userAgentDetails[appId] = details;
+        UpdateConfigTimestamp(appId);
+    }
+
+    public IEnumerable<UserAgentDetails> GetUserAgentDetails(int appId)
+    {
+        return _userAgentDetails.TryGetValue(appId, out var details) ? details : new List<UserAgentDetails>();
     }
 
     private Dictionary<string, object> GenerateDefaultConfig(int appId)

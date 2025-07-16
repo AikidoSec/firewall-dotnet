@@ -561,5 +561,64 @@ namespace Aikido.Zen.Test.End2End
             var responseBodyBlocked = await responseBlocked.Content.ReadAsStringAsync();
             Assert.That(responseBodyBlocked, Does.Contain("Your request is blocked: IP is not allowed for this endpoint"));
         }
+
+        [Test]
+        public async Task WhenBypassIpv6IsConfigured_ShouldAllowRequest()
+        {
+            // Arrange
+            var firewallLists = new FirewallListConfig
+            {
+                BypassedIPAddresses = [new FirewallListConfig.IPList
+                {
+                    Ips = ["2001:4860:4860::8888"], // Using a public IPv6 address (Google Public DNS)
+                    Description = "Bypassed IPv6",
+                    Source = "runtime"
+                }],
+                AllowedIPAddresses = [new FirewallListConfig.IPList
+                {
+                    Ips = ["123.123.123.123"],
+                    Description = "Allowed IP addresses",
+                    Source = "runtime"
+                }]
+            };
+            await MockServerClient.PostAsJsonAsync("/api/runtime/firewall/lists", firewallLists);
+            SampleAppClient = CreateSampleAppFactory().CreateClient();
+            Thread.Sleep(250);
+
+            var request = new HttpRequestMessage(HttpMethod.Get, "/api/pets");
+            request.Headers.Add("X-Forwarded-For", "2001:4860:4860::8888"); // Using the same public IPv6 address
+
+            // Act
+            var response = await SampleAppClient.SendAsync(request);
+
+            // Assert
+            Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+            var responseBody = await response.Content.ReadAsStringAsync();
+            Assert.That(responseBody, Does.Contain("["));
+        }
+
+        [Test]
+        public async Task WhenRequestContainsUserAgentInBlockedList_ShouldBlockRequest()
+        {
+            // Arrange
+            var blockedUserAgents = new FirewallListConfig
+            {
+                BlockedUserAgents = "malicious-bot"
+            };
+            await MockServerClient.PostAsJsonAsync("/api/runtime/firewall/lists", blockedUserAgents);
+            SampleAppClient = CreateSampleAppFactory().CreateClient();
+            Thread.Sleep(250);
+
+            var request = new HttpRequestMessage(HttpMethod.Get, "/api/pets");
+            request.Headers.Add("User-Agent", "malicious-bot");
+
+            // Act
+            var response = await SampleAppClient.SendAsync(request);
+
+            // Assert
+            Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
+            var responseBody = await response.Content.ReadAsStringAsync();
+            Assert.That(responseBody, Does.Contain("Your request is blocked: You are not allowed to access this resource because you have been identified as a bot."));
+        }
     }
 }

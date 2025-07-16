@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace Aikido.Zen.Server.Mock.Models
 {
     /// <summary>
@@ -15,20 +17,14 @@ namespace Aikido.Zen.Server.Mock.Models
         /// </summary>
         public int ServiceId { get; set; }
 
-        /// <summary>
-        /// Gets or sets the list of blocked IP addresses.
-        /// </summary>
-        public List<IPList> BlockedIPAddresses { get; set; }
-
-        /// <summary>
-        /// Gets or sets the list of allowed IP addresses.
-        /// </summary>
-        public List<IPList> AllowedIPAddresses { get; set; }
-
-        /// <summary>
-        /// Gets or sets the blocked user agents.
-        /// </summary>
+        public IEnumerable<IPList> BlockedIPAddresses { get; set; }
+        public IEnumerable<IPList> BypassedIPAddresses { get; set; }
         public string BlockedUserAgents { get; set; }
+        public IEnumerable<IPList> AllowedIPAddresses { get; set; }
+        public IEnumerable<IPList> MonitoredIPAddresses { get; set; }
+        public string MonitoredUserAgents { get; set; }
+        public IEnumerable<UserAgentDetails> UserAgentDetails { get; set; }
+
 
         /// <summary>
         /// Represents a list of IP addresses with a source and description.
@@ -48,7 +44,9 @@ namespace Aikido.Zen.Server.Mock.Models
             /// <summary>
             /// Gets or sets the list of IP addresses.
             /// </summary>
-            public List<string> Ips { get; set; }
+            public string[] Ips { get; set; }
+            public string Key { get; set; }
         }
+
     }
 }

@@ -1,4 +1,5 @@
 using Aikido.Zen.Server.Mock.Controllers;
+using Aikido.Zen.Server.Mock.Filters;
 using Aikido.Zen.Server.Mock.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,6 +13,7 @@ namespace Aikido.Zen.Server.Mock
     {
         private readonly RuntimeController _runtimeController;
         private readonly HealthController _healthController;
+        private readonly MonitoringController _monitoringController;
 
         public MockServerStartup()
         {
@@ -23,6 +25,7 @@ namespace Aikido.Zen.Server.Mock
             // Create controllers
             _runtimeController = new RuntimeController(configService, eventService, appService);
             _healthController = new HealthController();
+            _monitoringController = new MonitoringController(configService, eventService);
         }
 
         /// <summary>
@@ -30,10 +33,12 @@ namespace Aikido.Zen.Server.Mock
         /// </summary>
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddControllers();
             services.AddResponseCompression();
             services.AddSingleton<AppService>();
             services.AddSingleton<ConfigService>();
             services.AddSingleton<EventService>();
+            services.AddScoped<AuthFilter>();
         }
 
         /// <summary>
@@ -44,9 +49,17 @@ namespace Aikido.Zen.Server.Mock
             // enable gzip compression
             app.UseResponseCompression();
 
+            app.UseRouting();
+
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapControllers();
+            });
+
             // Configure endpoints for each controller
             _runtimeController.ConfigureEndpoints(app);
             _healthController.ConfigureEndpoints(app);
+            _monitoringController.ConfigureEndpoints(app);
         }
 
         /// <summary>
