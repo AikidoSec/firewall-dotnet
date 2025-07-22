@@ -15,7 +15,7 @@ namespace Aikido.Zen.Core.Patches
     /// </summary>
     public static class LLMPatcher
     {
-        private const string operationKind = "llm_op";
+        private const string operationKind = "ai_op";
 
         /// <summary>
         /// Handles completed LLM API calls to extract token usage and track statistics
