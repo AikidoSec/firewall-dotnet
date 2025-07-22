@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Helpers;
@@ -121,6 +122,29 @@ namespace Aikido.Zen.Core.Models
 
             // AddOrUpdate handles incrementing hits and eviction
             _routes.AddOrUpdate(context.Route, route);
+        }
+
+        public void UpdateRequestStats(Context context)
+        {
+            if (context == null) return;
+
+            var monitoredIpKeys = Config.GetMatchingMonitoredIPListKeys(context.RemoteAddress);
+            if (monitoredIpKeys.Any())
+            {
+                _stats.OnIPAddressMatches(monitoredIpKeys);
+            }
+
+            var blockedIpKeys = Config.GetMatchingBlockedIPListKeys(context.RemoteAddress);
+            if (blockedIpKeys.Any())
+            {
+                _stats.OnIPAddressMatches(blockedIpKeys);
+            }
+
+            var userAgentKeys = Config.GetMatchingUserAgentKeys(context.UserAgent);
+            if (userAgentKeys.Any())
+            {
+                _stats.OnUserAgentMatches(userAgentKeys);
+            }
         }
 
         public void Clear()

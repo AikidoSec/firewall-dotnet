@@ -1,10 +1,10 @@
+using System.Net;
+using System.Net.Http.Json;
+using Aikido.Zen.DotNetCore;
+using Aikido.Zen.Server.Mock.Models;
 using Microsoft.AspNetCore.Mvc.Testing;
 using NUnit.Framework;
-using System.Net;
-using Aikido.Zen.DotNetCore;
-using System.Net.Http.Json;
 using SQLiteSampleApp;
-using Aikido.Zen.Server.Mock.Models;
 
 namespace Aikido.Zen.Test.End2End
 {
@@ -50,16 +50,16 @@ namespace Aikido.Zen.Test.End2End
         public async Task WhenBypassIpIsConfigured_ShouldAllowRequest()
         {
             // Arrange
-            // Configure mock server to return config with bypass IP
-            var bypassList = new Dictionary<string, object>
+            var firewallLists = new FirewallListConfig
             {
-                ["allowedIPAddresses"] = new List<string> { "123.123.123.123" }
+                BypassedIPAddresses = [new FirewallListConfig.IPList { Ips = ["123.123.123.123"] }]
             };
-            var result = await MockServerClient.PostAsJsonAsync("/api/runtime/config", bypassList);
+            await MockServerClient.PostAsJsonAsync("/api/runtime/firewall/lists", firewallLists);
 
             SampleAppClient = CreateSampleAppFactory().CreateClient();
             Thread.Sleep(250);
 
+            // This payload would normally be blocked by the SQLi detector
             var unsafePayload = new { Name = "Malicious Pet', 'Gru from the Minions'); -- " };
             var request = new HttpRequestMessage(HttpMethod.Post, "/api/pets/create");
             request.Headers.Add("X-Forwarded-For", "123.123.123.123");
@@ -78,22 +78,14 @@ namespace Aikido.Zen.Test.End2End
         public async Task WhenBypassIpIsNotConfigured_ShouldBlockRequest()
         {
             // Arrange
-            // Configure mock server to return config without bypass IP
-            var bypassList = new Dictionary<string, object>
-            {
-                ["allowedIPAddresses"] = new List<string>()
-            };
-            var firewallLists = new FirewallListConfig
-            {
-                AllowedIPAddresses = []
-            };
-            await MockServerClient.PostAsJsonAsync("/api/runtime/config", bypassList);
+            var firewallLists = new FirewallListConfig(); // Empty config
             await MockServerClient.PostAsJsonAsync("/api/runtime/firewall/lists", firewallLists);
             SampleAppClient = CreateSampleAppFactory().CreateClient();
             Thread.Sleep(250);
 
             var unsafePayload = new { Name = "Malicious Pet', 'Gru from the Minions'); -- " };
             var request = new HttpRequestMessage(HttpMethod.Post, "/api/pets/create");
+            // Use a non-bypassed IP
             request.Headers.Add("X-Forwarded-For", "192.168.1.1");
             request.Content = JsonContent.Create(unsafePayload);
 
@@ -110,22 +102,14 @@ namespace Aikido.Zen.Test.End2End
         public async Task WhenBypassIpRangesConfigured_ShouldAllowMatchingIp()
         {
             // Arrange
-            // Configure mock server to return config with bypass IP ranges
-            var bypassList = new Dictionary<string, object>
-            {
-                ["allowedIPAddresses"] = new List<string> { "124.124.124.0/16" } // Using a public IPv6 address (Google Public DNS)
-            };
             var firewallLists = new FirewallListConfig
             {
-                AllowedIPAddresses = [new FirewallListConfig.IPList
-                {
-                    Ips = ["123.123.123.123"],
-                    Description = "Allowed IP addresses",
-                    Source = "runtime"
-                }]
+                // This IP would be blocked, but the bypass list takes precedence
+                BlockedIPAddresses = [new FirewallListConfig.IPList { Ips = ["124.124.124.124"] }],
+                BypassedIPAddresses = [new FirewallListConfig.IPList { Ips = ["124.124.124.0/16"] }]
             };
-            var configResult = await MockServerClient.PostAsJsonAsync("/api/runtime/config", bypassList);
-            var listsResult = await MockServerClient.PostAsJsonAsync("/api/runtime/firewall/lists", firewallLists);
+            await MockServerClient.PostAsJsonAsync("/api/runtime/firewall/lists", firewallLists);
+
             SampleAppClient = CreateSampleAppFactory().CreateClient();
             Thread.Sleep(250);
             var request = new HttpRequestMessage(HttpMethod.Get, "/api/pets");
@@ -144,22 +128,13 @@ namespace Aikido.Zen.Test.End2End
         public async Task WhenBypassIpv6IsConfigured_ShouldAllowRequest()
         {
             // Arrange
-            // Configure mock server to return config with bypass IPv6
-            var bypassList = new Dictionary<string, object>
-            {
-                ["allowedIPAddresses"] = new List<string> { "2001:4860:4860::8888" } // Using a public IPv6 address (Google Public DNS)
-            };
             var firewallLists = new FirewallListConfig
             {
-                AllowedIPAddresses = [new FirewallListConfig.IPList
-                {
-                    Ips = ["123.123.123.123"],
-                    Description = "Allowed IP addresses",
-                    Source = "runtime"
-                }]
+                // This IP would be blocked, but the bypass list takes precedence
+                BlockedIPAddresses = [new FirewallListConfig.IPList { Ips = ["2001:4860:4860::8888"] }],
+                BypassedIPAddresses = [new FirewallListConfig.IPList { Ips = ["2001:4860:4860::8888"] }]
             };
-            var configResult = await MockServerClient.PostAsJsonAsync("/api/runtime/config", bypassList);
-            var listsResult = await MockServerClient.PostAsJsonAsync("/api/runtime/firewall/lists", firewallLists);
+            await MockServerClient.PostAsJsonAsync("/api/runtime/firewall/lists", firewallLists);
             SampleAppClient = CreateSampleAppFactory().CreateClient();
             Thread.Sleep(250);
             var request = new HttpRequestMessage(HttpMethod.Get, "/api/pets");
@@ -178,16 +153,7 @@ namespace Aikido.Zen.Test.End2End
         public async Task WhenBypassIpv6IsNotConfigured_ShouldBlockRequest()
         {
             // Arrange
-            // Configure mock server to return config without bypass IPv6
-            var bypassList = new Dictionary<string, object>
-            {
-                ["allowedIPAddresses"] = new List<string>()
-            };
-            var firewallLists = new FirewallListConfig
-            {
-                AllowedIPAddresses = []
-            };
-            await MockServerClient.PostAsJsonAsync("/api/runtime/config", bypassList);
+            var firewallLists = new FirewallListConfig(); // Empty config
             await MockServerClient.PostAsJsonAsync("/api/runtime/firewall/lists", firewallLists);
             SampleAppClient = CreateSampleAppFactory().CreateClient();
             Thread.Sleep(250);

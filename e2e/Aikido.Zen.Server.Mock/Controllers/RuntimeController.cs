@@ -72,8 +72,10 @@ namespace Aikido.Zen.Server.Mock.Controllers
 
                 var appModel = context.Items["app"] as AppModel;
                 var blockedIps = _configService.GetBlockedIps(appModel!.Id).ToList();
-
                 var allowedIps = _configService.GetAllowedIps(appModel.Id).ToList();
+                var bypassedIps = _configService.GetBypassedIps(appModel.Id).ToList();
+                var monitoredIps = _configService.GetMonitoredIps(appModel.Id).ToList();
+                var userAgentDetails = _configService.GetUserAgentDetails(appModel.Id).ToList();
 
                 var firewallListConfig = new FirewallListConfig
                 {
@@ -81,7 +83,11 @@ namespace Aikido.Zen.Server.Mock.Controllers
                     ServiceId = appModel.Id,
                     BlockedIPAddresses = blockedIps,
                     AllowedIPAddresses = allowedIps,
-                    BlockedUserAgents = _configService.GetBlockedUserAgents(appModel.Id)
+                    BypassedIPAddresses = bypassedIps,
+                    BlockedUserAgents = _configService.GetBlockedUserAgents(appModel.Id),
+                    MonitoredIPAddresses = monitoredIps,
+                    MonitoredUserAgents = _configService.GetMonitoredUserAgents(appModel.Id),
+                    UserAgentDetails = userAgentDetails
                 };
 
                 return Results.Json(firewallListConfig);
@@ -93,7 +99,7 @@ namespace Aikido.Zen.Server.Mock.Controllers
 
                 if (lists.BlockedIPAddresses?.Any() ?? false)
                 {
-                    _configService.UpdateBlockedIps(appModel!.Id, lists.BlockedIPAddresses);
+                    _configService.UpdateBlockedIps(appModel!.Id, lists.BlockedIPAddresses.ToList());
                 }
 
                 if (!string.IsNullOrEmpty(lists.BlockedUserAgents))
@@ -103,7 +109,27 @@ namespace Aikido.Zen.Server.Mock.Controllers
 
                 if (lists.AllowedIPAddresses?.Any() ?? false)
                 {
-                    _configService.UpdateAllowedIps(appModel!.Id, lists.AllowedIPAddresses);
+                    _configService.UpdateAllowedIps(appModel!.Id, lists.AllowedIPAddresses.ToList());
+                }
+
+                if (lists.BypassedIPAddresses?.Any() ?? false)
+                {
+                    _configService.UpdateBypassedIps(appModel!.Id, lists.BypassedIPAddresses.ToList());
+                }
+
+                if (lists.MonitoredIPAddresses?.Any() ?? false)
+                {
+                    _configService.UpdateMonitoredIps(appModel!.Id, lists.MonitoredIPAddresses);
+                }
+
+                if (!string.IsNullOrEmpty(lists.MonitoredUserAgents))
+                {
+                    _configService.UpdateMonitoredUserAgents(appModel!.Id, lists.MonitoredUserAgents);
+                }
+
+                if (lists.UserAgentDetails?.Any() ?? false)
+                {
+                    _configService.UpdateUserAgentDetails(appModel!.Id, lists.UserAgentDetails);
                 }
 
                 return Results.Json(new { success = true });
@@ -115,6 +141,13 @@ namespace Aikido.Zen.Server.Mock.Controllers
                 var token = _appService.CreateApp();
                 return Results.Json(new { token });
             });
+
+            app.MapDelete("/api/runtime/events", async (HttpContext context) =>
+            {
+                var appModel = context.Items["app"] as AppModel;
+                _eventService.ClearEvents(appModel!.Id);
+                return Results.Json(new { success = true });
+            }).AddEndpointFilter<AuthFilter>();
         }
     }
 }

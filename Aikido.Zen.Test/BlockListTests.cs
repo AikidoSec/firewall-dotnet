@@ -1,7 +1,7 @@
+using System.Threading.Tasks;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Models.Ip;
-using System.Threading.Tasks;
 
 namespace Aikido.Zen.Test
 {
@@ -307,7 +307,7 @@ namespace Aikido.Zen.Test
             {
                 var context = new Context { RemoteAddress = ip, Method = "GET", Url = url, Route = "testUrl" };
                 Assert.That(_blockList.IsBlocked(context, out var reason), Is.False);
-                Assert.That(reason, Is.EqualTo("Ip is private or local"));
+                Assert.That(reason, Is.EqualTo("IP is private or local"));
             }
         }
 
@@ -330,7 +330,7 @@ namespace Aikido.Zen.Test
 
             // Invalid IPs should not be allowed when there are allowed IPs
             _blockList.UpdateAllowedIps(new[] { "8.8.8.0/8" });
-            Assert.That(_blockList.IsIPAllowed("invalid.ip"), Is.False);
+            Assert.That(_blockList.IsIpAllowed("invalid.ip"), Is.False);
 
             // Invalid IPs should not be bypassed
             Assert.That(_blockList.IsIPBypassed("invalid.ip"), Is.False);
@@ -370,7 +370,7 @@ namespace Aikido.Zen.Test
             // 1. Private IPs should be allowed first
             var context1 = new Context { RemoteAddress = "192.168.1.1", Method = "GET", Url = url, Route = "testUrl" };
             Assert.That(_blockList.IsBlocked(context1, out var reason1), Is.False);
-            Assert.That(reason1, Is.EqualTo("Ip is private or local"));
+            Assert.That(reason1, Is.EqualTo("IP is private or local"));
 
             // 2. Bypassed IPs should be allowed second
             _blockList.UpdateBypassedIps(new[] { ip });
@@ -383,7 +383,7 @@ namespace Aikido.Zen.Test
             _blockList.UpdateBlockedIps([ip]);
             var context3 = new Context { RemoteAddress = ip, Method = "GET", Url = url, Route = "testUrl" };
             Assert.That(_blockList.IsBlocked(context3, out var reason3), Is.True);
-            Assert.That(reason3, Is.EqualTo("IP is not allowed"));
+            Assert.That(reason3, Is.EqualTo("IP is blocked"));
 
             // 4. Bypassed IPs should override blocked IPs
             _blockList.UpdateBypassedIps(new[] { ip });
@@ -397,7 +397,7 @@ namespace Aikido.Zen.Test
             _blockList.UpdateBypassedIps(Array.Empty<string>());
             var context5 = new Context { RemoteAddress = ip, Method = "GET", Url = url, Route = "testUrl" };
             Assert.That(_blockList.IsBlocked(context5, out var reason5), Is.True);
-            Assert.That(reason5, Is.EqualTo("Ip is not allowed"));
+            Assert.That(reason5, Is.EqualTo("IP is not allowed for this endpoint"));
         }
 
         [Test]

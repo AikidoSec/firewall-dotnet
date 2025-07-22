@@ -1,8 +1,11 @@
 
+using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Models;
+using NUnit.Framework;
 
 namespace Aikido.Zen.Test
 {
@@ -176,6 +179,113 @@ namespace Aikido.Zen.Test
             // Assert
             Assert.That(_config.BlockedUserAgents, Is.Null);
             Assert.That(_config.IsUserAgentBlocked("Mozilla/5.0 (compatible; Bot/1.0)"), Is.False);
+        }
+
+        [Test]
+        public void UpdateMonitoredIPAddresses_ShouldSetAndUpdateLists()
+        {
+            // Arrange
+            var monitoredIps1 = new List<FirewallListsAPIResponse.IPList>
+            {
+                new FirewallListsAPIResponse.IPList { Key = "monitored1", Ips = new[] { "1.1.1.0/24" } }
+            };
+            var monitoredIps2 = new List<FirewallListsAPIResponse.IPList>
+            {
+                new FirewallListsAPIResponse.IPList { Key = "monitored2", Ips = new[] { "2.2.2.0/24" } }
+            };
+
+            // Act & Assert - Initial Update
+            _config.UpdateMonitoredIPAddresses(monitoredIps1);
+            var matches1 = _config.GetMatchingMonitoredIPListKeys("1.1.1.1");
+            Assert.That(matches1.Count(), Is.EqualTo(1));
+            Assert.That(matches1.First(), Is.EqualTo("monitored1"));
+
+            // Act & Assert - Second Update (should replace)
+            _config.UpdateMonitoredIPAddresses(monitoredIps2);
+            var matches2 = _config.GetMatchingMonitoredIPListKeys("1.1.1.1");
+            var matches3 = _config.GetMatchingMonitoredIPListKeys("2.2.2.2");
+            Assert.That(matches2.Any(), Is.False);
+            Assert.That(matches3.Count(), Is.EqualTo(1));
+            Assert.That(matches3.First(), Is.EqualTo("monitored2"));
+
+            // Act & Assert - Clear list
+            _config.UpdateMonitoredIPAddresses(null);
+            var matches4 = _config.GetMatchingMonitoredIPListKeys("2.2.2.2");
+            Assert.That(matches4.Any(), Is.False);
+        }
+
+        [Test]
+        public void GetMatchingIPListKeys_ShouldReturnCorrectKeysForBlockedAndMonitored()
+        {
+            // Arrange
+            var monitoredIps = new List<FirewallListsAPIResponse.IPList>
+            {
+                new FirewallListsAPIResponse.IPList { Key = "monitored", Ips = new[] { "1.1.1.0/24" } }
+            };
+            var blockedIps = new List<FirewallListsAPIResponse.IPList>
+            {
+                new FirewallListsAPIResponse.IPList { Key = "blocked", Ips = new[] { "2.2.2.0/24" } }
+            };
+            _config.UpdateMonitoredIPAddresses(monitoredIps);
+            _config.BlockList.UpdateIPLists(blockedIps);
+
+            // Act
+            var monitoredMatches = _config.GetMatchingMonitoredIPListKeys("1.1.1.1");
+            var blockedMatches = _config.GetMatchingBlockedIPListKeys("2.2.2.2");
+            var noMonitoredMatches = _config.GetMatchingMonitoredIPListKeys("2.2.2.2");
+            var noBlockedMatches = _config.GetMatchingBlockedIPListKeys("1.1.1.1");
+
+            // Assert
+            Assert.That(monitoredMatches.First(), Is.EqualTo("monitored"));
+            Assert.That(blockedMatches.First(), Is.EqualTo("blocked"));
+            Assert.That(noMonitoredMatches.Any(), Is.False);
+            Assert.That(noBlockedMatches.Any(), Is.False);
+        }
+
+        [Test]
+        public void GetMatchingUserAgentKeys_ShouldReturnAllMatchingKeys()
+        {
+            // Arrange
+            var userAgentDetails = new List<UserAgentDetails>
+            {
+                new UserAgentDetails { Key = "GoogleBot", Pattern = "Googlebot" },
+                new UserAgentDetails { Key = "DesktopBrowser", Pattern = "Mozilla" }
+            };
+            var regexPattern = string.Join("|", userAgentDetails.Select(ud => $"(?<{ud.Key}>{ud.Pattern})"));
+            _config.UpdateMonitoredUserAgents(regexPattern);
+            _config.UpdateUserAgentDetails(userAgentDetails);
+
+            // Act
+            var matches = _config.GetMatchingUserAgentKeys("Mozilla/5.0 (compatible; Googlebot/2.1;)");
+
+            // Assert
+            Assert.That(matches.Count(), Is.EqualTo(2));
+            Assert.That(matches, Contains.Item("GoogleBot"));
+            Assert.That(matches, Contains.Item("DesktopBrowser"));
+        }
+
+        [Test]
+        public void UpdateMonitoredUserAgents_WithEmptyOrInvalidPattern_ShouldBeHandledGracefully()
+        {
+            // Arrange
+            var userAgentDetails = new List<UserAgentDetails> { new UserAgentDetails { Key = "A", Pattern = "B" } };
+            _config.UpdateUserAgentDetails(userAgentDetails);
+            var userAgent = "TestUserAgent";
+
+            // Act & Assert - Invalid Pattern
+            _config.UpdateMonitoredUserAgents("(?<invalid"); // Invalid regex
+            var matches1 = _config.GetMatchingUserAgentKeys(userAgent);
+            Assert.That(matches1.Any(), Is.False, "Should not match with invalid regex");
+
+            // Act & Assert - Empty Pattern
+            _config.UpdateMonitoredUserAgents(string.Empty);
+            var matches2 = _config.GetMatchingUserAgentKeys(userAgent);
+            Assert.That(matches2.Any(), Is.False, "Should not match with empty regex");
+
+            // Act & Assert - Null Pattern
+            _config.UpdateMonitoredUserAgents(null);
+            var matches3 = _config.GetMatchingUserAgentKeys(userAgent);
+            Assert.That(matches3.Any(), Is.False, "Should not match with null regex");
         }
     }
 }

@@ -20,6 +20,10 @@ namespace Aikido.Zen.Core.Models
         private List<EndpointConfig> _endpoints = new List<EndpointConfig>();
         private readonly object _endpointsLock = new object();
 
+        private BlockList _monitoredIps = new BlockList();
+        private Regex _monitoredUserAgentRegex;
+        private List<UserAgentDetails> _userAgentDetails = new List<UserAgentDetails>();
+
         public long ConfigLastUpdated { get; set; } = 0;
         public bool ContextMiddlewareInstalled { get; set; } = false;
         public bool BlockingMiddlewareInstalled { get; set; } = false;
@@ -33,6 +37,9 @@ namespace Aikido.Zen.Core.Models
             _endpoints.Clear();
             _blockedUserAgents = null;
             _blockList = new BlockList();
+            _monitoredIps = new BlockList();
+            _monitoredUserAgentRegex = null;
+            _userAgentDetails = new List<UserAgentDetails>();
         }
 
         /// <summary>
@@ -56,6 +63,45 @@ namespace Aikido.Zen.Core.Models
                 return false;
 
             return _blockedUserAgents?.IsMatch(userAgent) ?? false;
+        }
+
+        public IEnumerable<string> GetMatchingMonitoredIPListKeys(string ip)
+        {
+            return _monitoredIps.GetMatchingIPListKeys(ip);
+        }
+
+        public IEnumerable<string> GetMatchingBlockedIPListKeys(string ip)
+        {
+            return _blockList.GetMatchingIPListKeys(ip);
+        }
+
+        public IEnumerable<string> GetMatchingUserAgentKeys(string userAgent)
+        {
+            if (string.IsNullOrWhiteSpace(userAgent) || _userAgentDetails == null)
+            {
+                return Enumerable.Empty<string>();
+            }
+
+            var safeRegex = _monitoredUserAgentRegex;
+            if (safeRegex == null)
+            {
+                return Enumerable.Empty<string>();
+            }
+
+            var match = safeRegex.Match(userAgent);
+            if (!match.Success)
+            {
+                return Enumerable.Empty<string>();
+            }
+
+            return _userAgentDetails
+                .Where(ud =>
+                {
+                    // The group name in the regex pattern corresponds to the user agent key.
+                    // A successful match for a group means that user agent pattern was found.
+                    return match.Groups[ud.Key].Success;
+                })
+                .Select(ud => ud.Key);
         }
 
         /// <summary>
@@ -111,13 +157,22 @@ namespace Aikido.Zen.Core.Models
             if (response == null)
             {
                 BlockList.UpdateBlockedIps(new List<string>());
+                BlockList.UpdateBypassedIps(new List<string>());
                 BlockList.UpdateAllowedIps(new List<string>());
                 UpdateBlockedUserAgents(null);
+                UpdateMonitoredIPAddresses(null);
+                UpdateMonitoredUserAgents(null);
+                UpdateUserAgentDetails(null);
                 return;
             }
             BlockList.UpdateBlockedIps(response.BlockedIps);
+            BlockList.UpdateBypassedIps(response.BypassedIps);
             BlockList.UpdateAllowedIps(response.AllowedIps);
             UpdateBlockedUserAgents(response.BlockedUserAgentsRegex);
+
+            UpdateMonitoredIPAddresses(response.MonitoredIPAddresses);
+            UpdateMonitoredUserAgents(response.MonitoredUserAgents);
+            UpdateUserAgentDetails(response.UserAgentDetails);
         }
 
         /// <summary>
@@ -127,6 +182,39 @@ namespace Aikido.Zen.Core.Models
         public void UpdateBlockedUserAgents(Regex blockedUserAgents)
         {
             _blockedUserAgents = blockedUserAgents;
+        }
+
+        public void UpdateMonitoredIPAddresses(IEnumerable<FirewallListsAPIResponse.IPList> monitoredIPs)
+        {
+            if (monitoredIPs == null)
+            {
+                _monitoredIps = new BlockList();
+                return;
+            }
+            _monitoredIps.UpdateIPLists(monitoredIPs);
+        }
+
+        public void UpdateMonitoredUserAgents(string monitoredUserAgents)
+        {
+            if (string.IsNullOrWhiteSpace(monitoredUserAgents))
+            {
+                _monitoredUserAgentRegex = null;
+                return;
+            }
+
+            try
+            {
+                _monitoredUserAgentRegex = new Regex(monitoredUserAgents, RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            }
+            catch (ArgumentException)
+            {
+                _monitoredUserAgentRegex = null;
+            }
+        }
+
+        public void UpdateUserAgentDetails(IEnumerable<UserAgentDetails> userAgentDetails)
+        {
+            _userAgentDetails = userAgentDetails?.ToList() ?? new List<UserAgentDetails>();
         }
 
         // Public properties

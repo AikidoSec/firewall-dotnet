@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Helpers.OpenAPI;
+using Aikido.Zen.Core.Models;
 
 // Make internals visible to the test project
 [assembly: InternalsVisibleTo("Aikido.Zen.Test")]
@@ -21,6 +22,16 @@ namespace Aikido.Zen.Core.Models
         private readonly int _maxCompressedStatsInMem;
         private ConcurrentDictionary<string, OperationStats> _operations = new ConcurrentDictionary<string, OperationStats>();
         private Requests _requests = new Requests();
+
+        /// <summary>
+        /// Gets statistics about IP address matches.
+        /// </summary>
+        public IPAddressStats IPAddresses { get; private set; }
+
+        /// <summary>
+        /// Gets statistics about user agent matches.
+        /// </summary>
+        public UserAgentStats UserAgents { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AgentStats"/> class.
@@ -99,6 +110,8 @@ namespace Aikido.Zen.Core.Models
                     Blocked = 0
                 }
             };
+            IPAddresses = new IPAddressStats();
+            UserAgents = new UserAgentStats();
             StartedAt = DateTimeHelper.UTCNowUnixMilliseconds();
         }
 
@@ -123,6 +136,32 @@ namespace Aikido.Zen.Core.Models
             var operationStats = _operations[operation];
             Interlocked.Increment(ref operationStats.Total);
             Interlocked.Increment(ref operationStats.InterceptorThrewError);
+        }
+
+        /// <summary>
+        /// Records a list of matching IP list keys.
+        /// </summary>
+        /// <param name="matches">The keys of the IP lists that matched.</param>
+        public void OnIPAddressMatches(IEnumerable<string> matches)
+        {
+            if (matches == null) return;
+            foreach (var match in matches)
+            {
+                IPAddresses.Breakdown.AddOrUpdate(match, 1, (key, count) => count + 1);
+            }
+        }
+
+        /// <summary>
+        /// Records a list of matching user agent keys.
+        /// </summary>
+        /// <param name="matches">The keys of the user agent patterns that matched.</param>
+        public void OnUserAgentMatches(IEnumerable<string> matches)
+        {
+            if (matches == null) return;
+            foreach (var match in matches)
+            {
+                UserAgents.Breakdown.AddOrUpdate(match, 1, (key, count) => count + 1);
+            }
         }
 
         /// <summary>
@@ -337,7 +376,9 @@ namespace Aikido.Zen.Core.Models
         {
             return !_operations.Any() &&
                    _requests.Total == 0 &&
-                   _requests.AttacksDetected.Total == 0;
+                   _requests.AttacksDetected.Total == 0 &&
+                   !IPAddresses.Breakdown.Any() &&
+                   !UserAgents.Breakdown.Any();
         }
     }
 }
