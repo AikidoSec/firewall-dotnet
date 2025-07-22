@@ -163,6 +163,9 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 }
                 else
                 {
+                    // Example: for ?foo=a&foo=b, the dictionary will be:
+                    // { "foo": "a", "foo[1]": "b" }
+                    // The first value ("a") is used as the default ("foo"), matching ASP.NET Core's default behavior for query and header collections.
                     for (int i = 0; i < values.Count; i++)
                     {
                         string dictKey = i == 0 ? kvp.Key : $"{kvp.Key}[{i}]";
