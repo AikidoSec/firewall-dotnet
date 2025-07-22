@@ -68,6 +68,8 @@ namespace Aikido.Zen.Core.Helpers
             var typeKey = $"{assemblyName}.{typeName}";
             if (!_types.TryGetValue(typeKey, out var type))
             {
+                // first we look in ExportedTypes, since it's faster than GetTypes(), but doesn't include all types
+                // if we don't find the type, we fallback to GetTypes()
                 type = assembly.ExportedTypes.FirstOrDefault(t => t.Name == typeName || t.FullName == typeName)
                     ?? assembly.GetTypes().FirstOrDefault(t => t.Name == typeName || t.FullName == typeName);
 
