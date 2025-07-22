@@ -1,7 +1,7 @@
-using Aikido.Zen.Core.Patches;
+using Aikido.Zen.Core.Helpers;
 using NUnit.Framework;
 
-namespace Aikido.Zen.Tests.DotNetCore.Patches
+namespace Aikido.Zen.Tests
 {
     /// <summary>
     /// Tests for the <see cref="IOPatcher"/> class.
@@ -27,7 +27,7 @@ namespace Aikido.Zen.Tests.DotNetCore.Patches
         public void ShouldExcludeAssembly_ShouldReturnCorrectResult(string assemblyName, bool expected)
         {
             // Act
-            var result = IOPatcher.ShouldExcludeAssembly(assemblyName);
+            var result = ReflectionHelper.ShouldExcludeAssembly(assemblyName);
 
             // Assert
             Assert.AreEqual(expected, result);

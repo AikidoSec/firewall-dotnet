@@ -25,7 +25,7 @@ namespace Aikido.Zen.Core.Patches
         {
             // Exclude certain assemblies to avoid stack overflow issues
             var callingAssembly = GetCallingAssembly();
-            if (ShouldExcludeAssembly(callingAssembly))
+            if (ReflectionHelper.ShouldExcludeAssembly(callingAssembly))
             {
                 return true; // Skip processing for excluded assemblies
             }
@@ -69,25 +69,6 @@ namespace Aikido.Zen.Core.Patches
                 throw AikidoException.PathTraversalDetected(operation, originalMethod.Name);
             }
             return true;
-        }
-
-        private static bool ShouldExcludeAssembly(string assemblyFullName)
-        {
-            if (string.IsNullOrEmpty(assemblyFullName))
-            {
-                return false;
-            }
-
-            // Exclude assemblies that are known to cause issues
-            // Using FullName which includes version info, so we check if it contains the assembly name
-            var excludedAssemblies = new[]
-            {
-                "Costura", // Assembly weaver that embeds dependencies
-                "Harmony", // Harmony patching library
-                "Fody", // IL weaving framework
-            };
-
-            return excludedAssemblies.Any(excluded => assemblyFullName.Contains(excluded));
         }
 
         private static string GetCallingAssembly()
