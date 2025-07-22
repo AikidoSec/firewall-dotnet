@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Aikido.Zen.Core.Api;
@@ -25,6 +26,7 @@ namespace Aikido.Zen.Core.Models
         public long ConfigLastUpdated { get; set; } = 0;
         public bool ContextMiddlewareInstalled { get; set; } = false;
         public bool BlockingMiddlewareInstalled { get; set; } = false;
+        public List<Context.RedirectInfo> OutgoingRequestRedirects { get; set; } = new List<Context.RedirectInfo>();
 
         public void AddRequest()
         {
@@ -131,6 +133,7 @@ namespace Aikido.Zen.Core.Models
             _users.Clear();
             _routes.Clear();
             ConfigLastUpdated = 0;
+            OutgoingRequestRedirects.Clear();
         }
 
         /// <summary>

@@ -22,7 +22,7 @@ namespace Aikido.Zen.Test.Helpers
             using var bodyStream = new MemoryStream(Encoding.UTF8.GetBytes(body));
 
             // Act
-            var result = await HttpHelper.ReadAndFlattenHttpDataAsync(queryParams, headers, cookies, bodyStream, contentType, bodyStream.Length);
+            var result = await HttpHelper.ReadAndFlattenHttpDataAsync("/request/path", "/request/{route}", queryParams, headers, cookies, bodyStream, contentType, bodyStream.Length);
 
             // Assert
             Assert.That(result.FlattenedData, Is.Not.Null);

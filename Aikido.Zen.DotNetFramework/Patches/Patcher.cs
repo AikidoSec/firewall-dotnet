@@ -27,6 +27,10 @@ namespace Aikido.Zen.DotNetFramework.Patches
 
                 // Patch process execution methods to prevent shell injection
                 ProcessPatches.ApplyPatches(harmony);
+
+                // patch methods to trace outgoing web requests
+                WebRequestPatches.ApplyPatches(harmony);
+                HttpClientPatches.ApplyPatches(harmony);
             }
             catch (Exception ex)
             {

@@ -41,6 +41,33 @@ namespace Aikido.Zen.Core.Models
             }
         }
 
+        public static Source ToSource(this string value)
+        {
+            switch (value.ToLower())
+            {
+                case "query":
+                    return Source.Query;
+                case "body":
+                    return Source.Body;
+                case "route":
+                    return Source.RouteParams;
+                case "headers":
+                    return Source.Headers;
+                case "cookies":
+                    return Source.Cookies;
+                case "routeparams":
+                    return Source.RouteParams;
+                case "graphql":
+                    return Source.Graphql;
+                case "xml":
+                    return Source.Xml;
+                case "subdomains":
+                    return Source.Subdomains;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(value), $"Unknown source: {value}");
+            }
+        }
+
         public static string ToJsonName(this Source source)
         {
             switch (source)
