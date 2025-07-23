@@ -1,15 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Weavers xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="FodyWeavers.xsd">
-  <Costura CreateTemporaryAssemblies='true' DisableCleanup='true'>
+  <Costura CreateTemporaryAssemblies='false'>
     <IncludeProjectReferences>true</IncludeProjectReferences>
-    <Unmanaged32Assemblies>
-      Lib.Harmony
-    </Unmanaged32Assemblies>
-    <Unmanaged64Assemblies>
-      Lib.Harmony
-    </Unmanaged64Assemblies>
     <ExcludeAssemblies>
       Aikido.Zen.Core
+      Lib.Harmony
     </ExcludeAssemblies>
   </Costura>
 </Weavers>
