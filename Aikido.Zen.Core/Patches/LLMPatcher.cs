@@ -81,7 +81,7 @@ namespace Aikido.Zen.Core.Patches
                 provider = "azure";
                 return true;
             }
-            // than the llm companies
+            // then the llm companies
             if (searchString.Contains("anthropic") || searchString.Contains("claude"))
             {
                 provider = "anthropic";
