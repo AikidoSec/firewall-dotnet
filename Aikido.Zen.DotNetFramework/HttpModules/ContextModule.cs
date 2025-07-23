@@ -163,21 +163,15 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             foreach (string key in queryString.AllKeys)
             {
                 var values = queryString.GetValues(key);
-                if (values != null)
+                // Example: for ?foo=a&foo=b, the dictionary will be:
+                // { "foo": "a", "foo[1]": "b" }
+                // The first value ("a") is used as the default ("foo"), matching ASP.NET Core's default behavior for query and header collections.
+                for (int i = 0; i < values.Length; i++)
                 {
-                    if (values.Length == 1)
-                    {
-                        result[key] = values[0];
-                    }
-                    else
-                    {
-                        for (int i = 0; i < values.Length; i++)
-                        {
-                            string dictKey = i == 0 ? key : $"{key}[{i}]";
-                            result[dictKey] = values[i];
-                        }
-                    }
+                    string dictKey = i == 0 ? key : $"{key}[{i}]";
+                    result[dictKey] = values[i];
                 }
+
             }
 
             return result;
@@ -195,23 +189,13 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             foreach (string key in headers.AllKeys)
             {
                 var values = headers.GetValues(key);
-                if (values != null)
+
+                // Example: for X-Forwarded-For: 1.2.3.4, 5.6.7.8, the dictionary will be:
+                // { "X-Forwarded-For": "1.2.3.4", "X-Forwarded-For[1]": "5.6.7.8" }
+                for (int i = 0; i < values.Length; i++)
                 {
-                    if (values.Length == 1)
-                    {
-                        result[key] = values[0];
-                    }
-                    else
-                    {
-                        // Example: for ?foo=a&foo=b, the dictionary will be:
-                        // { "foo": "a", "foo[1]": "b" }
-                        // The first value ("a") is used as the default ("foo"), matching ASP.NET Core's default behavior for query and header collections.
-                        for (int i = 0; i < values.Length; i++)
-                        {
-                            string dictKey = i == 0 ? key : $"{key}[{i}]";
-                            result[dictKey] = values[i];
-                        }
-                    }
+                    string dictKey = i == 0 ? key : $"{key}[{i}]";
+                    result[dictKey] = values[i];
                 }
             }
 

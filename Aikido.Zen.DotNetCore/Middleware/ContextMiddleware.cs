@@ -157,20 +157,14 @@ namespace Aikido.Zen.DotNetCore.Middleware
             foreach (var kvp in query)
             {
                 var values = kvp.Value;
-                if (values.Count == 1)
+
+                // Example: for ?foo=a&foo=b, the dictionary will be:
+                // { "foo": "a", "foo[1]": "b" }
+                // The first value ("a") is used as the default ("foo"), matching ASP.NET Core's default behavior for query and header collections.
+                for (int i = 0; i < values.Count; i++)
                 {
-                    result[kvp.Key] = values[0];
-                }
-                else
-                {
-                    // Example: for ?foo=a&foo=b, the dictionary will be:
-                    // { "foo": "a", "foo[1]": "b" }
-                    // The first value ("a") is used as the default ("foo"), matching ASP.NET Core's default behavior for query and header collections.
-                    for (int i = 0; i < values.Count; i++)
-                    {
-                        string dictKey = i == 0 ? kvp.Key : $"{kvp.Key}[{i}]";
-                        result[dictKey] = values[i];
-                    }
+                    string dictKey = i == 0 ? kvp.Key : $"{kvp.Key}[{i}]";
+                    result[dictKey] = values[i];
                 }
             }
 
@@ -189,18 +183,14 @@ namespace Aikido.Zen.DotNetCore.Middleware
             foreach (var kvp in headers)
             {
                 var values = kvp.Value;
-                if (values.Count == 1)
+                // Example: for X-Forwarded-For: 1.2.3.4, 5.6.7.8, the dictionary will be:
+                // { "X-Forwarded-For": "1.2.3.4", "X-Forwarded-For[1]": "5.6.7.8" }
+                for (int i = 0; i < values.Count; i++)
                 {
-                    result[kvp.Key] = values[0];
+                    string dictKey = i == 0 ? kvp.Key : $"{kvp.Key}[{i}]";
+                    result[dictKey] = values[i];
                 }
-                else
-                {
-                    for (int i = 0; i < values.Count; i++)
-                    {
-                        string dictKey = i == 0 ? kvp.Key : $"{kvp.Key}[{i}]";
-                        result[dictKey] = values[i];
-                    }
-                }
+
             }
 
             return result;
