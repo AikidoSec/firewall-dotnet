@@ -157,7 +157,8 @@ namespace Aikido.Zen.Core.Models
                 // Update route information if provided
                 if (!string.IsNullOrEmpty(route))
                 {
-                    UpdateRouteStats(existing, route, inputTokens, outputTokens);
+                    // Don't update route stats for now, since this is subject to change
+                    // UpdateRouteStats(existing, route, inputTokens, outputTokens);
                 }
             }
 
@@ -166,6 +167,7 @@ namespace Aikido.Zen.Core.Models
 
         /// <summary>
         /// Updates route statistics for an AI provider.
+        /// TODO: This is subject to change, so we're not using it for now
         /// </summary>
         private void UpdateRouteStats(AiInfo aiInfo, string route, long inputTokens, long outputTokens)
         {
