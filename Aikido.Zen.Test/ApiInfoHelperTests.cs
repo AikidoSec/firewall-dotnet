@@ -1,12 +1,11 @@
-using NUnit.Framework;
-using Aikido.Zen.Core.Helpers;
-using Aikido.Zen.Core.Models;
-using System.Collections.Generic;
-using Aikido.Zen.Core;
-using Aikido.Zen.Core.Helpers.OpenAPI;
 using System.Text;
 using System.Text.Json;
 using System.Web;
+using Aikido.Zen.Core;
+using Aikido.Zen.Core.Helpers;
+using Aikido.Zen.Core.Helpers.OpenAPI;
+using Aikido.Zen.Core.Models;
+using NUnit.Framework;
 
 namespace Aikido.Zen.Test.Helpers
 {
@@ -14,11 +13,11 @@ namespace Aikido.Zen.Test.Helpers
     public class ApiInfoHelperTests
     {
         private Context CreateTestContext(
-            Dictionary<string, string[]>? headers = null,
+            Dictionary<string, string>? headers = null,
             object? body = null,
-            Dictionary<string, string[]>? query = null)
+            Dictionary<string, string>? query = null)
         {
-            string? contentType = headers?.GetValueOrDefault("content-type")?.FirstOrDefault() ?? "application/json";
+            string? contentType = headers?.GetValueOrDefault("content-type") ?? "application/json";
             Stream? bodyStream = null;
 
             if (body != null)
@@ -62,24 +61,24 @@ namespace Aikido.Zen.Test.Helpers
                             bodyStream = new MemoryStream(Encoding.UTF8.GetBytes(formBuilder.ToString()));
 
                             // Update content type with boundary
-                            headers ??= new Dictionary<string, string[]>();
-                            headers["content-type"] = new[] { $"multipart/form-data; boundary={boundary}" };
+                            headers ??= new Dictionary<string, string>();
+                            headers["content-type"] = $"multipart/form-data; boundary={boundary}";
                         }
                         break;
                 }
             }
 
-            var queryParams = query?.ToDictionary(x => x.Key, x => string.Join(",", x.Value)) ?? new Dictionary<string, string>();
-            var headerDict = headers?.ToDictionary(x => x.Key, x => string.Join(",", x.Value)) ?? new Dictionary<string, string>();
+            var queryParams = query ?? new Dictionary<string, string>();
+            var headerDict = headers ?? new Dictionary<string, string>();
             var parsed = HttpHelper.ReadAndFlattenHttpDataAsync(queryParams, headerDict, new Dictionary<string, string>(), bodyStream, contentType, bodyStream?.Length ?? 0).Result;
 
             return new Context
             {
                 Method = "POST",
                 Route = "/test",
-                Headers = headers ?? new Dictionary<string, string[]>(),
+                Headers = headers ?? new Dictionary<string, string>(),
                 Body = bodyStream,
-                Query = query ?? new Dictionary<string, string[]>(),
+                Query = query ?? new Dictionary<string, string>(),
                 RemoteAddress = "127.0.0.1",
                 Url = "http://localhost/test",
                 RouteParams = new Dictionary<string, string>(),
@@ -94,9 +93,9 @@ namespace Aikido.Zen.Test.Helpers
         public void GetApiInfo_WithJsonBody_ReturnsCorrectSpec()
         {
             var context = CreateTestContext(
-                headers: new Dictionary<string, string[]>
+                headers: new Dictionary<string, string>
                 {
-                    { "content-type", ["application/json"] }
+                    { "content-type", "application/json" }
                 },
                 body: new Dictionary<string, object>
                 {
@@ -120,11 +119,11 @@ namespace Aikido.Zen.Test.Helpers
         public void GetApiInfo_WithQueryParameters_ReturnsCorrectSpec()
         {
             var context = CreateTestContext(
-                query: new Dictionary<string, string[]>
+                query: new Dictionary<string, string>
                 {
-                    { "page", ["1"] },
-                    { "limit", ["10"] },
-                    { "search", ["test"] }
+                    { "page", "1" },
+                    { "limit", "10" },
+                    { "search", "test" }
                 }
             );
 
@@ -141,9 +140,9 @@ namespace Aikido.Zen.Test.Helpers
         public void GetApiInfo_WithAuth_ReturnsCorrectSpec()
         {
             var context = CreateTestContext(
-                headers: new Dictionary<string, string[]>
+                headers: new Dictionary<string, string>
                 {
-                    { "authorization", ["Bearer token123"] }
+                    { "authorization", "Bearer token123" }
                 }
             );
 
@@ -159,9 +158,9 @@ namespace Aikido.Zen.Test.Helpers
         public void GetApiInfo_WithComplexNestedBody_ReturnsCorrectSpec()
         {
             var context = CreateTestContext(
-                headers: new Dictionary<string, string[]>
+                headers: new Dictionary<string, string>
                 {
-                    { "content-type", ["application/json"] }
+                    { "content-type", "application/json" }
                 },
                 body: new Dictionary<string, object>
                 {
@@ -203,9 +202,9 @@ namespace Aikido.Zen.Test.Helpers
         public void GetApiInfo_WithArrayBody_ReturnsCorrectSpec()
         {
             var context = CreateTestContext(
-                headers: new Dictionary<string, string[]>
+                headers: new Dictionary<string, string>
                 {
-                    { "content-type", ["application/json"] }
+                    { "content-type", "application/json" }
                 },
                 body: new[]
                 {
@@ -246,9 +245,9 @@ namespace Aikido.Zen.Test.Helpers
         public void GetApiInfo_WithFormUrlEncodedBody_ReturnsCorrectSpec()
         {
             var context = CreateTestContext(
-                headers: new Dictionary<string, string[]>
+                headers: new Dictionary<string, string>
                 {
-                    { "content-type", ["application/x-www-form-urlencoded"] }
+                    { "content-type", "application/x-www-form-urlencoded" }
                 },
                 body: new Dictionary<string, object>
                 {
@@ -269,9 +268,9 @@ namespace Aikido.Zen.Test.Helpers
         public void GetApiInfo_WithPrimitiveArrayBody_ReturnsCorrectSpec()
         {
             var context = CreateTestContext(
-                headers: new Dictionary<string, string[]>
+                headers: new Dictionary<string, string>
                 {
-                    { "content-type", ["application/json"] }
+                    { "content-type", "application/json" }
                 },
                 body: new[] { "item1", "item2", "item3" }
             );
@@ -288,11 +287,11 @@ namespace Aikido.Zen.Test.Helpers
         public void GetApiInfo_WithPrimitiveBody_ReturnsCorrectSpec()
         {
             var context = CreateTestContext(
-                headers: new Dictionary<string, string[]>
+                headers: new Dictionary<string, string>
                 {
-                    { "content-type", ["application/json"] }
+                    { "content-type", "application/json" }
                 },
-                body: "simple string value"
+                body: "simple string"
             );
 
             var result = OpenAPIHelper.GetApiInfo(context);
@@ -306,9 +305,9 @@ namespace Aikido.Zen.Test.Helpers
         public void UpdateApiInfo_SuccessfulUpdate_UpdatesRouteCorrectly()
         {
             var context = CreateTestContext(
-                headers: new Dictionary<string, string[]>
+                headers: new Dictionary<string, string>
                 {
-                    { "content-type", ["application/json"] }
+                    { "content-type", "application/json" }
                 },
                 body: new Dictionary<string, object>
                 {
@@ -318,6 +317,8 @@ namespace Aikido.Zen.Test.Helpers
 
             var existingRoute = new Route
             {
+                Path = "/test",
+                Method = "POST",
                 ApiSpec = new APISpec
                 {
                     Body = new APIBodyInfo
@@ -325,20 +326,22 @@ namespace Aikido.Zen.Test.Helpers
                         Type = "json",
                         Schema = new DataSchema
                         {
+                            Type = new[] { "object" },
                             Properties = new Dictionary<string, DataSchema>
                             {
-                                { "name", new DataSchema { Type = new[] { "string" } } }
+                                { "existingProp", new DataSchema { Type = new[] { "string" } } }
                             }
                         }
                     }
                 }
             };
 
-            ApiInfoHelper.UpdateApiInfo(context, existingRoute, 10);
+            OpenAPIHelper.UpdateApiInfo(context, existingRoute, 10);
 
             Assert.That(existingRoute.ApiSpec.Body, Is.Not.Null);
             Assert.That(existingRoute.ApiSpec.Body.Type, Is.EqualTo("json"));
-            Assert.That(existingRoute.ApiSpec.Body.Schema.Properties["name"].Type[0], Is.EqualTo("string"));
+            Assert.That(existingRoute.ApiSpec.Body.Schema.Properties.ContainsKey("existingProp"), Is.True);
+            Assert.That(existingRoute.ApiSpec.Body.Schema.Properties.ContainsKey("name"), Is.True);
         }
 
         [Test]
@@ -351,7 +354,7 @@ namespace Aikido.Zen.Test.Helpers
                 existingRoute.Increment();
             }
 
-            ApiInfoHelper.UpdateApiInfo(context, existingRoute, 10);
+            OpenAPIHelper.UpdateApiInfo(context, existingRoute, 10);
 
             Assert.That(existingRoute.ApiSpec, Is.Null);
         }
@@ -362,7 +365,7 @@ namespace Aikido.Zen.Test.Helpers
             var context = CreateTestContext();
             var existingRoute = new Route { ApiSpec = new APISpec() };
 
-            ApiInfoHelper.UpdateApiInfo(context, existingRoute, 10);
+            OpenAPIHelper.UpdateApiInfo(context, existingRoute, 10);
 
             Assert.That(existingRoute.ApiSpec.Body, Is.Null);
             Assert.That(existingRoute.ApiSpec.Query, Is.Null);
@@ -376,7 +379,7 @@ namespace Aikido.Zen.Test.Helpers
             var existingRoute = new Route { ApiSpec = new APISpec() };
 
             // Simulate an error by passing a null context
-            ApiInfoHelper.UpdateApiInfo(null, existingRoute, 10);
+            OpenAPIHelper.UpdateApiInfo(null, existingRoute, 10);
 
             // Ensure no exception is thrown and the route remains unchanged
             Assert.That(existingRoute.ApiSpec.Body, Is.Null);
@@ -388,9 +391,9 @@ namespace Aikido.Zen.Test.Helpers
         public void UpdateApiInfo_NewBodyInfo_UpdatesBodyCorrectly()
         {
             var context = CreateTestContext(
-                headers: new Dictionary<string, string[]>
+                headers: new Dictionary<string, string>
                 {
-                    { "content-type", ["application/json"] }
+                    { "content-type", "application/json" }
                 },
                 body: new Dictionary<string, object>
                 {
@@ -400,7 +403,7 @@ namespace Aikido.Zen.Test.Helpers
 
             var existingRoute = new Route { ApiSpec = new APISpec() };
 
-            ApiInfoHelper.UpdateApiInfo(context, existingRoute, 10);
+            OpenAPIHelper.UpdateApiInfo(context, existingRoute, 10);
 
             Assert.That(existingRoute.ApiSpec.Body, Is.Not.Null);
             Assert.That(existingRoute.ApiSpec.Body.Type, Is.EqualTo("json"));
@@ -411,15 +414,15 @@ namespace Aikido.Zen.Test.Helpers
         public void UpdateApiInfo_NewQueryInfo_UpdatesQueryCorrectly()
         {
             var context = CreateTestContext(
-                query: new Dictionary<string, string[]>
+                query: new Dictionary<string, string>
                 {
-                    { "newQuery", ["newValue"] }
+                    { "newQuery", "newValue" }
                 }
             );
 
             var existingRoute = new Route { ApiSpec = new APISpec() };
 
-            ApiInfoHelper.UpdateApiInfo(context, existingRoute, 10);
+            OpenAPIHelper.UpdateApiInfo(context, existingRoute, 10);
 
             Assert.That(existingRoute.ApiSpec.Query, Is.Not.Null);
             Assert.That(existingRoute.ApiSpec.Query.Properties["newQuery"].Type[0], Is.EqualTo("string"));
@@ -429,15 +432,15 @@ namespace Aikido.Zen.Test.Helpers
         public void UpdateApiInfo_NewAuthInfo_UpdatesAuthCorrectly()
         {
             var context = CreateTestContext(
-                headers: new Dictionary<string, string[]>
+                headers: new Dictionary<string, string>
                 {
-                    { "authorization", ["Bearer newToken"] }
+                    { "authorization", "Bearer newToken" }
                 }
             );
 
             var existingRoute = new Route { ApiSpec = new APISpec() };
 
-            ApiInfoHelper.UpdateApiInfo(context, existingRoute, 10);
+            OpenAPIHelper.UpdateApiInfo(context, existingRoute, 10);
 
             Assert.That(existingRoute.ApiSpec.Auth, Is.Not.Null);
             Assert.That(existingRoute.ApiSpec.Auth[0].Type, Is.EqualTo("http"));
@@ -450,7 +453,7 @@ namespace Aikido.Zen.Test.Helpers
             var context = CreateTestContext();
             var existingRoute = new Route { ApiSpec = new APISpec() };
 
-            ApiInfoHelper.UpdateApiInfo(context, existingRoute, 10);
+            OpenAPIHelper.UpdateApiInfo(context, existingRoute, 10);
 
             Assert.That(existingRoute.ApiSpec.Body, Is.Null);
             Assert.That(existingRoute.ApiSpec.Query, Is.Null);

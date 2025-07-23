@@ -26,7 +26,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
             try
             {
                 // if the ip is bypassed, skip the handling of the request
-                if (Agent.Instance.Context.BlockList.IsIPBypassed(httpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty) || EnvironmentHelper.IsDisabled)
+                if (Agent.Instance.Context.BlockList.IsIPBypassed(GetClientIp(httpContext)) || EnvironmentHelper.IsDisabled)
                 {
                     // call the next middleware
                     await next(httpContext);
@@ -66,7 +66,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 }
 
                 var httpData = await HttpHelper.ReadAndFlattenHttpDataAsync(
-                    queryParams: queryDictionary.ToDictionary(h => h.Key, h => string.Join(',', h.Value)),
+                    queryParams: context.Query,
                     headers: headersDictionary.ToDictionary(h => h.Key, h => string.Join(',', h.Value)),
                     cookies: context.Cookies,
                     body: request.Body,
@@ -123,11 +123,11 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 {
                     Url = httpContext.Request.Path.ToString(),
                     Method = httpContext.Request.Method,
-                    Query = queryDictionary,
-                    Headers = headersDictionary,
-                    RemoteAddress = httpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty, // no need to use X-FORWARDED-FOR, .NET Core already handles this
+                    Query = FlattenQueryParameters(httpContext.Request.Query),
+                    Headers = FlattenHeaders(httpContext.Request.Headers),
+                    RemoteAddress = GetClientIp(httpContext),
                     Cookies = httpContext.Request.Cookies.ToDictionary(c => c.Key, c => c.Value),
-                    UserAgent = headersDictionary.TryGetValue("User-Agent", out var userAgent) ? userAgent.FirstOrDefault() ?? string.Empty : string.Empty,
+                    UserAgent = httpContext.Request.Headers.TryGetValue("User-Agent", out var userAgent) ? userAgent.FirstOrDefault() ?? string.Empty : string.Empty,
                     Source = Environment.Version.Major >= 5 ? "DotNetCore" : "DotNetFramework",
                     Route = GetParametrizedRoute(httpContext),
                     User = httpContext.Items["Aikido.Zen.CurrentUser"] as User
@@ -143,6 +143,79 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 return false;
             }
 
+        }
+
+        /// <summary>
+        /// Flattens query parameters into individual dictionary entries with indexing for multiple values.
+        /// </summary>
+        /// <param name="query">The query collection</param>
+        /// <returns>A dictionary with flattened query parameters</returns>
+        private static IDictionary<string, string> FlattenQueryParameters(IQueryCollection query)
+        {
+            var result = new Dictionary<string, string>();
+
+            foreach (var kvp in query)
+            {
+                var values = kvp.Value;
+
+                // Example: for ?foo=a&foo=b, the dictionary will be:
+                // { "foo": "a", "foo[1]": "b" }
+                // The first value ("a") is used as the default ("foo"), matching ASP.NET Core's default behavior for query and header collections.
+                for (int i = 0; i < values.Count; i++)
+                {
+                    string dictKey = i == 0 ? kvp.Key : $"{kvp.Key}[{i}]";
+                    result[dictKey] = values[i];
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Flattens headers into individual dictionary entries with indexing for multiple values.
+        /// </summary>
+        /// <param name="headers">The headers collection</param>
+        /// <returns>A dictionary with flattened headers</returns>
+        private static IDictionary<string, string> FlattenHeaders(IHeaderDictionary headers)
+        {
+            var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var kvp in headers)
+            {
+                var values = kvp.Value;
+                // Example: for X-Forwarded-For: 1.2.3.4, 5.6.7.8, the dictionary will be:
+                // { "X-Forwarded-For": "1.2.3.4", "X-Forwarded-For[1]": "5.6.7.8" }
+                for (int i = 0; i < values.Count; i++)
+                {
+                    string dictKey = i == 0 ? kvp.Key : $"{kvp.Key}[{i}]";
+                    result[dictKey] = values[i];
+                }
+
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Gets the client IP address, considering X-Forwarded-For headers for proxied requests.
+        /// </summary>
+        /// <param name="httpContext">The HTTP context containing the request information</param>
+        /// <returns>The client IP address as a string</returns>
+        private static string GetClientIp(HttpContext httpContext)
+        {
+            // Check for X-Forwarded-For header first (for proxied requests)
+            if (httpContext.Request.Headers.TryGetValue("X-Forwarded-For", out var forwardedFor))
+            {
+                var firstIp = forwardedFor.FirstOrDefault();
+                if (!string.IsNullOrEmpty(firstIp))
+                {
+                    // X-Forwarded-For can contain multiple IPs, take the first one
+                    return firstIp.Split(',')[0].Trim();
+                }
+            }
+
+            // Fall back to the connection's remote IP address
+            return httpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty;
         }
 
         /// <summary>

@@ -1,3 +1,7 @@
+using System;
+using System.Collections.Generic;
+using System.Reflection;
+using System.Threading.Tasks;
 using System.Web;
 using System.Web.Routing;
 using Aikido.Zen.DotNetFramework.HttpModules;
@@ -184,6 +188,86 @@ namespace Aikido.Zen.Tests.DotNetFramework
                 new HttpResponse(null));
             route = _contextModule.GetParametrizedRoute(_mockHttpContext);
             Assert.That(route, Is.EqualTo("/users/:number/profile")); // PathIsSingleSegment would return false for /users/:number/profile
+        }
+
+        [Test]
+        public void FlattenQueryParameters_FlattensSingleParameter()
+        {
+            // Arrange
+            var queryString = new System.Collections.Specialized.NameValueCollection();
+            queryString.Add("param1", "value1");
+
+            // Act
+            var method = typeof(ContextModule).GetMethod("FlattenQueryParameters", BindingFlags.NonPublic | BindingFlags.Static);
+            var result = (IDictionary<string, string>)method.Invoke(null, new object[] { queryString });
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result.ContainsKey("param1"), Is.True);
+            Assert.That(result["param1"], Is.EqualTo("value1"));
+        }
+
+        [Test]
+        public void FlattenQueryParameters_FlattensMultipleParameters()
+        {
+            // Arrange
+            var queryString = new System.Collections.Specialized.NameValueCollection();
+            queryString.Add("param1", "value1");
+            queryString.Add("param1", "value2");
+            queryString.Add("param1", "value3");
+
+            // Act
+            var method = typeof(ContextModule).GetMethod("FlattenQueryParameters", BindingFlags.NonPublic | BindingFlags.Static);
+            var result = (IDictionary<string, string>)method.Invoke(null, new object[] { queryString });
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result.ContainsKey("param1"), Is.True);
+            Assert.That(result["param1"], Is.EqualTo("value1"));
+            Assert.That(result.ContainsKey("param1[1]"), Is.True);
+            Assert.That(result["param1[1]"], Is.EqualTo("value2"));
+            Assert.That(result.ContainsKey("param1[2]"), Is.True);
+            Assert.That(result["param1[2]"], Is.EqualTo("value3"));
+        }
+
+        [Test]
+        public void FlattenHeaders_FlattensSingleHeader()
+        {
+            // Arrange
+            var headers = new System.Collections.Specialized.NameValueCollection();
+            headers.Add("X-Custom-Header", "custom-value");
+
+            // Act
+            var method = typeof(ContextModule).GetMethod("FlattenHeaders", BindingFlags.NonPublic | BindingFlags.Static);
+            var result = (IDictionary<string, string>)method.Invoke(null, new object[] { headers });
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result.ContainsKey("X-Custom-Header"), Is.True);
+            Assert.That(result["X-Custom-Header"], Is.EqualTo("custom-value"));
+        }
+
+        [Test]
+        public void FlattenHeaders_FlattensMultipleHeaders()
+        {
+            // Arrange
+            var headers = new System.Collections.Specialized.NameValueCollection();
+            headers.Add("Accept", "text/html");
+            headers.Add("Accept", "application/json");
+            headers.Add("Accept", "application/xml");
+
+            // Act
+            var method = typeof(ContextModule).GetMethod("FlattenHeaders", BindingFlags.NonPublic | BindingFlags.Static);
+            var result = (IDictionary<string, string>)method.Invoke(null, new object[] { headers });
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result.ContainsKey("Accept"), Is.True);
+            Assert.That(result["Accept"], Is.EqualTo("text/html"));
+            Assert.That(result.ContainsKey("Accept[1]"), Is.True);
+            Assert.That(result["Accept[1]"], Is.EqualTo("application/json"));
+            Assert.That(result.ContainsKey("Accept[2]"), Is.True);
+            Assert.That(result["Accept[2]"], Is.EqualTo("application/xml"));
         }
     }
 }

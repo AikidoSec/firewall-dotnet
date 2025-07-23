@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
@@ -71,8 +72,8 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 {
                     Url = httpContext.Request.Path,
                     Method = httpContext.Request.HttpMethod,
-                    Query = httpContext.Request.QueryString.AllKeys.ToDictionary(k => k, k => httpContext.Request.QueryString.GetValues(k)),
-                    Headers = httpContext.Request.Headers.AllKeys.ToDictionary(k => k, k => httpContext.Request.Headers.GetValues(k)),
+                    Query = FlattenQueryParameters(httpContext.Request.QueryString),
+                    Headers = FlattenHeaders(httpContext.Request.Headers),
                     RemoteAddress = httpContext.Request.UserHostAddress ?? string.Empty,
                     Cookies = httpContext.Request.Cookies.AllKeys.ToDictionary(k => k, k => httpContext.Request.Cookies[k].Value),
                     User = (User)httpContext.Items["Aikido.Zen.CurrentUser"],
@@ -87,7 +88,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
 
                 var request = httpContext.Request;
                 var httpData = await HttpHelper.ReadAndFlattenHttpDataAsync(
-                    queryParams: request.QueryString.AllKeys.ToDictionary(k => k, k => request.QueryString.Get(k)),
+                    queryParams: context.Query,
                     headers: request.Headers.AllKeys.ToDictionary(k => k, k => request.Headers.Get(k)),
                     cookies: request.Cookies.AllKeys.ToDictionary(k => k, k => request.Cookies[k].Value),
                     body: request.InputStream,
@@ -148,6 +149,57 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             return !string.IsNullOrEmpty(httpContext.Request.ServerVariables["HTTP_X_FORWARDED_FOR"])
                 ? httpContext.Request.ServerVariables["HTTP_X_FORWARDED_FOR"]
                 : httpContext.Request.ServerVariables["REMOTE_ADDR"];
+        }
+
+        /// <summary>
+        /// Flattens query parameters into individual dictionary entries with indexing for multiple values.
+        /// </summary>
+        /// <param name="queryString">The query string collection</param>
+        /// <returns>A dictionary with flattened query parameters</returns>
+        private static IDictionary<string, string> FlattenQueryParameters(System.Collections.Specialized.NameValueCollection queryString)
+        {
+            var result = new Dictionary<string, string>();
+
+            foreach (string key in queryString.AllKeys)
+            {
+                var values = queryString.GetValues(key);
+                // Example: for ?foo=a&foo=b, the dictionary will be:
+                // { "foo": "a", "foo[1]": "b" }
+                // The first value ("a") is used as the default ("foo"), matching ASP.NET Core's default behavior for query and header collections.
+                for (int i = 0; i < values.Length; i++)
+                {
+                    string dictKey = i == 0 ? key : $"{key}[{i}]";
+                    result[dictKey] = values[i];
+                }
+
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Flattens headers into individual dictionary entries with indexing for multiple values.
+        /// </summary>
+        /// <param name="headers">The headers collection</param>
+        /// <returns>A dictionary with flattened headers</returns>
+        private static IDictionary<string, string> FlattenHeaders(System.Collections.Specialized.NameValueCollection headers)
+        {
+            var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (string key in headers.AllKeys)
+            {
+                var values = headers.GetValues(key);
+
+                // Example: for X-Forwarded-For: 1.2.3.4, 5.6.7.8, the dictionary will be:
+                // { "X-Forwarded-For": "1.2.3.4", "X-Forwarded-For[1]": "5.6.7.8" }
+                for (int i = 0; i < values.Length; i++)
+                {
+                    string dictKey = i == 0 ? key : $"{key}[{i}]";
+                    result[dictKey] = values[i];
+                }
+            }
+
+            return result;
         }
 
         /// <summary>
