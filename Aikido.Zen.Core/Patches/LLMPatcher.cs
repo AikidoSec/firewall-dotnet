@@ -136,7 +136,7 @@ namespace Aikido.Zen.Core.Patches
         {
             try
             {
-                var resultAsDictionary = ConvertObjectToDictionary(result);
+                var resultAsDictionary = ReflectionHelper.ConvertObjectToDictionary(result);
                 if (resultAsDictionary.Count == 0)
                 {
                     tokens = (0, 0);
@@ -147,7 +147,7 @@ namespace Aikido.Zen.Core.Patches
                 {
                     var iTokensFound = false;
                     var oTokensFound = false;
-                    var usageAsDictionary = ConvertObjectToDictionary(usage);
+                    var usageAsDictionary = ReflectionHelper.ConvertObjectToDictionary(usage);
                     long? inputTokens = null;
                     long? outputTokens = null;
 
