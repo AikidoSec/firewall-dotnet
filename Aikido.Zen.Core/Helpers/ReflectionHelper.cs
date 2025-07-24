@@ -96,6 +96,32 @@ namespace Aikido.Zen.Core.Helpers
         }
 
         /// <summary>
+        /// This method is crucial for preventing re-entrancy issues with certain IL weavers and patchers.
+        /// </summary>
+        /// <param name="assemblyFullName">The full name of the assembly to check.</param>
+        /// <returns>True if the assembly should be excluded from patching, false otherwise.</returns>
+        public static bool ShouldExcludeAssembly(string assemblyFullName)
+        {
+            if (string.IsNullOrEmpty(assemblyFullName))
+            {
+                return false;
+            }
+
+            // Exclude assemblies that are known to cause issues
+            // Using FullName which includes version info, so we check if it contains the assembly name
+            var excludedAssemblies = new[]
+            {
+                "Costura", // Assembly weaver that embeds dependencies
+                "Harmony", // Harmony patching library
+                "Fody", // IL weaving framework
+                "Mono.Cecil", // IL manipulation library
+                "PostSharp", // AOP framework
+            };
+
+            return excludedAssemblies.Any(excluded => assemblyFullName.Contains(excluded));
+        }
+
+        /// <summary>
         /// Converts a dynamic object to a dictionary using reflection
         /// </summary>
         internal static Dictionary<string, object> ConvertObjectToDictionary(object obj)

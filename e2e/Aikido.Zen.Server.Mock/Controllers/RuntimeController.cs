@@ -61,6 +61,15 @@ namespace Aikido.Zen.Server.Mock.Controllers
             // Firewall endpoints
             app.MapGet("/api/runtime/firewall/lists", async (HttpContext context) =>
             {
+                var acceptEncodingHeader = context.Request.Headers["Accept-Encoding"].ToString().ToLower();
+                if (!acceptEncodingHeader.Contains("gzip"))
+                {
+                    return Results.BadRequest(new {
+                        success = false,
+                        error = "Accept-Encoding header must include 'gzip' for firewall lists endpoint"
+                    });
+                }
+
                 var appModel = context.Items["app"] as AppModel;
                 var blockedIps = _configService.GetBlockedIps(appModel!.Id).ToList();
 
