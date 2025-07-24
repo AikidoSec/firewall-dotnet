@@ -89,7 +89,7 @@ namespace Aikido.Zen.Core.Patches
             }
             if (searchString.Contains("google") || searchString.Contains("gemini"))
             {
-                provider = "google";
+                provider = "gemini";
                 return true;
             }
             if (searchString.Contains("mistral"))
