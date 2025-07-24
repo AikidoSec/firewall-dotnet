@@ -1,5 +1,6 @@
 using System.Reflection;
 using Aikido.Zen.Core;
+using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Patches;
 using Moq;
 
@@ -276,7 +277,7 @@ namespace Aikido.Zen.Test
         public void ConvertObjectToDictionary_WithNull_ReturnsEmptyDictionary()
         {
             // Act
-            var result = LLMPatcher.ConvertObjectToDictionary(null);
+            var result = ReflectionHelper.ConvertObjectToDictionary(null);
 
             // Assert
             Assert.That(result, Is.Not.Null);
@@ -290,7 +291,7 @@ namespace Aikido.Zen.Test
             var input = new Dictionary<string, object> { { "key1", "value1" }, { "key2", 42 } };
 
             // Act
-            var result = LLMPatcher.ConvertObjectToDictionary(input);
+            var result = ReflectionHelper.ConvertObjectToDictionary(input);
 
             // Assert
             Assert.That(result, Is.Not.SameAs(input));
@@ -306,7 +307,7 @@ namespace Aikido.Zen.Test
             var input = new { Name = "Test", Value = 42, IsActive = true };
 
             // Act
-            var result = LLMPatcher.ConvertObjectToDictionary(input);
+            var result = ReflectionHelper.ConvertObjectToDictionary(input);
 
             // Assert
             Assert.That(result.Count, Is.EqualTo(3));
@@ -326,7 +327,7 @@ namespace Aikido.Zen.Test
             };
 
             // Act
-            var result = LLMPatcher.ConvertObjectToDictionary(input);
+            var result = ReflectionHelper.ConvertObjectToDictionary(input);
 
             // Assert
             Assert.That(result.Count, Is.EqualTo(2));
@@ -341,7 +342,7 @@ namespace Aikido.Zen.Test
             var input = new MockObjectWithBrokenProperty();
 
             // Act
-            var result = LLMPatcher.ConvertObjectToDictionary(input);
+            var result = ReflectionHelper.ConvertObjectToDictionary(input);
 
             // Assert
             Assert.That(result.Count, Is.EqualTo(1)); // Only WorkingProperty should be included
