@@ -1,0 +1,118 @@
+### Test LLM Usage - OpenAI
+
+# Basic OpenAI request
+GET https://localhost:7086/llm-usage/request/provider/openai/model/gpt-4o?input=Hello%2C%20how%20are%20you%3F
+
+### Test LLM Usage - Azure OpenAI
+
+# Basic Azure OpenAI request
+GET https://localhost:7086/llm-usage/request/provider/azure/model/gpt-4?input=What%20is%20the%20capital%20of%20France%3F
+
+
+### Basic Rystem.OpenAi request
+# Basic Rystem request
+GET https://localhost:7086/llm-usage/request/provider/rystem/model/gpt-4?input=What%20is%20the%20capital%20of%20France%3F
+
+### Test LLM Usage - Anthropic
+
+# Basic Anthropic request
+GET https://localhost:7086/llm-usage/request/provider/anthropic/model/claude-3-5-haiku-latest?input=Explain%20quantum%20computing
+
+### Test LLM Usage - Gemini
+
+# Basic Gemini request
+GET https://localhost:7086/llm-usage/request/provider/gemini/model/gemini-pro?input=Write%20a%20short%20poem%20about%20coding
+
+### Test LLM Usage - Bedrock
+
+# Basic AWS Bedrock request
+GET https://localhost:7086/llm-usage/request/provider/bedrock/model/anthropic.claude-3-5-haiku-latest?input=What%20are%20the%20benefits%20of%20cloud%20computing%3F
+
+### Test LLM Usage - Different Models
+
+# Test GPT-3.5 Turbo
+GET https://localhost:7086/llm-usage/request/provider/openai/model/gpt-3.5-turbo?input=Translate%20hello%20to%20Spanish
+
+# Test Claude Instant
+GET https://localhost:7086/llm-usage/request/provider/anthropic/model/claude-3-haiku?input=Summarize%20this%20in%20one%20sentence
+
+# Test Gemini Flash
+GET https://localhost:7086/llm-usage/request/provider/gemini/model/gemini-1.5-flash?input=What%20is%20machine%20learning%3F
+
+### Test LLM Usage - Complex Prompts
+
+# Code generation request
+GET https://localhost:7086/llm-usage/request/provider/openai/model/gpt-4?input=Write%20a%20C%23%20function%20that%20calculates%20the%20factorial%20of%20a%20number
+
+# Analysis request
+GET https://localhost:7086/llm-usage/request/provider/azure/model/gpt-4?input=Analyze%20the%20pros%20and%20cons%20of%20microservices%20architecture
+
+# Creative writing request
+GET https://localhost:7086/llm-usage/request/provider/anthropic/model/claude-3-sonnet?input=Write%20a%20short%20story%20about%20a%20robot%20learning%20to%20paint
+
+### Test LLM Usage - Edge Cases
+
+# Empty input
+GET https://localhost:7086/llm-usage/request/provider/openai/model/gpt-4?input=
+
+# Very long input
+GET https://localhost:7086/llm-usage/request/provider/openai/model/gpt-4?input=This%20is%20a%20very%20long%20input%20that%20tests%20how%20the%20system%20handles%20large%20amounts%20of%20text.%20It%20should%20be%20able%20to%20process%20this%20without%20issues%20and%20provide%20a%20meaningful%20response.%20The%20input%20should%20be%20long%20enough%20to%20test%20the%20limits%20of%20the%20system%20and%20ensure%20that%20it%20can%20handle%20substantial%20amounts%20of%20text%20without%20breaking%20or%20timing%20out.
+
+# Special characters in input
+GET https://localhost:7086/llm-usage/request/provider/openai/model/gpt-4?input=Test%20with%20special%20chars%3A%20%21%40%23%24%25%5E%26%2A%28%29_%2B-%3D%5B%5D%7B%7D%7C%3B%27%3A%22%2C.%2F%3C%3E%3F
+
+# Unicode characters
+GET https://localhost:7086/llm-usage/request/provider/openai/model/gpt-4?input=Hello%20%E4%B8%96%E7%95%8C%21%20How%20are%20you%20today%3F%20%E4%BD%A0%E5%A5%BD%E5%90%97%EF%BC%9F
+
+### Test LLM Usage - Invalid Providers
+
+# Invalid provider
+GET https://localhost:7086/llm-usage/request/provider/invalid/model/gpt-4?input=This%20should%20fail
+
+# Invalid model
+GET https://localhost:7086/llm-usage/request/provider/openai/model/invalid-model?input=This%20should%20also%20fail
+
+### Test LLM Usage - URL Encoded Inputs
+
+# URL encoded special characters
+GET https://localhost:7086/llm-usage/request/provider/openai/model/gpt-4?input=Hello%20World%21%20How%20are%20you%3F
+
+# URL encoded spaces and punctuation
+GET https://localhost:7086/llm-usage/request/provider/azure/model/gpt-4?input=What%20is%20the%20meaning%20of%20life%3F%20%28philosophical%20question%29
+
+### Test LLM Usage - Performance Testing
+
+# Multiple concurrent requests (for load testing)
+GET https://localhost:7086/llm-usage/request/provider/openai/model/gpt-4?input=Quick%20response%20test%201
+###
+GET https://localhost:7086/llm-usage/request/provider/openai/model/gpt-4?input=Quick%20response%20test%202
+###
+GET https://localhost:7086/llm-usage/request/provider/openai/model/gpt-4?input=Quick%20response%20test%203
+
+### Test LLM Usage - Model Comparison
+
+# Compare responses across different providers
+GET https://localhost:7086/llm-usage/request/provider/openai/model/gpt-4?input=What%20is%20artificial%20intelligence%3F
+###
+GET https://localhost:7086/llm-usage/request/provider/anthropic/model/claude-3-sonnet?input=What%20is%20artificial%20intelligence%3F
+###
+GET https://localhost:7086/llm-usage/request/provider/gemini/model/gemini-pro?input=What%20is%20artificial%20intelligence%3F
+
+### Test LLM Usage - Error Scenarios
+
+# Missing API key scenario (should be handled gracefully)
+GET https://localhost:7086/llm-usage/request/provider/openai/model/gpt-4?input=Test%20without%20proper%20configuration
+
+# Network timeout scenario
+GET https://localhost:7086/llm-usage/request/provider/openai/model/gpt-4?input=This%20might%20timeout%20if%20network%20is%20slow
+
+### Test LLM Usage - Business Logic
+
+# Code review request
+GET https://localhost:7086/llm-usage/request/provider/openai/model/gpt-4?input=Review%20this%20code%20for%20security%20vulnerabilities%3A%20function%20getUserData%28id%29%20%7B%20return%20database.query%28%27SELECT%20%2A%20FROM%20users%20WHERE%20id%20%3D%20%27%20%2B%20id%29%3B%20%7D
+
+# Documentation generation
+GET https://localhost:7086/llm-usage/request/provider/azure/model/gpt-4?input=Generate%20API%20documentation%20for%20a%20REST%20endpoint%20that%20creates%20a%20new%20user
+
+# Bug fixing assistance
+GET https://localhost:7086/llm-usage/request/provider/anthropic/model/claude-3-sonnet?input=Help%20me%20debug%20this%20error%3A%20NullReferenceException%20in%20line%2042%20of%20UserService.cs

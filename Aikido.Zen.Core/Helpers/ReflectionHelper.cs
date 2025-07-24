@@ -68,7 +68,10 @@ namespace Aikido.Zen.Core.Helpers
             var typeKey = $"{assemblyName}.{typeName}";
             if (!_types.TryGetValue(typeKey, out var type))
             {
-                type = assembly.ExportedTypes.FirstOrDefault(t => t.Name == typeName || t.FullName == typeName);
+                // first we look in ExportedTypes, since it's faster than GetTypes(), but doesn't include all types
+                // if we don't find the type, we fallback to GetTypes()
+                type = assembly.ExportedTypes.FirstOrDefault(t => t.Name == typeName || t.FullName == typeName)
+                    ?? assembly.GetTypes().FirstOrDefault(t => t.Name == typeName || t.FullName == typeName);
 
                 if (type == null) return null;
                 _types[typeKey] = type;
@@ -116,6 +119,41 @@ namespace Aikido.Zen.Core.Helpers
             };
 
             return excludedAssemblies.Any(excluded => assemblyFullName.Contains(excluded));
+        }
+
+        /// <summary>
+        /// Converts a dynamic object to a dictionary using reflection
+        /// </summary>
+        internal static Dictionary<string, object> ConvertObjectToDictionary(object obj)
+        {
+            var dictionary = new Dictionary<string, object>();
+
+            if (obj == null) return dictionary;
+
+            // Handle if it's already an IDictionary
+            if (obj is IDictionary<string, object> existingDict)
+            {
+                return new Dictionary<string, object>(existingDict);
+            }
+
+            // Use reflection to get all properties
+            var type = obj.GetType();
+            var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+
+            foreach (var property in properties)
+            {
+                try
+                {
+                    var value = property.GetValue(obj);
+                    dictionary[property.Name] = value;
+                }
+                catch
+                {
+                    // Skip properties that can't be accessed
+                }
+            }
+
+            return dictionary;
         }
 
         public static void ClearCache()

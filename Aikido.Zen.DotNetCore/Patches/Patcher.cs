@@ -27,6 +27,9 @@ namespace Aikido.Zen.DotNetCore.Patches
 
                 // Patch process execution methods to prevent shell injection
                 ProcessPatches.ApplyPatches(harmony);
+
+                // Patch LLM client methods to monitor LLM API calls
+                LLMPatches.ApplyPatches(harmony);
             }
             catch (Exception ex)
             {
