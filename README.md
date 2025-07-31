@@ -14,7 +14,7 @@ Zen is an embedded Web Application Firewall that autonomously protects your .NET
 
 Zen protects your .NET apps by preventing user input containing dangerous strings, which allow SQL injections. It runs on the same server as your .NET app for easy installation and zero maintenance.
 
-Zen for .NET currently supports onwards of .NET 4.6. The latest tested version is .NET 8.0.
+Zen for .NET currently supports onwards of .NET 4.6. The latest tested version is .NET 9.0.
 
 ## Features
 
