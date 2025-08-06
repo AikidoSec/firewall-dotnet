@@ -40,10 +40,12 @@ namespace Aikido.Zen.Core
                 return ReportingStatusResult.Failure;
             }
 
-            var now = GetCurrentTime();
             // A grace period is added to allow for slight delays in reporting
             // This helps avoid false expirations due to network latency or short processing delays
-            if (_lastReported.Value.Add(Heartbeat.Interval).Add(_gracePeriod) < now)
+            var now = GetCurrentTime();
+            var lastReportedTime = _lastReported.Value;
+            var nextHeartbeatTime = lastReportedTime.Add(Heartbeat.Interval);
+            if (nextHeartbeatTime.Add(_gracePeriod) < now)
             {
                 return ReportingStatusResult.Expired;
             }
