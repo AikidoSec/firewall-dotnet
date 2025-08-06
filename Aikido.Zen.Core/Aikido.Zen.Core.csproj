@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
@@ -25,6 +25,9 @@
     <Message Text="Creating NuGet package for Core..." Importance="high" />
     <Exec Command="powershell -ExecutionPolicy Bypass -File ..\\pack.ps1 -buildConfiguration $(Configuration)" />
   </Target>-->
+  <ItemGroup>
+    <InternalsVisibleTo Include="Aikido.Zen.Tests.Mocks"/>
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Lib.Harmony" Version="2.3.5" />

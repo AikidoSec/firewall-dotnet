@@ -9,7 +9,7 @@ using System.Net.Http.Headers;
 
 namespace Aikido.Zen.Core.Api
 {
-    public class RuntimeAPIClient : IRuntimeAPIClient
+    internal class RuntimeAPIClient : IRuntimeAPIClient
     {
         private readonly HttpClient _httpClient;
 

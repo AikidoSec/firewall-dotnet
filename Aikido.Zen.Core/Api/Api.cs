@@ -2,7 +2,7 @@ using System.Text.Json;
 
 namespace Aikido.Zen.Core.Api
 {
-    public class ZenApi : IZenApi
+    internal class ZenApi : IZenApi
     {
         public static readonly JsonSerializerOptions JsonSerializerOptions = new JsonSerializerOptions
         {
