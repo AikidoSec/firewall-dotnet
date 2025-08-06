@@ -11,6 +11,10 @@ namespace Aikido.Zen.Core
 
         public void SignalReporting(string operation, bool success)
         {
+            // The last reported time and success status can be set in 2 cases:
+            // 1. Initial reporting (Started event)
+            // 2. Heartbeat event (This updates the status every time a heartbeat is sent)
+
             if (operation == Heartbeat.HeartbeatEventName)
             {
                 _lastReported = GetCurrentTime();
