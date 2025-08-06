@@ -29,6 +29,8 @@ namespace Aikido.Zen.Core
         private long _lastConfigCheck = DateTime.UtcNow.Ticks;
         public static ILogger Logger = new DefaultLogger();
 
+        private readonly ReportingStatus _reportingStatus = new ReportingStatus();
+
         // Rate limiting and timing constants for the event processing loop
         private const int RateLimitPerSecond = 10;
 
@@ -372,6 +374,20 @@ namespace Aikido.Zen.Core
             Context.AddAttackDetected(blocked);
         }
 
+        /// <summary>
+        /// Gets the current status of the Aikido Zen agent, including heartbeat reporting status.
+        /// This method provides a snapshot of the agent's communication status with the Zen API.
+        /// </summary>
+        /// <returns>
+        /// An <see cref="AgentStatus"/> object containing the current status information, including:
+        /// - Heartbeat reporting status indicating whether the agent is successfully communicating with the Zen API
+        /// - Success/failure state of recent API communications
+        /// - Whether heartbeat reports have expired or are current
+        /// </returns>
+        public AgentStatus GetCurrentStatus()
+        {
+            return new AgentStatus(_reportingStatus.GetReportingStatus());
+        }
 
         // Main event processing loop that handles config checks, scheduled events and queued events
         private async Task ProcessRecurringTasksAsync()
@@ -501,6 +517,8 @@ namespace Aikido.Zen.Core
                     // Other errors are dropped to avoid infinite retries
                     LogHelper.DebugLog(Logger, $"Event was not sent successfully: {response.Error}");
                 }
+
+                _reportingStatus.SignalReporting(queuedItem.Event.Type, response.Success);
                 queuedItem.Callback?.Invoke(queuedItem.Event, response);
             }
             catch (OperationCanceledException) when (_cancellationSource.Token.IsCancellationRequested)

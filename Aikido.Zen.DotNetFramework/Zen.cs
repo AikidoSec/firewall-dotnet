@@ -100,5 +100,20 @@ namespace Aikido.Zen.DotNetFramework
             LogHelper.DebugLog(Agent.Logger, "Initializing the Zen modules manually");
             RegisterModules();
         }
+
+        /// <summary>
+        /// Gets the current status of the Aikido Zen agent, including heartbeat reporting status.
+        /// This method provides a snapshot of the agent's communication status with the Zen API.
+        /// </summary>
+        /// <returns>
+        /// An <see cref="AgentStatus"/> object containing the current status information, including:
+        /// - Heartbeat reporting status indicating whether the agent is successfully communicating with the Zen API
+        /// - Success/failure state of recent API communications
+        /// - Whether heartbeat reports have expired or are current
+        /// </returns>
+        public static AgentStatus Status()
+        {
+            return Agent.Instance?.GetCurrentStatus();
+        }
     }
 }
