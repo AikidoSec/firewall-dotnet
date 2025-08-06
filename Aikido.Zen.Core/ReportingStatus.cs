@@ -1,36 +1,37 @@
 using System;
-using System.Collections.Concurrent;
 using Aikido.Zen.Core.Models.Events;
 
 namespace Aikido.Zen.Core
 {
     internal class ReportingStatus
     {
-        private ReportingStatusEntry? _startedReport;
-        private ReportingStatusEntry? _lastHeartBeatReport;
+        private DateTime? _lastReported;
+        private bool _success;
         private readonly TimeSpan _gracePeriod = TimeSpan.FromSeconds(30);
 
         public void SignalReporting(string operation, bool success)
         {
-            if (operation == Started.StartedEventName)
+            if (operation == Heartbeat.HeartbeatEventName)
             {
-                _startedReport = new ReportingStatusEntry(GetCurrentTime(), success);
+                _lastReported = GetCurrentTime();
+                _success = success;
             }
-            else if (operation == Heartbeat.HeartbeatEventName)
+
+            if (operation == Started.StartedEventName && (_lastReported == null || _success == false))
             {
-                _lastHeartBeatReport = new ReportingStatusEntry(GetCurrentTime(), success);
+                _lastReported = GetCurrentTime();
+                _success = success;
             }
         }
 
         public ReportingStatusResult GetReportingStatus()
         {
-            var lastReport = _lastHeartBeatReport ?? _startedReport;
-            if (lastReport == null)
+            if (_lastReported == null)
             {
                 return ReportingStatusResult.NotReported;
             }
 
-            if (!lastReport.Value.Success)
+            if (!_success)
             {
                 return ReportingStatusResult.Failure;
             }
@@ -38,7 +39,7 @@ namespace Aikido.Zen.Core
             var now = GetCurrentTime();
             // A grace period is added to allow for slight delays in reporting
             // This helps avoid false expirations due to network latency or short processing delays
-            if (lastReport.Value.LastReported.Add(Heartbeat.Interval).Add(_gracePeriod) < now)
+            if (_lastReported.Value.Add(Heartbeat.Interval).Add(_gracePeriod) < now)
             {
                 return ReportingStatusResult.Expired;
             }
@@ -48,19 +49,8 @@ namespace Aikido.Zen.Core
 
         protected virtual DateTime GetCurrentTime()
         {
+            // This method can be overridden for testing purposes
             return DateTime.UtcNow;
-        }
-
-        private struct ReportingStatusEntry
-        {
-            public ReportingStatusEntry(DateTime lastReported, bool success)
-            {
-                LastReported = lastReported;
-                Success = success;
-            }
-
-            public DateTime LastReported { get; }
-            public bool Success { get; }
         }
     }
 }

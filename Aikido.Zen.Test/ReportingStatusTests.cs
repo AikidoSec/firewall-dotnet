@@ -39,6 +39,20 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void SignalReporting_StartedRetriedAfterFailure_GetReportingStatusReturnsOk()
+        {
+            // Arrange
+            _reportingStatus.SignalReporting(Started.StartedEventName, false);
+            _reportingStatus.SignalReporting(Started.StartedEventName, true);
+
+            // Act
+            var result = _reportingStatus.GetReportingStatus();
+
+            // Assert
+            Assert.That(result, Is.EqualTo(ReportingStatusResult.Ok));
+        }
+
+        [Test]
         public void SignalReporting_WithStartedEventSuccess_GetReportingStatusReturnsOk()
         {
             // Act
@@ -171,21 +185,6 @@ namespace Aikido.Zen.Test
 
             // Assert
             Assert.That(result, Is.EqualTo(ReportingStatusResult.Ok));
-        }
-
-        [Test]
-        public void SignalReporting_WithHeartbeatFailureThenStartedSuccess_ReturnsFailure()
-        {
-            // Arrange - HeartbeatEvent has priority over Started event in GetReportingStatus
-            _reportingStatus.SignalReporting(Heartbeat.HeartbeatEventName, false);
-            _reportingStatus.SignalReporting(Started.StartedEventName, true);
-
-            // Act
-            var result = _reportingStatus.GetReportingStatus();
-
-            // Assert
-            // Heartbeat event takes priority, so even though Started succeeded, Heartbeat failed
-            Assert.That(result, Is.EqualTo(ReportingStatusResult.Failure));
         }
 
         [Test]
