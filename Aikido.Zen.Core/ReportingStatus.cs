@@ -15,14 +15,11 @@ namespace Aikido.Zen.Core
             // 1. Initial reporting (Started event)
             // 2. Heartbeat event
 
-            if (operation != Heartbeat.EventType && operation != Started.EventType)
+            if (operation == Heartbeat.EventType || operation == Started.EventType)
             {
-                // Ignore other operations
-                return;
+                _lastReported = GetCurrentTime();
+                _success = success;
             }
-
-            _lastReported = GetCurrentTime();
-            _success = success;
         }
 
         public ReportingStatusResult GetReportingStatus()
