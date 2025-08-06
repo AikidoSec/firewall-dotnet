@@ -4,7 +4,7 @@ namespace Aikido.Zen.Core
     {
         public AgentStatus(ReportingStatusResult heartbeatStatus)
         {
-            HeartbeatStatus = heartbeatStatus;
+            Heartbeat = heartbeatStatus;
         }
 
         /// <summary>
@@ -19,7 +19,7 @@ namespace Aikido.Zen.Core
         /// - <see cref="ReportingStatusResult.Expired"/>: Heartbeat reporting has expired
         /// - <see cref="ReportingStatusResult.Failure"/>: The most recent reporting attempt failed
         /// </value>
-        public ReportingStatusResult HeartbeatStatus { get; }
+        public ReportingStatusResult Heartbeat { get; }
     }
 
     public enum ReportingStatusResult

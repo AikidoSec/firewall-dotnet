@@ -518,7 +518,7 @@ namespace Aikido.Zen.Core
                     LogHelper.DebugLog(Logger, $"Event was not sent successfully: {response.Error}");
                 }
 
-                _reportingStatus.SignalReporting(queuedItem.Event.Type, response.Success);
+                _reportingStatus.OnEventReported(queuedItem.Event.Type, response.Success);
                 queuedItem.Callback?.Invoke(queuedItem.Event, response);
             }
             catch (OperationCanceledException) when (_cancellationSource.Token.IsCancellationRequested)

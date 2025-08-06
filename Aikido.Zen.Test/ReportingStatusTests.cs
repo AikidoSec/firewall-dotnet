@@ -31,7 +31,7 @@ namespace Aikido.Zen.Test
         public void SignalReporting_WithHeartbeatEventSuccess_GetReportingStatusReturnsOk()
         {
             // Act
-            _reportingStatus.SignalReporting(Heartbeat.HeartbeatEventName, true);
+            _reportingStatus.OnEventReported(Heartbeat.EventType, true);
             var result = _reportingStatus.GetReportingStatus();
 
             // Assert
@@ -42,8 +42,8 @@ namespace Aikido.Zen.Test
         public void SignalReporting_StartedRetriedAfterFailure_GetReportingStatusReturnsOk()
         {
             // Arrange
-            _reportingStatus.SignalReporting(Started.StartedEventName, false);
-            _reportingStatus.SignalReporting(Started.StartedEventName, true);
+            _reportingStatus.OnEventReported(Started.EventType, false);
+            _reportingStatus.OnEventReported(Started.EventType, true);
 
             // Act
             var result = _reportingStatus.GetReportingStatus();
@@ -56,7 +56,7 @@ namespace Aikido.Zen.Test
         public void SignalReporting_WithStartedEventSuccess_GetReportingStatusReturnsOk()
         {
             // Act
-            _reportingStatus.SignalReporting(Started.StartedEventName, true);
+            _reportingStatus.OnEventReported(Started.EventType, true);
             var result = _reportingStatus.GetReportingStatus();
 
             // Assert
@@ -67,7 +67,7 @@ namespace Aikido.Zen.Test
         public void SignalReporting_WithHeartbeatEventFailure_GetReportingStatusReturnsFailure()
         {
             // Act
-            _reportingStatus.SignalReporting(Heartbeat.HeartbeatEventName, false);
+            _reportingStatus.OnEventReported(Heartbeat.EventType, false);
             var result = _reportingStatus.GetReportingStatus();
 
             // Assert
@@ -78,7 +78,7 @@ namespace Aikido.Zen.Test
         public void SignalReporting_WithStartedEventFailure_GetReportingStatusReturnsFailure()
         {
             // Act
-            _reportingStatus.SignalReporting(Started.StartedEventName, false);
+            _reportingStatus.OnEventReported(Started.EventType, false);
             var result = _reportingStatus.GetReportingStatus();
 
             // Assert
@@ -89,7 +89,7 @@ namespace Aikido.Zen.Test
         public void SignalReporting_WithOtherEventSuccess_GetReportingStatusReturnsNotReported()
         {
             // Act
-            _reportingStatus.SignalReporting("some_other_event", true);
+            _reportingStatus.OnEventReported("some_other_event", true);
             var result = _reportingStatus.GetReportingStatus();
 
             // Assert
@@ -104,7 +104,7 @@ namespace Aikido.Zen.Test
             var testableReportingStatus = new TestableReportingStatus(baseTime);
             
             // Signal successful reporting at base time
-            testableReportingStatus.SignalReporting(Heartbeat.HeartbeatEventName, true);
+            testableReportingStatus.OnEventReported(Heartbeat.EventType, true);
             
             // Move time forward beyond heartbeat interval + grace period
             var expiredTime = baseTime.Add(Heartbeat.Interval).AddSeconds(31); // Grace period is 30 seconds
@@ -125,7 +125,7 @@ namespace Aikido.Zen.Test
             var testableReportingStatus = new TestableReportingStatus(baseTime);
             
             // Signal successful reporting at base time (only Started event, no Heartbeat)
-            testableReportingStatus.SignalReporting(Started.StartedEventName, true);
+            testableReportingStatus.OnEventReported(Started.EventType, true);
             
             // Move time forward beyond heartbeat interval + grace period
             var expiredTime = baseTime.Add(Heartbeat.Interval).AddSeconds(31); // Grace period is 30 seconds
@@ -146,7 +146,7 @@ namespace Aikido.Zen.Test
             var testableReportingStatus = new TestableReportingStatus(baseTime);
             
             // Signal successful reporting at base time
-            testableReportingStatus.SignalReporting(Heartbeat.HeartbeatEventName, true);
+            testableReportingStatus.OnEventReported(Heartbeat.EventType, true);
             
             // Move time forward but still within grace period
             var withinGracePeriodTime = baseTime.Add(Heartbeat.Interval).AddSeconds(15); // Grace period is 30 seconds
@@ -163,8 +163,8 @@ namespace Aikido.Zen.Test
         public void SignalReporting_WithMultipleOperations_PrefersHeartbeatOverStarted()
         {
             // Arrange
-            _reportingStatus.SignalReporting(Started.StartedEventName, false);
-            _reportingStatus.SignalReporting(Heartbeat.HeartbeatEventName, true);
+            _reportingStatus.OnEventReported(Started.EventType, false);
+            _reportingStatus.OnEventReported(Heartbeat.EventType, true);
 
             // Act
             var result = _reportingStatus.GetReportingStatus();
@@ -177,8 +177,8 @@ namespace Aikido.Zen.Test
         public void SignalReporting_WithStartedFailureThenHeartbeatSuccess_ReturnsOk()
         {
             // Arrange
-            _reportingStatus.SignalReporting(Started.StartedEventName, false);
-            _reportingStatus.SignalReporting(Heartbeat.HeartbeatEventName, true);
+            _reportingStatus.OnEventReported(Started.EventType, false);
+            _reportingStatus.OnEventReported(Heartbeat.EventType, true);
 
             // Act
             var result = _reportingStatus.GetReportingStatus();
@@ -191,10 +191,10 @@ namespace Aikido.Zen.Test
         public void SignalReporting_OverwritesPreviousStatusForSameOperation()
         {
             // Arrange
-            _reportingStatus.SignalReporting(Heartbeat.HeartbeatEventName, false);
+            _reportingStatus.OnEventReported(Heartbeat.EventType, false);
             
             // Act - overwrite with success
-            _reportingStatus.SignalReporting(Heartbeat.HeartbeatEventName, true);
+            _reportingStatus.OnEventReported(Heartbeat.EventType, true);
             var result = _reportingStatus.GetReportingStatus();
 
             // Assert
@@ -205,16 +205,16 @@ namespace Aikido.Zen.Test
         public void SignalReporting_WithEmptyOperation_DoesNotThrow()
         {
             // Act & Assert
-            Assert.DoesNotThrow(() => _reportingStatus.SignalReporting("", true));
-            Assert.DoesNotThrow(() => _reportingStatus.SignalReporting(string.Empty, false));
-            Assert.DoesNotThrow(() => _reportingStatus.SignalReporting(null, false));
+            Assert.DoesNotThrow(() => _reportingStatus.OnEventReported("", true));
+            Assert.DoesNotThrow(() => _reportingStatus.OnEventReported(string.Empty, false));
+            Assert.DoesNotThrow(() => _reportingStatus.OnEventReported(null, false));
         }
 
         [Test]
         public void GetReportingStatus_WhenOnlyStartedEventExists_UsesStartedEvent()
         {
             // Act
-            _reportingStatus.SignalReporting(Started.StartedEventName, true);
+            _reportingStatus.OnEventReported(Started.EventType, true);
             var result = _reportingStatus.GetReportingStatus();
 
             // Assert
@@ -225,7 +225,7 @@ namespace Aikido.Zen.Test
         public void GetReportingStatus_WhenOnlyStartedEventExistsAndFailed_ReturnsFailure()
         {
             // Act
-            _reportingStatus.SignalReporting(Started.StartedEventName, false);
+            _reportingStatus.OnEventReported(Started.EventType, false);
             var result = _reportingStatus.GetReportingStatus();
 
             // Assert
@@ -245,7 +245,7 @@ namespace Aikido.Zen.Test
                 int index = i;
                 threads[i] = new Thread(() =>
                 {
-                    _reportingStatus.SignalReporting(Heartbeat.HeartbeatEventName, true);
+                    _reportingStatus.OnEventReported(Heartbeat.EventType, true);
                     results[index] = _reportingStatus.GetReportingStatus();
                 });
                 threads[i].Start();
@@ -268,8 +268,8 @@ namespace Aikido.Zen.Test
         public void GetReportingStatus_PrioritizesHeartbeatOverStartedEvent()
         {
             // Arrange - Signal both events with different outcomes
-            _reportingStatus.SignalReporting(Started.StartedEventName, true);
-            _reportingStatus.SignalReporting(Heartbeat.HeartbeatEventName, false);
+            _reportingStatus.OnEventReported(Started.EventType, true);
+            _reportingStatus.OnEventReported(Heartbeat.EventType, false);
 
             // Act
             var result = _reportingStatus.GetReportingStatus();
@@ -285,7 +285,7 @@ namespace Aikido.Zen.Test
             var customOperation = "other_operation";
 
             // Act
-            _reportingStatus.SignalReporting(customOperation, true);
+            _reportingStatus.OnEventReported(customOperation, true);
 
             // Assert - Custom operations don't affect GetReportingStatus (only Heartbeat and Started do)
             var result = _reportingStatus.GetReportingStatus();

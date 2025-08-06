@@ -5,9 +5,9 @@ namespace Aikido.Zen.Core.Models.Events
 {
     public class Started : IEvent
     {
-        internal const string StartedEventName = "started";
+        internal const string EventType = "started";
 
-        public string Type => StartedEventName;
+        public string Type => EventType;
         public AgentInfo Agent { get; set; }
         public long Time => DateTimeHelper.UTCNowUnixMilliseconds();
 

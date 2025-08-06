@@ -9,13 +9,13 @@ namespace Aikido.Zen.Core
         private bool _success;
         private readonly TimeSpan _gracePeriod = TimeSpan.FromSeconds(30);
 
-        public void SignalReporting(string operation, bool success)
+        public void OnEventReported(string operation, bool success)
         {
             // The last reported time and success status can be set in 2 cases:
             // 1. Initial reporting (Started event)
             // 2. Heartbeat event
 
-            if (operation != Heartbeat.HeartbeatEventName && operation != Started.StartedEventName)
+            if (operation != Heartbeat.EventType && operation != Started.EventType)
             {
                 // Ignore other operations
                 return;

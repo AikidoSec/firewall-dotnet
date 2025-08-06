@@ -7,9 +7,9 @@ namespace Aikido.Zen.Core.Models.Events
 {
     public class Heartbeat : IEvent
     {
-        internal const string HeartbeatEventName = "heartbeat";
+        internal const string EventType = "heartbeat";
 
-        public string Type => HeartbeatEventName;
+        public string Type => EventType;
 
         public AgentStats Stats { get; set; } = new AgentStats();
         public IEnumerable<AiInfo> Ai { get; set; }
