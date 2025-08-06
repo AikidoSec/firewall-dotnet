@@ -13,19 +13,16 @@ namespace Aikido.Zen.Core
         {
             // The last reported time and success status can be set in 2 cases:
             // 1. Initial reporting (Started event)
-            // 2. Heartbeat event (This updates the status every time a heartbeat is sent)
+            // 2. Heartbeat event
 
-            if (operation == Heartbeat.HeartbeatEventName)
+            if (operation != Heartbeat.HeartbeatEventName && operation != Started.StartedEventName)
             {
-                _lastReported = GetCurrentTime();
-                _success = success;
+                // Ignore other operations
+                return;
             }
 
-            if (operation == Started.StartedEventName && (_lastReported == null || _success == false))
-            {
-                _lastReported = GetCurrentTime();
-                _success = success;
-            }
+            _lastReported = GetCurrentTime();
+            _success = success;
         }
 
         public ReportingStatusResult GetReportingStatus()
