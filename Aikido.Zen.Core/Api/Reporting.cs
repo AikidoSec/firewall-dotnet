@@ -10,7 +10,7 @@ using Aikido.Zen.Core.Helpers;
 
 namespace Aikido.Zen.Core.Api
 {
-    public class ReportingAPIClient : IReportingAPIClient
+    internal class ReportingAPIClient : IReportingAPIClient
     {
         private readonly HttpClient _httpClient;
 

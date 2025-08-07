@@ -1,6 +1,6 @@
 namespace Aikido.Zen.Core.Api
 {
-	public interface IZenApi
+    internal interface IZenApi
 	{
 		IReportingAPIClient Reporting { get; }
         IRuntimeAPIClient Runtime { get; }
