@@ -9,8 +9,7 @@ namespace Aikido.Zen.DotNetCore.RuntimeSca
     internal class RuntimeAssemblyTracker
     {
         private readonly IAgent _agent;
-        private readonly IDependencyContextProvider _dependencyContextProvider;
-        private readonly IFileVersionInfoProvider _fileVersionInfoProvider;
+        private readonly AssemblyToPackageMatcher _assemblyToPackageMatcher;
 
         internal static RuntimeAssemblyTracker Instance { get; } = new RuntimeAssemblyTracker(
             Agent.Instance,
@@ -25,8 +24,7 @@ namespace Aikido.Zen.DotNetCore.RuntimeSca
             IFileVersionInfoProvider fileVersionInfoProvider)
         {
             _agent = agent;
-            _dependencyContextProvider = dependencyContextProvider;
-            _fileVersionInfoProvider = fileVersionInfoProvider;
+            _assemblyToPackageMatcher = new AssemblyToPackageMatcher(dependencyContextProvider, fileVersionInfoProvider);
         }
 
         internal void SubscribeToAppDomain(AppDomain appDomain)
@@ -47,12 +45,16 @@ namespace Aikido.Zen.DotNetCore.RuntimeSca
                 return;
             }
 
-            var library = FindLibraryForAssembly(assembly);
+            var library = _assemblyToPackageMatcher.FindLibraryForAssembly(assembly);
             if (library == null)
             {
                 return;
             }
 
+
+            // The package type can be "package", "project", or "platform".
+            // We are only interested in "package" type because it is used
+            //  to check for vulnerabilities on packages.
             if (library.Type != "package")
             {
                 return;
@@ -73,61 +75,6 @@ namespace Aikido.Zen.DotNetCore.RuntimeSca
             }
         }
 
-        private RuntimeLibrary FindLibraryForAssembly(Assembly assembly)
-        {
-            if (string.IsNullOrEmpty(assembly?.Location))
-            {
-                return null;
-            }
-
-            var assemblyFileName = Path.GetFileName(assembly.Location);
-            var assemblyVersion = assembly.GetName()?.Version?.ToString();
-            
-            FileVersionInfo fileVersionInfo;
-            try
-            {
-                fileVersionInfo = _fileVersionInfoProvider.GetVersionInfo(assembly.Location);
-            }
-            catch (Exception)
-            {
-                // If we can't get file version info, we can't match the library
-                return null;
-            }
-
-            // Getting the fileVersionInfo.FileVersion omits the ending '.0' in some cases.
-            // This is part of the {application}.deps.json file though.
-            // So we need it to match the correct assembly with the correct package.
-            var fileVersion = $"{fileVersionInfo.FileMajorPart}.{fileVersionInfo.FileMinorPart}.{fileVersionInfo.FileBuildPart}.{fileVersionInfo.FilePrivatePart}";
-
-            foreach (var library in _dependencyContextProvider.GetRuntimeLibraries())
-            {
-                foreach (var group in library.RuntimeAssemblyGroups)
-                {
-                    foreach (var file in group.RuntimeFiles)
-                    {
-                        if (!Path.GetFileName(file.Path).Equals(assemblyFileName, StringComparison.OrdinalIgnoreCase))
-                        {
-                            continue;
-                        }
-
-                        if (!assemblyVersion.Equals(file.AssemblyVersion, StringComparison.OrdinalIgnoreCase))
-                        {
-                            continue;
-                        }
-
-                        if (fileVersion != null &&
-                            !fileVersion.Equals(file.FileVersion, StringComparison.OrdinalIgnoreCase))
-                        {
-                            continue;
-                        }
-
-                        return library;
-                    }
-                }
-            }
-
-            return null;
-        }
 
 
         // The reason DependencyContextProvider and FileVersionInfoProvider is to allow mocking in tests.

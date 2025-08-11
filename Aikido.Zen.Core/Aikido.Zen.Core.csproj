@@ -26,7 +26,7 @@
     <Exec Command="powershell -ExecutionPolicy Bypass -File ..\\pack.ps1 -buildConfiguration $(Configuration)" />
   </Target>-->
   <ItemGroup>
-    <InternalsVisibleTo Include="Aikido.Zen.Tests.Mocks"/>
+    <InternalsVisibleTo Include="Aikido.Zen.Tests.Mocks" />
     <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
   </ItemGroup>
 

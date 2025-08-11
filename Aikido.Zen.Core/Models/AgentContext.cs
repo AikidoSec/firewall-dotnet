@@ -135,20 +135,19 @@ namespace Aikido.Zen.Core.Models
         public void AddRuntimePackage(string packageName, string packageVersion)
         {
             var identifier = $"{packageName.ToLowerInvariant()}@{packageVersion}";
-            if (_packages.TryGetValue(identifier, out var existingPackage))
-            {
-                existingPackage.RequiredAt = DateTimeHelper.UTCNowUnixMilliseconds();
-            }
-            else
-            {
-                var newPackage = new Package
+
+            _packages.AddOrUpdate(identifier, 
+                new Package
                 {
                     Name = packageName,
                     Version = packageVersion,
                     RequiredAt = DateTimeHelper.UTCNowUnixMilliseconds()
-                };
-                _packages[identifier] = newPackage;
-            }
+                },
+                (_, existingPackage) =>
+                {
+                    existingPackage.RequiredAt = DateTimeHelper.UTCNowUnixMilliseconds();
+                    return existingPackage;
+                });
         }
 
         public void Clear()
