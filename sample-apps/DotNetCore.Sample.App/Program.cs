@@ -1,7 +1,12 @@
 using Aikido.Zen.DotNetCore;
-using SQLitePCL;
 using Microsoft.AspNetCore.HttpOverrides;
+using System.Net;
 
+HttpClient.DefaultProxy = new WebProxy("http://localhost:8000")
+{
+    BypassProxyOnLocal = false,
+    UseDefaultCredentials = true
+};
 
 /// <summary>
 /// Creates and configures the web application

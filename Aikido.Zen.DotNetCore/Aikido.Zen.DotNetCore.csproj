@@ -33,11 +33,20 @@
     <PackageReference Include="System.Text.Json" Version="9.0.1" Condition="'$(TargetFramework)' == 'net9.0'" />
     <PackageReference Include="Fody" Version="6.9.0" PrivateAssets="All" />
     <PackageReference Include="Costura.Fody" Version="6.0.0" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="[6.0,)" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Aikido.Zen.Core\Aikido.Zen.Core.csproj">
       <PrivateAssets>all</PrivateAssets>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Aikido.Zen.Tests.Mocks"/>
+    <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Interfaces\" />
   </ItemGroup>
 </Project>

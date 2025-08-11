@@ -27,6 +27,7 @@
   </Target>-->
   <ItemGroup>
     <InternalsVisibleTo Include="Aikido.Zen.Tests.Mocks"/>
+    <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
   </ItemGroup>
 
   <ItemGroup>
