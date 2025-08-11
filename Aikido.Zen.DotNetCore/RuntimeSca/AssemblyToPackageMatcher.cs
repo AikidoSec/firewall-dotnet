@@ -28,38 +28,49 @@ namespace Aikido.Zen.DotNetCore.RuntimeSca
             var assemblyVersion = assembly.GetName()?.Version?.ToString();
             var fileVersion = GetFileVersion(assembly.Location);
 
-            foreach (var library in _dependencyContextProvider.GetRuntimeLibraries())
+            return _dependencyContextProvider.GetRuntimeLibraries()
+                                             .FirstOrDefault(
+                                                library => IsMatchingAssembly(
+                                                    library,
+                                                    assemblyFileName,
+                                                    assemblyVersion,
+                                                    fileVersion));
+        }
+
+        private bool IsMatchingAssembly(
+            RuntimeLibrary library,
+            string assemblyFileName,
+            string assemblyVersion,
+            string fileVersion)
+        {
+            var libraryFiles = library.RuntimeAssemblyGroups.SelectMany(g => g.RuntimeFiles);
+
+            foreach (var file in libraryFiles)
             {
-                foreach (var group in library.RuntimeAssemblyGroups)
+                if (!Path.GetFileName(file.Path).Equals(assemblyFileName, StringComparison.OrdinalIgnoreCase))
                 {
-                    foreach (var file in group.RuntimeFiles)
-                    {
-                        if (!Path.GetFileName(file.Path).Equals(assemblyFileName, StringComparison.OrdinalIgnoreCase))
-                        {
-                            // The assembly file name (eg: "System.Runtime.dll") must match the file name in the runtime files.
-                            continue;
-                        }
-
-                        if (!assemblyVersion.Equals(file.AssemblyVersion, StringComparison.OrdinalIgnoreCase))
-                        {
-                            // The assembly version (eg: "1.0.0.0") must match the file version in the runtime files.
-                            continue;
-                        }
-
-                        if (fileVersion != null &&
-                            !fileVersion.Equals(file.FileVersion, StringComparison.OrdinalIgnoreCase))
-                        {
-                            // If there is a file version, it must match the file version in the runtime files.
-                            // If there is no file version, it is safe to skip this check.
-                            continue;
-                        }
-
-                        return library;
-                    }
+                    // The assembly file name (eg: "System.Runtime.dll") must match the file name in the runtime files.
+                    continue;
                 }
+
+                if (!assemblyVersion.Equals(file.AssemblyVersion, StringComparison.OrdinalIgnoreCase))
+                {
+                    // The assembly version (eg: "1.0.0.0") must match the file version in the runtime files.
+                    continue;
+                }
+
+                if (fileVersion != null &&
+                    !fileVersion.Equals(file.FileVersion, StringComparison.OrdinalIgnoreCase))
+                {
+                    // If there is a file version, it must match the file version in the runtime files.
+                    // If there is no file version, it is safe to skip this check.
+                    continue;
+                }
+
+                return true;
             }
 
-            return null;
+            return false;
         }
 
         private string GetFileVersion(string filePath)
