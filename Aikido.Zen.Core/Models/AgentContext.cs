@@ -134,6 +134,11 @@ namespace Aikido.Zen.Core.Models
         /// <param name="packageVersion">The version of the package that was loaded</param>
         public void AddRuntimePackage(string packageName, string packageVersion)
         {
+            if (packageName == null || packageVersion == null)
+            {
+                return;
+            }
+
             // This method gets called whenever an assembly from a package is loaded.
             // We use this to track which packages are being used at runtime.
 
