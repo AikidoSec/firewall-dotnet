@@ -98,10 +98,7 @@ namespace Aikido.Zen.DotNetCore.RuntimeSca
         {
             try
             {
-                var sw = Stopwatch.StartNew();
                 _assemblyLoadQueue.Add(args.LoadedAssembly);
-                sw.Stop();
-                LogHelper.DebugLog(Agent.Logger, $"Assembly loaded: {args.LoadedAssembly.FullName} in {sw.ElapsedTicks / 10} us");
             }
             catch (Exception ex)
             {
