@@ -29,12 +29,19 @@ namespace Aikido.Zen.DotNetCore.RuntimeSca
 
         internal void SubscribeToAppDomain(AppDomain appDomain)
         {
-            appDomain.AssemblyLoad += OnAssemblyLoad;
-            
-            // Process already loaded assemblies
-            foreach (var assembly in appDomain.GetAssemblies())
+            try
             {
-                AddAssembly(assembly);
+                appDomain.AssemblyLoad += OnAssemblyLoad;
+
+                // Process already loaded assemblies
+                foreach (var assembly in appDomain.GetAssemblies())
+                {
+                    AddAssembly(assembly);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogHelper.ErrorLog(Agent.Logger, ex, $"Failed to subscribe to AppDomain events");
             }
         }
 
