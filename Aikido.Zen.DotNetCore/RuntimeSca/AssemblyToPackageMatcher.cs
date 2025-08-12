@@ -28,13 +28,9 @@ namespace Aikido.Zen.DotNetCore.RuntimeSca
             var assemblyVersion = assembly.GetName()?.Version?.ToString();
             var fileVersion = GetFileVersion(assembly.Location);
 
-            return _dependencyContextProvider.GetRuntimeLibraries()
-                                             .FirstOrDefault(
-                                                library => IsMatchingAssembly(
-                                                    library,
-                                                    assemblyFileName,
-                                                    assemblyVersion,
-                                                    fileVersion));
+            return _dependencyContextProvider
+                .GetRuntimeLibraries()
+                .FirstOrDefault(library => IsMatchingAssembly(library, assemblyFileName, assemblyVersion, fileVersion));
         }
 
         private bool IsMatchingAssembly(

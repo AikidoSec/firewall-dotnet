@@ -27,6 +27,7 @@
   </Target>-->
   <ItemGroup>
     <InternalsVisibleTo Include="Aikido.Zen.Tests.Mocks" />
+    <!-- Allow Moq's dynamic proxy generation to access internal members for unit testing -->
     <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
   </ItemGroup>
 
