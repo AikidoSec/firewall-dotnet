@@ -134,17 +134,26 @@ namespace Aikido.Zen.Core.Models
         /// <param name="packageVersion">The version of the package that was loaded</param>
         public void AddRuntimePackage(string packageName, string packageVersion)
         {
+            // This method gets called whenever an assembly from a package is loaded.
+            // We use this to track which packages are being used at runtime.
+
             var identifier = $"{packageName.ToLowerInvariant()}@{packageVersion}";
 
-            _packages.AddOrUpdate(identifier, 
-                new Package
+            _packages.AddOrUpdate(
+                key: identifier, 
+                addValue: new Package
                 {
                     Name = packageName,
                     Version = packageVersion,
                     RequiredAt = DateTimeHelper.UTCNowUnixMilliseconds()
                 },
-                (_, existingPackage) =>
+                updateValueFactory: (_, existingPackage) =>
                 {
+                    // If the package already exists, we update the RequiredAt time.
+                    // This gives us an accurate last used time for the package
+                    // This can happen when a package contains multiple assemblies
+                    // and are loaded at different times by the runtime.
+
                     existingPackage.RequiredAt = DateTimeHelper.UTCNowUnixMilliseconds();
                     return existingPackage;
                 });
@@ -158,6 +167,7 @@ namespace Aikido.Zen.Core.Models
             _hostnames.Clear();
             _users.Clear();
             _routes.Clear();
+            _packages.Clear();
             ConfigLastUpdated = 0;
         }
 
