@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Aikido.Zen.Core.Api;
@@ -22,6 +23,7 @@ namespace Aikido.Zen.Core.Models
         private readonly ConcurrentLFUDictionary<string, Host> _hostnames = new ConcurrentLFUDictionary<string, Host>(MaxHostnames);
         private readonly ConcurrentLFUDictionary<string, UserExtended> _users = new ConcurrentLFUDictionary<string, UserExtended>(MaxUsers);
         private readonly ConcurrentLFUDictionary<string, Route> _routes = new ConcurrentLFUDictionary<string, Route>(MaxRoutes);
+        private readonly ConcurrentDictionary<string, Package> _packages = new ConcurrentDictionary<string, Package>();
 
         public long ConfigLastUpdated { get; set; } = 0;
         public bool ContextMiddlewareInstalled { get; set; } = false;
@@ -124,6 +126,44 @@ namespace Aikido.Zen.Core.Models
             _routes.AddOrUpdate(context.Route, route);
         }
 
+        /// <summary>
+        /// Adds a runtime package to the context.
+        /// This is used to track nuget packages once they are loaded by the application.
+        /// </summary>
+        /// <param name="packageName">The name of the package that was loaded</param>
+        /// <param name="packageVersion">The version of the package that was loaded</param>
+        public void AddRuntimePackage(string packageName, string packageVersion)
+        {
+            if (packageName == null || packageVersion == null)
+            {
+                return;
+            }
+
+            // This method gets called whenever an assembly from a package is loaded.
+            // We use this to track which packages are being used at runtime.
+
+            var identifier = $"{packageName.ToLowerInvariant()}@{packageVersion}";
+
+            _packages.AddOrUpdate(
+                key: identifier, 
+                addValue: new Package
+                {
+                    Name = packageName,
+                    Version = packageVersion,
+                    RequiredAt = DateTimeHelper.UTCNowUnixMilliseconds()
+                },
+                updateValueFactory: (_, existingPackage) =>
+                {
+                    // If the package already exists, we update the RequiredAt time.
+                    // This gives us an accurate last used time for the package
+                    // This can happen when a package contains multiple assemblies
+                    // and are loaded at different times by the runtime.
+
+                    existingPackage.RequiredAt = DateTimeHelper.UTCNowUnixMilliseconds();
+                    return existingPackage;
+                });
+        }
+
         public void Clear()
         {
             _config.Clear();
@@ -132,6 +172,7 @@ namespace Aikido.Zen.Core.Models
             _hostnames.Clear();
             _users.Clear();
             _routes.Clear();
+            _packages.Clear();
             ConfigLastUpdated = 0;
         }
 
@@ -234,6 +275,7 @@ namespace Aikido.Zen.Core.Models
         public IEnumerable<Host> Hostnames => _hostnames.GetValues();
         public IEnumerable<UserExtended> Users => _users.GetValues();
         public IEnumerable<Route> Routes => _routes.GetValues();
+        public IEnumerable<Package> Packages => _packages.Values;
 
         public IEnumerable<EndpointConfig> Endpoints => _config.Endpoints;
         public int Requests => _stats.Requests.Total;

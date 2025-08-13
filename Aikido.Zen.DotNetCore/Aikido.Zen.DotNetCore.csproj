@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>net6.0;net7.0;net8.0;net9.0</TargetFrameworks>
@@ -33,11 +33,21 @@
     <PackageReference Include="System.Text.Json" Version="9.0.1" Condition="'$(TargetFramework)' == 'net9.0'" />
     <PackageReference Include="Fody" Version="6.9.0" PrivateAssets="All" />
     <PackageReference Include="Costura.Fody" Version="6.0.0" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="[6.0,)" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Aikido.Zen.Core\Aikido.Zen.Core.csproj">
       <PrivateAssets>all</PrivateAssets>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Aikido.Zen.Tests.Mocks"/>
+    <!-- Allow Moq's dynamic proxy generation to access internal members for unit testing -->
+    <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Interfaces\" />
   </ItemGroup>
 </Project>

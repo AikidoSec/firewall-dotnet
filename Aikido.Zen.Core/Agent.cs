@@ -9,16 +9,16 @@ using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Models.Events;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 
 [assembly: InternalsVisibleTo("Aikido.Zen.Tests")]
 namespace Aikido.Zen.Core
 {
+
     /// <summary>
     /// Manages event processing, scheduling and reporting for the Aikido Zen monitoring system.
     /// Handles rate limiting, retries, and graceful shutdown of event processing.
     /// </summary>
-    public class Agent : IDisposable
+    public class Agent : IAgent, IDisposable
     {
         private readonly IZenApi _api;
         private readonly ConcurrentQueue<QueuedItem> _eventQueue;
@@ -302,6 +302,17 @@ namespace Aikido.Zen.Core
         public void IncrementTotalRequestCount()
         {
             _context.AddRequest();
+        }
+
+        /// <summary>
+        /// Adds a runtime package to the context.
+        /// This is used to track nuget packages once they are loaded by the application.
+        /// </summary>
+        /// <param name="packageName">The name of the package that was loaded</param>
+        /// <param name="packageVersion">The version of the package that was loaded</param>
+        public void AddRuntimePackage(string packageName, string packageVersion)
+        {
+            _context.AddRuntimePackage(packageName, packageVersion);
         }
 
         /// <summary>

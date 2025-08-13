@@ -4,6 +4,7 @@ using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.DotNetCore.Middleware;
 using Aikido.Zen.DotNetCore.Patches;
+using Aikido.Zen.DotNetCore.RuntimeSca;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
@@ -143,6 +144,7 @@ namespace Aikido.Zen.DotNetCore
                     AikidoException.ConfigureLogger(exceptionLogger);
                 }
                 EnvironmentHelper.ReportValues();
+                RuntimeAssemblyTracker.Instance.SubscribeToAppDomain(AppDomain.CurrentDomain);
             }
             Patcher.Patch();
             app.UseMiddleware<ContextMiddleware>();

@@ -59,14 +59,30 @@ namespace Aikido.Zen.Core.Helpers
         /// </summary>
         /// <param name="logger">The logger instance to use.</param>
         /// <param name="message">The message to log.</param>
-        public static void ErrorLog(ILogger logger, string message)
+        public static void ErrorLog(ILogger logger, string message) => ErrorLog(logger, null, message);
+
+        /// <summary>
+        /// Logs an error message, after sanitizing the message and applying rate limiting.
+        /// </summary>
+        /// <param name="logger">The logger instance to use.</param>
+        /// <param name="message">The message to log.</param>
+        public static void ErrorLog(ILogger logger, Exception exception, string message)
         {
             // Sanitize the message to prevent log injection
             string sanitizedMessage = SanitizeMessage(message);
-            // we log the message to the outputs defined by the application
-            logger.LogError(sanitizedMessage);
             // we also log the message to the debug output in case the application is running in a debugger
             Console.Error.WriteLine(sanitizedMessage);
+
+            if (exception == null)
+            {
+                // we log the message to the outputs defined by the application
+                logger.LogError(sanitizedMessage);
+            }
+            else
+            {
+                // we log the message to the outputs defined by the application
+                logger.LogError(exception, sanitizedMessage);
+            }
         }
 
         /// <summary>

@@ -1,7 +1,5 @@
 using Aikido.Zen.DotNetCore;
-using SQLitePCL;
 using Microsoft.AspNetCore.HttpOverrides;
-
 
 /// <summary>
 /// Creates and configures the web application

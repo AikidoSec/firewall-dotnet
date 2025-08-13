@@ -16,6 +16,7 @@ namespace Aikido.Zen.Core.Models.Events
         public IEnumerable<Host> Hostnames { get; set; }
         public IEnumerable<Route> Routes { get; set; }
         public IEnumerable<UserExtended> Users { get; set; }
+        public IEnumerable<Package> Packages { get; set; }
         public AgentInfo Agent { get; set; }
         public long Time => DateTimeHelper.UTCNowUnixMilliseconds();
         public bool MiddlewareInstalled { get; set; }
@@ -53,6 +54,7 @@ namespace Aikido.Zen.Core.Models.Events
             heartbeat.MiddlewareInstalled = context.ContextMiddlewareInstalled && context.BlockingMiddlewareInstalled;
             heartbeat.Stats.StartedAt = context.Started;
             heartbeat.Stats.EndedAt = DateTimeHelper.UTCNowUnixMilliseconds();
+            heartbeat.Packages = context.Packages;
             return heartbeat;
         }
     }
