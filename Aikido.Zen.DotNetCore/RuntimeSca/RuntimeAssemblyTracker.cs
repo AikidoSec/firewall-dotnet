@@ -12,14 +12,20 @@ namespace Aikido.Zen.DotNetCore.RuntimeSca
     {
         private readonly IAgent _agent;
         private readonly AssemblyToPackageMatcher _assemblyToPackageMatcher;
+        private AppDomain _currentAppDomain;
+
+        // These fields are used to process assemblies in a background task
         private readonly Task _assemblyLoadProcessingBackgroundTask;
+        private readonly BlockingCollection<Assembly> _assemblyLoadQueue = new BlockingCollection<Assembly>();
+
+        // This timer is used to periodically scan the current AppDomain for new assemblies
+        private static readonly TimeSpan _fullAssemblyScanInterval = TimeSpan.FromHours(12);
+        private Timer _fullAssemblyScanTimer;
 
         internal static RuntimeAssemblyTracker Instance { get; } = new RuntimeAssemblyTracker(
             Agent.Instance,
             new DependencyContextProvider(),
             new FileVersionInfoProvider());
-
-        private readonly BlockingCollection<Assembly> _assemblyLoadQueue = new BlockingCollection<Assembly>();
 
         // This constructor is meant for testing purposes only.
         // Use the Instance property to access the singleton instance in production code.
@@ -38,11 +44,43 @@ namespace Aikido.Zen.DotNetCore.RuntimeSca
 
         internal void SubscribeToAppDomain(AppDomain appDomain)
         {
+            if (_currentAppDomain != null)
+            {
+                return;
+            }
+
             try
             {
-                appDomain.AssemblyLoad += OnAssemblyLoad;
+                _currentAppDomain = appDomain;
+                _currentAppDomain.AssemblyLoad += OnAssemblyLoad;
 
-                // Process already loaded assemblies
+                // Assemblies need to be refreshed every so often because
+                //  they are removed from the "Packages in use" if no report
+                //  is sent after 24 hours.
+                _fullAssemblyScanTimer = new Timer(
+                    callback: FullAssemblyScanTimerCallback,
+                    state: null,
+                    dueTime: TimeSpan.Zero,
+                    period: _fullAssemblyScanInterval);
+            }
+            catch (Exception ex)
+            {
+                LogHelper.ErrorLog(Agent.Logger, ex, $"Failed to subscribe to AppDomain events");
+            }
+        }
+
+        private void FullAssemblyScanTimerCallback(object state)
+        {
+            var appDomain = _currentAppDomain;
+            if (appDomain == null)
+            {
+                // If there is no appdomain to scan, we can return early.
+                return;
+            }
+
+            try
+            {
+                // Check for new assemblies in the current AppDomain
                 foreach (var assembly in appDomain.GetAssemblies())
                 {
                     _assemblyLoadQueue.Add(assembly);
@@ -50,7 +88,7 @@ namespace Aikido.Zen.DotNetCore.RuntimeSca
             }
             catch (Exception ex)
             {
-                LogHelper.ErrorLog(Agent.Logger, ex, $"Failed to subscribe to AppDomain events");
+                LogHelper.ErrorLog(Agent.Logger, ex, $"Failed to scan AppDomain for assemblies");
             }
         }
 
@@ -105,8 +143,6 @@ namespace Aikido.Zen.DotNetCore.RuntimeSca
                 LogHelper.ErrorLog(Agent.Logger, ex, $"Failed to process assembly load event for {args.LoadedAssembly?.FullName}");
             }
         }
-
-
 
         // The reason DependencyContextProvider and FileVersionInfoProvider is to allow mocking in tests.
         // The classes are marked private to prevent them from being used outside of this class.
