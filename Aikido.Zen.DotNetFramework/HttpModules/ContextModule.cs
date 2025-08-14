@@ -146,9 +146,23 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
 
         private static string GetClientIp(HttpContext httpContext)
         {
-            return !string.IsNullOrEmpty(httpContext.Request.ServerVariables["HTTP_X_FORWARDED_FOR"])
-                ? httpContext.Request.ServerVariables["HTTP_X_FORWARDED_FOR"]
-                : httpContext.Request.ServerVariables["REMOTE_ADDR"];
+            if (EnvironmentHelper.TrustProxy)
+            {
+                var headerVarName = $"HTTP_{EnvironmentHelper.ClientIpHeader.ToUpper().Replace("-", "_")}";
+                var ipHeader = httpContext.Request.ServerVariables[headerVarName];
+                var ipList = IPHeaderHelper.ParseIpHeader(ipHeader);
+
+                // Return the first valid non-private IP address
+                foreach (var ip in ipList)
+                {
+                    if (IPHelper.IsValidIp(ip) && !IPHelper.IsPrivateOrLocalIp(ip))
+                    {
+                        return ip;
+                    }
+                }
+            }
+
+            return httpContext.Request.ServerVariables["REMOTE_ADDR"];
         }
 
         /// <summary>

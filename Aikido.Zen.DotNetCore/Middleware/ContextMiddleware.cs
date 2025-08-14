@@ -198,34 +198,12 @@ namespace Aikido.Zen.DotNetCore.Middleware
 
         /// <summary>
         /// Gets the client IP address, considering X-Forwarded-For headers for proxied requests.
+        /// See https://help.aikido.dev/zen-firewall/zen-installation-instructions/proxy-load-balancer-settings#additional-configuration-for-aspnet-core
         /// </summary>
         /// <param name="httpContext">The HTTP context containing the request information</param>
         /// <returns>The client IP address as a string</returns>
         private static string GetClientIp(HttpContext httpContext)
         {
-            // Only check headers if the application is configured to trust the proxy
-            // This is true by default, but can be overridden by the user
-            if (EnvironmentHelper.TrustProxy)
-            {
-                // Check for header first (for proxied requests)
-                // Checks X-Forwarded-For by default, but can be overridden by user
-                if (httpContext.Request.Headers.TryGetValue(EnvironmentHelper.ClientIpHeader, out var forwardedFor))
-                {
-                    var ipHeader = forwardedFor.FirstOrDefault();
-                    var ipList = IPHeaderHelper.ParseIpHeader(ipHeader);
-
-                    // Return the first valid non-private IP address
-                    foreach (var ip in ipList)
-                    {
-                        if (IPHelper.IsValidIp(ip) && !IPHelper.IsPrivateOrLocalIp(ip))
-                        {
-                            return ip;
-                        }
-                    }
-                }
-            }
-
-            // Fall back to the connection's remote IP address
             return httpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty;
         }
 
