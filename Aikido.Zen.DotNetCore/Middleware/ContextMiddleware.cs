@@ -203,14 +203,25 @@ namespace Aikido.Zen.DotNetCore.Middleware
         /// <returns>The client IP address as a string</returns>
         private static string GetClientIp(HttpContext httpContext)
         {
-            // Check for X-Forwarded-For header first (for proxied requests)
-            if (httpContext.Request.Headers.TryGetValue("X-Forwarded-For", out var forwardedFor))
+            // Only check headers if the application is configured to trust the proxy
+            // This is true by default, but can be overridden by the user
+            if (EnvironmentHelper.TrustProxy)
             {
-                var firstIp = forwardedFor.FirstOrDefault();
-                if (!string.IsNullOrEmpty(firstIp))
+                // Check for header first (for proxied requests)
+                // Checks X-Forwarded-For by default, but can be overridden by user
+                if (httpContext.Request.Headers.TryGetValue(EnvironmentHelper.ClientIpHeader, out var forwardedFor))
                 {
-                    // X-Forwarded-For can contain multiple IPs, take the first one
-                    return firstIp.Split(',')[0].Trim();
+                    var ipHeader = forwardedFor.FirstOrDefault();
+                    var ipList = IPHeaderHelper.ParseIpHeader(ipHeader);
+
+                    // Return the first valid non-private IP address
+                    foreach (var ip in ipList)
+                    {
+                        if (IPHelper.IsValidIp(ip) && !IPHelper.IsPrivateOrLocalIp(ip))
+                        {
+                            return ip;
+                        }
+                    }
                 }
             }
 

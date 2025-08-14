@@ -43,13 +43,29 @@ namespace Aikido.Zen.Core.Helpers
         public static bool IsDisabled => GetBooleanValue("AIKIDO_DISABLE");
 
         /// <summary>
+        /// Determines whether to trust the X-Forwarded-For header.
+        /// Should be set to false if the application is not behind a reverse proxy.
+        /// </summary>
+        public static bool TrustProxy => GetBooleanValue("AIKIDO_TRUST_PROXY", true);
+
+        /// <summary>
+        /// Determines whether to trust the X-Forwarded-For header.
+        /// Should be set to false if the application is not behind a reverse proxy.
+        /// </summary>
+        public static string ClientIpHeader => Environment.GetEnvironmentVariable("AIKIDO_CLIENT_IP_HEADER") ?? "X-FORWARDED-FOR";
+
+        /// <summary>
         /// Helper method to determine if an environment variable is set to "true" or "1".
         /// </summary>
         /// <param name="variableName">The name of the environment variable to check.</param>
         /// <returns>True if the environment variable is set to "true" or "1"; otherwise, false.</returns>
-        private static bool GetBooleanValue(string variableName)
+        private static bool GetBooleanValue(string variableName, bool defaultValue = false)
         {
             var value = Environment.GetEnvironmentVariable(variableName);
+            if (value == null)
+            {
+                return defaultValue;
+            }
             return value == "true" || value == "1";
         }
 
