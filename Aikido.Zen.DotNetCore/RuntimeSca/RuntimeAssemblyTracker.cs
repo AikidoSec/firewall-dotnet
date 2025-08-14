@@ -15,6 +15,7 @@ namespace Aikido.Zen.DotNetCore.RuntimeSca
         private AppDomain _currentAppDomain;
 
         // These fields are used to process assemblies in a background task
+        // The task will consume assemblies from the queue and process them
         private readonly Task _assemblyLoadProcessingBackgroundTask;
         private readonly BlockingCollection<Assembly> _assemblyLoadQueue = new BlockingCollection<Assembly>();
 
@@ -71,6 +72,10 @@ namespace Aikido.Zen.DotNetCore.RuntimeSca
 
         private void FullAssemblyScanTimerCallback(object state)
         {
+            // When the timer has elapsed, we will scan the current AppDomain
+            //  so we can report all assemblies that are still loaded.
+            // This prevents assemblies from being removed from the "Packages in use"
+
             var appDomain = _currentAppDomain;
             if (appDomain == null)
             {
