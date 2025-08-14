@@ -5,6 +5,11 @@ namespace Aikido.Zen.Core.Helpers
 {
     public class IPHeaderHelper
     {
+        /// <summary>
+        /// Parses the X-Forwarded-For header or similar headers to extract IP addresses.
+        /// Removes any port numbers and normalizes IPv6 addresses by removing brackets.
+        /// Does not validate the IP addresses
+        /// </summary>
         public static string[] ParseIpHeader(string header)
         {
             if (string.IsNullOrWhiteSpace(header))
@@ -18,13 +23,6 @@ namespace Aikido.Zen.Core.Helpers
                 .Where(ip => !string.IsNullOrEmpty(ip))
                 .Select(ip =>
                 {
-                    // We do a first check here to make sure that valid IPv6 addresses don't
-                    // get split on ":" below.
-                    if (IPHelper.IsValidIp(ip))
-                    {
-                        return ip;
-                    }
-
                     // According to RFC7239 the X-Forwarded-For header can contain port numbers.
                     // If the IP includes a port number, remove it.
                     if (ip.Contains(':'))
