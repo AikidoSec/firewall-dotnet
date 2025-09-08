@@ -30,5 +30,34 @@ namespace Aikido.Zen.Core.Models
         /// Optional type of the bearer token (e.g., JWT)
         /// </summary>
         public string BearerFormat { get; set; }
+
+
+        // Basic equality for testing purposes
+        public override bool Equals(object obj)
+        {
+            if (obj is APIAuthType other)
+                return Type == other.Type &&
+                    Scheme == other.Scheme &&
+                    In == other.In &&
+                    Name == other.Name &&
+                    BearerFormat == other.BearerFormat;
+            return false;
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hash = 17;
+                hash = hash * 23 + (Type != null ? Type.GetHashCode() : 0);
+                hash = hash * 23 + (Scheme != null ? Scheme.GetHashCode() : 0);
+                hash = hash * 23 + (In != null ? In.GetHashCode() : 0);
+                hash = hash * 23 + (Name != null ? Name.GetHashCode() : 0);
+                hash = hash * 23 + (BearerFormat != null ? BearerFormat.GetHashCode() : 0);
+
+                return hash;
+            }
+        }
+
     }
 }
