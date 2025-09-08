@@ -32,7 +32,7 @@ namespace Aikido.Zen.Core.Models
         public string BearerFormat { get; set; }
 
 
-        // Basic equality for testing purposes
+        // Override for unit tests to pass
         public override bool Equals(object obj)
         {
             if (obj is APIAuthType other)
