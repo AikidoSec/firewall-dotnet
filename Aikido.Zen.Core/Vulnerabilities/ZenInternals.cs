@@ -163,15 +163,15 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 case 1:
                     return true; // Injection detected
                 case 2:
-                    // Log error but don't throw to avoid crashing the application
+                    // Internal error
                     LogHelper.ErrorLog(Agent.Logger, "Error in detecting SQL injection: internal error");
-                    return false; // Return false to be safe
+                    return false;
                 case 3:
-                    return false; // SQL tokenization failed - return false (no injection detected)
+                    // SQL tokenization failed
+                    return false;
                 default:
-                    // Log unexpected result but don't throw
                     LogHelper.ErrorLog(Agent.Logger, $"Unexpected result from SQL injection detection: {result}");
-                    return false; // Return false to be safe
+                    return false;
             }
         }
 
