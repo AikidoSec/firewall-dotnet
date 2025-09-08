@@ -18,31 +18,6 @@ namespace Aikido.Zen.Core.Vulnerabilities
             return Encoding.UTF8.GetBytes(str + "\0");
         }
 
-        [DllImport("libraries/libzen_internals_x86_64-pc-windows-gnu.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "detect_shell_injection")]
-        private static extern int detect_shell_injection_windows(
-            [In] byte[] command,
-            [In] byte[] userinput);
-
-        [DllImport("libraries/libzen_internals_aarch64-apple-darwin.dylib", CallingConvention = CallingConvention.Cdecl, EntryPoint = "detect_shell_injection")]
-        private static extern int detect_shell_injection_osx_arm64(
-            [In] byte[] command,
-            [In] byte[] userinput);
-
-        [DllImport("libraries/libzen_internals_x86_64-apple-darwin.dylib", CallingConvention = CallingConvention.Cdecl, EntryPoint = "detect_shell_injection")]
-        private static extern int detect_shell_injection_osx_x86_64(
-            [In] byte[] command,
-            [In] byte[] userinput);
-
-        [DllImport("libraries/libzen_internals_aarch64-unknown-linux-gnu.so", CallingConvention = CallingConvention.Cdecl, EntryPoint = "detect_shell_injection")]
-        private static extern int detect_shell_injection_linux_arm64(
-            [In] byte[] command,
-            [In] byte[] userinput);
-
-        [DllImport("libraries/libzen_internals_x86_64-unknown-linux-gnu.so", CallingConvention = CallingConvention.Cdecl, EntryPoint = "detect_shell_injection")]
-        private static extern int detect_shell_injection_linux_x86_64(
-            [In] byte[] command,
-            [In] byte[] userinput);
-
         [DllImport("libraries/libzen_internals_x86_64-pc-windows-gnu.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "detect_sql_injection")]
         private static extern int detect_sql_injection_windows_x86_64(
             [In] byte[] query,
@@ -78,66 +53,6 @@ namespace Aikido.Zen.Core.Vulnerabilities
             [In] byte[] query,
             [In] byte[] userinput,
             int dialect);
-
-        /// <summary>
-        /// Detects potential shell injection vulnerabilities in a command string
-        /// </summary>
-        /// <param name="command">The shell command to analyze</param>
-        /// <param name="userInput">The user input to check for injection attempts</param>
-        /// <returns>True if shell injection is detected, false otherwise</returns>
-        /// <exception cref="Exception">Thrown when there is an error in the detection process</exception>
-        internal static bool IsShellInjection(string command, string userInput)
-        {
-            int result;
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                result = detect_shell_injection_windows(
-                    NullTerminatedUTF8bytes(command),
-                    NullTerminatedUTF8bytes(userInput));
-            }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            {
-                // check if arm64 or x86_64
-                if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
-                {
-                    result = detect_shell_injection_osx_arm64(
-                        NullTerminatedUTF8bytes(command),
-                        NullTerminatedUTF8bytes(userInput));
-                }
-                else
-                {
-                    result = detect_shell_injection_osx_x86_64(
-                        NullTerminatedUTF8bytes(command),
-                        NullTerminatedUTF8bytes(userInput));
-                }
-            }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            {
-                // check if arm64 or x86_64
-                if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
-                {
-                    result = detect_shell_injection_linux_arm64(
-                        NullTerminatedUTF8bytes(command),
-                        NullTerminatedUTF8bytes(userInput));
-                }
-                else
-                {
-                    result = detect_shell_injection_linux_x86_64(
-                        NullTerminatedUTF8bytes(command),
-                        NullTerminatedUTF8bytes(userInput));
-                }
-            }
-            else
-            {
-                throw new PlatformNotSupportedException("Unsupported platform");
-            }
-
-            if (result > 1)
-            {
-                throw new AikidoException("Error in detecting shell injection");
-            }
-            return result == 1;
-        }
 
         /// <summary>
         /// Detects potential SQL injection vulnerabilities in a query string
