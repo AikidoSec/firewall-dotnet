@@ -63,7 +63,7 @@ namespace Aikido.Zen.Core.Api
                 catch (Exception ex)
                 {
                     LogHelper.ErrorLog(Agent.Logger, $"ReportAsync request unknown exception: {ex.Message}");
-                    return new ReportingAPIResponse { Success = false, Error = "Request canceled or timed out" };
+                    return new ReportingAPIResponse { Success = false, Error = "Unknown error" };
                 }
             }
         }
