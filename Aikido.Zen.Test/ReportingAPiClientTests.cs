@@ -158,8 +158,8 @@ namespace Aikido.Zen.Test
                 .Returns(async (HttpRequestMessage req, CancellationToken token) =>
                 {
                     // Simulate waiting for longer than the cancellation timeout
-                    await Task.Delay(10000, token); // Wait 10 seconds or until canceled
-                    return new HttpResponseMessage(); // This line will never execute if token is cancelled
+                    await Task.Delay(10000, token); 
+                    return new HttpResponseMessage();
                 });
 
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
