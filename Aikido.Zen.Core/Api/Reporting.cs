@@ -57,15 +57,13 @@ namespace Aikido.Zen.Core.Api
                 }
                 catch (TaskCanceledException)
                 {
-                    if (!cts.Token.IsCancellationRequested)
-                        return new ReportingAPIResponse { Success = false, Error = "timeout" };
-
-                    throw;
+                    LogHelper.ErrorLog(Agent.Logger, "Error sending event: Operation canceled");
+                    return new ReportingAPIResponse { Success = false, Error = "cancelation" };
                 }
                 catch (Exception ex)
                 {
-                    LogHelper.ErrorLog(Agent.Logger, ex.Message);
-                    throw new Exception("An error occurred while reporting", ex);
+                    LogHelper.ErrorLog(Agent.Logger, $"Error sending event: {ex.Message}");
+                    return new ReportingAPIResponse { Success = false, Error = "unknown_error" };
                 }
             }
         }
@@ -82,11 +80,13 @@ namespace Aikido.Zen.Core.Api
                 }
                 catch (TaskCanceledException)
                 {
-                    return new FirewallListsAPIResponse { Success = false, Error = "Request canceled or timed out" };
+                    LogHelper.ErrorLog(Agent.Logger, "Error getting Firewall Lists: Operation canceled");
+                    return new FirewallListsAPIResponse { Success = false, Error = "cancelation" };
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-                    throw;
+                    LogHelper.ErrorLog(Agent.Logger, $"Error getting Firewall Lists: {ex.Message}");
+                    return new FirewallListsAPIResponse { Success = false, Error = "unknown_error" };
                 }
             }
         }
