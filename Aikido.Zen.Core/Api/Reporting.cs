@@ -82,10 +82,7 @@ namespace Aikido.Zen.Core.Api
                 }
                 catch (TaskCanceledException)
                 {
-                    if (!cts.Token.IsCancellationRequested)
-                        return new FirewallListsAPIResponse { Success = false, Error = "timeout" };
-
-                    throw;
+                    return new FirewallListsAPIResponse { Success = false, Error = "Request canceled or timed out" };
                 }
                 catch (Exception)
                 {

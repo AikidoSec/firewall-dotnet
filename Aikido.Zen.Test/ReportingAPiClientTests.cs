@@ -77,7 +77,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public async Task GetBlockedIps_ShouldReturnSuccess()
+        public async Task GetFirewallLists_ShouldReturnSuccess()
         {
             // Arrange
             var response = new HttpResponseMessage
@@ -112,7 +112,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void GetBlockedIps_ShouldThrowExceptionOnError()
+        public void GetFirewallLists_ShouldThrowExceptionOnError()
         {
             // Arrange
             _handlerMock
@@ -126,6 +126,54 @@ namespace Aikido.Zen.Test
 
             // Act & Assert
             Assert.ThrowsAsync<Exception>(async () => await _reportingApiClient.GetFirewallLists("token"));
+        }
+        [Test]
+        public void GetFirewallLists_ShouldContinueOnCanceledTaskCanceledException()
+        {
+            // Arrange
+            _handlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>()
+                )
+                .Throws(new TaskCanceledException("Canceled"));
+
+            // Act & Assert
+            Assert.DoesNotThrowAsync(async () => await _reportingApiClient.GetFirewallLists("token"),"Failed: Task Canceled, but the exception propagated.");
+        }
+
+        [Test]
+        public async Task GetFirewallLists_ShouldContinueOnTimeoutTaskCanceledException()
+        {
+            // Arrange
+            _handlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>()
+                )
+                .Returns(async (HttpRequestMessage req, CancellationToken token) =>
+                {
+                    // Simulate waiting for longer than the cancellation timeout
+                    await Task.Delay(10000, token); 
+                    return new HttpResponseMessage();
+                });
+
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            FirewallListsAPIResponse result = new ();
+
+            // Act
+
+            Assert.DoesNotThrowAsync(async () => result = await _reportingApiClient.GetFirewallLists("token"), "Failed: Task timed out, but the exception propagated.");
+
+            stopwatch.Stop();
+
+            // Assert
+            Assert.That(result!.Success, Is.False);
+            Assert.That(stopwatch.ElapsedMilliseconds, Is.InRange( 4500, 7000));
         }
     }
 }
