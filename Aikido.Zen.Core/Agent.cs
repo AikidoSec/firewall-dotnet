@@ -518,33 +518,12 @@ namespace Aikido.Zen.Core
                 var response = await _api.Reporting.ReportAsync(queuedItem.Token, queuedItem.Event, _batchTimeoutMs)
                     .ConfigureAwait(false);
 
-                if (!response.Success)
-                {
-                    if (response.Error == "rate_limited" || response.Error == "timeout")
-                    {
-                        _eventQueue.Enqueue(queuedItem);
-                        await Task.Delay(RetryDelayMs, _cancellationSource.Token);
-                    }
-                    // Other errors are dropped to avoid infinite retries
-                    LogHelper.DebugLog(Logger, $"Event was not sent successfully: {response.Error}");
-                }
-
                 _reportingStatus.OnEventReported(queuedItem.Event.Type, response.Success);
                 queuedItem.Callback?.Invoke(queuedItem.Event, response);
             }
-            catch (OperationCanceledException) when (_cancellationSource.Token.IsCancellationRequested)
+            catch (Exception ex)
             {
-                // Graceful shutdown
-                _eventQueue.Enqueue(queuedItem);
-                LogHelper.DebugLog(Logger, "Error sending event: Operation canceled");
-                throw;
-            }
-            catch (Exception)
-            {
-                // Requeue on error and delay
-                _eventQueue.Enqueue(queuedItem);
-                LogHelper.DebugLog(Logger, "Error sending event");
-                await Task.Delay(RetryDelayMs, _cancellationSource.Token);
+                LogHelper.DebugLog(Logger, $"Error processing event: {ex.Message}");
             }
             return requestsThisSecond;
         }
