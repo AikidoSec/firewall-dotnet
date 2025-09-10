@@ -520,7 +520,7 @@ namespace Aikido.Zen.Core
 
                 if (!response.Success)
                 {
-                    if (response.Error == "rate_limited" || response.Error == "timeout")
+                    if (response.Error == "rate_limited" || response.Error == "timeout_or_canceled")
                     {
                         _eventQueue.Enqueue(queuedItem);
                         await Task.Delay(RetryDelayMs, _cancellationSource.Token);
@@ -531,13 +531,6 @@ namespace Aikido.Zen.Core
 
                 _reportingStatus.OnEventReported(queuedItem.Event.Type, response.Success);
                 queuedItem.Callback?.Invoke(queuedItem.Event, response);
-            }
-            catch (OperationCanceledException) when (_cancellationSource.Token.IsCancellationRequested)
-            {
-                // Graceful shutdown
-                _eventQueue.Enqueue(queuedItem);
-                LogHelper.DebugLog(Logger, "Error sending event: Operation canceled");
-                throw;
             }
             catch (Exception)
             {

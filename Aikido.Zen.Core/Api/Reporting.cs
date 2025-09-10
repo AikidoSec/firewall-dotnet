@@ -57,15 +57,13 @@ namespace Aikido.Zen.Core.Api
                 }
                 catch (TaskCanceledException)
                 {
-                    if (!cts.Token.IsCancellationRequested)
-                        return new ReportingAPIResponse { Success = false, Error = "timeout" };
-
-                    throw;
+                    LogHelper.ErrorLog(Agent.Logger, "ReportAsync request canceled or timed out");
+                    return new ReportingAPIResponse { Success = false, Error = "timeout_or_canceled" };
                 }
                 catch (Exception ex)
                 {
-                    LogHelper.ErrorLog(Agent.Logger, ex.Message);
-                    throw new Exception("An error occurred while reporting", ex);
+                    LogHelper.ErrorLog(Agent.Logger, $"ReportAsync request unknown exception: {ex.Message}");
+                    return new ReportingAPIResponse { Success = false, Error = "Request canceled or timed out" };
                 }
             }
         }
@@ -82,11 +80,13 @@ namespace Aikido.Zen.Core.Api
                 }
                 catch (TaskCanceledException)
                 {
+                    LogHelper.ErrorLog(Agent.Logger, "GetFirewallLists request canceled or timed out");
                     return new FirewallListsAPIResponse { Success = false, Error = "Request canceled or timed out" };
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
-                    throw;
+                    LogHelper.ErrorLog(Agent.Logger, $"GetFirewallLists unknown exception: {e.Message}");
+                    return new FirewallListsAPIResponse { Success = false, Error = "Unknown error" };
                 }
             }
         }
