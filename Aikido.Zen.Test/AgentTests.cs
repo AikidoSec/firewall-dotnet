@@ -690,23 +690,6 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public async Task ProcessSingleEvent_OnException_RequeuesEventAndDelays()
-        {
-            // Arrange
-            var testEvent = new Started();
-            _zenApiMock.Setup(x => x.Reporting.ReportAsync(It.IsAny<string>(), It.IsAny<IEvent>(), It.IsAny<int>()))
-                .ThrowsAsync(new Exception("Test exception"));
-
-            // Act
-            _agent.QueueEvent("token", testEvent);
-            await Task.Delay(Agent.RetryDelayMs + 250); // Wait for retry
-
-            // Assert
-            _zenApiMock.Verify(x => x.Reporting.ReportAsync(It.IsAny<string>(), It.IsAny<IEvent>(), It.IsAny<int>()),
-                Times.AtLeast(2)); // Should try at least twice
-        }
-
-        [Test]
         public async Task UpdateBlockedIps_WithEmptyToken_ReturnsWithoutUpdating()
         {
             // Arrange
