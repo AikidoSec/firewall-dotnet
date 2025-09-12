@@ -160,7 +160,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void GetFirewallLists_ShouldNotThrowExceptionOnError()
+        public void GetFirewallLists_ShouldThrowExceptionOnError()
         {
             // Arrange
             _handlerMock
@@ -173,7 +173,7 @@ namespace Aikido.Zen.Test
                 .ThrowsAsync(new Exception("An error occurred while getting blocked IPs"));
 
             // Act & Assert
-            Assert.DoesNotThrowAsync(async () => await _reportingApiClient.GetFirewallLists("token"));
+            Assert.ThrowsAsync<Exception>(async () => await _reportingApiClient.GetFirewallLists("token"));
         }
         [Test]
         public void GetFirewallLists_ShouldContinueOnCanceledTaskCanceledException()
