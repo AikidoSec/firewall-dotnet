@@ -1,0 +1,27 @@
+@baseUrl = http://localhost:5000
+
+### Get all pets
+GET {{baseUrl}}/api/pets
+
+### Create a new pet
+POST {{baseUrl}}/api/pets/create
+Content-Type: application/json
+
+{
+  "name": "Whiskers"
+}
+
+### Execute SQL injection attack (for testing purposes)
+POST {{baseUrl}}/api/pets/create
+Content-Type: application/json
+{
+  "name": "Malicious Pet', 'Gru from the Minions'); -- "
+}
+
+
+### Execute SQL injection attack (for testing purposes)
+GET http://localhost:5000/api/pets/execute-raw-sql?sql=Malicious%20Pet%27%2C%20%27Gru%20from%20the%20Minions%27%29%3B%20--
+Content-Type: application/json
+
+### Health check
+GET {{baseUrl}}/health

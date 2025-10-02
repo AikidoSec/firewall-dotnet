@@ -1,0 +1,21 @@
+{
+    "$schema": "https://json.schemastore.org/launchsettings.json",
+    "profiles": {
+        "NewRelicSampleApp": {
+            "commandName": "Project",
+            "launchBrowser": true,
+            "launchUrl": "health",
+            "environmentVariables": {
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "CORECLR_ENABLE_PROFILING": "1",
+                "CORECLR_PROFILER": "{36032161-FFC0-4B61-B559-F6C5D41BAE5A}",
+                "CORECLR_PROFILER_PATH": "APP_DEPLOYMENT_DIRECTORY\\newrelic\\NewRelic.Profiler.dll",
+                "CORECLR_NEWRELIC_HOME": "APP_DEPLOYMENT_DIRECTORY\\newrelic",
+                "NEW_RELIC_LICENSE_KEY": "YOUR_LICENSE_KEY",
+                "NEW_RELIC_APP_NAME": "NewRelicSampleApp"
+            },
+            "applicationUrl": "http://localhost:5000",
+            "dotnetRunMessages": true
+        }
+    }
+}
