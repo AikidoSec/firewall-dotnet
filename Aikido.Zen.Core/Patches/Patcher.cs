@@ -26,23 +26,8 @@ namespace Aikido.Zen.Core.Patches
 
         public static bool CanPatch(out string message)
         {
-            // if we are running on arm64, we can't patch
-
-            // for m1 chips, we have a more specific message
-            if (
-                RuntimeInformation.IsOSPlatform(OSPlatform.OSX) &&
-                (RuntimeInformation.ProcessArchitecture == Architecture.Arm64 || RuntimeInformation.ProcessArchitecture == Architecture.Arm)
-            )
-            {
-                message = "Apple silicon is currently not supported.";
-                return false;
-            }
-            // for linux or windows arm64, we have a more specific message
-            if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64 || RuntimeInformation.ProcessArchitecture == Architecture.Arm)
-            {
-                message = "ARM/ARM64 is currently not supported.";
-                return false;
-            }
+            // Using harmony 2.4.1 we can now also patch arm64 machines, as of now there are no known
+            // platform limitations.
             message = "";
             return true;
         }
