@@ -26,7 +26,7 @@ namespace Aikido.Zen.Core.Patches
 
         public static bool CanPatch(out string message)
         {
-            // Using harmony 2.4.1 we can now also patch arm64 machines, as of now there are no known
+            // Using harmony 2.4.1 we can now also patch arm64 machines (important for apple silicon), as of now there are no known
             // platform limitations.
             message = "";
             return true;
