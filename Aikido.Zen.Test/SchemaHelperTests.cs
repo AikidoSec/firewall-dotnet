@@ -185,5 +185,23 @@ namespace Aikido.Zen.Test.Helpers
             var result = SchemaHelper.MergeDataSchemas(null, null);
             Assert.That(result, Is.Null);
         }
+
+        [Test]
+        public void GetDataSchema_WithCircularReference_DoesNotHangOrStackOverflow()
+        {
+            // Create a circular reference
+            var circular = new Dictionary<string, object>();
+            circular["self"] = circular;
+            circular["name"] = "test";
+
+            // This should complete without hanging or stack overflow
+            // Currently it will recurse MaxDepth (20) times unnecessarily
+            var result = SchemaHelper.GetDataSchema(circular);
+
+            Assert.That(result.Type[0], Is.EqualTo("object"));
+            Assert.That(result.Properties, Is.Not.Null);
+            // The circular reference should be detected and handled gracefully
+            // Instead of recursing 20 levels deep
+        }
     }
 }
