@@ -357,12 +357,13 @@ namespace Aikido.Zen.Test
         {
             // Arrange
             var ip = "123.123.123.123";
+            var allowedIp = "8.8.8.0/8";
             var url = "http://localhost:80/testUrl";
             var endpoints = new List<EndpointConfig> {
                 new EndpointConfig {
                     Method = "GET",
                     Route = "testUrl",
-                    AllowedIPAddresses = new[] { "8.8.8.0/8" }
+                    AllowedIPAddresses = new[] { allowedIp }
                 }
             };
 
@@ -383,7 +384,7 @@ namespace Aikido.Zen.Test
             _blockList.UpdateBlockedIps([ip]);
             var context3 = new Context { RemoteAddress = ip, Method = "GET", Url = url, Route = "testUrl" };
             Assert.That(_blockList.IsBlocked(context3, out var reason3), Is.True);
-            Assert.That(reason3, Is.EqualTo("IP is not allowed"));
+            Assert.That(reason3, Is.EqualTo("IP is blocked"));
 
             // 4. Bypassed IPs should override blocked IPs
             _blockList.UpdateBypassedIps(new[] { ip });
@@ -391,13 +392,20 @@ namespace Aikido.Zen.Test
             Assert.That(_blockList.IsBlocked(context4, out var reason4), Is.False);
             Assert.That(reason4, Is.EqualTo("IP is bypassed"));
 
-            // 5. Endpoint-specific rules should be checked last
+            // 5. Endpoint-specific rules should come next
             _blockList.UpdateAllowedIpsPerEndpoint(endpoints);
             _blockList.UpdateBlockedIps(Array.Empty<string>());
             _blockList.UpdateBypassedIps(Array.Empty<string>());
             var context5 = new Context { RemoteAddress = ip, Method = "GET", Url = url, Route = "testUrl" };
             Assert.That(_blockList.IsBlocked(context5, out var reason5), Is.True);
-            Assert.That(reason5, Is.EqualTo("Ip is not allowed"));
+            Assert.That(reason5, Is.EqualTo("IP is not allowed for this endpoint"));
+
+            // 6. Allowed rules should be checked last
+            _blockList.UpdateAllowedIps([allowedIp]);
+            _blockList.UpdateAllowedIpsPerEndpoint(Array.Empty<EndpointConfig>());
+            var context6 = new Context { RemoteAddress = ip, Method = "GET", Url = url, Route = "testUrl" };
+            Assert.That(_blockList.IsBlocked(context6, out var reason6), Is.True);
+            Assert.That(reason6, Is.EqualTo("IP is not allowed"));
         }
 
         [Test]
