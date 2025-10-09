@@ -43,7 +43,6 @@ namespace Aikido.Zen.Test
             _agent.IncrementTotalRequestCount();
             _agent.CaptureOutboundRequest("test.com", 443);
             var startedTime = _agent.Context.Started;
-            var statsStartedTime = _agent.Context.Stats.StartedAt;
 
             // Act
             // wait a bit to make sure some ms have passed between settings the started time and clearing the context            
