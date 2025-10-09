@@ -187,6 +187,7 @@ namespace Aikido.Zen.Test.Helpers
         [Test]
         public void GetDataSchema_WithCircularReference_DoesNotHangOrStackOverflow()
         {
+            // Using a Stopwatch because [Timeout] is deprecated
             var stopwatch = Stopwatch.StartNew();
 
             // Create a complex circular reference structure
