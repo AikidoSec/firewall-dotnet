@@ -106,11 +106,6 @@ namespace Aikido.Zen.Core.Helpers
             if (assembly == null)
                 return false;
 
-            // Exclude assemblies with GeneratedCodeAttribute
-            var customAttributes = assembly.GetCustomAttributes(typeof(GeneratedCodeAttribute), false);
-            if (customAttributes != null && customAttributes.Length > 0)
-                return true;
-
             // Exclude DispatchProxy-based dynamic types
             var assemblyFullName = assembly.FullName ?? string.Empty;
             if (assemblyFullName.IndexOf("Anonymously Hosted DynamicMethods", StringComparison.OrdinalIgnoreCase) >= 0 || //.NET runtime to hold dynamically generated method, it usually appears when the runtime uses Reflection.Emit
@@ -174,13 +169,6 @@ namespace Aikido.Zen.Core.Helpers
                 var stackTrace = new StackTrace();
                 var frames = stackTrace.GetFrames();
 
-                Assembly[] assemblies = new Assembly[frames.Length];
-                for (int i = 0; i < frames.Length; i++)
-                {
-                    var method = frames[i].GetMethod();
-                    var assembly = method?.DeclaringType?.Assembly;
-                    assemblies[i] = assembly;
-                }
                 // Skip the first few frames which are our patch methods
                 for (int i = 2; i < frames.Length; i++)
                 {
