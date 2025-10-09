@@ -187,6 +187,7 @@ namespace Aikido.Zen.Test.Helpers
         }
 
         [Test]
+        [Timeout(1000)] // Should complete in under 1 second
         public void GetDataSchema_WithCircularReference_DoesNotHangOrStackOverflow()
         {
             // Create a complex circular reference structure
