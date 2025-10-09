@@ -307,7 +307,7 @@ namespace Aikido.Zen.Test
             {
                 var context = new Context { RemoteAddress = ip, Method = "GET", Url = url, Route = "testUrl" };
                 Assert.That(_blockList.IsBlocked(context, out var reason), Is.False);
-                Assert.That(reason, Is.EqualTo("Ip is private or local"));
+                Assert.That(reason, Is.EqualTo("IP is private or local"));
             }
         }
 
@@ -370,7 +370,7 @@ namespace Aikido.Zen.Test
             // 1. Private IPs should be allowed first
             var context1 = new Context { RemoteAddress = "192.168.1.1", Method = "GET", Url = url, Route = "testUrl" };
             Assert.That(_blockList.IsBlocked(context1, out var reason1), Is.False);
-            Assert.That(reason1, Is.EqualTo("Ip is private or local"));
+            Assert.That(reason1, Is.EqualTo("IP is private or local"));
 
             // 2. Bypassed IPs should be allowed second
             _blockList.UpdateBypassedIps(new[] { ip });
