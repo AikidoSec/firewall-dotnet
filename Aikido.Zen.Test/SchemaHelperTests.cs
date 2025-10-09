@@ -1,5 +1,6 @@
 using Aikido.Zen.Core.Helpers.OpenAPI;
 using Aikido.Zen.Core.Models;
+using System.Diagnostics;
 
 namespace Aikido.Zen.Test.Helpers
 {
@@ -184,9 +185,10 @@ namespace Aikido.Zen.Test.Helpers
         }
 
         [Test]
-        [Timeout(1000)] // Should complete in under 1 second
         public void GetDataSchema_WithCircularReference_DoesNotHangOrStackOverflow()
         {
+            var stopwatch = Stopwatch.StartNew();
+
             // Create a complex circular reference structure
             var parent = new Dictionary<string, object>();
             var child1 = new Dictionary<string, object>();
@@ -217,14 +219,16 @@ namespace Aikido.Zen.Test.Helpers
             list.Add(child1);
             list.Add("string value");
 
-            // This should complete without hanging or stack overflow
             var result = SchemaHelper.GetDataSchema(parent);
+
+            stopwatch.Stop();
 
             Assert.That(result.Type[0], Is.EqualTo("object"));
             Assert.That(result.Properties, Is.Not.Null);
             Assert.That(result.Properties.ContainsKey("name"), Is.True);
             Assert.That(result.Properties.ContainsKey("child1"), Is.True);
             Assert.That(result.Properties.ContainsKey("child2"), Is.True);
+            Assert.That(stopwatch.ElapsedMilliseconds, Is.LessThan(100));
         }
     }
 }
