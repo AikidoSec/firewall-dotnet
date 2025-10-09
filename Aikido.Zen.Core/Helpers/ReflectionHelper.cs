@@ -1,5 +1,4 @@
 using System;
-using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -105,11 +104,6 @@ namespace Aikido.Zen.Core.Helpers
         {
             if (assembly == null)
                 return false;
-
-            // Exclude assemblies with GeneratedCodeAttribute
-            var customAttributes = assembly.GetCustomAttributes(typeof(GeneratedCodeAttribute), false);
-            if (customAttributes != null && customAttributes.Length > 0)
-                return true;
 
             // Exclude DispatchProxy-based dynamic types
             var assemblyFullName = assembly.FullName ?? string.Empty;
