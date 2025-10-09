@@ -43,7 +43,7 @@ namespace Aikido.Zen.Tests
         [TestCase("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089", false)]
         public void ShouldExcludeAssembly_ShouldReturnCorrectResult(string assemblyName, bool expected)
         {
-            //Arrange
+            // Arrange
             // Use AssemblyName to parse the full name
             var name = new AssemblyName(assemblyName);
             // Dynamically define an Assembly using reflection emit
