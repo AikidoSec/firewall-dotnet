@@ -1,7 +1,7 @@
 using System;
 using System.Diagnostics;
-using System.Linq;
 using System.Reflection;
+
 using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.Core.Helpers;
 
@@ -24,7 +24,7 @@ namespace Aikido.Zen.Core.Patches
         public static bool OnFileOperation(string[] paths, MethodBase originalMethod, Context context)
         {
             // Exclude certain assemblies to avoid stack overflow issues
-            var callingAssembly = GetCallingAssembly();
+            var callingAssembly = ReflectionHelper.GetCallingAssembly();
             if (ReflectionHelper.ShouldExcludeAssembly(callingAssembly))
             {
                 return true; // Skip processing for excluded assemblies
@@ -62,6 +62,7 @@ namespace Aikido.Zen.Core.Patches
                 {
                     LogHelper.ErrorLog(Agent.Logger, "Error recording OnInspectedCall stats.");
                 }
+                _patching = false;
             }
 
             if (blocked)
@@ -69,32 +70,6 @@ namespace Aikido.Zen.Core.Patches
                 throw AikidoException.PathTraversalDetected(operation, originalMethod.Name);
             }
             return true;
-        }
-
-        private static string GetCallingAssembly()
-        {
-            try
-            {
-                var stackTrace = new StackTrace();
-                var frames = stackTrace.GetFrames();
-
-                // Skip the first few frames which are our patch methods
-                for (int i = 2; i < frames.Length; i++)
-                {
-                    var method = frames[i].GetMethod();
-                    var assembly = method?.DeclaringType?.Assembly;
-                    if (assembly != null)
-                    {
-                        return assembly.FullName;
-                    }
-                }
-            }
-            catch
-            {
-                // If we can't get the calling assembly, don't exclude
-            }
-
-            return null;
         }
     }
 }
