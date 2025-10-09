@@ -62,7 +62,6 @@ namespace Aikido.Zen.Core.Patches
                 {
                     LogHelper.ErrorLog(Agent.Logger, "Error recording OnInspectedCall stats.");
                 }
-                _patching = false;
             }
 
             if (blocked)
