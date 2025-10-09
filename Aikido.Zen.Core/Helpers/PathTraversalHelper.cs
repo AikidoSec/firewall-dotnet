@@ -1,6 +1,6 @@
-
 using System.Collections.Generic;
 using System.Linq;
+
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Vulnerabilities;
 
@@ -12,69 +12,59 @@ namespace Aikido.Zen.Core.Helpers
     public class PathTraversalHelper
     {
 
-        public static bool DetectPathTraversal(string path, Context context, string moduleName, string operation)
-        {
-            // Check for path traversal against the user inputs
-            foreach (var userInput in context.ParsedUserInput)
-            {
-                if (PathTraversalDetector.DetectPathTraversal(userInput.Value, path))
-                {
-                    var metadata = new Dictionary<string, object> {
-                        { "path", path }
-                    };
-
-                    // Send an attack event
-                    Agent.Instance.SendAttackEvent(
-                        kind: AttackKind.PathTraversal,
-                        source: HttpHelper.GetSourceFromUserInputPath(userInput.Key),
-                        payload: userInput.Value,
-                        operation: operation,
-                        context: context,
-                        module: moduleName,
-                        metadata: metadata,
-                        blocked: !EnvironmentHelper.DryMode
-                    );
-
-                    // Set attack detected to true
-                    context.AttackDetected = true;
-                    return true;
-                }
-            }
-            return false;
-        }
-
         /// <summary>
         /// Validates file operations by checking for path traversal attempts in arguments
         /// </summary>
-        /// <param name="args">Array of operation arguments to validate</param>
+        /// <param name="paths">Array of paths to validate</param>
         /// <param name="assembly">Assembly name where operation originated</param>
         /// <param name="context">Current execution context</param>
         /// <param name="operation">Name of operation being validated</param>
         /// <returns>True if validation passes, throws exception if path traversal detected in non-dry mode</returns>
-        public static bool DetectPathTraversal(object[] args, string assembly, Context context, string operation)
+        public static bool DetectPathTraversal(string[] paths, string assembly, Context context, string operation)
         {
             // Skip validation if not in request context
             if (context == null)
                 return false;
 
-
             // Validate each argument
-            foreach (var arg in args)
+            foreach (var path in paths)            
+                if (CheckPath(path, context, assembly, operation))
+                    return true;           
+
+            return false;
+        }
+
+        /// <summary>
+        /// Checks a given path against user inputs for path traversal attempts
+        /// </summary>
+        /// <returns></returns>
+        private static bool CheckPath(string path, Context context, string moduleName, string operation)
+        {
+            // Check for path traversal against the user inputs
+            foreach (var userInput in context.ParsedUserInput)
             {
-                switch (arg)
-                {
-                    case string path:
-                        if (DetectPathTraversal(path, context, assembly, operation))
-                            return true;
-                        break;
+                if (!PathTraversalDetector.DetectPathTraversal(userInput.Value, path))
+                    continue;
 
-                    case string[] paths:
-                        if (paths.Any(p => DetectPathTraversal(p, context, assembly, operation)))
-                            return true;
-                        break;
-                }
+                var metadata = new Dictionary<string, object> {
+                        { "path", path }
+                    };
+
+                // Send an attack event
+                Agent.Instance.SendAttackEvent(
+                    kind: AttackKind.PathTraversal,
+                    source: HttpHelper.GetSourceFromUserInputPath(userInput.Key),
+                    payload: userInput.Value,
+                    operation: operation,
+                    context: context,
+                    module: moduleName,
+                    metadata: metadata,
+                    blocked: !EnvironmentHelper.DryMode
+                );
+
+                context.AttackDetected = true;
+                return true;
             }
-
             return false;
         }
     }
