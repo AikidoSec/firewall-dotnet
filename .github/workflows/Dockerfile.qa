@@ -15,8 +15,8 @@ COPY Aikido.Zen.*.nupkg ./local-feed/
 # Remove existing Aikido.Zen reference
 RUN dotnet remove package Aikido.Zen || true
 
-# Add the local package with version
-RUN dotnet add package Aikido.Zen --version 0.0.0-qa --source ./local-feed
+# Add the local package with version (include nuget.org for other dependencies)
+RUN dotnet add package Aikido.Zen --version 0.0.0-qa --source ./local-feed --source https://api.nuget.org/v3/index.json
 
 # Restore dependencies
 RUN dotnet restore
