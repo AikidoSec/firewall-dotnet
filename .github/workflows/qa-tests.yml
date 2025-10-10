@@ -1,0 +1,52 @@
+name: 🧪 QA Tests
+permissions:
+  contents: read
+on:
+  push: {}
+  workflow_call: {}
+
+jobs:
+  qa-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout firewall-dotnet
+        uses: actions/checkout@v4
+        with:
+          path: firewall-dotnet
+
+      - name: Checkout zen-demo-dotnet-core
+        uses: actions/checkout@v4
+        with:
+          repository: Aikido-demo-apps/zen-demo-dotnet-core
+          ref: qa-endpoints
+          path: zen-demo-dotnet-core
+          submodules: true
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Build firewall-dotnet package
+        run: |
+          cd firewall-dotnet
+          dotnet restore
+          dotnet build -c Release
+
+          # Pack the built package for local installation
+          dotnet pack -c Release -o ./local-feed
+
+          # Move the packed nupkg to zen-demo-dotnet-core directory
+          mv ./local-feed/Aikido.Zen.*.nupkg ../zen-demo-dotnet-core/
+
+      - name: Replace Dockerfile with QA version
+        run: |
+          cp firewall-dotnet/.github/workflows/Dockerfile.qa zen-demo-dotnet-core/Dockerfile
+
+      - name: Run Firewall QA Tests
+        uses: AikidoSec/firewall-tester-action@releases/v1
+        with:
+          dockerfile_path: ./zen-demo-dotnet-core/Dockerfile
+          app_port: 8080
+          sleep_before_test: 10
