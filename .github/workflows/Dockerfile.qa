@@ -12,11 +12,20 @@ COPY . ./
 # Copy the dev firewall package
 COPY Aikido.Zen.*.nupkg ./local-feed/
 
+# Create NuGet.Config to add local package source
+RUN echo '<?xml version="1.0" encoding="utf-8"?>\n\
+<configuration>\n\
+  <packageSources>\n\
+    <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />\n\
+    <add key="local-feed" value="/src/local-feed" />\n\
+  </packageSources>\n\
+</configuration>' > NuGet.Config
+
 # Remove existing Aikido.Zen reference
 RUN dotnet remove package Aikido.Zen || true
 
-# Add the local package with version (include nuget.org for other dependencies)
-RUN dotnet add package Aikido.Zen --version 0.0.0-qa --source ./local-feed --source https://api.nuget.org/v3/index.json
+# Add the local package with version
+RUN dotnet add package Aikido.Zen --version 0.0.0-qa
 
 # Restore dependencies
 RUN dotnet restore
