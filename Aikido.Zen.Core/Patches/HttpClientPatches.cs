@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics;
 using System.Net.Http;
 using System.Reflection;
 using Aikido.Zen.Core.Helpers;
@@ -56,6 +55,12 @@ namespace Aikido.Zen.Core.Patches
         /// <returns>True if the original method should continue execution; otherwise, false.</returns>
         internal static bool CaptureRequest(HttpRequestMessage request, HttpClient __instance, System.Reflection.MethodBase __originalMethod)
         {
+            // Exclude certain assemblies to avoid stack overflow issues
+            var callingAssembly = ReflectionHelper.GetCallingAssembly();
+            if (ReflectionHelper.ShouldExcludeAssembly(callingAssembly))
+            {
+                return true; // Skip processing for excluded assemblies
+            }
             var uri = __instance.BaseAddress == null
                 ? request.RequestUri
                 : request.RequestUri == null
