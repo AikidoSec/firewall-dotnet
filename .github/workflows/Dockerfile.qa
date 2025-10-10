@@ -11,12 +11,17 @@ COPY . ./
 # === THIS SECTION IS MODIFIED FOR QA STEP ===
 # Copy the dev firewall package
 COPY Aikido.Zen.*.nupkg ./local-feed/
-# Remove existing Aikido.Zen reference and install local package
+
+# Remove existing Aikido.Zen reference
 RUN dotnet remove package Aikido.Zen || true
-RUN dotnet add package Aikido.Zen --source ./local-feed
-# restore as distinct layers
+
+# Add the local package with version
+RUN dotnet add package Aikido.Zen --version 0.0.0-qa --source ./local-feed
+
+# Restore dependencies
 RUN dotnet restore
-# build and publish a release
+
+# Build and publish a release
 RUN dotnet publish -c Release -o /app
 # === END OF MODIFIED SECTION ===
 
