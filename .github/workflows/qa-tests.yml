@@ -6,22 +6,12 @@ on:
   workflow_call: {}
 
 jobs:
-  qa-tests:
+  build-package:
     runs-on: windows-2022
     timeout-minutes: 30
     steps:
       - name: Checkout firewall-dotnet
         uses: actions/checkout@v4
-        with:
-          path: firewall-dotnet
-
-      - name: Checkout zen-demo-dotnet-core
-        uses: actions/checkout@v4
-        with:
-          repository: Aikido-demo-apps/zen-demo-dotnet-core
-          ref: qa-endpoints
-          path: zen-demo-dotnet-core
-          submodules: true
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -36,26 +26,50 @@ jobs:
       - name: Install Cake Tool
         run: dotnet tool install --global Cake.Tool
 
-      - name: Build firewall-dotnet package
+      - name: Build and pack firewall-dotnet
         run: |
-          cd firewall-dotnet
-
           # Install dependencies
           dotnet tool restore
           dotnet restore
 
           # Run Cake Script to Build and Pack
           dotnet cake build.cake --target=CreatePackages --configuration=Release --libVersion=0.0.0-qa
-
-          # Create local-feed directory in zen-demo-dotnet-core and move the packed nupkg
-          New-Item -ItemType Directory -Force -Path ../zen-demo-dotnet-core/local-feed
-          Move-Item -Path ./artifacts/*.nupkg -Destination ../zen-demo-dotnet-core/local-feed/
         shell: pwsh
+
+      - name: Upload NuGet package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-package
+          path: ./artifacts/*.nupkg
+          retention-days: 1
+
+  qa-tests:
+    needs: build-package
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout zen-demo-dotnet-core
+        uses: actions/checkout@v4
+        with:
+          repository: Aikido-demo-apps/zen-demo-dotnet-core
+          ref: qa-endpoints
+          path: zen-demo-dotnet-core
+          submodules: true
+
+      - name: Checkout firewall-dotnet (for Dockerfile.qa)
+        uses: actions/checkout@v4
+        with:
+          path: firewall-dotnet
+
+      - name: Download NuGet package artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: nuget-package
+          path: zen-demo-dotnet-core/local-feed
 
       - name: Replace Dockerfile with QA version
         run: |
-          Copy-Item -Path firewall-dotnet/.github/workflows/Dockerfile.qa -Destination zen-demo-dotnet-core/Dockerfile
-        shell: pwsh
+          cp firewall-dotnet/.github/workflows/Dockerfile.qa zen-demo-dotnet-core/Dockerfile
 
       - name: Run Firewall QA Tests
         uses: AikidoSec/firewall-tester-action@releases/v1
