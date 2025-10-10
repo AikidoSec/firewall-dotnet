@@ -28,17 +28,23 @@ jobs:
         with:
           dotnet-version: '9.0.x'
 
+      - name: Install Cake Tool
+        run: dotnet tool install --global Cake.Tool
+
       - name: Build firewall-dotnet package
         run: |
           cd firewall-dotnet
+
+          # Install dependencies
+          dotnet tool restore
           dotnet restore
-          dotnet build -c Release
 
-          # Pack the built package for local installation
-          dotnet pack -c Release -o ./local-feed
+          # Run Cake Script to Build and Pack
+          dotnet cake build.cake --target=CreatePackages --configuration=Release --libVersion=0.0.0-qa
 
-          # Move the packed nupkg to zen-demo-dotnet-core directory
-          mv ./local-feed/Aikido.Zen.*.nupkg ../zen-demo-dotnet-core/
+          # Create local-feed directory in zen-demo-dotnet-core and move the packed nupkg
+          mkdir -p ../zen-demo-dotnet-core/local-feed
+          mv ./artifacts/*.nupkg ../zen-demo-dotnet-core/local-feed/
 
       - name: Replace Dockerfile with QA version
         run: |
