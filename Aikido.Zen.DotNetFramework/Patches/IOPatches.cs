@@ -1,13 +1,11 @@
-using System;
-using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Security.AccessControl;
 using System.Threading;
-using Aikido.Zen.Core;
-using Aikido.Zen.Core.Patches;
+
 using HarmonyLib;
+
+using Aikido.Zen.Core.Patches;
 
 namespace Aikido.Zen.DotNetFramework.Patches
 {
@@ -16,8 +14,6 @@ namespace Aikido.Zen.DotNetFramework.Patches
     /// </summary>
     internal static class IOPatches
     {
-        // Thread-local flag to prevent re-entrancy during assembly loading
-        private static readonly ThreadLocal<bool> _isProcessing = new ThreadLocal<bool>(() => false);
         /// <summary>
         /// Applies all IO patches using the provided Harmony instance.
         /// </summary>
@@ -84,25 +80,8 @@ namespace Aikido.Zen.DotNetFramework.Patches
 
         private static bool OnFileOperation(string[] paths, MethodBase originalMethod)
         {
-            // Prevent re-entrancy that can occur during Costura assembly loading
-            if (_isProcessing.Value)
-            {
-                return true; // Continue with original method execution
-            }
-
-
-
-            try
-            {
-                _isProcessing.Value = true;
-                var context = Zen.GetContext();
-
-                return IOPatcher.OnFileOperation(paths, originalMethod, context);
-            }
-            finally
-            {
-                _isProcessing.Value = false;
-            }
+            var context = Zen.GetContext();
+            return IOPatcher.OnFileOperation(paths, originalMethod, context);
         }
 
 

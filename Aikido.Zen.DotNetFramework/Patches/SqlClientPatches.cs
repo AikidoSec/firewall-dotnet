@@ -1,9 +1,9 @@
 using System;
 using System.Reflection;
+
 using HarmonyLib;
-using Aikido.Zen.Core.Models;
+
 using Aikido.Zen.Core.Helpers;
-using Aikido.Zen.Core;
 
 namespace Aikido.Zen.DotNetFramework.Patches
 {

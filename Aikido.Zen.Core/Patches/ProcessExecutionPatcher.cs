@@ -2,11 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
+
 using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Vulnerabilities;
-using HarmonyLib;
 
 namespace Aikido.Zen.Core.Patches
 {
@@ -16,6 +16,9 @@ namespace Aikido.Zen.Core.Patches
     public static class ProcessExecutionPatcher
     {
         private const string kind = "exec_op";
+        [ThreadStatic]
+        private static bool _isProcessing = false;
+
         /// <summary>
         /// Inspects the process start arguments for potential shell injection vulnerabilities.
         /// </summary>
@@ -26,6 +29,14 @@ namespace Aikido.Zen.Core.Patches
         /// <returns>True if the original method should continue execution; otherwise, false.</returns>
         public static bool OnProcessStart(object[] __args, MethodBase __originalMethod, object __instance, Context context)
         {
+
+            // Exclude certain assemblies to avoid stack overflow issues
+            var callingAssembly = ReflectionHelper.GetCallingAssembly();
+            if (ReflectionHelper.ShouldExcludeAssembly(callingAssembly))
+            {
+                return true; // Skip processing for excluded assemblies
+            }
+
             var stopwatch = Stopwatch.StartNew();
             var methodInfo = __originalMethod as MethodInfo;
             var operation = $"{methodInfo?.DeclaringType?.Name}.{methodInfo?.Name}";
@@ -37,6 +48,7 @@ namespace Aikido.Zen.Core.Patches
 
             try
             {
+                _isProcessing = true;
                 var processStartInfo = (__instance as Process)?.StartInfo;
                 // Only inspect if context and process info are available
                 if (processStartInfo != null && context != null)
@@ -89,6 +101,10 @@ namespace Aikido.Zen.Core.Patches
             catch
             {
                 LogHelper.ErrorLog(Agent.Logger, "Error recording Process.Start OnInspectedCall stats.");
+            }
+            finally
+            {
+                _isProcessing = false;
             }
 
             // Handle blocking
