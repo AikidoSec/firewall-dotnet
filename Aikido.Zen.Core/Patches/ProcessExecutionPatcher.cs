@@ -16,6 +16,8 @@ namespace Aikido.Zen.Core.Patches
     public static class ProcessExecutionPatcher
     {
         private const string kind = "exec_op";
+        [ThreadStatic]
+        private static bool _isProcessing = false;
 
         /// <summary>
         /// Inspects the process start arguments for potential shell injection vulnerabilities.
@@ -46,6 +48,7 @@ namespace Aikido.Zen.Core.Patches
 
             try
             {
+                _isProcessing = true;
                 var processStartInfo = (__instance as Process)?.StartInfo;
                 // Only inspect if context and process info are available
                 if (processStartInfo != null && context != null)
@@ -98,6 +101,10 @@ namespace Aikido.Zen.Core.Patches
             catch
             {
                 LogHelper.ErrorLog(Agent.Logger, "Error recording Process.Start OnInspectedCall stats.");
+            }
+            finally
+            {
+                _isProcessing = false;
             }
 
             // Handle blocking

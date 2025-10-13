@@ -14,6 +14,8 @@ namespace Aikido.Zen.Core.Patches
     public static class SqlClientPatcher
     {
         private const string operationKind = "sql_op";
+        [ThreadStatic]
+        private static bool _isProcessing = false;
         /// <summary>
         /// Patches the OnCommandExecuting method to detect and prevent SQL injection attacks
         /// </summary>
@@ -22,6 +24,11 @@ namespace Aikido.Zen.Core.Patches
         /// <param name="sql">The SQL command to execute.</param>
         public static bool OnCommandExecuting(object[] __args, MethodBase __originalMethod, string sql, string assembly, Context context)
         {
+            if (_isProcessing)
+            {
+                return true; // Prevent re-entrancy
+            }
+
             // Exclude certain assemblies to avoid stack overflow issues
             var callingAssembly = ReflectionHelper.GetCallingAssembly();
             if (ReflectionHelper.ShouldExcludeAssembly(callingAssembly))
@@ -41,6 +48,7 @@ namespace Aikido.Zen.Core.Patches
 
             try
             {
+                _isProcessing = true;
                 // Perform detection only if context and sql are available
                 if (context != null && sql != null)
                 {
@@ -68,6 +76,11 @@ namespace Aikido.Zen.Core.Patches
             catch
             {
                 LogHelper.ErrorLog(Agent.Logger, "Error recording OnInspectedCall stats.");
+            }
+            finally
+            {
+                stopwatch.Stop();
+                _isProcessing = false;
             }
 
             // Handle blocking if an attack was detected and not in dry mode
