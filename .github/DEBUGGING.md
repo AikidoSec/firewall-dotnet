@@ -1,0 +1,136 @@
+# Debugging & Crash Report Guide
+
+This guide outlines how to collect crash reports and memory dumps for .NET applications—including .NET Framework, .NET Core, and .NET 5+—on both Windows and Linux.
+
+If you suspect that Zen is causing critical issues such as crashes or deadlocks, sharing these diagnostic files with us can significantly help in identifying and resolving the problem.
+
+---
+
+## 1. Why Memory Dumps Matter
+
+A memory dump is a snapshot of your application's memory at a specific moment. It contains threads, objects, stack traces, and more—essential for deep diagnostics. Please note: **dumps may contain sensitive data** (like passwords or personal info), so treat them carefully and follow your company's security policies.
+
+---
+
+## 2. Recommended Microsoft Guide for Debugging Deadlocks
+
+For full guide on debugging deadlocks, see [Microsoft’s official debugging guide](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/debug-deadlock?tabs=windows).
+
+---
+
+## 3. Collecting Memory Dumps
+
+### Windows
+
+#### A. Task Manager (Any .NET App)
+1. Open Task Manager (`Ctrl+Shift+Esc`).
+2. Find your app’s process.
+3. Right-click → **Create Dump File**.
+4. Note the dump file location (usually `%TEMP%`).
+
+#### B. ProcDump (Sysinternals)
+1. Download [ProcDump](https://docs.microsoft.com/en-us/sysinternals/downloads/procdump).
+2. Run in Command Prompt:
+   ```
+   procdump -ma <PID> <output.dmp>
+   ```
+   - `<PID>` is your process ID (see Task Manager).
+   - `-ma` creates a full memory dump.
+
+#### C. dotnet-dump (For .NET Core/5+)
+1. Install:
+   ```
+   dotnet tool install --global dotnet-dump
+   ```
+2. List processes:
+   ```
+   dotnet-dump ps
+   ```
+3. Collect dump:
+   ```
+   dotnet-dump collect -p <PID> -o <output_path>
+   ```
+   - Supports full, heap, or mini dump types.
+
+#### D. Visual Studio
+1. Attach to process (Debug > Attach to Process).
+2. Debug > Save Dump As.
+
+---
+
+### Linux
+
+#### A. dotnet-dump (Recommended)
+1. Install:
+   ```
+   dotnet tool install --global dotnet-dump
+   ```
+2. Find PID:
+   ```
+   ps aux | grep dotnet
+   ```
+3. Collect dump:
+   ```
+   dotnet-dump collect -p <PID> -o <output_file>
+   ```
+
+#### B. gcore (Native or .NET Framework)
+1. Find PID.
+2. Run:
+   ```
+   sudo gcore -o <output_file> <PID>
+   ```
+
+#### C. dotnet-monitor (Advanced/Cloud/Containers)
+- Allows automated or remote dump collection. See [dotnet-monitor docs](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/dumps).
+
+---
+
+## 4. Automated Dump Collection (On Crash)
+
+### Windows
+- Use **Windows Error Reporting (WER)** or registry keys to auto-capture dumps for .NET Framework.
+- See: [Microsoft Crash Dump Guide](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/dumps)
+
+### Linux
+- Set environment variable `DOTNET_DUMP_PATH`.
+- Configure dump settings in systemd or environment.
+
+---
+
+## 5. Submitting Your Crash Report
+
+1. **Compress** the dump file (ZIP recommended).
+2. Include the following info:
+   - Application name & version
+   - .NET Runtime version (`dotnet --info`)
+   - Operating system
+   - Steps to reproduce the issue
+   - Any relevant logs
+3. **Send securely** to customer service (see our portal or email instructions).
+
+---
+
+## 6. Advanced Analysis
+
+In case you want to perform the analysis yourself:
+- Analyze dumps with Visual Studio, WinDbg, JetBrains dotMemory, or `dotnet-dump analyze`.
+- On Linux, you can transfer the dump to Windows for advanced tools.
+- Useful resources:
+  - [How to analyze .NET memory dumps with WinDbg (GitHub Guide)](https://github.com/bulentkazanci/Cheat-Sheet-Windbg/)
+  - [Demystifying .NET Core Memory Leaks](https://romikoderbynew.com/2024/02/11/demystifying-net-core-memory-leaks-a-debugging-adventure-with-dotnet-dum/)
+
+---
+
+## References & Further Reading
+
+- [Debug Deadlock (Microsoft Guide)](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/debug-deadlock?tabs=windows)
+- [Dumps - .NET | Microsoft Learn](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/dumps)
+- [dotnet-dump diagnostic tool](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-dump)
+- [How to create Memory Dumps for .NET in Linux (dev.to)](https://dev.to/ernitingarg/how-to-create-and-analyze-memory-dumps-for-dotnet-applications-in-linux-3o8m)
+- [Practical WinDbg Guide (GitHub)](https://github.com/bulentkazanci/Cheat-Sheet-Windbg/)
+- [dotnet-monitor (Microsoft Learn)](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-monitor)
+
+---
+
+If you need tailored instructions for containers, cloud, or specific deployment scenarios, or have trouble collecting a dump, please contact our support team.
