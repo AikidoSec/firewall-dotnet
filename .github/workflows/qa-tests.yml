@@ -41,7 +41,6 @@ jobs:
         with:
           name: nuget-package
           path: ./artifacts/*.nupkg
-          retention-days: 1
 
   qa-tests:
     needs: build-package
