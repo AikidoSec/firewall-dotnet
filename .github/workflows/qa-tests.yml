@@ -69,6 +69,7 @@ jobs:
 
       - name: Replace Dockerfile with QA version
         run: |
+          cp firewall-dotnet/.github/workflows/NuGet.Config zen-demo-dotnet-core/NuGet.Config
           cp firewall-dotnet/.github/workflows/Dockerfile.qa zen-demo-dotnet-core/Dockerfile
 
       - name: Run Firewall QA Tests
