@@ -1,8 +1,8 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json;
-using System.Xml;
+
 using Aikido.Zen.Core.Models;
 
 namespace Aikido.Zen.Core.Helpers.OpenAPI
@@ -16,6 +16,8 @@ namespace Aikido.Zen.Core.Helpers.OpenAPI
         private const int MaxProperties = 100;
 
         private const int MaxItemsToMerge = 10;
+
+        private static readonly ReferenceEqualityComparer _referenceEqualityComparer = new ReferenceEqualityComparer();
 
         /// <summary>
         /// Merge two data schemas into one
@@ -89,8 +91,16 @@ namespace Aikido.Zen.Core.Helpers.OpenAPI
         /// <returns>A DataSchema describing the data structure</returns>
         public static DataSchema GetDataSchema(object data, int depth = 0)
         {
+            var visited = new HashSet<object>(_referenceEqualityComparer);
+
+            return GetDataSchemaInternal(data, depth, visited);
+        }
+
+        private static DataSchema GetDataSchemaInternal(object data, int depth, HashSet<object> visited)
+        {
             if (depth >= MaxDepth)
                 return new DataSchema { Type = new[] { "object" } };
+
             if (data == null)
                 return new DataSchema { Type = new[] { "null" } };
 
@@ -112,6 +122,12 @@ namespace Aikido.Zen.Core.Helpers.OpenAPI
 
             if (data is IDictionary dict)
             {
+                if (!visited.Add(dict))
+                {
+                    // Already visited this dictionary (circular reference)
+                    return new DataSchema { Type = new[] { "object" } };
+                }
+
                 var schema = new DataSchema
                 {
                     Type = new[] { "object" },
@@ -129,7 +145,7 @@ namespace Aikido.Zen.Core.Helpers.OpenAPI
                         // Ensure the key is a string before proceeding
                         if (kvp.Key is string key)
                         {
-                            schema.Properties[key] = GetDataSchema(kvp.Value, depth + 1);
+                            schema.Properties[key] = GetDataSchemaInternal(kvp.Value, depth + 1, visited);
                             propertiesCount++;
                         }
                     }
@@ -140,6 +156,12 @@ namespace Aikido.Zen.Core.Helpers.OpenAPI
 
             if (data is IEnumerable enumerable)
             {
+                if (!visited.Add(enumerable))
+                {
+                    // Already visited this enumerable (circular reference)
+                    return new DataSchema { Type = new[] { "array" } };
+                }
+
                 // Initialize a variable to hold the schema of the items
                 DataSchema itemsSchema = null;
                 var itemsMerged = 0;
@@ -152,7 +174,7 @@ namespace Aikido.Zen.Core.Helpers.OpenAPI
                         break;
 
                     // Merge the schema of each item with the existing itemsSchema
-                    var right = GetDataSchema(item, depth + 1);
+                    var right = GetDataSchemaInternal(item, depth + 1, visited);
                     if (itemsSchema == null)
                     {
                         itemsSchema = right;
@@ -171,6 +193,21 @@ namespace Aikido.Zen.Core.Helpers.OpenAPI
             }
 
             return new DataSchema { Type = new[] { "object" } };
+        }
+
+        // We can't use `ReferenceEqualityComparer.Instance` from .NET
+        // because it's not available in every framework we support
+        private class ReferenceEqualityComparer : IEqualityComparer<object>
+        {
+            public new bool Equals(object x, object y)
+            {
+                return ReferenceEquals(x, y);
+            }
+
+            public int GetHashCode(object obj)
+            {
+                return System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(obj);
+            }
         }
 
         private static bool IsSameType(string[] first, string[] second)
