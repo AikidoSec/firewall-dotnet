@@ -30,7 +30,7 @@ namespace Aikido.Zen.Core.Patches
             // Exclude certain assemblies to avoid stack overflow issues
             if (ReflectionHelper.ShouldSkipAssembly())
             {
-                return true; // Skip processing for excluded assemblies
+                return true;
             }
 
             var stopwatch = Stopwatch.StartNew();
