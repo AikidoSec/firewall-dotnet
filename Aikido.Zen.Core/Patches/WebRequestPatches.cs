@@ -43,8 +43,7 @@ namespace Aikido.Zen.Core.Patches
         internal static bool CaptureRequest(WebRequest __instance, System.Reflection.MethodBase __originalMethod)
         {
             // Exclude certain assemblies to avoid stack overflow issues
-            var callingAssembly = ReflectionHelper.GetCallingAssembly();
-            if (ReflectionHelper.ShouldExcludeAssembly(callingAssembly))
+            if (ReflectionHelper.ShouldSkipAssembly())
             {
                 return true; // Skip processing for excluded assemblies
             }

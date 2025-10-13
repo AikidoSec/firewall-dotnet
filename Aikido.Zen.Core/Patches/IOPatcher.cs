@@ -24,8 +24,7 @@ namespace Aikido.Zen.Core.Patches
         public static bool OnFileOperation(string[] paths, MethodBase originalMethod, Context context)
         {
             // Exclude certain assemblies to avoid stack overflow issues
-            var callingAssembly = ReflectionHelper.GetCallingAssembly();
-            if (ReflectionHelper.ShouldExcludeAssembly(callingAssembly))
+            if (ReflectionHelper.ShouldSkipAssembly())
             {
                 return true; // Skip processing for excluded assemblies
             }
