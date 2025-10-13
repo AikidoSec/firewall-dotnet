@@ -34,7 +34,6 @@ jobs:
 
           # Run Cake Script to Build and Pack
           dotnet cake build.cake --target=CreatePackages --configuration=Release --libVersion=0.0.0-qa
-        shell: pwsh
 
       - name: Upload NuGet package artifact
         uses: actions/upload-artifact@v4
