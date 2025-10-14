@@ -44,7 +44,7 @@ A memory dump is a snapshot of your application's memory at a specific moment. I
    ```
 3. Collect dump:
    ```
-   dotnet-dump collect -p <PID> --type Full -o <output_path> -type Full
+   dotnet-dump collect -p <PID> --type Full -o <output_path>
    ```
 
 #### D. Visual Studio
