@@ -2,7 +2,7 @@
 
 This guide outlines how to collect crash reports and memory dumps for .NET applications—including .NET Framework, .NET Core, and .NET 5+—on both Windows and Linux.
 
-If you suspect that Zen is causing critical issues such as crashes or deadlocks, sharing these diagnostic files with us can significantly help in identifying and resolving the problem.
+In the rare event that Zen is causing critical issues such as crashes or deadlocks, sharing these diagnostic files with us can significantly help in identifying and resolving the problem.
 
 ---
 
