@@ -1,6 +1,6 @@
 # Debugging & Crash Report Guide
 
-This guide outlines how to collect crash reports and memory dumps for .NET applications—including .NET Framework, .NET Core, and .NET 5+—on both Windows and Linux.
+This guide outlines how to collect crash reports and memory dumps for .NET applications on both Windows and Linux.
 
 In the rare event that Zen is causing critical issues such as crashes or deadlocks, sharing these diagnostic files with us can significantly help in identifying and resolving the problem.
 
@@ -33,7 +33,7 @@ A memory dump is a snapshot of your application's memory at a specific moment. I
    - `<PID>` is your process ID (see Task Manager).
    - `-ma` creates a full memory dump.
 
-#### dotnet-dump (For .NET Core/5+)
+#### dotnet-dump (For Modern .NET)
 1. Install:
    ```sh
    dotnet tool install --global dotnet-dump
