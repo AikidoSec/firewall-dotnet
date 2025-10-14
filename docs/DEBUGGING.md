@@ -6,19 +6,15 @@ In the rare event that Zen is causing critical issues such as crashes or deadloc
 
 ---
 
-## 1. Why Memory Dumps Matter
+## 1. How Memory Dumps Help us Diagnose Issues
 
-A memory dump is a snapshot of your application's memory at a specific moment. It contains threads, objects, stack traces, and more—essential for deep diagnostics. Please note: **dumps may contain sensitive data** (like passwords or personal info), so treat them carefully and follow your company's security policies.
-
----
-
-## 2. Recommended Microsoft Guide for Debugging Deadlocks
-
-For full guide on debugging deadlocks, see [Microsoft’s official debugging guide](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/debug-deadlock?tabs=windows).
+A memory dump is a snapshot of your application's memory at a specific moment. It contains threads, objects, stack traces, and more—essential information for deep diagnostics. These provide crucial insight into the problem and will help us resolve the issue.
+> [!WARNING]
+> Dumps may contain sensitive data (like passwords or personal info), so treat them carefully and follow your company's security policies.
 
 ---
 
-## 3. Collecting Memory Dumps
+## 2. Collecting Memory Dumps
 
 ### Windows
 
@@ -71,21 +67,13 @@ For full guide on debugging deadlocks, see [Microsoft’s official debugging gui
 3. Collect dump:
    ```
    dotnet-dump collect -p <PID> --type Full -o <output_file>
-   ```
 
-#### B. gcore (Native or .NET Framework)
-1. Find PID.
-2. Run:
-   ```
-   sudo gcore -o <output_file> <PID>
-   ```
-
-#### C. dotnet-monitor (Advanced/Cloud/Containers)
+#### B. dotnet-monitor (Advanced/Cloud/Containers)
 - Allows automated or remote dump collection. See [dotnet-monitor docs](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/dumps).
 
 ---
 
-## 4. Automated Dump Collection (On Crash)
+## 3. Automated Dump Collection (On Crash)
 
 ### Windows
 - Use **Windows Error Reporting (WER)** or registry keys to auto-capture dumps for .NET Framework.
@@ -97,7 +85,7 @@ For full guide on debugging deadlocks, see [Microsoft’s official debugging gui
 
 ---
 
-## 5. Submitting Your Crash Report
+## 4. Submitting Your Crash Report
 
 1. **Compress** the dump file (ZIP recommended). Note that the dump files are usually very large, but have a high compression rate.
 2. Include the following info:
@@ -106,18 +94,18 @@ For full guide on debugging deadlocks, see [Microsoft’s official debugging gui
    - Operating system
    - Steps to reproduce the issue
    - Any relevant logs
-3. **Send securely** to customer service (see our portal or email instructions).
+3. **Send securely** to customer service at support@aikido.dev with a link to the memory dump.
 
 ---
 
-## 6. Advanced Analysis
+## 5. Advanced Analysis
 
 In case you want to perform the analysis yourself:
 - Analyze dumps with Visual Studio, WinDbg, JetBrains dotMemory, or `dotnet-dump analyze`.
 - On Linux, you can transfer the dump to Windows for advanced tools.
 - Useful resources:
+  - [Microsoft’s official debugging guide](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/debug-deadlock?tabs=windows)
   - [How to analyze .NET memory dumps with WinDbg (GitHub Guide)](https://github.com/bulentkazanci/Cheat-Sheet-Windbg/)
-  - [Demystifying .NET Core Memory Leaks](https://romikoderbynew.com/2024/02/11/demystifying-net-core-memory-leaks-a-debugging-adventure-with-dotnet-dum/)
 
 ---
 
@@ -132,4 +120,4 @@ In case you want to perform the analysis yourself:
 
 ---
 
-If you need tailored instructions for containers, cloud, or specific deployment scenarios, or have trouble collecting a dump, please contact our support team.
+If you need tailored instructions for containers, cloud, or specific deployment scenarios, or have trouble collecting a dump, please contact our support team at aikido@support.dev
