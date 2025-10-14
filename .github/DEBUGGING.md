@@ -48,9 +48,8 @@ For full guide on debugging deadlocks, see [Microsoft’s official debugging gui
    ```
 3. Collect dump:
    ```
-   dotnet-dump collect -p <PID> -o <output_path>
+   dotnet-dump collect -p <PID> --type Full -o <output_path> -type Full
    ```
-   - Supports full, heap, or mini dump types.
 
 #### D. Visual Studio
 1. Attach to process (Debug > Attach to Process).
@@ -71,7 +70,7 @@ For full guide on debugging deadlocks, see [Microsoft’s official debugging gui
    ```
 3. Collect dump:
    ```
-   dotnet-dump collect -p <PID> -o <output_file>
+   dotnet-dump collect -p <PID> --type Full -o <output_file>
    ```
 
 #### B. gcore (Native or .NET Framework)
@@ -100,7 +99,7 @@ For full guide on debugging deadlocks, see [Microsoft’s official debugging gui
 
 ## 5. Submitting Your Crash Report
 
-1. **Compress** the dump file (ZIP recommended).
+1. **Compress** the dump file (ZIP recommended). Note that the dump files are usually very large, but have a high compression rate.
 2. Include the following info:
    - Application name & version
    - .NET Runtime version (`dotnet --info`)
