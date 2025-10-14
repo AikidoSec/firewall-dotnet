@@ -99,19 +99,13 @@ A memory dump is a snapshot of your application's memory at a specific moment. I
 
 ---
 
-## 5. Advanced Analysis
+## 5. Analyzing Dumps Yourself
 
-In case you want to perform the analysis yourself:
+If you want to perform the analysis yourself:
 - Analyze dumps with Visual Studio, WinDbg, JetBrains dotMemory, or `dotnet-dump analyze`.
 - On Linux, you can transfer the dump to Windows for advanced tools.
-- Useful resources:
-  - [Microsoft’s official debugging guide](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/debug-deadlock?tabs=windows)
-  - [How to analyze .NET memory dumps with WinDbg (GitHub Guide)](https://github.com/bulentkazanci/Cheat-Sheet-Windbg/)
 
----
-
-## References & Further Reading
-
+**Further Reading:**
 - [Debug Deadlock (Microsoft Guide)](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/debug-deadlock?tabs=windows)
 - [Dumps - .NET | Microsoft Learn](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/dumps)
 - [dotnet-dump diagnostic tool](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-dump)
