@@ -98,6 +98,17 @@ namespace Aikido.Zen.Core
         /// <param name="token">The authentication token for the Zen API</param>
         public void Start()
         {
+            var startupMessage = $"Zen Agent v{AgentInfoHelper.ZenVersion} started";
+
+            if (string.IsNullOrEmpty(EnvironmentHelper.Token))
+            {
+                LogHelper.InfoLog(Logger, "No token provided, disabling reporting.");
+                LogHelper.InfoLog(Logger, startupMessage);
+                return;
+            }
+
+            LogHelper.InfoLog(Logger, "Found token, reporting enabled!");
+
             // send started event
             QueueEvent(EnvironmentHelper.Token, Started.Create(),
             (evt, response) =>
@@ -137,8 +148,7 @@ namespace Aikido.Zen.Core
                 Heartbeat.ScheduleId,
                 scheduledHeartBeat
             );
-            LogHelper.InfoLog(Logger, $"Zen Agent v{AgentInfoHelper.ZenVersion} started");
-
+            LogHelper.InfoLog(Logger, startupMessage);
         }
 
         /// <summary>
@@ -381,7 +391,13 @@ namespace Aikido.Zen.Core
         public virtual void SendAttackEvent(AttackKind kind, Source source, string payload, string operation, Context context, string module, IDictionary<string, object> metadata, bool blocked)
         {
             LogHelper.AttackLog(Logger, $"Attack detected: {kind} in {source} {operation}, blocked: {blocked}");
-            QueueEvent(EnvironmentHelper.Token, DetectedAttack.Create(kind, source, payload, operation, context, module, metadata, blocked));
+
+            // Prevent sending events if no token is configured
+            if (!string.IsNullOrEmpty(EnvironmentHelper.Token))
+            {
+                QueueEvent(EnvironmentHelper.Token, DetectedAttack.Create(kind, source, payload, operation, context, module, metadata, blocked));
+            }
+
             Context.AddAttackDetected(blocked);
         }
 
