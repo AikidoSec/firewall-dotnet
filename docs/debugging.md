@@ -121,4 +121,4 @@ In case you want to perform the analysis yourself:
 
 ---
 
-If you need tailored instructions for containers, cloud, or specific deployment scenarios, or have trouble collecting a dump, please contact our support team at aikido@support.dev
+If you need tailored instructions for containers, cloud, or specific deployment scenarios, or have trouble collecting a dump, please contact our support team at support@aikido.dev
