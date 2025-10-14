@@ -1,12 +1,12 @@
 # Debugging & Crash Report Guide
 
-This guide outlines how to collect crash reports and memory dumps for .NET applications on both Windows and Linux.
+This guide shows you how to collect memory dumps for .NET applications on both Windows and Linux.
 
-In the rare event that Zen is causing critical issues such as crashes or deadlocks, sharing these diagnostic files with us can significantly help in identifying and resolving the problem.
+In the rare event that Zen causes crashes or deadlocks, memory dumps help us identify and resolve the issue quickly.
 
 ## 1. How Memory Dumps Help us Diagnose Issues
 
-A memory dump is a snapshot of your application's memory at a specific moment. It contains threads, objects, stack traces, and more—essential information for deep diagnostics. These provide crucial insight into the problem and will help us resolve the issue.
+A memory dump is a snapshot of your application's memory at a specific moment. It contains threads, objects, stack traces, and more—essential information for deep diagnostics.
 > [!WARNING]
 > Dumps may contain sensitive data (like passwords or personal info), so treat them carefully and follow your company's security policies.
 
@@ -73,19 +73,19 @@ A memory dump is a snapshot of your application's memory at a specific moment. I
 - See: [Microsoft Crash Dump Guide](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/dumps)
 
 ### Linux
-- Set environment variable `DOTNET_DUMP_PATH`.
-- Configure memory dump settings in systemd or environment.
+- Set environment variable `DOTNET_DUMP_PATH` to automatically save dumps on crash.
+- For containerized apps, configure dump settings in your systemd service or deployment environment.
 
 ## 4. Submitting Your Crash Report
 
-1. **Compress** the dump file (ZIP recommended). Note that the dump files are usually very large, but have a high compression rate.
+1. **Compress** the dump file (ZIP recommended). Dump files are large but compress well.
 2. Include the following info:
    - Application name & version
    - .NET Runtime version (`dotnet --info`)
    - Operating system
    - Steps to reproduce the issue
    - Any relevant logs
-3. **Send securely** to customer service at support@aikido.dev with a link to the memory dump.
+3. Email the link to [support@aikido.dev](mailto:support@aikido.dev) or start a chat on [aikido.dev](https://aikido.dev).
 
 ## 5. Analyzing Memory Dumps Yourself
 
@@ -101,4 +101,4 @@ If you want to perform the analysis yourself:
 - [Practical WinDbg Guide (GitHub)](https://github.com/bulentkazanci/Cheat-Sheet-Windbg/)
 - [dotnet-monitor (Microsoft Learn)](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-monitor)
 
-Need help? Contact us at [support@aikido.dev](mailto:support@aikido.dev).
+Need help? Email us at [support@aikido.dev](mailto:support@aikido.dev) or start a chat on [aikido.dev](https://aikido.dev).
