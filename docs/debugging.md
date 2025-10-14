@@ -4,15 +4,11 @@ This guide outlines how to collect crash reports and memory dumps for .NET appli
 
 In the rare event that Zen is causing critical issues such as crashes or deadlocks, sharing these diagnostic files with us can significantly help in identifying and resolving the problem.
 
----
-
 ## 1. How Memory Dumps Help us Diagnose Issues
 
 A memory dump is a snapshot of your application's memory at a specific moment. It contains threads, objects, stack traces, and more—essential information for deep diagnostics. These provide crucial insight into the problem and will help us resolve the issue.
 > [!WARNING]
 > Dumps may contain sensitive data (like passwords or personal info), so treat them carefully and follow your company's security policies.
-
----
 
 ## 2. Collecting Memory Dumps
 
@@ -51,8 +47,6 @@ A memory dump is a snapshot of your application's memory at a specific moment. I
 1. Attach to process (Debug > Attach to Process).
 2. Debug > Save Dump As.
 
----
-
 ### Linux
 
 #### dotnet-dump (Recommended)
@@ -72,8 +66,6 @@ A memory dump is a snapshot of your application's memory at a specific moment. I
 #### dotnet-monitor (Advanced/Cloud/Containers)
 - Allows automated or remote dump collection. See [dotnet-monitor docs](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/dumps).
 
----
-
 ## 3. Automated Dump Collection (On Crash)
 
 ### Windows
@@ -83,8 +75,6 @@ A memory dump is a snapshot of your application's memory at a specific moment. I
 ### Linux
 - Set environment variable `DOTNET_DUMP_PATH`.
 - Configure memory dump settings in systemd or environment.
-
----
 
 ## 4. Submitting Your Crash Report
 
@@ -96,8 +86,6 @@ A memory dump is a snapshot of your application's memory at a specific moment. I
    - Steps to reproduce the issue
    - Any relevant logs
 3. **Send securely** to customer service at support@aikido.dev with a link to the memory dump.
-
----
 
 ## 5. Analyzing Memory Dumps Yourself
 
@@ -112,7 +100,5 @@ If you want to perform the analysis yourself:
 - [How to create Memory Dumps for .NET in Linux (dev.to)](https://dev.to/ernitingarg/how-to-create-and-analyze-memory-dumps-for-dotnet-applications-in-linux-3o8m)
 - [Practical WinDbg Guide (GitHub)](https://github.com/bulentkazanci/Cheat-Sheet-Windbg/)
 - [dotnet-monitor (Microsoft Learn)](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-monitor)
-
----
 
 Need help? Contact us at [support@aikido.dev](mailto:support@aikido.dev).
