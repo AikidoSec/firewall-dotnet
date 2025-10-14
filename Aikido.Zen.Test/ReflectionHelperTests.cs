@@ -125,7 +125,7 @@ namespace Aikido.Zen.Test.Helpers
         /// <param name="assemblyName">The full name of the assembly to check.</param>
         /// <param name="expected">The expected result.</param>
         [TestCase("Costura, Version=4.1.0.0, Culture=neutral, PublicKeyToken=9919ef960d84173d", true)]
-        [TestCase("0Harmony, Version=2.2.2.0, Culture=neutral, PublicKeyToken=null", true)]
+        [TestCase("Harmony, Version=2.2.2.0, Culture=neutral, PublicKeyToken=null", true)]
         [TestCase("Fody, Version=6.5.1.0, Culture=neutral, PublicKeyToken=a750436ab3144e16", true)]
         [TestCase("Mono.Cecil, Version=0.11.4.0, Culture=neutral, PublicKeyToken=50cebf1cceb9d05e", true)]
         [TestCase("PostSharp, Version=6.10.16.0, Culture=neutral, PublicKeyToken=b13fd38b8f9c99d7", true)]
