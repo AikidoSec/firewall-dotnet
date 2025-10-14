@@ -27,7 +27,7 @@ A memory dump is a snapshot of your application's memory at a specific moment. I
 #### B. ProcDump (Sysinternals)
 1. Download [ProcDump](https://docs.microsoft.com/en-us/sysinternals/downloads/procdump).
 2. Run in Command Prompt:
-   ```
+   ```cmd
    procdump -ma <PID> <output.dmp>
    ```
    - `<PID>` is your process ID (see Task Manager).
@@ -35,15 +35,15 @@ A memory dump is a snapshot of your application's memory at a specific moment. I
 
 #### C. dotnet-dump (For .NET Core/5+)
 1. Install:
-   ```
+   ```sh
    dotnet tool install --global dotnet-dump
    ```
 2. List processes:
-   ```
+   ```sh
    dotnet-dump ps
    ```
 3. Collect dump:
-   ```
+   ```sh
    dotnet-dump collect -p <PID> --type Full -o <output_path>
    ```
 
@@ -57,15 +57,15 @@ A memory dump is a snapshot of your application's memory at a specific moment. I
 
 #### A. dotnet-dump (Recommended)
 1. Install:
-   ```
+   ```sh
    dotnet tool install --global dotnet-dump
    ```
 2. Find PID:
-   ```
+   ```sh
    ps aux | grep dotnet
    ```
 3. Collect dump:
-   ```
+   ```sh
    dotnet-dump collect -p <PID> --type Full -o <output_file>
    ```
 
