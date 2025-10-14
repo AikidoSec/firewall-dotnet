@@ -67,6 +67,7 @@ A memory dump is a snapshot of your application's memory at a specific moment. I
 3. Collect dump:
    ```
    dotnet-dump collect -p <PID> --type Full -o <output_file>
+   ```
 
 #### B. dotnet-monitor (Advanced/Cloud/Containers)
 - Allows automated or remote dump collection. See [dotnet-monitor docs](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/dumps).
