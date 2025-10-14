@@ -77,12 +77,12 @@ A memory dump is a snapshot of your application's memory at a specific moment. I
 ## 3. Automated Dump Collection (On Crash)
 
 ### Windows
-- Use **Windows Error Reporting (WER)** or registry keys to auto-capture dumps for .NET Framework.
+- Use **Windows Error Reporting (WER)** or registry keys to auto-capture memory dumps for .NET Framework.
 - See: [Microsoft Crash Dump Guide](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/dumps)
 
 ### Linux
 - Set environment variable `DOTNET_DUMP_PATH`.
-- Configure dump settings in systemd or environment.
+- Configure memory dump settings in systemd or environment.
 
 ---
 
@@ -99,11 +99,11 @@ A memory dump is a snapshot of your application's memory at a specific moment. I
 
 ---
 
-## 5. Analyzing Dumps Yourself
+## 5. Analyzing Memory Dumps Yourself
 
 If you want to perform the analysis yourself:
-- Analyze dumps with Visual Studio, WinDbg, JetBrains dotMemory, or `dotnet-dump analyze`.
-- On Linux, you can transfer the dump to Windows for advanced tools.
+- Analyze memory dumps with Visual Studio, WinDbg, JetBrains dotMemory, or `dotnet-dump analyze`.
+- On Linux, you can transfer the memory dump to Windows for advanced tools.
 
 **Further Reading:**
 - [Debug Deadlock (Microsoft Guide)](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/debug-deadlock?tabs=windows)
