@@ -18,13 +18,13 @@ A memory dump is a snapshot of your application's memory at a specific moment. I
 
 ### Windows
 
-#### A. Task Manager (Any .NET App)
+#### Task Manager (Any .NET App)
 1. Open Task Manager (`Ctrl+Shift+Esc`).
-2. Find your app’s process.
+2. Find your app's process.
 3. Right-click → **Create Dump File**.
 4. Note the dump file location (usually `%TEMP%`).
 
-#### B. ProcDump (Sysinternals)
+#### ProcDump (Sysinternals)
 1. Download [ProcDump](https://docs.microsoft.com/en-us/sysinternals/downloads/procdump).
 2. Run in Command Prompt:
    ```cmd
@@ -33,7 +33,7 @@ A memory dump is a snapshot of your application's memory at a specific moment. I
    - `<PID>` is your process ID (see Task Manager).
    - `-ma` creates a full memory dump.
 
-#### C. dotnet-dump (For .NET Core/5+)
+#### dotnet-dump (For .NET Core/5+)
 1. Install:
    ```sh
    dotnet tool install --global dotnet-dump
@@ -47,7 +47,7 @@ A memory dump is a snapshot of your application's memory at a specific moment. I
    dotnet-dump collect -p <PID> --type Full -o <output_path>
    ```
 
-#### D. Visual Studio
+#### Visual Studio
 1. Attach to process (Debug > Attach to Process).
 2. Debug > Save Dump As.
 
@@ -55,7 +55,7 @@ A memory dump is a snapshot of your application's memory at a specific moment. I
 
 ### Linux
 
-#### A. dotnet-dump (Recommended)
+#### dotnet-dump (Recommended)
 1. Install:
    ```sh
    dotnet tool install --global dotnet-dump
@@ -69,7 +69,7 @@ A memory dump is a snapshot of your application's memory at a specific moment. I
    dotnet-dump collect -p <PID> --type Full -o <output_file>
    ```
 
-#### B. dotnet-monitor (Advanced/Cloud/Containers)
+#### dotnet-monitor (Advanced/Cloud/Containers)
 - Allows automated or remote dump collection. See [dotnet-monitor docs](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/dumps).
 
 ---
