@@ -1,0 +1,104 @@
+# Debugging & Crash Report Guide
+
+This guide shows you how to collect memory dumps for .NET applications on both Windows and Linux.
+
+In the rare event that Zen causes crashes or deadlocks, memory dumps help us identify and resolve the issue quickly.
+
+## 1. How Memory Dumps Help us Diagnose Issues
+
+A memory dump is a snapshot of your application's memory at a specific moment. It contains threads, objects, stack traces, and more—essential information for deep diagnostics.
+> [!WARNING]
+> Dumps may contain sensitive data (like passwords or personal info), so treat them carefully and follow your company's security policies.
+
+## 2. Collecting Memory Dumps
+
+### Windows
+
+#### Task Manager (Any .NET App)
+1. Open Task Manager (`Ctrl+Shift+Esc`).
+2. Find your app's process.
+3. Right-click → **Create Dump File**.
+4. Note the dump file location (usually `%TEMP%`).
+
+#### ProcDump (Sysinternals)
+1. Download [ProcDump](https://docs.microsoft.com/en-us/sysinternals/downloads/procdump).
+2. Run in Command Prompt:
+   ```cmd
+   procdump -ma <PID> <output.dmp>
+   ```
+   - `<PID>` is your process ID (see Task Manager).
+   - `-ma` creates a full memory dump.
+
+#### dotnet-dump (For Modern .NET)
+1. Install:
+   ```sh
+   dotnet tool install --global dotnet-dump
+   ```
+2. List processes:
+   ```sh
+   dotnet-dump ps
+   ```
+3. Collect dump:
+   ```sh
+   dotnet-dump collect -p <PID> --type Full -o <output_path>
+   ```
+
+#### Visual Studio
+1. Attach to process (Debug > Attach to Process).
+2. Debug > Save Dump As.
+
+### Linux
+
+#### dotnet-dump (Recommended)
+1. Install:
+   ```sh
+   dotnet tool install --global dotnet-dump
+   ```
+2. Find PID:
+   ```sh
+   ps aux | grep dotnet
+   ```
+3. Collect dump:
+   ```sh
+   dotnet-dump collect -p <PID> --type Full -o <output_file>
+   ```
+
+#### dotnet-monitor (Advanced/Cloud/Containers)
+- Allows automated or remote dump collection. See [dotnet-monitor docs](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/dumps).
+
+## 3. Automated Dump Collection (On Crash)
+
+### Windows
+- Use **Windows Error Reporting (WER)** or registry keys to auto-capture memory dumps for .NET Framework.
+- See: [Microsoft Crash Dump Guide](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/dumps)
+
+### Linux
+- Set environment variable `DOTNET_DUMP_PATH` to automatically save dumps on crash.
+- For containerized apps, configure dump settings in your systemd service or deployment environment.
+
+## 4. Submitting Your Crash Report
+
+1. **Compress** the dump file (ZIP recommended). Dump files are large but compress well.
+2. Include the following info:
+   - Application name & version
+   - .NET Runtime version (`dotnet --info`)
+   - Operating system
+   - Steps to reproduce the issue
+   - Any relevant logs
+3. Email the link to [support@aikido.dev](mailto:support@aikido.dev) or start a chat on [aikido.dev](https://aikido.dev).
+
+## 5. Analyzing Memory Dumps Yourself
+
+If you want to perform the analysis yourself:
+- Analyze memory dumps with Visual Studio, WinDbg, JetBrains dotMemory, or `dotnet-dump analyze`.
+- On Linux, you can transfer the memory dump to Windows for advanced tools.
+
+**Further Reading:**
+- [Debug Deadlock (Microsoft Guide)](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/debug-deadlock?tabs=windows)
+- [Dumps - .NET | Microsoft Learn](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/dumps)
+- [dotnet-dump diagnostic tool](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-dump)
+- [How to create Memory Dumps for .NET in Linux (dev.to)](https://dev.to/ernitingarg/how-to-create-and-analyze-memory-dumps-for-dotnet-applications-in-linux-3o8m)
+- [Practical WinDbg Guide (GitHub)](https://github.com/bulentkazanci/Cheat-Sheet-Windbg/)
+- [dotnet-monitor (Microsoft Learn)](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-monitor)
+
+Need help? Email us at [support@aikido.dev](mailto:support@aikido.dev) or start a chat on [aikido.dev](https://aikido.dev).
