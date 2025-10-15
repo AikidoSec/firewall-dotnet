@@ -1,10 +1,9 @@
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+
 using Aikido.Zen.Core.Helpers;
-using Aikido.Zen.Core.Models;
 
 [assembly: InternalsVisibleTo("Aikido.Zen.Test")]
 
@@ -28,6 +27,12 @@ namespace Aikido.Zen.Core.Patches
         /// <param name="context">The current Aikido context.</param>
         public static void OnLLMCallCompleted(object[] __args, MethodBase __originalMethod, string assembly, object result, Context context)
         {
+            // Exclude certain assemblies to avoid stack overflow issues
+            if (ReflectionHelper.ShouldSkipAssembly())
+            {
+                return;
+            }
+
             try
             {
                 var stopWatch = Stopwatch.StartNew();

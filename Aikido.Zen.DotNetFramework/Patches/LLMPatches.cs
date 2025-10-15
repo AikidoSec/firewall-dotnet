@@ -1,10 +1,9 @@
 using System;
-using System.Collections.Generic;
 using System.Reflection;
-using System.Threading.Tasks;
-using Aikido.Zen.Core;
-using Aikido.Zen.Core.Helpers;
+
 using HarmonyLib;
+
+using Aikido.Zen.Core.Helpers;
 
 namespace Aikido.Zen.DotNetFramework.Patches
 {
