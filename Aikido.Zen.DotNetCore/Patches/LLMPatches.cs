@@ -3,6 +3,8 @@ using System.Reflection;
 using HarmonyLib;
 
 using Aikido.Zen.Core.Helpers;
+using Aikido.Zen.Core.Patches.LLMs;
+using Aikido.Zen.Core.Models.LLMs.Sinks;
 
 namespace Aikido.Zen.DotNetCore.Patches
 {
@@ -17,13 +19,9 @@ namespace Aikido.Zen.DotNetCore.Patches
         /// <param name="harmony">The Harmony instance used for patching.</param>
         public static void ApplyPatches(Harmony harmony)
         {
-            // OpenAI
-            PatchMethod(harmony, "OpenAI", "OpenAI.Chat.ChatClient", "CompleteChat", "System.Collections.Generic.IEnumerable`1[OpenAI.Chat.ChatMessage]", "OpenAI.Chat.ChatCompletionOptions", "System.Threading.CancellationToken");
-            PatchMethod(harmony, "OpenAI", "OpenAI.Chat.ChatClient", "CompleteChatAsync", "System.Collections.Generic.IEnumerable`1[OpenAI.Chat.ChatMessage]", "OpenAI.Chat.ChatCompletionOptions", "System.Threading.CancellationToken");
-
-            // Rystem.OpenAi
-            PatchMethod(harmony, "Rystem.OpenAi", "Rystem.OpenAi.Chat.OpenAiChat", "ExecuteAsync", "System.Threading.CancellationToken");
-            PatchMethod(harmony, "Rystem.OpenAi", "Rystem.OpenAi.Chat.OpenAiChat", "ExecuteAsStreamAsync", "System.Boolean", "System.Threading.CancellationToken");
+            foreach(var sink in LLMSinks.Sinks)            
+                foreach(var method in sink.Methods)                
+                    PatchMethod(harmony, sink.Assembly, method.Type, method.Name, method.Parameters.ToArray());
         }
 
         /// <summary>
@@ -55,7 +53,7 @@ namespace Aikido.Zen.DotNetCore.Patches
             var assembly = __instance?.GetType().Assembly.FullName?.Split(new[] { ", Culture=" }, StringSplitOptions.RemoveEmptyEntries)[0] ?? string.Empty;
             var resolvedResult = LLMResultHelper.ResolveResult(__result);
 
-            Aikido.Zen.Core.Patches.LLMPatcher.OnLLMCallCompleted(__args, __originalMethod, assembly, resolvedResult, Zen.GetContext());
+            LLMPatcher.OnLLMCallCompleted(__args, __originalMethod, assembly, resolvedResult, Zen.GetContext());
         }
     }
 }
