@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using Aikido.Zen.Core.Helpers;
 using NUnit.Framework;
 
-namespace Aikido.Zen.Test.Helpers
+namespace Aikido.Zen.Tests.Patches.LLMs
 {
     [TestFixture]
     public class LLMResultHelperTests

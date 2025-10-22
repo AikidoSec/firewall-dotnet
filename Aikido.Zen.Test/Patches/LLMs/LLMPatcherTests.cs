@@ -1,10 +1,10 @@
 using System.Reflection;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Helpers;
-using Aikido.Zen.Core.Patches;
+using Aikido.Zen.Core.Patches.LLMs;
 using Moq;
 
-namespace Aikido.Zen.Test
+namespace Aikido.Zen.Tests.Patches.LLMs
 {
     [TestFixture]
     public class LLMPatcherTests
@@ -361,7 +361,7 @@ namespace Aikido.Zen.Test
             var input = new MockLLMResult { Model = "gpt-4-turbo" };
 
             // Act
-            var result = LLMPatcher.TryExtractModelFromResult(input, out var model);
+            var result = LLMPatcher.TryExtractModelFromResult(TODO);
 
             // Assert
             Assert.That(result, Is.True);
@@ -375,7 +375,7 @@ namespace Aikido.Zen.Test
             var input = new MockLLMResult { Model = null };
 
             // Act
-            var result = LLMPatcher.TryExtractModelFromResult(input, out var model);
+            var result = LLMPatcher.TryExtractModelFromResult(TODO);
 
             // Assert
             Assert.That(result, Is.False);
@@ -389,7 +389,7 @@ namespace Aikido.Zen.Test
             var input = new { SomeProperty = "value" };
 
             // Act
-            var result = LLMPatcher.TryExtractModelFromResult(input, out var model);
+            var result = LLMPatcher.TryExtractModelFromResult(TODO);
 
             // Assert
             Assert.That(result, Is.False);
@@ -403,7 +403,7 @@ namespace Aikido.Zen.Test
             var input = new { };
 
             // Act
-            var result = LLMPatcher.TryExtractModelFromResult(input, out var model);
+            var result = LLMPatcher.TryExtractModelFromResult(TODO);
 
             // Assert
             Assert.That(result, Is.False);
@@ -424,7 +424,7 @@ namespace Aikido.Zen.Test
             };
 
             // Act
-            var result = LLMPatcher.TryExtractTokensFromResult(input, out var tokens);
+            var result = LLMPatcher.TryExtractTokensFromResult(TODO, TODO);
 
             // Assert
             Assert.That(result, Is.True);
@@ -442,7 +442,7 @@ namespace Aikido.Zen.Test
             };
 
             // Act
-            var result = LLMPatcher.TryExtractTokensFromResult(input, out var tokens);
+            var result = LLMPatcher.TryExtractTokensFromResult(TODO, TODO);
 
             // Assert
             Assert.That(result, Is.True);
@@ -464,7 +464,7 @@ namespace Aikido.Zen.Test
             };
 
             // Act
-            var result = LLMPatcher.TryExtractTokensFromResult(input, out var tokens);
+            var result = LLMPatcher.TryExtractTokensFromResult(TODO, TODO);
 
             // Assert
             Assert.That(result, Is.True);
@@ -482,7 +482,7 @@ namespace Aikido.Zen.Test
             };
 
             // Act
-            var result = LLMPatcher.TryExtractTokensFromResult(input, out var tokens);
+            var result = LLMPatcher.TryExtractTokensFromResult(TODO, TODO);
 
             // Assert
             Assert.That(result, Is.True);
@@ -497,7 +497,7 @@ namespace Aikido.Zen.Test
             var input = new MockLLMResult { Model = "gpt-4" }; // No Usage property
 
             // Act
-            var result = LLMPatcher.TryExtractTokensFromResult(input, out var tokens);
+            var result = LLMPatcher.TryExtractTokensFromResult(TODO, TODO);
 
             // Assert
             Assert.That(result, Is.False);
@@ -515,7 +515,7 @@ namespace Aikido.Zen.Test
             };
 
             // Act
-            var result = LLMPatcher.TryExtractTokensFromResult(input, out var tokens);
+            var result = LLMPatcher.TryExtractTokensFromResult(TODO, TODO);
 
             // Assert
             Assert.That(result, Is.False);
@@ -533,7 +533,7 @@ namespace Aikido.Zen.Test
             };
 
             // Act
-            var result = LLMPatcher.TryExtractTokensFromResult(input, out var tokens);
+            var result = LLMPatcher.TryExtractTokensFromResult(TODO, TODO);
 
             // Assert
             Assert.That(result, Is.True);
