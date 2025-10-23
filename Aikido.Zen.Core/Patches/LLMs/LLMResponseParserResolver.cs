@@ -25,6 +25,9 @@ namespace Aikido.Zen.Core.Patches.LLMs
         static LLMResponseParserResolver()
         {
             _parsers.Add(new OpenAIResponseParser());
+            _parsers.Add(new AzureOpenAIParser());
+            _parsers.Add(new AwsBedrockParser());
+            _parsers.Add(new AnthropicResponseParser());
             _parsers.Add(new RystemOpenAIResponseParser());
             _parsers.Add(new GenericResponseParser());
         }
@@ -35,8 +38,9 @@ namespace Aikido.Zen.Core.Patches.LLMs
         /// </summary>
         /// <param name="result">The result of the LLM request</param>
         /// <param name="assembly">The assembly from which the call originated</param>
+        /// <param name="method">Calling method from which the call originated</param>
         /// <returns>Parsed response or an empty model if the parsing failed</returns>
-        internal static ParsedLLMResponseModel Parse(object result, string assembly)
+        internal static ParsedLLMResponseModel Parse(object result, string assembly, string method)
         {
             //If we are patching an async method, we need to get the result from the Task
             if (result is Task task)
@@ -53,7 +57,7 @@ namespace Aikido.Zen.Core.Patches.LLMs
 
             foreach (var parser in _parsers)            
                 if (parser.CanParse(assembly))
-                    return parser.Parse(result, assembly);
+                    return parser.Parse(result, assembly, method);
                 
             return new ParsedLLMResponseModel();
         }

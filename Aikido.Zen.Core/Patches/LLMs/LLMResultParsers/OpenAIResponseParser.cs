@@ -17,10 +17,11 @@ namespace Aikido.Zen.Core.Patches.LLMs.LLMResultParsers
         /// <summary>
         /// Retrieves the token usage from the LLM result object. Specific to OpenAI structure.
         /// </summary>
-        /// <param name="result">The output result object from the LLM API</param>
-        /// <param name="assembly">The assembly of the patched method which generated the response</param>
+        /// <param name="result">The result of the LLM request</param>
+        /// <param name="assembly">The assembly from which the call originated</param>
+        /// <param name="method">Calling method from which the call originated</param>
         /// <returns>Token usage object which contains the number of Input and Output tokens used.</returns>
-        protected override TokenUsage ParseTokenUsage(object result, string assembly)
+        protected override TokenUsage ParseTokenUsage(object result, string assembly, string method)
         {
             try
             {

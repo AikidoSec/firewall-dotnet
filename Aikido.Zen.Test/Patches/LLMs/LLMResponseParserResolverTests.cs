@@ -1,8 +1,8 @@
-using System.Reflection;
-
 using Aikido.Zen.Core.Models.LLMs;
 using Aikido.Zen.Core.Patches.LLMs;
 using Aikido.Zen.Core.Patches.LLMs.LLMResultParsers.Abstractions;
+using NUnit.Framework.Internal;
+using System.Reflection;
 
 namespace Aikido.Zen.Tests;
 
@@ -35,16 +35,17 @@ internal class LLMResponseParserResolverTests
         var expected = new ParsedLLMResponseModel();
         var parser = new TestParser(
             canParse: (assembly) => assembly == "TestProvider",
-            parse: (result, assembly) => expected
+            parse: (result, assembly, method) => expected
         );
         _registryParsers.Insert(0, parser);
 
         var assembly = "TestProvider";
+        var method = "TestMethod";
         var wrapped = new ResponseShim<string> { Value = "inner-value" };
         var task = Task.FromResult(wrapped); // Task with Result, whose Value is the actual LLM response
 
         // Act
-        var parsed = LLMResponseParserResolver.Parse(task, assembly);
+        var parsed = LLMResponseParserResolver.Parse(task, assembly, method);
 
         // Assert
         Assert.That(expected, Is.SameAs(parsed));
@@ -58,23 +59,24 @@ internal class LLMResponseParserResolverTests
 
         var nonMatching = new TestParser(
             canParse: (assembly) => false,
-            parse: (result, assembly) => throw new AssertionException("Non-matching parser should not parse")
+            parse: (result, assembly, method) => throw new AssertionException("Non-matching parser should not parse")
         );
 
         var expected = new ParsedLLMResponseModel();
         var genericFallback = new TestParser(
             canParse: (assembly) => true, // emulate GenericResponseParser.CanParse == true
-            parse: (result, assembly) => expected
+            parse: (result, assembly, method) => expected
         );
 
         _registryParsers.Add(nonMatching);
         _registryParsers.Add(genericFallback);
 
         var assemblyName = "Test.Provider";
+        var method = "TestMethod";
         var result = new object();
 
         // Act
-        var parsed = LLMResponseParserResolver.Parse(result, assemblyName);
+        var parsed = LLMResponseParserResolver.Parse(result, assemblyName, method);
 
         // Assert: the fallback parser is used
         Assert.That(parsed, Is.SameAs(expected));
@@ -88,20 +90,21 @@ internal class LLMResponseParserResolverTests
 
         var nonMatching = new TestParser(
             canParse: (assembly) => false,
-            parse: (result, assembly) => throw new AssertionException("Non-matching parser should not parse")
+            parse: (result, assembly, method) => throw new AssertionException("Non-matching parser should not parse")
         );
 
         var assemblyName = "Test";
+        var method = "TestMethod";
         var expected = new ParsedLLMResponseModel();
         var matching = new TestParser(
             canParse: (assembly) => assembly == assemblyName,
-            parse: (result, assembly) => expected
+            parse: (result, assembly, method) => expected
         );
 
         var genericResponse = new ParsedLLMResponseModel();
         var genericFallback = new TestParser(
             canParse: (assembly) => true,
-            parse: (result, assembly) => genericResponse
+            parse: (result, assembly, method) => genericResponse
         );
 
         _registryParsers.Add(nonMatching);
@@ -111,7 +114,7 @@ internal class LLMResponseParserResolverTests
         var result = new object();
 
         // Act
-        var parsed = LLMResponseParserResolver.Parse(result, assemblyName);
+        var parsed = LLMResponseParserResolver.Parse(result, assemblyName, method);
 
         // Assert: the fallback parser is used
         Assert.That(parsed, Is.SameAs(expected));
@@ -121,9 +124,9 @@ internal class LLMResponseParserResolverTests
     private sealed class TestParser : ILLMResponseParser
     {
         private readonly Func<string, bool> _canParse;
-        private readonly Func<object, string, ParsedLLMResponseModel> _parse;
+        private readonly Func<object, string, string, ParsedLLMResponseModel> _parse;
 
-        public TestParser(Func<string, bool> canParse, Func<object, string, ParsedLLMResponseModel> parse)
+        public TestParser(Func<string, bool> canParse, Func<object, string, string, ParsedLLMResponseModel> parse)
         {
             _canParse = canParse;
             _parse = parse;
@@ -131,7 +134,7 @@ internal class LLMResponseParserResolverTests
 
         public bool CanParse(string assembly) => _canParse(assembly);
 
-        public ParsedLLMResponseModel Parse(object result, string assembly) => _parse(result, assembly);
+        public ParsedLLMResponseModel Parse(object result, string assembly, string method) => _parse(result, assembly, method);
     }
 
     private sealed class ResponseShim<T>

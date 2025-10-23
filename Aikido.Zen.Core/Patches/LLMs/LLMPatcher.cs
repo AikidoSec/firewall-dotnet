@@ -37,8 +37,7 @@ namespace Aikido.Zen.Core.Patches.LLMs
                 if (context is null)
                     LogHelper.ErrorLog(Agent.Logger, "OnLLMCallCompleted: Context is null.");
 
-                var parsedResponse = LLMResponseParserResolver.Parse(result, assembly);
-
+                var parsedResponse = LLMResponseParserResolver.Parse(result, assembly, __originalMethod.Name);
                 // Record AI statistics
                 Agent.Instance.Context.OnAiCall(assembly, parsedResponse.Model, parsedResponse.TokenUsage.InputTokens, parsedResponse.TokenUsage.OutputTokens, context?.Route);
 

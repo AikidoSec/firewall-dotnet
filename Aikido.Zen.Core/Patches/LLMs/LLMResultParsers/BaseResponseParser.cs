@@ -19,10 +19,11 @@ namespace Aikido.Zen.Core.Patches.LLMs.LLMResultParsers
         /// <summary>
         /// Parses the incoming LLM result into a <see cref="ParsedLLMResponseModel"/> instance.
         /// </summary>
-        /// <param name="result">The output result object from the LLM API</param>
-        /// <param name="assembly">The assembly of the patched method which generated the response</param>
-        /// <returns></returns>
-        public virtual ParsedLLMResponseModel Parse(object result, string assembly)
+        /// <param name="result">The result of the LLM request</param>
+        /// <param name="assembly">The assembly from which the call originated</param>
+        /// <param name="method">Calling method from which the call originated</param>
+        /// <returns>Parsed <see cref="ParsedLLMResponseModel"/>, or an empty model.</returns>
+        public virtual ParsedLLMResponseModel Parse(object result, string assembly, string method)
         {
             if (result == null)
             {
@@ -31,8 +32,8 @@ namespace Aikido.Zen.Core.Patches.LLMs.LLMResultParsers
             }
 
             var parsedResponse = new ParsedLLMResponseModel();
-            parsedResponse.Model = ParseModelName(result, assembly);
-            parsedResponse.TokenUsage = ParseTokenUsage(result, assembly);
+            parsedResponse.Model = ParseModelName(result, assembly, method);
+            parsedResponse.TokenUsage = ParseTokenUsage(result, assembly, method);
 
             return parsedResponse;
         }
@@ -40,10 +41,11 @@ namespace Aikido.Zen.Core.Patches.LLMs.LLMResultParsers
         /// <summary>
         /// Parses the model name of the LLM model from the LLM result object.
         /// </summary>
-        /// <param name="result">The output result object from the LLM API</param>
-        /// <param name="assembly">The assembly of the patched method which generated the response</param>
-        /// <returns></returns>
-        protected virtual string ParseModelName(object result, string assembly)
+        /// <param name="result">The result of the LLM request</param>
+        /// <param name="assembly">The assembly from which the call originated</param>
+        /// <param name="method">Calling method from which the call originated</param>
+        /// <returns>Parsed model name, or "unknown"</returns>
+        protected virtual string ParseModelName(object result, string assembly, string method)
         {
             var modelName = "unknown";
             try
@@ -66,10 +68,11 @@ namespace Aikido.Zen.Core.Patches.LLMs.LLMResultParsers
         /// <summary>
         /// Prases the token usage from the LLM result object.
         /// </summary>
-        /// <param name="result">The output result object from the LLM API</param>
-        /// <param name="assembly">The assembly of the patched method which generated the response</param>
+        /// <param name="result">The result of the LLM request</param>
+        /// <param name="assembly">The assembly from which the call originated</param>
+        /// <param name="method">Calling method from which the call originated</param>
         /// <returns>Token usage object which contains the number of Input and Output tokens used.</returns>
-        protected virtual TokenUsage ParseTokenUsage(object result, string assembly)
+        protected virtual TokenUsage ParseTokenUsage(object result, string assembly, string method)
         {
             var tokenUsage = new TokenUsage();
             try
@@ -97,7 +100,6 @@ namespace Aikido.Zen.Core.Patches.LLMs.LLMResultParsers
                 LogHelper.ErrorLog(Agent.Logger, $"LLM Token Usage Parsing failed from the assembly: {assembly} Reason: {e.Message}");
             }
             return tokenUsage;
-
         }
     }
 }
