@@ -7,9 +7,10 @@ namespace Aikido.Zen.Core.Models.LLMs.Sinks
     /// </summary>
     internal class LLMSink
     {
-        internal LLMSink(string assembly, IList<LLMMethod> methods)
+        internal LLMSink(string assembly, LLMProviderEnum provider, IList<LLMMethod> methods)
         {
             Assembly = assembly;
+            Provider = provider;
             Methods = new List<LLMMethod>(methods).AsReadOnly();
         }
 
