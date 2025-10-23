@@ -51,9 +51,9 @@ namespace Aikido.Zen.Core.Patches.LLMs
                 }
             }
 
-            foreach (var p in _parsers)            
-                if (p.CanParse(assembly))
-                    return p.Parse(result, assembly);
+            foreach (var parser in _parsers)            
+                if (parser.CanParse(assembly))
+                    return parser.Parse(result, assembly);
                 
             return new ParsedLLMResponseModel();
         }
