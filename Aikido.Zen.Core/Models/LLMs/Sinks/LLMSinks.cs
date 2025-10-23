@@ -3,19 +3,19 @@ using System.Collections.Generic;
 namespace Aikido.Zen.Core.Models.LLMs.Sinks
 {
     /// <summary>
-    /// Holds all the LLM sinks of the providers we want to patch
+    /// // Collection of provider LLM sinks that we enumerate to apply runtime patches and instrumentation.
     /// </summary>
     internal static class LLMSinks
     {
         public static IReadOnlyCollection<LLMSink> Sinks = new List<LLMSink>()
             {
-                AddOpenAISink(),
-                AddRystemOpenAISink(),
+                CreateOpenAISink(),
+                CreateRystemOpenAISink(),
             };
 
-        private static LLMSink AddOpenAISink()
+        private static LLMSink CreateOpenAISink()
         {
-            return new LLMSink("OpenAI", new List<LLMMethod>
+            return new LLMSink("OpenAI", LLMProviderEnum.OpenAI, new List<LLMMethod>
                 {
                     new LLMMethod(
                         "CompleteChat",
@@ -40,9 +40,9 @@ namespace Aikido.Zen.Core.Models.LLMs.Sinks
                 });
         }
 
-        private static LLMSink AddRystemOpenAISink()
+        private static LLMSink CreateRystemOpenAISink()
         {
-            return new LLMSink("Rystem.OpenAI", new List<LLMMethod>
+            return new LLMSink("Rystem.OpenAI", LLMProviderEnum.RystemOpenAI, new List<LLMMethod>
                 {
                     new LLMMethod(
                         "ExecuteAsync",
