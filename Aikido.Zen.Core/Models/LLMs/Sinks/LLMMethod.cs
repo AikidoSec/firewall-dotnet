@@ -3,9 +3,6 @@ using System.Collections.ObjectModel;
 
 namespace Aikido.Zen.Core.Models.LLMs.Sinks
 {
-    /// <summary>
-    /// LLM Method that we want to patch
-    /// </summary>
     internal sealed class LLMMethod
     {
         internal string Name { get; }

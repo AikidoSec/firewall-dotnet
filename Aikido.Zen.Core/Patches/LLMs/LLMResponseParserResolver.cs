@@ -13,10 +13,15 @@ namespace Aikido.Zen.Core.Patches.LLMs
     /// <remarks>This class maintains a collection of response parsers and determines the correct parser to
     /// use based on the  provided result object and assembly name. If the result is a <see cref="Task"/>, it waits for
     /// the task to  complete and extracts the result before attempting to parse it.</remarks>
-    internal class LLMResponseParserResolver
+    internal static class LLMResponseParserResolver
     {
         private static readonly List<ILLMResponseParser> _parsers = new List<ILLMResponseParser>();
 
+        /// <summary>
+        /// Adds the available parsers to the resolver.
+        /// Contains a Generic parser as a fallback, which should always be the last one in the list
+        /// since we itterate over it.
+        /// </summary>
         static LLMResponseParserResolver()
         {
             _parsers.Add(new OpenAIResponseParser());
@@ -24,6 +29,13 @@ namespace Aikido.Zen.Core.Patches.LLMs
             _parsers.Add(new GenericResponseParser());
         }
 
+        /// <summary>
+        /// Entry for parsing LLM responses. Chooses the correct parser based on the individual parser's CanParse method and assembly name.
+        /// It also checks if the result is a Task and extracts the result if it is.
+        /// </summary>
+        /// <param name="result">The result of the LLM request</param>
+        /// <param name="assembly">The assembly from which the call originated</param>
+        /// <returns>Parsed response or an empty model if the parsing failed</returns>
         internal static ParsedLLMResponseModel Parse(object result, string assembly)
         {
             //If we are patching an async method, we need to get the result from the Task
@@ -40,7 +52,7 @@ namespace Aikido.Zen.Core.Patches.LLMs
             }
 
             foreach (var p in _parsers)            
-                if (p.CanParse(result, assembly))
+                if (p.CanParse(assembly))
                     return p.Parse(result, assembly);
                 
             return new ParsedLLMResponseModel();
