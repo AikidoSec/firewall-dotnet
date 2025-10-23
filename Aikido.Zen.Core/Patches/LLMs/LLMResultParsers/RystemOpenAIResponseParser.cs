@@ -13,7 +13,7 @@ namespace Aikido.Zen.Core.Patches.LLMs.LLMResultParsers
     internal sealed class RystemOpenAIResponseParser : BaseResponseParser
     {
 
-        public override bool CanParse(object result, string assembly) => assembly.Contains(LLMSinks.Sinks.First(s => s.Provider == LLMProviderEnum.RystemOpenAI).Assembly);
+        public override bool CanParse(string assembly) => assembly.Contains(LLMSinks.Sinks.First(s => s.Provider == LLMProviderEnum.RystemOpenAI).Assembly);
 
         /// <summary>
         /// Retrieves the token usage from the LLM result object. Specific to RystemOpenAI structure.

@@ -14,7 +14,7 @@ namespace Aikido.Zen.Core.Patches.LLMs.LLMResultParsers
     internal abstract class BaseResponseParser : ILLMResponseParser
     {
         protected const BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase;
-        public abstract bool CanParse(object result, string assembly);
+        public abstract bool CanParse(string assembly);
 
         /// <summary>
         /// Parses the incoming LLM result into a <see cref="ParsedLLMResponseModel"/> instance.
