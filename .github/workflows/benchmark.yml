@@ -1,6 +1,8 @@
 on:
     push: {}
     workflow_call: {}
+permissions:
+    contents: read
 
 jobs:
     benchmark:
