@@ -3,6 +3,8 @@ name: Unit tests
 on:
     workflow_call: {}
     push: {}
+permissions:
+    contents: read
 
 jobs:
     build-and-test:
