@@ -1,8 +1,6 @@
-using NUnit.Framework;
-using Aikido.Zen.Core.Helpers;
-using System.Collections.Generic;
 using Aikido.Zen.Core.Helpers.OpenAPI;
 using Aikido.Zen.Core.Models;
+using System.Diagnostics;
 
 namespace Aikido.Zen.Test.Helpers
 {
@@ -184,6 +182,54 @@ namespace Aikido.Zen.Test.Helpers
         {
             var result = SchemaHelper.MergeDataSchemas(null, null);
             Assert.That(result, Is.Null);
+        }
+
+        [Test]
+        public void GetDataSchema_WithCircularReference_DoesNotHangOrStackOverflow()
+        {
+            // Using a Stopwatch because [Timeout] is deprecated
+            var stopwatch = Stopwatch.StartNew();
+
+            // Create a complex circular reference structure
+            var parent = new Dictionary<string, object>();
+            var child1 = new Dictionary<string, object>();
+            var child2 = new Dictionary<string, object>();
+            var grandchild = new Dictionary<string, object>();
+            var list = new List<object>();
+
+            // Create circular references at multiple levels
+            parent["child1"] = child1;
+            parent["child2"] = child2;
+            parent["items"] = list;
+            parent["name"] = "parent";
+
+            child1["grandchild"] = grandchild;
+            child1["parent"] = parent; // Back reference to parent
+            child1["name"] = "child1";
+
+            child2["sibling"] = child1;
+            child2["self"] = child2; // Self reference
+            child2["name"] = "child2";
+
+            grandchild["root"] = parent; // Reference to root
+            grandchild["parent"] = child1; // Reference to parent
+            grandchild["self"] = grandchild; // Self reference
+            grandchild["name"] = "grandchild";
+
+            list.Add(parent); // Circular reference in array
+            list.Add(child1);
+            list.Add("string value");
+
+            var result = SchemaHelper.GetDataSchema(parent);
+
+            stopwatch.Stop();
+
+            Assert.That(result.Type[0], Is.EqualTo("object"));
+            Assert.That(result.Properties, Is.Not.Null);
+            Assert.That(result.Properties.ContainsKey("name"), Is.True);
+            Assert.That(result.Properties.ContainsKey("child1"), Is.True);
+            Assert.That(result.Properties.ContainsKey("child2"), Is.True);
+            Assert.That(stopwatch.ElapsedMilliseconds, Is.LessThan(100));
         }
     }
 }

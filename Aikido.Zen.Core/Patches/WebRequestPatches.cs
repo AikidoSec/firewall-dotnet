@@ -49,10 +49,9 @@ namespace Aikido.Zen.Core.Patches
                 return true; // Prevent re-entrancy
             }
             // Exclude certain assemblies to avoid stack overflow issues
-            var callingAssembly = ReflectionHelper.GetCallingAssembly();
-            if (ReflectionHelper.ShouldExcludeAssembly(callingAssembly))
+            if (ReflectionHelper.ShouldSkipAssembly())
             {
-                return true; // Skip processing for excluded assemblies
+                return true;
             }
 
             try

@@ -1,4 +1,3 @@
-using System;
 using System.Diagnostics;
 using System.Reflection;
 
@@ -30,10 +29,9 @@ namespace Aikido.Zen.Core.Patches
             }
 
             // Exclude certain assemblies to avoid stack overflow issues
-            var callingAssembly = ReflectionHelper.GetCallingAssembly();
-            if (ReflectionHelper.ShouldExcludeAssembly(callingAssembly))
+            if (ReflectionHelper.ShouldSkipAssembly())
             {
-                return true; // Skip processing for excluded assemblies
+                return true;
             }
 
 

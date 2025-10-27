@@ -96,12 +96,12 @@ namespace Aikido.Zen.Core.Helpers
         }
 
         /// <summary>
-        /// This method is crucial for preventing re-entrancy issues with certain IL weavers and patchers.
+        /// Checks if we should skip patching of the current assembly. Crucial for preventing re-entrancy issues with certain IL weavers and patchers.
         /// </summary>
-        /// <param name="assemblyFullName">The full name of the assembly to check.</param>
         /// <returns>True if the assembly should be excluded from patching, false otherwise.</returns>
-        public static bool ShouldExcludeAssembly(Assembly assembly)
+        public static bool ShouldSkipAssembly()
         {
+            var assembly =  GetCallingAssembly();
             if (assembly == null)
                 return false;
 
@@ -114,7 +114,6 @@ namespace Aikido.Zen.Core.Helpers
             }
 
             // Exclude assemblies that are known to cause issues
-            // Using FullName which includes version info, so we check if it contains the assembly name
             var excludedAssemblies = new[]
             {
                 // IL weaving / patching
@@ -157,24 +156,18 @@ namespace Aikido.Zen.Core.Helpers
 
             return false;
         }
+
         /// <summary>
         /// Retrieves the calling assembly by examining the stack trace.
         /// </summary>
         /// <returns>The calling assembly</returns>
-        public static Assembly GetCallingAssembly()
+        private static Assembly GetCallingAssembly()
         {
             try
             {
                 var stackTrace = new StackTrace();
                 var frames = stackTrace.GetFrames();
 
-                Assembly[] assemblies = new Assembly[frames.Length];
-                for (int i = 0; i < frames.Length; i++)
-                {
-                    var method = frames[i].GetMethod();
-                    var assembly = method?.DeclaringType?.Assembly;
-                    assemblies[i] = assembly;
-                }
                 // Skip the first few frames which are our patch methods
                 for (int i = 2; i < frames.Length; i++)
                 {

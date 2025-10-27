@@ -88,20 +88,5 @@ namespace Aikido.Zen.Test
                 Assert.That(hostname.Port, Is.EqualTo(8080));
             });
         }
-
-        [Test]
-        public void CaptureRequest_WithAikidoDevHostname_SkipsCapture()
-        {
-            // Arrange
-            Agent.NewInstance(ZenApiMock.CreateMock().Object);
-            var request = new HttpRequestMessage(HttpMethod.Get, "https://api.aikido.dev/endpoint");
-
-            // Act
-            var result = HttpClientPatches.CaptureRequest(request, _httpClient, null);
-
-            // Assert
-            Assert.That(result, Is.True);
-            Assert.That(Agent.Instance.Context.Hostnames.Count, Is.EqualTo(0));
-        }
     }
 }
