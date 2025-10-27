@@ -24,17 +24,13 @@ namespace Aikido.Zen.Core.Patches
         /// <param name="sql">The SQL command to execute.</param>
         public static bool OnCommandExecuting(object[] __args, MethodBase __originalMethod, string sql, string assembly, Context context)
         {
-            if (_isProcessing)
-            {
-                return true; // Prevent re-entrancy
-            }
+            // Prevent re-entrancy 
+            if (_isProcessing)            
+                return true;           
 
             // Exclude certain assemblies to avoid stack overflow issues
-            if (ReflectionHelper.ShouldSkipAssembly())
-            {
-                return true;
-            }
-
+            if (ReflectionHelper.ShouldSkipAssembly())            
+                return true;            
 
             // Determine sink and context status regardless of detection outcome
             var stopwatch = Stopwatch.StartNew();
@@ -48,6 +44,7 @@ namespace Aikido.Zen.Core.Patches
             try
             {
                 _isProcessing = true;
+
                 // Perform detection only if context and sql are available
                 if (context != null && sql != null)
                 {

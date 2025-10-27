@@ -29,18 +29,19 @@ namespace Aikido.Zen.Core.Patches
         /// <param name="context">The current Aikido context.</param>
         public static void OnLLMCallCompleted(object[] __args, MethodBase __originalMethod, string assembly, object result, Context context)
         {
-            if(_isProcessing)
-                return; // Prevent re-entrancy
+            // Prevent re-entrancy
+            if (_isProcessing)
+                return; 
 
             // Exclude certain assemblies to avoid stack overflow issues
-            if (ReflectionHelper.ShouldSkipAssembly())
-            {
+            if (ReflectionHelper.ShouldSkipAssembly())            
                 return;
-            }
+            
 
             try
             {
                 _isProcessing = true;
+
                 var stopWatch = Stopwatch.StartNew();
                 if (context == null || result == null) return;
 

@@ -25,16 +25,14 @@ namespace Aikido.Zen.Core.Patches
         /// <returns>Always returns true. Throws an exception if a blocked attack is detected.</returns>
         public static bool OnFileOperation(string[] paths, MethodBase originalMethod, Context context)
         {
-            if(_isProcessing)
-            {
-                return true; // Prevent re-entrancy that can occur during Costura assembly loading
-            }
+            // Prevent re-entrancy
+            if (_isProcessing)            
+                return true;
 
             // Exclude certain assemblies to avoid stack overflow issues
-            if (ReflectionHelper.ShouldSkipAssembly())
-            {
+            if (ReflectionHelper.ShouldSkipAssembly())            
                 return true;
-            }
+            
 
             var methodInfo = originalMethod as MethodInfo;
             var operation = $"{methodInfo?.DeclaringType?.Name}.{methodInfo?.Name}";

@@ -58,19 +58,20 @@ namespace Aikido.Zen.Core.Patches
         /// <returns>True if the original method should continue execution; otherwise, false.</returns>
         internal static bool CaptureRequest(HttpRequestMessage request, HttpClient __instance, System.Reflection.MethodBase __originalMethod)
         {
-            if (_isProcessing)
-            {
-                return true; // Prevent re-entrancy
-            }
+            // Prevent re-entrancy
+            if (_isProcessing)            
+                return true;
 
             // Exclude certain assemblies to avoid stack overflow issues
-            if (ReflectionHelper.ShouldSkipAssembly())
-            {
+            if (ReflectionHelper.ShouldSkipAssembly())            
                 return true;
-            }
+            
+
 
             try
             {
+                _isProcessing = true;
+
                 var uri = __instance.BaseAddress == null
                     ? request.RequestUri
                     : request.RequestUri == null

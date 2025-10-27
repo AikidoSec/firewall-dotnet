@@ -44,15 +44,14 @@ namespace Aikido.Zen.Core.Patches
 
         internal static bool CaptureRequest(WebRequest __instance, System.Reflection.MethodBase __originalMethod)
         {
-            if (_isProcessing)
-            {
-                return true; // Prevent re-entrancy
-            }
-            // Exclude certain assemblies to avoid stack overflow issues
-            if (ReflectionHelper.ShouldSkipAssembly())
-            {
+            // Prevent re-entrancy 
+            if (_isProcessing)            
                 return true;
-            }
+            
+            // Exclude certain assemblies to avoid stack overflow issues
+            if (ReflectionHelper.ShouldSkipAssembly())            
+                return true;
+            
 
             try
             {
