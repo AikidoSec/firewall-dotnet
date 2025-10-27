@@ -92,6 +92,10 @@ namespace Aikido.Zen.Core.Patches
                 attackDetected = false; // Reset flags as detection failed
                 blocked = false;
             }
+            finally
+            {
+                _isProcessing = false;
+            }
 
             stopwatch.Stop();
             // Record the call attempt statistics
@@ -102,10 +106,6 @@ namespace Aikido.Zen.Core.Patches
             catch
             {
                 LogHelper.ErrorLog(Agent.Logger, "Error recording Process.Start OnInspectedCall stats.");
-            }
-            finally
-            {
-                _isProcessing = false;
             }
 
             // Handle blocking
