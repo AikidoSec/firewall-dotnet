@@ -55,6 +55,8 @@ namespace Aikido.Zen.Core.Patches
 
             try
             {
+                _isProcessing = true;
+
                 var (hostname, port) = UriHelper.ExtractHost(__instance.RequestUri);
                 Agent.Instance.CaptureOutboundRequest(hostname, port);
                 var methodInfo = __originalMethod as MethodInfo;
