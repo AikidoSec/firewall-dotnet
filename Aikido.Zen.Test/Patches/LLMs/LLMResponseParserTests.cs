@@ -23,11 +23,14 @@ internal class LLMResponseParserTests
         var assemblyName = "OpenAI";
         var result = new
         {
-            Model = "gpt-4o-mini",
-            Usage = new
+            Value= new
             {
-                InputTokenCount = "150",
-                OutputTokenCount = "75"
+                Model = "gpt-4o-mini",
+                Usage = new
+                {
+                    InputTokenCount = "150",
+                    OutputTokenCount = "75"
+                }
             }
         };
         // Act
@@ -56,11 +59,14 @@ internal class LLMResponseParserTests
         var assemblyName = "OpenAI";
         var result = new
         {
-            WrongModel = "gpt-4o-mini",
-            Usage = new
+            Value = new
             {
-                InputTokenCount = "150",
-                OutputTokenCount = "75"
+                WrongModel = "gpt-4o-mini",
+                Usage = new
+                {
+                    InputTokenCount = "150",
+                    OutputTokenCount = "75"
+                }
             }
         };
         // Act
@@ -89,11 +95,14 @@ internal class LLMResponseParserTests
         var assemblyName = "OpenAI";
         var result = new
         {
-            Model = "gpt-4o-mini",
-            WrongUsage = new
+            Value = new
             {
-                InputTokenCount = "150",
-                OutputTokenCount = "75"
+                Model = "gpt-4o-mini",
+                WrongUsage = new
+                {
+                    InputTokenCount = "150",
+                    OutputTokenCount = "75"
+                }
             }
         };
         // Act
@@ -122,11 +131,14 @@ internal class LLMResponseParserTests
         var assemblyName = "OpenAI";
         var result = new
         {
-            Model = "gpt-4o-mini",
-            Usage = new
+            Value = new
             {
-                WrongInputTokenCount = "150",
-                OutputTokenCount = "75"
+                Model = "gpt-4o-mini",
+                Usage = new
+                {
+                    WrongInputTokenCount = "150",
+                    OutputTokenCount = "75"
+                }
             }
         };
         // Act
@@ -152,14 +164,17 @@ internal class LLMResponseParserTests
             }
         };
         var openAIParser = new OpenAIResponseParser();
-        var assemblyName = "OpenAI";
+        var assemblyName = "OpenAI";        
         var result = new
         {
-            Model = "gpt-4o-mini",
-            Usage = new
+            Value = new
             {
-                InputTokenCount = "150",
-                WrongOutputTokenCount = "0"
+                Model = "gpt-4o-mini",
+                Usage = new
+                {
+                    InputTokenCount = "150",
+                    WrongOutputTokenCount = "75"
+                }
             }
         };
         // Act
