@@ -50,10 +50,9 @@ namespace Aikido.Zen.DotNetCore.Patches
         /// <param name="__result">The result returned by the original method.</param>
         private static void OnLLMCallCompleted(object[] __args, MethodBase __originalMethod, object __instance, object __result)
         {
-            var assembly = __instance?.GetType().Assembly.FullName?.Split(new[] { ", Culture=" }, StringSplitOptions.RemoveEmptyEntries)[0] ?? string.Empty;
-            var resolvedResult = LLMResultHelper.ResolveResult(__result);
+            var assembly = __instance?.GetType().Assembly.FullName?.Split(new[] { ", Culture=" }, StringSplitOptions.RemoveEmptyEntries)[0] ?? string.Empty;            
 
-            LLMPatcher.OnLLMCallCompleted(__args, __originalMethod, assembly, resolvedResult, Zen.GetContext());
+            LLMPatcher.OnLLMCallCompleted(__args, __originalMethod, assembly, __result, Zen.GetContext());
         }
     }
 }

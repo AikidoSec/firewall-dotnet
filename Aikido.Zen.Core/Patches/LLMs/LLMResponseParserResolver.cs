@@ -45,9 +45,7 @@ namespace Aikido.Zen.Core.Patches.LLMs
                 if (resultProperty != null)
                 {
                     var taskResult = resultProperty.GetValue(task);
-                    var resultType = taskResult.GetType();
-                    var usageProp = resultType.GetProperty("Value");
-                    result = usageProp?.GetValue(taskResult);
+                    result = taskResult;
                 }
             }
 
