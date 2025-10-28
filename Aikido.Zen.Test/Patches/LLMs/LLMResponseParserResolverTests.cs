@@ -1,8 +1,7 @@
-using System.Reflection;
-
 using Aikido.Zen.Core.Models.LLMs;
 using Aikido.Zen.Core.Patches.LLMs;
 using Aikido.Zen.Core.Patches.LLMs.LLMResultParsers.Abstractions;
+using System.Reflection;
 
 namespace Aikido.Zen.Tests;
 
@@ -29,7 +28,7 @@ internal class LLMResponseParserResolverTests
     }
 
     [Test]
-    public void Parse_UnwrapsTaskResultValueBeforeParsing()
+    public void Parse_UnwrapsTaskResultValueBeforeParsing_ReturnsInnerObject()
     {
         // Arrange: parser that only matches after Task unwrap (inner Value is the sentinel string)
         var expected = new ParsedLLMResponseModel();
@@ -48,6 +47,66 @@ internal class LLMResponseParserResolverTests
 
         // Assert
         Assert.That(expected, Is.SameAs(parsed));
+    }
+    [Test]
+    public void Parse_OnNullInput_returnsNull()
+    {
+        // Arrange      
+        var parser = new TestParser(
+            canParse: (assembly) => assembly == "TestProvider",
+            parse: (result, assembly) => null
+        );
+        _registryParsers.Insert(0, parser);
+
+        var assembly = "TestProvider";
+
+        // Act
+        var result = LLMResponseParserResolver.Parse(null, assembly);
+
+        // Assert
+        Assert.That(result, Is.Null);
+    }
+
+    [Test]
+    public void Parse_WithRegularObject_ReturnsOriginalObject()
+    {
+        // Arrange      
+        var input = new ParsedLLMResponseModel();
+        var parser = new TestParser(
+            canParse: (assembly) => assembly == "TestProvider",
+            parse: (result, assembly) => input
+        );
+        _registryParsers.Insert(0, parser);
+
+        var assembly = "TestProvider";
+
+
+        // Act
+        var result = LLMResponseParserResolver.Parse(input, assembly);
+
+        // Assert
+        Assert.That(result, Is.EqualTo(input));
+        Assert.That(result, Is.SameAs(input));
+    }
+
+    [Test]
+    public void Parse_WithTaskWithNullResult_ReturnsNull()
+    {
+        // Arrange
+        var parser = new TestParser(
+            canParse: (assembly) => assembly == "TestProvider",
+            parse: (result, assembly) => null
+        );
+        _registryParsers.Insert(0, parser);
+
+        var assembly = "TestProvider";
+        var task = Task.FromResult<object>(null);
+
+        // Act
+        var result = LLMResponseParserResolver.Parse(task, assembly);
+
+        // Assert
+        Assert.That(result, Is.Null);
     }
 
     [Test]
