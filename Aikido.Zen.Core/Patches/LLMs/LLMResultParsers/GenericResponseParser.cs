@@ -5,6 +5,6 @@ namespace Aikido.Zen.Core.Patches.LLMs.LLMResultParsers
     /// </summary>
     internal sealed class GenericResponseParser : BaseResponseParser
     {
-        public override bool CanParse(string assembly) => true; // Fallback parser in case no other parser matches
+        public override bool CanParse(string assembly) => true; // Fallback parser as a best effort in case no other is matched
     }
 }
