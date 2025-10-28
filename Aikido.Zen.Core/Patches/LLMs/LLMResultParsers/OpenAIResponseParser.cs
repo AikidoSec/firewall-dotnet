@@ -13,6 +13,18 @@ namespace Aikido.Zen.Core.Patches.LLMs.LLMResultParsers
     internal sealed class OpenAIResponseParser : BaseResponseParser
     {
         public override bool CanParse(string assembly) => assembly.Contains(LLMSinks.Sinks.First(s => s.Provider == LLMProviderEnum.OpenAI).Assembly);
+        /// <summary>
+        /// Parses the incoming LLM result into a <see cref="ParsedLLMResponseModel"/> instance.
+        /// </summary>
+        /// <param name="result">The output result object from the LLM API</param>
+        /// <param name="assembly">The assembly of the patched method which generated the response</param>
+        /// <returns></returns>
+        public override ParsedLLMResponseModel Parse(object result, string assembly)
+        {
+            result = UnwrapChatCompletion(result);
+
+            return base.Parse(result, assembly);
+        }
 
         /// <summary>
         /// Retrieves the token usage from the LLM result object. Specific to OpenAI structure.
@@ -57,6 +69,18 @@ namespace Aikido.Zen.Core.Patches.LLMs.LLMResultParsers
                 LogHelper.ErrorLog(Agent.Logger, $"LLM Token Usage Parsing failed from the assembly: {assembly} Reason: {e.Message}");
             }
             return new TokenUsage();
+        }
+
+        /// <summary>
+        /// Unwraps the object from System.ClientModel.ClientResult<T> to get the actual result value
+        /// </summary>
+        /// <param name="result">Incoming response object</param>
+        /// <returns>Unwrapped result object or null</returns>
+        private static object UnwrapChatCompletion(object result)
+        {
+            var completionResult = result?.GetType();
+            var valueProp = completionResult?.GetProperty("Value");
+            return valueProp?.GetValue(result);
         }
     }
 }
