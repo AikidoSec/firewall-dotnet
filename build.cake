@@ -260,10 +260,6 @@ Task("Test")
         {
             Warning("Coverage file was not generated!");
         }
-    })
-    .OnError(ex =>
-    {
-        Error($"Test task failed with error: {ex.Message}");
     });
 
 

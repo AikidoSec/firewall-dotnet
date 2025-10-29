@@ -1,13 +1,11 @@
-using System;
-using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Security.AccessControl;
 using System.Threading;
-using Aikido.Zen.Core;
-using Aikido.Zen.Core.Patches;
+
 using HarmonyLib;
+
+using Aikido.Zen.Core.Patches;
 
 namespace Aikido.Zen.DotNetFramework.Patches
 {

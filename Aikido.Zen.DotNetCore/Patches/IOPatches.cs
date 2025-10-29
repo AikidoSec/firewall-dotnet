@@ -1,7 +1,8 @@
 using System.Reflection;
-using System.Security.AccessControl;
-using Aikido.Zen.Core.Patches;
+
 using HarmonyLib;
+
+using Aikido.Zen.Core.Patches;
 
 namespace Aikido.Zen.DotNetCore.Patches
 {

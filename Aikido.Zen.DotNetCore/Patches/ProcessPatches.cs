@@ -1,8 +1,8 @@
-using System;
-using System.Diagnostics;
 using System.Reflection;
+
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Patches;
+
 using HarmonyLib;
 
 namespace Aikido.Zen.DotNetCore.Patches

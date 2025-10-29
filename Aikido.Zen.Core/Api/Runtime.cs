@@ -43,14 +43,13 @@ namespace Aikido.Zen.Core.Api
                 }
                 catch (TaskCanceledException)
                 {
-                    if (!cts.Token.IsCancellationRequested)
-                        return new ReportingAPIResponse { Success = false, Error = "timeout" };
-
-                    throw;
+                    LogHelper.ErrorLog(Agent.Logger, "Error retrieving config: Operation canceled");
+                    return new ReportingAPIResponse { Success = false, Error = "cancelation" };
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception("An error occurred while reporting", ex);
+                    LogHelper.ErrorLog(Agent.Logger, $"Error retrieving config: {ex.Message}");
+                    return new ReportingAPIResponse { Success = false, Error = "unknown_error" };
                 }
             }
         }
