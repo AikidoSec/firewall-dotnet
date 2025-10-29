@@ -159,15 +159,14 @@ namespace Aikido.Zen.Core.Vulnerabilities
             switch (result)
             {
                 case 0:
-                    return false; // No injection detected
+                    return false; // return code 0 comes from zen-internals to indicate that there was no sql injection
                 case 1:
-                    return true; // Injection detected
+                    return true; // return code 1 comes from zen-internals to indicate that there was a sql injection detected
                 case 2:
-                    // Internal error
                     LogHelper.ErrorLog(Agent.Logger, "Error in detecting SQL injection: internal error");
                     return false;
                 case 3:
-                    // SQL tokenization failed
+                    // return code 3 is what zen-internals returns when the sql tokenization has failed, we don't block this.
                     return false;
                 default:
                     LogHelper.ErrorLog(Agent.Logger, $"Unexpected result from SQL injection detection: {result}");

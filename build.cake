@@ -17,7 +17,7 @@ if (!string.IsNullOrEmpty(framework))
 }
 var solution = "./Aikido.Zen.sln";
 var projectName = "Aikido.Zen.Core";
-var zenInternalsVersion = "0.1.48";
+var zenInternalsVersion = "0.1.53";
 var libVersion = Argument("libVersion", "1.2.5");
 
 var baseUrl = $"https://github.com/AikidoSec/zen-internals/releases/download/v{zenInternalsVersion}/";
