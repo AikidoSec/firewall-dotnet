@@ -167,7 +167,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
                     LogHelper.ErrorLog(Agent.Logger, "Error in detecting SQL injection: internal error");
                     return false;
                 case 3:
-                    // SQL tokenization failed
+                    // return code 3 is what zen-internals returns when the sql tokenization has failed, we don't block this.
                     return false;
                 default:
                     LogHelper.ErrorLog(Agent.Logger, $"Unexpected result from SQL injection detection: {result}");
