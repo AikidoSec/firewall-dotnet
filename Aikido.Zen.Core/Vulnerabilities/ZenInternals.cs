@@ -159,7 +159,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
             switch (result)
             {
                 case 0:
-                    return false; // No injection detected
+                    return false; // return code 0 comes from zen-internals to indicate that there was no sql injection
                 case 1:
                     return true; // Injection detected
                 case 2:
