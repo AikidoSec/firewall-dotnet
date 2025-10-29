@@ -161,7 +161,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 case 0:
                     return false; // return code 0 comes from zen-internals to indicate that there was no sql injection
                 case 1:
-                    return true; // Injection detected
+                    return true; // return code 1 comes from zen-internals to indicate that there was a sql injection detected
                 case 2:
                     // Internal error
                     LogHelper.ErrorLog(Agent.Logger, "Error in detecting SQL injection: internal error");
