@@ -20,7 +20,7 @@ What actually happened (include logs or error messages if possible).
 - Language version: [e.g. .NET 8.0, .NET Framework 4.8]
 - Framework: [e.g. ASP.NET Core, ASP.NET Framework]
 - Environment: [local, Docker, cloud, etc.]
-- Package version: [e.g. 1.2.3]
+- Aikido Package version: [e.g. 1.2.3]
 
 **Additional context**
 Add any other details that might help troubleshoot.
