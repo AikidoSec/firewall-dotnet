@@ -7,6 +7,8 @@
     <UserSecretsId>6c0615d2-37e7-425f-906b-95a936adb05c</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Anthropic.SDK" Version="5.7.1" />
+    <PackageReference Include="AWSSDK.BedrockRuntime" Version="4.0.7.5" />
     <PackageReference Include="BenchmarkDotNet" Version="0.14.0" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.0" />
