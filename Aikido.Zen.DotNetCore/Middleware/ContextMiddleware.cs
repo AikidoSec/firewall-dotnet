@@ -198,23 +198,12 @@ namespace Aikido.Zen.DotNetCore.Middleware
 
         /// <summary>
         /// Gets the client IP address, considering X-Forwarded-For headers for proxied requests.
+        /// See https://help.aikido.dev/zen-firewall/zen-installation-instructions/proxy-load-balancer-settings#additional-configuration-for-aspnet-core
         /// </summary>
         /// <param name="httpContext">The HTTP context containing the request information</param>
         /// <returns>The client IP address as a string</returns>
         private static string GetClientIp(HttpContext httpContext)
         {
-            // Check for X-Forwarded-For header first (for proxied requests)
-            if (httpContext.Request.Headers.TryGetValue("X-Forwarded-For", out var forwardedFor))
-            {
-                var firstIp = forwardedFor.FirstOrDefault();
-                if (!string.IsNullOrEmpty(firstIp))
-                {
-                    // X-Forwarded-For can contain multiple IPs, take the first one
-                    return firstIp.Split(',')[0].Trim();
-                }
-            }
-
-            // Fall back to the connection's remote IP address
             return httpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty;
         }
 
