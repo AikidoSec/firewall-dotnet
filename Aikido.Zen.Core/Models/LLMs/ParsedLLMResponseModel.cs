@@ -6,7 +6,7 @@ namespace Aikido.Zen.Core.Models.LLMs
     public class ParsedLLMResponseModel
     {
         internal string Model { get; set; } = "unknown";
-        internal TokenUsage TokenUsage { get; set; }
+        internal TokenUsage TokenUsage { get; set; } = new TokenUsage();
 
     }
 
