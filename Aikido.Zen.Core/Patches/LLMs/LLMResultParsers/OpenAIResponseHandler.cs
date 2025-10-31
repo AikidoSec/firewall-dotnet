@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Reflection;
 
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models.LLMs;
@@ -10,10 +11,16 @@ namespace Aikido.Zen.Core.Patches.LLMs.LLMResultParsers
     /// <summary>
     /// Parses LLM response from OpenAI model into <see cref="ParsedLLMResponseModel"/> instance.
     /// </summary>
-    internal sealed class OpenAIResponseParser : BaseResponseParser
+    internal sealed class OpenAIResponseHandler : BaseResponseHandler
     {
-        public override bool CanParse(string assembly) => assembly.Contains(LLMSinks.Sinks.First(s => s.Provider == LLMProviderEnum.OpenAI).Assembly);
+        public override bool CanHandle(string assembly) => assembly.Contains(LLMSinks.Sinks.First(s => s.Provider == LLMProviderEnum.OpenAI).Assembly);
 
+        public override void Handle(object result, string assembly, MethodBase method, Context context)
+        {
+            result = UnwrapChatCompletion(result);
+
+            base.Handle(result, assembly, method, context);
+        }
         /// <summary>
         /// Retrieves the token usage from the LLM result object. Specific to OpenAI structure.
         /// </summary>
@@ -26,6 +33,7 @@ namespace Aikido.Zen.Core.Patches.LLMs.LLMResultParsers
             try
             {
                 var tokenUsage = new TokenUsage();
+
                 // Usage
                 var resultType = result.GetType();
                 var usageProp = resultType.GetProperty("Usage", bindingFlags);
@@ -58,6 +66,18 @@ namespace Aikido.Zen.Core.Patches.LLMs.LLMResultParsers
                 LogHelper.ErrorLog(Agent.Logger, $"LLM Token Usage Parsing failed from the assembly: {assembly} Reason: {e.Message}");
             }
             return new TokenUsage();
+        }
+
+        /// <summary>
+        /// Unwraps the object from System.ClientModel.ClientResult<T> to get the actual result value
+        /// </summary>
+        /// <param name="result">Incoming response object</param>
+        /// <returns>Unwrapped result object or null</returns>
+        private static object UnwrapChatCompletion(object result)
+        {
+            var completionResult = result?.GetType();
+            var valueProp = completionResult?.GetProperty("Value");
+            return valueProp?.GetValue(result);
         }
     }
 }
