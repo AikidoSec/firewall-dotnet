@@ -9,17 +9,16 @@ namespace Aikido.Zen.Core.Models.LLMs.Sinks
     {
         public static IReadOnlyCollection<LLMSink> Sinks = new List<LLMSink>()
             {
-                CreateAnthropicSink(),
                 CreateAwsBedrockSink(),
-                CreateAzureOpenAISink(),
                 CreateOpenAISink(),
                 CreateRystemOpenAISink(),
             };
-        private static LLMSink CreateAnthropicSink()
+        
+        private static LLMSink CreateAwsBedrockSink()
         {
-            return new LLMSink("AWSSDK.BedrockRuntime", LLMProviderEnum.Anthropic, new List<LLMMethod>
+            return new LLMSink("AWSSDK.BedrockRuntime", LLMProviderEnum.AwsBedrock, new List<LLMMethod>
             {
-                // Converse (normalized chat API)
+                // Converse
                 new LLMMethod(
                     "Converse",
                     "Amazon.BedrockRuntime.AmazonBedrockRuntimeClient",
@@ -57,7 +56,7 @@ namespace Aikido.Zen.Core.Models.LLMs.Sinks
                     }
                 ),
 
-                // Generic model invocation
+                // Model invocation
                 new LLMMethod(
                     "InvokeModel",
                     "Amazon.BedrockRuntime.AmazonBedrockRuntimeClient",
@@ -75,71 +74,7 @@ namespace Aikido.Zen.Core.Models.LLMs.Sinks
                         "System.Threading.CancellationToken"
                     }
                 ),
-
-                // Streaming invocation
-                new LLMMethod(
-                    "InvokeModelWithResponseStream",
-                    "Amazon.BedrockRuntime.AmazonBedrockRuntimeClient",
-                    new[]
-                    {
-                        "Amazon.BedrockRuntime.Model.InvokeModelWithResponseStreamRequest"
-                    }
-                ),
-                new LLMMethod(
-                    "InvokeModelWithResponseStreamAsync",
-                    "Amazon.BedrockRuntime.AmazonBedrockRuntimeClient",
-                    new[]
-                    {
-                        "Amazon.BedrockRuntime.Model.InvokeModelWithResponseStreamRequest",
-                        "System.Threading.CancellationToken"
-                    }
-                ),
             });
-        }
-        
-        private static LLMSink CreateAwsBedrockSink()
-        {
-            return new LLMSink("Rystem.OpenAI", LLMProviderEnum.RystemOpenAI, new List<LLMMethod>
-                {
-                    new LLMMethod(
-                        "ExecuteAsync",
-                        "Rystem.OpenAi.Chat.OpenAiChat",
-                        new[]
-                        {
-                            "System.Threading.CancellationToken"
-                        }
-                    ),
-                    new LLMMethod(
-                        "ExecuteAsStreamAsync",
-                        "Rystem.OpenAi.Chat.OpenAiChat",
-                        new[]
-                        {
-                            "System.Threading.CancellationToken"
-                        }
-                    )
-                });
-        }
-        private static LLMSink CreateAzureOpenAISink()
-        {
-            return new LLMSink("Rystem.OpenAI", LLMProviderEnum.RystemOpenAI, new List<LLMMethod>
-                {
-                    new LLMMethod(
-                        "ExecuteAsync",
-                        "Rystem.OpenAi.Chat.OpenAiChat",
-                        new[]
-                        {
-                            "System.Threading.CancellationToken"
-                        }
-                    ),
-                    new LLMMethod(
-                        "ExecuteAsStreamAsync",
-                        "Rystem.OpenAi.Chat.OpenAiChat",
-                        new[]
-                        {
-                            "System.Threading.CancellationToken"
-                        }
-                    )
-                });
         }
         private static LLMSink CreateOpenAISink()
         {
@@ -188,10 +123,6 @@ namespace Aikido.Zen.Core.Models.LLMs.Sinks
                         }
                     )
                 });
-        }
-
-
-
-        
+        }        
     }
 }
