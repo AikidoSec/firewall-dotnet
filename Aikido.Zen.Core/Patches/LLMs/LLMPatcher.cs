@@ -1,8 +1,11 @@
-using System.Diagnostics;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 
 using Aikido.Zen.Core.Helpers;
+using Aikido.Zen.Core.Patches.LLMs.LLMResultParsers;
+using Aikido.Zen.Core.Patches.LLMs.LLMResultParsers.Abstractions;
 
 [assembly: InternalsVisibleTo("Aikido.Zen.Test")]
 
@@ -13,7 +16,14 @@ namespace Aikido.Zen.Core.Patches.LLMs
     /// </summary>
     public static class LLMPatcher
     {
-        private const string operationKind = "ai_op";
+
+        private static readonly List<ILLMResponseHandler> _responseHandlers = new List<ILLMResponseHandler>()
+        {
+            new OpenAIResponseHandler(),
+            new AwsBedrockHandler(),
+            new RystemOpenAIResponseHandler(),
+            new GenericResponseHandler()
+        };
 
         /// <summary>
         /// Handles completed LLM API calls to extract token usage and track statistics
@@ -32,24 +42,23 @@ namespace Aikido.Zen.Core.Patches.LLMs
 
             try
             {
-                var stopWatch = Stopwatch.StartNew();
+                //If we are patching an async method, we need to get the result from the Task
+                if (result is Task task)
+                {
+                    var resultProperty = task.GetType().GetProperty("Result");
+                    if (resultProperty != null)
+                    {
+                        var taskResult = resultProperty.GetValue(task);
+                        result = taskResult;
+                    }
+                }
 
-                if (context is null)
-                    LogHelper.ErrorLog(Agent.Logger, "OnLLMCallCompleted: Context is null.");
-
-                var parsedResponse = LLMResponseParserResolver.Parse(result, assembly, __originalMethod.Name);
-                // Record AI statistics
-                Agent.Instance.Context.OnAiCall(assembly, parsedResponse.Model, parsedResponse.TokenUsage.InputTokens, parsedResponse.TokenUsage.OutputTokens, context?.Route);
-
-                // record sink statistics
-                Agent.Instance.Context.OnInspectedCall(
-                    operation: $"{__originalMethod.DeclaringType.Namespace}.{__originalMethod.DeclaringType.Name}.{__originalMethod.Name}",
-                    kind: operationKind,
-                    durationInMs: stopWatch.ElapsedMilliseconds,
-                    attackDetected: false,
-                    blocked: false,
-                    withoutContext: context != null
-                );
+                foreach (var handler in _responseHandlers)
+                    if (handler.CanHandle(assembly))
+                    {
+                        handler.Handle(result, assembly, __originalMethod, context);
+                        return;
+                    }
             }
             catch
             {
