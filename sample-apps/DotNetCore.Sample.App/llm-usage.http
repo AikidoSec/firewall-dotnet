@@ -25,8 +25,15 @@ GET https://localhost:7086/llm-usage/request/provider/gemini/model/gemini-pro?in
 
 ### Test LLM Usage - Bedrock
 
-# Basic AWS Bedrock request
-GET https://localhost:7086/llm-usage/request/provider/bedrock/model/anthropic.claude-3-5-haiku-latest?input=What%20are%20the%20benefits%20of%20cloud%20computing%3F
+# AWS Bedrock Converse request
+GET https://localhost:7086/llm-usage/request/provider/bedrock/model/anthropic.claude-3-haiku-20240307-v1:0?input=What%20are%20the%20benefits%20of%20cloud%20computing%3F&method=Converse
+### 
+# AWS Bedrock Converse Stream request
+GET https://localhost:7086/llm-usage/request/provider/bedrock/model/anthropic.claude-3-haiku-20240307-v1:0?input=What%20are%20the%20benefits%20of%20cloud%20computing%3F&method=ConverseStream
+###
+# AWS Bedrock Invoke Model request
+GET https://localhost:7086/llm-usage/request/provider/bedrock/model/anthropic.claude-3-haiku-20240307-v1:0?input=What%20are%20the%20benefits%20of%20cloud%20computing%3F&method=InvokeModel
+###
 
 ### Test LLM Usage - Different Models
 
@@ -34,7 +41,7 @@ GET https://localhost:7086/llm-usage/request/provider/bedrock/model/anthropic.cl
 GET https://localhost:7086/llm-usage/request/provider/openai/model/gpt-3.5-turbo?input=Translate%20hello%20to%20Spanish
 
 # Test Claude Instant
-GET https://localhost:7086/llm-usage/request/provider/anthropic/model/claude-3-haiku?input=Summarize%20this%20in%20one%20sentence
+GET https://localhost:7086/llm-usage/request/provider/anthropic/model/anthropic.claude-3-haiku-20240307-v1:0?input=Summarize%20this%20in%20one%20sentence
 
 # Test Gemini Flash
 GET https://localhost:7086/llm-usage/request/provider/gemini/model/gemini-1.5-flash?input=What%20is%20machine%20learning%3F
