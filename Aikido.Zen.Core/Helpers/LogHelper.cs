@@ -14,7 +14,6 @@ namespace Aikido.Zen.Core.Helpers
         private static readonly TimeSpan LogTimeSpan = TimeSpan.FromMinutes(60);
         private static readonly Queue<DateTime> _logTimestamps = new Queue<DateTime>();
         private static readonly object _logLock = new object();
-        private static readonly object _consoleLock = new object();
 
         private static bool ShouldLog()
         {
@@ -72,12 +71,6 @@ namespace Aikido.Zen.Core.Helpers
         {
             // Sanitize the message to prevent log injection
             string sanitizedMessage = SanitizeMessage(message);
-
-            // Serialize writes to Console.Error to avoid I/O race conditions
-            lock (_consoleLock)
-            {
-                Console.Error.WriteLine(sanitizedMessage);
-            }
 
             if (exception == null)
             {
