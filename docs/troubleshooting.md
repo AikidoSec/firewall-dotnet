@@ -41,3 +41,12 @@ Expected: `Aikido.Zen.DotNetCore` (for ASP.NET Core) or `Aikido.Zen.DotNetFramew
 - Environment variable: `echo $AIKIDO_TOKEN` (Linux/macOS) or `echo $Env:AIKIDO_TOKEN` (PowerShell)
 - ASP.NET Core `appsettings.json` key: `"Aikido": { "AikidoToken": "your-api-key" }`
 - .NET Framework `Web.config`: `<add key="Aikido:AikidoToken" value="your-api-key" />`  [oai_citation:4‡GitHub](https://github.com/AikidoSec/firewall-dotnet)
+
+## Contact support
+
+If you still can’t resolve the issue:
+
+- Use the in-app chat to reach our support team directly.
+- Or create an issue on [GitHub](../../issues) with details about your setup, framework, and logs.
+
+Include as much context as possible (framework, logs, and how Aikido was added) so we can help you quickly.
