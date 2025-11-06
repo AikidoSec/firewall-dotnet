@@ -41,7 +41,7 @@ Zen writes through Microsoft.Extensions.Logging; look for entries from `Aikido.Z
 
 `dotnet list package | grep Aikido.Zen`
 
-Expected: `Aikido.Zen.DotNetCore` (for ASP.NET Core) or `Aikido.Zen.DotNetFramework` (for .NET Framework).  [oai_citation:1‡GitHub](https://github.com/AikidoSec/firewall-dotnet)
+Expected: [Aikido.Zen.DotNetCore](https://www.nuget.org/packages/Aikido.Zen.DotNetCore) (for ASP.NET Core) or [Aikido.Zen.DotNetFramework](https://www.nuget.org/packages/Aikido.Zen.DotNetFramework) (for .NET Framework).
 
 ## Confirm middleware/startup is wired
 
@@ -56,4 +56,4 @@ If you still can’t resolve the issue:
 - Use the in-app chat to reach our support team directly.
 - Or create an issue on [GitHub](../../issues) with details about your setup, framework, and logs.
 
-Include as much context as possible (framework, logs, and how Aikido was added) so we can help you quickly.
+Include as much context as possible (framework, logs, and how Aikido was added) so we can help you quickly. Review our [debugging guide](./debugging.md) for additional details.
