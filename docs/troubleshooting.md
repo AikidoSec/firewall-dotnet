@@ -24,6 +24,7 @@ ASP.NET Core (container or service):
 Increase verbosity to see Zen messages by setting the log level for the Aikido namespace:
 
 **appsettings.json**
+```
 {
   "Logging": {
     "LogLevel": {
@@ -32,6 +33,7 @@ Increase verbosity to see Zen messages by setting the log level for the Aikido n
     }
   }
 }
+```
 
 Zen writes through Microsoft.Extensions.Logging; look for entries from `Aikido.Zen` and `Aikido.Zen.Core`.
 
