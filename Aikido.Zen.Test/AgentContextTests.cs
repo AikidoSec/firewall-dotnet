@@ -191,7 +191,7 @@ namespace Aikido.Zen.Test
             // Arrange
             var context = new Context
             {
-                Url = "/api/test",
+                Url = "http://example.com/api/test",
                 Method = "GET",
                 Route = "/api/test"
             };
@@ -252,7 +252,7 @@ namespace Aikido.Zen.Test
             // Arrange
             var context = new Context
             {
-                Url = "/api/repeated",
+                Url = "http://example.com/api/repeated",
                 Method = "GET",
                 Route = "/api/repeated"
             };
@@ -297,7 +297,7 @@ namespace Aikido.Zen.Test
             _agentContext.AddUser(new User("user1", "User One"), "192.168.1.1");
             _agentContext.AddRoute(new Context
             {
-                Url = "/api/test",
+                Url = "http://example.com/api/test",
                 Method = "GET"
             });
 
@@ -661,7 +661,7 @@ namespace Aikido.Zen.Test
         {
             // Arrange
             const int MaxRoutes = 5000;
-            var firstRouteContext = new Context { Url = "/route0", Method = "GET", Route = "/route0" };
+            var firstRouteContext = new Context { Url = "http://example.com/route0", Method = "GET", Route = "/route0" };
             _agentContext.Clear();
 
             // Act
@@ -671,7 +671,7 @@ namespace Aikido.Zen.Test
             // Add MaxRoutes more routes, ensuring they all end up with Hits = 2
             for (int i = 1; i <= MaxRoutes; i++)
             {
-                var routeContext = new Context { Url = $"/route{i}", Method = "GET", Route = $"/route{i}" };
+                var routeContext = new Context { Url = $"http://example.com/route{i}", Method = "GET", Route = $"/route{i}" };
                 // AddRoute calls AddOrUpdate internally.
                 // When adding route[MaxRoutes], Size >= MaxRoutes triggers eviction *before* add.
                 // LFU is route0 (Hits=1). route0 is evicted.

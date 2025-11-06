@@ -80,7 +80,7 @@ namespace Aikido.Zen.Test.Helpers
                 Body = bodyStream,
                 Query = query ?? new Dictionary<string, string>(),
                 RemoteAddress = "127.0.0.1",
-                Url = "http://localhost/test",
+                Url = "http://example.com/test",
                 RouteParams = new Dictionary<string, string>(),
                 Cookies = new Dictionary<string, string>(),
                 Source = "test",

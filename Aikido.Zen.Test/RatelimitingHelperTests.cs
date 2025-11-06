@@ -337,7 +337,7 @@ namespace Aikido.Zen.Test.Helpers
         public void IsRequestAllowed_ShouldRespectExactMatch()
         {
             // Arrange
-            var context = new Context { Method = "GET", Route = "api/{entity}", Url = "api/users" };
+            var context = new Context { Method = "GET", Route = "api/{entity}", Url = "http://example.com/api/users" };
             context.User = new User("user123", "Test User");
 
             var endpoints = new List<EndpointConfig>
@@ -367,7 +367,7 @@ namespace Aikido.Zen.Test.Helpers
         public void IsRequestAllowed_ShouldRespectWildcardMatch()
         {
             // Arrange
-            var context = new Context { Method = "GET", Route = "api/users", Url = "api/users" };
+            var context = new Context { Method = "GET", Route = "api/users", Url = "http://example.com/api/users" };
             context.User = new User("user123", "Test User");
 
             var endpoints = new List<EndpointConfig>
