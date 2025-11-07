@@ -50,7 +50,10 @@ internal class BlockingMiddleware : IMiddleware
             var (isAllowed, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(aikidoContext, agentContext.Endpoints);
 
             if (isAllowed)
+            {
                 await next(context);
+                return;
+            }
 
             Agent.Instance.Context.AddAbortedRequest();
             context.Response.StatusCode = 429;
