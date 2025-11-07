@@ -103,7 +103,7 @@ namespace Aikido.Zen.Test
                     {
                         _agentContext.AddRoute(new Context
                         {
-                            Url = $"/api/test{threadId}-{j}",
+                            Url = $"http://example.com/api/test{threadId}-{j}",
                             Method = "GET",
                             Route = $"/api/test{threadId}-{j}"
                         });
@@ -210,7 +210,7 @@ namespace Aikido.Zen.Test
                         // Add route
                         _agentContext.AddRoute(new Context
                         {
-                            Url = $"/api/test{threadId}-{j}",
+                            Url = $"http://example.com/api/test{threadId}-{j}",
                             Method = "GET",
                             Route = $"/api/test{threadId}-{j}"
                         });

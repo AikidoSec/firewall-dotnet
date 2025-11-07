@@ -19,7 +19,7 @@ namespace Aikido.Zen.Test.Helpers
                 Headers = headers ?? new Dictionary<string, string>(),
                 Body = null,
                 RemoteAddress = "",
-                Url = "http://localhost/test",
+                Url = "http://example.com/test",
                 RouteParams = new Dictionary<string, string>(),
                 Query = new Dictionary<string, string>(),
                 Cookies = cookies ?? new Dictionary<string, string>(),

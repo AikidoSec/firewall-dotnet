@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+
 using Aikido.Zen.Core.Models;
 
 namespace Aikido.Zen.Core.Helpers
@@ -264,13 +265,15 @@ namespace Aikido.Zen.Core.Helpers
                 return false;
             }
 
+            var absolutePath = TryParseUrlPath(context.Url);
+
             var specificMethodEndpoints = endpoints.Where(e => e.Method != "*");
             var wildcardMethodEndpoints = endpoints.Where(e => e.Method == "*");
 
             // 1. Check for Exact URL & Exact Method
             endpoint = specificMethodEndpoints.FirstOrDefault(e =>
                     e.Method.Equals(context.Method, StringComparison.OrdinalIgnoreCase) &&
-                    e.Route.Equals(context.Url, StringComparison.OrdinalIgnoreCase));
+                    e.Route.Equals(absolutePath, StringComparison.OrdinalIgnoreCase));
             if (endpoint != null) return true;
 
             // 2. Check for Exact Route & Exact Method
@@ -281,7 +284,7 @@ namespace Aikido.Zen.Core.Helpers
 
             // 3. Check for Exact URL & Wildcard Method
             endpoint = wildcardMethodEndpoints.FirstOrDefault(e =>
-                    e.Route.Equals(context.Url, StringComparison.OrdinalIgnoreCase));
+                    e.Route.Equals(absolutePath, StringComparison.OrdinalIgnoreCase));
             if (endpoint != null) return true;
 
             // 4. Check for Exact Route & Wildcard Method
@@ -415,8 +418,9 @@ namespace Aikido.Zen.Core.Helpers
         {
             try
             {
-                var uri = new Uri(url);
-                return uri.AbsolutePath;
+                if (Uri.TryCreate(url, UriKind.RelativeOrAbsolute, out var uri))
+                    return uri.AbsolutePath;
+                return url;
             }
             catch
             {
