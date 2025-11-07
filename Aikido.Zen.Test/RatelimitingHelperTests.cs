@@ -345,7 +345,7 @@ namespace Aikido.Zen.Test.Helpers
                 new EndpointConfig
                 {
                     Method = "GET",
-                    Route = "api/users",
+                    Route = "/api/users",
                     RateLimiting = new RateLimitingConfig { Enabled = true, MaxRequests = 2, WindowSizeInMS = 1000 }
                 }
             };
@@ -375,7 +375,7 @@ namespace Aikido.Zen.Test.Helpers
                 new EndpointConfig
                 {
                     Method = "GET",
-                    Route = "api/*",
+                    Route = "/api/*",
                     RateLimiting = new RateLimitingConfig { Enabled = true, MaxRequests = 2, WindowSizeInMS = 1000 }
                 }
             };

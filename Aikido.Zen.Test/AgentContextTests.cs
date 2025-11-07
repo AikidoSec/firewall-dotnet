@@ -200,7 +200,7 @@ namespace Aikido.Zen.Test
             _agentContext.AddRoute(context);
 
             // Assert
-            var route = _agentContext.Routes.FirstOrDefault(r => r.Path == context.Url);
+            var route = _agentContext.Routes.FirstOrDefault(r => r.Path == context.Route);
             Assert.That(route == null, Is.False);
             Assert.That(route.Method, Is.EqualTo(context.Method));
             Assert.That(route.Hits, Is.EqualTo(1));

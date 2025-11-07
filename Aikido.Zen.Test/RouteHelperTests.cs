@@ -337,7 +337,7 @@ namespace Aikido.Zen.Test.Helpers
             var context = new Context
             {
                 Method = "POST",
-                Url = "http://localhost:7000/api/users/123",
+                Url = "http://localhost:7000/posts/3",
                 Route = null
             };
             var endpoints = new List<EndpointConfig>
