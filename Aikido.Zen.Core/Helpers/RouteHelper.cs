@@ -416,15 +416,9 @@ namespace Aikido.Zen.Core.Helpers
 
         private static string TryParseUrlPath(string url)
         {
-            try
-            {
-                Uri.TryCreate(url, UriKind.RelativeOrAbsolute, out var uri);
+            if(Uri.TryCreate(url, UriKind.RelativeOrAbsolute, out var uri))
                 return uri.AbsolutePath;
-            }
-            catch
-            {
-                return url;
-            }
+            return url;   
         }
     }
 }
