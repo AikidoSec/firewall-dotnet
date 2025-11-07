@@ -397,7 +397,7 @@ namespace Aikido.Zen.Test.Helpers
         public void IsRequestAllowed_ShouldRespectMostExactMatch()
         {
             // Arrange
-            var context = new Context { Method = "GET", Route = "api/users" };
+            var context = new Context { Method = "GET", Route = "api/users", Url = "http://test.com/api/users" };
             context.User = new User("user123", "Test User");
 
             var endpoints = new List<EndpointConfig>
