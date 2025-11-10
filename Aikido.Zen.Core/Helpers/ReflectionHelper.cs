@@ -187,41 +187,6 @@ namespace Aikido.Zen.Core.Helpers
             return null;
         }
 
-        /// <summary>
-        /// Converts a dynamic object to a dictionary using reflection
-        /// </summary>
-        internal static Dictionary<string, object> ConvertObjectToDictionary(object obj)
-        {
-            var dictionary = new Dictionary<string, object>();
-
-            if (obj == null) return dictionary;
-
-            // Handle if it's already an IDictionary
-            if (obj is IDictionary<string, object> existingDict)
-            {
-                return new Dictionary<string, object>(existingDict);
-            }
-
-            // Use reflection to get all properties
-            var type = obj.GetType();
-            var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
-
-            foreach (var property in properties)
-            {
-                try
-                {
-                    var value = property.GetValue(obj);
-                    dictionary[property.Name] = value;
-                }
-                catch
-                {
-                    // Skip properties that can't be accessed
-                }
-            }
-
-            return dictionary;
-        }
-
         public static void ClearCache()
         {
             _types.Clear();
