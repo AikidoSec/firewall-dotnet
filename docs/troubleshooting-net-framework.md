@@ -1,19 +1,23 @@
 # Troubleshooting .NET Framework assembly loading
+This troubleshooting guide is targeted at .NET Framework users dealing with the following error:
 
-- .NET Framework assemblies usually resolve from Nuget folders or the GAC.
+```
+Could not load file or assembly 'Aikido.Zen.Core, Version=1.2.27.0, Culture=neutral, PublicKeyToken=null' or one of its dependencies. The system cannot find the file specified.
+```
 
-- There are 2 main Nuget locations, depending on the package management format:
+.NET Framework assemblies usually resolve from Nuget folders or the GAC.
 
-  - **packages.config file**: $(SolutionDir)\packages\
-  - **PackageReference .csproj**: %USERPROFILE%\\.nuget\packages
+You can inspect attempted load paths using [Process Monitor](https://learn.microsoft.com/en-us/sysinternals/downloads/procmon) (straightforward to use) or [Fusion Log Viewer](https://learn.microsoft.com/en-us/dotnet/framework/tools/fuslogvw-exe-assembly-binding-log-viewer) (more advanced, but requires custom configuration)
 
-- The GAC is a machine wide directory (C:\Windows\Microsoft.NET\assembly) where assemblies are installed.
+There are 2 main Nuget locations, depending on the package management format:
+- **packages.config file**: $(SolutionDir)\packages\
+- **PackageReference .csproj**: %USERPROFILE%\\.nuget\packages
 
-- `gacutil` can be used from the VS Developer Command Prompt to list, install or remove assemblies.
+The GAC is a machine wide directory (C:\Windows\Microsoft.NET\assembly) where assemblies are installed.
 
-- You can see which paths are tried by using [Process Monitor](https://learn.microsoft.com/en-us/sysinternals/downloads/procmon) or [Fusion Log Viewer](https://learn.microsoft.com/en-us/dotnet/framework/tools/fuslogvw-exe-assembly-binding-log-viewer)
+`gacutil` can be used from the VS Developer Command Prompt to list, install or remove assemblies.
 
-## Add an explicit path to .csproj
+## Adding an explicit assembly path to .csproj
 Use the `HintPath` tag to point references to the correct location (adjust the version and target framework to match your project).
 
 ```
