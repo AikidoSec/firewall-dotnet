@@ -52,6 +52,19 @@ namespace Aikido.Zen.DotNetFramework
             SetUserAction = setUser;
         }
 
+        private static HttpApplication GetApplicationInstanceOrThrow()
+        {
+            var applicationInstance = HttpContext.Current?.ApplicationInstance;
+            if (applicationInstance == null)
+            {
+                const string message = "Aikido.Zen.DotNetFramework must run inside an ASP.NET (System.Web) application; HttpContext.Current is null. If you are on ASP.NET Core, use Aikido.Zen.DotNetCore instead.";
+                LogHelper.ErrorLog(Agent.Logger, message);
+                throw new InvalidOperationException(message);
+            }
+
+            return applicationInstance;
+        }
+
         public static Context GetContext()
         {
             return (Context)HttpContext.Current?.Items["Aikido.Zen.Context"];
@@ -64,8 +77,9 @@ namespace Aikido.Zen.DotNetFramework
 
         internal static void CheckModules()
         {
-            var isContextModuleInstalled = HttpContext.Current.ApplicationInstance.Modules.AllKeys.Any(key => key.Contains("Aikido.Zen.DotNetFramework.HttpModules.ContextModule"));
-            var isBlockingModuleInstalled = HttpContext.Current.ApplicationInstance.Modules.AllKeys.Any(key => key.Contains("Aikido.Zen.DotNetFramework.HttpModules.BlockingModule"));
+            var applicationInstance = GetApplicationInstanceOrThrow();
+            var isContextModuleInstalled = applicationInstance.Modules.AllKeys.Any(key => key.Contains("Aikido.Zen.DotNetFramework.HttpModules.ContextModule"));
+            var isBlockingModuleInstalled = applicationInstance.Modules.AllKeys.Any(key => key.Contains("Aikido.Zen.DotNetFramework.HttpModules.BlockingModule"));
 
             if (!isContextModuleInstalled)
             {
@@ -82,10 +96,11 @@ namespace Aikido.Zen.DotNetFramework
             LogHelper.DebugLog(Agent.Logger, "Registering Zen modules");
             var contextModule = new ContextModule();
             var blockingModule = new BlockingModule();
+            var applicationInstance = GetApplicationInstanceOrThrow();
             try
             {
-                contextModule.Init(HttpContext.Current.ApplicationInstance);
-                blockingModule.Init(HttpContext.Current.ApplicationInstance);
+                contextModule.Init(applicationInstance);
+                blockingModule.Init(applicationInstance);
             }
             catch (Exception ex)
             {
