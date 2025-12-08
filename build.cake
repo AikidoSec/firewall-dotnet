@@ -1,7 +1,4 @@
-#addin nuget:?package=Cake.FileHelpers&version=6.0.0
 #load "nuget:https://www.nuget.org/api/v2?package=Cake.NuGet&version=5.0.0"
-
-
 
 var target = Argument("target", "Default");
 var configuration = Argument("configuration", "Release");
@@ -55,8 +52,9 @@ Task("DownloadLibraries")
         var files = GetFiles($"{librariesDir}/**/*.sha256sum");
         if (files.Count > 0)
         {
-            FilePath file = files.First();
-            var currVersion = FileReadText(file).Split('-')[1];
+            var file = files.First();
+            var content = System.IO.File.ReadAllText(file.FullPath);
+            var currVersion = content.Split('-')[1];
             if (currVersion == zenInternalsVersion)
             {
                 Information("Libraries already downloaded. skipping download.");
@@ -261,8 +259,6 @@ Task("Test")
             Warning("Coverage file was not generated!");
         }
     });
-
-
 
 /// <summary>
 /// Task to run end-to-end tests.
