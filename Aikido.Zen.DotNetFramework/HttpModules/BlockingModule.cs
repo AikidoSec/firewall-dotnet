@@ -58,20 +58,19 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 // Use the helper to check all rate limiting rules
                 var (isAllowed, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(aikidoContext, agentContext.Endpoints);
 
-                if (!isAllowed)
-                {
-                    Agent.Instance.Context.AddAbortedRequest();
-                    httpContext.Response.StatusCode = 429;
-
-                    if (effectiveConfig != null)
-                    {
-                        httpContext.Response.Headers.Add("Retry-After", effectiveConfig.WindowSizeInMS.ToString());
-                    }
-
-                    httpContext.Response.Write($"You are rate limited by Aikido firewall. (Your IP: {aikidoContext.RemoteAddress})");
-                    httpContext.Response.End();
+                if (isAllowed)
                     return;
-                }
+                
+                Agent.Instance.Context.AddAbortedRequest();
+                httpContext.Response.StatusCode = 429;
+
+                if (effectiveConfig.Enabled)
+                    httpContext.Response.Headers.Add("Retry-After", effectiveConfig.WindowSizeInMS.ToString());
+                
+
+                httpContext.Response.Write($"You are rate limited by Aikido firewall. (Your IP: {aikidoContext.RemoteAddress})");
+                httpContext.Response.End();
+                return;
             }
             catch (Exception ex)
             {

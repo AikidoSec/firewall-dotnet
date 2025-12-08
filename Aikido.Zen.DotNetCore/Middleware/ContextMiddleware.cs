@@ -4,6 +4,7 @@ using Aikido.Zen.Core;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Routing;
 
@@ -121,7 +122,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 headersDictionary = new ConcurrentDictionary<string, string[]>(httpContext.Request.Headers.ToDictionary(h => h.Key, h => h.Value.ToArray()));
                 context = new Context
                 {
-                    Url = httpContext.Request.Path.ToString(),
+                    Url = httpContext.Request.GetDisplayUrl(),
                     Method = httpContext.Request.Method,
                     Query = FlattenQueryParameters(httpContext.Request.Query),
                     Headers = FlattenHeaders(httpContext.Request.Headers),

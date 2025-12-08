@@ -337,7 +337,7 @@ namespace Aikido.Zen.Test.Helpers
         public void IsRequestAllowed_ShouldRespectExactMatch()
         {
             // Arrange
-            var context = new Context { Method = "GET", Route = "api/{entity}", Url = "api/users" };
+            var context = new Context { Method = "GET", Route = "api/{entity}", Url = "http://example.com/api/users" };
             context.User = new User("user123", "Test User");
 
             var endpoints = new List<EndpointConfig>
@@ -345,7 +345,7 @@ namespace Aikido.Zen.Test.Helpers
                 new EndpointConfig
                 {
                     Method = "GET",
-                    Route = "api/users",
+                    Route = "/api/users",
                     RateLimiting = new RateLimitingConfig { Enabled = true, MaxRequests = 2, WindowSizeInMS = 1000 }
                 }
             };
@@ -367,7 +367,7 @@ namespace Aikido.Zen.Test.Helpers
         public void IsRequestAllowed_ShouldRespectWildcardMatch()
         {
             // Arrange
-            var context = new Context { Method = "GET", Route = "api/users", Url = "api/users" };
+            var context = new Context { Method = "GET", Route = "api/users", Url = "http://example.com/api/users" };
             context.User = new User("user123", "Test User");
 
             var endpoints = new List<EndpointConfig>
@@ -375,7 +375,7 @@ namespace Aikido.Zen.Test.Helpers
                 new EndpointConfig
                 {
                     Method = "GET",
-                    Route = "api/*",
+                    Route = "/api/*",
                     RateLimiting = new RateLimitingConfig { Enabled = true, MaxRequests = 2, WindowSizeInMS = 1000 }
                 }
             };
@@ -397,7 +397,7 @@ namespace Aikido.Zen.Test.Helpers
         public void IsRequestAllowed_ShouldRespectMostExactMatch()
         {
             // Arrange
-            var context = new Context { Method = "GET", Route = "api/users" };
+            var context = new Context { Method = "GET", Route = "api/users", Url = "http://test.com/api/users" };
             context.User = new User("user123", "Test User");
 
             var endpoints = new List<EndpointConfig>

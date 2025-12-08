@@ -259,7 +259,7 @@ namespace Aikido.Zen.Test.Helpers
             var context = new Context
             {
                 Method = "POST",
-                Url = "/posts/3",
+                Url = "http://localhost:7000/api/users/123",
                 Route = "/posts/:number"
             };
             var endpoints = new List<EndpointConfig>
@@ -337,7 +337,7 @@ namespace Aikido.Zen.Test.Helpers
             var context = new Context
             {
                 Method = "POST",
-                Url = "/posts/3",
+                Url = "http://localhost:7000/posts/3",
                 Route = null
             };
             var endpoints = new List<EndpointConfig>
@@ -610,7 +610,7 @@ namespace Aikido.Zen.Test.Helpers
             {
                 Method = "GET",
                 Route = "/api/users/{id}",
-                Url = "/api/users/123"
+                Url = "http://example.com/api/users/123"
             };
 
             var endpoints = new List<EndpointConfig>
@@ -668,7 +668,7 @@ namespace Aikido.Zen.Test.Helpers
             {
                 Method = "GET",
                 Route = "/api/users/{id}",
-                Url = "/api/users/123"
+                Url = "http://localhost:7000/api/users/123"
             };
 
             var endpointPrio1 = new EndpointConfig { Method = "GET", Route = "/api/users/123", RateLimiting = new RateLimitingConfig { Enabled = true } }; // Exact URL & Exact Method
@@ -709,7 +709,7 @@ namespace Aikido.Zen.Test.Helpers
             {
                 Method = "GET",
                 Route = "/api/users/{id}",
-                Url = "/api/users/123"
+                Url = "http://localhost:7000/api/users/123"
             };
             var endpoints = new List<EndpointConfig>
             {
@@ -749,7 +749,7 @@ namespace Aikido.Zen.Test.Helpers
             {
                 Method = "get",
                 Route = "/api/USERS/{id:int}",
-                Url = "/api/USERS/123"
+                Url = "http://localhost:7000/api/users/123"
             };
             var endpoints = new List<EndpointConfig>
             {
@@ -779,7 +779,7 @@ namespace Aikido.Zen.Test.Helpers
             {
                 Method = "GET",
                 Route = "/api/users/{id}",
-                Url = "/api/users/123"
+                Url = "http://localhost:7000/api/users/123"
             };
             var endpoints = new List<EndpointConfig>();
 

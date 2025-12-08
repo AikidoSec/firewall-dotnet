@@ -1,9 +1,9 @@
-using System.Diagnostics;
-using Aikido.Zen.Core.Models;
-using System.Runtime.CompilerServices;
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
+using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
+
+using Aikido.Zen.Core.Models;
 
 [assembly: InternalsVisibleTo("Aikido.Zen.Test")]
 [assembly: InternalsVisibleTo("Aikido.Zen.Benchmarks")]
@@ -90,11 +90,11 @@ namespace Aikido.Zen.Core.Helpers
 
             // Get the user ID or IP address for the key
             string userOrIp = context.User?.Id ?? context.RemoteAddress ?? "unknown";
-
+            var config = new RateLimitingConfig();
             // Check exact match first if it exists
             if (RouteHelper.HasExactMatch(context, rateLimitedEndpoints, out var exactMatch))
             {
-                var config = exactMatch.RateLimiting;
+                config = exactMatch.RateLimiting;
                 var exactKey = $"{exactMatch.Method}|{exactMatch.Route}:user-or-ip:{userOrIp}";
                 if (!IsAllowed(exactKey, config.WindowSizeInMS, config.MaxRequests))
                 {
@@ -110,7 +110,7 @@ namespace Aikido.Zen.Core.Helpers
             foreach (var endpoint in matchingEndpoints)
             {
 
-                var config = endpoint.RateLimiting;
+                config = endpoint.RateLimiting;
                 if (config != null && config.Enabled)
                 {
                     var matchKey = $"{endpoint.Method}|{endpoint.Route}:user-or-ip:{userOrIp}";
@@ -122,7 +122,7 @@ namespace Aikido.Zen.Core.Helpers
             }
 
             // If we get here, all checks passed
-            return (true, null);
+            return (true, config);
         }
 
         private static long GetCurrentTimestamp()
