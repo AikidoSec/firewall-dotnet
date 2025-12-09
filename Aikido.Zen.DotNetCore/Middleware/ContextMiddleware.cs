@@ -210,8 +210,10 @@ namespace Aikido.Zen.DotNetCore.Middleware
 
             if (EnvironmentHelper.TrustProxy)
             {
-                // Check for X-Forwarded-For header first (for proxied requests)
-                if (httpContext.Request.Headers.TryGetValue("X-Forwarded-For", out var forwardedFor))
+                // Usually X-Forwarded-For, but can be set to something else via AIKIDO_CLIENT_IP_HEADER
+                var headerVarName = EnvironmentHelper.ClientIpHeader;
+
+                if (httpContext.Request.Headers.TryGetValue(headerVarName, out var forwardedFor))
                 {
                     // X-Forwarded-For can contain multiple IPs, take the first one
                     var firstIp = forwardedFor.FirstOrDefault();
