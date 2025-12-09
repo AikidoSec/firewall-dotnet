@@ -62,8 +62,10 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             try
             {
                 responseHandled = false;
+                string clientIp = GetClientIp(httpContext);
+
                 // if the ip is bypassed, skip the handling of the request
-                if (Agent.Instance.Context.BlockList.IsIPBypassed(GetClientIp(httpContext)) || EnvironmentHelper.IsDisabled)
+                if (Agent.Instance.Context.BlockList.IsIPBypassed(clientIp) || EnvironmentHelper.IsDisabled)
                 {
                     return;
                 }
@@ -74,7 +76,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                     Method = httpContext.Request.HttpMethod,
                     Query = FlattenQueryParameters(httpContext.Request.QueryString),
                     Headers = FlattenHeaders(httpContext.Request.Headers),
-                    RemoteAddress = httpContext.Request.UserHostAddress ?? string.Empty,
+                    RemoteAddress = clientIp,
                     Cookies = httpContext.Request.Cookies.AllKeys.ToDictionary(k => k, k => httpContext.Request.Cookies[k].Value),
                     User = (User)httpContext.Items["Aikido.Zen.CurrentUser"],
                     UserAgent = httpContext.Request.UserAgent,
@@ -84,9 +86,8 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
 
                 Agent.Instance.SetContextMiddlewareInstalled(true);
 
-                string clientIp = GetClientIp(httpContext);
-
                 var request = httpContext.Request;
+
                 var httpData = await HttpHelper.ReadAndFlattenHttpDataAsync(
                     queryParams: context.Query,
                     headers: request.Headers.AllKeys.ToDictionary(k => k, k => request.Headers.Get(k)),
@@ -95,6 +96,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                     contentType: request.ContentType,
                     contentLength: request.ContentLength
                 );
+
                 context.ParsedUserInput = httpData.FlattenedData;
                 context.Body = request.InputStream;
                 context.ParsedBody = httpData.ParsedBody;
