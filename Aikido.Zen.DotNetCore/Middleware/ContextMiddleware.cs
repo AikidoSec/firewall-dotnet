@@ -204,6 +204,22 @@ namespace Aikido.Zen.DotNetCore.Middleware
         /// <returns>The client IP address as a string</returns>
         private static string GetClientIp(HttpContext httpContext)
         {
+            // RemoteIpAddress was almost good enough to return directly, as it already takes into account
+            // the X-Forwarded-For header. However, it contains the last IP when multiple IPs are present.
+            // We want to extract the original client's IP, which should sit in the first position instead.
+
+            // Check for X-Forwarded-For header first (for proxied requests)
+            if (httpContext.Request.Headers.TryGetValue("X-Forwarded-For", out var forwardedFor))
+            {
+                var firstIp = forwardedFor.FirstOrDefault();
+                if (!string.IsNullOrEmpty(firstIp))
+                {
+                    // X-Forwarded-For can contain multiple IPs, take the first one
+                    return firstIp.Split(',')[0].Trim();
+                }
+            }
+
+            // When no X-Forwarded-For header is present, RemoteIpAddress behaves as expected
             return httpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty;
         }
 
