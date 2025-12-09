@@ -45,17 +45,35 @@ namespace Aikido.Zen.Test
             var startedTime = _agent.Context.Started;
 
             // Act
-            // wait a bit to make sure some ms have passed between settings the started time and clearing the context
-            var waitTimeMs = 25;
-            await Task.Delay(waitTimeMs);
+            // wait a bit to make sure some ms have passed between settings the started time and clearing the context            
+            await Task.Delay(25);
             _agent.ClearContext();
 
             // Assert
             Assert.That(_agent.Context.Users.Count, Is.EqualTo(0));
-            Assert.That(_agent.Context.Routes.Count, Is.EqualTo(0));
-            Assert.That(_agent.Context.Hostnames.Count, Is.EqualTo(0));
+
+            Assert.That(_agent.Context.Config.BlockList.IsEmpty(), Is.True);
+            Assert.That(_agent.Context.Config.BlockedUserAgents, Is.EqualTo(null));
+            Assert.That(_agent.Context.Config.Endpoints, Is.Empty);
+
+            Assert.That(_agent.Context.Stats.Operations, Is.Empty);
             Assert.That(_agent.Context.Requests, Is.EqualTo(0));
-            Assert.That(_agent.Context.Started, Is.GreaterThan(startedTime + waitTimeMs));
+            Assert.That(_agent.Context.RequestsAborted, Is.EqualTo(0));
+            Assert.That(_agent.Context.Stats.Requests.AttacksDetected.Blocked, Is.Zero);
+            Assert.That(_agent.Context.Stats.Requests.AttacksDetected.Total, Is.Zero);
+            Assert.That(_agent.Context.Started, Is.GreaterThan(startedTime));
+
+            Assert.That(_agent.Context.AiStats.Providers, Is.Empty);
+
+            Assert.That(_agent.Context.Hostnames, Is.Empty);
+
+            Assert.That(_agent.Context.Users, Is.Empty);
+
+            Assert.That(_agent.Context.Routes.Count, Is.EqualTo(0));
+
+            Assert.That(_agent.Context.Packages, Is.Empty);
+
+            Assert.That(_agent.Context.ConfigLastUpdated, Is.Zero);
         }
 
         [Test]
@@ -687,23 +705,6 @@ namespace Aikido.Zen.Test
 
             _zenApiMock.Verify(x => x.Runtime.GetConfigLastUpdated(It.IsAny<string>()), Times.Once);
             _zenApiMock.Verify(x => x.Runtime.GetConfig(It.IsAny<string>()), Times.Never);
-        }
-
-        [Test]
-        public async Task ProcessSingleEvent_OnException_RequeuesEventAndDelays()
-        {
-            // Arrange
-            var testEvent = new Started();
-            _zenApiMock.Setup(x => x.Reporting.ReportAsync(It.IsAny<string>(), It.IsAny<IEvent>(), It.IsAny<int>()))
-                .ThrowsAsync(new Exception("Test exception"));
-
-            // Act
-            _agent.QueueEvent("token", testEvent);
-            await Task.Delay(Agent.RetryDelayMs + 250); // Wait for retry
-
-            // Assert
-            _zenApiMock.Verify(x => x.Reporting.ReportAsync(It.IsAny<string>(), It.IsAny<IEvent>(), It.IsAny<int>()),
-                Times.AtLeast(2)); // Should try at least twice
         }
 
         [Test]

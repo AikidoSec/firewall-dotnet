@@ -1,6 +1,8 @@
+using HarmonyLib;
+
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Helpers;
-using HarmonyLib;
+
 using CorePatcher = Aikido.Zen.Core.Patches.Patcher;
 
 namespace Aikido.Zen.DotNetCore.Patches

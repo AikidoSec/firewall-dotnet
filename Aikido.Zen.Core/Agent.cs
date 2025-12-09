@@ -98,6 +98,17 @@ namespace Aikido.Zen.Core
         /// <param name="token">The authentication token for the Zen API</param>
         public void Start()
         {
+            var startupMessage = $"Zen Agent v{AgentInfoHelper.ZenVersion} started";
+
+            if (string.IsNullOrEmpty(EnvironmentHelper.Token))
+            {
+                LogHelper.InfoLog(Logger, "No token provided, disabling reporting.");
+                LogHelper.InfoLog(Logger, startupMessage);
+                return;
+            }
+
+            LogHelper.InfoLog(Logger, "Found token, reporting enabled!");
+
             // send started event
             QueueEvent(EnvironmentHelper.Token, Started.Create(),
             (evt, response) =>
@@ -137,8 +148,7 @@ namespace Aikido.Zen.Core
                 Heartbeat.ScheduleId,
                 scheduledHeartBeat
             );
-            LogHelper.InfoLog(Logger, $"Zen Agent v{AgentInfoHelper.ZenVersion} started");
-
+            LogHelper.InfoLog(Logger, startupMessage);
         }
 
         /// <summary>
@@ -381,7 +391,13 @@ namespace Aikido.Zen.Core
         public virtual void SendAttackEvent(AttackKind kind, Source source, string payload, string operation, Context context, string module, IDictionary<string, object> metadata, bool blocked)
         {
             LogHelper.AttackLog(Logger, $"Attack detected: {kind} in {source} {operation}, blocked: {blocked}");
-            QueueEvent(EnvironmentHelper.Token, DetectedAttack.Create(kind, source, payload, operation, context, module, metadata, blocked));
+
+            // Prevent sending events if no token is configured
+            if (!string.IsNullOrEmpty(EnvironmentHelper.Token))
+            {
+                QueueEvent(EnvironmentHelper.Token, DetectedAttack.Create(kind, source, payload, operation, context, module, metadata, blocked));
+            }
+
             Context.AddAttackDetected(blocked);
         }
 
@@ -518,33 +534,12 @@ namespace Aikido.Zen.Core
                 var response = await _api.Reporting.ReportAsync(queuedItem.Token, queuedItem.Event, _batchTimeoutMs)
                     .ConfigureAwait(false);
 
-                if (!response.Success)
-                {
-                    if (response.Error == "rate_limited" || response.Error == "timeout")
-                    {
-                        _eventQueue.Enqueue(queuedItem);
-                        await Task.Delay(RetryDelayMs, _cancellationSource.Token);
-                    }
-                    // Other errors are dropped to avoid infinite retries
-                    LogHelper.DebugLog(Logger, $"Event was not sent successfully: {response.Error}");
-                }
-
                 _reportingStatus.OnEventReported(queuedItem.Event.Type, response.Success);
                 queuedItem.Callback?.Invoke(queuedItem.Event, response);
             }
-            catch (OperationCanceledException) when (_cancellationSource.Token.IsCancellationRequested)
+            catch (Exception ex)
             {
-                // Graceful shutdown
-                _eventQueue.Enqueue(queuedItem);
-                LogHelper.DebugLog(Logger, "Error sending event: Operation canceled");
-                throw;
-            }
-            catch (Exception)
-            {
-                // Requeue on error and delay
-                _eventQueue.Enqueue(queuedItem);
-                LogHelper.DebugLog(Logger, "Error sending event");
-                await Task.Delay(RetryDelayMs, _cancellationSource.Token);
+                LogHelper.DebugLog(Logger, $"Error processing event: {ex.Message}");
             }
             return requestsThisSecond;
         }

@@ -1,7 +1,4 @@
-#addin nuget:?package=Cake.FileHelpers&version=6.0.0
 #load "nuget:https://www.nuget.org/api/v2?package=Cake.NuGet&version=5.0.0"
-
-
 
 var target = Argument("target", "Default");
 var configuration = Argument("configuration", "Release");
@@ -17,7 +14,7 @@ if (!string.IsNullOrEmpty(framework))
 }
 var solution = "./Aikido.Zen.sln";
 var projectName = "Aikido.Zen.Core";
-var zenInternalsVersion = "0.1.37";
+var zenInternalsVersion = "0.1.53";
 var libVersion = Argument("libVersion", "1.2.5");
 
 var baseUrl = $"https://github.com/AikidoSec/zen-internals/releases/download/v{zenInternalsVersion}/";
@@ -55,8 +52,9 @@ Task("DownloadLibraries")
         var files = GetFiles($"{librariesDir}/**/*.sha256sum");
         if (files.Count > 0)
         {
-            FilePath file = files.First();
-            var currVersion = FileReadText(file).Split('-')[1];
+            var file = files.First();
+            var content = System.IO.File.ReadAllText(file.FullPath);
+            var currVersion = content.Split('-')[1];
             if (currVersion == zenInternalsVersion)
             {
                 Information("Libraries already downloaded. skipping download.");
@@ -260,13 +258,7 @@ Task("Test")
         {
             Warning("Coverage file was not generated!");
         }
-    })
-    .OnError(ex =>
-    {
-        Error($"Test task failed with error: {ex.Message}");
     });
-
-
 
 /// <summary>
 /// Task to run end-to-end tests.
