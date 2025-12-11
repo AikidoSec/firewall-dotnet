@@ -213,13 +213,15 @@ namespace Aikido.Zen.DotNetCore.Middleware
             {
                 // Usually X-Forwarded-For, but can be set to something else via AIKIDO_CLIENT_IP_HEADER
                 var headerVarName = EnvironmentHelper.ClientIpHeader;
-
-                if (httpContext.Request.Headers.TryGetValue(headerVarName, out var ipList))
+                if (httpContext.Request?.Headers?.TryGetValue(headerVarName, out var ipStringValues) == true)
                 {
                     // X-Forwarded-For can contain multiple IPs
-                    // Return the first valid non-private IP address
+                    var ipHeader = ipStringValues.ToString();
+                    var ipList = IPHeaderHelper.ParseIpHeader(ipHeader);
+
                     foreach (var ip in ipList)
                     {
+                        // Return the first valid non-private IP address
                         if (IPHelper.IsValidIp(ip) && !IPHelper.IsPrivateOrLocalIp(ip))
                         {
                             return ip;
@@ -229,7 +231,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
             }
 
             // No X-Forwarded-For header, or X-Forwarded-For is present and ASP NET already popped the last list entry in RemoteIpAddress
-            return httpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty;
+            return httpContext.Connection?.RemoteIpAddress?.ToString() ?? string.Empty;
         }
 
         /// <summary>
