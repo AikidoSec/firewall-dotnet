@@ -44,13 +44,18 @@ namespace Aikido.Zen.Core.Patches
                     LogHelper.ErrorLog(Agent.Logger, $"Failed to extract model from LLM result for model: {model}");
                 }
 
+                if (!TryGetCloudProvider($"{model} {assembly} {result.GetType().ToString()}", out var provider))
+                {
+                    LogHelper.ErrorLog(Agent.Logger, $"Failed to extract provider from LLM for model: {model}, provider: {provider}");
+                }
+
                 if (!TryExtractTokensFromResult(result, out var tokens))
                 {
-                    LogHelper.ErrorLog(Agent.Logger, $"Failed to extract token usage from LLM result for provider: {assembly}, model: {model}");
+                    LogHelper.ErrorLog(Agent.Logger, $"Failed to extract token usage from LLM result for provider: {provider}, model: {model}");
                 }
 
                 // Record AI statistics
-                Agent.Instance.Context.OnAiCall(assembly, model, tokens.inputTokens, tokens.outputTokens, context.Route);
+                Agent.Instance.Context.OnAiCall(provider, model, tokens.inputTokens, tokens.outputTokens, context.Route);
 
 
                 // record sink statistics
