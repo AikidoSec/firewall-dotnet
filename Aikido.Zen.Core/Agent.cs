@@ -8,6 +8,7 @@ using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Models.Events;
+using Aikido.Zen.Core.Vulnerabilities;
 using Microsoft.Extensions.Logging;
 
 [assembly: InternalsVisibleTo("Aikido.Zen.Tests")]
@@ -40,6 +41,8 @@ namespace Aikido.Zen.Core
         private const int ErrorRetryDelayMs = 1000;
 
         private AgentContext _context;
+
+        private readonly AttackWaveDetector _attackWaveDetector;
 
         // instance
         private static Agent _instance;
@@ -90,6 +93,7 @@ namespace Aikido.Zen.Core
             _batchTimeoutMs = batchTimeoutMs;
             _backgroundTask = Task.Run(ProcessRecurringTasksAsync);
             _context = new AgentContext();
+            _attackWaveDetector = new AttackWaveDetector();
         }
 
         /// <summary>
@@ -287,6 +291,12 @@ namespace Aikido.Zen.Core
         public AgentContext Context => _context;
 
         /// <summary>
+        /// Gets the attack wave detector instance.
+        /// This instance is needed by the blocking module to process http requests
+        /// </summary>
+        public AttackWaveDetector AttackWaveDetector => _attackWaveDetector;
+
+        /// <summary>
         /// Clears all monitoring data from the current context.
         /// </summary>
         public void ClearContext()
@@ -399,6 +409,24 @@ namespace Aikido.Zen.Core
             }
 
             Context.AddAttackDetected(blocked);
+        }
+
+        /// <summary>
+        /// Sends an attack wave event.
+        /// </summary>
+        /// <param name="context">The current request context.</param>
+        /// <param name="samples">The collected suspicious samples for this IP.</param>
+        public virtual void SendAttackWaveEvent(Context context, IEnumerable<SuspiciousRequest> samples)
+        {
+            LogHelper.AttackLog(Logger, $"Attack wave detected from {context.RemoteAddress}");
+
+            // Prevent sending events if no token is configured
+            if (!string.IsNullOrEmpty(EnvironmentHelper.Token))
+            {
+                QueueEvent(EnvironmentHelper.Token, DetectedAttackWave.Create(context, samples));
+            }
+
+            Context.AddAttackDetected(false);
         }
 
         /// <summary>
