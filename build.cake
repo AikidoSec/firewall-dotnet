@@ -19,7 +19,7 @@ var libVersion = Argument("libVersion", "1.2.5");
 
 var baseUrl = $"https://github.com/AikidoSec/zen-internals/releases/download/v{zenInternalsVersion}/";
 var librariesDir = $"./{projectName}/libraries";
-var downloadRetries = Argument("downloadRetries", 5);
+var downloadRetries = Argument("downloadRetries", 10);
 var downloadRetryDelaySeconds = Argument("downloadRetryDelaySeconds", 2);
 
 var filesToDownload = new string[] {
@@ -87,7 +87,7 @@ Task("DownloadLibraries")
                         break;
                     }
 
-                    Warning($"Download failed for {url}. Attempt {attempt}/{downloadRetries}. Retrying in {downloadRetryDelaySeconds}s.");
+                    Warning($"Download failed. Retrying in {downloadRetryDelaySeconds}s.");
                     System.Threading.Thread.Sleep(TimeSpan.FromSeconds(downloadRetryDelaySeconds * attempt));
                 }
             }
