@@ -138,6 +138,8 @@ namespace Aikido.Zen.Core.Vulnerabilities
             if (samples.Any(s => string.Equals(s.Method, requestSample.Method, StringComparison.OrdinalIgnoreCase)
                 && string.Equals(s.Url, requestSample.Url, StringComparison.OrdinalIgnoreCase)))
             {
+                // Set is necessary to keep-alive the samples LRU even when no new samples are added, otherwise samples
+                // might expire before the total count LRU hits the threshold, leading to a report with no samples.
                 _suspiciousRequestsSamples.Set(ip, samples);
                 return;
             }
