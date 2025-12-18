@@ -87,7 +87,7 @@ Task("DownloadLibraries")
                         break;
                     }
 
-                    Warning($"Download failed. Retrying in {downloadRetryDelaySeconds}s.");
+                    Warning($"Download failed for {url}. Error: {ex.Message}. Retrying in {downloadRetryDelaySeconds}s.");
                     System.Threading.Thread.Sleep(TimeSpan.FromSeconds(downloadRetryDelaySeconds * attempt));
                 }
             }
