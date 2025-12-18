@@ -198,24 +198,40 @@ namespace Aikido.Zen.DotNetCore.Middleware
 
         /// <summary>
         /// Gets the client IP address, considering X-Forwarded-For headers for proxied requests.
+        /// See https://help.aikido.dev/zen-firewall/zen-installation-instructions/proxy-load-balancer-settings#additional-configuration-for-aspnet-core
         /// </summary>
         /// <param name="httpContext">The HTTP context containing the request information</param>
         /// <returns>The client IP address as a string</returns>
         private static string GetClientIp(HttpContext httpContext)
         {
-            // Check for X-Forwarded-For header first (for proxied requests)
-            if (httpContext.Request.Headers.TryGetValue("X-Forwarded-For", out var forwardedFor))
+            // RemoteIpAddress was almost good enough to return directly, as it already contains either:
+            //   - the regular connection remote ip, or
+            //   - the last ip entry in the X-Forwarded-For header (which also gets removed from the X-Forwarded-For list)
+            // However, the standard specifies the client's ip to be the first entry in the X-Forwarded-For list.
+
+            if (EnvironmentHelper.TrustProxy)
             {
-                var firstIp = forwardedFor.FirstOrDefault();
-                if (!string.IsNullOrEmpty(firstIp))
+                // Usually X-Forwarded-For, but can be set to something else via AIKIDO_CLIENT_IP_HEADER
+                var headerVarName = EnvironmentHelper.ClientIpHeader;
+                if (httpContext.Request?.Headers?.TryGetValue(headerVarName, out var ipStringValues) == true)
                 {
-                    // X-Forwarded-For can contain multiple IPs, take the first one
-                    return firstIp.Split(',')[0].Trim();
+                    // X-Forwarded-For can contain multiple IPs
+                    var ipHeader = ipStringValues.ToString();
+                    var ipList = IPHeaderHelper.ParseIpHeader(ipHeader);
+
+                    foreach (var ip in ipList)
+                    {
+                        // Return the first valid non-private IP address
+                        if (IPHelper.IsValidIp(ip) && !IPHelper.IsPrivateOrLocalIp(ip))
+                        {
+                            return ip;
+                        }
+                    }
                 }
             }
 
-            // Fall back to the connection's remote IP address
-            return httpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty;
+            // No X-Forwarded-For header, or X-Forwarded-For is present and ASP NET already popped the last list entry in RemoteIpAddress
+            return httpContext.Connection?.RemoteIpAddress?.ToString() ?? string.Empty;
         }
 
         /// <summary>

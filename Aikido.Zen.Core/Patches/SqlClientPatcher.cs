@@ -1,7 +1,6 @@
-using System;
-using System.Data.Common;
 using System.Diagnostics;
 using System.Reflection;
+
 using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
@@ -22,6 +21,12 @@ namespace Aikido.Zen.Core.Patches
         /// <param name="sql">The SQL command to execute.</param>
         public static bool OnCommandExecuting(object[] __args, MethodBase __originalMethod, string sql, string assembly, Context context)
         {
+            // Exclude certain assemblies to avoid stack overflow issues
+            if (ReflectionHelper.ShouldSkipAssembly())
+            {
+                return true;
+            }
+
 
             // Determine sink and context status regardless of detection outcome
             var stopwatch = Stopwatch.StartNew();

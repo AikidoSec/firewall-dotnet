@@ -1,10 +1,11 @@
 using System;
-using System.Diagnostics;
 using System.Net;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Aikido.Zen.Core.Helpers;
+
 using HarmonyLib;
+
+using Aikido.Zen.Core.Helpers;
 
 // we don't want to expose this to the consumer, yet it should be testable, hence the internal visibility and the assembly attribute
 [assembly: InternalsVisibleTo("Aikido.Zen.Tests")]
@@ -13,6 +14,7 @@ namespace Aikido.Zen.Core.Patches
     internal static class WebRequestPatches
     {
         private const string operationKind = "outgoing_http_op";
+
         public static void ApplyPatches(Harmony harmony)
         {
             PatchMethod(harmony, typeof(WebRequest), "GetResponse", nameof(CaptureRequest));
@@ -40,6 +42,12 @@ namespace Aikido.Zen.Core.Patches
 
         internal static bool CaptureRequest(WebRequest __instance, System.Reflection.MethodBase __originalMethod)
         {
+            // Exclude certain assemblies to avoid stack overflow issues
+            if (ReflectionHelper.ShouldSkipAssembly())
+            {
+                return true;
+            }
+
             var (hostname, port) = UriHelper.ExtractHost(__instance.RequestUri);
             Agent.Instance.CaptureOutboundRequest(hostname, port);
             var methodInfo = __originalMethod as MethodInfo;

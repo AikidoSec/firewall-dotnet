@@ -23,6 +23,8 @@ namespace Aikido.Zen.Tests.DotNetCore
     {
         private Mock<HttpContext> _mockHttpContext;
         private Mock<EndpointDataSource> _mockEndpointDataSource;
+        private Mock<ConnectionInfo> _mockConnection;
+        private MethodInfo _getClientIpMethod;
         private ContextMiddleware _contextMiddleware;
 
         [SetUp]
@@ -40,7 +42,15 @@ namespace Aikido.Zen.Tests.DotNetCore
                 CreateEndpoint("api/v1/items/{id}", "V1ParameterizedEndpoint"),
                 CreateEndpoint("{slug}", "SlugEndpoint")
             });
+
+            _mockConnection = new Mock<ConnectionInfo>();
+            _mockConnection.SetupAllProperties();
+
             _mockHttpContext = new Mock<HttpContext>();
+            _mockHttpContext.Setup(c => c.Connection).Returns(_mockConnection.Object);
+
+            _getClientIpMethod = typeof(ContextMiddleware).GetMethod("GetClientIp", BindingFlags.NonPublic | BindingFlags.Static)!;
+
             _contextMiddleware = new ContextMiddleware([_mockEndpointDataSource.Object]);
         }
 
@@ -319,6 +329,436 @@ namespace Aikido.Zen.Tests.DotNetCore
             Assert.That(result["Accept[1]"], Is.EqualTo("application/json"));
             Assert.That(result.ContainsKey("Accept[2]"), Is.True);
             Assert.That(result["Accept[2]"], Is.EqualTo("application/xml"));
+        }
+
+        [Test]
+        public void GetClientIp_ReturnsEmpty_WhenNoHeadersOrRemoteAddress()
+        {
+            // Arrange
+            Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", "false");
+
+            // Act
+            var resultWithoutTrustProxy = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+
+            // Assert
+            Assert.That(resultWithoutTrustProxy, Is.Empty);
+
+            // Arrange
+            Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", "true");
+
+            // Act
+            var resultWithTrustProxy = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+
+            // Assert
+            Assert.That(resultWithTrustProxy, Is.Empty);
+        }
+
+        [Test]
+        public void GetClientIp_ReturnsRemoteAddress_WhenNoHeadersAndRemoteAddressPresent()
+        {
+            // Arrange
+            Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", "false");
+            _mockConnection.Object.RemoteIpAddress = IPAddress.Parse("1.2.3.4");
+
+            // Act
+            var resultWithoutTrustProxy = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+
+            // Assert
+            Assert.That(resultWithoutTrustProxy, Is.EqualTo("1.2.3.4"));
+
+            // Arrange
+            Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", "true");
+
+            // Act
+            var resultWithTrustProxy = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+
+            // Assert
+            Assert.That(resultWithTrustProxy, Is.EqualTo("1.2.3.4"));
+        }
+
+        [Test]
+        public void GetClientIp_IgnoresXForwardedFor_WhenTrustProxyDisabled()
+        {
+            // Arrange
+            Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", "false");
+            _mockConnection.Object.RemoteIpAddress = IPAddress.Parse("1.2.3.4");
+
+            var headers = new HeaderDictionary
+            {
+                { "X-FORWARDED-FOR", "9.9.9.9" }
+            };
+            _mockHttpContext.Setup(c => c.Request.Headers).Returns(headers);
+
+            // Act
+            var result1 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+
+            // Assert
+            Assert.That(result1, Is.EqualTo("1.2.3.4"));
+
+            // Arrange
+            _mockConnection.Object.RemoteIpAddress = IPAddress.Parse("df89:84af:85e0:c55f:960c:341a:2cc6:734d");
+            headers["X-FORWARDED-FOR"] = "a3ad:8f95:d2a8:454b:cf19:be6e:73c6:f880";
+
+            // Act
+            var result2 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+
+            // Assert
+            Assert.That(result2, Is.EqualTo("df89:84af:85e0:c55f:960c:341a:2cc6:734d"));
+        }
+
+        [Test]
+        public void GetClientIp_UsesRemoteAddress_WhenXForwardedForInvalidAndTrustProxyEnabled()
+        {
+            // Arrange
+            Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", "true");
+            _mockConnection.Object.RemoteIpAddress = IPAddress.Parse("1.2.3.4");
+
+            var headers = new HeaderDictionary
+            {
+                { "X-FORWARDED-FOR", "invalid" }
+            };
+            _mockHttpContext.Setup(c => c.Request.Headers).Returns(headers);
+
+            // Act
+            var result = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+
+            // Assert
+            Assert.That(result, Is.EqualTo("1.2.3.4"));
+        }
+
+        [Test]
+        public void GetClientIp_StripsPortFromXForwardedFor_WhenTrustProxyEnabled()
+        {
+            // Arrange
+            Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", "true");
+            _mockConnection.Object.RemoteIpAddress = IPAddress.Parse("1.2.3.4");
+            var headers = new HeaderDictionary
+            {
+                { "X-FORWARDED-FOR", "9.9.9.9:8080" }
+            };
+            _mockHttpContext.Setup(c => c.Request.Headers).Returns(headers);
+
+            // Act
+            var result1 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+
+            // Assert
+            Assert.That(result1, Is.EqualTo("9.9.9.9"));
+
+            // Arrange
+            headers["X-FORWARDED-FOR"] = "[a3ad:8f95:d2a8:454b:cf19:be6e:73c6:f880]:8080";
+
+            // Act
+            var result2 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+
+            // Assert
+            Assert.That(result2, Is.EqualTo("a3ad:8f95:d2a8:454b:cf19:be6e:73c6:f880"));
+
+            // Arrange
+            headers["X-FORWARDED-FOR"] = "[a3ad:8f95:d2a8:454b:cf19:be6e:73c6:f880]";
+
+            // Act
+            var result3 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+
+            // Assert
+            Assert.That(result3, Is.EqualTo("a3ad:8f95:d2a8:454b:cf19:be6e:73c6:f880"));
+
+            // Invalid format
+            // Arrange
+            headers["X-FORWARDED-FOR"] = "a3ad:8f95:d2a8:454b:cf19:be6e:73c6:f880:8080";
+            _mockConnection.Object.RemoteIpAddress = IPAddress.Parse("df89:84af:85e0:c55f:960c:341a:2cc6:734d");
+
+            // Act
+            var result4 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+
+            // Assert
+            Assert.That(result4, Is.EqualTo("df89:84af:85e0:c55f:960c:341a:2cc6:734d"));
+        }
+
+        [Test]
+        public void GetClientIp_HandlesTrailingCommasInXForwardedFor()
+        {
+            // Arrange
+            Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", "true");
+            _mockConnection.Object.RemoteIpAddress = IPAddress.Parse("1.2.3.4");
+            var headers = new HeaderDictionary
+            {
+                { "X-FORWARDED-FOR", "9.9.9.9," }
+            };
+            _mockHttpContext.Setup(c => c.Request.Headers).Returns(headers);
+
+            // Act
+            var result1 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+
+            // Assert
+            Assert.That(result1, Is.EqualTo("9.9.9.9"));
+
+            // Arrange
+            headers["X-FORWARDED-FOR"] = ",9.9.9.9";
+
+            // Act
+            var result2 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+
+            // Assert
+            Assert.That(result2, Is.EqualTo("9.9.9.9"));
+
+            // Arrange
+            headers["X-FORWARDED-FOR"] = ",9.9.9.9,";
+
+            // Act
+            var result3 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+
+            // Assert
+            Assert.That(result3, Is.EqualTo("9.9.9.9"));
+
+            // Arrange
+            headers["X-FORWARDED-FOR"] = ",9.9.9.9,,";
+
+            // Act
+            var result4 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+
+            // Assert
+            Assert.That(result4, Is.EqualTo("9.9.9.9"));
+        }
+
+        [Test]
+        public void GetClientIp_IgnoresPrivateXForwardedFor_WhenTrustProxyEnabled()
+        {
+            // Arrange
+            Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", "true");
+            _mockConnection.Object.RemoteIpAddress = IPAddress.Parse("1.2.3.4");
+            var headers = new HeaderDictionary
+            {
+                { "X-FORWARDED-FOR", "127.0.0.1" }
+            };
+            _mockHttpContext.Setup(c => c.Request.Headers).Returns(headers);
+
+            // Act
+            var result1 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+
+            // Assert
+            Assert.That(result1, Is.EqualTo("1.2.3.4"));
+
+            // Arrange
+            _mockConnection.Object.RemoteIpAddress = IPAddress.Parse("df89:84af:85e0:c55f:960c:341a:2cc6:734d");
+            headers["X-FORWARDED-FOR"] = "::1";
+
+            // Act
+            var result2 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+
+            // Assert
+            Assert.That(result2, Is.EqualTo("df89:84af:85e0:c55f:960c:341a:2cc6:734d"));
+        }
+
+        [Test]
+        public void GetClientIp_SkipsPrivateEntriesInXForwardedFor_WhenTrustProxyEnabled()
+        {
+            // Arrange
+            Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", "true");
+            _mockConnection.Object.RemoteIpAddress = IPAddress.Parse("1.2.3.4");
+            var headers = new HeaderDictionary
+            {
+                { "X-FORWARDED-FOR", "127.0.0.1, 9.9.9.9" }
+            };
+            _mockHttpContext.Setup(c => c.Request.Headers).Returns(headers);
+
+            // Act
+            var result1 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+
+            // Assert
+            Assert.That(result1, Is.EqualTo("9.9.9.9"));
+
+            // Arrange
+            _mockConnection.Object.RemoteIpAddress = IPAddress.Parse("df89:84af:85e0:c55f:960c:341a:2cc6:734d");
+            headers["X-FORWARDED-FOR"] = "::1, a3ad:8f95:d2a8:454b:cf19:be6e:73c6:f880";
+
+            // Act
+            var result2 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+
+            // Assert
+            Assert.That(result2, Is.EqualTo("a3ad:8f95:d2a8:454b:cf19:be6e:73c6:f880"));
+        }
+
+        [Test]
+        public void GetClientIp_UsesPublicXForwardedFor_WhenTrustProxyEnabled()
+        {
+            // Arrange
+            Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", "true");
+            _mockConnection.Object.RemoteIpAddress = IPAddress.Parse("1.2.3.4");
+            var headers = new HeaderDictionary
+            {
+                { "X-FORWARDED-FOR", "9.9.9.9" }
+            };
+            _mockHttpContext.Setup(c => c.Request.Headers).Returns(headers);
+
+            // Act
+            var result1 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+
+            // Assert
+            Assert.That(result1, Is.EqualTo("9.9.9.9"));
+
+            // Arrange
+            _mockConnection.Object.RemoteIpAddress = IPAddress.Parse("df89:84af:85e0:c55f:960c:341a:2cc6:734d");
+            headers["X-FORWARDED-FOR"] = "a3ad:8f95:d2a8:454b:cf19:be6e:73c6:f880";
+
+            // Act
+            var result2 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+
+            // Assert
+            Assert.That(result2, Is.EqualTo("a3ad:8f95:d2a8:454b:cf19:be6e:73c6:f880"));
+        }
+
+        [Test]
+        public void GetClientIp_IgnoresTrailingPrivateIpInXForwardedFor_WhenTrustProxyEnabled()
+        {
+            // Arrange
+            Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", "true");
+            _mockConnection.Object.RemoteIpAddress = IPAddress.Parse("1.2.3.4");
+            var headers = new HeaderDictionary
+            {
+                { "X-FORWARDED-FOR", "9.9.9.9, 127.0.0.1" }
+            };
+            _mockHttpContext.Setup(c => c.Request.Headers).Returns(headers);
+
+            // Act
+            var result1 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+
+            // Assert
+            Assert.That(result1, Is.EqualTo("9.9.9.9"));
+
+            // Arrange
+            _mockConnection.Object.RemoteIpAddress = IPAddress.Parse("df89:84af:85e0:c55f:960c:341a:2cc6:734d");
+            headers["X-FORWARDED-FOR"] = "a3ad:8f95:d2a8:454b:cf19:be6e:73c6:f880, ::1";
+
+            // Act
+            var result2 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+
+            // Assert
+            Assert.That(result2, Is.EqualTo("a3ad:8f95:d2a8:454b:cf19:be6e:73c6:f880"));
+        }
+
+        [Test]
+        public void GetClientIp_UsesFirstPublicEntry_WhenMultipleXForwardedForValues()
+        {
+            // Arrange
+            Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", "true");
+            _mockConnection.Object.RemoteIpAddress = IPAddress.Parse("1.2.3.4");
+            var headers = new HeaderDictionary
+            {
+                { "X-FORWARDED-FOR", "9.9.9.9, 8.8.8.8, 7.7.7.7" }
+            };
+            _mockHttpContext.Setup(c => c.Request.Headers).Returns(headers);
+
+            // Act
+            var result1 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+
+            // Assert
+            Assert.That(result1, Is.EqualTo("9.9.9.9"));
+
+            // Arrange
+            _mockConnection.Object.RemoteIpAddress = IPAddress.Parse("df89:84af:85e0:c55f:960c:341a:2cc6:734d");
+            headers["X-FORWARDED-FOR"] = "a3ad:8f95:d2a8:454b:cf19:be6e:73c6:f880, 3b07:2fba:0270:2149:5fc1:2049:5f04:2131, 791d:967e:428a:90b9:8f6f:4fcc:5d88:015d";
+
+            // Act
+            var result2 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+
+            // Assert
+            Assert.That(result2, Is.EqualTo("a3ad:8f95:d2a8:454b:cf19:be6e:73c6:f880"));
+        }
+
+        [Test]
+        public void GetClientIp_UsesFirstPublicEntry_WhenManyXForwardedForValues()
+        {
+            // Arrange
+            Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", "true");
+            _mockConnection.Object.RemoteIpAddress = IPAddress.Parse("1.2.3.4");
+            var headers = new HeaderDictionary
+            {
+                { "X-FORWARDED-FOR", "127.0.0.1, 192.168.0.1, 192.168.0.2, 9.9.9.9" }
+            };
+            _mockHttpContext.Setup(c => c.Request.Headers).Returns(headers);
+
+            // Act
+            var result1 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+
+            // Assert
+            Assert.That(result1, Is.EqualTo("9.9.9.9"));
+
+            // Arrange
+            headers["X-FORWARDED-FOR"] = "9.9.9.9, 127.0.0.1, 192.168.0.1, 192.168.0.2";
+
+            // Act
+            var result2 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+
+            // Assert
+            Assert.That(result2, Is.EqualTo("9.9.9.9"));
+        }
+
+        [Test]
+        public void GetClientIp_UsesConfiguredClientIpHeader_WhenSet()
+        {
+            // Arrange
+            Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", "true");
+            Environment.SetEnvironmentVariable("AIKIDO_CLIENT_IP_HEADER", null);
+            _mockConnection.Object.RemoteIpAddress = IPAddress.Parse("1.2.3.4");
+            var headers = new HeaderDictionary
+            {
+                { "X-FORWARDED-FOR", "127.0.0.1, 192.168.0.1" },
+                { "connecting-ip", "9.9.9.9" }
+            };
+            _mockHttpContext.Setup(c => c.Request.Headers).Returns(headers);
+
+            // Act
+            var result1 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+
+            // Assert
+            Assert.That(result1, Is.EqualTo("1.2.3.4"));
+
+            // Arrange
+            Environment.SetEnvironmentVariable("AIKIDO_CLIENT_IP_HEADER", "connecting-ip");
+
+            // Act
+            var result2 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+
+            // Assert
+            Assert.That(result2, Is.EqualTo("9.9.9.9"));
+
+            // Arrange
+            headers.Remove("connecting-ip");
+
+            // Act
+            var result3 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+
+            // Assert
+            Assert.That(result3, Is.EqualTo("1.2.3.4"));
+
+            // Arrange
+            headers["connecting-ip"] = "9.9.9.9";
+            Environment.SetEnvironmentVariable("AIKIDO_CLIENT_IP_HEADER", "connecting-IP");
+
+            // Act
+            var result4 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+
+            // Assert
+            Assert.That(result4, Is.EqualTo("9.9.9.9"));
+
+            // Arrange
+            Environment.SetEnvironmentVariable("AIKIDO_CLIENT_IP_HEADER", string.Empty);
+
+            // Act
+            var result5 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+
+            // Assert
+            Assert.That(result5, Is.EqualTo("1.2.3.4"));
+
+            // Arrange
+            Environment.SetEnvironmentVariable("AIKIDO_CLIENT_IP_HEADER", null);
+            headers["X-FORWARDED-FOR"] = "127.0.0.1, 192.168.0.1, 5.6.7.8";
+
+            // Act
+            var result6 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+
+            // Assert
+            Assert.That(result6, Is.EqualTo("5.6.7.8"));
         }
     }
 }

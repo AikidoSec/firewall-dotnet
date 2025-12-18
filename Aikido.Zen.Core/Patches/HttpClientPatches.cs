@@ -1,9 +1,9 @@
 using System;
-using System.Diagnostics;
 using System.Net.Http;
 using System.Reflection;
-using Aikido.Zen.Core.Helpers;
 using HarmonyLib;
+
+using Aikido.Zen.Core.Helpers;
 
 namespace Aikido.Zen.Core.Patches
 {
@@ -56,6 +56,11 @@ namespace Aikido.Zen.Core.Patches
         /// <returns>True if the original method should continue execution; otherwise, false.</returns>
         internal static bool CaptureRequest(HttpRequestMessage request, HttpClient __instance, System.Reflection.MethodBase __originalMethod)
         {
+            // Exclude certain assemblies to avoid stack overflow issues
+            if (ReflectionHelper.ShouldSkipAssembly())
+            {
+                return true;
+            }
             var uri = __instance.BaseAddress == null
                 ? request.RequestUri
                 : request.RequestUri == null

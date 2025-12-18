@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 
 namespace Aikido.Zen.Core.Helpers
 {
@@ -96,29 +96,95 @@ namespace Aikido.Zen.Core.Helpers
         }
 
         /// <summary>
-        /// This method is crucial for preventing re-entrancy issues with certain IL weavers and patchers.
+        /// Checks if we should skip patching of the current assembly. Crucial for preventing re-entrancy issues with certain IL weavers and patchers.
         /// </summary>
-        /// <param name="assemblyFullName">The full name of the assembly to check.</param>
         /// <returns>True if the assembly should be excluded from patching, false otherwise.</returns>
-        public static bool ShouldExcludeAssembly(string assemblyFullName)
+        public static bool ShouldSkipAssembly()
         {
-            if (string.IsNullOrEmpty(assemblyFullName))
-            {
+            var assembly =  GetCallingAssembly();
+            if (assembly == null)
                 return false;
+
+            // Exclude DispatchProxy-based dynamic types
+            var assemblyFullName = assembly.FullName ?? string.Empty;
+            if (assemblyFullName.IndexOf("Anonymously Hosted DynamicMethods", StringComparison.OrdinalIgnoreCase) >= 0 || //.NET runtime to hold dynamically generated method, it usually appears when the runtime uses Reflection.Emit
+                assemblyFullName.IndexOf("DynamicProxyGenAssembly2", StringComparison.OrdinalIgnoreCase) >= 0) // default assembly name used by Castle DynamicProxy, the proxy generator behind many interceptors
+            {
+                return true;
             }
 
             // Exclude assemblies that are known to cause issues
-            // Using FullName which includes version info, so we check if it contains the assembly name
             var excludedAssemblies = new[]
             {
-                "Costura", // Assembly weaver that embeds dependencies
-                "Harmony", // Harmony patching library
-                "Fody", // IL weaving framework
-                "Mono.Cecil", // IL manipulation library
-                "PostSharp", // AOP framework
+                // IL weaving / patching
+                "Costura",
+                "Harmony",
+                "Fody",
+                "Mono.Cecil",
+                "PostSharp",
+                "dnlib",
+                "ILRepack",
+                "BepInEx",
+
+                // Dynamic proxy / AOP
+                "Castle.DynamicProxy",
+                "Autofac.Extras.DynamicProxy",
+                "DispatchProxy",
+
+                // Instrumentation / APM
+                "Datadog.Trace",
+                "NewRelic",
+                "AppDynamics",
+                "OpenTelemetry",
+
+                // Scripting / dynamic compilation
+                "Microsoft.CodeAnalysis",
+                "Roslyn",
+                "ScriptCs",
+                "Jint",
+                "ClearScript",
+
+                // System.Reflection.Emit (dynamic runtime code generation)
+                "System.Reflection.Emit"
             };
 
-            return excludedAssemblies.Any(excluded => assemblyFullName.Contains(excluded));
+            if (excludedAssemblies.Any(excluded =>
+                assemblyFullName.IndexOf(excluded, StringComparison.OrdinalIgnoreCase) >= 0))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Retrieves the calling assembly by examining the stack trace.
+        /// </summary>
+        /// <returns>The calling assembly</returns>
+        private static Assembly GetCallingAssembly()
+        {
+            try
+            {
+                var stackTrace = new StackTrace();
+                var frames = stackTrace.GetFrames();
+
+                // Skip the first few frames which are our patch methods
+                for (int i = 2; i < frames.Length; i++)
+                {
+                    var method = frames[i].GetMethod();
+                    var assembly = method?.DeclaringType?.Assembly;
+                    if (assembly != null)
+                    {
+                        return assembly;
+                    }
+                }
+            }
+            catch
+            {
+                // If we can't get the calling assembly, don't exclude
+            }
+
+            return null;
         }
 
         /// <summary>

@@ -22,8 +22,8 @@ stop_app() {
 
 # Run benchmarks for each app
 for app in "${SAMPLE_APPS[@]}"; do
-    # Run the sample app with AIKIDO_DISABLED=true
-    export AIKIDO_DISABLED=true
+    # Run the sample app with AIKIDO_DISABLE=true
+    export AIKIDO_DISABLE=true
     ./scripts/run_sample_app.sh e2e/sample-apps/$app/$app.csproj
 
     # Run k6 benchmark
@@ -47,8 +47,8 @@ for app in "${SAMPLE_APPS[@]}"; do
     # Stop the app
     stop_app
 
-    # Run the sample app with AIKIDO_DISABLED=false
-    export AIKIDO_DISABLED=false
+    # Run the sample app with AIKIDO_DISABLE=false
+    export AIKIDO_DISABLE=false
     ./scripts/run_sample_app.sh e2e/sample-apps/$app/$app.csproj
 
     # Run k6 benchmark

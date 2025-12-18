@@ -1,10 +1,9 @@
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+
 using Aikido.Zen.Core.Helpers;
-using Aikido.Zen.Core.Models;
 
 [assembly: InternalsVisibleTo("Aikido.Zen.Test")]
 
@@ -28,6 +27,12 @@ namespace Aikido.Zen.Core.Patches
         /// <param name="context">The current Aikido context.</param>
         public static void OnLLMCallCompleted(object[] __args, MethodBase __originalMethod, string assembly, object result, Context context)
         {
+            // Exclude certain assemblies to avoid stack overflow issues
+            if (ReflectionHelper.ShouldSkipAssembly())
+            {
+                return;
+            }
+
             try
             {
                 var stopWatch = Stopwatch.StartNew();
@@ -39,13 +44,18 @@ namespace Aikido.Zen.Core.Patches
                     LogHelper.ErrorLog(Agent.Logger, $"Failed to extract model from LLM result for model: {model}");
                 }
 
+                if (!TryGetCloudProvider($"{model} {assembly} {result.GetType().ToString()}", out var provider))
+                {
+                    LogHelper.ErrorLog(Agent.Logger, $"Failed to extract provider from LLM for model: {model}, provider: {provider}");
+                }
+
                 if (!TryExtractTokensFromResult(result, out var tokens))
                 {
-                    LogHelper.ErrorLog(Agent.Logger, $"Failed to extract token usage from LLM result for provider: {assembly}, model: {model}");
+                    LogHelper.ErrorLog(Agent.Logger, $"Failed to extract token usage from LLM result for provider: {provider}, model: {model}");
                 }
 
                 // Record AI statistics
-                Agent.Instance.Context.OnAiCall(assembly, model, tokens.inputTokens, tokens.outputTokens, context.Route);
+                Agent.Instance.Context.OnAiCall(provider, model, tokens.inputTokens, tokens.outputTokens, context.Route);
 
 
                 // record sink statistics

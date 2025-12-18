@@ -3,6 +3,8 @@ name: Publish NuGet Packages
 on:
     release:
         types: [created]
+permissions:
+    contents: read
 
 jobs:
     publish:
