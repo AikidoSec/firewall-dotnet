@@ -17,10 +17,10 @@ namespace Aikido.Zen.Core.Models.Events
 
         public static DetectedAttack Create(AttackKind kind, Source source, string payload, string operation, Context context, string module, IDictionary<string, object> metadata, bool blocked)
         {
-
             // if the context is null, throw an argument null exception
             if (context == null)
                 throw new ArgumentNullException(nameof(context));
+
             // in case the body is null, create an empty stream
             if (context.Body == null)
                 context.Body = new MemoryStream();

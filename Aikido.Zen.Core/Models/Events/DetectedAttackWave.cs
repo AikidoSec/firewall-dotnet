@@ -29,9 +29,7 @@ namespace Aikido.Zen.Core.Models.Events
                 Source = context.Source,
             };
 
-            var serializedSamples = JsonSerializer.Serialize(
-                samples ?? Array.Empty<SuspiciousRequest>(),
-                Api.ZenApi.JsonSerializerOptions);
+            var serializedSamples = JsonSerializer.Serialize(samples, Api.ZenApi.JsonSerializerOptions);
 
             var attack = new Attack
             {

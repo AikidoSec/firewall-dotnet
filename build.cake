@@ -19,6 +19,8 @@ var libVersion = Argument("libVersion", "1.2.5");
 
 var baseUrl = $"https://github.com/AikidoSec/zen-internals/releases/download/v{zenInternalsVersion}/";
 var librariesDir = $"./{projectName}/libraries";
+var downloadRetries = Argument("downloadRetries", 10);
+var downloadRetryDelaySeconds = Argument("downloadRetryDelaySeconds", 2);
 
 var filesToDownload = new string[] {
     "libzen_internals_aarch64-apple-darwin.dylib",
@@ -64,7 +66,36 @@ Task("DownloadLibraries")
 
         foreach (var file in filesToDownload)
         {
-            DownloadFile($"{baseUrl}{file}", $"{librariesDir}/{file}");
+            var url = $"{baseUrl}{file}";
+            var destination = $"{librariesDir}/{file}";
+            Exception lastException = null;
+
+            for (var attempt = 1; attempt <= downloadRetries; attempt++)
+            {
+                try
+                {
+                    Information($"Downloading {url}. Attempt {attempt}/{downloadRetries}.");
+                    DownloadFile(url, destination);
+                    lastException = null;
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    lastException = ex;
+                    if (attempt == downloadRetries)
+                    {
+                        break;
+                    }
+
+                    Warning($"Download failed for {url}. Error: {ex.Message}. Retrying in {downloadRetryDelaySeconds}s.");
+                    System.Threading.Thread.Sleep(TimeSpan.FromSeconds(downloadRetryDelaySeconds * attempt));
+                }
+            }
+
+            if (lastException != null)
+            {
+                throw new Exception($"Failed to download {url} after {downloadRetries} attempts.", lastException);
+            }
         }
         Information("DownloadLibraries task completed successfully.");
     });

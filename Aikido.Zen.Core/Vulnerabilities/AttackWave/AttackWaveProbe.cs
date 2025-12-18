@@ -121,19 +121,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 return false;
             }
 
-            var normalized = path;
-            var questionMarkIndex = normalized.IndexOf("?", StringComparison.Ordinal);
-            if (questionMarkIndex >= 0)
-            {
-                normalized = normalized.Substring(0, questionMarkIndex);
-            }
-            var hashIndex = normalized.IndexOf("#", StringComparison.Ordinal);
-            if (hashIndex >= 0)
-            {
-                normalized = normalized.Substring(0, hashIndex);
-            }
-
-            normalized = normalized.ToLowerInvariant();
+            var normalized = path.ToLowerInvariant();
 
             var segments = normalized.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries).ToList();
             var filename = segments.LastOrDefault();
