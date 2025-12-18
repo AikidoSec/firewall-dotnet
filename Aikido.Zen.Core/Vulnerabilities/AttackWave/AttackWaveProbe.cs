@@ -91,18 +91,12 @@ namespace Aikido.Zen.Core.Vulnerabilities
 
         public static bool IsProbeRequest(Context context)
         {
-            if (context == null)
-            {
-                return false;
-            }
-
-            if (!string.IsNullOrEmpty(context.Method) && IsProbeMethod(context.Method))
+            if (IsProbeMethod(context.Method))
             {
                 return true;
             }
 
-            var path = string.IsNullOrEmpty(context.Route) ? context.Url : context.Route;
-            if (!string.IsNullOrEmpty(path) && IsProbePath(path))
+            if (IsProbePath(context.Url))
             {
                 return true;
             }

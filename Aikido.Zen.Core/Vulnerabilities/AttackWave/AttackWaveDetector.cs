@@ -40,8 +40,8 @@ namespace Aikido.Zen.Core.Vulnerabilities
         /// </summary>
         public bool Check(Context context)
         {
-            // Must have a request context and IP to proceed
-            if (context == null || string.IsNullOrWhiteSpace(context.RemoteAddress))
+            // Must have remote address to proceed
+            if (string.IsNullOrWhiteSpace(context.RemoteAddress))
             {
                 return false;
             }

@@ -29,6 +29,27 @@ namespace DotNetCore.Sample.App.Controllers
                 return BadRequest("Command parameter 'cmd' is required.");
             }
 
+            return await ExecuteCommandInternal(command);
+        }
+
+        /// <summary>
+        /// Executes a shell command provided as a route parameter.
+        /// </summary>
+        /// <param name="command">Command to execute.</param>
+        /// <returns>An IActionResult containing the command's stdout and stderr, or an error message.</returns>
+        [HttpGet("/api/execute/{command}")]
+        public async Task<IActionResult> ExecuteRouteCommand(string command)
+        {
+            if (string.IsNullOrEmpty(command))
+            {
+                return BadRequest("Route parameter 'command' is required.");
+            }
+
+            return await ExecuteCommandInternal(command);
+        }
+
+        private async Task<IActionResult> ExecuteCommandInternal(string command)
+        {
             var processStartInfo = new ProcessStartInfo
             {
                 RedirectStandardOutput = true,
@@ -39,12 +60,10 @@ namespace DotNetCore.Sample.App.Controllers
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                // Use cmd /c wsl to execute the command in WSL on Windows
                 processStartInfo.FileName = "cmd.exe";
                 // Need to escape quotes for cmd.exe if the command contains them.
-                // The exact escaping for nested WSL commands can be tricky.
                 // This basic escaping handles simple cases.
-                processStartInfo.Arguments = $"/c wsl {command}";
+                processStartInfo.Arguments = $"/c {command}";
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
