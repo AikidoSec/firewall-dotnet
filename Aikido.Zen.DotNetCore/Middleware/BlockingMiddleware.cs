@@ -35,6 +35,14 @@ namespace Aikido.Zen.DotNetCore.Middleware
                     Agent.Instance.Context.AddUser(user, ipAddress: context.Connection.RemoteIpAddress?.ToString());
                 }
 
+                // Attack wave detection needs to be run manually as it doesn't rely on method patching
+                var attackWaveDetector = Agent.Instance.AttackWaveDetector;
+                if (attackWaveDetector.Check(aikidoContext))
+                {
+                    var samples = attackWaveDetector.GetSamplesForIp(aikidoContext.RemoteAddress);
+                    Agent.Instance.SendAttackWaveEvent(aikidoContext, samples);
+                }
+
                 // block the request if the user is blocked
                 if (Agent.Instance.Context.IsBlocked(aikidoContext, out var reason))
                 {
