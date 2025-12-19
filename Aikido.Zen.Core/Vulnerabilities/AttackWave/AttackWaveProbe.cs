@@ -123,28 +123,30 @@ namespace Aikido.Zen.Core.Vulnerabilities
 
             var normalized = path.ToLowerInvariant();
 
+            // Split path into filename and directories, last segment is filename
             var segments = normalized.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries).ToList();
             var filename = segments.LastOrDefault();
 
             if (!string.IsNullOrEmpty(filename))
             {
+                // Match suspicious filenames
                 if (FileNames.Contains(filename))
                 {
                     return true;
                 }
 
-                if (filename.Contains('.'))
+                // Match suspicious extensions
+                var ext = filename.Split('.').LastOrDefault();
+                if (!string.IsNullOrEmpty(ext) && ext != filename && FileExtensions.Contains(ext))
                 {
-                    var ext = filename.Split('.').LastOrDefault();
-                    if (!string.IsNullOrEmpty(ext) && FileExtensions.Contains(ext))
-                    {
-                        return true;
-                    }
+                    return true;
                 }
 
+                // Drop filename before checking directories
                 segments.RemoveAt(segments.Count - 1);
             }
 
+            // Match suspicious directories
             foreach (var dir in segments)
             {
                 if (Directories.Contains(dir))
@@ -163,40 +165,11 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 return false;
             }
 
-            foreach (var str in ExtractStringsFromQuery(query))
-            {
-                if (str.Length < 5 || str.Length > 1000)
-                {
-                    continue;
-                }
-
-                var upper = str.ToUpperInvariant();
-                foreach (var keyword in Keywords)
-                {
-                    if (upper.IndexOf(keyword, StringComparison.Ordinal) >= 0)
-                    {
-                        return true;
-                    }
-                }
-            }
-
-            return false;
-        }
-
-        private static IEnumerable<string> ExtractStringsFromQuery(IDictionary<string, string> query)
-        {
-            foreach (var pair in query)
-            {
-                if (!string.IsNullOrEmpty(pair.Key))
-                {
-                    yield return pair.Key;
-                }
-
-                if (!string.IsNullOrEmpty(pair.Value))
-                {
-                    yield return pair.Value;
-                }
-            }
+            return query
+                .SelectMany(p => new[] { p.Key, p.Value })
+                .Where(s => !string.IsNullOrEmpty(s) && s.Length >= 5 && s.Length <= 1000)
+                .Select(s => s.ToUpperInvariant())
+                .Any(upper => Keywords.Any(k => upper.Contains(k)));
         }
     }
 }

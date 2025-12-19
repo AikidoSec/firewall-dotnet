@@ -44,6 +44,11 @@ namespace Aikido.Zen.Core.Models
             _stats.OnDetectedAttack(blocked);
         }
 
+        public void AddAttackWaveDetected(bool blocked = false)
+        {
+            _stats.OnDetectedAttackWave(blocked);
+        }
+
         public void AddHostname(string hostname)
         {
             if (string.IsNullOrWhiteSpace(hostname))
@@ -145,7 +150,7 @@ namespace Aikido.Zen.Core.Models
             var identifier = $"{packageName.ToLowerInvariant()}@{packageVersion}";
 
             _packages.AddOrUpdate(
-                key: identifier, 
+                key: identifier,
                 addValue: new Package
                 {
                     Name = packageName,
@@ -282,6 +287,8 @@ namespace Aikido.Zen.Core.Models
         public int RequestsAborted => _stats.Requests.Aborted;
         public int AttacksDetected => _stats.Requests.AttacksDetected.Total;
         public int AttacksBlocked => _stats.Requests.AttacksDetected.Blocked;
+        public int AttackWavesDetected => _stats.Requests.AttackWaves.Total;
+        public int AttackWavesBlocked => _stats.Requests.AttackWaves.Blocked;
         public long Started => _stats.StartedAt;
         public BlockList BlockList => _config.BlockList;
         public Regex BlockedUserAgents => _config.BlockedUserAgents;
