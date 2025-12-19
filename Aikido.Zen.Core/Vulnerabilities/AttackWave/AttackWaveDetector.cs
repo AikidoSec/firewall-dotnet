@@ -8,8 +8,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
 {
     public class AttackWaveDetector
     {
-        private readonly LRUCache<string, int> _suspiciousRequestsCounts;
-        private readonly LRUCache<string, List<SuspiciousRequest>> _suspiciousRequestsSamples;
+        private readonly LRUCache<string, SuspiciousState> _suspiciousRequests;
         private readonly LRUCache<string, long> _sentEventsMap;
         private readonly int _attackWaveThreshold;
         private readonly int _maxSamplesPerIp;
@@ -29,8 +28,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
             _attackWaveThreshold = options.AttackWaveThreshold ?? 15;
             _maxSamplesPerIp = Math.Min(options.MaxSamplesPerIP ?? 15, _attackWaveThreshold);
 
-            _suspiciousRequestsCounts = new LRUCache<string, int>(maxLruEntries, attackWaveTimeFrame);
-            _suspiciousRequestsSamples = new LRUCache<string, List<SuspiciousRequest>>(maxLruEntries, attackWaveTimeFrame);
+            _suspiciousRequests = new LRUCache<string, SuspiciousState>(maxLruEntries, attackWaveTimeFrame);
             _sentEventsMap = new LRUCache<string, long>(maxLruEntries, minTimeBetweenEvents);
         }
 
@@ -70,8 +68,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 }
 
                 // Update total counter and track unique sample
-                var suspiciousRequests = IncrementSuspiciousRequestCount(ip);
-                TrackUniqueSample(ip, context);
+                var suspiciousRequests = TrackSuspiciousRequest(ip, context);
 
                 // Threshold not yet reached
                 if (suspiciousRequests < _attackWaveThreshold)
@@ -94,59 +91,42 @@ namespace Aikido.Zen.Core.Vulnerabilities
 
             lock (_lock)
             {
-                if (_suspiciousRequestsSamples.TryGetValue(ip, out var samples) && samples != null)
+                if (_suspiciousRequests.TryGetValue(ip, out var state) && state?.Samples != null)
                 {
-                    return samples.ToList();
+                    return state.Samples.ToList();
                 }
             }
 
             return new List<SuspiciousRequest>();
         }
 
-        private int IncrementSuspiciousRequestCount(string ip)
+        private int TrackSuspiciousRequest(string ip, Context context)
         {
-            if (!_suspiciousRequestsCounts.TryGetValue(ip, out var count))
+            if (!_suspiciousRequests.TryGetValue(ip, out var state) || state == null)
             {
-                count = 0;
+                state = new SuspiciousState();
             }
 
-            count++;
-            _suspiciousRequestsCounts.Set(ip, count);
-            return count;
-        }
+            state.Count++;
 
-        private void TrackUniqueSample(string ip, Context context)
-        {
-            if (!_suspiciousRequestsSamples.TryGetValue(ip, out var samples) || samples == null)
+            if (state.Samples.Count < _maxSamplesPerIp)
             {
-                samples = new List<SuspiciousRequest>();
+                var requestSample = new SuspiciousRequest
+                {
+                    Method = context.Method,
+                    Url = BuildUrlWithQuery(context)
+                };
+
+                // Only store unique samples
+                if (!state.Samples.Any(s => string.Equals(s.Method, requestSample.Method, StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(s.Url, requestSample.Url, StringComparison.OrdinalIgnoreCase)))
+                {
+                    state.Samples.Add(requestSample);
+                }
             }
 
-            // Stop collecting once the per-IP cap is reached
-            if (samples.Count >= _maxSamplesPerIp)
-            {
-                return;
-            }
-
-            var requestSample = new SuspiciousRequest
-            {
-                Method = context.Method,
-                Url = BuildUrlWithQuery(context)
-            };
-
-            // Only store unique method+URL combinations
-            if (samples.Any(s => string.Equals(s.Method, requestSample.Method, StringComparison.OrdinalIgnoreCase)
-                && string.Equals(s.Url, requestSample.Url, StringComparison.OrdinalIgnoreCase)))
-            {
-                // Set is necessary to keep-alive the samples LRU even when no new samples are added, otherwise samples
-                // might expire before the total count LRU hits the threshold, leading to a report with no samples.
-                _suspiciousRequestsSamples.Set(ip, samples);
-                return;
-            }
-
-            // Update sample list for this IP
-            samples.Add(requestSample);
-            _suspiciousRequestsSamples.Set(ip, samples);
+            _suspiciousRequests.Set(ip, state);
+            return state.Count;
         }
 
         private static string BuildUrlWithQuery(Context context)
@@ -190,5 +170,11 @@ namespace Aikido.Zen.Core.Vulnerabilities
     {
         public string Method { get; set; }
         public string Url { get; set; }
+    }
+
+    internal class SuspiciousState
+    {
+        public int Count { get; set; }
+        public List<SuspiciousRequest> Samples { get; set; } = new List<SuspiciousRequest>();
     }
 }
