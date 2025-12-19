@@ -123,28 +123,30 @@ namespace Aikido.Zen.Core.Vulnerabilities
 
             var normalized = path.ToLowerInvariant();
 
+            // Split path into filename and directories, last segment is filename
             var segments = normalized.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries).ToList();
             var filename = segments.LastOrDefault();
 
             if (!string.IsNullOrEmpty(filename))
             {
+                // Match suspicious filenames
                 if (FileNames.Contains(filename))
                 {
                     return true;
                 }
 
-                if (filename.Contains('.'))
+                // Match suspicious extensions
+                var ext = filename.Split('.').LastOrDefault();
+                if (!string.IsNullOrEmpty(ext) && ext != filename && FileExtensions.Contains(ext))
                 {
-                    var ext = filename.Split('.').LastOrDefault();
-                    if (!string.IsNullOrEmpty(ext) && FileExtensions.Contains(ext))
-                    {
-                        return true;
-                    }
+                    return true;
                 }
 
+                // Drop filename before checking directories
                 segments.RemoveAt(segments.Count - 1);
             }
 
+            // Match suspicious directories
             foreach (var dir in segments)
             {
                 if (Directories.Contains(dir))
