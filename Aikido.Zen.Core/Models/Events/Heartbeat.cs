@@ -51,6 +51,11 @@ namespace Aikido.Zen.Core.Models.Events
                 Blocked = context.AttacksBlocked,
                 Total = context.AttacksDetected
             };
+            heartbeat.Stats.Requests.AttackWaves = new AttacksDetected
+            {
+                Blocked = context.AttackWavesBlocked,
+                Total = context.AttackWavesDetected
+            };
             heartbeat.MiddlewareInstalled = context.ContextMiddlewareInstalled && context.BlockingMiddlewareInstalled;
             heartbeat.Stats.StartedAt = context.Started;
             heartbeat.Stats.EndedAt = DateTimeHelper.UTCNowUnixMilliseconds();
