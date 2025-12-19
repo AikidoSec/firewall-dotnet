@@ -165,40 +165,11 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 return false;
             }
 
-            foreach (var str in ExtractStringsFromQuery(query))
-            {
-                if (str.Length < 5 || str.Length > 1000)
-                {
-                    continue;
-                }
-
-                var upper = str.ToUpperInvariant();
-                foreach (var keyword in Keywords)
-                {
-                    if (upper.IndexOf(keyword, StringComparison.Ordinal) >= 0)
-                    {
-                        return true;
-                    }
-                }
-            }
-
-            return false;
-        }
-
-        private static IEnumerable<string> ExtractStringsFromQuery(IDictionary<string, string> query)
-        {
-            foreach (var pair in query)
-            {
-                if (!string.IsNullOrEmpty(pair.Key))
-                {
-                    yield return pair.Key;
-                }
-
-                if (!string.IsNullOrEmpty(pair.Value))
-                {
-                    yield return pair.Value;
-                }
-            }
+            return query
+                .SelectMany(p => new[] { p.Key, p.Value })
+                .Where(s => !string.IsNullOrEmpty(s) && s.Length >= 5 && s.Length <= 1000)
+                .Select(s => s.ToUpperInvariant())
+                .Any(upper => Keywords.Any(k => upper.Contains(k)));
         }
     }
 }
