@@ -426,7 +426,8 @@ namespace Aikido.Zen.Core
                 QueueEvent(EnvironmentHelper.Token, DetectedAttackWave.Create(context, samples));
             }
 
-            Context.AddAttackDetected(false);
+            // Currently we do not block attack waves
+            Context.AddAttackWaveDetected(false);
         }
 
         /// <summary>

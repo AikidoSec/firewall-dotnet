@@ -97,7 +97,12 @@ namespace Aikido.Zen.Core.Models
                 {
                     Total = 0,
                     Blocked = 0
-                }
+                },
+                AttackWaves = new AttacksDetected
+                {
+                    Total = 0,
+                    Blocked = 0
+                },
             };
             StartedAt = DateTimeHelper.UTCNowUnixMilliseconds();
         }
@@ -134,6 +139,18 @@ namespace Aikido.Zen.Core.Models
             if (blocked)
             {
                 Interlocked.Increment(ref _requests.AttacksDetected.Blocked);
+            }
+        }
+
+        /// <summary>
+        /// Records a detected attack wave during request processing.
+        /// </summary>
+        public void OnDetectedAttackWave(bool blocked = false)
+        {
+            Interlocked.Increment(ref _requests.AttackWaves.Total);
+            if (blocked)
+            {
+                Interlocked.Increment(ref _requests.AttackWaves.Blocked);
             }
         }
 
@@ -337,7 +354,8 @@ namespace Aikido.Zen.Core.Models
         {
             return !_operations.Any() &&
                    _requests.Total == 0 &&
-                   _requests.AttacksDetected.Total == 0;
+                   _requests.AttacksDetected.Total == 0 &&
+                   _requests.AttackWaves.Total == 0;
         }
     }
 }
