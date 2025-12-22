@@ -41,7 +41,7 @@ namespace Aikido.Zen.Core.Models.Events
 
         public static Heartbeat Create(AgentContext context)
         {
-            if (context.HeartbeatIntervalInMS > 0)
+            if (context.HeartbeatIntervalInMS > 10_000) // safety min 10s
             {
                 DefaultInterval = TimeSpan.FromMilliseconds(context.HeartbeatIntervalInMS);
             }
