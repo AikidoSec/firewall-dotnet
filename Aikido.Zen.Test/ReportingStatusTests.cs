@@ -102,12 +102,12 @@ namespace Aikido.Zen.Test
             // Arrange
             var baseTime = new DateTime(2024, 1, 1, 12, 0, 0, DateTimeKind.Utc);
             var testableReportingStatus = new TestableReportingStatus(baseTime);
-            
+
             // Signal successful reporting at base time
             testableReportingStatus.OnEventReported(Heartbeat.EventType, true);
-            
+
             // Move time forward beyond heartbeat interval + grace period
-            var expiredTime = baseTime.Add(Heartbeat.Interval).AddSeconds(31); // Grace period is 30 seconds
+            var expiredTime = baseTime.Add(Heartbeat.DefaultInterval).AddSeconds(31); // Grace period is 30 seconds
             testableReportingStatus.SetCurrentTime(expiredTime);
 
             // Act
@@ -123,12 +123,12 @@ namespace Aikido.Zen.Test
             // Arrange
             var baseTime = new DateTime(2024, 1, 1, 12, 0, 0, DateTimeKind.Utc);
             var testableReportingStatus = new TestableReportingStatus(baseTime);
-            
+
             // Signal successful reporting at base time (only Started event, no Heartbeat)
             testableReportingStatus.OnEventReported(Started.EventType, true);
-            
+
             // Move time forward beyond heartbeat interval + grace period
-            var expiredTime = baseTime.Add(Heartbeat.Interval).AddSeconds(31); // Grace period is 30 seconds
+            var expiredTime = baseTime.Add(Heartbeat.DefaultInterval).AddSeconds(31); // Grace period is 30 seconds
             testableReportingStatus.SetCurrentTime(expiredTime);
 
             // Act
@@ -144,12 +144,12 @@ namespace Aikido.Zen.Test
             // Arrange
             var baseTime = new DateTime(2024, 1, 1, 12, 0, 0, DateTimeKind.Utc);
             var testableReportingStatus = new TestableReportingStatus(baseTime);
-            
+
             // Signal successful reporting at base time
             testableReportingStatus.OnEventReported(Heartbeat.EventType, true);
-            
+
             // Move time forward but still within grace period
-            var withinGracePeriodTime = baseTime.Add(Heartbeat.Interval).AddSeconds(15); // Grace period is 30 seconds
+            var withinGracePeriodTime = baseTime.Add(Heartbeat.DefaultInterval).AddSeconds(15); // Grace period is 30 seconds
             testableReportingStatus.SetCurrentTime(withinGracePeriodTime);
 
             // Act
@@ -192,7 +192,7 @@ namespace Aikido.Zen.Test
         {
             // Arrange
             _reportingStatus.OnEventReported(Heartbeat.EventType, false);
-            
+
             // Act - overwrite with success
             _reportingStatus.OnEventReported(Heartbeat.EventType, true);
             var result = _reportingStatus.GetReportingStatus();
