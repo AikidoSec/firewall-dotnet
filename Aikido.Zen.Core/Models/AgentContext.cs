@@ -25,8 +25,6 @@ namespace Aikido.Zen.Core.Models
         private readonly ConcurrentLFUDictionary<string, Route> _routes = new ConcurrentLFUDictionary<string, Route>(MaxRoutes);
         private readonly ConcurrentDictionary<string, Package> _packages = new ConcurrentDictionary<string, Package>();
 
-        public long ConfigLastUpdated { get; set; } = 0;
-        public int HeartbeatIntervalInMS { get; set; } = 0;
         public bool ContextMiddlewareInstalled { get; set; } = false;
         public bool BlockingMiddlewareInstalled { get; set; } = false;
 
@@ -179,8 +177,6 @@ namespace Aikido.Zen.Core.Models
             _users.Clear();
             _routes.Clear();
             _packages.Clear();
-            ConfigLastUpdated = 0;
-            HeartbeatIntervalInMS = 0;
         }
 
         /// <summary>
@@ -266,8 +262,6 @@ namespace Aikido.Zen.Core.Models
         public void UpdateConfig(ReportingAPIResponse response)
         {
             _config.UpdateConfig(response);
-            ConfigLastUpdated = response?.ConfigUpdatedAt ?? 0;
-            HeartbeatIntervalInMS = response?.HeartbeatIntervalInMS ?? 0;
         }
 
         public void UpdateFirewallLists(FirewallListsAPIResponse response)

@@ -602,7 +602,7 @@ namespace Aikido.Zen.Core
 
             response = _api.Runtime.GetConfigLastUpdated(EnvironmentHelper.Token).Result;
             if (!response.Success) return false;
-            if (response.ConfigUpdatedAt != _context.ConfigLastUpdated)
+            if (response.ConfigUpdatedAt != _context.Config.ConfigLastUpdated)
             {
                 response = _api.Runtime.GetConfig(EnvironmentHelper.Token).Result;
                 return true;

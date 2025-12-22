@@ -21,8 +21,7 @@ namespace Aikido.Zen.Core.Models
         private readonly object _endpointsLock = new object();
 
         public long ConfigLastUpdated { get; set; } = 0;
-        public bool ContextMiddlewareInstalled { get; set; } = false;
-        public bool BlockingMiddlewareInstalled { get; set; } = false;
+        public int HeartbeatIntervalInMS { get; private set; } = 0;
 
         /// <summary>
         /// Clears all configuration data.
@@ -33,6 +32,7 @@ namespace Aikido.Zen.Core.Models
             _endpoints.Clear();
             _blockedUserAgents = null;
             _blockList = new BlockList();
+            HeartbeatIntervalInMS = 0;
         }
 
         /// <summary>
@@ -100,6 +100,7 @@ namespace Aikido.Zen.Core.Models
             BlockList.UpdateBypassedIps(response.BypassedIPAddresses);
             UpdateRatelimitedRoutes(response.Endpoints);
             ConfigLastUpdated = response.ConfigUpdatedAt;
+            HeartbeatIntervalInMS = response.HeartbeatIntervalInMS;
         }
 
         /// <summary>
