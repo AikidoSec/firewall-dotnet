@@ -9,6 +9,7 @@ namespace Aikido.Zen.Core.Models.Events
     {
         public const string ScheduleId = "heartbeat";
         internal const string EventType = "heartbeat";
+        private const int MinimumIntervalInMS = 1 * 60 * 1000; // 1 minute
 
         public string Type => EventType;
         public AgentStats Stats { get; set; } = new AgentStats();
@@ -41,9 +42,9 @@ namespace Aikido.Zen.Core.Models.Events
 
         public static Heartbeat Create(AgentContext context)
         {
-            if (context.HeartbeatIntervalInMS > 10_000) // safety min 10s
+            if (context.Config.HeartbeatIntervalInMS >= MinimumIntervalInMS) // safety check
             {
-                DefaultInterval = TimeSpan.FromMilliseconds(context.HeartbeatIntervalInMS);
+                DefaultInterval = TimeSpan.FromMilliseconds(context.Config.HeartbeatIntervalInMS);
             }
 
             var heartbeat = new Heartbeat
