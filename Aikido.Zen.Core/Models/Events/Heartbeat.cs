@@ -7,10 +7,10 @@ namespace Aikido.Zen.Core.Models.Events
 {
     public class Heartbeat : IEvent
     {
+        public const string ScheduleId = "heartbeat";
         internal const string EventType = "heartbeat";
 
         public string Type => EventType;
-
         public AgentStats Stats { get; set; } = new AgentStats();
         public IEnumerable<AiInfo> Ai { get; set; }
         public IEnumerable<Host> Hostnames { get; set; }
@@ -21,16 +21,31 @@ namespace Aikido.Zen.Core.Models.Events
         public long Time => DateTimeHelper.UTCNowUnixMilliseconds();
         public bool MiddlewareInstalled { get; set; }
 
-        // Constants for the heartbeat event
-        public const string ScheduleId = "heartbeat";
-#if DEBUG
-        public static TimeSpan Interval => TimeSpan.FromMinutes(1);
-#else
-        public static TimeSpan Interval => TimeSpan.FromMinutes(10);
-#endif
+        public static TimeSpan DefaultInterval { get; private set; } = TimeSpan.FromMinutes(10);
+        private static int _intervalIndex;
+        private static readonly TimeSpan[] StartupIntervals = new[]
+        {
+            TimeSpan.FromSeconds(30),
+            TimeSpan.FromMinutes(2)
+        };
+
+        public static TimeSpan GetNextInterval()
+        {
+            if (_intervalIndex < StartupIntervals.Length)
+            {
+                return StartupIntervals[_intervalIndex++];
+            }
+
+            return DefaultInterval;
+        }
 
         public static Heartbeat Create(AgentContext context)
         {
+            if (context.HeartbeatIntervalInMS > 0)
+            {
+                DefaultInterval = TimeSpan.FromMilliseconds(context.HeartbeatIntervalInMS);
+            }
+
             var heartbeat = new Heartbeat
             {
                 Agent = AgentInfoHelper.GetInfo(),
