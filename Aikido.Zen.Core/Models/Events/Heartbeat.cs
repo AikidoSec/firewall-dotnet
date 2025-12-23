@@ -40,13 +40,16 @@ namespace Aikido.Zen.Core.Models.Events
             return DefaultInterval;
         }
 
+        public static void UpdateDefaultInterval(int heartbeatIntervalInMs)
+        {
+            if (heartbeatIntervalInMs >= MinimumIntervalInMS)
+            {
+                DefaultInterval = TimeSpan.FromMilliseconds(heartbeatIntervalInMs);
+            }
+        }
+
         public static Heartbeat Create(AgentContext context)
         {
-            if (context.Config.HeartbeatIntervalInMS >= MinimumIntervalInMS) // safety check
-            {
-                DefaultInterval = TimeSpan.FromMilliseconds(context.Config.HeartbeatIntervalInMS);
-            }
-
             var heartbeat = new Heartbeat
             {
                 Agent = AgentInfoHelper.GetInfo(),

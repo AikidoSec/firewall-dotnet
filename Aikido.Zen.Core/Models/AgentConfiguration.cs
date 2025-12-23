@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Models.Ip;
+using Aikido.Zen.Core.Models.Events;
 
 namespace Aikido.Zen.Core.Models
 {
@@ -100,7 +101,9 @@ namespace Aikido.Zen.Core.Models
             BlockList.UpdateBypassedIps(response.BypassedIPAddresses);
             UpdateRatelimitedRoutes(response.Endpoints);
             ConfigLastUpdated = response.ConfigUpdatedAt;
+
             HeartbeatIntervalInMS = response.HeartbeatIntervalInMS;
+            Heartbeat.UpdateDefaultInterval(response.HeartbeatIntervalInMS);
         }
 
         /// <summary>
