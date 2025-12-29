@@ -108,6 +108,7 @@ namespace Aikido.Zen.Test
                 RemoteAddress = ip,
                 Route = path,
                 Url = path,
+                FullUrl = path,
                 Method = method,
                 Query = query ?? new Dictionary<string, string>(),
                 Headers = new Dictionary<string, string>(),
