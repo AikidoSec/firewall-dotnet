@@ -4,6 +4,7 @@ using Aikido.Zen.Core;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Routing;
 
@@ -122,6 +123,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 context = new Context
                 {
                     Url = httpContext.Request.Path.ToString(),
+                    FullUrl = httpContext.Request.GetDisplayUrl(),
                     Method = httpContext.Request.Method,
                     Query = FlattenQueryParameters(httpContext.Request.Query),
                     Headers = FlattenHeaders(httpContext.Request.Headers),

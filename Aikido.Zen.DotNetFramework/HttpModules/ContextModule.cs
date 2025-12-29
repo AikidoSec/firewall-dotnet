@@ -73,6 +73,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 var context = new Context
                 {
                     Url = httpContext.Request.Path,
+                    FullUrl = httpContext.Request.Url,
                     Method = httpContext.Request.HttpMethod,
                     Query = FlattenQueryParameters(httpContext.Request.QueryString),
                     Headers = FlattenHeaders(httpContext.Request.Headers),
