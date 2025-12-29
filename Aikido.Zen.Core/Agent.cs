@@ -132,7 +132,7 @@ namespace Aikido.Zen.Core
             {
                 Token = EnvironmentHelper.Token,
                 EventFactory = ConstructHeartbeat,
-                Interval = Heartbeat.Interval,
+                Interval = Heartbeat.GetNextInterval(),
                 Callback = (evt, response) =>
                 {
                     var reportingResponse = response as ReportingAPIResponse;
@@ -502,12 +502,17 @@ namespace Aikido.Zen.Core
                 if (now >= scheduledItem.NextRun)
                 {
                     QueueEvent(scheduledItem.Token, scheduledItem.EventFactory.Invoke(), scheduledItem.Callback);
+
+                    var nextInterval = kvp.Key == Heartbeat.ScheduleId
+                        ? Heartbeat.GetNextInterval()
+                        : scheduledItem.Interval;
+
                     var updatedItem = new ScheduledItem
                     {
                         Token = scheduledItem.Token,
                         EventFactory = scheduledItem.EventFactory,
-                        Interval = scheduledItem.Interval,
-                        NextRun = scheduledItem.NextRun.Add(scheduledItem.Interval),
+                        Interval = nextInterval,
+                        NextRun = scheduledItem.NextRun.Add(nextInterval),
                         Callback = scheduledItem.Callback
                     };
                     _scheduledEvents.TryUpdate(
@@ -597,7 +602,7 @@ namespace Aikido.Zen.Core
 
             response = _api.Runtime.GetConfigLastUpdated(EnvironmentHelper.Token).Result;
             if (!response.Success) return false;
-            if (response.ConfigUpdatedAt != _context.ConfigLastUpdated)
+            if (response.ConfigUpdatedAt != _context.Config.ConfigLastUpdated)
             {
                 response = _api.Runtime.GetConfig(EnvironmentHelper.Token).Result;
                 return true;

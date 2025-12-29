@@ -45,7 +45,7 @@ namespace Aikido.Zen.Test
             var startedTime = _agent.Context.Started;
 
             // Act
-            // wait a bit to make sure some ms have passed between settings the started time and clearing the context            
+            // wait a bit to make sure some ms have passed between settings the started time and clearing the context
             await Task.Delay(25);
             _agent.ClearContext();
 
@@ -73,7 +73,7 @@ namespace Aikido.Zen.Test
 
             Assert.That(_agent.Context.Packages, Is.Empty);
 
-            Assert.That(_agent.Context.ConfigLastUpdated, Is.Zero);
+            Assert.That(_agent.Context.Config.ConfigLastUpdated, Is.Zero);
         }
 
         [Test]
@@ -629,7 +629,7 @@ namespace Aikido.Zen.Test
                 }
             };
 
-            _agent.Context.ConfigLastUpdated = configLastUpdated;
+            _agent.Context.Config.ConfigLastUpdated = configLastUpdated;
 
             var configVersionResponse = new ReportingAPIResponse
             {
@@ -689,7 +689,7 @@ namespace Aikido.Zen.Test
                 .ReturnsAsync(configVersionResponse);
             _zenApiMock = ZenApiMock.CreateMock(runtime: runtimeApiClientMock.Object);
             _agent = new Agent(_zenApiMock.Object);
-            _agent.Context.ConfigLastUpdated = configLastUpdated;
+            _agent.Context.Config.ConfigLastUpdated = configLastUpdated;
 
             // Act
             var result = _agent.ConfigChanged(out var response);

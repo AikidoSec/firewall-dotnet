@@ -452,7 +452,7 @@ namespace Aikido.Zen.Test
                 Assert.That(endpoint, Is.Not.Null);
                 Assert.That(endpoint.RateLimiting.MaxRequests, Is.EqualTo(60));
 
-                Assert.That(_agentContext.ConfigLastUpdated, Is.EqualTo(configVersion));
+                Assert.That(_agentContext.Config.ConfigLastUpdated, Is.EqualTo(configVersion));
             });
         }
 

@@ -71,13 +71,9 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void Interval_HasCorrectValue()
+        public void DefaultInterval_HasCorrectValue()
         {
-#if DEBUG
-            Assert.That(Heartbeat.Interval, Is.EqualTo(TimeSpan.FromMinutes(1)));
-#else
-            Assert.That(Heartbeat.Interval, Is.EqualTo(TimeSpan.FromMinutes(10)));
-#endif
+            Assert.That(Heartbeat.DefaultInterval, Is.EqualTo(TimeSpan.FromMinutes(10)));
         }
 
         [Test]
