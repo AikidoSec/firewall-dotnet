@@ -432,7 +432,7 @@ namespace Aikido.Zen.Test
             var operation = "login";
             var context = new Context
             {
-                Url = "http://test.com/login",
+                FullUrl = "http://test.com/login",
                 Method = "POST",
                 Headers = new Dictionary<string, string>
                 {
@@ -463,7 +463,7 @@ namespace Aikido.Zen.Test
                         a.Attack.Operation == operation &&
                         a.Attack.Module == module &&
                         a.Attack.Blocked == blocked &&
-                        a.Request.Url == context.Url &&
+                        a.Request.Url == context.FullUrl &&
                         a.Request.Method == context.Method &&
                         a.Request.Headers.ContainsKey("Content-Type") &&
                         a.Attack.Metadata.ContainsKey("sql")
