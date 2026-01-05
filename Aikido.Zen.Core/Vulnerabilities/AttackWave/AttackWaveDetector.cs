@@ -114,7 +114,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 var requestSample = new SuspiciousRequest
                 {
                     Method = context.Method,
-                    Url = BuildUrlWithQuery(context)
+                    Url = context.Url
                 };
 
                 // Only store unique samples
@@ -129,32 +129,6 @@ namespace Aikido.Zen.Core.Vulnerabilities
             return state.Count;
         }
 
-        private static string BuildUrlWithQuery(Context context)
-        {
-            if (context == null)
-            {
-                return string.Empty;
-            }
-
-            var url = context.Url ?? string.Empty;
-
-            if (context.Query == null || context.Query.Count == 0)
-            {
-                return url;
-            }
-
-            var queryString = string.Join("&", context.Query
-                .OrderBy(kvp => kvp.Key, StringComparer.OrdinalIgnoreCase)
-                .Select(kvp => $"{kvp.Key}={kvp.Value ?? string.Empty}"));
-
-            if (string.IsNullOrEmpty(queryString))
-            {
-                return url;
-            }
-
-            var separator = url.Contains("?") ? "&" : "?";
-            return $"{url}{separator}{queryString}";
-        }
     }
 
     public class AttackWaveDetectorOptions
@@ -168,6 +142,8 @@ namespace Aikido.Zen.Core.Vulnerabilities
 
     public class SuspiciousRequest
     {
+        // Field names are converted to json fields when reporting attacks
+        // Don't rename
         public string Method { get; set; }
         public string Url { get; set; }
     }
