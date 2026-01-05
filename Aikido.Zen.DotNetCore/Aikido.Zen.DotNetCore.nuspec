@@ -22,7 +22,7 @@
       </group>
     </frameworkReferences>
     <dependencies>
-        <dependency id="Lib.Harmony" version="[2.4.1,)" />
+        <dependency id="Lib.Harmony" version="[2.4.2,)" />
         <dependency id="Microsoft.Extensions.DependencyModel" version="[6.0.0,)" />
     </dependencies>
   </metadata>

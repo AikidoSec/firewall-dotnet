@@ -12,7 +12,7 @@
     <copyright>Copyright 2024 Aikido</copyright>
     <tags>firewall .NET</tags>
     <dependencies>
-        <dependency id="Lib.Harmony" version="[2.4.1,)" />
+        <dependency id="Lib.Harmony" version="[2.4.2,)" />
     </dependencies>
   </metadata>
   <files>
