@@ -122,8 +122,8 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 headersDictionary = new ConcurrentDictionary<string, string[]>(httpContext.Request.Headers.ToDictionary(h => h.Key, h => h.Value.ToArray()));
                 context = new Context
                 {
-                    Url = httpContext.Request.Path.ToString(),
-                    FullUrl = httpContext.Request.GetDisplayUrl(),
+                    Path = httpContext.Request.Path.ToString(),
+                    Url = httpContext.Request.GetDisplayUrl(),
                     Method = httpContext.Request.Method,
                     Query = FlattenQueryParameters(httpContext.Request.Query),
                     Headers = FlattenHeaders(httpContext.Request.Headers),

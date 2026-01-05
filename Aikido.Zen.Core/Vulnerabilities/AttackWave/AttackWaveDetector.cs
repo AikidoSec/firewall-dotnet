@@ -114,7 +114,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 var requestSample = new SuspiciousRequest
                 {
                     Method = context.Method,
-                    Url = context.FullUrl
+                    Url = context.Url
                 };
 
                 // Only store unique samples
@@ -142,8 +142,8 @@ namespace Aikido.Zen.Core.Vulnerabilities
 
     public class SuspiciousRequest
     {
-        // Field names are automatically converted to json when reporting attack waves
-        // Must not be renamed as they are part of the contract
+        // Field names are converted to json fields when reporting attacks
+        // Don't rename
         public string Method { get; set; }
         public string Url { get; set; }
     }
