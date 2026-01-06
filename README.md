@@ -67,7 +67,7 @@ Zen operates autonomously on the same server as your .NET app to:
 
 ### .NET Core
 
-Ensure that your project runs on .NET Core 6, 7, 8 or 9
+Ensure that your project runs on .NET Core 6, 7, 8, 9 or 10
 
 - Install the package from NuGet:
 
