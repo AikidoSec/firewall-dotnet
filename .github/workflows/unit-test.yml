@@ -21,6 +21,7 @@ jobs:
                         "7.0.x",
                         "8.0.x",
                         "9.0.x",
+                        "10.0.x",
                     ]
             fail-fast: false
 
@@ -48,6 +49,7 @@ jobs:
                       7.0.x
                       8.0.x
                       9.0.x
+                      10.0.x
 
             - name: Add msbuild to PATH
               uses: microsoft/setup-msbuild@v2
