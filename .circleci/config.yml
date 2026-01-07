@@ -63,4 +63,4 @@ workflows:
             - checkout_code
           matrix:
             parameters:
-              dotnet_version: ["9.0"]
+              dotnet_version: ["10.0"]
