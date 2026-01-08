@@ -45,9 +45,8 @@ jobs:
           command: dotnet restore
       - run:
           name: Run E2E Tests
+          # TL Off is required for proper terminal output in circleci
           command: |
-          command: |
-            # TL Off is required for proper terminal output in circleci
             dotnet test "Aikido.Zen.Test.End2End/Aikido.Zen.Test.End2End.csproj" \
               --configuration Release \
               --tl:off
