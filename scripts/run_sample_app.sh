@@ -38,7 +38,7 @@ done
 
 # Run the sample app
 echo "...Running the sample app..."
-dotnet run --project "$1" --urls "http://localhost:5081" > /dev/null 2>&1 &
+dotnet run --project "$1" --urls "http://localhost:5081" &
 APP_PID=$!
 sleep 5  # Increased sleep time to give the app more time to start
 
