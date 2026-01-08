@@ -22,7 +22,7 @@ for i in {1..5}; do
         break
     elif [ "$response" -eq 000 ]; then
         echo "[✗] Mock server responded with status code 000. Attempting to start the mock server again..."
-        dotnet run --project e2e/Aikido.Zen.Server.Mock/Aikido.Zen.Server.Mock.csproj --urls "http://localhost:5080" > /dev/null 2>&1 &
+        dotnet run --project e2e/Aikido.Zen.Server.Mock/Aikido.Zen.Server.Mock.csproj --urls "http://localhost:5080" &
         sleep 5  # Give the mock server some time to start
     else
         echo "[✗] Mock server responded with status code $response"
@@ -38,7 +38,7 @@ done
 
 # Run the sample app
 echo "...Running the sample app..."
-dotnet run --project "$1" --urls "http://localhost:5081" > /dev/null 2>&1 &
+dotnet run --project "$1" --urls "http://localhost:5081" &
 APP_PID=$!
 sleep 5  # Increased sleep time to give the app more time to start
 

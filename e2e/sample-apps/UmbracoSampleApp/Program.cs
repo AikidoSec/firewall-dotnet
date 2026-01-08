@@ -1,12 +1,14 @@
-using UmbracoSampleApp;
 using Aikido.Zen.DotNetCore;
 
-public class Program
+namespace UmbracoSampleApp
 {
-    public static async Task Main(string[] args)
+    public class Program
     {
-        var app = await AppBuilderHelper.CreateApp(args);
+        public static async Task Main(string[] args)
+        {
+            var app = await AppBuilderHelper.CreateApp(args);
 
-        await app.RunAsync();
+            await app.RunAsync();
+        }
     }
 }

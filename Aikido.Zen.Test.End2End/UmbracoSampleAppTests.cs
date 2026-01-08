@@ -4,6 +4,7 @@ using Aikido.Zen.Core.Exceptions;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Aikido.Zen.DotNetCore;
 using NUnit.Framework;
+using UmbracoSampleApp;
 
 namespace Aikido.Zen.Test.End2End;
 
@@ -12,13 +13,13 @@ public class UmbracoSampleAppTests : WebApplicationTestBase
 {
     private const string ProjectDirectory = "e2e/sample-apps/UmbracoSampleApp";
 
-    private WebApplicationFactory<Program> CreateSampleAppFactory()
+    private WebApplicationFactory<UmbracoSampleApp.Program> CreateSampleAppFactory()
     {
         foreach (var envVar in SampleAppEnvironmentVariables)
         {
             Environment.SetEnvironmentVariable(envVar.Key, envVar.Value);
         }
-        var factory = new WebApplicationFactory<Program>()
+        var factory = new WebApplicationFactory<UmbracoSampleApp.Program>()
             .WithWebHostBuilder(builder =>
             {
                 builder.ConfigureServices(services =>
