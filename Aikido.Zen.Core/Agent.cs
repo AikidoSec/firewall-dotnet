@@ -599,14 +599,21 @@ namespace Aikido.Zen.Core
 
         internal bool ConfigChanged(out ReportingAPIResponse response)
         {
-
+            // 1. Check if new configuration is available
             response = _api.Runtime.GetConfigLastUpdated(EnvironmentHelper.Token).Result;
-            if (!response.Success) return false;
+
+            if (!response.Success)
+                return false;
+
             if (response.ConfigUpdatedAt != _context.Config.ConfigLastUpdated)
             {
+                // 2. Retrieve the new configuration
                 response = _api.Runtime.GetConfig(EnvironmentHelper.Token).Result;
+
+                // Only trigger config change if new configuration was retrieved successfully
                 return response.Success;
             }
+
             return false;
         }
 
