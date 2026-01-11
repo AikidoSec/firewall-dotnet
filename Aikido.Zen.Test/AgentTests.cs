@@ -631,7 +631,7 @@ namespace Aikido.Zen.Test
 
             _agent.Context.Config.ConfigLastUpdated = configLastUpdated;
 
-            var configVersionResponse = new ReportingAPIResponse
+            var configVersionResponse = new ConfigLastUpdatedAPIResponse
             {
                 Success = true,
                 ConfigUpdatedAt = newConfigLastUpdated
@@ -677,7 +677,12 @@ namespace Aikido.Zen.Test
             // Arrange
             var configLastUpdated = 123L;
 
-            var configVersionResponse = new ReportingAPIResponse
+            var configVersionResponse = new ConfigLastUpdatedAPIResponse
+            {
+                Success = true,
+                ConfigUpdatedAt = configLastUpdated,
+            };
+            var configResponse = new ReportingAPIResponse
             {
                 Success = true,
                 ConfigUpdatedAt = configLastUpdated,
@@ -686,7 +691,7 @@ namespace Aikido.Zen.Test
             runtimeApiClientMock.Setup(x => x.GetConfigLastUpdated(It.IsAny<string>()))
                 .ReturnsAsync(configVersionResponse);
             runtimeApiClientMock.Setup(x => x.GetConfig(It.IsAny<string>()))
-                .ReturnsAsync(configVersionResponse);
+                .ReturnsAsync(configResponse);
             _zenApiMock = ZenApiMock.CreateMock(runtime: runtimeApiClientMock.Object);
             _agent = new Agent(_zenApiMock.Object);
             _agent.Context.Config.ConfigLastUpdated = configLastUpdated;
@@ -714,7 +719,7 @@ namespace Aikido.Zen.Test
             var configLastUpdated = 123L;
             var newConfigLastUpdated = 124L;
 
-            var configVersionResponse = new ReportingAPIResponse
+            var configVersionResponse = new ConfigLastUpdatedAPIResponse
             {
                 Success = true,
                 ConfigUpdatedAt = newConfigLastUpdated

@@ -597,24 +597,30 @@ namespace Aikido.Zen.Core
             return heartbeat;
         }
 
-        internal bool ConfigChanged(out ReportingAPIResponse response)
+        internal bool ConfigChanged(out ReportingAPIResponse latestConfig)
         {
-            // 1. Check if new configuration is available
-            response = _api.Runtime.GetConfigLastUpdated(EnvironmentHelper.Token).Result;
+            // Check if new configuration available
+            var latestConfigVersion = _api.Runtime.GetConfigLastUpdated(EnvironmentHelper.Token).Result;
 
-            if (!response.Success)
-                return false;
-
-            if (response.ConfigUpdatedAt != _context.Config.ConfigLastUpdated)
+            if (!latestConfigVersion.Success)
             {
-                // 2. Retrieve the new configuration
-                response = _api.Runtime.GetConfig(EnvironmentHelper.Token).Result;
-
-                // Only trigger config change if new configuration was retrieved successfully
-                return response.Success;
+                // Check failed
+                latestConfig = new ReportingAPIResponse { Success = false, Error = latestConfigVersion.Error };
+                return false;
             }
 
-            return false;
+            if (latestConfigVersion.ConfigUpdatedAt == _context.Config.ConfigLastUpdated)
+            {
+                // Check worked but config is the same
+                latestConfig = new ReportingAPIResponse { Success = true, ConfigUpdatedAt = latestConfigVersion.ConfigUpdatedAt };
+                return false;
+            }
+
+            // Retrieve new configuration
+            latestConfig = _api.Runtime.GetConfig(EnvironmentHelper.Token).Result;
+
+            // Trigger config change if new configuration retrieved successfully
+            return latestConfig.Success;
         }
 
         private async Task UpdateConfig(ReportingAPIResponse response)

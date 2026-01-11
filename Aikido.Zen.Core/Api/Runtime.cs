@@ -22,15 +22,15 @@ namespace Aikido.Zen.Core.Api
         }
 
         // used for testing purposes
-		public RuntimeAPIClient(HttpClient httpClient)
-		{
-			_httpClient = httpClient;
-			httpClient.DefaultRequestHeaders.AcceptEncoding.Add(new StringWithQualityHeaderValue("gzip"));
-			httpClient.DefaultRequestHeaders.AcceptEncoding.Add(new StringWithQualityHeaderValue("deflate"));
-		}
+        public RuntimeAPIClient(HttpClient httpClient)
+        {
+            _httpClient = httpClient;
+            httpClient.DefaultRequestHeaders.AcceptEncoding.Add(new StringWithQualityHeaderValue("gzip"));
+            httpClient.DefaultRequestHeaders.AcceptEncoding.Add(new StringWithQualityHeaderValue("deflate"));
+        }
 
 
-        public async Task<ReportingAPIResponse> GetConfigLastUpdated(string token)
+        public async Task<ConfigLastUpdatedAPIResponse> GetConfigLastUpdated(string token)
         {
             using (var cts = new CancellationTokenSource(5000))
             {
@@ -39,17 +39,17 @@ namespace Aikido.Zen.Core.Api
                 try
                 {
                     var response = await _httpClient.SendAsync(request, cts.Token);
-                    return APIHelper.ToAPIResponse<ReportingAPIResponse>(response);
+                    return APIHelper.ToAPIResponse<ConfigLastUpdatedAPIResponse>(response);
                 }
                 catch (TaskCanceledException)
                 {
                     LogHelper.ErrorLog(Agent.Logger, "Error retrieving config: Operation canceled");
-                    return new ReportingAPIResponse { Success = false, Error = "cancelation" };
+                    return new ConfigLastUpdatedAPIResponse { Success = false, Error = "cancelation" };
                 }
                 catch (Exception ex)
                 {
                     LogHelper.ErrorLog(Agent.Logger, $"Error retrieving config: {ex.Message}");
-                    return new ReportingAPIResponse { Success = false, Error = "unknown_error" };
+                    return new ConfigLastUpdatedAPIResponse { Success = false, Error = "unknown_error" };
                 }
             }
         }
