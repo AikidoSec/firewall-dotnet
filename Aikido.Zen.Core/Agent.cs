@@ -605,7 +605,7 @@ namespace Aikido.Zen.Core
             if (response.ConfigUpdatedAt != _context.Config.ConfigLastUpdated)
             {
                 response = _api.Runtime.GetConfig(EnvironmentHelper.Token).Result;
-                return true;
+                return response.Success;
             }
             return false;
         }
