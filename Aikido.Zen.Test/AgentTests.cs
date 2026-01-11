@@ -708,6 +708,50 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public async Task ConfigChanged_WhenConfigFetchFails_ReturnsFalse()
+        {
+            // Arrange
+            var configLastUpdated = 123L;
+            var newConfigLastUpdated = 124L;
+
+            var configVersionResponse = new ReportingAPIResponse
+            {
+                Success = true,
+                ConfigUpdatedAt = newConfigLastUpdated
+            };
+
+            var failedConfigResponse = new ReportingAPIResponse
+            {
+                Success = false,
+                Error = "timeout"
+            };
+
+            var runtimeApiClientMock = new Mock<IRuntimeAPIClient>();
+            runtimeApiClientMock.Setup(x => x.GetConfigLastUpdated(It.IsAny<string>()))
+                .ReturnsAsync(configVersionResponse);
+            runtimeApiClientMock.Setup(x => x.GetConfig(It.IsAny<string>()))
+                .ReturnsAsync(failedConfigResponse);
+            _zenApiMock = ZenApiMock.CreateMock(runtime: runtimeApiClientMock.Object);
+            _agent = new Agent(_zenApiMock.Object);
+            _agent.Context.Config.ConfigLastUpdated = configLastUpdated;
+
+            // Act
+            var result = _agent.ConfigChanged(out var response);
+            await Task.Delay(100);
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(result, Is.False);
+                Assert.That(response.Success, Is.False);
+                Assert.That(_agent.Context.Config.ConfigLastUpdated, Is.EqualTo(configLastUpdated));
+            });
+
+            _zenApiMock.Verify(x => x.Runtime.GetConfigLastUpdated(It.IsAny<string>()), Times.Once);
+            _zenApiMock.Verify(x => x.Runtime.GetConfig(It.IsAny<string>()), Times.Once);
+        }
+
+        [Test]
         public async Task UpdateBlockedIps_WithEmptyToken_ReturnsWithoutUpdating()
         {
             // Arrange

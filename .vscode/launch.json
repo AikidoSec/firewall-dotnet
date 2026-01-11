@@ -1,0 +1,20 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug DotNetCore.Sample.App",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build DotNetCore.Sample.App",
+      "program": "${workspaceFolder}/sample-apps/DotNetCore.Sample.App/bin/Debug/net10.0/DotNetCore.Sample.App.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/sample-apps/DotNetCore.Sample.App",
+      "stopAtEntry": false,
+      "console": "integratedTerminal",
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "DOTNET_ENVIRONMENT": "Development"
+      }
+    }
+  ]
+}
