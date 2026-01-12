@@ -111,7 +111,7 @@ namespace Aikido.Zen.Test
                 });
 
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-            ReportingAPIResponse result = new();
+            ConfigLastUpdatedAPIResponse result = new();
 
             // Act
 

@@ -26,7 +26,7 @@ namespace Aikido.Zen.Tests.Mocks
                 var runtimeMock = new Mock<IRuntimeAPIClient>();
                 runtimeMock
                     .Setup(r => r.GetConfigLastUpdated(It.IsAny<string>()))
-                .ReturnsAsync(new ReportingAPIResponse { Success = true });
+                .ReturnsAsync(new ConfigLastUpdatedAPIResponse { Success = true });
 
                 runtimeMock
                     .Setup(r => r.GetConfig(It.IsAny<string>()))
@@ -54,7 +54,7 @@ namespace Aikido.Zen.Tests.Mocks
             var runtimeApiClient = new Mock<IRuntimeAPIClient>();
             runtimeApiClient
                 .Setup(r => r.GetConfigLastUpdated(It.IsAny<string>()))
-                .ReturnsAsync(new ReportingAPIResponse { Success = false, Error = "Test error" });
+                .ReturnsAsync(new ConfigLastUpdatedAPIResponse { Success = false, Error = "Test error" });
 
             runtimeApiClient
                 .Setup(r => r.GetConfig(It.IsAny<string>()))
