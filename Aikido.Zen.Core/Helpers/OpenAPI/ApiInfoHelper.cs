@@ -81,6 +81,9 @@ namespace Aikido.Zen.Core.Helpers.OpenAPI
 
                 var existingSpec = existingRoute.ApiSpec;
 
+                if(existingSpec == null)
+                    return;
+
                 // Merge body schemas
                 if (existingSpec.Body != null && newInfo.Body != null)
                 {
