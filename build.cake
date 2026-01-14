@@ -333,6 +333,7 @@ Task("Pack")
                 {
                     OutputDirectory = "./artifacts",
                     Version = libVersion,
+                    Symbols = true,
                     SymbolPackageFormat = "snupkg"
                 };
                 NuGetPack(specFile, nugetPackSettings);
