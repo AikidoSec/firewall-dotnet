@@ -65,3 +65,12 @@ jobs:
                       exit 1
                     }
                   }
+                  Get-ChildItem -Path artifacts\*.snupkg | ForEach-Object {
+                    try {
+                      dotnet nuget push $_.FullName --api-key ${{ secrets.NUGETAPIKEY }} --source https://api.nuget.org/v3/index.json
+                      Write-Host "Pushed symbols $($_.FullName)"
+                    } catch {
+                      Write-Host "Failed to push symbols $($_.FullName)"
+                      exit 1
+                    }
+                  }
