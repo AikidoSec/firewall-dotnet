@@ -31,5 +31,6 @@
     <file src="bin\Release\net47\Aikido.Zen.Core.dll" target="lib\net47" />
     <file src="bin\Release\net47\Aikido.Zen.Core.pdb" target="lib\net47" />
     <file src="bin\Release\net48\Aikido.Zen.Core.dll" target="lib\net48" />
+    <file src="bin\Release\net48\Aikido.Zen.Core.pdb" target="lib\net48" />
   </files>
 </package>
