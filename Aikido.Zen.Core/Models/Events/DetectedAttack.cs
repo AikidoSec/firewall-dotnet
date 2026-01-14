@@ -51,7 +51,7 @@ namespace Aikido.Zen.Core.Models.Events
                 Headers = context.Headers.ToDictionary(h => h.Key, h => h.Value),
                 Method = context.Method,
                 Source = context.Source,
-                Url = context.Url,
+                Url = context.FullUrl,
                 Body = HttpHelper.GetRawBody(context.Body),
                 Route = context.Route,
                 IpAddress = context.RemoteAddress,
