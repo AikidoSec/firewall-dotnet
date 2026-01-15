@@ -7,6 +7,7 @@ namespace Aikido.Zen.Core
 {
     public class Context
     {
+        public string Path { get; set; } = string.Empty;
         public string Url { get; set; } = string.Empty;
         public string Method { get; set; } = string.Empty;
         public IDictionary<string, string> Query { get; set; } = new Dictionary<string, string>();
