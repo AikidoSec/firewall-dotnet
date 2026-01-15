@@ -139,7 +139,7 @@ namespace Aikido.Zen.Core
                     if (reportingResponse != null && reportingResponse.Success)
                     {
                         LogHelper.DebugLog(Logger, "Heartbeat was sent successfully");
-                        _context.UpdateBlockedUsers(reportingResponse.BlockedUserIds);
+                        ClearContext();
                         UpdateConfig(reportingResponse);
                     }
                     else
@@ -593,7 +593,6 @@ namespace Aikido.Zen.Core
         internal Heartbeat ConstructHeartbeat()
         {
             var heartbeat = Heartbeat.Create(_context);
-            ClearContext();
             return heartbeat;
         }
 
