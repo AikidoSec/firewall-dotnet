@@ -43,7 +43,7 @@ jobs:
 
             - name: Setup .NET
               if: ${{ matrix.dotnet-version == '6.0.x' || matrix.dotnet-version == '7.0.x' }} # .NET Framework and .NET Core 8/9/10 are built-in
-              uses: actions/setup-dotnet@v5.1
+              uses: actions/setup-dotnet@v5.1.0
               with:
                   dotnet-version: ${{ matrix.dotnet-version }}
 
