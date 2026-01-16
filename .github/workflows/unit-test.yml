@@ -42,14 +42,10 @@ jobs:
                       ${{ runner.os }}-nuget-
 
             - name: Setup .NET
-              uses: xt0rted/setup-dotnet@fc29edc677f23f3fa306defaec2fb1104c84cf8a # v1.0.0
+              if: ${{ matrix.dotnet-version == '6.0.x' || matrix.dotnet-version == '7.0.x' }} # .NET Framework and .NET Core 8/9/10 are built-in
+              uses: actions/setup-dotnet@v5.1.0
               with:
-                  dotnet-version: |
-                      6.0.x
-                      7.0.x
-                      8.0.x
-                      9.0.x
-                      10.0.x
+                  dotnet-version: ${{ matrix.dotnet-version }}
 
             - name: Add msbuild to PATH
               uses: microsoft/setup-msbuild@v2

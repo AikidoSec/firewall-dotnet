@@ -170,7 +170,7 @@ namespace Aikido.Zen.Core.Models
 
         public void Clear()
         {
-            _config.Clear();
+            // Clear monitoring data but keep config
             _stats.Reset();
             _aiStats.Reset();
             _hostnames.Clear();
