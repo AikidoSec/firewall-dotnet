@@ -42,8 +42,8 @@ jobs:
                       ${{ runner.os }}-nuget-
 
             - name: Setup .NET
-              if: ${{ !startsWith(matrix.dotnet-version, '4.') }} # .NET Framework is built-in and cannot be installed
-              uses: xt0rted/setup-dotnet@v1.5.0
+              if: ${{ matrix.dotnet-version == '6.0.x' || matrix.dotnet-version == '7.0.x' }} # .NET Framework and .NET Core 8/9/10 are built-in
+              uses: actions/setup-dotnet@v5.1
               with:
                   dotnet-version: ${{ matrix.dotnet-version }}
 
