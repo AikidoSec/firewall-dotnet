@@ -44,12 +44,7 @@ jobs:
             - name: Setup .NET
               uses: xt0rted/setup-dotnet@fc29edc677f23f3fa306defaec2fb1104c84cf8a # v1.0.0
               with:
-                  dotnet-version: |
-                      6.0.x
-                      7.0.x
-                      8.0.x
-                      9.0.x
-                      10.0.x
+                  dotnet-version: ${{ matrix.dotnet-version }}
 
             - name: Add msbuild to PATH
               uses: microsoft/setup-msbuild@v2
