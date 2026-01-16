@@ -53,12 +53,10 @@ namespace Aikido.Zen.Core.Models.Events
             var heartbeat = new Heartbeat
             {
                 Agent = AgentInfoHelper.GetInfo(),
-                Hostnames = context.Hostnames
-                    .ToList(),
-                Users = context.Users
-                    .ToList(),
-                Routes = context.Routes
-                    .ToList(),
+                Hostnames = context.Hostnames,
+                Users = context.Users,
+                Routes = context.Routes,
+                Packages = context.Packages,
                 Ai = new List<AiInfo>()
             };
             context.AiStats.CopyProviders((ICollection<AiInfo>)heartbeat.Ai);
@@ -78,7 +76,6 @@ namespace Aikido.Zen.Core.Models.Events
             heartbeat.MiddlewareInstalled = context.ContextMiddlewareInstalled && context.BlockingMiddlewareInstalled;
             heartbeat.Stats.StartedAt = context.Started;
             heartbeat.Stats.EndedAt = DateTimeHelper.UTCNowUnixMilliseconds();
-            heartbeat.Packages = context.Packages;
             return heartbeat;
         }
     }
