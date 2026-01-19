@@ -69,7 +69,6 @@ namespace Aikido.Zen.Core
 
         internal static Agent NewInstance(IZenApi api, int batchTimeoutMs = 20000)
         {
-            // Default 20s timeout estimation based on cloud measurements
             _instance = new Agent(api, batchTimeoutMs);
             return _instance;
         }
@@ -79,9 +78,10 @@ namespace Aikido.Zen.Core
         /// </summary>
         /// <param name="api">The Zen API client for reporting events</param>
         /// <param name="batchTimeoutMs">Timeout in milliseconds for batch operations</param>
-        internal Agent(IZenApi api, int batchTimeoutMs)
+        internal Agent(IZenApi api, int batchTimeoutMs = 20000)
         {
-            // batchTimeout should be at least 1 second
+            // batchTimeout default 20s timeout estimation based on cloud measurements
+            // should be at least 1 second
             if (batchTimeoutMs < 1000)
             {
                 throw new ArgumentException("Batch timeout must be at least 1000 ms", nameof(batchTimeoutMs));
