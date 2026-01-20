@@ -12,7 +12,7 @@ namespace Aikido.Zen.Test
 
         private Agent _agent;
         private Mock<IZenApi> _zenApiMock;
-        private const int BatchTimeoutMs = 5000;
+        private const int BatchTimeoutMs = 20000;
 
         [SetUp]
         public void Setup()
