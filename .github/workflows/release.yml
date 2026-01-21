@@ -54,6 +54,7 @@ jobs:
               run: dotnet cake build.cake --target=CreatePackages --libVersion=${{ github.ref_name }}
 
             - name: Publish NuGet Packages
+              # snupkg are discovered and pushed automatically along with the main package
               run: |
                   $ErrorActionPreference = "Stop"
                   Get-ChildItem -Path artifacts\*.nupkg | ForEach-Object {
@@ -62,15 +63,6 @@ jobs:
                       Write-Host "Pushed $($_.FullName)"
                     } catch {
                       Write-Host "Failed to push $($_.FullName)"
-                      exit 1
-                    }
-                  }
-                  Get-ChildItem -Path artifacts\*.snupkg | ForEach-Object {
-                    try {
-                      dotnet nuget push $_.FullName --api-key ${{ secrets.NUGETAPIKEY }} --source https://api.nuget.org/v3/index.json
-                      Write-Host "Pushed symbols $($_.FullName)"
-                    } catch {
-                      Write-Host "Failed to push symbols $($_.FullName)"
                       exit 1
                     }
                   }
