@@ -226,18 +226,11 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
         /// <returns>A parameterized route string with a leading slash</returns>
         internal string GetParametrizedRoute(HttpContext context)
         {
-            var routePattern = context.Request.Path;
-            if (string.IsNullOrEmpty(routePattern))
-            {
-                return "/";
-            }
-
-            // Ensure the request path starts with a slash for consistency
-            routePattern = "/" + routePattern.TrimStart('/');
+            var routePattern = RouteHelper.NormalizeRoutePattern(context.Request.Path);
 
             // Check for an exact match endpoint
             var frameworkRoutes = RouteTable.Routes.Cast<RouteBase>()
-                .Select(route => GetRoutePattern(route))
+                .Select(route => RouteHelper.NormalizeRoutePattern((route as System.Web.Routing.Route)?.Url))
                 .ToList();
 
             var exactEndpoint = frameworkRoutes.FirstOrDefault(rp => rp == routePattern);
@@ -278,17 +271,6 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             }
 
             return routePattern;
-        }
-
-        private string GetRoutePattern(RouteBase route)
-        {
-            string routePattern = null;
-            if (route is System.Web.Routing.Route)
-            {
-                routePattern = (route as System.Web.Routing.Route).Url;
-            }
-            // ensure the leading slash from the route pattern, to ensure we don't distinguish for example between api/users and /api/users
-            return "/" + routePattern?.TrimStart('/');
         }
     }
 }

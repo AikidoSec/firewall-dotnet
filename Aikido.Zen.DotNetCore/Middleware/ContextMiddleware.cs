@@ -243,20 +243,12 @@ namespace Aikido.Zen.DotNetCore.Middleware
         /// <returns>A parameterized route string, always starting with a leading slash</returns>
         internal string GetParametrizedRoute(HttpContext context)
         {
-            var routePattern = context.Request.Path.Value;
-
-            if (string.IsNullOrEmpty(routePattern))
-            {
-                return "/";
-            }
-
-            // Ensure the request path starts with a slash for consistency
-            routePattern = "/" + routePattern.TrimStart('/');
+            var routePattern = RouteHelper.NormalizeRoutePattern(context.Request.Path.Value);
 
             // Check for an exact match endpoint
             var frameworkRoutes = _endpoints
                 .OfType<RouteEndpoint>()
-                .Select(e => GetRoutePattern(e))
+                .Select(e => RouteHelper.NormalizeRoutePattern(e?.RoutePattern.RawText))
                 .ToList();
 
             var exactEndpoint = frameworkRoutes.FirstOrDefault(rp => rp == routePattern);
@@ -299,22 +291,6 @@ namespace Aikido.Zen.DotNetCore.Middleware
 
                 return routePattern;
             }
-        }
-
-        /// <summary>
-        /// Normalizes an endpoint route pattern string by ensuring it starts with a leading slash.
-        /// Returns "/" if the endpoint or its pattern is null/empty.
-        /// </summary>
-        /// <param name="endpoint">The RouteEndpoint to normalize.</param>
-        /// <returns>A normalized route pattern string starting with "/".</returns>
-        private static string GetRoutePattern(RouteEndpoint endpoint)
-        {
-            var pattern = endpoint?.RoutePattern.RawText;
-            if (string.IsNullOrEmpty(pattern))
-            {
-                return "/";
-            }
-            return "/" + pattern.TrimStart('/');
         }
     }
 }
