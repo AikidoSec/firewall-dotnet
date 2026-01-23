@@ -108,6 +108,22 @@ namespace Aikido.Zen.Core.Helpers
         };
 
         /// <summary>
+        /// Normalizes a route pattern string by ensuring it starts with a slash but doesn't end with one.
+        /// This is because ASP.NET will trim the ending slash in routes to find the original endpoint.
+        /// </summary>
+        /// <param name="routePattern">The route pattern string to normalize.</param>
+        /// <returns>A normalized route pattern string.</returns>
+        public static string NormalizeRoutePattern(string routePattern)
+        {
+            if (string.IsNullOrEmpty(routePattern))
+            {
+                return "/";
+            }
+
+            return "/" + routePattern.TrimStart('/').TrimEnd('/');
+        }
+
+        /// <summary>
         /// Matches a route pattern against an actual URL path
         /// </summary>
         /// <param name="pattern">The route pattern (e.g. "api/users/{id}")</param>
