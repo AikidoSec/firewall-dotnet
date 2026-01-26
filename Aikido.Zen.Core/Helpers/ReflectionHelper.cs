@@ -43,7 +43,7 @@ namespace Aikido.Zen.Core.Helpers
                 return null;
             }
 
-            // Attempt to load the assembly
+            // Attempt to resolve the assembly
             if (!_assemblies.TryGetValue(assemblyName, out var assembly))
             {
                 // Check if already loaded
@@ -54,7 +54,7 @@ namespace Aikido.Zen.Core.Helpers
                     try
                     {
                         // Load from the shared framework if it's not already loaded
-                        // Useful for System.Diagnostics.Process which might not be loaded yet
+                        // Useful for late assemblies that might not be loaded yet (eg. `System.Diagnostics` in ProcessPatches)
                         assembly = Assembly.Load(new AssemblyName(assemblyName));
                     }
                     catch
