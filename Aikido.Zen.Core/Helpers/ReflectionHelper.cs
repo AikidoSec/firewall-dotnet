@@ -46,8 +46,22 @@ namespace Aikido.Zen.Core.Helpers
             // Attempt to load the assembly
             if (!_assemblies.TryGetValue(assemblyName, out var assembly))
             {
+                // Check if already loaded
                 assembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.GetName().Name == assemblyName);
 
+                if (assembly == null)
+                {
+                    try
+                    {
+                        // Load from the shared framework if it's not already loaded
+                        // Useful for System.Diagnostics.Process which might not be loaded yet
+                        assembly = Assembly.Load(new AssemblyName(assemblyName));
+                    }
+                    catch
+                    {
+                        // Ignore and fall back to local assembly probing
+                    }
+                }
 
                 if (assembly == null)
                 {
@@ -101,7 +115,7 @@ namespace Aikido.Zen.Core.Helpers
         /// <returns>True if the assembly should be excluded from patching, false otherwise.</returns>
         public static bool ShouldSkipAssembly()
         {
-            var assembly =  GetCallingAssembly();
+            var assembly = GetCallingAssembly();
             if (assembly == null)
                 return false;
 
