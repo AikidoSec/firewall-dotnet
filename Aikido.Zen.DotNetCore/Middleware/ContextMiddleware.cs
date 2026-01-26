@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Helpers;
@@ -66,6 +67,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 }
 
                 var httpData = await HttpHelper.ReadAndFlattenHttpDataAsync(
+                    routeParams: context.RouteParams,
                     queryParams: context.Query,
                     headers: headersDictionary.ToDictionary(h => h.Key, h => string.Join(',', h.Value)),
                     cookies: context.Cookies,
@@ -130,6 +132,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
                     UserAgent = httpContext.Request.Headers.TryGetValue("User-Agent", out var userAgent) ? userAgent.FirstOrDefault() ?? string.Empty : string.Empty,
                     Source = Environment.Version.Major >= 5 ? "DotNetCore" : "DotNetFramework",
                     Route = GetParametrizedRoute(httpContext),
+                    RouteParams = FlattenRouteParameters(httpContext.GetRouteData()?.Values),
                     User = httpContext.Items["Aikido.Zen.CurrentUser"] as User
                 };
                 return true;
@@ -143,6 +146,29 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 return false;
             }
 
+        }
+
+        private static IDictionary<string, string> FlattenRouteParameters(RouteValueDictionary routeValues)
+        {
+            var result = new Dictionary<string, string>();
+
+            foreach (var kvp in routeValues)
+            {
+                if (kvp.Value == null)
+                {
+                    continue;
+                }
+
+                var value = Convert.ToString(kvp.Value, CultureInfo.InvariantCulture);
+                if (value == null)
+                {
+                    continue;
+                }
+
+                result[kvp.Key] = value;
+            }
+
+            return result;
         }
 
         /// <summary>
