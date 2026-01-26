@@ -3,6 +3,33 @@
         "queryParams": {
             "param1": "value1"
         },
+        "routeParams": {
+            "command": "ls -la"
+        },
+        "headers": {
+            "header1": "value1"
+        },
+        "cookies": {
+            "cookie1": "value1"
+        },
+        "body": "{\"key\":\"value\"}",
+        "contentType": "application/json",
+        "expectedFlattenedData": {
+            "query.param1": "value1",
+            "headers.header1": "value1",
+            "cookies.cookie1": "value1",
+            "body.key": "value",
+            "route.command": "ls -la"
+        },
+        "expectedParsedBody": {
+            "key": "value"
+        }
+    },
+    {
+        "queryParams": {
+            "param1": "value1"
+        },
+        "routeParams": {},
         "headers": {
             "header1": "value1"
         },
@@ -25,28 +52,7 @@
         "queryParams": {
             "param1": "value1"
         },
-        "headers": {
-            "header1": "value1"
-        },
-        "cookies": {
-            "cookie1": "value1"
-        },
-        "body": "{\"key\":\"value\"}",
-        "contentType": "application/json",
-        "expectedFlattenedData": {
-            "query.param1": "value1",
-            "headers.header1": "value1",
-            "cookies.cookie1": "value1",
-            "body.key": "value"
-        },
-        "expectedParsedBody": {
-            "key": "value"
-        }
-    },
-    {
-        "queryParams": {
-            "param1": "value1"
-        },
+        "routeParams": {},
         "headers": {
             "header1": "value1"
         },
@@ -66,6 +72,7 @@
         "queryParams": {
             "param1": "value1"
         },
+        "routeParams": {},
         "headers": {
             "header1": "value1"
         },
@@ -85,6 +92,7 @@
         "queryParams": {
             "param1": "value1"
         },
+        "routeParams": {},
         "headers": {
             "header1": "value1"
         },
@@ -107,6 +115,7 @@
         "queryParams": {
             "param1": "value1"
         },
+        "routeParams": {},
         "headers": {
             "header1": "value1"
         },
@@ -129,6 +138,7 @@
         "queryParams": {
             "param1": "value1"
         },
+        "routeParams": {},
         "headers": {
             "header1": "value1"
         },
@@ -153,6 +163,7 @@
         "queryParams": {
             "param1": "value1"
         },
+        "routeParams": {},
         "headers": {
             "header1": "value1"
         },
@@ -177,6 +188,7 @@
         "queryParams": {
             "param1": "value1"
         },
+        "routeParams": {},
         "headers": {
             "header1": "value1"
         },
@@ -201,6 +213,7 @@
         "queryParams": {
             "param1": "value1"
         },
+        "routeParams": {},
         "headers": {
             "header1": "value1"
         },
@@ -225,6 +238,7 @@
         "queryParams": {
             "param1": "value1"
         },
+        "routeParams": {},
         "headers": {
             "header1": "value1"
         },
@@ -244,6 +258,7 @@
         "queryParams": {
             "param1": "value1"
         },
+        "routeParams": {},
         "headers": {
             "header1": "value1"
         },
@@ -269,6 +284,7 @@
             "param1": "value1",
             "param2": "value2"
         },
+        "routeParams": {},
         "headers": {
             "header1": "value1",
             "header2": "value2"
@@ -296,6 +312,7 @@
         "queryParams": {
             "param1": "value1"
         },
+        "routeParams": {},
         "headers": {
             "header1": "value1"
         },
@@ -315,6 +332,7 @@
         "queryParams": {
             "param1": "value1"
         },
+        "routeParams": {},
         "headers": {
             "header1": "value1",
             "header2": "value2"
@@ -339,6 +357,7 @@
         "queryParams": {
             "param1": "value1"
         },
+        "routeParams": {},
         "headers": {
             "header1": "value1"
         },
@@ -361,6 +380,7 @@
             "param1": "value1",
             "param2": "value2"
         },
+        "routeParams": {},
         "headers": {
             "header1": "value1"
         },

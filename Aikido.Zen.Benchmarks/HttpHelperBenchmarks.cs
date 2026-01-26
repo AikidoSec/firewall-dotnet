@@ -16,6 +16,7 @@ namespace Aikido.Zen.Benchmarks
     [HideColumns(Column.StdErr, Column.StdDev, Column.Error, Column.Min, Column.Max, Column.RatioSD)]
     public class HttpHelperBenchmarks
     {
+        private IDictionary<string, string> _routeParams;
         private IDictionary<string, string> _queryParams;
         private IDictionary<string, string> _headers;
         private IDictionary<string, string> _cookies;
@@ -99,6 +100,12 @@ namespace Aikido.Zen.Benchmarks
                 { "param2", "value2" }
             };
 
+            _routeParams = new Dictionary<string, string>
+            {
+                { "routeParam1", "value1" },
+                { "routeParam2", "value2" }
+            };
+
             _headers = new Dictionary<string, string>
             {
                 { "header1", "value1" },
@@ -126,6 +133,7 @@ namespace Aikido.Zen.Benchmarks
         public async Task ProcessJsonRequest()
         {
             var result = await HttpHelper.ReadAndFlattenHttpDataAsync(
+                _routeParams,
                 _queryParams,
                 _headers,
                 _cookies,
@@ -140,6 +148,7 @@ namespace Aikido.Zen.Benchmarks
         public async Task ProcessXmlRequest()
         {
             var result = await HttpHelper.ReadAndFlattenHttpDataAsync(
+                _routeParams,
                 _queryParams,
                 _headers,
                 _cookies,
@@ -154,6 +163,7 @@ namespace Aikido.Zen.Benchmarks
         public async Task ProcessFormRequest()
         {
             var result = await HttpHelper.ReadAndFlattenHttpDataAsync(
+                _routeParams,
                 _queryParams,
                 _headers,
                 _cookies,
@@ -168,6 +178,7 @@ namespace Aikido.Zen.Benchmarks
         public async Task ProcessMultipartFormDataRequest()
         {
             var result = await HttpHelper.ReadAndFlattenHttpDataAsync(
+                _routeParams,
                 _queryParams,
                 _headers,
                 _cookies,

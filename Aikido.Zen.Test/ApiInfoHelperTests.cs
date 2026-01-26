@@ -15,7 +15,8 @@ namespace Aikido.Zen.Test.Helpers
         private Context CreateTestContext(
             Dictionary<string, string>? headers = null,
             object? body = null,
-            Dictionary<string, string>? query = null)
+            Dictionary<string, string>? query = null,
+            Dictionary<string, string>? route = null)
         {
             string? contentType = headers?.GetValueOrDefault("content-type") ?? "application/json";
             Stream? bodyStream = null;
@@ -70,7 +71,9 @@ namespace Aikido.Zen.Test.Helpers
 
             var queryParams = query ?? new Dictionary<string, string>();
             var headerDict = headers ?? new Dictionary<string, string>();
-            var parsed = HttpHelper.ReadAndFlattenHttpDataAsync(queryParams, headerDict, new Dictionary<string, string>(), bodyStream, contentType, bodyStream?.Length ?? 0).Result;
+            var routeParams = route ?? new Dictionary<string, string>();
+
+            var parsed = HttpHelper.ReadAndFlattenHttpDataAsync(routeParams, queryParams, headerDict, new Dictionary<string, string>(), bodyStream, contentType, bodyStream?.Length ?? 0).Result;
 
             return new Context
             {
@@ -81,7 +84,7 @@ namespace Aikido.Zen.Test.Helpers
                 Query = query ?? new Dictionary<string, string>(),
                 RemoteAddress = "127.0.0.1",
                 Url = "http://localhost/test",
-                RouteParams = new Dictionary<string, string>(),
+                RouteParams = routeParams,
                 Cookies = new Dictionary<string, string>(),
                 Source = "test",
                 ParsedBody = parsed.ParsedBody,
