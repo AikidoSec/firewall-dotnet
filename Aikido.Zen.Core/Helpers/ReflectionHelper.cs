@@ -43,24 +43,44 @@ namespace Aikido.Zen.Core.Helpers
                 return null;
             }
 
-            // Attempt to load the assembly
+            // Attempt to resolve the assembly
             if (!_assemblies.TryGetValue(assemblyName, out var assembly))
             {
+                // Check if already loaded
                 assembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.GetName().Name == assemblyName);
-
 
                 if (assembly == null)
                 {
-                    // we assume the loaded dll's are in the same directory as the executing assembly.
-                    // The current directory is not always the same as the executing assembly's directory, so we need to get the executing directory.
+                    // Try loading the assembly manually
                     var executingDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
                     var assemblyPath = Path.Combine(executingDirectory, $"{assemblyName}.dll");
+
                     if (File.Exists(assemblyPath))
                     {
+                        // First search the executing assembly directory
+                        // Useful for self-contained apps where all necessary dll's are in the same directory as the executing assembly
+                        // The current directory is not always the same as the executing assembly's directory, so we need to get the executing directory
                         assembly = Assembly.LoadFrom(assemblyPath);
                     }
+                    else
+                    {
+                        // The app is not self-contained or the dll was not included with the app
+                        // Try loading from the default shared framework path
+                        // Useful for late loaded assemblies (eg. `System.Diagnostics.Process` in ProcessPatches)
+                        try
+                        {
+                            assembly = Assembly.Load(new AssemblyName(assemblyName));
+                        }
+                        catch
+                        {
+                            // Ignore file not found exceptions
+                        }
+                    }
                 }
-                if (assembly == null) return null;
+
+                if (assembly == null)
+                    return null;
+
                 _assemblies[assemblyName] = assembly;
             }
 
@@ -101,7 +121,7 @@ namespace Aikido.Zen.Core.Helpers
         /// <returns>True if the assembly should be excluded from patching, false otherwise.</returns>
         public static bool ShouldSkipAssembly()
         {
-            var assembly =  GetCallingAssembly();
+            var assembly = GetCallingAssembly();
             if (assembly == null)
                 return false;
 
