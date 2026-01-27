@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
@@ -82,6 +83,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                     UserAgent = httpContext.Request.UserAgent,
                     Source = "DotNetFramework",
                     Route = GetParametrizedRoute(httpContext),
+                    RouteParams = FlattenRouteParameters(httpContext.Request?.RequestContext?.RouteData?.Values),
                 };
 
                 Agent.Instance.SetContextMiddlewareInstalled(true);
@@ -89,6 +91,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 var request = httpContext.Request;
 
                 var httpData = await HttpHelper.ReadAndFlattenHttpDataAsync(
+                    routeParams: context.RouteParams,
                     queryParams: context.Query,
                     headers: request.Headers.AllKeys.ToDictionary(k => k, k => request.Headers.Get(k)),
                     cookies: request.Cookies.AllKeys.ToDictionary(k => k, k => request.Cookies[k].Value),
@@ -213,6 +216,34 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                     string dictKey = i == 0 ? key : $"{key}[{i}]";
                     result[dictKey] = values[i];
                 }
+            }
+
+            return result;
+        }
+
+        private static IDictionary<string, string> FlattenRouteParameters(RouteValueDictionary routeValues)
+        {
+            var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            if (routeValues == null)
+            {
+                return result;
+            }
+
+            foreach (var kvp in routeValues)
+            {
+                if (kvp.Value == null)
+                {
+                    continue;
+                }
+
+                var value = Convert.ToString(kvp.Value, CultureInfo.InvariantCulture);
+                if (value == null)
+                {
+                    continue;
+                }
+
+                result[kvp.Key] = value;
             }
 
             return result;
