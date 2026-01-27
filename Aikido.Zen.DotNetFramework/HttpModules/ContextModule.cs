@@ -91,6 +91,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 var request = httpContext.Request;
 
                 var httpData = await HttpHelper.ReadAndFlattenHttpDataAsync(
+                    routeParams: context.RouteParams,
                     queryParams: context.Query,
                     headers: request.Headers.AllKeys.ToDictionary(k => k, k => request.Headers.Get(k)),
                     cookies: request.Cookies.AllKeys.ToDictionary(k => k, k => request.Cookies[k].Value),
