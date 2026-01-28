@@ -132,7 +132,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
                     UserAgent = httpContext.Request.Headers.TryGetValue("User-Agent", out var userAgent) ? userAgent.FirstOrDefault() ?? string.Empty : string.Empty,
                     Source = Environment.Version.Major >= 5 ? "DotNetCore" : "DotNetFramework",
                     Route = GetParametrizedRoute(httpContext),
-                    RouteParams = FlattenRouteParameters(httpContext.GetRouteData()?.Values),
+                    RouteParams = FlattenRouteParameters(httpContext.GetRouteData().Values),
                     User = httpContext.Items["Aikido.Zen.CurrentUser"] as User
                 };
                 return true;
