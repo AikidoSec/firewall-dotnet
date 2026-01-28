@@ -5,6 +5,7 @@ using Aikido.Zen.Core;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Routing;
 
@@ -123,7 +124,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 headersDictionary = new ConcurrentDictionary<string, string[]>(httpContext.Request.Headers.ToDictionary(h => h.Key, h => h.Value.ToArray()));
                 context = new Context
                 {
-                    Url = httpContext.Request.Path.ToString(),
+                    Url = httpContext.Request.GetDisplayUrl(),
                     Method = httpContext.Request.Method,
                     Query = FlattenQueryParameters(httpContext.Request.Query),
                     Headers = FlattenHeaders(httpContext.Request.Headers),
@@ -132,7 +133,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
                     UserAgent = httpContext.Request.Headers.TryGetValue("User-Agent", out var userAgent) ? userAgent.FirstOrDefault() ?? string.Empty : string.Empty,
                     Source = Environment.Version.Major >= 5 ? "DotNetCore" : "DotNetFramework",
                     Route = GetParametrizedRoute(httpContext),
-                    RouteParams = FlattenRouteParameters(httpContext.GetRouteData()?.Values),
+                    RouteParams = FlattenRouteParameters(httpContext.GetRouteData().Values),
                     User = httpContext.Items["Aikido.Zen.CurrentUser"] as User
                 };
                 return true;

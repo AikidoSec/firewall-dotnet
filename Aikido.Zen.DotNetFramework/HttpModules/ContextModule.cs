@@ -73,7 +73,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
 
                 var context = new Context
                 {
-                    Url = httpContext.Request.Path,
+                    Url = httpContext.Request.Url.ToString(),
                     Method = httpContext.Request.HttpMethod,
                     Query = FlattenQueryParameters(httpContext.Request.QueryString),
                     Headers = FlattenHeaders(httpContext.Request.Headers),
@@ -83,7 +83,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                     UserAgent = httpContext.Request.UserAgent,
                     Source = "DotNetFramework",
                     Route = GetParametrizedRoute(httpContext),
-                    RouteParams = FlattenRouteParameters(httpContext.Request?.RequestContext?.RouteData?.Values),
+                    RouteParams = FlattenRouteParameters(httpContext.Request.RequestContext.RouteData.Values),
                 };
 
                 Agent.Instance.SetContextMiddlewareInstalled(true);
