@@ -1,9 +1,11 @@
 using System.Collections.Concurrent;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Routing;
 
@@ -66,6 +68,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 }
 
                 var httpData = await HttpHelper.ReadAndFlattenHttpDataAsync(
+                    routeParams: context.RouteParams,
                     queryParams: context.Query,
                     headers: headersDictionary.ToDictionary(h => h.Key, h => string.Join(',', h.Value)),
                     cookies: context.Cookies,
@@ -121,7 +124,8 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 headersDictionary = new ConcurrentDictionary<string, string[]>(httpContext.Request.Headers.ToDictionary(h => h.Key, h => h.Value.ToArray()));
                 context = new Context
                 {
-                    Url = httpContext.Request.Path.ToString(),
+                    Url = httpContext.Request.GetDisplayUrl(),
+                    Path = httpContext.Request.Path.ToString(),
                     Method = httpContext.Request.Method,
                     Query = FlattenQueryParameters(httpContext.Request.Query),
                     Headers = FlattenHeaders(httpContext.Request.Headers),
@@ -130,6 +134,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
                     UserAgent = httpContext.Request.Headers.TryGetValue("User-Agent", out var userAgent) ? userAgent.FirstOrDefault() ?? string.Empty : string.Empty,
                     Source = Environment.Version.Major >= 5 ? "DotNetCore" : "DotNetFramework",
                     Route = GetParametrizedRoute(httpContext),
+                    RouteParams = FlattenRouteParameters(httpContext.GetRouteData().Values),
                     User = httpContext.Items["Aikido.Zen.CurrentUser"] as User
                 };
                 return true;
@@ -143,6 +148,29 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 return false;
             }
 
+        }
+
+        private static IDictionary<string, string> FlattenRouteParameters(RouteValueDictionary routeValues)
+        {
+            var result = new Dictionary<string, string>();
+
+            foreach (var kvp in routeValues)
+            {
+                if (kvp.Value == null)
+                {
+                    continue;
+                }
+
+                var value = Convert.ToString(kvp.Value, CultureInfo.InvariantCulture);
+                if (value == null)
+                {
+                    continue;
+                }
+
+                result[kvp.Key] = value;
+            }
+
+            return result;
         }
 
         /// <summary>
