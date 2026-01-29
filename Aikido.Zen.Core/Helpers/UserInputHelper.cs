@@ -52,6 +52,19 @@ namespace Aikido.Zen.Core.Helpers
         }
 
         /// <summary>
+        /// Processes route parameters and adds them to the result dictionary.
+        /// </summary>
+        /// <param name="routeParams">The route parameters dictionary.</param>
+        /// <param name="result">The dictionary to store processed data.</param>
+        public static void ProcessRouteParameters(IDictionary<string, string> routeParams, IDictionary<string, string> result)
+        {
+            foreach (var routeParam in routeParams)
+            {
+                result[$"route.{routeParam.Key}"] = routeParam.Value;
+            }
+        }
+
+        /// <summary>
         /// Processes headers and adds them to the result dictionary.
         /// </summary>
         /// <param name="headers">The headers dictionary.</param>

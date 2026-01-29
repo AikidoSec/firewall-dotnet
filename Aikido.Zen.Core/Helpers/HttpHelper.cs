@@ -39,6 +39,7 @@ namespace Aikido.Zen.Core.Helpers
         /// <summary>
         /// Reads and flattens HTTP request data into a dictionary with dot-notation keys.
         /// </summary>
+        /// <param name="routeParams">The route parameters dictionary.</param>
         /// <param name="queryParams">The query parameters dictionary.</param>
         /// <param name="headers">The headers dictionary.</param>
         /// <param name="cookies">The cookies dictionary.</param>
@@ -47,6 +48,7 @@ namespace Aikido.Zen.Core.Helpers
         /// <param name="contentLength">The content length of the request body.</param>
         /// <returns>A HttpDataResult containing both flattened data and parsed body.</returns>
         public static async Task<HttpDataResult> ReadAndFlattenHttpDataAsync(
+            IDictionary<string, string> routeParams,
             IDictionary<string, string> queryParams,
             IDictionary<string, string> headers,
             IDictionary<string, string> cookies,
@@ -56,6 +58,9 @@ namespace Aikido.Zen.Core.Helpers
         {
             var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             object parsedBody = null;
+
+            // Process Route Parameters
+            UserInputHelper.ProcessRouteParameters(routeParams, result);
 
             // Process Query Parameters
             UserInputHelper.ProcessQueryParameters(queryParams, result);

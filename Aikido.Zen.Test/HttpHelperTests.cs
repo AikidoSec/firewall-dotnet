@@ -10,6 +10,7 @@ namespace Aikido.Zen.Test.Helpers
     {
         [TestCaseSource(nameof(GetTestData))]
         public async Task ReadAndFlattenHttpDataAsync_ShouldProcessData(
+            IDictionary<string, string> routeParams,
             IDictionary<string, string> queryParams,
             IDictionary<string, string> headers,
             IDictionary<string, string> cookies,
@@ -22,7 +23,7 @@ namespace Aikido.Zen.Test.Helpers
             using var bodyStream = new MemoryStream(Encoding.UTF8.GetBytes(body));
 
             // Act
-            var result = await HttpHelper.ReadAndFlattenHttpDataAsync(queryParams, headers, cookies, bodyStream, contentType, bodyStream.Length);
+            var result = await HttpHelper.ReadAndFlattenHttpDataAsync(routeParams, queryParams, headers, cookies, bodyStream, contentType, bodyStream.Length);
 
             // Assert
             Assert.That(result.FlattenedData, Is.Not.Null);
@@ -79,6 +80,7 @@ namespace Aikido.Zen.Test.Helpers
             foreach (var testCase in testCases)
             {
                 yield return new TestCaseData(
+                    testCase.RouteParams,
                     testCase.QueryParams,
                     testCase.Headers,
                     testCase.Cookies,
@@ -92,6 +94,7 @@ namespace Aikido.Zen.Test.Helpers
 
         private class TestCase
         {
+            public IDictionary<string, string> RouteParams { get; set; }
             public IDictionary<string, string> QueryParams { get; set; }
             public IDictionary<string, string> Headers { get; set; }
             public IDictionary<string, string> Cookies { get; set; }
