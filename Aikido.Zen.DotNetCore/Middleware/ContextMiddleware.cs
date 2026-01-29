@@ -125,6 +125,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 context = new Context
                 {
                     Url = httpContext.Request.GetDisplayUrl(),
+                    Path = httpContext.Request.Path.ToString(),
                     Method = httpContext.Request.Method,
                     Query = FlattenQueryParameters(httpContext.Request.Query),
                     Headers = FlattenHeaders(httpContext.Request.Headers),
