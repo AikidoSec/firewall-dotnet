@@ -35,7 +35,7 @@ namespace Aikido.Zen.Test
             var context = new Context
             {
                 User = new User("123", "testUser"),
-                Url = "/test",
+                Url = "http://test.com/test",
                 Method = "GET",
                 RemoteAddress = "127.0.0.1"
             };
@@ -351,7 +351,7 @@ namespace Aikido.Zen.Test
             // Arrange
             var context = new Context
             {
-                Url = "/test",
+                Url = "http://test.com/test",
                 Method = "GET",
                 RemoteAddress = "127.0.0.1"
             };
@@ -374,7 +374,7 @@ namespace Aikido.Zen.Test
             var context = new Context
             {
                 User = user,
-                Url = "/test/path",
+                Url = "http://test.com/test/path",
                 Method = "POST",
                 RemoteAddress = "192.168.1.1"
             };
@@ -570,7 +570,7 @@ namespace Aikido.Zen.Test
             var context = new Context
             {
                 User = new User("123", "userName"),
-                Url = "/test",
+                Url = "http://test.com/test",
                 Route = "/test",
                 Method = "GET",
                 RemoteAddress = "1.2.3.4"
@@ -775,7 +775,7 @@ namespace Aikido.Zen.Test
             // Arrange
             var context = new Context
             {
-                Url = "/test/route",
+                Url = "http://test.com/test/route",
                 Method = "GET",
                 RemoteAddress = "192.168.1.1",
                 Route = "/test/route"
