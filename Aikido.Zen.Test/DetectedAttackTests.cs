@@ -42,7 +42,7 @@ namespace Aikido.Zen.Test
             var request = new RequestInfo
             {
                 Method = "POST",
-                Url = "/test",
+                Url = "http://example.com/test",
                 Headers = new Dictionary<string, string>
                 {
                     { "Content-Type", "application/json" }

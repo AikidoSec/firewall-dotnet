@@ -94,7 +94,7 @@ namespace Aikido.Zen.Test
         public void SetAndGetProperties_ShouldWorkCorrectly()
         {
             // Arrange
-            var url = "/api/test";
+            var url = "http://example.com/api/test";
             var method = "POST";
             var remoteAddress = "192.168.1.1";
             var userAgent = "Mozilla/5.0";

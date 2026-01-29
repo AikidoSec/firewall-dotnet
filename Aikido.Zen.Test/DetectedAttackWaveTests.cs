@@ -32,7 +32,7 @@ namespace Aikido.Zen.Test
 
             var samples = new List<SuspiciousRequest>
             {
-                new SuspiciousRequest { Method = "GET", Url = "/wp-config.php" }
+                new SuspiciousRequest { Method = "GET", Url = "http://example.com/wp-config.php" }
             };
 
             var evt = DetectedAttackWave.Create(context, samples);
