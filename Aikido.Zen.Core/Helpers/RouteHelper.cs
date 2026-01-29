@@ -286,7 +286,7 @@ namespace Aikido.Zen.Core.Helpers
             // 1. Check for Exact URL & Exact Method
             endpoint = specificMethodEndpoints.FirstOrDefault(e =>
                     e.Method.Equals(context.Method, StringComparison.OrdinalIgnoreCase) &&
-                    e.Route.Equals(context.Url, StringComparison.OrdinalIgnoreCase));
+                    e.Route.Equals(context.Path, StringComparison.OrdinalIgnoreCase));
             if (endpoint != null) return true;
 
             // 2. Check for Exact Route & Exact Method
@@ -297,7 +297,7 @@ namespace Aikido.Zen.Core.Helpers
 
             // 3. Check for Exact URL & Wildcard Method
             endpoint = wildcardMethodEndpoints.FirstOrDefault(e =>
-                    e.Route.Equals(context.Url, StringComparison.OrdinalIgnoreCase));
+                    e.Route.Equals(context.Path, StringComparison.OrdinalIgnoreCase));
             if (endpoint != null) return true;
 
             // 4. Check for Exact Route & Wildcard Method
@@ -358,9 +358,9 @@ namespace Aikido.Zen.Core.Helpers
             });
 
             // Handle wildcard routes if URL is available
-            if (!string.IsNullOrEmpty(context.Url))
+            if (!string.IsNullOrEmpty(context.Path))
             {
-                var path = TryParseUrlPath(context.Url);
+                var path = TryParseUrlPath(context.Path);
                 if (!string.IsNullOrEmpty(path))
                 {
                     // Get wildcard routes and sort by specificity (more specific first)

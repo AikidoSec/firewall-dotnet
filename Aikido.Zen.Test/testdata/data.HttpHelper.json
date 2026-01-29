@@ -1,5 +1,8 @@
 [
     {
+        "routeParams": {
+            "param1": "value1"
+        },
         "queryParams": {
             "param1": "value1"
         },
@@ -12,6 +15,7 @@
         "body": "{\"key\":\"value\"}",
         "contentType": "application/json",
         "expectedFlattenedData": {
+            "route.param1": "value1",
             "query.param1": "value1",
             "headers.header1": "value1",
             "cookies.cookie1": "value1",
@@ -22,6 +26,9 @@
         }
     },
     {
+        "routeParams": {
+            "param1": "value1"
+        },
         "queryParams": {
             "param1": "value1"
         },
@@ -34,6 +41,7 @@
         "body": "{\"key\":\"value\"}",
         "contentType": "application/json",
         "expectedFlattenedData": {
+            "route.param1": "value1",
             "query.param1": "value1",
             "headers.header1": "value1",
             "cookies.cookie1": "value1",
@@ -44,6 +52,9 @@
         }
     },
     {
+        "routeParams": {
+            "param1": "value1"
+        },
         "queryParams": {
             "param1": "value1"
         },
@@ -56,6 +67,7 @@
         "body": "",
         "contentType": "application/json",
         "expectedFlattenedData": {
+            "route.param1": "value1",
             "query.param1": "value1",
             "headers.header1": "value1",
             "cookies.cookie1": "value1"
@@ -63,6 +75,9 @@
         "expectedParsedBody": null
     },
     {
+        "routeParams": {
+            "param1": "value1"
+        },
         "queryParams": {
             "param1": "value1"
         },
@@ -75,6 +90,7 @@
         "body": "malformed json",
         "contentType": "application/json",
         "expectedFlattenedData": {
+            "route.param1": "value1",
             "query.param1": "value1",
             "headers.header1": "value1",
             "cookies.cookie1": "value1"
@@ -82,6 +98,9 @@
         "expectedParsedBody": null
     },
     {
+        "routeParams": {
+            "param1": "value1"
+        },
         "queryParams": {
             "param1": "value1"
         },
@@ -94,6 +113,7 @@
         "body": "<root><key>value</key></root>",
         "contentType": "application/xml",
         "expectedFlattenedData": {
+            "route.param1": "value1",
             "query.param1": "value1",
             "headers.header1": "value1",
             "cookies.cookie1": "value1",
@@ -104,6 +124,9 @@
         }
     },
     {
+        "routeParams": {
+            "param1": "value1"
+        },
         "queryParams": {
             "param1": "value1"
         },
@@ -116,6 +139,7 @@
         "body": "--boundary\r\nContent-Disposition: form-data; name=\"key\"\r\n\r\nvalue\r\n--boundary--",
         "contentType": "multipart/form-data; boundary=boundary",
         "expectedFlattenedData": {
+            "route.param1": "value1",
             "query.param1": "value1",
             "headers.header1": "value1",
             "cookies.cookie1": "value1",
@@ -126,6 +150,9 @@
         }
     },
     {
+        "routeParams": {
+            "param1": "value1"
+        },
         "queryParams": {
             "param1": "value1"
         },
@@ -138,6 +165,7 @@
         "body": "--boundary\r\nContent-Disposition: form-data; name=\"jsonData\"\r\nContent-Type: application/json\r\n\r\n{\"key\":\"value\"}\r\n--boundary--",
         "contentType": "multipart/form-data; boundary=boundary",
         "expectedFlattenedData": {
+            "route.param1": "value1",
             "query.param1": "value1",
             "headers.header1": "value1",
             "cookies.cookie1": "value1",
@@ -150,6 +178,9 @@
         }
     },
     {
+        "routeParams": {
+            "param1": "value1"
+        },
         "queryParams": {
             "param1": "value1"
         },
@@ -162,6 +193,7 @@
         "body": "--boundary\r\nContent-Disposition: form-data; name=\"xmlData\"\r\nContent-Type: application/xml\r\n\r\n<root><key>value</key></root>\r\n--boundary--",
         "contentType": "multipart/form-data; boundary=boundary",
         "expectedFlattenedData": {
+            "route.param1": "value1",
             "query.param1": "value1",
             "headers.header1": "value1",
             "cookies.cookie1": "value1",
@@ -174,6 +206,9 @@
         }
     },
     {
+        "routeParams": {
+            "param1": "value1"
+        },
         "queryParams": {
             "param1": "value1"
         },
@@ -186,6 +221,7 @@
         "body": "--boundary\r\nContent-Disposition: form-data; name=\"file1\"; filename=\"test.txt\"\r\nContent-Type: text/plain\r\n\r\nSmall file content\r\n--boundary--",
         "contentType": "multipart/form-data; boundary=boundary",
         "expectedFlattenedData": {
+            "route.param1": "value1",
             "query.param1": "value1",
             "headers.header1": "value1",
             "cookies.cookie1": "value1",
@@ -198,6 +234,9 @@
         }
     },
     {
+        "routeParams": {
+            "param1": "value1"
+        },
         "queryParams": {
             "param1": "value1"
         },
@@ -210,6 +249,7 @@
         "body": "--boundary\r\nContent-Disposition: form-data; name=\"file2\"; filename=\"large.bin\"\r\nContent-Type: application/octet-stream\r\n\r\n[2MB of binary data]\r\n--boundary--",
         "contentType": "multipart/form-data; boundary=boundary",
         "expectedFlattenedData": {
+            "route.param1": "value1",
             "query.param1": "value1",
             "headers.header1": "value1",
             "cookies.cookie1": "value1",
@@ -222,6 +262,9 @@
         }
     },
     {
+        "routeParams": {
+            "param1": "value1"
+        },
         "queryParams": {
             "param1": "value1"
         },
@@ -234,6 +277,7 @@
         "body": "plain text body",
         "contentType": "text/plain",
         "expectedFlattenedData": {
+            "route.param1": "value1",
             "query.param1": "value1",
             "headers.header1": "value1",
             "cookies.cookie1": "value1"
@@ -241,6 +285,9 @@
         "expectedParsedBody": null
     },
     {
+        "routeParams": {
+            "param1": "value1"
+        },
         "queryParams": {
             "param1": "value1"
         },
@@ -253,6 +300,7 @@
         "body": "key1=value1&key2=value2",
         "contentType": "application/x-www-form-urlencoded",
         "expectedFlattenedData": {
+            "route.param1": "value1",
             "query.param1": "value1",
             "headers.header1": "value1",
             "cookies.cookie1": "value1",
@@ -265,6 +313,9 @@
         }
     },
     {
+        "routeParams": {
+            "param1": "value1"
+        },
         "queryParams": {
             "param1": "value1",
             "param2": "value2"
@@ -280,6 +331,7 @@
         "body": "{\"key\":\"value\"}",
         "contentType": "application/json",
         "expectedFlattenedData": {
+            "route.param1": "value1",
             "query.param1": "value1",
             "query.param2": "value2",
             "headers.header1": "value1",
@@ -293,6 +345,9 @@
         }
     },
     {
+        "routeParams": {
+            "param1": "value1"
+        },
         "queryParams": {
             "param1": "value1"
         },
@@ -305,6 +360,7 @@
         "body": "<html><body>Test</body></html>",
         "contentType": "text/html",
         "expectedFlattenedData": {
+            "route.param1": "value1",
             "query.param1": "value1",
             "headers.header1": "value1",
             "cookies.cookie1": "value1"
@@ -312,6 +368,9 @@
         "expectedParsedBody": null
     },
     {
+        "routeParams": {
+            "param1": "value1"
+        },
         "queryParams": {
             "param1": "value1"
         },
@@ -325,6 +384,7 @@
         "body": "{\"key\":\"value\"}",
         "contentType": "application/json",
         "expectedFlattenedData": {
+            "route.param1": "value1",
             "query.param1": "value1",
             "headers.header1": "value1",
             "headers.header2": "value2",
@@ -336,6 +396,9 @@
         }
     },
     {
+        "routeParams": {
+            "param1": "value1"
+        },
         "queryParams": {
             "param1": "value1"
         },
@@ -349,6 +412,7 @@
         "body": "plain text body",
         "contentType": "text/plain",
         "expectedFlattenedData": {
+            "route.param1": "value1",
             "query.param1": "value1",
             "headers.header1": "value1",
             "cookies.cookie1": "value1",
@@ -357,6 +421,9 @@
         "expectedParsedBody": null
     },
     {
+        "routeParams": {
+            "param1": "value1"
+        },
         "queryParams": {
             "param1": "value1",
             "param2": "value2"
@@ -370,6 +437,7 @@
         "body": "key1=value1&key2=value2",
         "contentType": "application/x-www-form-urlencoded",
         "expectedFlattenedData": {
+            "route.param1": "value1",
             "query.param1": "value1",
             "query.param2": "value2",
             "headers.header1": "value1",
