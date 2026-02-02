@@ -259,7 +259,7 @@ namespace Aikido.Zen.Test.Helpers
             var context = new Context
             {
                 Method = "POST",
-                Url = "/posts/3",
+                Url = "http://localhost:4000/posts/3",
                 Route = "/posts/:number"
             };
             var endpoints = new List<EndpointConfig>
@@ -709,7 +709,7 @@ namespace Aikido.Zen.Test.Helpers
             {
                 Method = "GET",
                 Route = "/api/users/{id}",
-                Url = "/api/users/123"
+                Url = "http://localhost:4000/api/users/123"
             };
             var endpoints = new List<EndpointConfig>
             {
@@ -779,7 +779,7 @@ namespace Aikido.Zen.Test.Helpers
             {
                 Method = "GET",
                 Route = "/api/users/{id}",
-                Url = "/api/users/123"
+                Url = "http://localhost:4000/api/users/123"
             };
             var endpoints = new List<EndpointConfig>();
 

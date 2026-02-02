@@ -37,7 +37,7 @@ namespace Aikido.Zen.Test
             {
                 Method = "GET",
                 Route = "/test",
-                Url = "/test",
+                Url = "http://example.com/test",
                 RemoteAddress = "234.234.234.234"
             };
 
