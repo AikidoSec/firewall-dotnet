@@ -124,6 +124,11 @@ namespace Aikido.Zen.DotNetCore
             {
                 return app;
             }
+            if (!HasEndpointRouting(app))
+            {
+                throw new InvalidOperationException("UseZenFirewall must be called after routing is configured, either directly via UseRouting or indirectly if using a custom framework.");
+            }
+
             var contextAccessor = app.ApplicationServices.GetRequiredService<IHttpContextAccessor>();
             Zen.Initialize(app.ApplicationServices, contextAccessor);
             var options = app.ApplicationServices.GetRequiredService<IOptions<AikidoOptions>>();
@@ -150,6 +155,19 @@ namespace Aikido.Zen.DotNetCore
             app.UseMiddleware<ContextMiddleware>();
             app.UseMiddleware<BlockingMiddleware>();
             return app;
+        }
+
+        private static bool HasEndpointRouting(IApplicationBuilder app)
+        {
+            // Based on the ASP.NET Core source for VerifyEndpointRoutingMiddlewareIsRegistered
+            // https://github.com/dotnet/aspnetcore/blob/main/src/Http/Routing/src/Builder/EndpointRoutingApplicationBuilderExtensions.cs#L129
+
+            if (!app.Properties.TryGetValue("__EndpointRouteBuilder", out var routeBuilder))
+            {
+                return false;
+            }
+
+            return true;
         }
 
         internal static IServiceCollection AddAikidoZenMiddleware(this IServiceCollection services)
