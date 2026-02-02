@@ -50,7 +50,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: Aikido-demo-apps/zen-demo-dotnet-core
-          ref: qa-endpoints
           path: zen-demo-dotnet-core
           submodules: true
 
