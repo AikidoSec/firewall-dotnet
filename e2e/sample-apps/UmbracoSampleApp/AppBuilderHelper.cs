@@ -42,13 +42,13 @@ namespace UmbracoSampleApp
             await app.BootUmbracoAsync();
             DatabaseService.ConnectionString = app.Configuration.GetConnectionString("umbracoDbDSN");
 
-            app.UseZenFirewall();
 
             app.UseUmbraco()
                 .WithMiddleware(u =>
                 {
                     u.UseBackOffice();
                     u.UseWebsite();
+                    app.UseZenFirewall(); // UseRouting was called by WithMiddleware so we are good to go
                     app.Use(async (context, next) =>
                     {
                         try
