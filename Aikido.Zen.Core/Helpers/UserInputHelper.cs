@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Aikido.Zen.Core.Models;
 using Microsoft.Net.Http.Headers;
 
@@ -10,6 +11,25 @@ namespace Aikido.Zen.Core.Helpers
     /// </summary>
     public static class UserInputHelper
     {
+        private const int MaxDecodeUriPasses = 2;
+
+        /// <summary>
+        /// Decodes percent-encoded values in place (e.g. who%61mi => whoami).
+        /// </summary>
+        /// <param name="values">Dictionary containing user input values.</param>
+        public static void DecodeUriValues(IDictionary<string, string> values)
+        {
+            if (values == null || values.Count == 0)
+            {
+                return;
+            }
+
+            foreach (var key in values.Keys.ToList())
+            {
+                values[key] = DecodeUriComponent(values[key]);
+            }
+        }
+
         /// <summary>
         /// Extracts the source of the user input from the path.
         /// </summary>
@@ -106,6 +126,29 @@ namespace Aikido.Zen.Core.Helpers
             }
             boundary = parsedContentType.Boundary.Value;
             return isMultipart;
+        }
+
+        private static string DecodeUriComponent(string input)
+        {
+            string decoded = input;
+
+            if (string.IsNullOrEmpty(input))
+            {
+                return decoded;
+            }
+
+            for (int i = 0; i < MaxDecodeUriPasses; i++)
+            {
+                string next = Uri.UnescapeDataString(decoded);
+                if (next == decoded)
+                {
+                    break;
+                }
+
+                decoded = next;
+            }
+
+            return decoded;
         }
     }
 }

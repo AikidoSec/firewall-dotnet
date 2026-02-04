@@ -84,6 +84,9 @@ namespace Aikido.Zen.Core.Helpers
                 LogHelper.ErrorLog(Agent.Logger, $"caught error while parsing body: {e.Message}");
             }
 
+            // Decode percent-encoded values
+            UserInputHelper.DecodeUriValues(result);
+
             return new HttpDataResult
             {
                 FlattenedData = result,

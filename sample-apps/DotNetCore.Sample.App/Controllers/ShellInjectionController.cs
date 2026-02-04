@@ -1,8 +1,10 @@
+using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using DotNetCore.Sample.App.Models;
 
 namespace DotNetCore.Sample.App.Controllers
 {
@@ -14,6 +16,8 @@ namespace DotNetCore.Sample.App.Controllers
     [Route("shell-injection")]
     public class ShellInjectionController : ControllerBase
     {
+        private const int MaxDecodeUriPasses = 2;
+
         /// <summary>
         /// Executes a shell command provided in the 'cmd' query parameter.
         /// On Windows, it attempts to use WSL via 'cmd.exe /c wsl'.
@@ -48,8 +52,23 @@ namespace DotNetCore.Sample.App.Controllers
             return await ExecuteCommandInternal(command);
         }
 
+        [HttpPost("/api/execute")]
+        public async Task<IActionResult> ExecuteCommandPost([FromBody] CommandRequest request)
+        {
+            var command = request.UserCommand;
+
+            if (string.IsNullOrEmpty(command))
+            {
+                return BadRequest("Command is required");
+            }
+
+            return await ExecuteCommandInternal(command);
+        }
+
         private async Task<IActionResult> ExecuteCommandInternal(string command)
         {
+            command = DecodeUriComponent(command);
+
             var processStartInfo = new ProcessStartInfo
             {
                 RedirectStandardOutput = true,
@@ -132,6 +151,29 @@ namespace DotNetCore.Sample.App.Controllers
                 // Use a simple format for the response string
                 return BadRequest($"Error executing command: {ex.Message}\nStackTrace:{ex.StackTrace}");
             }
+        }
+
+        private static string DecodeUriComponent(string input)
+        {
+            string decoded = input;
+
+            if (string.IsNullOrEmpty(input))
+            {
+                return decoded;
+            }
+
+            for (int i = 0; i < MaxDecodeUriPasses; i++)
+            {
+                string next = Uri.UnescapeDataString(decoded);
+                if (next == decoded)
+                {
+                    break;
+                }
+
+                decoded = next;
+            }
+
+            return decoded;
         }
     }
 }

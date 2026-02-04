@@ -16,6 +16,8 @@ namespace DotNetFramework.Sample.App.Controllers
     [RoutePrefix("api/shell-injection")]
     public class ShellInjectionController : ApiController
     {
+        private const int MaxDecodeUriPasses = 2;
+
         /// <summary>
         /// Executes a shell command provided in the 'cmd' query parameter.
         /// On Windows, it attempts to use WSL via 'cmd.exe /c wsl'.
@@ -31,6 +33,8 @@ namespace DotNetFramework.Sample.App.Controllers
             {
                 return BadRequest("Command parameter 'cmd' is required.");
             }
+
+            command = DecodeUriComponent(command);
 
             var processStartInfo = new ProcessStartInfo
             {
@@ -92,6 +96,29 @@ namespace DotNetFramework.Sample.App.Controllers
             {
                 return BadRequest($"Error executing command: {ex.Message} StackTrace:{ex.StackTrace}");
             }
+        }
+
+        private static string DecodeUriComponent(string input)
+        {
+            string decoded = input;
+
+            if (string.IsNullOrEmpty(input))
+            {
+                return decoded;
+            }
+
+            for (int i = 0; i < MaxDecodeUriPasses; i++)
+            {
+                string next = Uri.UnescapeDataString(decoded);
+                if (next == decoded)
+                {
+                    break;
+                }
+
+                decoded = next;
+            }
+
+            return decoded;
         }
     }
 }

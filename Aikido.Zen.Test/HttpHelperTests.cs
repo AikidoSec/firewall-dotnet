@@ -105,6 +105,44 @@ namespace Aikido.Zen.Test.Helpers
         }
 
         [Test]
+        public async Task ReadAndFlattenHttpDataAsync_ShouldDecodePercentEncodedUserInputValues()
+        {
+            // Arrange
+            var routeParams = new Dictionary<string, string> { { "command", "who%61mi" } };
+            var queryParams = new Dictionary<string, string> {
+                { "path", "%2e%2e%2fetc%2fpasswd" },
+                { "emoji", "%F0%9F%98%80" },
+                { "double", "%2577%2568%256f%2561%256d%2569" },
+                { "invalid", "%E0%A4%A" }
+            };
+            var headers = new Dictionary<string, string> { { "X-Custom", "a+b%2Bc" } };
+            var cookies = new Dictionary<string, string> { { "session", "abc%31%32%33" } };
+            const string body = "{\"cmd\":\"who%61mi\",\"literal\":\"a+b\"}";
+            using var bodyStream = new MemoryStream(Encoding.UTF8.GetBytes(body));
+
+            // Act
+            var result = await HttpHelper.ReadAndFlattenHttpDataAsync(
+                routeParams,
+                queryParams,
+                headers,
+                cookies,
+                bodyStream,
+                "application/json",
+                bodyStream.Length);
+
+            // Assert
+            Assert.That(result.FlattenedData["route.command"], Is.EqualTo("whoami"));
+            Assert.That(result.FlattenedData["query.path"], Is.EqualTo("../etc/passwd"));
+            Assert.That(result.FlattenedData["query.emoji"], Is.EqualTo("\U0001F600"));
+            Assert.That(result.FlattenedData["query.double"], Is.EqualTo("whoami"));
+            Assert.That(result.FlattenedData["query.invalid"], Is.EqualTo("%E0%A4%A"));
+            Assert.That(result.FlattenedData["headers.X-Custom"], Is.EqualTo("a+b+c"));
+            Assert.That(result.FlattenedData["cookies.session"], Is.EqualTo("abc123"));
+            Assert.That(result.FlattenedData["body.cmd"], Is.EqualTo("whoami"));
+            Assert.That(result.FlattenedData["body.literal"], Is.EqualTo("a+b"));
+        }
+
+        [Test]
         public void ToJsonObj_ShouldHandleTrueFalseNull()
         {
             // Arrange
