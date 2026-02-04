@@ -14,6 +14,16 @@
         "kind": "build",
         "isDefault": true
       }
+    },
+    {
+      "label": "build UmbracoSampleApp",
+      "type": "process",
+      "command": "dotnet",
+      "args": [
+        "build",
+        "${workspaceFolder}/e2e/sample-apps/UmbracoSampleApp/UmbracoSampleApp.csproj"
+      ],
+      "problemMatcher": "$msCompile"
     }
   ]
 }
