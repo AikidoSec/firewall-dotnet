@@ -81,8 +81,9 @@ namespace Aikido.Zen.Core.Vulnerabilities
             // Check if the command contains a commonly used command
             foreach (Match match in commandsRegex.Matches(command))
             {
-                if (userInput != match.Value)
+                if (!userInput.Contains(match.Value))
                 {
+                    // Don't skip whoami%00
                     continue;
                 }
 
