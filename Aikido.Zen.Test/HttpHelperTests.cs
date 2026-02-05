@@ -131,15 +131,25 @@ namespace Aikido.Zen.Test.Helpers
                 bodyStream.Length);
 
             // Assert
-            Assert.That(result.FlattenedData["route.command"], Is.EqualTo("whoami"));
-            Assert.That(result.FlattenedData["query.path"], Is.EqualTo("../etc/passwd"));
-            Assert.That(result.FlattenedData["query.emoji"], Is.EqualTo("\U0001F600"));
-            Assert.That(result.FlattenedData["query.double"], Is.EqualTo("whoami"));
+            Assert.That(result.FlattenedData["route.command"], Is.EqualTo("who%61mi"));
+            Assert.That(result.FlattenedData["query.path"], Is.EqualTo("%2e%2e%2fetc%2fpasswd"));
+            Assert.That(result.FlattenedData["query.emoji"], Is.EqualTo("%F0%9F%98%80"));
+            Assert.That(result.FlattenedData["query.double"], Is.EqualTo("%2577%2568%256f%2561%256d%2569"));
             Assert.That(result.FlattenedData["query.invalid"], Is.EqualTo("%E0%A4%A"));
-            Assert.That(result.FlattenedData["headers.X-Custom"], Is.EqualTo("a+b+c"));
-            Assert.That(result.FlattenedData["cookies.session"], Is.EqualTo("abc123"));
-            Assert.That(result.FlattenedData["body.cmd"], Is.EqualTo("whoami"));
+            Assert.That(result.FlattenedData["headers.X-Custom"], Is.EqualTo("a+b%2Bc"));
+            Assert.That(result.FlattenedData["cookies.session"], Is.EqualTo("abc%31%32%33"));
+            Assert.That(result.FlattenedData["body.cmd"], Is.EqualTo("who%61mi"));
             Assert.That(result.FlattenedData["body.literal"], Is.EqualTo("a+b"));
+
+            Assert.That(result.FlattenedData["route.command|decoded"], Is.EqualTo("whoami"));
+            Assert.That(result.FlattenedData["query.path|decoded"], Is.EqualTo("../etc/passwd"));
+            Assert.That(result.FlattenedData["query.emoji|decoded"], Is.EqualTo("\U0001F600"));
+            Assert.That(result.FlattenedData["query.double|decoded"], Is.EqualTo("whoami"));
+            Assert.That(result.FlattenedData["headers.X-Custom|decoded"], Is.EqualTo("a+b+c"));
+            Assert.That(result.FlattenedData["cookies.session|decoded"], Is.EqualTo("abc123"));
+            Assert.That(result.FlattenedData["body.cmd|decoded"], Is.EqualTo("whoami"));
+            Assert.That(result.FlattenedData.ContainsKey("query.invalid|decoded"), Is.False);
+            Assert.That(result.FlattenedData.ContainsKey("body.literal|decoded"), Is.False);
         }
 
         [Test]
