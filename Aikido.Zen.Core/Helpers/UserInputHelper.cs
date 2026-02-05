@@ -14,10 +14,10 @@ namespace Aikido.Zen.Core.Helpers
         private const int MaxDecodeUriPasses = 2;
 
         /// <summary>
-        /// Decodes percent-encoded values in place (e.g. who%61mi => whoami).
+        /// Processes all values and adds URI decoded variants where applicable (e.g. who%61mi => whoami).
         /// </summary>
-        /// <param name="values">Dictionary containing user input values.</param>
-        public static void DecodeUriValues(IDictionary<string, string> values)
+        /// <param name="result">The dictionary to store processed data.</param>
+        public static void ProcessUriValues(IDictionary<string, string> values)
         {
             if (values == null || values.Count == 0)
             {
@@ -26,7 +26,11 @@ namespace Aikido.Zen.Core.Helpers
 
             foreach (var key in values.Keys.ToList())
             {
-                values[key] = DecodeUriComponent(values[key]);
+                string original = values[key];
+                if (TryDecodeUriComponent(original, out string decoded))
+                {
+                    values[$"{key}|decoded"] = decoded;
+                }
             }
         }
 
@@ -128,13 +132,14 @@ namespace Aikido.Zen.Core.Helpers
             return isMultipart;
         }
 
-        private static string DecodeUriComponent(string input)
+        private static bool TryDecodeUriComponent(string input, out string decoded)
         {
-            string decoded = input;
+            bool changed = false;
+            decoded = input;
 
             if (string.IsNullOrEmpty(input))
             {
-                return decoded;
+                return false;
             }
 
             for (int i = 0; i < MaxDecodeUriPasses; i++)
@@ -146,9 +151,10 @@ namespace Aikido.Zen.Core.Helpers
                 }
 
                 decoded = next;
+                changed = true;
             }
 
-            return decoded;
+            return changed;
         }
     }
 }
