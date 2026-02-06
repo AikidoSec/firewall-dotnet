@@ -15,6 +15,8 @@ namespace Aikido.Zen.Core.Patches
     public static class LLMPatcher
     {
         private const string operationKind = "ai_op";
+        [ThreadStatic]
+        private static bool _isProcessing = false;
 
         /// <summary>
         /// Handles completed LLM API calls to extract token usage and track statistics
@@ -27,14 +29,19 @@ namespace Aikido.Zen.Core.Patches
         /// <param name="context">The current Aikido context.</param>
         public static void OnLLMCallCompleted(object[] __args, MethodBase __originalMethod, string assembly, object result, Context context)
         {
+            // Prevent re-entrancy
+            if (_isProcessing)
+                return; 
+
             // Exclude certain assemblies to avoid stack overflow issues
-            if (ReflectionHelper.ShouldSkipAssembly())
-            {
+            if (ReflectionHelper.ShouldSkipAssembly())            
                 return;
-            }
+            
 
             try
             {
+                _isProcessing = true;
+
                 var stopWatch = Stopwatch.StartNew();
                 if (context == null || result == null) return;
 
@@ -72,6 +79,10 @@ namespace Aikido.Zen.Core.Patches
             {
                 // Silently handle any errors to avoid affecting the original LLM call
                 LogHelper.ErrorLog(Agent.Logger, "Error tracking LLM call statistics.");
+            }
+            finally
+            {
+                _isProcessing = false;
             }
         }
 

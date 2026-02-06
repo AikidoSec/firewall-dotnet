@@ -14,6 +14,8 @@ namespace Aikido.Zen.Core.Patches
     internal static class WebRequestPatches
     {
         private const string operationKind = "outgoing_http_op";
+        [ThreadStatic]
+        private static bool _isProcessing = false;
 
         public static void ApplyPatches(Harmony harmony)
         {
@@ -42,27 +44,39 @@ namespace Aikido.Zen.Core.Patches
 
         internal static bool CaptureRequest(WebRequest __instance, System.Reflection.MethodBase __originalMethod)
         {
+            // Prevent re-entrancy 
+            if (_isProcessing)            
+                return true;
+            
             // Exclude certain assemblies to avoid stack overflow issues
-            if (ReflectionHelper.ShouldSkipAssembly())
+            if (ReflectionHelper.ShouldSkipAssembly())            
+                return true;
+            
+
+            try
             {
+                _isProcessing = true;
+
+                var (hostname, port) = UriHelper.ExtractHost(__instance.RequestUri);
+                Agent.Instance.CaptureOutboundRequest(hostname, port);
+                var methodInfo = __originalMethod as MethodInfo;
+                var operation = $"{methodInfo?.DeclaringType?.Name}.{methodInfo?.Name}";
+                bool withoutContext = true;
+                bool attackDetected = false;
+                bool blocked = false;
+                Agent.Instance.Context.OnInspectedCall(
+                            operation,
+                            operationKind,
+                            0, // once ssrf attack detection is implemented, we can measure the algorithm's performance
+                            attackDetected,
+                            blocked,
+                            withoutContext);
                 return true;
             }
-
-            var (hostname, port) = UriHelper.ExtractHost(__instance.RequestUri);
-            Agent.Instance.CaptureOutboundRequest(hostname, port);
-            var methodInfo = __originalMethod as MethodInfo;
-            var operation = $"{methodInfo?.DeclaringType?.Name}.{methodInfo?.Name}";
-            bool withoutContext = true;
-            bool attackDetected = false;
-            bool blocked = false;
-            Agent.Instance.Context.OnInspectedCall(
-                        operation,
-                        operationKind,
-                        0, // once ssrf attack detection is implemented, we can measure the algorithm's performance
-                        attackDetected,
-                        blocked,
-                        withoutContext);
-            return true;
+            finally
+            {
+                _isProcessing = false;
+            }
         }
     }
 }
