@@ -207,6 +207,12 @@ public void Configuration(IAppBuilder app)
 }
 ```
 
+## Guides
+
+- [Troubleshooting](docs/troubleshooting.md) — common issues and how to debug Zen
+- [Azure Key Vault](docs/azure-key-vault.md) — using Azure Key Vault with Zen
+- [Set the current user](docs/user.md) — identify users for rate limiting, blocking, and attack reports
+
 ## Reporting to your Aikido Security dashboard
 
 > Aikido is your no nonsense application security platform. One central system that scans your source code & cloud, shows you what vulnerabilities matter, and how to fix them - fast. So you can get back to building.
