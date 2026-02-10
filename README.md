@@ -179,6 +179,14 @@ public void Configuration(IAppBuilder app)
 }
 ```
 
+- Zen needs to run for all requests to properly detect attacks. This can be enforced in `Web.config` as such:
+
+``` xml
+<system.webServer>
+  <modules runAllManagedModulesForAllRequests="true" />
+</system.webServer>
+```
+
 - If you would like to block users by their identity, you can pass in a function to set the user, in your Global.asax.cs file.
 
 ``` csharp
