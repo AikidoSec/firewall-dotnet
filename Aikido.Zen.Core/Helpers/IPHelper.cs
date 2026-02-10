@@ -71,12 +71,12 @@ namespace Aikido.Zen.Core.Helpers
                 {
                     IPHostEntry ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
                     IPAddress ipAddress = ipHostInfo.AddressList.FirstOrDefault(ip => ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork);
-                    return ipAddress?.ToString() ?? "unknown";
+                    return ipAddress?.ToString() ?? "";
                 }
                 catch (Exception)
                 {
                     // GetHostEntry can throw "SocketException: nodename nor servname provided, or not known"
-                    return "unknown";
+                    return "";
                 }
             }
         }
