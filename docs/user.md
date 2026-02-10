@@ -51,7 +51,7 @@ public void Configuration(IAppBuilder app)
 ```
 
 > [!WARNING]
-> Do not call `SetUser` with a shared user ID for unauthenticated or anonymous users (e.g. `SetUser("anonymous", "Anonymous", context)`). When a user is set, rate limiting is applied per user ID instead of per IP address. This means all anonymous users would share a single rate limit bucket and be blocked as a group. For unauthenticated users, simply don't call `SetUser` — rate limiting will automatically fall back to per-IP limiting.
+> Do not call `SetUser` with a shared user ID for unauthenticated or anonymous users (e.g. `SetUser("anonymous", "Anonymous")`). When a user is set, rate limiting is applied per user ID instead of per IP address. This means all anonymous users would share a single rate limit bucket and be blocked as a group. For unauthenticated users, simply don't call `SetUser` — rate limiting will automatically fall back to per-IP limiting.
 
 ## Benefits
 
