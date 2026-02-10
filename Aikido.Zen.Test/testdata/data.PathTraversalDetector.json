@@ -132,6 +132,60 @@
     "isTraversal": false
   },
   {
+    "input": "/app/config.yml",
+    "path": "/app/config.yml",
+    "description": "Container app absolute path",
+    "isTraversal": true
+  },
+  {
+    "input": "/code/repo/file.txt",
+    "path": "/code/repo/file.txt",
+    "description": "Container code absolute path",
+    "isTraversal": true
+  },
+  {
+    "input": "/applications/utilities/terminal.app",
+    "path": "/applications/utilities/terminal.app",
+    "description": "MacOS Applications absolute path",
+    "isTraversal": true
+  },
+  {
+    "input": "/cores/core.1234",
+    "path": "/cores/core.1234",
+    "description": "MacOS Cores absolute path",
+    "isTraversal": true
+  },
+  {
+    "input": "/library/preferences/com.example.plist",
+    "path": "/library/preferences/com.example.plist",
+    "description": "MacOS Library absolute path",
+    "isTraversal": true
+  },
+  {
+    "input": "/private/var/log/system.log",
+    "path": "/private/var/log/system.log",
+    "description": "MacOS Private absolute path",
+    "isTraversal": true
+  },
+  {
+    "input": "/users/alice/.ssh/id_rsa",
+    "path": "/users/alice/.ssh/id_rsa",
+    "description": "MacOS Users absolute path",
+    "isTraversal": true
+  },
+  {
+    "input": "/system/library/kernel",
+    "path": "/system/library/kernel",
+    "description": "MacOS System absolute path",
+    "isTraversal": true
+  },
+  {
+    "input": "/volumes/external/data.txt",
+    "path": "/volumes/external/data.txt",
+    "description": "MacOS Volumes absolute path",
+    "isTraversal": true
+  },
+  {
     "input": "C:\\file.txt",
     "path": "C:\\files\\C:\\file.txt",
     "description": "Windows drive letter access",
