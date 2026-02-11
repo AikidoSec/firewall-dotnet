@@ -70,7 +70,7 @@ jobs:
           cp firewall-dotnet/.github/workflows/Dockerfile.qa zen-demo-dotnet-core/Dockerfile
 
       - name: Run Firewall QA Tests
-        uses: AikidoSec/firewall-tester-action@v1.0.7
+        uses: AikidoSec/firewall-tester-action@v1.0.9
         with:
           dockerfile_path: ./zen-demo-dotnet-core/Dockerfile
           app_port: 8080
