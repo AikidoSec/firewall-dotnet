@@ -22,7 +22,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
 
         private static readonly string[] DangerousPathStarts = new[]
         {
-            // Linux root folders
+            // Linux specific
             "/bin/",
             "/boot/",
             "/dev/",
@@ -42,7 +42,18 @@ namespace Aikido.Zen.Core.Vulnerabilities
             "/tmp/",
             "/usr/",
             "/var/",
-            // Windows drives and system paths
+            // Common container/cloud directories
+            "/app/",
+            "/code/",
+            // macOS specific
+            "/applications/",
+            "/cores/",
+            "/library/",
+            "/private/",
+            "/users/",
+            "/system/",
+            "/volumes/",
+            // Windows specific
             "c:/",
             "c:\\",
             "d:/",

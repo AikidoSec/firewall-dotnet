@@ -82,6 +82,20 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void IsShellInjection_ShouldDetectNullByteEndedCommand()
+        {
+            // Arrange
+            string command = "echo whoami\0";
+            string userInput = "whoami\0";
+
+            // Act
+            var result = ShellInjectionDetector.IsShellInjection(command, userInput);
+
+            // Assert
+            Assert.That(result, Is.True, "Should detect injection when user input contains a null byte ending.");
+        }
+
+        [Test]
         public void IsShellInjection_ShouldDetectSeparatorBeforeEndOfString()
         {
             // Arrange
