@@ -13,10 +13,10 @@ namespace Aikido.Zen.Core.Vulnerabilities
     public class ShellInjectionDetector
     {
         private static readonly string[] pathPrefixes = { "/bin/", "/sbin/", "/usr/bin/", "/usr/sbin/", "/usr/local/bin/", "/usr/local/sbin/" };
-        private static readonly char[] separators = { ' ', '\t', '\n', ';', '&', '|', '(', ')', '<', '>' };
+        private static readonly char[] separators = { ' ', '\t', '\n', ';', '&', '|', '(', ')', '<', '>', '\r', '\f' };
 
         // Define dangerous characters and commands as static fields
-        private static readonly char[] dangerousChars = { '#', '!', '"', '$', '&', '\'', '(', ')', '*', ';', '<', '=', '>', '?', '[', '\\', ']', '^', '`', '{', '|', '}', ' ', '\n', '\t', '~' };
+        private static readonly char[] dangerousChars = { '#', '!', '"', '$', '&', '\'', '(', ')', '*', ';', '<', '=', '>', '?', '[', '\\', ']', '^', '`', '{', '|', '}', ' ', '\n', '\t', '~', '\r', '\f' };
         private static readonly string[] dangerousCommands = { "sleep", "shutdown", "reboot", "poweroff", "halt", "ifconfig", "chmod", "chown", "ping", "ssh", "scp", "curl", "wget", "telnet", "kill", "killall", "rm", "mv", "cp", "touch", "echo", "cat", "head", "tail", "grep", "find", "awk", "sed", "sort", "uniq", "wc", "ls", "env", "ps", "who", "whoami", "id", "w", "df", "du", "pwd", "uname", "hostname", "netstat", "passwd", "arch", "printenv", "logname", "pstree", "hostnamectl", "set", "lsattr", "killall5", "dmesg", "history", "free", "uptime", "finger", "top", "shopt", ":" };
         private static readonly char[] dangerousCharsInsideDoubleQuotes = { '$', '`', '\\', '!' };
 

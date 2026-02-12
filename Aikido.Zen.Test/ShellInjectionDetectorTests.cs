@@ -123,6 +123,40 @@ namespace Aikido.Zen.Test
             Assert.That(result, Is.True, "Should detect injection when start of string and separator is after user input.");
         }
 
+        [Test]
+        public void IsShellInjection_ShouldDetectCarriageReturnAsSeparator()
+        {
+            // Carriage return in user input is flagged
+            Assert.That(ShellInjectionDetector.IsShellInjection("ls \rrm", "\rrm"), Is.True);
+            Assert.That(ShellInjectionDetector.IsShellInjection("ls \rrm -rf", "\rrm -rf"), Is.True);
+
+            // Carriage return in user input when user input is the command
+            Assert.That(ShellInjectionDetector.IsShellInjection("sleep\r10", "sleep\r10"), Is.True);
+            Assert.That(ShellInjectionDetector.IsShellInjection("shutdown\r-h\rnow", "shutdown\r-h\rnow"), Is.True);
+
+            // Carriage return as separator between commands
+            Assert.That(ShellInjectionDetector.IsShellInjection("ls\rrm", "rm"), Is.True);
+            Assert.That(ShellInjectionDetector.IsShellInjection("echo test\rrm -rf /", "rm"), Is.True);
+            Assert.That(ShellInjectionDetector.IsShellInjection("rm\rls", "rm"), Is.True);
+        }
+
+        [Test]
+        public void IsShellInjection_ShouldDetectFormFeedAsSeparator()
+        {
+            // Form feed in user input is flagged
+            Assert.That(ShellInjectionDetector.IsShellInjection("ls \frm", "\frm"), Is.True);
+            Assert.That(ShellInjectionDetector.IsShellInjection("ls \frm -rf", "\frm -rf"), Is.True);
+
+            // Form feed in user input when user input is the command
+            Assert.That(ShellInjectionDetector.IsShellInjection("sleep\f10", "sleep\f10"), Is.True);
+            Assert.That(ShellInjectionDetector.IsShellInjection("shutdown\f-h\fnow", "shutdown\f-h\fnow"), Is.True);
+
+            // Form feed as separator between commands
+            Assert.That(ShellInjectionDetector.IsShellInjection("ls\frm", "rm"), Is.True);
+            Assert.That(ShellInjectionDetector.IsShellInjection("echo test\frm -rf /", "rm"), Is.True);
+            Assert.That(ShellInjectionDetector.IsShellInjection("rm\fls", "rm"), Is.True);
+        }
+
         public static IEnumerable<TestCaseData> GetTestData()
         {
             var jsonData = File.ReadAllText("testdata/data.ShellInjectionDetector.json");
