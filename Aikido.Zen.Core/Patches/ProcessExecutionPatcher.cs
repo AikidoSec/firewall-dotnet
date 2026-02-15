@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
@@ -15,6 +16,8 @@ namespace Aikido.Zen.Core.Patches
     public static class ProcessExecutionPatcher
     {
         private const string kind = "exec_op";
+        [ThreadStatic]
+        private static bool _isProcessing = false;
 
         /// <summary>
         /// Inspects the process start arguments for potential shell injection vulnerabilities.
@@ -26,12 +29,13 @@ namespace Aikido.Zen.Core.Patches
         /// <returns>True if the original method should continue execution; otherwise, false.</returns>
         public static bool OnProcessStart(object[] __args, MethodBase __originalMethod, object __instance, Context context)
         {
+            // Prevent re-entrancy 
+            if (_isProcessing)
+                return true;
 
             // Exclude certain assemblies to avoid stack overflow issues
-            if (ReflectionHelper.ShouldSkipAssembly())
-            {
-                return true;
-            }
+            if (ReflectionHelper.ShouldSkipAssembly())            
+                return true;   
 
             var stopwatch = Stopwatch.StartNew();
             var methodInfo = __originalMethod as MethodInfo;
@@ -44,6 +48,8 @@ namespace Aikido.Zen.Core.Patches
 
             try
             {
+                _isProcessing = true;
+
                 var processStartInfo = (__instance as Process)?.StartInfo;
                 // Only inspect if context and process info are available
                 if (processStartInfo != null && context != null)
@@ -85,6 +91,10 @@ namespace Aikido.Zen.Core.Patches
                 LogHelper.ErrorLog(Agent.Logger, "Error during Shell injection detection.");
                 attackDetected = false; // Reset flags as detection failed
                 blocked = false;
+            }
+            finally
+            {
+                _isProcessing = false;
             }
 
             stopwatch.Stop();

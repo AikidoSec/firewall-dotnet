@@ -1,3 +1,4 @@
+using System;
 using System.Diagnostics;
 using System.Reflection;
 
@@ -12,6 +13,8 @@ namespace Aikido.Zen.Core.Patches
     public static class IOPatcher
     {
         private const string OperationKind = "fs_op";
+        [ThreadStatic]
+        private static bool _isProcessing = false;
 
         /// <summary>
         /// A generic handler for file operations that checks for path traversal attacks.
@@ -22,11 +25,14 @@ namespace Aikido.Zen.Core.Patches
         /// <returns>Always returns true. Throws an exception if a blocked attack is detected.</returns>
         public static bool OnFileOperation(string[] paths, MethodBase originalMethod, Context context)
         {
-            // Exclude certain assemblies to avoid stack overflow issues
-            if (ReflectionHelper.ShouldSkipAssembly())
-            {
+            // Prevent re-entrancy
+            if (_isProcessing)            
                 return true;
-            }
+
+            // Exclude certain assemblies to avoid stack overflow issues
+            if (ReflectionHelper.ShouldSkipAssembly())            
+                return true;
+            
 
             var methodInfo = originalMethod as MethodInfo;
             var operation = $"{methodInfo?.DeclaringType?.Name}.{methodInfo?.Name}";
@@ -38,6 +44,8 @@ namespace Aikido.Zen.Core.Patches
 
             try
             {
+                _isProcessing = true;
+
                 if (paths != null && paths.Length > 0)
                 {
                     attackDetected = PathTraversalHelper.DetectPathTraversal(paths, assemblyName, context, operation);
@@ -60,6 +68,7 @@ namespace Aikido.Zen.Core.Patches
                 {
                     LogHelper.ErrorLog(Agent.Logger, "Error recording OnInspectedCall stats.");
                 }
+                _isProcessing = false;
             }
 
             if (blocked)
