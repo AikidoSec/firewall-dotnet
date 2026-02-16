@@ -224,11 +224,24 @@ namespace Aikido.Zen.Core.Models
                 reason = "User is blocked";
                 return true;
             }
+
+            // Keep track of monitored IP list matches per request.
+            _stats.OnIPAddressMatches(_config.GetMatchingMonitoredIPListKeys(context.RemoteAddress));
+
             if (_config.BlockList.IsBlocked(context, out reason))
             {
                 return true;
             }
-            if (IsUserAgentBlocked(context.UserAgent))
+
+            var isUserAgentBlocked = IsUserAgentBlocked(context.UserAgent);
+            var isMonitoredUserAgent = _config.IsMonitoredUserAgent(context.UserAgent);
+            if (isUserAgentBlocked || isMonitoredUserAgent)
+            {
+                // Keep track of user-agent list matches when monitored or blocked.
+                _stats.OnUserAgentMatches(_config.GetMatchingUserAgentKeys(context.UserAgent));
+            }
+
+            if (isUserAgentBlocked)
             {
                 reason = "You are not allowed to access this resource because you have been identified as a bot.";
                 return true;

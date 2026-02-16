@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Aikido.Zen.Core.Api;
+using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models.Ip;
 using Aikido.Zen.Core.Models.Events;
 
@@ -17,9 +18,13 @@ namespace Aikido.Zen.Core.Models
     {
         private readonly ConcurrentDictionary<string, string> _blockedUsers = new ConcurrentDictionary<string, string>();
         private Regex _blockedUserAgents;
+        private Regex _monitoredUserAgents;
         private BlockList _blockList = new BlockList();
         private List<EndpointConfig> _endpoints = new List<EndpointConfig>();
+        private List<(string Key, Regex Pattern)> _userAgentDetails = new List<(string Key, Regex Pattern)>();
+        private List<(string Key, IPRange List)> _monitoredIPAddresses = new List<(string Key, IPRange List)>();
         private readonly object _endpointsLock = new object();
+        private readonly object _monitoringLock = new object();
 
         public long ConfigLastUpdated { get; set; } = 0;
         public int HeartbeatIntervalInMS { get; private set; } = 0;
@@ -32,6 +37,9 @@ namespace Aikido.Zen.Core.Models
             _blockedUsers.Clear();
             _endpoints.Clear();
             _blockedUserAgents = null;
+            _monitoredUserAgents = null;
+            _userAgentDetails = new List<(string Key, Regex Pattern)>();
+            _monitoredIPAddresses = new List<(string Key, IPRange List)>();
             _blockList = new BlockList();
             HeartbeatIntervalInMS = 0;
         }
@@ -57,6 +65,65 @@ namespace Aikido.Zen.Core.Models
                 return false;
 
             return _blockedUserAgents?.IsMatch(userAgent) ?? false;
+        }
+
+        /// <summary>
+        /// Checks whether a user agent matches monitored user-agent patterns.
+        /// </summary>
+        /// <param name="userAgent">The user-agent string to check.</param>
+        /// <returns>True if the user-agent is monitored, false otherwise.</returns>
+        public bool IsMonitoredUserAgent(string userAgent)
+        {
+            if (string.IsNullOrWhiteSpace(userAgent))
+                return false;
+
+            return _monitoredUserAgents?.IsMatch(userAgent) ?? false;
+        }
+
+        /// <summary>
+        /// Gets all user-agent detail keys matching a specific user-agent value.
+        /// </summary>
+        /// <param name="userAgent">The user-agent string to check.</param>
+        /// <returns>A list of matching keys.</returns>
+        public IEnumerable<string> GetMatchingUserAgentKeys(string userAgent)
+        {
+            if (string.IsNullOrWhiteSpace(userAgent))
+            {
+                return Enumerable.Empty<string>();
+            }
+
+            List<(string Key, Regex Pattern)> detailsSnapshot;
+            lock (_monitoringLock)
+            {
+                detailsSnapshot = _userAgentDetails.ToList();
+            }
+
+            return detailsSnapshot.Where(detail => detail.Pattern.IsMatch(userAgent))
+                                  .Select(detail => detail.Key)
+                                  .ToList();
+        }
+
+        /// <summary>
+        /// Gets all monitored IP list keys matching the provided IP.
+        /// </summary>
+        /// <param name="ip">The IP address to check.</param>
+        /// <returns>A list of matching monitored IP keys.</returns>
+        public IEnumerable<string> GetMatchingMonitoredIPListKeys(string ip)
+        {
+            if (!IPHelper.IsValidIp(ip))
+            {
+                return Enumerable.Empty<string>();
+            }
+
+            List<(string Key, IPRange List)> monitoredSnapshot;
+            lock (_monitoringLock)
+            {
+                monitoredSnapshot = _monitoredIPAddresses.ToList();
+            }
+
+            return monitoredSnapshot.Where(list => list.List.HasItems && list.List.IsIpInRange(ip))
+                                    .Select(list => list.Key)
+                                    .ToList();
         }
 
         /// <summary>
@@ -117,11 +184,17 @@ namespace Aikido.Zen.Core.Models
                 BlockList.UpdateBlockedIps(new List<string>());
                 BlockList.UpdateAllowedIps(new List<string>());
                 UpdateBlockedUserAgents(null);
+                UpdateMonitoredUserAgents(null);
+                UpdateMonitoredIPAddresses(new List<FirewallListsAPIResponse.IPList>());
+                UpdateUserAgentDetails(new List<FirewallListsAPIResponse.UserAgentDetail>());
                 return;
             }
             BlockList.UpdateBlockedIps(response.BlockedIps);
             BlockList.UpdateAllowedIps(response.AllowedIps);
             UpdateBlockedUserAgents(response.BlockedUserAgentsRegex);
+            UpdateMonitoredUserAgents(response.MonitoredUserAgentsRegex);
+            UpdateMonitoredIPAddresses(response.MonitoredIPAddresses);
+            UpdateUserAgentDetails(response.UserAgentDetails);
         }
 
         /// <summary>
@@ -131,6 +204,93 @@ namespace Aikido.Zen.Core.Models
         public void UpdateBlockedUserAgents(Regex blockedUserAgents)
         {
             _blockedUserAgents = blockedUserAgents;
+        }
+
+        /// <summary>
+        /// Updates the monitored user agents regex pattern.
+        /// </summary>
+        /// <param name="monitoredUserAgents">The regex pattern for monitored user agents.</param>
+        public void UpdateMonitoredUserAgents(Regex monitoredUserAgents)
+        {
+            _monitoredUserAgents = monitoredUserAgents;
+        }
+
+        /// <summary>
+        /// Updates keyed user-agent patterns used for stats attribution.
+        /// Invalid regex patterns are ignored.
+        /// </summary>
+        /// <param name="userAgentDetails">The keyed user-agent pattern list.</param>
+        public void UpdateUserAgentDetails(IEnumerable<FirewallListsAPIResponse.UserAgentDetail> userAgentDetails)
+        {
+            var details = new List<(string Key, Regex Pattern)>();
+
+            if (userAgentDetails != null)
+            {
+                foreach (var detail in userAgentDetails)
+                {
+                    if (detail == null || string.IsNullOrWhiteSpace(detail.Key) || string.IsNullOrWhiteSpace(detail.Pattern))
+                    {
+                        continue;
+                    }
+
+                    try
+                    {
+                        details.Add((detail.Key, new Regex(detail.Pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase)));
+                    }
+                    catch (ArgumentException)
+                    {
+                        // Invalid regex from API should not crash config updates.
+                    }
+                }
+            }
+
+            lock (_monitoringLock)
+            {
+                _userAgentDetails = details;
+            }
+        }
+
+        /// <summary>
+        /// Updates monitored IP lists used for keyed monitoring stats.
+        /// </summary>
+        /// <param name="monitoredIPAddresses">The monitored IP lists from the API.</param>
+        public void UpdateMonitoredIPAddresses(IEnumerable<FirewallListsAPIResponse.IPList> monitoredIPAddresses)
+        {
+            var monitored = new List<(string Key, IPRange List)>();
+
+            if (monitoredIPAddresses != null)
+            {
+                foreach (var list in monitoredIPAddresses)
+                {
+                    if (list == null)
+                    {
+                        continue;
+                    }
+
+                    var key = !string.IsNullOrWhiteSpace(list.Key) ? list.Key : list.Source;
+                    if (string.IsNullOrWhiteSpace(key))
+                    {
+                        continue;
+                    }
+
+                    var range = new IPRange();
+                    var ips = list.Ips ?? Enumerable.Empty<string>();
+                    foreach (var ip in ips)
+                    {
+                        foreach (var cidr in IPHelper.ToCidrString(ip))
+                        {
+                            range.InsertRange(cidr);
+                        }
+                    }
+
+                    monitored.Add((key, range));
+                }
+            }
+
+            lock (_monitoringLock)
+            {
+                _monitoredIPAddresses = monitored;
+            }
         }
 
         // Public properties

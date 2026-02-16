@@ -133,11 +133,12 @@ namespace Aikido.Zen.Test
                 Description = "Test allowed IPs",
                 Ips = new List<string> { "10.0.0.1" }
             };
-            var response = new FirewallListsAPIResponse(
-                blockedIPAddresses: new[] { blockedIpList },
-                allowedIPAddresses: new[] { allowedIpList },
-                blockedUserAgents: "bot"
-            );
+            var response = new FirewallListsAPIResponse
+            {
+                BlockedIPAddresses = new[] { blockedIpList },
+                AllowedIPAddresses = new[] { allowedIpList },
+                BlockedUserAgents = "bot"
+            };
 
             // Act
             _config.UpdateFirewallLists(response);
@@ -163,11 +164,12 @@ namespace Aikido.Zen.Test
                 Description = "Test allowed IPs",
                 Ips = new List<string> { "10.0.0.1" }
             };
-            var initialResponse = new FirewallListsAPIResponse(
-                blockedIPAddresses: new[] { blockedIpList },
-                allowedIPAddresses: new[] { allowedIpList },
-                blockedUserAgents: "bot"
-            );
+            var initialResponse = new FirewallListsAPIResponse
+            {
+                BlockedIPAddresses = new[] { blockedIpList },
+                AllowedIPAddresses = new[] { allowedIpList },
+                BlockedUserAgents = "bot"
+            };
             _config.UpdateFirewallLists(initialResponse);
 
             // Act
@@ -176,6 +178,36 @@ namespace Aikido.Zen.Test
             // Assert
             Assert.That(_config.BlockedUserAgents, Is.Null);
             Assert.That(_config.IsUserAgentBlocked("Mozilla/5.0 (compatible; Bot/1.0)"), Is.False);
+        }
+
+        [Test]
+        public void UpdateFirewallLists_WithMonitoredConfig_UpdatesMonitoredMatchers()
+        {
+            // Arrange
+            var monitoredIpList = new FirewallListsAPIResponse.IPList
+            {
+                Key = "tor/exit_nodes",
+                Ips = new List<string> { "9.9.9.0/24" }
+            };
+            var userAgentDetail = new FirewallListsAPIResponse.UserAgentDetail
+            {
+                Key = "googlebot",
+                Pattern = "googlebot"
+            };
+            var response = new FirewallListsAPIResponse
+            {
+                MonitoredIPAddresses = new[] { monitoredIpList },
+                MonitoredUserAgents = "googlebot|bingbot",
+                UserAgentDetails = new[] { userAgentDetail }
+            };
+
+            // Act
+            _config.UpdateFirewallLists(response);
+
+            // Assert
+            Assert.That(_config.GetMatchingMonitoredIPListKeys("9.9.9.9"), Is.EquivalentTo(new[] { "tor/exit_nodes" }));
+            Assert.That(_config.IsMonitoredUserAgent("GoogleBot/2.1"), Is.True);
+            Assert.That(_config.GetMatchingUserAgentKeys("GoogleBot/2.1"), Is.EquivalentTo(new[] { "googlebot" }));
         }
     }
 }

@@ -83,6 +83,49 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void IsBlocked_WithMonitoredConfig_TracksIpAndUserAgentStats()
+        {
+            // Arrange
+            var monitoredIpList = new FirewallListsAPIResponse.IPList
+            {
+                Key = "tor/exit_nodes",
+                Ips = new[] { "9.9.9.0/24" }
+            };
+            var userAgentDetail = new FirewallListsAPIResponse.UserAgentDetail
+            {
+                Key = "googlebot",
+                Pattern = "googlebot"
+            };
+            _agentContext.UpdateFirewallLists(new FirewallListsAPIResponse
+            {
+                MonitoredIPAddresses = new[] { monitoredIpList },
+                MonitoredUserAgents = "googlebot",
+                UserAgentDetails = new[] { userAgentDetail }
+            });
+
+            var context = new Context
+            {
+                RemoteAddress = "9.9.9.9",
+                UserAgent = "GoogleBot/2.1",
+                Method = "GET",
+                Url = "http://localhost/test",
+                Route = "/test"
+            };
+
+            // Act
+            var blocked = _agentContext.IsBlocked(context, out var reason);
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(blocked, Is.False);
+                Assert.That(reason, Is.Null);
+                Assert.That(_agentContext.Stats.IpAddresses.Breakdown["tor/exit_nodes"], Is.EqualTo(1));
+                Assert.That(_agentContext.Stats.UserAgents.Breakdown["googlebot"], Is.EqualTo(1));
+            });
+        }
+
+        [Test]
         public void AddRequest_ShouldIncrementRequests()
         {
             // Act
@@ -466,7 +509,7 @@ namespace Aikido.Zen.Test
                 Ips = blockedIPs,
                 Description = "Test"
             };
-            var firewallAPiResponse = new FirewallListsAPIResponse(blockedIPAddresses: new[] { blockedIPList });
+            var firewallAPiResponse = new FirewallListsAPIResponse { BlockedIPAddresses = new[] { blockedIPList } };
 
             // Act
             _agentContext.UpdateFirewallLists(firewallAPiResponse);
@@ -491,7 +534,7 @@ namespace Aikido.Zen.Test
                 Description = "Test"
             };
 
-            var firewallListsAPIResponse = new FirewallListsAPIResponse(blockedIPAddresses: new[] { ipList });
+            var firewallListsAPIResponse = new FirewallListsAPIResponse { BlockedIPAddresses = new[] { ipList } };
             _agentContext.UpdateFirewallLists(firewallListsAPIResponse);
 
             // Act
@@ -511,7 +554,7 @@ namespace Aikido.Zen.Test
                 Ips = blockedIPs,
                 Description = "Test"
             };
-            var firewallAPiResponse = new FirewallListsAPIResponse(blockedIPAddresses: new[] { blockedIpList });
+            var firewallAPiResponse = new FirewallListsAPIResponse { BlockedIPAddresses = new[] { blockedIpList } };
 
             // Act
             _agentContext.UpdateFirewallLists(firewallAPiResponse);
