@@ -1,0 +1,77 @@
+name: 🧪 QA Tests
+permissions:
+  contents: read
+on:
+  push: {}
+  workflow_call: {}
+
+jobs:
+  build-package:
+    runs-on: windows-2022
+    timeout-minutes: 30
+    steps:
+      - name: Checkout firewall-dotnet
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v2
+        with:
+          vs-version: "[17.2,19.0)"
+
+      - name: Install Cake Tool
+        run: dotnet tool install --global Cake.Tool
+
+      - name: Build and pack firewall-dotnet
+        run: |
+          # Install dependencies
+          dotnet tool restore
+          dotnet restore
+
+          # Run Cake Script to Build and Pack
+          dotnet cake build.cake --target=CreatePackages --configuration=Release --libVersion=0.0.0-qa
+
+      - name: Upload NuGet package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-package
+          path: ./artifacts/*.nupkg
+
+  qa-tests:
+    needs: build-package
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout zen-demo-dotnet-core
+        uses: actions/checkout@v4
+        with:
+          repository: Aikido-demo-apps/zen-demo-dotnet-core
+          path: zen-demo-dotnet-core
+          submodules: true
+
+      - name: Checkout firewall-dotnet (for Dockerfile.qa)
+        uses: actions/checkout@v4
+        with:
+          path: firewall-dotnet
+
+      - name: Download NuGet package artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: nuget-package
+          path: zen-demo-dotnet-core/local-feed
+
+      - name: Replace Dockerfile with QA version
+        run: |
+          cp firewall-dotnet/.github/workflows/NuGet.Config zen-demo-dotnet-core/NuGet.Config
+          cp firewall-dotnet/.github/workflows/Dockerfile.qa zen-demo-dotnet-core/Dockerfile
+
+      - name: Run Firewall QA Tests
+        uses: AikidoSec/firewall-tester-action@v1.0.10
+        with:
+          dockerfile_path: ./zen-demo-dotnet-core/Dockerfile
+          app_port: 8080
+          sleep_before_test: 10
