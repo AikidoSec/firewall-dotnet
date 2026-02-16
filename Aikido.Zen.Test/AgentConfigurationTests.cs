@@ -1,5 +1,4 @@
 
-using System.Text.RegularExpressions;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Models;
@@ -21,7 +20,7 @@ namespace Aikido.Zen.Test
         public void Clear_ClearsAllCollections()
         {
             // Arrange
-            _config.UpdateBlockedUserAgents(new Regex("bot", RegexOptions.IgnoreCase));
+            _config.UpdateBlockedUserAgents("bot");
             _config.UpdateConfig(new ReportingAPIResponse
             {
                 Block = true,
@@ -78,8 +77,7 @@ namespace Aikido.Zen.Test
         public void IsUserAgentBlocked_WithBlockedUserAgent_ReturnsTrue()
         {
             // Arrange
-            var blockedPattern = new Regex("bot", RegexOptions.IgnoreCase);
-            _config.UpdateBlockedUserAgents(blockedPattern);
+            _config.UpdateBlockedUserAgents("bot");
 
             // Act & Assert
             Assert.That(_config.IsUserAgentBlocked("Mozilla/5.0 (compatible; Bot/1.0)"), Is.True);
@@ -89,8 +87,7 @@ namespace Aikido.Zen.Test
         public void IsUserAgentBlocked_WithNonBlockedUserAgent_ReturnsFalse()
         {
             // Arrange
-            var blockedPattern = new Regex("bot", RegexOptions.IgnoreCase);
-            _config.UpdateBlockedUserAgents(blockedPattern);
+            _config.UpdateBlockedUserAgents("bot");
 
             // Act & Assert
             Assert.That(_config.IsUserAgentBlocked("Mozilla/5.0 (Windows NT 10.0; Win64; x64)"), Is.False);
@@ -225,6 +222,32 @@ namespace Aikido.Zen.Test
             Assert.That(_config.BlockedUserAgents, Is.Null);
             Assert.That(_config.IsUserAgentBlocked("GoogleBot/2.1"), Is.False);
             Assert.That(_config.IsMonitoredUserAgent("GoogleBot/2.1"), Is.False);
+        }
+
+        [Test]
+        public void UpdateFirewallLists_WithNullAndEmptyIpLists_UsesValidIpsOnly()
+        {
+            // Arrange
+            var response = new FirewallListsAPIResponse
+            {
+                BlockedIPAddresses = new FirewallListsAPIResponse.IPList[]
+                {
+                    null,
+                    new FirewallListsAPIResponse.IPList { Ips = null },
+                    new FirewallListsAPIResponse.IPList { Ips = new[] { "203.0.113.10" } }
+                },
+                AllowedIPAddresses = new FirewallListsAPIResponse.IPList[]
+                {
+                    null,
+                    new FirewallListsAPIResponse.IPList { Ips = null },
+                    new FirewallListsAPIResponse.IPList { Ips = new[] { "198.51.100.10" } }
+                }
+            };
+
+            // Act + Assert
+            Assert.DoesNotThrow(() => _config.UpdateFirewallLists(response));
+            Assert.That(_config.BlockList.IsIPBlocked("203.0.113.10"), Is.True);
+            Assert.That(_config.BlockList.IsIPAllowed("198.51.100.10"), Is.True);
         }
     }
 }

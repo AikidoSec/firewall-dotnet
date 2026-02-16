@@ -282,7 +282,7 @@ namespace Aikido.Zen.Core.Models
             _config.UpdateFirewallLists(response);
         }
 
-        public void UpdateBlockedUserAgents(Regex blockedUserAgents)
+        public void UpdateBlockedUserAgents(string blockedUserAgents)
         {
             _config.UpdateBlockedUserAgents(blockedUserAgents);
         }

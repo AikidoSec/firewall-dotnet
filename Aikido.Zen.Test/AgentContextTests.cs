@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Models;
@@ -57,7 +56,7 @@ namespace Aikido.Zen.Test
                     AllowedIPAddresses = new[] { "9.9.9.0/24" }
                 }
             };
-            var blockedUserAgents = new Regex("googlebot|bingbot|yandexbot");
+            var blockedUserAgents = "googlebot|bingbot|yandexbot";
 
             _agentContext.UpdateBlockedUsers(new[] { "user1" });
             _agentContext.BlockList.AddIpAddressToBlocklist("8.8.8.101");  // Using public IP
@@ -572,7 +571,7 @@ namespace Aikido.Zen.Test
         public void UpdateBlockedUserAgents_ShouldUpdateBlockedUserAgentsList()
         {
             // Arrange
-            var userAgents = new Regex("googlebot|bingbot|yandexbot");
+            var userAgents = "googlebot|bingbot|yandexbot";
 
             // Act
             _agentContext.UpdateBlockedUserAgents(userAgents);
@@ -588,7 +587,7 @@ namespace Aikido.Zen.Test
         public void UpdateBlockedUserAgents_WithEmptyList_ShouldClearBlockedUserAgents()
         {
             // Arrange
-            _agentContext.UpdateBlockedUserAgents(new Regex("Mozilla/5.0"));
+            _agentContext.UpdateBlockedUserAgents("Mozilla/5.0");
 
             // Act
             _agentContext.UpdateBlockedUserAgents(null);
@@ -602,7 +601,7 @@ namespace Aikido.Zen.Test
         {
             // Arrange
             var userAgent = "Mozilla/5.0";
-            _agentContext.UpdateBlockedUserAgents(new Regex(userAgent));
+            _agentContext.UpdateBlockedUserAgents(userAgent);
 
             // Act
             var isBlocked = _agentContext.IsUserAgentBlocked(userAgent);

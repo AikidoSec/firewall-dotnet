@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 
 namespace Aikido.Zen.Core.Api
 {
@@ -34,27 +33,6 @@ namespace Aikido.Zen.Core.Api
         /// Gets or sets keyed user-agent regex patterns used for stats attribution.
         /// </summary>
         public IEnumerable<UserAgentDetail> UserAgentDetails { get; set; } = new List<UserAgentDetail>();
-
-        /// <summary>
-        /// Gets a collection of blocked IP addresses as strings.
-        /// </summary>
-        public IEnumerable<string> BlockedIps => (BlockedIPAddresses ?? Enumerable.Empty<IPList>())
-                   .Where(ipList => ipList != null)
-                   .SelectMany(ipList => ipList.Ips ?? Enumerable.Empty<string>());
-
-        /// <summary>
-        /// Gets a collection of allowed IP addresses as strings.
-        /// </summary>
-        public IEnumerable<string> AllowedIps => (AllowedIPAddresses ?? Enumerable.Empty<IPList>())
-                   .Where(ipList => ipList != null)
-                   .SelectMany(ipList => ipList.Ips ?? Enumerable.Empty<string>());
-
-        /// <summary>
-        /// Gets a collection of monitored IP addresses as strings.
-        /// </summary>
-        public IEnumerable<string> MonitoredIps => (MonitoredIPAddresses ?? Enumerable.Empty<IPList>())
-                   .Where(ipList => ipList != null)
-                   .SelectMany(ipList => ipList.Ips ?? Enumerable.Empty<string>());
 
         public class IPList
         {

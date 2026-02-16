@@ -181,20 +181,25 @@ namespace Aikido.Zen.Core.Models
         {
             if (response == null)
             {
-                BlockList.UpdateBlockedIps(new List<string>());
-                BlockList.UpdateAllowedIps(new List<string>());
-                UpdateBlockedUserAgents(null);
-                UpdateMonitoredUserAgents(null);
-                UpdateMonitoredIPAddresses(new List<FirewallListsAPIResponse.IPList>());
-                UpdateUserAgentDetails(new List<FirewallListsAPIResponse.UserAgentDetail>());
+                ClearFirewallLists();
                 return;
             }
-            BlockList.UpdateBlockedIps(response.BlockedIps);
-            BlockList.UpdateAllowedIps(response.AllowedIps);
+            UpdateBlockedIps(response.BlockedIPAddresses);
+            UpdateAllowedIps(response.AllowedIPAddresses);
             UpdateBlockedUserAgents(response.BlockedUserAgents);
             UpdateMonitoredUserAgents(response.MonitoredUserAgents);
             UpdateMonitoredIPAddresses(response.MonitoredIPAddresses);
             UpdateUserAgentDetails(response.UserAgentDetails);
+        }
+
+        private void ClearFirewallLists()
+        {
+            UpdateBlockedIps(new List<FirewallListsAPIResponse.IPList>());
+            UpdateAllowedIps(new List<FirewallListsAPIResponse.IPList>());
+            UpdateBlockedUserAgents(null);
+            UpdateMonitoredUserAgents(null);
+            UpdateMonitoredIPAddresses(new List<FirewallListsAPIResponse.IPList>());
+            UpdateUserAgentDetails(new List<FirewallListsAPIResponse.UserAgentDetail>());
         }
 
         /// <summary>
@@ -221,15 +226,6 @@ namespace Aikido.Zen.Core.Models
         }
 
         /// <summary>
-        /// Updates the blocked user agents regex pattern.
-        /// </summary>
-        /// <param name="blockedUserAgents">The compiled regex for blocked user agents.</param>
-        public void UpdateBlockedUserAgents(Regex blockedUserAgents)
-        {
-            _blockedUserAgents = blockedUserAgents;
-        }
-
-        /// <summary>
         /// Updates the monitored user agents regex pattern from a regex string.
         /// </summary>
         /// <param name="monitoredUserAgents">The regex pattern string for monitored user agents.</param>
@@ -250,15 +246,6 @@ namespace Aikido.Zen.Core.Models
                 // Ignore invalid regex patterns from API input and treat as no pattern configured.
                 _monitoredUserAgents = null;
             }
-        }
-
-        /// <summary>
-        /// Updates the monitored user agents regex pattern.
-        /// </summary>
-        /// <param name="monitoredUserAgents">The compiled regex for monitored user agents.</param>
-        public void UpdateMonitoredUserAgents(Regex monitoredUserAgents)
-        {
-            _monitoredUserAgents = monitoredUserAgents;
         }
 
         /// <summary>
@@ -337,6 +324,20 @@ namespace Aikido.Zen.Core.Models
             {
                 _monitoredIPAddresses = monitored;
             }
+        }
+
+        private void UpdateBlockedIps(IEnumerable<FirewallListsAPIResponse.IPList> blockedIPAddresses)
+        {
+            BlockList.UpdateBlockedIps((blockedIPAddresses ?? Enumerable.Empty<FirewallListsAPIResponse.IPList>())
+                .Where(list => list != null)
+                .SelectMany(list => list.Ips ?? Enumerable.Empty<string>()));
+        }
+
+        private void UpdateAllowedIps(IEnumerable<FirewallListsAPIResponse.IPList> allowedIPAddresses)
+        {
+            BlockList.UpdateAllowedIps((allowedIPAddresses ?? Enumerable.Empty<FirewallListsAPIResponse.IPList>())
+                .Where(list => list != null)
+                .SelectMany(list => list.Ips ?? Enumerable.Empty<string>()));
         }
 
         // Public properties
