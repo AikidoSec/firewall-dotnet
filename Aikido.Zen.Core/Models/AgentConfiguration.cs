@@ -310,7 +310,7 @@ namespace Aikido.Zen.Core.Models
                         }
                     }
 
-                    monitored.Add((key, range));
+                    monitored.Add((list.Key, range));
                 }
             }
 
