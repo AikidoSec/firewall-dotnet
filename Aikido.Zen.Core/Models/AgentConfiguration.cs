@@ -191,25 +191,71 @@ namespace Aikido.Zen.Core.Models
             }
             BlockList.UpdateBlockedIps(response.BlockedIps);
             BlockList.UpdateAllowedIps(response.AllowedIps);
-            UpdateBlockedUserAgents(response.BlockedUserAgentsRegex);
-            UpdateMonitoredUserAgents(response.MonitoredUserAgentsRegex);
+            UpdateBlockedUserAgents(response.BlockedUserAgents);
+            UpdateMonitoredUserAgents(response.MonitoredUserAgents);
             UpdateMonitoredIPAddresses(response.MonitoredIPAddresses);
             UpdateUserAgentDetails(response.UserAgentDetails);
         }
 
         /// <summary>
+        /// Updates the blocked user agents regex pattern from a regex string.
+        /// </summary>
+        /// <param name="blockedUserAgents">The regex pattern string for blocked user agents.</param>
+        public void UpdateBlockedUserAgents(string blockedUserAgents)
+        {
+            if (string.IsNullOrWhiteSpace(blockedUserAgents))
+            {
+                _blockedUserAgents = null;
+                return;
+            }
+
+            try
+            {
+                _blockedUserAgents = new Regex(blockedUserAgents, RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            }
+            catch (ArgumentException)
+            {
+                // Ignore invalid regex patterns from API input and treat as no pattern configured.
+                _blockedUserAgents = null;
+            }
+        }
+
+        /// <summary>
         /// Updates the blocked user agents regex pattern.
         /// </summary>
-        /// <param name="blockedUserAgents">The regex pattern for blocked user agents.</param>
+        /// <param name="blockedUserAgents">The compiled regex for blocked user agents.</param>
         public void UpdateBlockedUserAgents(Regex blockedUserAgents)
         {
             _blockedUserAgents = blockedUserAgents;
         }
 
         /// <summary>
+        /// Updates the monitored user agents regex pattern from a regex string.
+        /// </summary>
+        /// <param name="monitoredUserAgents">The regex pattern string for monitored user agents.</param>
+        public void UpdateMonitoredUserAgents(string monitoredUserAgents)
+        {
+            if (string.IsNullOrWhiteSpace(monitoredUserAgents))
+            {
+                _monitoredUserAgents = null;
+                return;
+            }
+
+            try
+            {
+                _monitoredUserAgents = new Regex(monitoredUserAgents, RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            }
+            catch (ArgumentException)
+            {
+                // Ignore invalid regex patterns from API input and treat as no pattern configured.
+                _monitoredUserAgents = null;
+            }
+        }
+
+        /// <summary>
         /// Updates the monitored user agents regex pattern.
         /// </summary>
-        /// <param name="monitoredUserAgents">The regex pattern for monitored user agents.</param>
+        /// <param name="monitoredUserAgents">The compiled regex for monitored user agents.</param>
         public void UpdateMonitoredUserAgents(Regex monitoredUserAgents)
         {
             _monitoredUserAgents = monitoredUserAgents;

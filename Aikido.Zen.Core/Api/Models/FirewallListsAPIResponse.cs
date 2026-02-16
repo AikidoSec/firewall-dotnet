@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
 
 namespace Aikido.Zen.Core.Api
 {
@@ -35,20 +34,6 @@ namespace Aikido.Zen.Core.Api
         /// Gets or sets keyed user-agent regex patterns used for stats attribution.
         /// </summary>
         public IEnumerable<UserAgentDetail> UserAgentDetails { get; set; } = new List<UserAgentDetail>();
-
-        /// <summary>
-        /// Gets the blocked user agents as a regex.
-        /// </summary>
-        public Regex BlockedUserAgentsRegex => !string.IsNullOrWhiteSpace(BlockedUserAgents)
-            ? new Regex(BlockedUserAgents, RegexOptions.Compiled | RegexOptions.IgnoreCase)
-            : null;
-
-        /// <summary>
-        /// Gets the monitored user agents as a regex.
-        /// </summary>
-        public Regex MonitoredUserAgentsRegex => !string.IsNullOrWhiteSpace(MonitoredUserAgents)
-            ? new Regex(MonitoredUserAgents, RegexOptions.Compiled | RegexOptions.IgnoreCase)
-            : null;
 
         /// <summary>
         /// Gets a collection of blocked IP addresses as strings.

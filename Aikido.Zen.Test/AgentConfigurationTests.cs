@@ -209,5 +209,22 @@ namespace Aikido.Zen.Test
             Assert.That(_config.IsMonitoredUserAgent("GoogleBot/2.1"), Is.True);
             Assert.That(_config.GetMatchingUserAgentKeys("GoogleBot/2.1"), Is.EquivalentTo(new[] { "googlebot" }));
         }
+
+        [Test]
+        public void UpdateFirewallLists_WithInvalidUserAgentRegex_DoesNotThrowAndDisablesRegexMatching()
+        {
+            // Arrange
+            var response = new FirewallListsAPIResponse
+            {
+                BlockedUserAgents = "(",
+                MonitoredUserAgents = "["
+            };
+
+            // Act + Assert
+            Assert.DoesNotThrow(() => _config.UpdateFirewallLists(response));
+            Assert.That(_config.BlockedUserAgents, Is.Null);
+            Assert.That(_config.IsUserAgentBlocked("GoogleBot/2.1"), Is.False);
+            Assert.That(_config.IsMonitoredUserAgent("GoogleBot/2.1"), Is.False);
+        }
     }
 }
