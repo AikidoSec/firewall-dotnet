@@ -295,13 +295,7 @@ namespace Aikido.Zen.Core.Models
             {
                 foreach (var list in monitoredIPAddresses)
                 {
-                    if (list == null)
-                    {
-                        continue;
-                    }
-
-                    var key = !string.IsNullOrWhiteSpace(list.Key) ? list.Key : list.Source;
-                    if (string.IsNullOrWhiteSpace(key))
+                    if (list == null || string.IsNullOrWhiteSpace(list.Key))
                     {
                         continue;
                     }
