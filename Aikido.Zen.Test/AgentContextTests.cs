@@ -125,6 +125,50 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void IsBlocked_WhenRouteDenied_DoesNotTrackIpMatches()
+        {
+            // Arrange
+            var monitoredIpList = new FirewallListsAPIResponse.IPList
+            {
+                Key = "tor/exit_nodes",
+                Ips = new[] { "8.8.8.0/24" }
+            };
+            _agentContext.UpdateFirewallLists(new FirewallListsAPIResponse
+            {
+                MonitoredIPAddresses = new[] { monitoredIpList }
+            });
+
+            _agentContext.BlockList.UpdateAllowedIpsPerEndpoint(new[]
+            {
+                new EndpointConfig
+                {
+                    Method = "GET",
+                    Route = "/test",
+                    AllowedIPAddresses = new[] { "9.9.9.0/24" }
+                }
+            });
+
+            var context = new Context
+            {
+                RemoteAddress = "8.8.8.8",
+                Method = "GET",
+                Url = "http://localhost/test",
+                Route = "/test"
+            };
+
+            // Act
+            var blocked = _agentContext.IsBlocked(context, out var reason);
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(blocked, Is.True);
+                Assert.That(reason, Is.EqualTo("IP is not allowed for this endpoint"));
+                Assert.That(_agentContext.Stats.IpAddresses.Breakdown.ContainsKey("tor/exit_nodes"), Is.False);
+            });
+        }
+
+        [Test]
         public void IsBlocked_WithBlockedIp_TracksMonitoredAndBlockedIpKeys()
         {
             // Arrange

@@ -213,16 +213,24 @@ namespace Aikido.Zen.Core.Models
         public bool IsBlocked(Context context, out string reason)
         {
             reason = null;
-            // if the ip is bypassed, we DON'T block the request (return false)
-            if (BlockList.IsIPBypassed(context.RemoteAddress))
-            {
-                return false;
-            }
             // Check if user exists and is blocked
             if (context.User != null && IsUserBlocked(context.User.Id))
             {
                 reason = "User is blocked";
                 return true;
+            }
+
+            // Evaluate route-level IP allow rules before collecting IP stats
+            if (!_config.BlockList.IsIpAllowedForEndpoint(context))
+            {
+                reason = "Your IP address is not allowed to access this resource.";
+                return true;
+            }
+
+            // if the ip is bypassed, we DON'T block the request (return false)
+            if (BlockList.IsIPBypassed(context.RemoteAddress))
+            {
+                return false;
             }
 
             // Keep track of monitored IP list matches per request.
