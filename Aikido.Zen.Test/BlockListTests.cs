@@ -24,7 +24,7 @@ namespace Aikido.Zen.Test
             var subnets = new[] { subnet1, subnet2 };
 
             // Act
-            _blockList.UpdateBlockedIps(subnets);
+            _blockList.UpdateBlockedIps(new[] { ("manual", (IEnumerable<string>)subnets) });
 
             // Assert
             Assert.That(_blockList.IsIPBlocked("192.168.1.100"));
@@ -37,10 +37,10 @@ namespace Aikido.Zen.Test
         {
             // Arrange
             var subnet = "192.168.1.0/24";
-            _blockList.UpdateBlockedIps(new[] { subnet });
+            _blockList.UpdateBlockedIps(new[] { ("manual", (IEnumerable<string>)new[] { subnet }) });
 
             // Act
-            _blockList.UpdateBlockedIps(Array.Empty<string>());
+            _blockList.UpdateBlockedIps(Array.Empty<(string Key, IEnumerable<string> Ips)>());
 
             // Assert
             Assert.That(_blockList.IsIPBlocked("192.168.1.100"), Is.False);
@@ -107,13 +107,13 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void AddIpAddressToBlocklist_ShouldBlockSpecificIP()
+        public void UpdateBlockedIps_WithSingleIp_ShouldBlockSpecificIP()
         {
             // Arrange
             var ip = "192.168.1.100";
 
             // Act
-            _blockList.AddIpAddressToBlocklist(ip);
+            _blockList.UpdateBlockedIps(new[] { ("manual", (IEnumerable<string>)new[] { ip }) });
 
             // Assert
             Assert.That(_blockList.IsIPBlocked(ip));
@@ -180,7 +180,7 @@ namespace Aikido.Zen.Test
                 }
             };
 
-            _blockList.AddIpAddressToBlocklist("192.168.1.101");
+            _blockList.UpdateBlockedIps(new[] { ("manual", (IEnumerable<string>)new[] { "192.168.1.101" }) });
             _blockList.UpdateAllowedIpsPerEndpoint(endpoints);
 
             // Act & Assert
@@ -199,11 +199,13 @@ namespace Aikido.Zen.Test
         public void LargeBlocklistHandling_ShouldHandleLargeNumberOfIPs()
         {
             // Arrange
+            var blockedIps = new List<string>();
             for (int i = 0; i < 256; i++)
             {
-                _blockList.AddIpAddressToBlocklist($"192.168.1.{i}");
-                _blockList.AddIpAddressToBlocklist($"192.168.{i}.0/24");
+                blockedIps.Add($"192.168.1.{i}");
+                blockedIps.Add($"192.168.{i}.0/24");
             }
+            _blockList.UpdateBlockedIps(new[] { ("manual", (IEnumerable<string>)blockedIps) });
 
             // Act & Assert
             Assert.That(_blockList.IsIPBlocked("192.168.1.255"));
@@ -216,15 +218,17 @@ namespace Aikido.Zen.Test
         {
             // Arrange
             var ip = "192.168.1.100";
+            var blockedIps = new List<string>();
 
             // Act
             for (int i = 0; i < 256; i++)
             {
                 for (int j = 0; j < 256; j++)
                 {
-                    _blockList.AddIpAddressToBlocklist($"192.{i}.{j}.0");
+                    blockedIps.Add($"192.{i}.{j}.0");
                 }
             }
+            _blockList.UpdateBlockedIps(new[] { ("manual", (IEnumerable<string>)blockedIps) });
             var stopwatch = new System.Diagnostics.Stopwatch();
             stopwatch.Start();
             for (int i = 0; i < 256; i++)
@@ -251,7 +255,7 @@ namespace Aikido.Zen.Test
                 }
             };
 
-            _blockList.AddIpAddressToBlocklist(ip);
+            _blockList.UpdateBlockedIps(new[] { ("manual", (IEnumerable<string>)new[] { ip }) });
             _blockList.UpdateAllowedIps(new[] { "8.8.8.0/8" });
             _blockList.UpdateAllowedIpsPerEndpoint(endpoints);
             _blockList.UpdateBypassedIps(new[] { ip });
@@ -291,7 +295,7 @@ namespace Aikido.Zen.Test
             };
             var url = "http://localhost:80/testUrl";
 
-            _blockList.AddIpAddressToBlocklist("10.0.0.1");
+            _blockList.UpdateBlockedIps(new[] { ("manual", (IEnumerable<string>)new[] { "10.0.0.1" }) });
             _blockList.UpdateAllowedIps(new[] { "8.8.8.0/8" });
             var endpoints = new List<EndpointConfig> {
                 new EndpointConfig {
@@ -381,7 +385,7 @@ namespace Aikido.Zen.Test
 
             // 3. Blocked IPs should be checked third
             _blockList.UpdateBypassedIps(Array.Empty<string>());
-            _blockList.UpdateBlockedIps([ip]);
+            _blockList.UpdateBlockedIps(new[] { ("manual", (IEnumerable<string>)new[] { ip }) });
             var context3 = new Context { RemoteAddress = ip, Method = "GET", Url = url, Route = "testUrl" };
             Assert.That(_blockList.IsBlocked(context3, out var reason3), Is.True);
             Assert.That(reason3, Is.EqualTo("IP is blocked"));
@@ -394,7 +398,7 @@ namespace Aikido.Zen.Test
 
             // 5. Endpoint-specific rules should come next
             _blockList.UpdateAllowedIpsPerEndpoint(endpoints);
-            _blockList.UpdateBlockedIps(Array.Empty<string>());
+            _blockList.UpdateBlockedIps(Array.Empty<(string Key, IEnumerable<string> Ips)>());
             _blockList.UpdateBypassedIps(Array.Empty<string>());
             var context5 = new Context { RemoteAddress = ip, Method = "GET", Url = url, Route = "testUrl" };
             Assert.That(_blockList.IsBlocked(context5, out var reason5), Is.True);

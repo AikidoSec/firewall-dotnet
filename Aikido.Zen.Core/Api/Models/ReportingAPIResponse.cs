@@ -1,6 +1,5 @@
 using Aikido.Zen.Core.Models;
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
 
 namespace Aikido.Zen.Core.Api
 {

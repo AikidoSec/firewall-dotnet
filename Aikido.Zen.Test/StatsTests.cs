@@ -111,6 +111,24 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void OnMatches_TracksAndResetsUserAgentAndIpBreakdowns()
+        {
+            var stats = new AgentStats();
+
+            stats.OnIPAddressMatches(new[] { "tor/exit_nodes", "tor/exit_nodes", "datacenter" });
+            stats.OnUserAgentMatches(new[] { "googlebot", "googlebot", "" });
+
+            Assert.That(stats.IpAddresses.Breakdown["tor/exit_nodes"], Is.EqualTo(2));
+            Assert.That(stats.IpAddresses.Breakdown["datacenter"], Is.EqualTo(1));
+            Assert.That(stats.UserAgents.Breakdown["googlebot"], Is.EqualTo(2));
+
+            stats.Reset();
+
+            Assert.That(stats.IpAddresses.Breakdown, Is.Empty);
+            Assert.That(stats.UserAgents.Breakdown, Is.Empty);
+        }
+
+        [Test]
         public void InterceptorThrewError_IncrementsOperationTotalAndErrors()
         {
             var stats = new AgentStats();

@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Models;
@@ -57,10 +56,10 @@ namespace Aikido.Zen.Test
                     AllowedIPAddresses = new[] { "9.9.9.0/24" }
                 }
             };
-            var blockedUserAgents = new Regex("googlebot|bingbot|yandexbot");
+            var blockedUserAgents = "googlebot|bingbot|yandexbot";
 
             _agentContext.UpdateBlockedUsers(new[] { "user1" });
-            _agentContext.BlockList.AddIpAddressToBlocklist("8.8.8.101");  // Using public IP
+            _agentContext.BlockList.UpdateBlockedIps(new[] { ("manual", (IEnumerable<string>)new[] { "8.8.8.101" }) });  // Using public IP
             _agentContext.BlockList.UpdateAllowedIpsPerEndpoint(endpoints);
             _agentContext.UpdateBlockedUserAgents(blockedUserAgents);
 
@@ -80,6 +79,134 @@ namespace Aikido.Zen.Test
             Assert.That(_agentContext.IsBlocked(context5, out var reason5), Is.False); // Invalid IP should not be blocked
             Assert.That(_agentContext.IsBlocked(context6, out var reason6), Is.False); // Non-blocked user in allowed subnet
             Assert.That(_agentContext.IsBlocked(context7, out var reason7), Is.True); // Blocked user agent
+        }
+
+        [Test]
+        public void IsBlocked_WithMonitoredConfig_TracksIpAndUserAgentStats()
+        {
+            // Arrange
+            var monitoredIpList = new FirewallListsAPIResponse.IPList
+            {
+                Key = "tor/exit_nodes",
+                Ips = new[] { "9.9.9.0/24" }
+            };
+            var userAgentDetail = new FirewallListsAPIResponse.UserAgentDetail
+            {
+                Key = "googlebot",
+                Pattern = "googlebot"
+            };
+            _agentContext.UpdateFirewallLists(new FirewallListsAPIResponse
+            {
+                MonitoredIPAddresses = new[] { monitoredIpList },
+                MonitoredUserAgents = "googlebot",
+                UserAgentDetails = new[] { userAgentDetail }
+            });
+
+            var context = new Context
+            {
+                RemoteAddress = "9.9.9.9",
+                UserAgent = "GoogleBot/2.1",
+                Method = "GET",
+                Url = "http://localhost/test",
+                Route = "/test"
+            };
+
+            // Act
+            var blocked = _agentContext.IsBlocked(context, out var reason);
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(blocked, Is.False);
+                Assert.That(reason, Is.Null);
+                Assert.That(_agentContext.Stats.IpAddresses.Breakdown["tor/exit_nodes"], Is.EqualTo(1));
+                Assert.That(_agentContext.Stats.UserAgents.Breakdown["googlebot"], Is.EqualTo(1));
+            });
+        }
+
+        [Test]
+        public void IsBlocked_WhenRouteDenied_DoesNotTrackIpMatches()
+        {
+            // Arrange
+            var monitoredIpList = new FirewallListsAPIResponse.IPList
+            {
+                Key = "tor/exit_nodes",
+                Ips = new[] { "8.8.8.0/24" }
+            };
+            _agentContext.UpdateFirewallLists(new FirewallListsAPIResponse
+            {
+                MonitoredIPAddresses = new[] { monitoredIpList }
+            });
+
+            _agentContext.BlockList.UpdateAllowedIpsPerEndpoint(new[]
+            {
+                new EndpointConfig
+                {
+                    Method = "GET",
+                    Route = "/test",
+                    AllowedIPAddresses = new[] { "9.9.9.0/24" }
+                }
+            });
+
+            var context = new Context
+            {
+                RemoteAddress = "8.8.8.8",
+                Method = "GET",
+                Url = "http://localhost/test",
+                Route = "/test"
+            };
+
+            // Act
+            var blocked = _agentContext.IsBlocked(context, out var reason);
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(blocked, Is.True);
+                Assert.That(reason, Is.EqualTo("Your IP address is not allowed to access this resource."));
+                Assert.That(_agentContext.Stats.IpAddresses.Breakdown.ContainsKey("tor/exit_nodes"), Is.False);
+            });
+        }
+
+        [Test]
+        public void IsBlocked_WithBlockedIp_TracksMonitoredAndBlockedIpKeys()
+        {
+            // Arrange
+            var monitoredIpList = new FirewallListsAPIResponse.IPList
+            {
+                Key = "tor/exit_nodes",
+                Ips = new[] { "8.8.8.0/24" }
+            };
+            var blockedIpList = new FirewallListsAPIResponse.IPList
+            {
+                Key = "known_threat_actors/public_scanners",
+                Ips = new[] { "8.8.8.0/24" }
+            };
+            _agentContext.UpdateFirewallLists(new FirewallListsAPIResponse
+            {
+                MonitoredIPAddresses = new[] { monitoredIpList },
+                BlockedIPAddresses = new[] { blockedIpList }
+            });
+
+            var context = new Context
+            {
+                RemoteAddress = "8.8.8.8",
+                Method = "GET",
+                Url = "http://localhost/test",
+                Route = "/test"
+            };
+
+            // Act
+            var blocked = _agentContext.IsBlocked(context, out var reason);
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(blocked, Is.True);
+                Assert.That(reason, Is.EqualTo("IP is blocked"));
+                Assert.That(_agentContext.Stats.IpAddresses.Breakdown["tor/exit_nodes"], Is.EqualTo(1));
+                Assert.That(_agentContext.Stats.IpAddresses.Breakdown["known_threat_actors/public_scanners"], Is.EqualTo(1));
+            });
         }
 
         [Test]
@@ -466,7 +593,7 @@ namespace Aikido.Zen.Test
                 Ips = blockedIPs,
                 Description = "Test"
             };
-            var firewallAPiResponse = new FirewallListsAPIResponse(blockedIPAddresses: new[] { blockedIPList });
+            var firewallAPiResponse = new FirewallListsAPIResponse { BlockedIPAddresses = new[] { blockedIPList } };
 
             // Act
             _agentContext.UpdateFirewallLists(firewallAPiResponse);
@@ -491,7 +618,7 @@ namespace Aikido.Zen.Test
                 Description = "Test"
             };
 
-            var firewallListsAPIResponse = new FirewallListsAPIResponse(blockedIPAddresses: new[] { ipList });
+            var firewallListsAPIResponse = new FirewallListsAPIResponse { BlockedIPAddresses = new[] { ipList } };
             _agentContext.UpdateFirewallLists(firewallListsAPIResponse);
 
             // Act
@@ -511,7 +638,7 @@ namespace Aikido.Zen.Test
                 Ips = blockedIPs,
                 Description = "Test"
             };
-            var firewallAPiResponse = new FirewallListsAPIResponse(blockedIPAddresses: new[] { blockedIpList });
+            var firewallAPiResponse = new FirewallListsAPIResponse { BlockedIPAddresses = new[] { blockedIpList } };
 
             // Act
             _agentContext.UpdateFirewallLists(firewallAPiResponse);
@@ -529,7 +656,7 @@ namespace Aikido.Zen.Test
         public void UpdateBlockedUserAgents_ShouldUpdateBlockedUserAgentsList()
         {
             // Arrange
-            var userAgents = new Regex("googlebot|bingbot|yandexbot");
+            var userAgents = "googlebot|bingbot|yandexbot";
 
             // Act
             _agentContext.UpdateBlockedUserAgents(userAgents);
@@ -545,7 +672,7 @@ namespace Aikido.Zen.Test
         public void UpdateBlockedUserAgents_WithEmptyList_ShouldClearBlockedUserAgents()
         {
             // Arrange
-            _agentContext.UpdateBlockedUserAgents(new Regex("Mozilla/5.0"));
+            _agentContext.UpdateBlockedUserAgents("Mozilla/5.0");
 
             // Act
             _agentContext.UpdateBlockedUserAgents(null);
@@ -559,7 +686,7 @@ namespace Aikido.Zen.Test
         {
             // Arrange
             var userAgent = "Mozilla/5.0";
-            _agentContext.UpdateBlockedUserAgents(new Regex(userAgent));
+            _agentContext.UpdateBlockedUserAgents(userAgent);
 
             // Act
             var isBlocked = _agentContext.IsUserAgentBlocked(userAgent);
