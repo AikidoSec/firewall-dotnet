@@ -163,7 +163,7 @@ namespace Aikido.Zen.Test
             Assert.Multiple(() =>
             {
                 Assert.That(blocked, Is.True);
-                Assert.That(reason, Is.EqualTo("IP is not allowed for this endpoint"));
+                Assert.That(reason, Is.EqualTo("Your IP address is not allowed to access this resource."));
                 Assert.That(_agentContext.Stats.IpAddresses.Breakdown.ContainsKey("tor/exit_nodes"), Is.False);
             });
         }
