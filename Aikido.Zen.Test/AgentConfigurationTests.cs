@@ -208,6 +208,27 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void UpdateFirewallLists_WithBlockedIpListKeys_UpdatesBlockedIpMatchers()
+        {
+            // Arrange
+            var blockedIpList = new FirewallListsAPIResponse.IPList
+            {
+                Key = "known_threat_actors/public_scanners",
+                Ips = new List<string> { "8.8.8.0/24" }
+            };
+            var response = new FirewallListsAPIResponse
+            {
+                BlockedIPAddresses = new[] { blockedIpList }
+            };
+
+            // Act
+            _config.UpdateFirewallLists(response);
+
+            // Assert
+            Assert.That(_config.GetMatchingBlockedIPListKeys("8.8.8.8"), Is.EquivalentTo(new[] { "known_threat_actors/public_scanners" }));
+        }
+
+        [Test]
         public void UpdateFirewallLists_WithInvalidUserAgentRegex_DoesNotThrowAndDisablesRegexMatching()
         {
             // Arrange

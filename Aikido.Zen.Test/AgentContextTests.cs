@@ -59,7 +59,7 @@ namespace Aikido.Zen.Test
             var blockedUserAgents = "googlebot|bingbot|yandexbot";
 
             _agentContext.UpdateBlockedUsers(new[] { "user1" });
-            _agentContext.BlockList.AddIpAddressToBlocklist("8.8.8.101");  // Using public IP
+            _agentContext.BlockList.UpdateBlockedIps(new[] { ("manual", (IEnumerable<string>)new[] { "8.8.8.101" }) });  // Using public IP
             _agentContext.BlockList.UpdateAllowedIpsPerEndpoint(endpoints);
             _agentContext.UpdateBlockedUserAgents(blockedUserAgents);
 
@@ -121,6 +121,47 @@ namespace Aikido.Zen.Test
                 Assert.That(reason, Is.Null);
                 Assert.That(_agentContext.Stats.IpAddresses.Breakdown["tor/exit_nodes"], Is.EqualTo(1));
                 Assert.That(_agentContext.Stats.UserAgents.Breakdown["googlebot"], Is.EqualTo(1));
+            });
+        }
+
+        [Test]
+        public void IsBlocked_WithBlockedIp_TracksMonitoredAndBlockedIpKeys()
+        {
+            // Arrange
+            var monitoredIpList = new FirewallListsAPIResponse.IPList
+            {
+                Key = "tor/exit_nodes",
+                Ips = new[] { "8.8.8.0/24" }
+            };
+            var blockedIpList = new FirewallListsAPIResponse.IPList
+            {
+                Key = "known_threat_actors/public_scanners",
+                Ips = new[] { "8.8.8.0/24" }
+            };
+            _agentContext.UpdateFirewallLists(new FirewallListsAPIResponse
+            {
+                MonitoredIPAddresses = new[] { monitoredIpList },
+                BlockedIPAddresses = new[] { blockedIpList }
+            });
+
+            var context = new Context
+            {
+                RemoteAddress = "8.8.8.8",
+                Method = "GET",
+                Url = "http://localhost/test",
+                Route = "/test"
+            };
+
+            // Act
+            var blocked = _agentContext.IsBlocked(context, out var reason);
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(blocked, Is.True);
+                Assert.That(reason, Is.EqualTo("IP is blocked"));
+                Assert.That(_agentContext.Stats.IpAddresses.Breakdown["tor/exit_nodes"], Is.EqualTo(1));
+                Assert.That(_agentContext.Stats.IpAddresses.Breakdown["known_threat_actors/public_scanners"], Is.EqualTo(1));
             });
         }
 

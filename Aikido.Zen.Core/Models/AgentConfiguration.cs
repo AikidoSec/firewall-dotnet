@@ -127,6 +127,16 @@ namespace Aikido.Zen.Core.Models
         }
 
         /// <summary>
+        /// Gets all blocked IP list keys matching the provided IP.
+        /// </summary>
+        /// <param name="ip">The IP address to check.</param>
+        /// <returns>A list of matching blocked IP keys.</returns>
+        public IEnumerable<string> GetMatchingBlockedIPListKeys(string ip)
+        {
+            return BlockList.GetMatchingBlockedIPListKeys(ip);
+        }
+
+        /// <summary>
         /// Updates the list of blocked users.
         /// </summary>
         /// <param name="users">The list of user IDs to block.</param>
@@ -324,7 +334,7 @@ namespace Aikido.Zen.Core.Models
         {
             BlockList.UpdateBlockedIps((blockedIPAddresses ?? Enumerable.Empty<FirewallListsAPIResponse.IPList>())
                 .Where(list => list != null)
-                .SelectMany(list => list.Ips ?? Enumerable.Empty<string>()));
+                .Select(list => (list.Key, list.Ips ?? Enumerable.Empty<string>())));
         }
 
         private void UpdateAllowedIps(IEnumerable<FirewallListsAPIResponse.IPList> allowedIPAddresses)

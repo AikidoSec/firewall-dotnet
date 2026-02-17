@@ -230,6 +230,8 @@ namespace Aikido.Zen.Core.Models
 
             if (_config.BlockList.IsBlocked(context, out reason))
             {
+                // Keep track of blocked IP list matches only when the request is blocked by IP rules.
+                _stats.OnIPAddressMatches(_config.GetMatchingBlockedIPListKeys(context.RemoteAddress));
                 return true;
             }
 
