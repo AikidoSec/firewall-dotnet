@@ -219,6 +219,7 @@ public void Configuration(IAppBuilder app)
 
 - [Troubleshooting](docs/troubleshooting.md) — common issues and how to debug Zen
 - [Azure Key Vault](docs/azure-key-vault.md) — using Azure Key Vault with Zen
+- [AWS Secrets Manager](docs/aws-secrets-manager.md) — using AWS Secrets Manager with Zen
 - [Set the current user](docs/user.md) — identify users for rate limiting, blocking, and attack reports
 
 ## Reporting to your Aikido Security dashboard
