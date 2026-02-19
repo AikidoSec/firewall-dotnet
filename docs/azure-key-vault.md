@@ -15,6 +15,11 @@ builder.Configuration.AddAzureKeyVault(
 );
 
 var app = builder.Build();
+app
+// ...
+    .UseRouting()
+// ...
+    .UseZenFirewall()
 ```
 
 ## Store token in Key Vault
