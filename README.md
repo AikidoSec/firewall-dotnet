@@ -75,7 +75,7 @@ Ensure that your project runs on .NET Core 6, 7, 8, 9 or 10
 dotnet add package Aikido.Zen.DotNetCore
 ```
 
-- Add the following to your `appsettings.json` file: (use secrets manager to store the API key)
+- Add the following to your `appsettings.json` file: (tip: use secrets manager to store the API key)
 
 ``` json
 {
@@ -97,14 +97,14 @@ If you are using a startup class, you can add the following to your `Startup.cs`
 public void ConfigureServices(IServiceCollection services)
 {
     // other services
-    services.AddZenFirewall(Configuration);
+    services.AddZenFirewall();
     // other services
 }
 
 public void Configure(IApplicationBuilder app)
 {
     // other middleware
-    app.UseZenFirewall(); // place this after userouting, or after authorization, but high enough in the pipeline to catch all requests
+    app.UseZenFirewall(); // place this after UseRouting, or after authorization, but high enough in the pipeline to catch all requests
     // other middleware
 }
 ```
