@@ -8,14 +8,15 @@
     <owners>Aikido Security</owners>
     <description>Aikido Security Zen .NET Framework Firewall</description>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <license type="expression">MIT</license>
-    <copyright>Copyright 2024 Aikido</copyright>
+    <license type="file">LICENSE</license>
+    <copyright>Copyright 2025 Aikido</copyright>
     <tags>firewall .NET</tags>
     <dependencies>
         <dependency id="Lib.Harmony" version="[2.4.2,)" />
     </dependencies>
   </metadata>
   <files>
+    <file src="../LICENSE" target="" />
     <file src="Aikido.Zen.DotNetFramework.targets" target="Build\" />
     <file src="FodyWeavers.xml" target="Build\" />
     <file src="bin\Release\net48\libraries\libzen_internals_x86_64-pc-windows-gnu.dll" target="Build\libraries\" />
