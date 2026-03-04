@@ -43,5 +43,17 @@ namespace Aikido.Zen.Core.Api
         /// Gets or sets a value indicating whether blocking is enabled.
         /// </summary>
         public bool Block { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether unknown outgoing requests should be blocked.
+        /// Null means the field was omitted from the backend response.
+        /// </summary>
+        public bool? BlockNewOutgoingRequests { get; set; }
+
+        /// <summary>
+        /// Gets or sets the configured outbound domain rules.
+        /// Null means the field was omitted from the backend response.
+        /// </summary>
+        public IEnumerable<OutboundDomainConfig> Domains { get; set; }
     }
 }

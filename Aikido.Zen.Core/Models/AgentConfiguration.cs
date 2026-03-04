@@ -23,8 +23,10 @@ namespace Aikido.Zen.Core.Models
         private List<EndpointConfig> _endpoints = new List<EndpointConfig>();
         private List<(string Key, Regex Pattern)> _userAgentDetails = new List<(string Key, Regex Pattern)>();
         private List<(string Key, IPRange List)> _monitoredIPAddresses = new List<(string Key, IPRange List)>();
+        private readonly ConcurrentDictionary<string, string> _domains = new ConcurrentDictionary<string, string>();
         private readonly object _endpointsLock = new object();
         private readonly object _monitoringLock = new object();
+        private volatile bool _blockNewOutgoingRequests;
 
         public long ConfigLastUpdated { get; set; } = 0;
         public int HeartbeatIntervalInMS { get; private set; } = 0;
@@ -40,6 +42,8 @@ namespace Aikido.Zen.Core.Models
             _monitoredUserAgents = null;
             _userAgentDetails = new List<(string Key, Regex Pattern)>();
             _monitoredIPAddresses = new List<(string Key, IPRange List)>();
+            _domains.Clear();
+            _blockNewOutgoingRequests = false;
             _blockList = new BlockList();
             HeartbeatIntervalInMS = 0;
         }
@@ -181,6 +185,52 @@ namespace Aikido.Zen.Core.Models
 
             HeartbeatIntervalInMS = response.HeartbeatIntervalInMS;
             Heartbeat.UpdateDefaultInterval(response.HeartbeatIntervalInMS);
+
+            if (response.BlockNewOutgoingRequests.HasValue && response.Domains != null)
+            {
+                UpdateOutboundDomains(response.BlockNewOutgoingRequests.Value, response.Domains);
+            }
+        }
+
+        public void UpdateOutboundDomains(bool blockNewOutgoingRequests, IEnumerable<OutboundDomainConfig> domains)
+        {
+            _domains.Clear();
+            _blockNewOutgoingRequests = blockNewOutgoingRequests;
+
+            foreach (var domain in domains ?? Enumerable.Empty<OutboundDomainConfig>())
+            {
+                if (domain == null || string.IsNullOrWhiteSpace(domain.Hostname) || string.IsNullOrWhiteSpace(domain.Mode))
+                {
+                    continue;
+                }
+
+                var hostname = domain.Hostname.Trim().ToLowerInvariant();
+                var mode = domain.Mode.Trim().ToLowerInvariant();
+
+                if (mode != "allow" && mode != "block")
+                {
+                    continue;
+                }
+
+                _domains[hostname] = mode;
+            }
+        }
+
+        public bool ShouldBlockOutgoingRequest(string hostname)
+        {
+            if (string.IsNullOrWhiteSpace(hostname))
+            {
+                return false;
+            }
+
+            _domains.TryGetValue(hostname.Trim().ToLowerInvariant(), out var mode);
+
+            if (_blockNewOutgoingRequests)
+            {
+                return mode != "allow";
+            }
+
+            return mode == "block";
         }
 
         /// <summary>
