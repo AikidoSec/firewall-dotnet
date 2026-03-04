@@ -51,7 +51,7 @@ namespace Aikido.Zen.Core.Exceptions
 
         public static AikidoException OutboundConnectionBlocked(string hostname)
         {
-            return new AikidoException($"Outbound connection blocked: {hostname}");
+            return new AikidoException($"Zen has blocked an outbound connection to {hostname}");
         }
     }
 }
