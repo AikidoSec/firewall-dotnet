@@ -21,6 +21,8 @@ namespace Aikido.Zen.Core.Models
         private readonly int _maxCompressedStatsInMem;
         private ConcurrentDictionary<string, OperationStats> _operations = new ConcurrentDictionary<string, OperationStats>();
         private Requests _requests = new Requests();
+        private UserAgentStats _userAgents = new UserAgentStats();
+        private IPAddressStats _ipAddresses = new IPAddressStats();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AgentStats"/> class.
@@ -84,6 +86,16 @@ namespace Aikido.Zen.Core.Models
         public Requests Requests => _requests;
 
         /// <summary>
+        /// Gets the keyed user-agent match statistics.
+        /// </summary>
+        public UserAgentStats UserAgents => _userAgents;
+
+        /// <summary>
+        /// Gets the keyed IP-address match statistics.
+        /// </summary>
+        public IPAddressStats IpAddresses => _ipAddresses;
+
+        /// <summary>
         /// Resets all collected statistics and updates the start time.
         /// </summary>
         public void Reset()
@@ -104,6 +116,8 @@ namespace Aikido.Zen.Core.Models
                     Blocked = 0
                 },
             };
+            _userAgents = new UserAgentStats();
+            _ipAddresses = new IPAddressStats();
             StartedAt = DateTimeHelper.UTCNowUnixMilliseconds();
         }
 
@@ -168,6 +182,42 @@ namespace Aikido.Zen.Core.Models
         public void OnAbortedRequest()
         {
             Interlocked.Increment(ref _requests.Aborted);
+        }
+
+        /// <summary>
+        /// Records matching monitored and blocked IP list keys.
+        /// </summary>
+        /// <param name="matches">The list keys that matched the incoming IP.</param>
+        public void OnIPAddressMatches(IEnumerable<string> matches)
+        {
+            UpdateBreakdown(_ipAddresses.Breakdown, matches);
+        }
+
+        /// <summary>
+        /// Records matching monitored and blocked user-agent keys.
+        /// </summary>
+        /// <param name="matches">The list keys that matched the incoming user-agent.</param>
+        public void OnUserAgentMatches(IEnumerable<string> matches)
+        {
+            UpdateBreakdown(_userAgents.Breakdown, matches);
+        }
+
+        /// <summary>
+        /// Copies keyed user-agent statistics into this stats instance.
+        /// </summary>
+        /// <param name="breakdown">The keyed user-agent counters to copy.</param>
+        public void CopyUserAgentBreakdown(IReadOnlyDictionary<string, int> breakdown)
+        {
+            _userAgents = CreateUserAgentStatsCopy(breakdown);
+        }
+
+        /// <summary>
+        /// Copies keyed IP-address statistics into this stats instance.
+        /// </summary>
+        /// <param name="breakdown">The keyed IP-address counters to copy.</param>
+        public void CopyIpAddressBreakdown(IReadOnlyDictionary<string, int> breakdown)
+        {
+            _ipAddresses = CreateIpAddressStatsCopy(breakdown);
         }
 
         /// <summary>
@@ -346,6 +396,56 @@ namespace Aikido.Zen.Core.Models
             return sortedValues[kIndex];
         }
 
+        private static void UpdateBreakdown(ConcurrentDictionary<string, int> breakdown, IEnumerable<string> matches)
+        {
+            if (matches == null)
+            {
+                return;
+            }
+
+            foreach (var key in matches)
+            {
+                if (string.IsNullOrWhiteSpace(key))
+                {
+                    continue;
+                }
+
+                breakdown.AddOrUpdate(key, 1, (_, count) => count + 1);
+            }
+        }
+
+        private static UserAgentStats CreateUserAgentStatsCopy(IReadOnlyDictionary<string, int> source)
+        {
+            var copy = new UserAgentStats();
+            if (source == null)
+            {
+                return copy;
+            }
+
+            foreach (var pair in source)
+            {
+                copy.Breakdown[pair.Key] = pair.Value;
+            }
+
+            return copy;
+        }
+
+        private static IPAddressStats CreateIpAddressStatsCopy(IReadOnlyDictionary<string, int> source)
+        {
+            var copy = new IPAddressStats();
+            if (source == null)
+            {
+                return copy;
+            }
+
+            foreach (var pair in source)
+            {
+                copy.Breakdown[pair.Key] = pair.Value;
+            }
+
+            return copy;
+        }
+
         /// <summary>
         /// Checks if there are no statistics collected (no operations, no requests).
         /// </summary>
@@ -357,5 +457,15 @@ namespace Aikido.Zen.Core.Models
                    _requests.AttacksDetected.Total == 0 &&
                    _requests.AttackWaves.Total == 0;
         }
+    }
+
+    public class UserAgentStats
+    {
+        public ConcurrentDictionary<string, int> Breakdown { get; set; } = new ConcurrentDictionary<string, int>();
+    }
+
+    public class IPAddressStats
+    {
+        public ConcurrentDictionary<string, int> Breakdown { get; set; } = new ConcurrentDictionary<string, int>();
     }
 }

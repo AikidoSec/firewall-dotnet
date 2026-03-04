@@ -61,6 +61,8 @@ namespace Aikido.Zen.Core.Models.Events
             };
             context.AiStats.CopyProviders((ICollection<AiInfo>)heartbeat.Ai);
             heartbeat.Stats.CopyOperations(context.Stats.Operations);
+            heartbeat.Stats.CopyUserAgentBreakdown(context.Stats.UserAgents.Breakdown);
+            heartbeat.Stats.CopyIpAddressBreakdown(context.Stats.IpAddresses.Breakdown);
             heartbeat.Stats.Requests.Total = context.Requests;
             heartbeat.Stats.Requests.Aborted = context.RequestsAborted;
             heartbeat.Stats.Requests.AttacksDetected = new AttacksDetected

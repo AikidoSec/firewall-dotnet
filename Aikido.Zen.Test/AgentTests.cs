@@ -573,13 +573,32 @@ namespace Aikido.Zen.Test
                 Url = "http://test.com/test",
                 Route = "/test",
                 Method = "GET",
-                RemoteAddress = "1.2.3.4"
+                RemoteAddress = "1.2.3.4",
+                UserAgent = "GoogleBot/2.1"
             };
+            var monitoredIpList = new FirewallListsAPIResponse.IPList
+            {
+                Key = "tor/exit_nodes",
+                Ips = new[] { "1.2.3.4/32" }
+            };
+            var userAgentDetail = new FirewallListsAPIResponse.UserAgentDetail
+            {
+                Key = "googlebot",
+                Pattern = "googlebot"
+            };
+
+            _agent.Context.UpdateFirewallLists(new FirewallListsAPIResponse
+            {
+                MonitoredIPAddresses = new[] { monitoredIpList },
+                MonitoredUserAgents = "googlebot",
+                UserAgentDetails = new[] { userAgentDetail }
+            });
             _agent.Context.AddHostname("test.com");
             _agent.Context.AddUser(context.User, context.RemoteAddress);
             _agent.Context.AddRoute(context);
             _agent.Context.AddRequest();
             _agent.Context.AddAttackDetected(true);
+            _agent.Context.IsBlocked(context, out _);
             _agent.SetContextMiddlewareInstalled(true);
             _agent.SetBlockingMiddlewareInstalled(true);
             // Act
@@ -596,6 +615,8 @@ namespace Aikido.Zen.Test
                 Assert.That(heartbeat.Stats.Requests.AttacksDetected.Total, Is.EqualTo(1));
                 Assert.That(heartbeat.Stats.StartedAt, Is.GreaterThan(0));
                 Assert.That(heartbeat.Stats.EndedAt, Is.GreaterThan(heartbeat.Stats.StartedAt));
+                Assert.That(heartbeat.Stats.IpAddresses.Breakdown["tor/exit_nodes"], Is.EqualTo(1));
+                Assert.That(heartbeat.Stats.UserAgents.Breakdown["googlebot"], Is.EqualTo(1));
                 Assert.That(heartbeat.MiddlewareInstalled, Is.True);
             });
         }

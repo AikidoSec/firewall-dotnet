@@ -213,22 +213,45 @@ namespace Aikido.Zen.Core.Models
         public bool IsBlocked(Context context, out string reason)
         {
             reason = null;
-            // if the ip is bypassed, we DON'T block the request (return false)
-            if (BlockList.IsIPBypassed(context.RemoteAddress))
-            {
-                return false;
-            }
             // Check if user exists and is blocked
             if (context.User != null && IsUserBlocked(context.User.Id))
             {
                 reason = "User is blocked";
                 return true;
             }
-            if (_config.BlockList.IsBlocked(context, out reason))
+
+            // Evaluate route-level IP allow rules before collecting IP stats
+            if (!_config.BlockList.IsIpAllowedForEndpoint(context))
             {
+                reason = "Your IP address is not allowed to access this resource.";
                 return true;
             }
-            if (IsUserAgentBlocked(context.UserAgent))
+
+            // if the ip is bypassed, we DON'T block the request (return false)
+            if (BlockList.IsIPBypassed(context.RemoteAddress))
+            {
+                return false;
+            }
+
+            // Keep track of monitored IP list matches per request.
+            _stats.OnIPAddressMatches(_config.GetMatchingMonitoredIPListKeys(context.RemoteAddress));
+
+            if (_config.BlockList.IsBlocked(context, out reason))
+            {
+                // Keep track of blocked IP list matches only when the request is blocked by IP rules.
+                _stats.OnIPAddressMatches(_config.GetMatchingBlockedIPListKeys(context.RemoteAddress));
+                return true;
+            }
+
+            var isUserAgentBlocked = IsUserAgentBlocked(context.UserAgent);
+            var isMonitoredUserAgent = _config.IsMonitoredUserAgent(context.UserAgent);
+            if (isUserAgentBlocked || isMonitoredUserAgent)
+            {
+                // Keep track of user-agent list matches when monitored or blocked.
+                _stats.OnUserAgentMatches(_config.GetMatchingUserAgentKeys(context.UserAgent));
+            }
+
+            if (isUserAgentBlocked)
             {
                 reason = "You are not allowed to access this resource because you have been identified as a bot.";
                 return true;
@@ -269,7 +292,7 @@ namespace Aikido.Zen.Core.Models
             _config.UpdateFirewallLists(response);
         }
 
-        public void UpdateBlockedUserAgents(Regex blockedUserAgents)
+        public void UpdateBlockedUserAgents(string blockedUserAgents)
         {
             _config.UpdateBlockedUserAgents(blockedUserAgents);
         }

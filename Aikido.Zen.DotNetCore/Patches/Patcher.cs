@@ -3,23 +3,17 @@ using HarmonyLib;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Helpers;
 
-using CorePatcher = Aikido.Zen.Core.Patches.Patcher;
-
 namespace Aikido.Zen.DotNetCore.Patches
 {
     public class Patcher
     {
+        private const string HarmonyId = "aikido.zen.dotnetcore";
+
         public static void Patch()
         {
-            if (!CorePatcher.CanPatch(out var message))
-            {
-                LogHelper.ErrorLog(Agent.Logger, message);
-                return;
-            }
             try
             {
-                CorePatcher.Patch();
-                var harmony = new Harmony("aikido.zen.dotnetcore");
+                var harmony = new Harmony(HarmonyId);
 
                 // we need to patch the sqlClient patches outside of the Aikido.Zen.Core package, because we need to pass the context, which is different for dotnetcore / dotnetframework
                 SqlClientPatches.ApplyPatches(harmony);
@@ -29,6 +23,10 @@ namespace Aikido.Zen.DotNetCore.Patches
 
                 // Patch process execution methods to prevent shell injection
                 ProcessPatches.ApplyPatches(harmony);
+
+                // Patch outbound HTTP methods outside of the core package so SSRF inspection can use Zen.GetContext().
+                HttpClientPatches.ApplyPatches(harmony);
+                WebRequestPatches.ApplyPatches(harmony);
 
                 // Patch LLM client methods to monitor LLM API calls
                 LLMPatches.ApplyPatches(harmony);
@@ -41,11 +39,10 @@ namespace Aikido.Zen.DotNetCore.Patches
 
         public static void Unpatch()
         {
-            CorePatcher.Unpatch();
-            if (Harmony.HasAnyPatches("aikido.zen.dotnetcore"))
+            if (Harmony.HasAnyPatches(HarmonyId))
             {
-                var harmony = new Harmony("aikido.zen.dotnetcore");
-                harmony.UnpatchAll("aikido.zen.dotnetcore");
+                var harmony = new Harmony(HarmonyId);
+                harmony.UnpatchAll(HarmonyId);
             }
         }
     }

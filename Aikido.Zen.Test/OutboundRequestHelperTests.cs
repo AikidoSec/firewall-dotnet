@@ -1,0 +1,76 @@
+using System;
+using System.Linq;
+using Aikido.Zen.Core;
+using Aikido.Zen.Core.Api;
+using Aikido.Zen.Core.Helpers;
+using Aikido.Zen.Core.Models;
+using Aikido.Zen.Tests.Mocks;
+using Moq;
+
+namespace Aikido.Zen.Test
+{
+    [TestFixture]
+    public class OutboundRequestHelperTests
+    {
+        private Mock<IReportingAPIClient> _reportingApiMock;
+        private Mock<IRuntimeAPIClient> _runtimeApiMock;
+        private Agent _agent;
+
+        [SetUp]
+        public void Setup()
+        {
+            Environment.SetEnvironmentVariable("AIKIDO_TOKEN", "test-token");
+            Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", "true");
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
+
+            _reportingApiMock = new Mock<IReportingAPIClient>();
+            _reportingApiMock
+                .Setup(r => r.ReportAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<int>()))
+                .ReturnsAsync(new ReportingAPIResponse { Success = true });
+            _reportingApiMock
+                .Setup(r => r.GetFirewallLists(It.IsAny<string>()))
+                .ReturnsAsync(new FirewallListsAPIResponse { Success = true });
+
+            _runtimeApiMock = new Mock<IRuntimeAPIClient>();
+            _runtimeApiMock
+                .Setup(r => r.GetConfig(It.IsAny<string>()))
+                .ReturnsAsync(new ReportingAPIResponse { Success = true });
+            _runtimeApiMock
+                .Setup(r => r.GetConfigLastUpdated(It.IsAny<string>()))
+                .ReturnsAsync(new ConfigLastUpdatedAPIResponse { Success = true });
+
+            _agent = Agent.NewInstance(ZenApiMock.CreateMock(_reportingApiMock.Object, _runtimeApiMock.Object).Object);
+            _agent.ClearContext();
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            _agent?.Dispose();
+        }
+
+        [Test]
+        public void Inspect_WhenDomainRuleBlocks_CapturesHostnameWithoutAttack()
+        {
+            // Arrange
+            _agent.Context.Config.UpdateOutboundDomains(false, new[]
+            {
+                new OutboundDomainConfig { Hostname = "blocked.example", Mode = "block" }
+            });
+
+            // Act
+            var result = OutboundRequestHelper.Inspect(
+                new Uri("https://blocked.example/path"),
+                "HttpClient.SendAsync",
+                "System.Net.Http",
+                null);
+
+            // Assert
+            Assert.That(result.ShouldProceed, Is.False);
+            Assert.That(result.AttackDetected, Is.False);
+            Assert.That(result.Blocked, Is.True);
+            Assert.That(_agent.Context.AttacksDetected, Is.EqualTo(0));
+            Assert.That(_agent.Context.Hostnames.Any(h => h.Hostname == "blocked.example" && h.Port == 443), Is.True);
+        }
+    }
+}
