@@ -26,16 +26,16 @@ namespace Aikido.Zen.Core.Patches
 
             try
             {
+                if (IsBypassedRequest(context))
+                {
+                    return result;
+                }
+
                 var hostname = targetUri.Host;
                 var port = UriHelper.GetPort(targetUri);
                 Agent.Instance.CaptureOutboundRequest(hostname, port);
 
                 if (IsAikidoInternalTarget(targetUri))
-                {
-                    return result;
-                }
-
-                if (IsBypassedRequest(context))
                 {
                     return result;
                 }
