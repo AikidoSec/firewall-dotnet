@@ -26,11 +26,6 @@ namespace Aikido.Zen.Core.Patches
 
             try
             {
-                if (context == null)
-                {
-                    return result;
-                }
-
                 if (IsBypassedRequest(context))
                 {
                     return result;
@@ -68,17 +63,17 @@ namespace Aikido.Zen.Core.Patches
             }
         }
 
-        private static bool IsBypassedRequest(Context context)
-        {
-            return context != null &&
-                !string.IsNullOrWhiteSpace(context.RemoteAddress) &&
-                Agent.Instance.Context.BlockList.IsIPBypassed(context.RemoteAddress);
-        }
-
         private static bool IsAikidoInternalTarget(Uri targetUri)
         {
             return MatchesConfiguredAikidoEndpoint(targetUri, EnvironmentHelper.AikidoUrl) ||
                    MatchesConfiguredAikidoEndpoint(targetUri, EnvironmentHelper.AikidoRealtimeUrl);
+        }
+
+        private static bool IsBypassedRequest(Context context)
+        {
+            return context != null &&
+                   !string.IsNullOrWhiteSpace(context.RemoteAddress) &&
+                   Agent.Instance.Context.BlockList.IsIPBypassed(context.RemoteAddress);
         }
 
         private static bool MatchesConfiguredAikidoEndpoint(Uri targetUri, string configuredUrl)
