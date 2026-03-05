@@ -26,6 +26,11 @@ namespace Aikido.Zen.Core.Patches
 
             try
             {
+                if (context == null)
+                {
+                    return result;
+                }
+
                 if (IsBypassedRequest(context))
                 {
                     return result;
