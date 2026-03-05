@@ -31,7 +31,7 @@ namespace Aikido.Zen.Core.Patches
                     return result;
                 }
 
-                if (IsBypassedRequest(context))
+                if (Agent.Instance.Context.BlockList.IsIPBypassed(context.RemoteAddress))
                 {
                     return result;
                 }
@@ -66,13 +66,6 @@ namespace Aikido.Zen.Core.Patches
                     result.Blocked,
                     withoutContext);
             }
-        }
-
-        private static bool IsBypassedRequest(Context context)
-        {
-            return context != null &&
-                !string.IsNullOrWhiteSpace(context.RemoteAddress) &&
-                Agent.Instance.Context.BlockList.IsIPBypassed(context.RemoteAddress);
         }
 
         private static bool IsAikidoInternalTarget(Uri targetUri)
