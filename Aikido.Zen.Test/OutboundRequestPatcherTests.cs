@@ -2,15 +2,15 @@ using System;
 using System.Linq;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Api;
-using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
+using Aikido.Zen.Core.Patches;
 using Aikido.Zen.Tests.Mocks;
 using Moq;
 
 namespace Aikido.Zen.Test
 {
     [TestFixture]
-    public class OutboundRequestHelperTests
+    public class OutboundRequestPatcherTests
     {
         private Mock<IReportingAPIClient> _reportingApiMock;
         private Mock<IRuntimeAPIClient> _runtimeApiMock;
@@ -59,7 +59,7 @@ namespace Aikido.Zen.Test
             });
 
             // Act
-            var result = OutboundRequestHelper.Inspect(
+            var result = OutboundRequestPatcher.Inspect(
                 new Uri("https://blocked.example/path"),
                 "HttpClient.SendAsync",
                 "System.Net.Http",
@@ -100,7 +100,7 @@ namespace Aikido.Zen.Test
             };
 
             // Act
-            var result = OutboundRequestHelper.Inspect(
+            var result = OutboundRequestPatcher.Inspect(
                 new Uri("https://blocked.example/path"),
                 "HttpClient.SendAsync",
                 "System.Net.Http",

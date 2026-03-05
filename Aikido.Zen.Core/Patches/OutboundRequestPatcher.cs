@@ -1,9 +1,10 @@
 using System;
 using System.Diagnostics;
 using Aikido.Zen.Core.Exceptions;
+using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 
-namespace Aikido.Zen.Core.Helpers
+namespace Aikido.Zen.Core.Patches
 {
     internal sealed class OutboundInspectionResult
     {
@@ -13,7 +14,7 @@ namespace Aikido.Zen.Core.Helpers
         public Exception Exception { get; set; }
     }
 
-    internal static class OutboundRequestHelper
+    internal static class OutboundRequestPatcher
     {
         private const string OperationKind = "outgoing_http_op";
 
@@ -41,6 +42,7 @@ namespace Aikido.Zen.Core.Helpers
                     result.Exception = AikidoException.OutboundConnectionBlocked(hostname);
                     return result;
                 }
+
                 return result;
             }
             finally
