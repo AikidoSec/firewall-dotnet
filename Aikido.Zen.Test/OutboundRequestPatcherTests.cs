@@ -65,7 +65,13 @@ namespace Aikido.Zen.Test
                 new Uri("https://blocked.example/path"),
                 "HttpClient.SendAsync",
                 "System.Net.Http",
-                null);
+                new Context
+                {
+                    Method = "GET",
+                    Route = "/outbound",
+                    Url = "https://app.local/outbound",
+                    RemoteAddress = "203.0.113.10"
+                });
 
             // Assert
             Assert.That(result.ShouldProceed, Is.False);
@@ -90,7 +96,13 @@ namespace Aikido.Zen.Test
                 new Uri("https://blocked.example/path"),
                 "HttpClient.SendAsync",
                 "System.Net.Http",
-                null);
+                new Context
+                {
+                    Method = "GET",
+                    Route = "/outbound",
+                    Url = "https://app.local/outbound",
+                    RemoteAddress = "203.0.113.10"
+                });
 
             // Assert
             Assert.That(result.ShouldProceed, Is.True);
