@@ -30,6 +30,11 @@ namespace Aikido.Zen.Core.Patches
                 var port = UriHelper.GetPort(targetUri);
                 Agent.Instance.CaptureOutboundRequest(hostname, port);
 
+                if (IsAikidoInternalTarget(targetUri))
+                {
+                    return result;
+                }
+
                 if (IsBypassedRequest(context))
                 {
                     return result;
@@ -63,6 +68,31 @@ namespace Aikido.Zen.Core.Patches
             return context != null &&
                 !string.IsNullOrWhiteSpace(context.RemoteAddress) &&
                 Agent.Instance.Context.BlockList.IsIPBypassed(context.RemoteAddress);
+        }
+
+        private static bool IsAikidoInternalTarget(Uri targetUri)
+        {
+            return MatchesConfiguredAikidoEndpoint(targetUri, EnvironmentHelper.AikidoUrl) ||
+                   MatchesConfiguredAikidoEndpoint(targetUri, EnvironmentHelper.AikidoRealtimeUrl);
+        }
+
+        private static bool MatchesConfiguredAikidoEndpoint(Uri targetUri, string configuredUrl)
+        {
+            if (targetUri == null || string.IsNullOrWhiteSpace(configuredUrl))
+            {
+                return false;
+            }
+
+            if (!Uri.TryCreate(configuredUrl, UriKind.Absolute, out var configuredUri))
+            {
+                return false;
+            }
+
+            var targetPort = UriHelper.GetPort(targetUri);
+            var configuredPort = UriHelper.GetPort(configuredUri);
+
+            return string.Equals(targetUri.Host, configuredUri.Host, StringComparison.OrdinalIgnoreCase) &&
+                   targetPort == configuredPort;
         }
     }
 }
