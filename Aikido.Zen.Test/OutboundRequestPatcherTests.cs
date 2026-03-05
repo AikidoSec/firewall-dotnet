@@ -76,6 +76,29 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void Inspect_WhenDryMode_DomainRuleDoesNotBlock()
+        {
+            // Arrange
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "false");
+            _agent.Context.Config.UpdateOutboundDomains(false, new[]
+            {
+                new OutboundDomainConfig { Hostname = "blocked.example", Mode = "block" }
+            });
+
+            // Act
+            var result = OutboundRequestPatcher.Inspect(
+                new Uri("https://blocked.example/path"),
+                "HttpClient.SendAsync",
+                "System.Net.Http",
+                null);
+
+            // Assert
+            Assert.That(result.ShouldProceed, Is.True);
+            Assert.That(result.Blocked, Is.False);
+            Assert.That(_agent.Context.Hostnames.Any(h => h.Hostname == "blocked.example" && h.Port == 443), Is.True);
+        }
+
+        [Test]
         public void Inspect_WhenForceProtectionOffRoute_DomainBlockingStillApplies()
         {
             // Arrange
@@ -132,6 +155,39 @@ namespace Aikido.Zen.Test
             // Assert
             Assert.That(result.ShouldProceed, Is.True);
             Assert.That(result.Blocked, Is.False);
+        }
+
+        [Test]
+        public void Inspect_WhenRequestIsFromBypassedIp_DoesNotCaptureHostname()
+        {
+            // Arrange
+            _agent.Context.Config.UpdateConfig(new ReportingAPIResponse
+            {
+                ConfigUpdatedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                Block = true,
+                Endpoints = new EndpointConfig[0],
+                BlockedUserIds = new string[0],
+                BypassedIPAddresses = new[] { "1.2.3.4" }
+            });
+
+            var context = new Context
+            {
+                RemoteAddress = "1.2.3.4",
+                Method = "POST",
+                Route = "/api/request",
+                Url = "http://app.local/api/request"
+            };
+
+            // Act
+            var result = OutboundRequestPatcher.Inspect(
+                new Uri("http://domain1.example.com/test"),
+                "HttpClient.SendAsync",
+                "System.Net.Http",
+                context);
+
+            // Assert
+            Assert.That(result.ShouldProceed, Is.True);
+            Assert.That(_agent.Context.Hostnames.Any(h => h.Hostname == "domain1.example.com"), Is.False);
         }
     }
 }
