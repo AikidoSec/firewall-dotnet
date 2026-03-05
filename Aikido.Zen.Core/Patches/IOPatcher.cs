@@ -28,6 +28,11 @@ namespace Aikido.Zen.Core.Patches
                 return true;
             }
 
+            if (context != null && Agent.Instance.Context.BlockList.IsIPBypassed(context.RemoteAddress))
+            {
+                return true;
+            }
+
             var methodInfo = originalMethod as MethodInfo;
             var operation = $"{methodInfo?.DeclaringType?.Name}.{methodInfo?.Name}";
             var assemblyName = methodInfo?.DeclaringType?.Assembly.GetName().Name;
@@ -68,5 +73,6 @@ namespace Aikido.Zen.Core.Patches
             }
             return true;
         }
+
     }
 }
