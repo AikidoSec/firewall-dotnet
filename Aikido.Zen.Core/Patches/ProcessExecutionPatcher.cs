@@ -33,6 +33,11 @@ namespace Aikido.Zen.Core.Patches
                 return true;
             }
 
+            if (context != null && Agent.Instance.Context.BlockList.IsIPBypassed(context.RemoteAddress))
+            {
+                return true;
+            }
+
             var stopwatch = Stopwatch.StartNew();
             var methodInfo = __originalMethod as MethodInfo;
             var operation = $"{methodInfo?.DeclaringType?.Name}.{methodInfo?.Name}";
@@ -106,5 +111,6 @@ namespace Aikido.Zen.Core.Patches
 
             return true; // Allow original method execution
         }
+
     }
 }

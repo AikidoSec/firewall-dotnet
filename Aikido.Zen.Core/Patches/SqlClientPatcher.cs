@@ -27,6 +27,11 @@ namespace Aikido.Zen.Core.Patches
                 return true;
             }
 
+            if (context != null && Agent.Instance.Context.BlockList.IsIPBypassed(context.RemoteAddress))
+            {
+                return true;
+            }
+
 
             // Determine sink and context status regardless of detection outcome
             var stopwatch = Stopwatch.StartNew();
