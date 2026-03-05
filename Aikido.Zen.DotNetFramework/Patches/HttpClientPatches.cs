@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Aikido.Zen.Core.Helpers;
+using Aikido.Zen.Core.Patches;
 using HarmonyLib;
 
 namespace Aikido.Zen.DotNetFramework.Patches
@@ -71,7 +72,7 @@ namespace Aikido.Zen.DotNetFramework.Patches
                 return true;
             }
 
-            var inspection = OutboundRequestHelper.Inspect(
+            var inspection = OutboundRequestPatcher.Inspect(
                 targetUri,
                 GetOperation(__originalMethod),
                 GetModule(__originalMethod),
@@ -93,7 +94,7 @@ namespace Aikido.Zen.DotNetFramework.Patches
                 return true;
             }
 
-            var inspection = OutboundRequestHelper.Inspect(
+            var inspection = OutboundRequestPatcher.Inspect(
                 targetUri,
                 GetOperation(originalMethod),
                 GetModule(originalMethod),

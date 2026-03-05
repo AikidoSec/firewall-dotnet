@@ -81,7 +81,9 @@ public class ConfigService
             ["endpoints"] = new List<EndpointConfig>(),
             ["blockedUserIds"] = new List<string>(),
             ["allowedIPAddresses"] = _largeBlockedIpList,
-            ["receivedAnyStats"] = true
+            ["receivedAnyStats"] = true,
+            ["blockNewOutgoingRequests"] = false,
+            ["domains"] = new List<object>()
         };
     }
 
