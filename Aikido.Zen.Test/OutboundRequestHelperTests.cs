@@ -72,5 +72,43 @@ namespace Aikido.Zen.Test
             Assert.That(_agent.Context.AttacksDetected, Is.EqualTo(0));
             Assert.That(_agent.Context.Hostnames.Any(h => h.Hostname == "blocked.example" && h.Port == 443), Is.True);
         }
+
+        [Test]
+        public void Inspect_WhenForceProtectionOffRoute_DomainBlockingStillApplies()
+        {
+            // Arrange
+            _agent.Context.Config.UpdateOutboundDomains(true, new[]
+            {
+                new OutboundDomainConfig { Hostname = "allowed.example", Mode = "allow" }
+            });
+            _agent.Context.Config.UpdateRatelimitedRoutes(new[]
+            {
+                new EndpointConfig
+                {
+                    Method = "GET",
+                    Route = "/outbound",
+                    ForceProtectionOff = true
+                }
+            });
+
+            var context = new Context
+            {
+                Method = "GET",
+                Route = "/outbound",
+                Url = "https://app.local/outbound",
+                RemoteAddress = "203.0.113.10"
+            };
+
+            // Act
+            var result = OutboundRequestHelper.Inspect(
+                new Uri("https://blocked.example/path"),
+                "HttpClient.SendAsync",
+                "System.Net.Http",
+                context);
+
+            // Assert
+            Assert.That(result.ShouldProceed, Is.False);
+            Assert.That(result.Blocked, Is.True);
+        }
     }
 }
