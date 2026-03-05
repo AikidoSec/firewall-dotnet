@@ -35,7 +35,7 @@ namespace Aikido.Zen.Core.Patches
                 var port = UriHelper.GetPort(targetUri);
                 Agent.Instance.CaptureOutboundRequest(hostname, port);
 
-                if (IsAikidoInternalTarget(targetUri))
+                if (EnvironmentHelper.DryMode || IsAikidoInternalTarget(targetUri))
                 {
                     return result;
                 }

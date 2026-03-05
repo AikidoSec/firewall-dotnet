@@ -76,6 +76,29 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void Inspect_WhenDryMode_DomainRuleDoesNotBlock()
+        {
+            // Arrange
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "false");
+            _agent.Context.Config.UpdateOutboundDomains(false, new[]
+            {
+                new OutboundDomainConfig { Hostname = "blocked.example", Mode = "block" }
+            });
+
+            // Act
+            var result = OutboundRequestPatcher.Inspect(
+                new Uri("https://blocked.example/path"),
+                "HttpClient.SendAsync",
+                "System.Net.Http",
+                null);
+
+            // Assert
+            Assert.That(result.ShouldProceed, Is.True);
+            Assert.That(result.Blocked, Is.False);
+            Assert.That(_agent.Context.Hostnames.Any(h => h.Hostname == "blocked.example" && h.Port == 443), Is.True);
+        }
+
+        [Test]
         public void Inspect_WhenForceProtectionOffRoute_DomainBlockingStillApplies()
         {
             // Arrange
