@@ -29,7 +29,7 @@ namespace Aikido.Zen.Core.Helpers
                 var port = UriHelper.GetPort(targetUri);
                 Agent.Instance.CaptureOutboundRequest(hostname, port);
 
-                if (ForceProtectionOff(context) || IsBypassedRequest(context))
+                if (IsBypassedRequest(context))
                 {
                     return result;
                 }
@@ -54,24 +54,6 @@ namespace Aikido.Zen.Core.Helpers
                     result.Blocked,
                     withoutContext);
             }
-        }
-
-        private static bool ForceProtectionOff(Context context)
-        {
-            if (context == null)
-            {
-                return false;
-            }
-
-            foreach (var endpoint in RouteHelper.MatchEndpoints(context, Agent.Instance.Context.Endpoints))
-            {
-                if (endpoint.ForceProtectionOff)
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         private static bool IsBypassedRequest(Context context)
