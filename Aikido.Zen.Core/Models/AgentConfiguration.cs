@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Aikido.Zen.Core.Api;
@@ -16,6 +17,7 @@ namespace Aikido.Zen.Core.Models
     /// </summary>
     public class AgentConfiguration
     {
+        private readonly IdnMapping _idnMapping = new IdnMapping();
         private readonly ConcurrentDictionary<string, string> _blockedUsers = new ConcurrentDictionary<string, string>();
         private Regex _blockedUserAgents;
         private Regex _monitoredUserAgents;
@@ -204,10 +206,10 @@ namespace Aikido.Zen.Core.Models
                     continue;
                 }
 
-                var hostname = domain.Hostname.Trim().ToLowerInvariant();
+                var hostname = NormalizeOutboundHostname(domain.Hostname);
                 var mode = domain.Mode.Trim().ToLowerInvariant();
 
-                if (mode != "allow" && mode != "block")
+                if (string.IsNullOrWhiteSpace(hostname) || (mode != "allow" && mode != "block"))
                 {
                     continue;
                 }
@@ -218,12 +220,13 @@ namespace Aikido.Zen.Core.Models
 
         public bool ShouldBlockOutgoingRequest(string hostname)
         {
-            if (string.IsNullOrWhiteSpace(hostname))
+            var normalizedHostname = NormalizeOutboundHostname(hostname);
+            if (string.IsNullOrWhiteSpace(normalizedHostname))
             {
                 return false;
             }
 
-            _domains.TryGetValue(hostname.Trim().ToLowerInvariant(), out var mode);
+            _domains.TryGetValue(normalizedHostname, out var mode);
 
             if (_blockNewOutgoingRequests)
             {
@@ -231,6 +234,26 @@ namespace Aikido.Zen.Core.Models
             }
 
             return mode == "block";
+        }
+
+        private string NormalizeOutboundHostname(string hostname)
+        {
+            if (string.IsNullOrWhiteSpace(hostname))
+            {
+                return null;
+            }
+
+            var normalized = hostname.Trim().ToLowerInvariant();
+            try
+            {
+                normalized = _idnMapping.GetAscii(normalized).ToLowerInvariant();
+            }
+            catch (ArgumentException)
+            {
+                // Keep the normalized value as-is for non-IDN-compatible hostnames.
+            }
+
+            return normalized;
         }
 
         /// <summary>

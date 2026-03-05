@@ -164,6 +164,23 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void ShouldBlockOutgoingRequest_WithUnicodeAndPunycodeHostnames_TreatsAsSameDomain()
+        {
+            // Arrange
+            _config.UpdateOutboundDomains(true, new[]
+            {
+                new OutboundDomainConfig { Hostname = "xn--mnchen-allowed-gsb.example.com", Mode = "allow" },
+                new OutboundDomainConfig { Hostname = "münchen-blocked.example.com", Mode = "block" },
+            });
+
+            // Assert
+            Assert.That(_config.ShouldBlockOutgoingRequest("xn--mnchen-allowed-gsb.example.com"), Is.False);
+            Assert.That(_config.ShouldBlockOutgoingRequest("münchen-allowed.example.com"), Is.False);
+            Assert.That(_config.ShouldBlockOutgoingRequest("xn--mnchen-blocked-gsb.example.com"), Is.True);
+            Assert.That(_config.ShouldBlockOutgoingRequest("münchen-blocked.example.com"), Is.True);
+        }
+
+        [Test]
         public void UpdateConfig_WhenOutboundFieldsMissing_PreservesExistingOutboundConfig()
         {
             // Arrange
