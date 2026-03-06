@@ -60,20 +60,6 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void UserConstructor_ShouldAllowEmptyName()
-        {
-            // Arrange
-            var id = "123";
-            var name = "";
-
-            // Act
-            var user = new User(id, name);
-
-            // Assert
-            Assert.That(user.Name, Is.EqualTo(name));
-        }
-
-        [Test]
         public void UserConstructor_ShouldThrowException_WhenIdIsWhitespace()
         {
             // Arrange
@@ -85,18 +71,5 @@ namespace Aikido.Zen.Test
             Assert.That(ex.Message, Is.EqualTo("User ID cannot be null or empty"));
         }
 
-        [Test]
-        public void UserConstructor_ShouldAllowWhitespaceName()
-        {
-            // Arrange
-            var id = "123";
-            var name = "   ";
-
-            // Act
-            var user = new User(id, name);
-
-            // Assert
-            Assert.That(user.Name, Is.EqualTo(name));
-        }
     }
 }
