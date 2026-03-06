@@ -17,6 +17,8 @@ namespace Aikido.Zen.Core.Patches
     internal static class OutboundRequestPatcher
     {
         private const string OperationKind = "outgoing_http_op";
+        private static readonly Uri ParsedAikidoUrl = new Uri(EnvironmentHelper.AikidoUrl);
+        private static readonly Uri ParsedAikidoRealtimeUrl = new Uri(EnvironmentHelper.AikidoRealtimeUrl);
 
         internal static OutboundInspectionResult Inspect(Uri targetUri, string operation, string module, Context context)
         {
@@ -65,27 +67,27 @@ namespace Aikido.Zen.Core.Patches
 
         private static bool IsAikidoInternalTarget(Uri targetUri)
         {
-            return MatchesConfiguredAikidoEndpoint(targetUri, EnvironmentHelper.AikidoUrl) ||
-                   MatchesConfiguredAikidoEndpoint(targetUri, EnvironmentHelper.AikidoRealtimeUrl);
-        }
-
-        private static bool MatchesConfiguredAikidoEndpoint(Uri targetUri, string configuredUrl)
-        {
-            if (targetUri == null || string.IsNullOrWhiteSpace(configuredUrl))
-            {
-                return false;
-            }
-
-            if (!Uri.TryCreate(configuredUrl, UriKind.Absolute, out var configuredUri))
+            if (targetUri == null)
             {
                 return false;
             }
 
             var targetPort = UriHelper.GetPort(targetUri);
-            var configuredPort = UriHelper.GetPort(configuredUri);
+            var targetHost = targetUri.Host;
 
-            return string.Equals(targetUri.Host, configuredUri.Host, StringComparison.OrdinalIgnoreCase) &&
-                   targetPort == configuredPort;
+            if (string.Equals(targetHost, ParsedAikidoUrl.Host, StringComparison.OrdinalIgnoreCase) &&
+                targetPort == UriHelper.GetPort(ParsedAikidoUrl))
+            {
+                return true;
+            }
+
+            if (string.Equals(targetHost, ParsedAikidoRealtimeUrl.Host, StringComparison.OrdinalIgnoreCase) &&
+                targetPort == UriHelper.GetPort(ParsedAikidoRealtimeUrl))
+            {
+                return true;
+            }
+
+            return false;
         }
     }
 }
