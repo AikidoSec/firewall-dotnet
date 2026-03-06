@@ -125,9 +125,9 @@ using Microsoft.AspNet.Identity;
     .Use((context, next) =>
     {
         // unique id for the user
-        var id = context.User?.Identity?.GetUserId() ?? "test";
+        var id = context.User?.Identity?.GetUserId();
         // name for the user, can be same as id
-        var name = context.User?.Identity?.Name ?? "Anonymous";
+        var name = context.User?.Identity?.Name;
         if (!string.IsNullOrEmpty(id))
             Zen.SetUser(id, name, context);
         return next();
