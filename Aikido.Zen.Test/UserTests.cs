@@ -30,19 +30,21 @@ namespace Aikido.Zen.Test
 
             // Act & Assert
             var ex = Assert.Throws<ArgumentException>(() => new User(id, name));
-            Assert.That("User ID or name cannot be null or empty", Is.EqualTo(ex.Message));
+            Assert.That("User ID cannot be null or empty", Is.EqualTo(ex.Message));
         }
 
         [Test]
-        public void UserConstructor_ShouldThrowException_WhenNameIsNull()
+        public void UserConstructor_ShouldAllowNullName()
         {
             // Arrange
             var id = "123";
             string name = null;
 
-            // Act & Assert
-            var ex = Assert.Throws<ArgumentException>(() => new User(id, name));
-            Assert.That("User ID or name cannot be null or empty", Is.EqualTo(ex.Message));
+            // Act
+            var user = new User(id, name);
+
+            // Assert
+            Assert.That(user.Name, Is.Null);
         }
 
         [Test]
@@ -54,19 +56,21 @@ namespace Aikido.Zen.Test
 
             // Act & Assert
             var ex = Assert.Throws<ArgumentException>(() => new User(id, name));
-            Assert.That(ex.Message, Is.EqualTo("User ID or name cannot be null or empty"));
+            Assert.That(ex.Message, Is.EqualTo("User ID cannot be null or empty"));
         }
 
         [Test]
-        public void UserConstructor_ShouldThrowException_WhenNameIsEmpty()
+        public void UserConstructor_ShouldAllowEmptyName()
         {
             // Arrange
             var id = "123";
             var name = "";
 
-            // Act & Assert
-            var ex = Assert.Throws<ArgumentException>(() => new User(id, name));
-            Assert.That(ex.Message, Is.EqualTo("User ID or name cannot be null or empty"));
+            // Act
+            var user = new User(id, name);
+
+            // Assert
+            Assert.That(user.Name, Is.EqualTo(name));
         }
 
         [Test]
@@ -78,19 +82,21 @@ namespace Aikido.Zen.Test
 
             // Act & Assert
             var ex = Assert.Throws<ArgumentException>(() => new User(id, name));
-            Assert.That(ex.Message, Is.EqualTo("User ID or name cannot be null or empty"));
+            Assert.That(ex.Message, Is.EqualTo("User ID cannot be null or empty"));
         }
 
         [Test]
-        public void UserConstructor_ShouldThrowException_WhenNameIsWhitespace()
+        public void UserConstructor_ShouldAllowWhitespaceName()
         {
             // Arrange
             var id = "123";
             var name = "   ";
 
-            // Act & Assert
-            var ex = Assert.Throws<ArgumentException>(() => new User(id, name));
-            Assert.That("User ID or name cannot be null or empty", Is.EqualTo(ex.Message));
+            // Act
+            var user = new User(id, name);
+
+            // Assert
+            Assert.That(user.Name, Is.EqualTo(name));
         }
     }
 }
