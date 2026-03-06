@@ -115,6 +115,98 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void ShouldBlockOutgoingRequest_WithExplicitRules_MatchesNodeSemantics()
+        {
+            // Arrange
+            _config.UpdateOutboundDomains(false, new[]
+            {
+                new OutboundDomainConfig { Hostname = "blocked.example", Mode = "block" },
+                new OutboundDomainConfig { Hostname = "allowed.example", Mode = "allow" },
+            });
+
+            // Assert
+            Assert.That(_config.ShouldBlockOutgoingRequest("blocked.example"), Is.True);
+            Assert.That(_config.ShouldBlockOutgoingRequest("allowed.example"), Is.False);
+            Assert.That(_config.ShouldBlockOutgoingRequest("unknown.example"), Is.False);
+        }
+
+        [Test]
+        public void ShouldBlockOutgoingRequest_WhenBlockingUnknownDomains_OnlyAllowsConfiguredAllowEntries()
+        {
+            // Arrange
+            _config.UpdateOutboundDomains(true, new[]
+            {
+                new OutboundDomainConfig { Hostname = "allowed.example", Mode = "allow" },
+                new OutboundDomainConfig { Hostname = "blocked.example", Mode = "block" },
+            });
+
+            // Assert
+            Assert.That(_config.ShouldBlockOutgoingRequest("allowed.example"), Is.False);
+            Assert.That(_config.ShouldBlockOutgoingRequest("blocked.example"), Is.True);
+            Assert.That(_config.ShouldBlockOutgoingRequest("unknown.example"), Is.True);
+        }
+
+        [Test]
+        public void UpdateOutboundDomains_IgnoresInvalidEntries()
+        {
+            // Arrange
+            _config.UpdateOutboundDomains(false, new[]
+            {
+                new OutboundDomainConfig { Hostname = "valid.example", Mode = "block" },
+                new OutboundDomainConfig { Hostname = "", Mode = "block" },
+                new OutboundDomainConfig { Hostname = "other.example", Mode = "invalid" },
+                null,
+            });
+
+            // Assert
+            Assert.That(_config.ShouldBlockOutgoingRequest("valid.example"), Is.True);
+            Assert.That(_config.ShouldBlockOutgoingRequest("other.example"), Is.False);
+        }
+
+        [Test]
+        public void ShouldBlockOutgoingRequest_WithUnicodeAndPunycodeHostnames_TreatsAsSameDomain()
+        {
+            // Arrange
+            _config.UpdateOutboundDomains(true, new[]
+            {
+                new OutboundDomainConfig { Hostname = "xn--mnchen-allowed-gsb.example.com", Mode = "allow" },
+                new OutboundDomainConfig { Hostname = "münchen-blocked.example.com", Mode = "block" },
+            });
+
+            // Assert
+            Assert.That(_config.ShouldBlockOutgoingRequest("xn--mnchen-allowed-gsb.example.com"), Is.False);
+            Assert.That(_config.ShouldBlockOutgoingRequest("münchen-allowed.example.com"), Is.False);
+            Assert.That(_config.ShouldBlockOutgoingRequest("xn--mnchen-blocked-gsb.example.com"), Is.True);
+            Assert.That(_config.ShouldBlockOutgoingRequest("münchen-blocked.example.com"), Is.True);
+        }
+
+        [Test]
+        public void UpdateConfig_WhenOutboundFieldsMissing_PreservesExistingOutboundConfig()
+        {
+            // Arrange
+            _config.UpdateOutboundDomains(true, new[]
+            {
+                new OutboundDomainConfig { Hostname = "allowed.example", Mode = "allow" },
+            });
+
+            // Act
+            _config.UpdateConfig(new ReportingAPIResponse
+            {
+                Block = true,
+                ConfigUpdatedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                Endpoints = new List<EndpointConfig>(),
+                BlockedUserIds = new List<string>(),
+                BypassedIPAddresses = new List<string>(),
+                Domains = null,
+                BlockNewOutgoingRequests = null
+            });
+
+            // Assert
+            Assert.That(_config.ShouldBlockOutgoingRequest("allowed.example"), Is.False);
+            Assert.That(_config.ShouldBlockOutgoingRequest("unknown.example"), Is.True);
+        }
+
+        [Test]
         public void UpdateFirewallLists_WithValidResponse_UpdatesFirewallLists()
         {
             // Arrange

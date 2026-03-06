@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Aikido.Zen.Core.Api;
@@ -16,6 +17,7 @@ namespace Aikido.Zen.Core.Models
     /// </summary>
     public class AgentConfiguration
     {
+        private readonly IdnMapping _idnMapping = new IdnMapping();
         private readonly ConcurrentDictionary<string, string> _blockedUsers = new ConcurrentDictionary<string, string>();
         private Regex _blockedUserAgents;
         private Regex _monitoredUserAgents;
@@ -23,8 +25,10 @@ namespace Aikido.Zen.Core.Models
         private List<EndpointConfig> _endpoints = new List<EndpointConfig>();
         private List<(string Key, Regex Pattern)> _userAgentDetails = new List<(string Key, Regex Pattern)>();
         private List<(string Key, IPRange List)> _monitoredIPAddresses = new List<(string Key, IPRange List)>();
+        private readonly ConcurrentDictionary<string, string> _domains = new ConcurrentDictionary<string, string>();
         private readonly object _endpointsLock = new object();
         private readonly object _monitoringLock = new object();
+        private volatile bool _blockNewOutgoingRequests;
 
         public long ConfigLastUpdated { get; set; } = 0;
         public int HeartbeatIntervalInMS { get; private set; } = 0;
@@ -40,6 +44,8 @@ namespace Aikido.Zen.Core.Models
             _monitoredUserAgents = null;
             _userAgentDetails = new List<(string Key, Regex Pattern)>();
             _monitoredIPAddresses = new List<(string Key, IPRange List)>();
+            _domains.Clear();
+            _blockNewOutgoingRequests = false;
             _blockList = new BlockList();
             HeartbeatIntervalInMS = 0;
         }
@@ -181,6 +187,73 @@ namespace Aikido.Zen.Core.Models
 
             HeartbeatIntervalInMS = response.HeartbeatIntervalInMS;
             Heartbeat.UpdateDefaultInterval(response.HeartbeatIntervalInMS);
+
+            if (response.BlockNewOutgoingRequests.HasValue && response.Domains != null)
+            {
+                UpdateOutboundDomains(response.BlockNewOutgoingRequests.Value, response.Domains);
+            }
+        }
+
+        public void UpdateOutboundDomains(bool blockNewOutgoingRequests, IEnumerable<OutboundDomainConfig> domains)
+        {
+            _domains.Clear();
+            _blockNewOutgoingRequests = blockNewOutgoingRequests;
+
+            foreach (var domain in domains ?? Enumerable.Empty<OutboundDomainConfig>())
+            {
+                if (domain == null || string.IsNullOrWhiteSpace(domain.Hostname) || string.IsNullOrWhiteSpace(domain.Mode))
+                {
+                    continue;
+                }
+
+                var hostname = NormalizeOutboundHostname(domain.Hostname);
+                var mode = domain.Mode.Trim().ToLowerInvariant();
+
+                if (string.IsNullOrWhiteSpace(hostname) || (mode != "allow" && mode != "block"))
+                {
+                    continue;
+                }
+
+                _domains[hostname] = mode;
+            }
+        }
+
+        public bool ShouldBlockOutgoingRequest(string hostname)
+        {
+            var normalizedHostname = NormalizeOutboundHostname(hostname);
+            if (string.IsNullOrWhiteSpace(normalizedHostname))
+            {
+                return false;
+            }
+
+            _domains.TryGetValue(normalizedHostname, out var mode);
+
+            if (_blockNewOutgoingRequests)
+            {
+                return mode != "allow";
+            }
+
+            return mode == "block";
+        }
+
+        private string NormalizeOutboundHostname(string hostname)
+        {
+            if (string.IsNullOrWhiteSpace(hostname))
+            {
+                return null;
+            }
+
+            var normalized = hostname.Trim().ToLowerInvariant();
+            try
+            {
+                normalized = _idnMapping.GetAscii(normalized).ToLowerInvariant();
+            }
+            catch (ArgumentException)
+            {
+                // Keep the normalized value as-is for non-IDN-compatible hostnames.
+            }
+
+            return normalized;
         }
 
         /// <summary>

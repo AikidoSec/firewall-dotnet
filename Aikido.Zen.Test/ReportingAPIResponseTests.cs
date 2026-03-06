@@ -3,6 +3,7 @@ using Aikido.Zen.Core.Models;
 using NUnit.Framework;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 
 namespace Aikido.Zen.Test
 {
@@ -70,6 +71,31 @@ namespace Aikido.Zen.Test
             Assert.That(response.Endpoints, Is.Null);
             Assert.That(response.BlockedUserIds, Is.Null);
             Assert.That(response.BypassedIPAddresses, Is.Null);
+        }
+
+        [Test]
+        public void Deserialize_FromCamelCaseJson_ParsesOutboundFields()
+        {
+            // Arrange
+            var json = """
+                {
+                  "success": true,
+                  "blockNewOutgoingRequests": true,
+                  "domains": [
+                    { "hostname": "allowed.example", "mode": "allow" }
+                  ]
+                }
+                """;
+
+            // Act
+            var response = JsonSerializer.Deserialize<ReportingAPIResponse>(json, ZenApi.JsonSerializerOptions);
+
+            // Assert
+            Assert.That(response, Is.Not.Null);
+            Assert.That(response.BlockNewOutgoingRequests, Is.True);
+            Assert.That(response.Domains.Count(), Is.EqualTo(1));
+            Assert.That(response.Domains.First().Hostname, Is.EqualTo("allowed.example"));
+            Assert.That(response.Domains.First().Mode, Is.EqualTo("allow"));
         }
     }
 }

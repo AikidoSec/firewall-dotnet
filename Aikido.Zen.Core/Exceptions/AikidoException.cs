@@ -48,5 +48,10 @@ namespace Aikido.Zen.Core.Exceptions
         {
             return new AikidoException($"Path traversal detected in {assemblyName} during {operation}");
         }
+
+        public static AikidoException OutboundConnectionBlocked(string hostname)
+        {
+            return new AikidoException($"Zen has blocked an outbound connection to {hostname}");
+        }
     }
 }

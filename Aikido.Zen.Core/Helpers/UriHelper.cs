@@ -16,5 +16,20 @@ namespace Aikido.Zen.Core.Helpers
         {
             return (requestUri.Host, requestUri.Port);
         }
+
+        internal static int? GetPort(Uri requestUri)
+        {
+            if (requestUri == null)
+            {
+                return null;
+            }
+
+            if (requestUri.Port > 0)
+            {
+                return requestUri.Port;
+            }
+
+            return null;
+        }
     }
 }
