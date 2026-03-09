@@ -53,5 +53,15 @@ namespace Aikido.Zen.Core.Exceptions
         {
             return new AikidoException($"Zen has blocked an outbound connection to {hostname}");
         }
+
+        public static AikidoException SsrfDetected()
+        {
+            return new AikidoException("Server-side request forgery detected");
+        }
+
+        public static AikidoException StoredSsrfDetected()
+        {
+            return new AikidoException("Stored server-side request forgery detected");
+        }
     }
 }

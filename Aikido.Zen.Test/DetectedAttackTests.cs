@@ -100,5 +100,31 @@ namespace Aikido.Zen.Test
                 Assert.That(detectedAttack.Agent, Is.Null);
             });
         }
+
+        [Test]
+        public void Create_WithNullContext_CreatesAttackWithoutRequest()
+        {
+            // Act
+            var detectedAttack = DetectedAttack.Create(
+                AttackKind.StoredSsrf,
+                null,
+                null,
+                "HttpClient.SendAsync",
+                null,
+                "System.Net.Http",
+                new Dictionary<string, object> { { "hostname", "metadata.attacker.example" } },
+                true);
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(detectedAttack.Request, Is.Null);
+                Assert.That(detectedAttack.Attack.Kind, Is.EqualTo(AttackKind.StoredSsrf.ToJsonName()));
+                Assert.That(detectedAttack.Attack.Source, Is.Null);
+                Assert.That(detectedAttack.Attack.Payload, Is.Null);
+                Assert.That(detectedAttack.Attack.Path, Is.EqualTo(string.Empty));
+                Assert.That(detectedAttack.Attack.User, Is.Null);
+            });
+        }
     }
 }

@@ -3,6 +3,7 @@ using System.Diagnostics;
 using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
+using Aikido.Zen.Core.Vulnerabilities;
 
 namespace Aikido.Zen.Core.Patches
 {
@@ -50,6 +51,10 @@ namespace Aikido.Zen.Core.Patches
                     return result;
                 }
 
+                if (InspectSsrf(targetUri, operation, module, context, result))
+                {
+                    return result;
+                }
                 return result;
             }
             finally
@@ -63,6 +68,43 @@ namespace Aikido.Zen.Core.Patches
                     result.Blocked,
                     withoutContext);
             }
+        }
+
+        private static bool InspectSsrf(Uri targetUri, string operation, string module, Context context, OutboundInspectionResult result)
+        {
+            var detection = SsrfDetector.Detect(targetUri, context);
+            if (detection == null)
+            {
+                return false;
+            }
+
+            var blocked = !EnvironmentHelper.DryMode;
+            // Stored SSRF can be reported without a matching request-scoped source, payload, or context.
+            Agent.Instance.SendAttackEvent(
+                detection.Kind,
+                detection.Source,
+                detection.Payload,
+                operation,
+                detection.Kind == AttackKind.StoredSsrf ? null : context,
+                module,
+                detection.Metadata,
+                blocked);
+
+            if (context != null)
+            {
+                context.AttackDetected = true;
+            }
+
+            result.AttackDetected = true;
+            result.Blocked = blocked;
+            if (blocked)
+            {
+                result.ShouldProceed = false;
+                result.Exception = detection.Kind == AttackKind.StoredSsrf
+                    ? AikidoException.StoredSsrfDetected()
+                    : AikidoException.SsrfDetected();
+            }
+            return true;
         }
 
         private static bool IsAikidoInternalTarget(Uri targetUri)
