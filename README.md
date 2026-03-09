@@ -125,9 +125,9 @@ using Microsoft.AspNet.Identity;
     .Use((context, next) =>
     {
         // unique id for the user
-        var id = context.User?.Identity?.GetUserId() ?? "test";
+        var id = context.User?.Identity?.GetUserId();
         // name for the user, can be same as id
-        var name = context.User?.Identity?.Name ?? "Anonymous";
+        var name = context.User?.Identity?.Name;
         if (!string.IsNullOrEmpty(id))
             Zen.SetUser(id, name, context);
         return next();
@@ -196,12 +196,15 @@ public void Configuration(IAppBuilder app)
 public void Application_Start()
 {
     // other code
-    Zen.SetUser(context => new User(context.User.Identity.Name, context.User.Identity.Name));
+    // userId should be unique
+    // userName is optional
+    // context.User.Identity.GetUserId() and .Name are available to use when authentication is implemented
+    Zen.SetUser(context => new User(userId, userName));
     Zen.Start();
 }
 ```
 
-Or if you are using OWIN, you can add the following to your `Startup.cs` file:
+- If using OWIN, you can add the following to your `Startup.cs` file:
 
 ``` csharp
 // ...
@@ -212,7 +215,9 @@ using Microsoft.AspNet.Identity;
 public void Configuration(IAppBuilder app)
 {
     // other code
-    // set the user, id should be unique, name can be same as id if needed
+    // set the user:
+    // userId should be unique eg. User.Identity.GetUserId()
+    // userName is optional eg. context.User.Identity.Name
     Zen.SetUser(context => new User(context.User.Identity.GetUserId(), context.User.Identity.Name));
     Zen.Start();
 }
