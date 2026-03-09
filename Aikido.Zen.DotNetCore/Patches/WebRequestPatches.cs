@@ -19,14 +19,17 @@ namespace Aikido.Zen.DotNetCore.Patches
 
         private static void PatchMethod(Harmony harmony, System.Type type, string methodName, string prefixMethodName)
         {
-            var method = AccessTools.Method(type, methodName);
-            if (method == null || method.IsAbstract)
+            try
             {
-                return;
+                var method = AccessTools.Method(type, methodName);
+                var prefix = typeof(WebRequestPatches).GetMethod(prefixMethodName, BindingFlags.Static | BindingFlags.NonPublic);
+                harmony.Patch(method, new HarmonyMethod(prefix));
             }
-
-            var prefix = typeof(WebRequestPatches).GetMethod(prefixMethodName, BindingFlags.Static | BindingFlags.NonPublic);
-            harmony.Patch(method, new HarmonyMethod(prefix));
+            catch
+            {
+                // Some methods fail to patch (abstract or not implemented) depending on the framework, so we just ignore them
+                // You can only patch implemented methods/constructors. Patch the declared method virtual System.Threading.Tasks.TaskbRbbRequest::GetResponseAsync() instead.
+            }
         }
 
         private static bool PrefixGetResponse(WebRequest __instance, MethodBase __originalMethod, ref WebResponse __result)
