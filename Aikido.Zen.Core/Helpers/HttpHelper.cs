@@ -109,34 +109,6 @@ namespace Aikido.Zen.Core.Helpers
             }
         }
 
-        /// <summary>
-        /// Extracts the source of the user input from the path.
-        /// </summary>
-        /// <param name="path"></param>
-        /// <returns></returns>
-        public static Source GetSourceFromUserInputPath(string path)
-        {
-            path = path.ToLower();
-
-            if (path.StartsWith("query"))
-            {
-                return Source.Query;
-            }
-            else if (path.StartsWith("headers"))
-            {
-                return Source.Headers;
-            }
-            else if (path.StartsWith("cookies"))
-            {
-                return Source.Cookies;
-            }
-            else if (path.StartsWith("route"))
-            {
-                return Source.RouteParams;
-            }
-            return UserInputHelper.GetSourceFromUserInputPath(path);
-        }
-
         private static async Task<object> ProcessRequestBodyAsync(Stream body, string contentType, IDictionary<string, string> result)
         {
             object parsedBody = null;
