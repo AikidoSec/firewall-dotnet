@@ -12,6 +12,11 @@ namespace Aikido.Zen.Core.Helpers
     {
         public static bool DetectPathTraversal(string path, Context context, string moduleName, string operation)
         {
+            if (context == null || context.ParsedUserInput == null)
+            {
+                return false;
+            }
+
             // Check for path traversal against the user inputs
             foreach (var userInput in context.ParsedUserInput)
             {
