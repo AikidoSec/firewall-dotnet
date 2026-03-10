@@ -18,18 +18,20 @@ namespace Aikido.Zen.Core.Helpers
                 if (SQLInjectionDetector.IsSQLInjection(commandText, userInput.Value, dialect))
                 {
                     var metadata = new Dictionary<string, object> {
-                        { "sql", commandText }
+                        { "sql", commandText },
+                        { "dialect", dialect.ToHumanName() }
                     };
                     // send an attack event
                     Agent.Instance.SendAttackEvent(
                         kind: AttackKind.SqlInjection,
-                        source: HttpHelper.GetSourceFromUserInputPath(userInput.Key),
+                        source: UserInputHelper.GetAttackSourceFromUserInputKey(userInput.Key),
                         payload: userInput.Value,
                         operation: operation,
                         context: context,
                         module: moduleName,
                         metadata: metadata,
-                        blocked: !EnvironmentHelper.DryMode
+                        blocked: !EnvironmentHelper.DryMode,
+                        paths: new[] { UserInputHelper.GetAttackPathFromUserInputKey(userInput.Key) }
                     );
                     // set attack detected to true
                     context.AttackDetected = true;

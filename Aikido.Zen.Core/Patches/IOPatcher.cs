@@ -45,7 +45,14 @@ namespace Aikido.Zen.Core.Patches
             {
                 if (paths != null && paths.Length > 0)
                 {
-                    attackDetected = PathTraversalHelper.DetectPathTraversal(paths, assemblyName, context, operation);
+                    foreach (var path in paths)
+                    {
+                        if (PathTraversalHelper.DetectPathTraversal(path, context, assemblyName, operation))
+                        {
+                            attackDetected = true;
+                            break;
+                        }
+                    }
                 }
 
                 blocked = attackDetected && !EnvironmentHelper.DryMode;

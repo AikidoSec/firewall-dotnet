@@ -69,13 +69,14 @@ namespace Aikido.Zen.Core.Patches
                             };
                             Agent.Instance.SendAttackEvent(
                                 kind: AttackKind.ShellInjection,
-                                source: HttpHelper.GetSourceFromUserInputPath(userInput.Key),
+                                source: UserInputHelper.GetAttackSourceFromUserInputKey(userInput.Key),
                                 payload: userInput.Value,
                                 operation: operation,
                                 context: context,
                                 module: assemblyName,
                                 metadata: metadata,
-                                blocked: blocked
+                                blocked: blocked,
+                                paths: new[] { UserInputHelper.GetAttackPathFromUserInputKey(userInput.Key) }
                             );
                             context.AttackDetected = true; // Mark context
                             // Break after first detection for this process start
