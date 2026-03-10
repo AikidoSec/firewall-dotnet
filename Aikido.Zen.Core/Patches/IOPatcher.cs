@@ -76,7 +76,7 @@ namespace Aikido.Zen.Core.Patches
 
             if (blocked)
             {
-                throw AikidoException.PathTraversalDetected(operation, originalMethod.Name);
+                throw AikidoException.PathTraversalDetected(operation);
             }
             return true;
         }
