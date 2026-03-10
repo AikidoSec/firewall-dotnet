@@ -1,3 +1,4 @@
+using Aikido.Zen.Core;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Models.Events;
 using NUnit.Framework;
