@@ -390,22 +390,23 @@ namespace Aikido.Zen.Core
         /// Sends out an attack event
         /// </summary>
         /// <param name="kind">The attack kind</param>
-        /// <param name="source">The source of the attack</param>
+        /// <param name="source">The attack source</param>
         /// <param name="payload">The attack payload</param>
         /// <param name="operation">The operation where the attack was detected</param>
         /// <param name="context">The context of the attack</param>
         /// <param name="module">The module where the attack was detected</param>
         /// <param name="metadata">Additional metadata for the attack</param>
         /// <param name="blocked">Whether the attack was blocked</param>
+        /// <param name="paths">Relative paths to the user-controlled fields inside the attack source</param>
         /// <returns></returns>
-        public virtual void SendAttackEvent(AttackKind kind, Source source, string payload, string operation, Context context, string module, IDictionary<string, object> metadata, bool blocked)
+        public virtual void SendAttackEvent(AttackKind kind, Source source, string payload, string operation, Context context, string module, IDictionary<string, object> metadata, bool blocked, string[] paths)
         {
             LogHelper.AttackLog(Logger, $"Attack detected: {kind} in {source} {operation}, blocked: {blocked}");
 
             // Prevent sending events if no token is configured
             if (!string.IsNullOrEmpty(EnvironmentHelper.Token))
             {
-                QueueEvent(EnvironmentHelper.Token, DetectedAttack.Create(kind, source, payload, operation, context, module, metadata, blocked));
+                QueueEvent(EnvironmentHelper.Token, DetectedAttack.Create(kind, source, payload, operation, context, module, metadata, blocked, paths));
             }
 
             Context.AddAttackDetected(blocked);

@@ -44,9 +44,9 @@ namespace Aikido.Zen.Core.Exceptions
             return new AikidoException($"Ratelimited: {route}");
         }
 
-        public static AikidoException PathTraversalDetected(string assemblyName, string operation)
+        public static AikidoException PathTraversalDetected(string operation)
         {
-            return new AikidoException($"Path traversal detected in {assemblyName} during {operation}");
+            return new AikidoException($"Path traversal detected during {operation}");
         }
 
         public static AikidoException OutboundConnectionBlocked(string hostname)

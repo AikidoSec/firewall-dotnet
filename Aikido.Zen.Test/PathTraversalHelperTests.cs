@@ -1,8 +1,9 @@
-using System.Web;
 using Aikido.Zen.Core;
-using Aikido.Zen.Core.Exceptions;
+using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Helpers;
+using Aikido.Zen.Core.Models.Events;
 using Aikido.Zen.Tests.Mocks;
+using Moq;
 
 namespace Aikido.Zen.Test.Helpers
 {
@@ -29,11 +30,8 @@ namespace Aikido.Zen.Test.Helpers
         [Test]
         public void DetectPathTraversal_WithNullContext_ReturnsFalse()
         {
-            // Arrange
-            object[] args = new object[] { "test.txt" };
-
             // Act
-            bool result = PathTraversalHelper.DetectPathTraversal(args, ModuleName, null, Operation);
+            bool result = PathTraversalHelper.DetectPathTraversal("test.txt", null, ModuleName, Operation);
 
             // Assert
             Assert.That(result, Is.False);
@@ -41,15 +39,14 @@ namespace Aikido.Zen.Test.Helpers
 
         [TestCase("../test.txt", true, Description = "Detects traversal in single path")]
         [TestCase("safe.txt", false, Description = "Passes safe single path")]
-        public void DetectPathTraversal_WithSinglePath(string path, bool expectedAttack)
+        public void DetectPathTraversal_WithSingleFilename(string filename, bool expectedAttack)
         {
             // Arrange
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "false");
-            _context.ParsedUserInput.Add("test", path);
-            object[] args = new object[] { path };
+            _context.ParsedUserInput.Add("test", filename);
 
             // Act
-            bool result = PathTraversalHelper.DetectPathTraversal(args, ModuleName, _context, Operation);
+            bool result = PathTraversalHelper.DetectPathTraversal(filename, _context, ModuleName, Operation);
 
             // Assert
             Assert.That(result, Is.EqualTo(expectedAttack));
@@ -57,67 +54,46 @@ namespace Aikido.Zen.Test.Helpers
         }
 
         [Test]
-        public void DetectPathTraversal_WithNonStringArg_IgnoresArg()
+        public async Task DetectPathTraversal_WhenAttackDetected_ReportsFilenameMetadata()
         {
-            // Arrange
-            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
-            _context.ParsedUserInput.Add("test", "../test.txt");
-            object[] args = new object[] { 42 };
+            var reportingApiMock = new Mock<IReportingAPIClient>();
+            reportingApiMock
+                .Setup(r => r.ReportAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<int>()))
+                .ReturnsAsync(new ReportingAPIResponse { Success = true });
+            reportingApiMock
+                .Setup(r => r.GetFirewallLists(It.IsAny<string>()))
+                .ReturnsAsync(new FirewallListsAPIResponse { Success = true });
 
-            // Act
-            bool result = PathTraversalHelper.DetectPathTraversal(args, ModuleName, _context, Operation);
+            var runtimeApiMock = new Mock<IRuntimeAPIClient>();
+            runtimeApiMock
+                .Setup(r => r.GetConfig(It.IsAny<string>()))
+                .ReturnsAsync(new ReportingAPIResponse { Success = true });
+            runtimeApiMock
+                .Setup(r => r.GetConfigLastUpdated(It.IsAny<string>()))
+                .ReturnsAsync(new ConfigLastUpdatedAPIResponse { Success = true });
 
-            // Assert
-            Assert.That(result, Is.False);
-            Assert.That(_context.AttackDetected, Is.False);
-        }
+            Agent.NewInstance(ZenApiMock.CreateMock(reportingApiMock.Object, runtimeApiMock.Object).Object);
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "false");
 
-        [Test]
-        public void DetectPathTraversal_WithEmptyArray_ReturnsFalse()
-        {
-            // Arrange
-            object[] args = new object[] { new string[0] };
+            _context.ParsedUserInput.Clear();
+            _context.ParsedUserInput.Add("query.file", "../test.txt");
 
-            // Act
-            bool result = PathTraversalHelper.DetectPathTraversal(args, ModuleName, _context, Operation);
+            var filename = "/var/www/data/../test.txt";
 
-            // Assert
-            Assert.That(result, Is.False);
-            Assert.That(_context.AttackDetected, Is.False);
-        }
+            PathTraversalHelper.DetectPathTraversal(filename, _context, ModuleName, Operation);
+            await Task.Delay(150);
 
-        [Test]
-        public void DetectPathTraversal_WithNullArrayElement_SkipsNullElement()
-        {
-            // Arrange
-            string[] paths = new string[] { null, "safe.txt" };
-            object[] args = new object[] { paths };
-
-            // Act
-            bool result = PathTraversalHelper.DetectPathTraversal(args, ModuleName, _context, Operation);
-
-            // Assert
-            Assert.That(result, Is.False);
-            Assert.That(_context.AttackDetected, Is.False);
-        }
-
-        [Test]
-        public void DetectPathTraversal_WithMixedArrayContent_DetectsTraversal()
-        {
-            // Arrange
-            _context.ParsedUserInput.Add("query", "../");
-            object[] args = new object[] {
-                "safe.txt",
-                new string[] { "../safe1.txt", "../unsafe.txt" },
-                42
-            };
-
-            // Act
-            bool result = PathTraversalHelper.DetectPathTraversal(args, ModuleName, _context, Operation);
-
-            // Assert
-            Assert.That(result, Is.True);
-            Assert.That(_context.AttackDetected, Is.True);
+            reportingApiMock.Verify(
+                r => r.ReportAsync(
+                    It.IsAny<string>(),
+                    It.Is<DetectedAttack>(a =>
+                        a.Attack.Kind == "path_traversal" &&
+                        a.Attack.Path == ".file" &&
+                        a.Attack.Metadata.ContainsKey("filename") &&
+                        (string)a.Attack.Metadata["filename"] == filename &&
+                        !a.Attack.Metadata.ContainsKey("path")),
+                    It.IsAny<int>()),
+                Times.Once);
         }
     }
 }

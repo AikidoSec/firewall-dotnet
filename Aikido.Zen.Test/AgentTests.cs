@@ -419,7 +419,7 @@ namespace Aikido.Zen.Test
         public void SendAttackEvent_WithNullContext_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>(() =>
-                _agent.SendAttackEvent(AttackKind.SqlInjection, Source.Query, "payload", "operation", null, "module", null, true));
+                _agent.SendAttackEvent(AttackKind.SqlInjection, Source.Query, "payload", "operation", null, "module", null, true, Array.Empty<string>()));
         }
 
         [Test]
@@ -445,11 +445,12 @@ namespace Aikido.Zen.Test
                 { "sql", payload }
             };
             var blocked = true;
+            var paths = new[] { ".username" };
             _zenApiMock = ZenApiMock.CreateMock();
             _agent = new Agent(_zenApiMock.Object);
 
             // Act
-            _agent.SendAttackEvent(kind, source, payload, operation, context, module, metadata, blocked);
+            _agent.SendAttackEvent(kind, source, payload, operation, context, module, metadata, blocked, paths);
             await Task.Delay(150);
 
             // Assert
@@ -463,6 +464,7 @@ namespace Aikido.Zen.Test
                         a.Attack.Operation == operation &&
                         a.Attack.Module == module &&
                         a.Attack.Blocked == blocked &&
+                        a.Attack.Path == paths[0] &&
                         a.Request.Url == context.Url &&
                         a.Request.Method == context.Method &&
                         a.Request.Headers.ContainsKey("Content-Type") &&
@@ -501,7 +503,7 @@ namespace Aikido.Zen.Test
             _agent = new Agent(_zenApiMock.Object);
 
             // Act
-            _agent.SendAttackEvent(kind, source, payload, operation, context, module, metadata, blocked);
+            _agent.SendAttackEvent(kind, source, payload, operation, context, module, metadata, blocked, Array.Empty<string>());
             await Task.Delay(150);
 
             // Assert
@@ -535,7 +537,7 @@ namespace Aikido.Zen.Test
             _agent = new Agent(_zenApiMock.Object);
 
             // Act
-            _agent.SendAttackEvent(kind, source, payload, operation, context, module, metadata, blocked);
+            _agent.SendAttackEvent(kind, source, payload, operation, context, module, metadata, blocked, Array.Empty<string>());
             await Task.Delay(150);
 
             // Assert

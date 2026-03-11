@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using Aikido.Zen.Core.Models;
 using Microsoft.Net.Http.Headers;
@@ -35,31 +36,77 @@ namespace Aikido.Zen.Core.Helpers
         }
 
         /// <summary>
-        /// Extracts the source of the user input from the path.
+        /// Extracts the source of the user input from the flattened ParsedUserInput key.
         /// </summary>
-        /// <param name="path">The path to analyze.</param>
+        /// <param name="key">The key to analyze.</param>
         /// <returns>The source of the user input.</returns>
-        public static Source GetSourceFromUserInputPath(string path)
+        public static Source GetAttackSourceFromUserInputKey(string key)
         {
-            path = path.ToLower();
+            key = key.ToLower();
 
-            if (path.StartsWith("query"))
+            if (key.StartsWith("query"))
             {
                 return Source.Query;
             }
-            else if (path.StartsWith("headers"))
+            else if (key.StartsWith("headers"))
             {
                 return Source.Headers;
             }
-            else if (path.StartsWith("cookies"))
+            else if (key.StartsWith("cookies"))
             {
                 return Source.Cookies;
             }
-            else if (path.StartsWith("route"))
+            else if (key.StartsWith("route"))
             {
                 return Source.RouteParams;
             }
             return Source.Body;
+        }
+
+        public static string GetAttackPathFromUserInputKey(string key)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                return string.Empty;
+            }
+
+            var normalizedPath = key;
+            // ParsedUserInput may contain synthetic decoded variants such as "query.url|decoded".
+            // The reported attack path should still point to the original field, e.g. ".url".
+            var decodedSuffixIndex = normalizedPath.IndexOf('|');
+            if (decodedSuffixIndex >= 0)
+            {
+                normalizedPath = normalizedPath.Substring(0, decodedSuffixIndex);
+            }
+
+            var segments = normalizedPath.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries);
+            if (segments.Length == 0)
+            {
+                return string.Empty;
+            }
+
+            // Node reports the path relative to the source bucket, so "query.url" becomes ".url".
+            var startIndex = IsSourceRoot(segments[0]) ? 1 : 0;
+            if (startIndex >= segments.Length)
+            {
+                return ".";
+            }
+
+            var attackPath = string.Empty;
+            for (var i = startIndex; i < segments.Length; i++)
+            {
+                // Flattened keys use ".0" for arrays, while attack paths use ".[0]".
+                if (int.TryParse(segments[i], NumberStyles.None, CultureInfo.InvariantCulture, out var index))
+                {
+                    attackPath += $".[{index}]";
+                }
+                else
+                {
+                    attackPath += $".{segments[i]}";
+                }
+            }
+
+            return attackPath;
         }
 
         /// <summary>
@@ -155,6 +202,24 @@ namespace Aikido.Zen.Core.Helpers
             }
 
             return changed;
+        }
+
+        private static bool IsSourceRoot(string segment)
+        {
+            switch (segment.ToLowerInvariant())
+            {
+                case "query":
+                case "headers":
+                case "cookies":
+                case "route":
+                case "body":
+                case "graphql":
+                case "xml":
+                case "subdomains":
+                    return true;
+                default:
+                    return false;
+            }
         }
     }
 }

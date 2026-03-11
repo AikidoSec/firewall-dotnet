@@ -189,12 +189,12 @@ namespace Aikido.Zen.Test.Helpers
         }
 
         [Test]
-        public void GetSourceFromUserInputPath_ShouldIdentifyCorrectSource()
+        public void GetAttackSourceFromUserInputKey_ShouldIdentifyCorrectSource()
         {
             // Act & Assert
-            Assert.That(HttpHelper.GetSourceFromUserInputPath("headers.someHeader"), Is.EqualTo(Source.Headers));
-            Assert.That(HttpHelper.GetSourceFromUserInputPath("cookies.someCookie"), Is.EqualTo(Source.Cookies));
-            Assert.That(HttpHelper.GetSourceFromUserInputPath("route.someRoute"), Is.EqualTo(Source.RouteParams));
+            Assert.That(UserInputHelper.GetAttackSourceFromUserInputKey("headers.someHeader"), Is.EqualTo(Source.Headers));
+            Assert.That(UserInputHelper.GetAttackSourceFromUserInputKey("cookies.someCookie"), Is.EqualTo(Source.Cookies));
+            Assert.That(UserInputHelper.GetAttackSourceFromUserInputKey("route.someRoute"), Is.EqualTo(Source.RouteParams));
         }
     }
 }
