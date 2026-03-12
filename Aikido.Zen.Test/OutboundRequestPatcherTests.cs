@@ -326,23 +326,25 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public async Task Inspect_WhenHostnameResolvesToImdsWithoutSource_ReportsStoredSsrf()
+        public async Task Inspect_WhenHostnameResolvesToImdsWithoutSource_ReportsStoredSsrfWithRequestContext()
         {
+            var context = new Context
+            {
+                Method = "GET",
+                Route = "/outbound",
+                Url = "https://app.local/outbound",
+                RemoteAddress = "203.0.113.10",
+                ParsedUserInput = new Dictionary<string, string>
+                {
+                    { "body.image", "test.png" }
+                }
+            };
+
             var exception = Assert.Throws<AikidoException>(() => OutboundRequestPatcher.Inspect(
                 new Uri("http://100.100.100.200.nip.io/latest/meta-data"),
                 "HttpClient.SendAsync",
                 "System.Net.Http",
-                new Context
-                {
-                    Method = "GET",
-                    Route = "/outbound",
-                    Url = "https://app.local/outbound",
-                    RemoteAddress = "203.0.113.10",
-                    ParsedUserInput = new Dictionary<string, string>
-                    {
-                        { "body.image", "test.png" }
-                    }
-                }));
+                context));
 
             Assert.Multiple(() =>
             {
@@ -360,7 +362,11 @@ namespace Aikido.Zen.Test
                         ((DetectedAttack)evt).Attack.Source == null &&
                         ((DetectedAttack)evt).Attack.Path == string.Empty &&
                         ((DetectedAttack)evt).Attack.Payload == null &&
-                        ((DetectedAttack)evt).Request == null &&
+                        ((DetectedAttack)evt).Request != null &&
+                        ((DetectedAttack)evt).Request.Url == context.Url &&
+                        ((DetectedAttack)evt).Request.Method == context.Method &&
+                        ((DetectedAttack)evt).Request.Route == context.Route &&
+                        ((DetectedAttack)evt).Request.IpAddress == context.RemoteAddress &&
                         ((DetectedAttack)evt).Attack.Metadata["hostname"].Equals("100.100.100.200.nip.io") &&
                         ((DetectedAttack)evt).Attack.Metadata["privateIP"].Equals("100.100.100.200")),
                     It.IsAny<int>()),

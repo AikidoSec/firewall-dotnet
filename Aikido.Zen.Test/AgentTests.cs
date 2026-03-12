@@ -434,10 +434,31 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void SendAttackEvent_WithNullContext_ThrowsArgumentNullException()
+        public async Task SendAttackEvent_WithNullContext_QueuesDetectedAttackWithoutRequest()
         {
-            Assert.Throws<ArgumentNullException>(() =>
-                _agent.SendAttackEvent(AttackKind.SqlInjection, Source.Query, "payload", "operation", null, "module", null, true, Array.Empty<string>()));
+            var kind = AttackKind.SqlInjection;
+            var source = Source.Query;
+            var payload = "payload";
+            var operation = "operation";
+            var module = "module";
+            var blocked = true;
+
+            _agent.SendAttackEvent(kind, source, payload, operation, null, module, null, blocked, Array.Empty<string>());
+            await Task.Delay(150);
+
+            _zenApiMock.Verify(
+                r => r.Reporting.ReportAsync(
+                    It.IsAny<string>(),
+                    It.Is<DetectedAttack>(a =>
+                        a.Attack.Kind == kind.ToJsonName() &&
+                        a.Attack.Source == source.ToJsonName() &&
+                        a.Attack.Payload == payload &&
+                        a.Attack.Operation == operation &&
+                        a.Attack.Module == module &&
+                        a.Attack.Blocked == blocked &&
+                        a.Request == null),
+                    BatchTimeoutMs),
+                Times.Once);
         }
 
         [Test]
