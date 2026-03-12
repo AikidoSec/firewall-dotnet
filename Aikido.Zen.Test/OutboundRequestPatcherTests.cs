@@ -326,6 +326,36 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public async Task Inspect_WhenUserInputMatchesHostButUsesDifferentPort_DoesNotReportSsrf()
+        {
+            var context = new Context
+            {
+                Method = "GET",
+                Route = "/outbound",
+                Url = "https://app.local/outbound",
+                RemoteAddress = "203.0.113.10",
+                ParsedUserInput = new Dictionary<string, string>
+                {
+                    { "body.image", "http://127.0.0.1:4001/admin" }
+                }
+            };
+
+            Assert.DoesNotThrow(() => OutboundRequestPatcher.Inspect(
+                new Uri("http://127.0.0.1:4000/admin"),
+                "HttpClient.SendAsync",
+                "System.Net.Http",
+                context));
+
+            Assert.That(context.AttackDetected, Is.False);
+
+            await Task.Delay(100);
+
+            _reportingApiMock.Verify(
+                r => r.ReportAsync(It.IsAny<string>(), It.Is<object>(evt => evt is DetectedAttack), It.IsAny<int>()),
+                Times.Never);
+        }
+
+        [Test]
         public async Task Inspect_WhenHostnameResolvesToImdsWithoutSource_ReportsStoredSsrfWithRequestContext()
         {
             var context = new Context

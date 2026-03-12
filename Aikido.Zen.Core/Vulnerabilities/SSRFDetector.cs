@@ -41,7 +41,6 @@ namespace Aikido.Zen.Core.Vulnerabilities
             }
 
             var targetHost = targetUri.Host;
-            var targetPort = targetUri.Port;
 
             // Skip internal service names and request-to-self cases before doing any IP checks.
             if (IsRequestToServiceHostname(targetHost) || CompareRequests(targetUri, serverUri))
@@ -113,7 +112,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 return false;
             }
 
-            var result = Uri.Compare(uri1, uri2, UriComponents.Host, UriFormat.SafeUnescaped, StringComparison.OrdinalIgnoreCase);
+            var result = Uri.Compare(uri1, uri2, UriComponents.HostAndPort, UriFormat.SafeUnescaped, StringComparison.OrdinalIgnoreCase);
             return result == 0;
         }
 
