@@ -6,10 +6,28 @@ namespace Aikido.Zen.Test
     [TestFixture]
     public class SSRFDetectorTests
     {
+        private string _originalTrustProxy;
+
+        [SetUp]
+        public void SetUp()
+        {
+            _originalTrustProxy = Environment.GetEnvironmentVariable("AIKIDO_TRUST_PROXY");
+            Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", "true");
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", _originalTrustProxy);
+        }
+
         [Test]
         public void IsSuspiciousTarget_WhenTargetIsDirectPrivateIp_ReturnsTrue()
         {
-            var result = SSRFDetector.IsSuspiciousTarget(new Uri("http://127.0.0.1"), null, out var privateIPAddress);
+            var result = SSRFDetector.IsSuspiciousTarget(
+                new Uri("http://127.0.0.1"),
+                new Uri("https://app.local/outbound"),
+                out var privateIPAddress);
 
             Assert.Multiple(() =>
             {
@@ -21,7 +39,10 @@ namespace Aikido.Zen.Test
         [Test]
         public void IsSuspiciousTarget_WhenHostnameResolvesToPrivateIp_ReturnsTrueWithResolvedIp()
         {
-            var result = SSRFDetector.IsSuspiciousTarget(new Uri("http://localtest.me"), null, out var privateIPAddress);
+            var result = SSRFDetector.IsSuspiciousTarget(
+                new Uri("http://localtest.me"),
+                new Uri("https://app.local/outbound"),
+                out var privateIPAddress);
 
             Assert.Multiple(() =>
             {
@@ -33,7 +54,10 @@ namespace Aikido.Zen.Test
         [Test]
         public void IsSuspiciousTarget_WhenTargetIsPublicIp_ReturnsFalse()
         {
-            var result = SSRFDetector.IsSuspiciousTarget(new Uri("http://8.8.8.8"), null, out var privateIPAddress);
+            var result = SSRFDetector.IsSuspiciousTarget(
+                new Uri("http://8.8.8.8"),
+                new Uri("https://app.local/outbound"),
+                out var privateIPAddress);
 
             Assert.Multiple(() =>
             {
@@ -45,7 +69,10 @@ namespace Aikido.Zen.Test
         [Test]
         public void IsSuspiciousTarget_WhenHostnameLooksLikeServiceHostname_ReturnsFalse()
         {
-            var result = SSRFDetector.IsSuspiciousTarget(new Uri("http://backend"), null, out var privateIPAddress);
+            var result = SSRFDetector.IsSuspiciousTarget(
+                new Uri("http://backend"),
+                new Uri("https://app.local/outbound"),
+                out var privateIPAddress);
 
             Assert.Multiple(() =>
             {
@@ -57,9 +84,25 @@ namespace Aikido.Zen.Test
         [Test]
         public void IsSuspiciousTarget_WhenRequestTargetsItself_ReturnsFalse()
         {
-            Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", "true");
+            var result = SSRFDetector.IsSuspiciousTarget(
+                new Uri("http://app.local:4000/private"),
+                new Uri("http://app.local:4000/outbound"),
+                out var privateIPAddress);
 
-            var result = SSRFDetector.IsSuspiciousTarget(new Uri("http://app.local:4000/private"), "http://app.local:4000/outbound", out var privateIPAddress);
+            Assert.Multiple(() =>
+            {
+                Assert.That(result, Is.False);
+                Assert.That(privateIPAddress, Is.Null);
+            });
+        }
+
+        [Test]
+        public void IsSuspiciousTarget_WhenServerUriIsNull_ReturnsFalse()
+        {
+            var result = SSRFDetector.IsSuspiciousTarget(
+                new Uri("http://127.0.0.1"),
+                null,
+                out var privateIPAddress);
 
             Assert.Multiple(() =>
             {
@@ -69,41 +112,25 @@ namespace Aikido.Zen.Test
         }
 
         [TestCase("http://localhost", "http://localhost", true)]
-        [TestCase("http:/localhost/path", "http://localhost", true)]
-        [TestCase("http:localhost", "http://localhost", true)]
-        [TestCase("localhost/path/path", "http://localhost", true)]
-        [TestCase("ftp://localhost", "ftp://localhost", true)]
-        [TestCase("http://localhost:8080", "http://localhost:8080", true)]
-        [TestCase("http://localhost", "http://localhost:8080", false)]
-        [TestCase("http://", "http://localhost", false)]
-        public void FindTargetInUserInput_MatchesNodeBehavior(string userInput, string target, bool expected)
+        [TestCase("ftp://localhost", "http://localhost", true)]
+        [TestCase("http://localhost", "http://localhost:8080", true)]
+        [TestCase("http://aikido.dev:4000/private", "https://aikido.dev/admin", true)]
+        [TestCase("https://aikido.dev", "https://google.com", false)]
+        public void CompareRequests_WhenComparingHosts_ReturnsExpectedResult(string uri1, string uri2, bool expected)
         {
-            var result = SSRFDetector.FindTargetInUserInput(userInput, new Uri(target));
-
-            Assert.That(result, Is.EqualTo(expected));
-        }
-
-        [TestCase("http://aikido.dev", "aikido.dev", 80, true)]
-        [TestCase("https://aikido.dev", "aikido.dev", 443, true)]
-        [TestCase("http://aikido.dev", "aikido.dev", 443, true)]
-        [TestCase("https://aikido.dev", "aikido.dev", 80, true)]
-        [TestCase("http://aikido.dev:4000", "aikido.dev", 80, false)]
-        [TestCase("https://aikido.dev", "google.com", 443, false)]
-        public void IsRequestToItself_MatchesNodeBehavior(string serverUrl, string outboundHostname, int? outboundPort, bool expected)
-        {
-            Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", "true");
-
-            var result = SSRFDetector.IsRequestToItself(serverUrl, outboundHostname, outboundPort);
+            var result = SSRFDetector.CompareRequests(new Uri(uri1), new Uri(uri2));
 
             Assert.That(result, Is.EqualTo(expected));
         }
 
         [Test]
-        public void IsRequestToItself_WhenTrustProxyDisabled_ReturnsFalse()
+        public void CompareRequests_WhenTrustProxyDisabled_ReturnsFalse()
         {
             Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", "false");
 
-            var result = SSRFDetector.IsRequestToItself("https://aikido.dev", "aikido.dev", 443);
+            var result = SSRFDetector.CompareRequests(
+                new Uri("https://aikido.dev"),
+                new Uri("https://aikido.dev/admin"));
 
             Assert.That(result, Is.False);
         }
