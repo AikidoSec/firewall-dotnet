@@ -30,7 +30,7 @@ namespace Aikido.Zen.Core.Helpers
                 foreach (var userInput in context.ParsedUserInput)
                 {
                     Uri.TryCreate(userInput.Value, UriKind.Absolute, out var userUri);
-                    if (!SSRFDetector.CompareRequests(targetUri, userUri))
+                    if (!MatchesTargetOrRedirectedSource(targetUri, userUri, context))
                     {
                         continue;
                     }
@@ -74,6 +74,30 @@ namespace Aikido.Zen.Core.Helpers
                 attackKind = AttackKind.StoredSsrf.ToHumanName();
                 source = "unknown source";
                 return true;
+            }
+
+            return false;
+        }
+
+        private static bool MatchesTargetOrRedirectedSource(Uri targetUri, Uri userUri, Context context)
+        {
+            if (SSRFDetector.HasSameHostAndPort(targetUri, userUri))
+            {
+                return true;
+            }
+
+            if (context?.OutgoingRequestRedirects == null)
+            {
+                return false;
+            }
+
+            foreach (var redirect in context.OutgoingRequestRedirects)
+            {
+                if (SSRFDetector.HasSameHostAndPort(userUri, redirect.Source) &&
+                    SSRFDetector.HasSameHostAndPort(targetUri, redirect.Destination))
+                {
+                    return true;
+                }
             }
 
             return false;
