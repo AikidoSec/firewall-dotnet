@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -10,6 +11,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
 {
     internal static class SSRFDetector
     {
+        private static readonly IdnMapping HostnameIdnMapping = new IdnMapping();
         private static readonly Regex ServiceHostnamePattern = new Regex("^[a-z-_]+$", RegexOptions.Compiled);
         private static readonly HashSet<string> NotServiceHostnames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
@@ -41,6 +43,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
             }
 
             var targetHost = targetUri.Host;
+            var normalizedTargetHost = NormalizeHostname(targetHost);
 
             // Skip internal service names and request-to-self cases before doing any IP checks.
             if (IsRequestToServiceHostname(targetHost) || CompareRequests(targetUri, serverUri))
@@ -49,7 +52,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
             }
 
             // Direct private IPs are suspicious immediately and don't need DNS resolution.
-            if (ContainsPrivateIPAddress(targetHost))
+            if (ContainsPrivateIPAddress(normalizedTargetHost))
             {
                 return true;
             }
@@ -58,7 +61,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
             try
             {
                 var resolvedPrivateIPAddress = Dns
-                    .GetHostAddresses(targetHost)
+                    .GetHostAddresses(normalizedTargetHost)
                     .FirstOrDefault(address => IPHelper.IsPrivateOrLocalIp(address.ToString()));
                 if (resolvedPrivateIPAddress == null)
                 {
@@ -123,13 +126,13 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 return false;
             }
 
-            var lowerHostname = hostname.ToLowerInvariant();
-            if (NotServiceHostnames.Contains(lowerHostname))
+            var normalizedHostname = NormalizeHostname(hostname);
+            if (NotServiceHostnames.Contains(normalizedHostname))
             {
                 return false;
             }
 
-            return ServiceHostnamePattern.IsMatch(lowerHostname);
+            return ServiceHostnamePattern.IsMatch(normalizedHostname);
         }
 
         internal static bool IsStoredSSRF(string hostname, string privateIPAddress)
@@ -139,7 +142,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 return false;
             }
 
-            if (TrustedImdsHostnames.Contains(hostname))
+            if (TrustedImdsHostnames.Contains(NormalizeHostname(hostname)))
             {
                 return false;
             }
@@ -152,6 +155,24 @@ namespace Aikido.Zen.Core.Vulnerabilities
         {
             var ip = TrimIPv6Brackets(hostname);
             return IPAddress.TryParse(ip, out var parsedAddress) && IPHelper.IsPrivateOrLocalIp(parsedAddress.ToString());
+        }
+
+        private static string NormalizeHostname(string hostname)
+        {
+            if (string.IsNullOrWhiteSpace(hostname))
+            {
+                return hostname;
+            }
+
+            var normalizedHostname = TrimIPv6Brackets(hostname).Trim().TrimEnd('.').ToLowerInvariant();
+            try
+            {
+                return HostnameIdnMapping.GetAscii(normalizedHostname).ToLowerInvariant();
+            }
+            catch (ArgumentException)
+            {
+                return normalizedHostname;
+            }
         }
 
         // private static Uri TryCreateAbsoluteUri(string value)

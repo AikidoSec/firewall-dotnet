@@ -52,6 +52,21 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void IsSuspiciousTarget_WhenHostnameNormalizesToLocalhost_ReturnsTrueWithResolvedIp()
+        {
+            var result = SSRFDetector.IsSuspiciousTarget(
+                new Uri("http://ⓛocalhost:4000"),
+                new Uri("https://app.local/outbound"),
+                out var privateIPAddress);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result, Is.True);
+                Assert.That(privateIPAddress, Is.AnyOf("127.0.0.1", "::1"));
+            });
+        }
+
+        [Test]
         public void IsSuspiciousTarget_WhenTargetIsPublicIp_ReturnsFalse()
         {
             var result = SSRFDetector.IsSuspiciousTarget(
