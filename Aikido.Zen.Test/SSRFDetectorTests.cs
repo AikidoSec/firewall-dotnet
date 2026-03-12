@@ -132,19 +132,19 @@ namespace Aikido.Zen.Test
         [TestCase("http://aikido.dev:4000/private", "https://aikido.dev/admin", false)]
         [TestCase("ftp://localhost", "http://localhost", false)]
         [TestCase("https://aikido.dev", "https://google.com", false)]
-        public void CompareRequests_WhenComparingHostAndPort_ReturnsExpectedResult(string uri1, string uri2, bool expected)
+        public void HasSameHostAndPort_WhenComparingHostAndPort_ReturnsExpectedResult(string uri1, string uri2, bool expected)
         {
-            var result = SSRFDetector.CompareRequests(new Uri(uri1), new Uri(uri2));
+            var result = SSRFDetector.HasSameHostAndPort(new Uri(uri1), new Uri(uri2));
 
             Assert.That(result, Is.EqualTo(expected));
         }
 
         [Test]
-        public void CompareRequests_WhenTrustProxyDisabled_ReturnsFalse()
+        public void HasSameHostAndPort_WhenTrustProxyDisabled_ReturnsFalse()
         {
             Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", "false");
 
-            var result = SSRFDetector.CompareRequests(
+            var result = SSRFDetector.HasSameHostAndPort(
                 new Uri("https://aikido.dev"),
                 new Uri("https://aikido.dev/admin"));
 
