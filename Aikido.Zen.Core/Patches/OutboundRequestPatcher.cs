@@ -6,51 +6,55 @@ using Aikido.Zen.Core.Models;
 
 namespace Aikido.Zen.Core.Patches
 {
-    internal sealed class OutboundInspectionResult
-    {
-        public bool ShouldProceed { get; set; } = true;
-        public bool AttackDetected { get; set; }
-        public bool Blocked { get; set; }
-        public Exception Exception { get; set; }
-    }
-
     internal static class OutboundRequestPatcher
     {
         private const string OperationKind = "outgoing_http_op";
         private static readonly Uri ParsedAikidoUrl = new Uri(EnvironmentHelper.AikidoUrl);
         private static readonly Uri ParsedAikidoRealtimeUrl = new Uri(EnvironmentHelper.AikidoRealtimeUrl);
 
-        internal static OutboundInspectionResult Inspect(Uri targetUri, string operation, string module, Context context)
+        internal static bool Inspect(Uri targetUri, string operation, string module, Context context)
         {
-            var result = new OutboundInspectionResult();
             var withoutContext = context == null;
             var stopwatch = Stopwatch.StartNew();
+            var attackDetected = false;
+            var blocked = false;
 
             try
             {
                 if (context != null && Agent.Instance.Context.BlockList.IsIPBypassed(context.RemoteAddress))
                 {
-                    return result;
+                    return true;
                 }
 
                 var hostname = targetUri.Host;
-                var port = UriHelper.GetPort(targetUri);
+                var port = targetUri.Port;
+
                 Agent.Instance.CaptureOutboundRequest(hostname, port);
 
-                if (EnvironmentHelper.DryMode || IsAikidoInternalTarget(targetUri))
+                if (IsAikidoInternalTarget(targetUri))
                 {
-                    return result;
+                    // Skip inspecting Aikido requests
+                    return true;
                 }
 
                 if (Agent.Instance.Context.Config.ShouldBlockOutgoingRequest(hostname))
                 {
-                    result.ShouldProceed = false;
-                    result.Blocked = true;
-                    result.Exception = AikidoException.OutboundConnectionBlocked(hostname);
-                    return result;
+                    if (!EnvironmentHelper.DryMode)
+                    {
+                        blocked = true;
+                        throw AikidoException.OutboundConnectionBlocked(hostname);
+                    }
                 }
 
-                return result;
+                attackDetected = SSRFHelper.DetectSSRF(targetUri, context, module, operation, out var attackKind, out var source);
+                blocked = attackDetected && !EnvironmentHelper.DryMode;
+
+                if (blocked)
+                {
+                    throw AikidoException.SSRFDetected(attackKind, operation, source);
+                }
+
+                return true;
             }
             finally
             {
@@ -59,8 +63,8 @@ namespace Aikido.Zen.Core.Patches
                     operation,
                     OperationKind,
                     stopwatch.Elapsed.TotalMilliseconds,
-                    result.AttackDetected,
-                    result.Blocked,
+                    attackDetected,
+                    blocked,
                     withoutContext);
             }
         }
@@ -72,17 +76,17 @@ namespace Aikido.Zen.Core.Patches
                 return false;
             }
 
-            var targetPort = UriHelper.GetPort(targetUri);
             var targetHost = targetUri.Host;
+            var targetPort = targetUri.Port;
 
             if (string.Equals(targetHost, ParsedAikidoUrl.Host, StringComparison.OrdinalIgnoreCase) &&
-                targetPort == UriHelper.GetPort(ParsedAikidoUrl))
+                targetPort == ParsedAikidoUrl.Port)
             {
                 return true;
             }
 
             if (string.Equals(targetHost, ParsedAikidoRealtimeUrl.Host, StringComparison.OrdinalIgnoreCase) &&
-                targetPort == UriHelper.GetPort(ParsedAikidoRealtimeUrl))
+                targetPort == ParsedAikidoRealtimeUrl.Port)
             {
                 return true;
             }
