@@ -112,11 +112,12 @@ namespace Aikido.Zen.Test
         }
 
         [TestCase("http://localhost", "http://localhost", true)]
-        [TestCase("ftp://localhost", "http://localhost", true)]
-        [TestCase("http://localhost", "http://localhost:8080", true)]
-        [TestCase("http://aikido.dev:4000/private", "https://aikido.dev/admin", true)]
+        [TestCase("http://localhost", "http://localhost/path", true)]
+        [TestCase("http://localhost", "http://localhost:8080", false)]
+        [TestCase("http://aikido.dev:4000/private", "https://aikido.dev/admin", false)]
+        [TestCase("ftp://localhost", "http://localhost", false)]
         [TestCase("https://aikido.dev", "https://google.com", false)]
-        public void CompareRequests_WhenComparingHosts_ReturnsExpectedResult(string uri1, string uri2, bool expected)
+        public void CompareRequests_WhenComparingHostAndPort_ReturnsExpectedResult(string uri1, string uri2, bool expected)
         {
             var result = SSRFDetector.CompareRequests(new Uri(uri1), new Uri(uri2));
 
