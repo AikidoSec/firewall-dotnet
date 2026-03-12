@@ -46,7 +46,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
             var normalizedTargetHost = NormalizeHostname(targetHost);
 
             // Skip internal service names and request-to-self cases before doing any IP checks.
-            if (IsRequestToServiceHostname(targetHost) || CompareRequests(targetUri, serverUri))
+            if (IsRequestToServiceHostname(targetHost) || HasSameHostAndPort(targetUri, serverUri))
             {
                 return false;
             }
@@ -77,38 +77,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
             }
         }
 
-        // internal static bool IsRequestToTarget(Uri targetUri, Uri userUri)
-        // {
-        //     var targetHost = targetUri.Host;
-        //     var targetPort = targetUri.Port;
-
-        //     var userHostname = userUri.Host;
-        //     var userPort = userUri.Port;
-
-        //     if (string.IsNullOrWhiteSpace(userInput) || userInput.Length <= 1 || string.IsNullOrWhiteSpace(targetHost))
-        //     {
-        //         return false;
-        //     }
-
-        //     // foreach (var candidate in GetUserInputCandidates(userInput))
-        //     // {
-        //     // var userInputUri = TryCreateAbsoluteUri(userInput);
-        //     if (userInputUri == null || !string.Equals(userInputUri.Host, targetHost, StringComparison.OrdinalIgnoreCase))
-        //     {
-        //         // continue;
-        //         return false;
-        //     }
-
-        //     if (userInputUri.Port == targetPort.Value)
-        //     {
-        //         return true;
-        //     }
-        //     // }
-
-        //     return false;
-        // }
-
-        internal static bool CompareRequests(Uri uri1, Uri uri2)
+        internal static bool HasSameHostAndPort(Uri uri1, Uri uri2)
         {
             if (!EnvironmentHelper.TrustProxy)
             {
@@ -174,68 +143,6 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 return normalizedHostname;
             }
         }
-
-        // private static Uri TryCreateAbsoluteUri(string value)
-        // {
-        //     if (string.IsNullOrWhiteSpace(value))
-        //     {
-        //         return null;
-        //     }
-
-        //     if (Uri.TryCreate(value, UriKind.Absolute, out var uri) && !string.IsNullOrWhiteSpace(uri.Host))
-        //     {
-        //         return uri;
-        //     }
-
-        //     return null;
-        // }
-
-        // private static IEnumerable<string> GetUserInputCandidates(string userInput)
-        // {
-        //     var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        //     var candidates = new List<string>();
-        //     var trimmedInput = userInput.Trim();
-
-        //     AddCandidate(candidates, seen, trimmedInput);
-
-        //     var normalized = NormalizeUriWithMissingSchemeSeparators(trimmedInput);
-        //     AddCandidate(candidates, seen, normalized);
-        //     AddCandidate(candidates, seen, $"http://{trimmedInput}");
-        //     AddCandidate(candidates, seen, $"https://{trimmedInput}");
-
-        //     return candidates;
-        // }
-
-        // private static void AddCandidate(ICollection<string> candidates, ISet<string> seen, string candidate)
-        // {
-        //     if (!string.IsNullOrWhiteSpace(candidate) && seen.Add(candidate))
-        //     {
-        //         candidates.Add(candidate);
-        //     }
-        // }
-
-        // private static string NormalizeUriWithMissingSchemeSeparators(string userInput)
-        // {
-        //     var schemeSeparatorIndex = userInput.IndexOf(':');
-        //     if (schemeSeparatorIndex <= 0)
-        //     {
-        //         return userInput;
-        //     }
-
-        //     var scheme = userInput.Substring(0, schemeSeparatorIndex);
-        //     if (!Uri.CheckSchemeName(scheme))
-        //     {
-        //         return userInput;
-        //     }
-
-        //     var remainder = userInput.Substring(schemeSeparatorIndex + 1);
-        //     if (remainder.StartsWith("//", StringComparison.Ordinal))
-        //     {
-        //         return userInput;
-        //     }
-
-        //     return $"{scheme}://{remainder.TrimStart('/')}";
-        // }
 
         private static string TrimIPv6Brackets(string hostname)
         {
