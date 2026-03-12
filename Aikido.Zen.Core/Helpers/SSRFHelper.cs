@@ -15,7 +15,9 @@ namespace Aikido.Zen.Core.Helpers
             attackKind = null;
             source = null;
 
-            if (targetUri == null || !SSRFDetector.IsSuspiciousTarget(targetUri, context?.Url, out var privateIPAddress))
+            Uri.TryCreate(context?.Url, UriKind.Absolute, out var serverUri);
+
+            if (!SSRFDetector.IsSuspiciousTarget(targetUri, serverUri, out var privateIPAddress))
             {
                 return false;
             }
@@ -27,7 +29,8 @@ namespace Aikido.Zen.Core.Helpers
             {
                 foreach (var userInput in context.ParsedUserInput)
                 {
-                    if (!SSRFDetector.FindTargetInUserInput(userInput.Value, targetUri))
+                    Uri.TryCreate(userInput.Value, UriKind.Absolute, out var userUri);
+                    if (!SSRFDetector.CompareRequests(targetUri, userUri))
                     {
                         continue;
                     }
