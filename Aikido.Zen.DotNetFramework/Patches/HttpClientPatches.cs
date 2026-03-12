@@ -72,18 +72,11 @@ namespace Aikido.Zen.DotNetFramework.Patches
                 return true;
             }
 
-            var inspection = OutboundRequestPatcher.Inspect(
+            return OutboundRequestPatcher.Inspect(
                 targetUri,
                 GetOperation(__originalMethod),
                 GetModule(__originalMethod),
                 Zen.GetContext());
-
-            if (inspection.ShouldProceed)
-            {
-                return true;
-            }
-
-            throw inspection.Exception;
         }
 
         private static bool InspectRequest(HttpRequestMessage request, HttpClient client, MethodBase originalMethod, ref Task<HttpResponseMessage> result)
@@ -94,19 +87,11 @@ namespace Aikido.Zen.DotNetFramework.Patches
                 return true;
             }
 
-            var inspection = OutboundRequestPatcher.Inspect(
+            return OutboundRequestPatcher.Inspect(
                 targetUri,
                 GetOperation(originalMethod),
                 GetModule(originalMethod),
                 Zen.GetContext());
-
-            if (inspection.ShouldProceed)
-            {
-                return true;
-            }
-
-            result = Task.FromException<HttpResponseMessage>(inspection.Exception);
-            return false;
         }
 
         private static Uri ResolveUri(HttpRequestMessage request, HttpClient client)
