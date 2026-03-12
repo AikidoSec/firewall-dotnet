@@ -31,35 +31,35 @@ namespace Aikido.Zen.Core.Vulnerabilities
             IPAddress.Parse("fd00:ec2::254")
         };
 
-        internal static bool IsSuspiciousTarget(Uri targetUri, string serverUrl, out string privateIPAddress)
+        internal static bool IsSuspiciousTarget(Uri targetUri, Uri serverUri, out string privateIPAddress)
         {
             privateIPAddress = null;
 
-            var hostname = targetUri.Host;
-            var port = targetUri.Port;
-
-            if (string.IsNullOrWhiteSpace(hostname))
+            if (targetUri == null || serverUri == null)
             {
                 return false;
             }
 
+            var targetHost = targetUri.Host;
+            var targetPort = targetUri.Port;
+
             // Skip internal service names and request-to-self cases before doing any IP checks.
-            if (IsRequestToServiceHostname(hostname) || IsRequestToItself(targetUri, serverUrl, port))
+            if (IsRequestToServiceHostname(targetHost) || CompareRequests(targetUri, serverUri))
             {
                 return false;
             }
 
             // Direct private IPs are suspicious immediately and don't need DNS resolution.
-            if (ContainsPrivateIPAddress(hostname))
+            if (ContainsPrivateIPAddress(targetHost))
             {
                 return true;
             }
 
-            // Hostnames are suspicious when they resolve to a private or local IP.
+            // Target hostname is suspicious when it resolves to a private or local IP.
             try
             {
                 var resolvedPrivateIPAddress = Dns
-                    .GetHostAddresses(hostname)
+                    .GetHostAddresses(targetHost)
                     .FirstOrDefault(address => IPHelper.IsPrivateOrLocalIp(address.ToString()));
                 if (resolvedPrivateIPAddress == null)
                 {
@@ -75,54 +75,46 @@ namespace Aikido.Zen.Core.Vulnerabilities
             }
         }
 
-        internal static bool FindTargetInUserInput(Uri targetUri, string userInput)
-        {
-            var targetHost = targetUri.Host;
-            var targetPort = targetUri.Port;
+        // internal static bool IsRequestToTarget(Uri targetUri, Uri userUri)
+        // {
+        //     var targetHost = targetUri.Host;
+        //     var targetPort = targetUri.Port;
 
-            if (string.IsNullOrWhiteSpace(userInput) || userInput.Length <= 1 || string.IsNullOrWhiteSpace(targetHost))
-            {
-                return false;
-            }
+        //     var userHostname = userUri.Host;
+        //     var userPort = userUri.Port;
 
-            // foreach (var candidate in GetUserInputCandidates(userInput))
-            // {
-            var userInputUri = TryCreateAbsoluteUri(userInput);
-            if (userInputUri == null || !string.Equals(userInputUri.Host, targetHost, StringComparison.OrdinalIgnoreCase))
-            {
-                continue;
-            }
+        //     if (string.IsNullOrWhiteSpace(userInput) || userInput.Length <= 1 || string.IsNullOrWhiteSpace(targetHost))
+        //     {
+        //         return false;
+        //     }
 
-            if (userInputUri.Port == targetPort.Value)
-            {
-                return true;
-            }
-            // }
+        //     // foreach (var candidate in GetUserInputCandidates(userInput))
+        //     // {
+        //     // var userInputUri = TryCreateAbsoluteUri(userInput);
+        //     if (userInputUri == null || !string.Equals(userInputUri.Host, targetHost, StringComparison.OrdinalIgnoreCase))
+        //     {
+        //         // continue;
+        //         return false;
+        //     }
 
-            return false;
-        }
+        //     if (userInputUri.Port == targetPort.Value)
+        //     {
+        //         return true;
+        //     }
+        //     // }
 
-        internal static bool IsRequestToItself(Uri targetUri, Uri serverUri)
+        //     return false;
+        // }
+
+        internal static bool CompareRequests(Uri uri1, Uri uri2)
         {
             if (!EnvironmentHelper.TrustProxy)
             {
                 return false;
             }
 
-            if (serverUri == null || outboundUri == null || !string.Equals(serverUri.Host, targetUri.Host, StringComparison.OrdinalIgnoreCase))
-            {
-                return false;
-            }
-
-            var targetPort = targetUri.Port;
-            var serverPort = serverUri.Port;
-
-            if (targetPort == serverPort)
-            {
-                return true;
-            }
-
-            return (targetPort == 80 && serverPort == 443) || (targetPort == 443 && serverPort == 80);
+            var result = Uri.Compare(uri1, uri2, UriComponents.Host, UriFormat.SafeUnescaped, StringComparison.OrdinalIgnoreCase);
+            return result == 0;
         }
 
         internal static bool IsRequestToServiceHostname(string hostname)
@@ -163,20 +155,20 @@ namespace Aikido.Zen.Core.Vulnerabilities
             return IPAddress.TryParse(ip, out var parsedAddress) && IPHelper.IsPrivateOrLocalIp(parsedAddress.ToString());
         }
 
-        private static Uri TryCreateAbsoluteUri(string value)
-        {
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                return null;
-            }
+        // private static Uri TryCreateAbsoluteUri(string value)
+        // {
+        //     if (string.IsNullOrWhiteSpace(value))
+        //     {
+        //         return null;
+        //     }
 
-            if (Uri.TryCreate(value, UriKind.Absolute, out var uri) && !string.IsNullOrWhiteSpace(uri.Host))
-            {
-                return uri;
-            }
+        //     if (Uri.TryCreate(value, UriKind.Absolute, out var uri) && !string.IsNullOrWhiteSpace(uri.Host))
+        //     {
+        //         return uri;
+        //     }
 
-            return null;
-        }
+        //     return null;
+        // }
 
         // private static IEnumerable<string> GetUserInputCandidates(string userInput)
         // {

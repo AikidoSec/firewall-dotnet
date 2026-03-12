@@ -15,7 +15,7 @@ namespace Aikido.Zen.Core.Models.Events
         public AgentInfo Agent { get; set; }
         public long Time => DateTimeHelper.UTCNowUnixMilliseconds();
 
-        public static DetectedAttack Create(AttackKind kind, Source source, string payload, string operation, Context? context, string module, IDictionary<string, object> metadata, bool blocked, string[] paths)
+        public static DetectedAttack Create(AttackKind kind, Source? source, string payload, string operation, Context context, string module, IDictionary<string, object> metadata, bool blocked, string[] paths)
         {
 
             var stackTrace = StackTraceHelper.CleanedStackTrace();
@@ -30,7 +30,7 @@ namespace Aikido.Zen.Core.Models.Events
                 Operation = operation, // the class + method where the attack was detected
                 Metadata = metadata,
                 Stack = stackTrace,
-                Source = source.ToJsonName()
+                Source = source.HasValue ? source.Value.ToJsonName() : null
             };
 
             RequestInfo request = null;
