@@ -326,6 +326,51 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public async Task Inspect_WhenUnicodeHostnameNormalizesToLocalhost_ReportsSsrf()
+        {
+            var context = new Context
+            {
+                Method = "GET",
+                Route = "/api/request",
+                Url = "http://localhost:4000/api/request",
+                RemoteAddress = "203.0.113.10",
+                ParsedUserInput = new Dictionary<string, string>
+                {
+                    { "body.url", "http://ⓛocalhost:4000/" }
+                }
+            };
+
+            var exception = Assert.Throws<AikidoException>(() => OutboundRequestPatcher.Inspect(
+                new Uri("http://ⓛocalhost:4000/"),
+                "HttpClient.SendAsync",
+                "System.Net.Http",
+                context));
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(context.AttackDetected, Is.True);
+                Assert.That(exception.Message, Does.Contain("server-side request forgery"));
+            });
+
+            await Task.Delay(150);
+
+            _reportingApiMock.Verify(
+                r => r.ReportAsync(
+                    It.IsAny<string>(),
+                    It.Is<object>(evt =>
+                        evt is DetectedAttack &&
+                        ((DetectedAttack)evt).Attack.Kind == "ssrf" &&
+                        ((DetectedAttack)evt).Attack.Source == "body" &&
+                        ((DetectedAttack)evt).Attack.Path == ".url" &&
+                        ((DetectedAttack)evt).Attack.Payload == "http://ⓛocalhost:4000/" &&
+                        ((DetectedAttack)evt).Attack.Metadata["hostname"].Equals("ⓛocalhost") &&
+                        (((DetectedAttack)evt).Attack.Metadata["privateIP"].Equals("127.0.0.1") ||
+                         ((DetectedAttack)evt).Attack.Metadata["privateIP"].Equals("::1"))),
+                    It.IsAny<int>()),
+                Times.Once);
+        }
+
+        [Test]
         public async Task Inspect_WhenUserInputMatchesHostButUsesDifferentPort_DoesNotReportSsrf()
         {
             var context = new Context
