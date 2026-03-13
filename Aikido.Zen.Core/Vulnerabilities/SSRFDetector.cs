@@ -47,8 +47,8 @@ namespace Aikido.Zen.Core.Vulnerabilities
             var targetHost = targetUri.Host;
             var normalizedTargetHost = NormalizeHostname(targetHost);
 
-            // Skip internal service names and request-to-self cases before doing any IP checks.
-            if (IsRequestToServiceHostname(targetHost) || HasSameHostAndPort(targetUri, serverUri))
+            // Skip request-to-self cases before doing any IP checks.
+            if (HasSameHostAndPort(targetUri, serverUri))
             {
                 return false;
             }
@@ -71,12 +71,13 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 }
 
                 privateIPAddress = resolvedPrivateIPAddress.ToString();
-                return true;
             }
             catch (Exception)
             {
                 return false;
             }
+
+            return true;
         }
 
         internal static bool HasSameHostAndPort(Uri uri1, Uri uri2)

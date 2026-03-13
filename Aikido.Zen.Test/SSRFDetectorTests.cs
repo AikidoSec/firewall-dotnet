@@ -82,7 +82,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void IsSuspiciousTarget_WhenHostnameLooksLikeServiceHostname_ReturnsFalse()
+        public void IsSuspiciousTarget_WhenHostnameDoesNotResolve_ReturnsFalse()
         {
             var result = SSRFDetector.IsSuspiciousTarget(
                 new Uri("http://backend"),
