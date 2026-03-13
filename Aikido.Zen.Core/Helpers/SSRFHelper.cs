@@ -17,6 +17,7 @@ namespace Aikido.Zen.Core.Helpers
 
             Uri.TryCreate(context?.Url, UriKind.Absolute, out var serverUri);
 
+            // First classify the outbound target based on host/IP resolution only.
             if (!SSRFDetector.IsSuspiciousTarget(targetUri, serverUri, out var privateIPAddress))
             {
                 return false;
@@ -25,10 +26,14 @@ namespace Aikido.Zen.Core.Helpers
             var hostname = targetUri.Host;
             var port = targetUri.Port;
 
-            if (context?.ParsedUserInput != null)
+            // We only emit normal SSRF for non-service hostnames. Single-label internal names
+            // like "backend" or "redis" are common legitimate targets inside private networks,
+            // so matching them to request input would create false positives.
+            if (!SSRFDetector.IsRequestToServiceHostname(hostname) && context?.ParsedUserInput != null)
             {
                 foreach (var userInput in context.ParsedUserInput)
                 {
+                    // Normal SSRF requires a match back to request input in the current context.
                     Uri.TryCreate(userInput.Value, UriKind.Absolute, out var userUri);
                     if (!MatchesTargetOrRedirectedSource(targetUri, userUri, context))
                     {
@@ -57,6 +62,8 @@ namespace Aikido.Zen.Core.Helpers
                 }
             }
 
+            // If the target resolves to IMDS and we did not emit a normal SSRF finding above,
+            // report it as stored SSRF instead.
             if (SSRFDetector.IsStoredSSRF(hostname, privateIPAddress))
             {
                 Agent.Instance.SendAttackEvent(

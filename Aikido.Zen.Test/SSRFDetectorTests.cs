@@ -82,7 +82,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void IsSuspiciousTarget_WhenHostnameLooksLikeServiceHostname_ReturnsFalse()
+        public void IsSuspiciousTarget_WhenHostnameDoesNotResolve_ReturnsFalse()
         {
             var result = SSRFDetector.IsSuspiciousTarget(
                 new Uri("http://backend"),
@@ -171,16 +171,6 @@ namespace Aikido.Zen.Test
         public void IsStoredSSRF_MatchesNodeBehavior(string hostname, string? privateIPAddress, bool expected)
         {
             var result = SSRFDetector.IsStoredSSRF(hostname, privateIPAddress);
-
-            Assert.That(result, Is.EqualTo(expected));
-        }
-
-        [TestCase("backend", "127.0.0.1", true)]
-        [TestCase("evil-stored-ssrf-hostname", "169.254.169.254", false)]
-        [TestCase("metadata.google.internal", "169.254.169.254", false)]
-        public void ShouldIgnoreResolvedHostname_MatchesStoredSsrfBehavior(string hostname, string privateIPAddress, bool expected)
-        {
-            var result = SSRFDetector.ShouldIgnoreResolvedHostname(hostname, privateIPAddress);
 
             Assert.That(result, Is.EqualTo(expected));
         }
