@@ -21,11 +21,6 @@ namespace Aikido.Zen.Core.Patches
 
             try
             {
-                if (Agent.Instance.Context.IsProtectionDisabledForEndpoint(context))
-                {
-                    return true;
-                }
-
                 if (Agent.Instance.Context.BlockList.IsIPBypassed(context?.RemoteAddress))
                 {
                     return true;
@@ -49,6 +44,11 @@ namespace Aikido.Zen.Core.Patches
                         blocked = true;
                         throw AikidoException.OutboundConnectionBlocked(hostname);
                     }
+                }
+
+                if (Agent.Instance.Context.IsProtectionDisabledForEndpoint(context))
+                {
+                    return true;
                 }
 
                 attackDetected = SSRFHelper.DetectSSRF(targetUri, context, module, operation, out var attackKind, out var source);
