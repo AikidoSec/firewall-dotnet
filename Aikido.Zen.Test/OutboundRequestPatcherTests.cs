@@ -499,6 +499,35 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public async Task Inspect_WhenHostnameResolvesToImdsWithoutContext_ReportsStoredSsrfWithoutRequest()
+        {
+            var exception = Assert.Throws<AikidoException>(() => OutboundRequestPatcher.Inspect(
+                new Uri("http://100.100.100.200.nip.io/latest/meta-data"),
+                "HttpClient.SendAsync",
+                "System.Net.Http",
+                null));
+
+            Assert.That(exception.Message, Does.Contain("stored server-side request forgery"));
+
+            await Task.Delay(150);
+
+            _reportingApiMock.Verify(
+                r => r.ReportAsync(
+                    It.IsAny<string>(),
+                    It.Is<object>(evt =>
+                        evt is DetectedAttack &&
+                        ((DetectedAttack)evt).Attack.Kind == "stored_ssrf" &&
+                        ((DetectedAttack)evt).Attack.Source == null &&
+                        ((DetectedAttack)evt).Attack.Path == string.Empty &&
+                        ((DetectedAttack)evt).Attack.Payload == null &&
+                        ((DetectedAttack)evt).Request == null &&
+                        ((DetectedAttack)evt).Attack.Metadata["hostname"].Equals("100.100.100.200.nip.io") &&
+                        ((DetectedAttack)evt).Attack.Metadata["privateIP"].Equals("100.100.100.200")),
+                    It.IsAny<int>()),
+                Times.Once);
+        }
+
+        [Test]
         public async Task Inspect_WhenHostnameIsRequestToItself_DoesNotReportSsrf()
         {
             var context = new Context

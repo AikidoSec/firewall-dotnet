@@ -37,8 +37,10 @@ namespace Aikido.Zen.Core.Vulnerabilities
         {
             privateIPAddress = null;
 
-            if (targetUri == null || serverUri == null)
+            if (targetUri == null)
             {
+                // targetUri is mandatory
+                // serverUri can be null in stored ssrf scenarios
                 return false;
             }
 
