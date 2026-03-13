@@ -282,6 +282,11 @@ namespace Aikido.Zen.Core.Models
             _config.UpdateRatelimitedRoutes(endpoints);
         }
 
+        public bool IsProtectionDisabledForEndpoint(Context context)
+        {
+            return _config.IsProtectionDisabledForEndpoint(context);
+        }
+
         public void UpdateConfig(ReportingAPIResponse response)
         {
             _config.UpdateConfig(response);
