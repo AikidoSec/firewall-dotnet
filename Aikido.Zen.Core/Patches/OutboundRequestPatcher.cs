@@ -28,7 +28,7 @@ namespace Aikido.Zen.Core.Patches
 
             try
             {
-                if (context != null && Agent.Instance.Context.BlockList.IsIPBypassed(context.RemoteAddress))
+                if (Agent.Instance.Context.BlockList.IsIPBypassed(context?.RemoteAddress))
                 {
                     return result;
                 }
@@ -47,6 +47,11 @@ namespace Aikido.Zen.Core.Patches
                     result.ShouldProceed = false;
                     result.Blocked = true;
                     result.Exception = AikidoException.OutboundConnectionBlocked(hostname);
+                    return result;
+                }
+
+                if (Agent.Instance.Context.IsProtectionDisabledForEndpoint(context))
+                {
                     return result;
                 }
 
