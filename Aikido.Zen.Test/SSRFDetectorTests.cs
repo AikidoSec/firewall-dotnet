@@ -112,17 +112,17 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void IsSuspiciousTarget_WhenServerUriIsNull_ReturnsFalse()
+        public void IsSuspiciousTarget_WhenServerUriIsNull_StillChecksResolvedHostnames()
         {
             var result = SSRFDetector.IsSuspiciousTarget(
-                new Uri("http://127.0.0.1"),
+                new Uri("http://localtest.me"),
                 null,
                 out var privateIPAddress);
 
             Assert.Multiple(() =>
             {
-                Assert.That(result, Is.False);
-                Assert.That(privateIPAddress, Is.Null);
+                Assert.That(result, Is.True);
+                Assert.That(privateIPAddress, Is.AnyOf("127.0.0.1", "::1"));
             });
         }
 
