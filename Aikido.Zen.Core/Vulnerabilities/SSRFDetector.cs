@@ -44,17 +44,16 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 return false;
             }
 
-            var targetHost = targetUri.Host;
-            var normalizedTargetHost = NormalizeHostname(targetHost);
-
             // Skip request-to-self cases before doing any IP checks.
             if (HasSameHostAndPort(targetUri, serverUri))
             {
                 return false;
             }
 
+            var normalizedTargetHost = NormalizeHostname(targetUri.Host);
+
             // Direct private IPs are suspicious immediately and don't need DNS resolution.
-            if (ContainsPrivateIPAddress(normalizedTargetHost))
+            if (IsPrivateIPAddress(normalizedTargetHost))
             {
                 return true;
             }
@@ -123,10 +122,9 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 ImdsIPAddresses.Contains(parsedPrivateIPAddress);
         }
 
-        private static bool ContainsPrivateIPAddress(string hostname)
+        private static bool IsPrivateIPAddress(string normalizedHostname)
         {
-            var ip = TrimIPv6Brackets(hostname);
-            return IPAddress.TryParse(ip, out var parsedAddress) && IPHelper.IsPrivateOrLocalIp(parsedAddress.ToString());
+            return IPAddress.TryParse(normalizedHostname, out var parsedAddress) && IPHelper.IsPrivateOrLocalIp(parsedAddress.ToString());
         }
 
         private static string NormalizeHostname(string hostname)
@@ -136,7 +134,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 return hostname;
             }
 
-            var normalizedHostname = TrimIPv6Brackets(hostname).Trim().TrimEnd('.').ToLowerInvariant();
+            var normalizedHostname = hostname.Trim().TrimStart('[').TrimEnd(']').ToLowerInvariant();
             try
             {
                 return HostnameIdnMapping.GetAscii(normalizedHostname).ToLowerInvariant();
@@ -145,16 +143,6 @@ namespace Aikido.Zen.Core.Vulnerabilities
             {
                 return normalizedHostname;
             }
-        }
-
-        private static string TrimIPv6Brackets(string hostname)
-        {
-            if (string.IsNullOrWhiteSpace(hostname))
-            {
-                return hostname;
-            }
-
-            return hostname.Trim().TrimStart('[').TrimEnd(']');
         }
     }
 }
