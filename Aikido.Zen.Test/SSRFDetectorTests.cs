@@ -174,5 +174,15 @@ namespace Aikido.Zen.Test
 
             Assert.That(result, Is.EqualTo(expected));
         }
+
+        [TestCase("backend", "127.0.0.1", true)]
+        [TestCase("evil-stored-ssrf-hostname", "169.254.169.254", false)]
+        [TestCase("metadata.google.internal", "169.254.169.254", false)]
+        public void ShouldIgnoreResolvedHostname_MatchesStoredSsrfBehavior(string hostname, string privateIPAddress, bool expected)
+        {
+            var result = SSRFDetector.ShouldIgnoreResolvedHostname(hostname, privateIPAddress);
+
+            Assert.That(result, Is.EqualTo(expected));
+        }
     }
 }
