@@ -150,7 +150,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void Inspect_WhenForceProtectionOffRoute_DomainBlockingStillApplies()
+        public void Inspect_WhenForceProtectionOffRoute_DomainBlockingIsSkipped()
         {
             // Arrange
             _agent.Context.Config.UpdateOutboundDomains(true, new[]
@@ -176,14 +176,58 @@ namespace Aikido.Zen.Test
             };
 
             // Act
-            var exception = Assert.Throws<AikidoException>(() => OutboundRequestPatcher.Inspect(
+            Assert.DoesNotThrow(() => OutboundRequestPatcher.Inspect(
                 new Uri("https://blocked.example/path"),
                 "HttpClient.SendAsync",
                 "System.Net.Http",
                 context));
 
             // Assert
-            Assert.That(exception.Message, Is.EqualTo("Zen has blocked an outbound connection to blocked.example"));
+            Assert.That(_agent.Context.Hostnames.Any(h => h.Hostname == "blocked.example"), Is.False);
+            Assert.That(_agent.Context.AttacksDetected, Is.EqualTo(0));
+        }
+
+        [Test]
+        public async Task Inspect_WhenForceProtectionOffRoute_SsrfIsNotReportedOrBlocked()
+        {
+            _agent.Context.Config.UpdateRatelimitedRoutes(new[]
+            {
+                new EndpointConfig
+                {
+                    Method = "POST",
+                    Route = "/api/stored_ssrf",
+                    ForceProtectionOff = true
+                }
+            });
+
+            var context = new Context
+            {
+                Method = "POST",
+                Route = "/api/stored_ssrf",
+                Url = "https://app.local/api/stored_ssrf",
+                RemoteAddress = "203.0.113.10",
+                ParsedUserInput = new Dictionary<string, string>
+                {
+                    { "body.url", "http://127.0.0.1/admin" }
+                }
+            };
+
+            Assert.DoesNotThrow(() => OutboundRequestPatcher.Inspect(
+                new Uri("http://127.0.0.1/admin"),
+                "HttpClient.SendAsync",
+                "System.Net.Http",
+                context));
+
+            await Task.Delay(150);
+
+            Assert.That(context.AttackDetected, Is.False);
+            Assert.That(_agent.Context.AttacksDetected, Is.EqualTo(0));
+            _reportingApiMock.Verify(
+                r => r.ReportAsync(
+                    It.IsAny<string>(),
+                    It.Is<object>(evt => evt is DetectedAttack),
+                    It.IsAny<int>()),
+                Times.Never);
         }
 
         [Test]
