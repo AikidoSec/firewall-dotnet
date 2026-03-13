@@ -127,5 +127,31 @@ namespace Aikido.Zen.Test
 
             Assert.That(detectedAttack.Attack.Path, Is.EqualTo(".url"));
         }
+
+        [Test]
+        public void Create_WithStoredSsrf_DoesNotRequireContextOrSource()
+        {
+            var detectedAttack = DetectedAttack.Create(
+                AttackKind.StoredSsrf,
+                null,
+                null,
+                "HttpClient.SendAsync",
+                null,
+                "System.Net.Http",
+                new Dictionary<string, object>
+                {
+                    { "hostname", "imds.test.com" },
+                    { "privateIP", "169.254.169.254" }
+                },
+                true,
+                Array.Empty<string>());
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(detectedAttack.Attack.Kind, Is.EqualTo("stored_ssrf"));
+                Assert.That(detectedAttack.Attack.Source, Is.Null);
+                Assert.That(detectedAttack.Request, Is.Null);
+            });
+        }
     }
 }

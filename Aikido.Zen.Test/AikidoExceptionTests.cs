@@ -108,6 +108,32 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void SSRFDetected_WithSource_ShouldReturnCorrectMessage()
+        {
+            var exception = AikidoException.SSRFDetected(
+                "a server-side request forgery",
+                "HttpClient.SendAsync",
+                "query.url");
+
+            Assert.That(
+                exception.Message,
+                Is.EqualTo("Zen has blocked a server-side request forgery: HttpClient.SendAsync originating from query.url"));
+        }
+
+        [Test]
+        public void SSRFDetected_WithUnknownSource_ShouldReturnCorrectMessage()
+        {
+            var exception = AikidoException.SSRFDetected(
+                "a stored server-side request forgery",
+                "HttpClient.SendAsync",
+                "unknown source");
+
+            Assert.That(
+                exception.Message,
+                Is.EqualTo("Zen has blocked a stored server-side request forgery: HttpClient.SendAsync originating from unknown source"));
+        }
+
+        [Test]
         public void Exception_ShouldPreserveStackTrace()
         {
             // Arrange & Act
