@@ -77,12 +77,6 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 return false;
             }
 
-            // Internal service hostnames are typically safe, unless they resolve to IMDS.
-            if (IsRequestToServiceHostname(targetHost))
-            {
-                return false;
-            }
-
             return true;
         }
 
