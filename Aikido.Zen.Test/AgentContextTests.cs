@@ -538,6 +538,30 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void IsProtectionDisabledForEndpoint_ShouldReturnTrue_WhenMatchingEndpointDisablesProtection()
+        {
+            _agentContext.UpdateRatelimitedRoutes(new[]
+            {
+                new EndpointConfig
+                {
+                    Method = "POST",
+                    Route = "/api/stored_ssrf",
+                    ForceProtectionOff = true
+                }
+            });
+
+            var context = new Context
+            {
+                Method = "POST",
+                Route = "/api/stored_ssrf",
+                Path = "/api/stored_ssrf",
+                Url = "https://app.local/api/stored_ssrf"
+            };
+
+            Assert.That(_agentContext.IsProtectionDisabledForEndpoint(context), Is.True);
+        }
+
+        [Test]
         public void UpdateConfig_ShouldUpdateAllConfigurationAspects()
         {
             // Arrange
