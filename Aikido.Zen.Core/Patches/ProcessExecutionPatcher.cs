@@ -51,9 +51,8 @@ namespace Aikido.Zen.Core.Patches
             {
                 var processStartInfo = (__instance as Process)?.StartInfo;
                 // Only inspect if context and process info are available
-                if (!Agent.Instance.Context.IsProtectionDisabledForEndpoint(context) &&
-                    processStartInfo != null &&
-                    context != null)
+                if (processStartInfo != null && context != null &&
+                    !Agent.Instance.Context.IsProtectionDisabledForEndpoint(context))
                 {
                     command = processStartInfo.FileName + " " + processStartInfo.Arguments;
 
