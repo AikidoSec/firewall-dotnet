@@ -172,6 +172,22 @@ namespace Aikido.Zen.Core.Models
         }
 
         /// <summary>
+        /// Checks whether protections should be skipped for the current request endpoint.
+        /// </summary>
+        /// <param name="context">The current request context.</param>
+        /// <returns>True when the matching endpoint disables protection; otherwise, false.</returns>
+        public bool IsProtectionDisabledForEndpoint(Context context)
+        {
+            if (context == null)
+            {
+                return false;
+            }
+
+            return RouteHelper.MatchEndpoints(context, Endpoints)
+                .Any(endpoint => endpoint.ForceProtectionOff);
+        }
+
+        /// <summary>
         /// Updates the configuration based on the API response.
         /// </summary>
         /// <param name="response">The API response containing configuration updates.</param>
