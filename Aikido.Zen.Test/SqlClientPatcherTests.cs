@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Data.Common;
 using System.Reflection;
 using Aikido.Zen.Core;
@@ -110,6 +111,41 @@ namespace Aikido.Zen.Test
 
             // Assert
             Assert.That(result, Is.True);
+        }
+
+        [Test]
+        public void OnCommandExecuting_WithForceProtectionOffRoute_ReturnsTrueWithoutMarkingAttack()
+        {
+            _context.Method = "POST";
+            _context.Route = "/api/create";
+            _context.Path = "/api/create";
+            _context.ParsedUserInput = new Dictionary<string, string>
+            {
+                { "body.query", "1' OR '1'='1'" }
+            };
+
+            Agent.Instance.Context.Config.UpdateRatelimitedRoutes(new[]
+            {
+                new EndpointConfig
+                {
+                    Method = "POST",
+                    Route = "/api/create",
+                    ForceProtectionOff = true
+                }
+            });
+
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
+            var sql = "SELECT * FROM users WHERE id = '1' OR '1'='1'";
+
+            var result = SqlClientPatcher.OnCommandExecuting(
+                new object[] { },
+                _methodInfo,
+                sql,
+                "System.Data.SqlClient",
+                _context);
+
+            Assert.That(result, Is.True);
+            Assert.That(_context.AttackDetected, Is.False);
         }
 
         [TearDown]

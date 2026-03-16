@@ -43,7 +43,9 @@ namespace Aikido.Zen.Core.Patches
 
             try
             {
-                if (paths != null && paths.Length > 0)
+                if (!Agent.Instance.Context.IsProtectionDisabledForEndpoint(context) &&
+                    paths != null &&
+                    paths.Length > 0)
                 {
                     foreach (var path in paths)
                     {

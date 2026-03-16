@@ -45,7 +45,9 @@ namespace Aikido.Zen.Core.Patches
             try
             {
                 // Perform detection only if context and sql are available
-                if (context != null && sql != null)
+                if (!Agent.Instance.Context.IsProtectionDisabledForEndpoint(context) &&
+                    context != null &&
+                    sql != null)
                 {
                     var dialect = GetDialect(assembly ?? assemblyName);
 
