@@ -15,7 +15,7 @@ namespace Aikido.Zen.Core.Models.Events
         public AgentInfo Agent { get; set; }
         public long Time => DateTimeHelper.UTCNowUnixMilliseconds();
 
-        public static DetectedAttack Create(AttackKind kind, Source source, string payload, string operation, Context context, string module, IDictionary<string, object> metadata, bool blocked)
+        public static DetectedAttack Create(AttackKind kind, Source source, string payload, string operation, Context context, string module, IDictionary<string, object> metadata, bool blocked, string[] paths)
         {
             // if the context is null, throw an argument null exception
             if (context == null)
@@ -25,19 +25,13 @@ namespace Aikido.Zen.Core.Models.Events
             if (context.Body == null)
                 context.Body = new MemoryStream();
 
-            var path = "";
-            if (Uri.TryCreate(context.Url, UriKind.Absolute, out var uri))
-                path = uri.AbsolutePath;
-            else
-                path = context.Url;
-
             var stackTrace = StackTraceHelper.CleanedStackTrace();
             var attack = new Attack
             {
                 Blocked = blocked,
                 Kind = kind.ToJsonName(),
                 Module = module, // the qualified assembly name
-                Path = path,
+                Path = paths.Length > 0 ? paths[0] : string.Empty,
                 User = context.User,
                 Payload = payload,
                 Operation = operation, // the class + method where the attack was detected

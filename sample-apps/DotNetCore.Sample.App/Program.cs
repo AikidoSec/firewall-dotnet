@@ -22,8 +22,8 @@ app
     // authorize users
     .Use((context, next) =>
     {
-        var id = context.User?.Identity?.Name ?? "test";
-        var name = context.User?.Identity?.Name ?? "Anonymous";
+        var id = context.User?.Identity?.Name;
+        var name = context.User?.Identity?.Name;
         if (!string.IsNullOrEmpty(id))
             Zen.SetUser(id, name, context);
         return next();

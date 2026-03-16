@@ -228,7 +228,7 @@ namespace Aikido.Zen.Core.Models
             }
 
             // if the ip is bypassed, we DON'T block the request (return false)
-            if (BlockList.IsIPBypassed(context.RemoteAddress))
+            if (_config.BlockList.IsIPBypassed(context.RemoteAddress))
             {
                 return false;
             }
@@ -280,6 +280,11 @@ namespace Aikido.Zen.Core.Models
         public void UpdateRatelimitedRoutes(IEnumerable<EndpointConfig> endpoints)
         {
             _config.UpdateRatelimitedRoutes(endpoints);
+        }
+
+        public bool IsProtectionDisabledForEndpoint(Context context)
+        {
+            return _config.IsProtectionDisabledForEndpoint(context);
         }
 
         public void UpdateConfig(ReportingAPIResponse response)
