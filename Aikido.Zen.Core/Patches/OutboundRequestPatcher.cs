@@ -50,6 +50,11 @@ namespace Aikido.Zen.Core.Patches
                     return result;
                 }
 
+                if (Agent.Instance.Context.IsProtectionDisabledForEndpoint(context))
+                {
+                    return result;
+                }
+
                 return result;
             }
             finally
