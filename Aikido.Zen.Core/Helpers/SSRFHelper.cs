@@ -10,7 +10,7 @@ namespace Aikido.Zen.Core.Helpers
     /// </summary>
     public class SSRFHelper
     {
-        public static bool DetectSSRF(Uri targetUri, Context context, string moduleName, string operation, out string attackKind, out string source)
+        public static bool DetectSSRF(Uri targetUri, Context context, string moduleName, string operation, out AttackKind? attackKind, out string source)
         {
             attackKind = null;
             source = null;
@@ -56,7 +56,7 @@ namespace Aikido.Zen.Core.Helpers
                     );
 
                     context.AttackDetected = true;
-                    attackKind = AttackKind.Ssrf.ToHumanName();
+                    attackKind = AttackKind.Ssrf;
                     source = $"{attackSource.ToJsonName()}{attackPath}";
                     return true;
                 }
@@ -78,7 +78,7 @@ namespace Aikido.Zen.Core.Helpers
                     paths: Array.Empty<string>()
                 );
 
-                attackKind = AttackKind.StoredSsrf.ToHumanName();
+                attackKind = AttackKind.StoredSsrf;
                 source = "unknown source";
                 return true;
             }

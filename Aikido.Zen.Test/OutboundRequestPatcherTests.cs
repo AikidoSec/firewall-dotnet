@@ -516,7 +516,9 @@ namespace Aikido.Zen.Test
 
             Assert.Multiple(() =>
             {
-                Assert.That(exception.Message, Does.Contain("stored server-side request forgery"));
+                Assert.That(
+                    exception.Message,
+                    Is.EqualTo("Zen has blocked a stored server-side request forgery: HttpClient.SendAsync originating from unknown source"));
             });
 
             await Task.Delay(150);
@@ -550,7 +552,9 @@ namespace Aikido.Zen.Test
                 "System.Net.Http",
                 null));
 
-            Assert.That(exception.Message, Does.Contain("stored server-side request forgery"));
+            Assert.That(
+                exception.Message,
+                Is.EqualTo("Zen has blocked a stored server-side request forgery: HttpClient.SendAsync originating from unknown source"));
 
             await Task.Delay(150);
 

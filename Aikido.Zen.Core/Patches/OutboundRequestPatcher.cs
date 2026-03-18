@@ -56,7 +56,17 @@ namespace Aikido.Zen.Core.Patches
 
                 if (blocked)
                 {
-                    throw AikidoException.SSRFDetected(attackKind, operation, source);
+                    if (attackKind == AttackKind.StoredSsrf)
+                    {
+                        throw AikidoException.StoredSSRFDetected(operation);
+                    }
+
+                    if (attackKind == AttackKind.Ssrf)
+                    {
+                        throw AikidoException.SSRFDetected(operation, source);
+                    }
+
+                    throw new InvalidOperationException("SSRF attack detected without a concrete attack kind.");
                 }
 
                 if (Agent.Instance.Context.IsProtectionDisabledForEndpoint(context))
