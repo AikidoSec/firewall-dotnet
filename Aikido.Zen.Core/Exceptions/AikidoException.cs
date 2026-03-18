@@ -53,5 +53,10 @@ namespace Aikido.Zen.Core.Exceptions
         {
             return new AikidoException($"Zen has blocked an outbound connection to {hostname}");
         }
+
+        public static AikidoException SSRFDetected(string kind, string operation, string source)
+        {
+            return new AikidoException($"Zen has blocked {kind}: {operation} originating from {source}");
+        }
     }
 }
