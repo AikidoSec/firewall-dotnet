@@ -2,6 +2,7 @@ using System;
 using System.Net.Http;
 using System.Reflection;
 using System.Threading;
+using System.Threading.Tasks;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Patches;
@@ -62,83 +63,84 @@ namespace Aikido.Zen.DotNetCore.Patches
             harmony.Patch(method, new HarmonyMethod(prefix), new HarmonyMethod(postfix), null, new HarmonyMethod(finalizer));
         }
 
-        private static bool PrefixSendAsyncWithCompletionOption(HttpRequestMessage request, HttpClient __instance, MethodBase __originalMethod, CancellationToken cancellationToken, out OutboundRequestHelper.RequestScopeState __state)
+        private static bool PrefixSendAsyncWithCompletionOption(HttpRequestMessage request, HttpClient __instance, MethodBase __originalMethod, CancellationToken cancellationToken)
         {
-            return InspectRequest(request, __instance, __originalMethod, out __state);
+            return InspectRequest(request, __instance, __originalMethod);
         }
 
-        private static void PostfixSendAsyncWithCompletionOption(OutboundRequestHelper.RequestScopeState __state)
+        private static void PostfixSendAsyncWithCompletionOption(ref Task<HttpResponseMessage> __result)
         {
-            OutboundRequestHelper.ExitRequestScope(__state);
+            __result = ExitRequestScopeWhenCompletedAsync(__result);
         }
 
-        private static Exception FinalizerSendAsyncWithCompletionOption(Exception __exception, OutboundRequestHelper.RequestScopeState __state)
+        private static Exception FinalizerSendAsyncWithCompletionOption(Exception __exception)
         {
             if (__exception != null)
             {
-                OutboundRequestHelper.ExitRequestScope(__state);
+                OutboundRequestHelper.ExitRequestScope();
             }
 
             return __exception;
         }
 
-        private static bool PrefixSendAsync(HttpRequestMessage request, HttpClient __instance, MethodBase __originalMethod, CancellationToken cancellationToken, out OutboundRequestHelper.RequestScopeState __state)
+        private static bool PrefixSendAsync(HttpRequestMessage request, HttpClient __instance, MethodBase __originalMethod, CancellationToken cancellationToken)
         {
-            return InspectRequest(request, __instance, __originalMethod, out __state);
+            return InspectRequest(request, __instance, __originalMethod);
         }
 
-        private static void PostfixSendAsync(OutboundRequestHelper.RequestScopeState __state)
+        private static void PostfixSendAsync(ref Task<HttpResponseMessage> __result)
         {
-            OutboundRequestHelper.ExitRequestScope(__state);
+            __result = ExitRequestScopeWhenCompletedAsync(__result);
         }
 
-        private static Exception FinalizerSendAsync(Exception __exception, OutboundRequestHelper.RequestScopeState __state)
+        private static Exception FinalizerSendAsync(Exception __exception)
         {
             if (__exception != null)
             {
-                OutboundRequestHelper.ExitRequestScope(__state);
+                OutboundRequestHelper.ExitRequestScope();
             }
 
             return __exception;
         }
 
-        private static bool PrefixSend(HttpRequestMessage request, HttpClient __instance, MethodBase __originalMethod, CancellationToken cancellationToken, out OutboundRequestHelper.RequestScopeState __state)
+        private static bool PrefixSend(HttpRequestMessage request, HttpClient __instance, MethodBase __originalMethod, CancellationToken cancellationToken)
         {
-            return InspectRequest(request, __instance, __originalMethod, out __state);
+            return InspectRequest(request, __instance, __originalMethod);
         }
 
-        private static void PostfixSend(OutboundRequestHelper.RequestScopeState __state)
+        private static void PostfixSend()
         {
-            OutboundRequestHelper.ExitRequestScope(__state);
+            OutboundRequestHelper.ExitRequestScope();
         }
 
-        private static Exception FinalizerSend(Exception __exception, OutboundRequestHelper.RequestScopeState __state)
+        private static Exception FinalizerSend(Exception __exception)
         {
             if (__exception != null)
             {
-                OutboundRequestHelper.ExitRequestScope(__state);
+                OutboundRequestHelper.ExitRequestScope();
             }
 
             return __exception;
         }
 
-        private static bool InspectRequest(HttpRequestMessage request, HttpClient client, MethodBase originalMethod, out OutboundRequestHelper.RequestScopeState state)
+        private static bool InspectRequest(HttpRequestMessage request, HttpClient client, MethodBase originalMethod)
         {
-            state = null;
             var targetUri = ResolveUri(request, client);
             if (targetUri == null)
             {
                 return true;
             }
 
-            var operation = GetOperation(originalMethod);
-            var module = GetModule(originalMethod);
+            var methodInfo = originalMethod as MethodInfo;
+            var operation = $"{methodInfo?.DeclaringType?.Name}.{methodInfo?.Name}";
+            var module = methodInfo?.DeclaringType?.Assembly.GetName().Name;
+
             if (!OutboundRequestPatcher.Inspect(targetUri, operation, module, Zen.GetContext()))
             {
                 return false;
             }
 
-            state = OutboundRequestHelper.EnterRequestScope(targetUri, operation, module);
+            OutboundRequestHelper.EnterRequestScope(targetUri, operation, module);
             return true;
         }
 
@@ -157,16 +159,31 @@ namespace Aikido.Zen.DotNetCore.Patches
             return new Uri(client.BaseAddress, request.RequestUri);
         }
 
-        private static string GetOperation(MethodBase originalMethod)
+        private static async Task<HttpResponseMessage> ExitRequestScopeWhenCompletedAsync(Task<HttpResponseMessage> responseTask)
         {
-            var methodInfo = originalMethod as MethodInfo;
-            return $"{methodInfo?.DeclaringType?.Name}.{methodInfo?.Name}";
-        }
+            if (responseTask == null)
+            {
+                OutboundRequestHelper.ExitRequestScope();
+                return null;
+            }
 
-        private static string GetModule(MethodBase originalMethod)
-        {
-            var methodInfo = originalMethod as MethodInfo;
-            return methodInfo?.DeclaringType?.Assembly.GetName().Name;
+            try
+            {
+                return await responseTask.ConfigureAwait(false);
+            }
+            catch (Exception)
+            {
+                if (OutboundRequestHelper.TryGetDetectedAttackException(out var aikidoException))
+                {
+                    throw aikidoException;
+                }
+
+                throw;
+            }
+            finally
+            {
+                OutboundRequestHelper.ExitRequestScope();
+            }
         }
     }
 }

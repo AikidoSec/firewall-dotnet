@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Vulnerabilities;
 
@@ -15,21 +16,15 @@ namespace Aikido.Zen.Core.Helpers
 
         internal static OutboundRequestInfo CurrentRequestScope => CurrentRequest.Value;
 
-        internal static RequestScopeState EnterRequestScope(Uri targetUri, string operation, string module)
+        internal static void EnterRequestScope(Uri targetUri, string operation, string module)
         {
-            var previous = CurrentRequest.Value;
-            CurrentRequest.Value = new OutboundRequestInfo(targetUri, operation, module);
-            return new RequestScopeState(previous);
+            var current = new OutboundRequestInfo(targetUri, operation, module);
+            CurrentRequest.Value = current;
         }
 
-        internal static void ExitRequestScope(RequestScopeState state)
+        internal static void ExitRequestScope()
         {
-            if (state == null || !state.Entered)
-            {
-                return;
-            }
-
-            CurrentRequest.Value = state.PreviousRequest;
+            CurrentRequest.Value = null;
         }
 
         public static bool InspectRequest(Uri targetUri, Context context, string moduleName, string operation, out AttackKind? attackKind, out string source)
@@ -95,6 +90,7 @@ namespace Aikido.Zen.Core.Helpers
                     );
 
                     context.AttackDetected = true;
+                    RecordDetectedAttack(AttackKind.Ssrf, $"{attackSource.ToJsonName()}{attackPath}");
                     attackKind = AttackKind.Ssrf;
                     source = $"{attackSource.ToJsonName()}{attackPath}";
                     return true;
@@ -115,6 +111,7 @@ namespace Aikido.Zen.Core.Helpers
                     paths: Array.Empty<string>()
                 );
 
+                RecordDetectedAttack(AttackKind.StoredSsrf, "unknown source");
                 attackKind = AttackKind.StoredSsrf;
                 source = "unknown source";
                 return true;
@@ -135,18 +132,8 @@ namespace Aikido.Zen.Core.Helpers
             internal Uri TargetUri { get; }
             internal string Operation { get; }
             internal string Module { get; }
-        }
-
-        internal sealed class RequestScopeState
-        {
-            internal RequestScopeState(OutboundRequestInfo previousRequest)
-            {
-                PreviousRequest = previousRequest;
-                Entered = true;
-            }
-
-            internal OutboundRequestInfo PreviousRequest { get; }
-            internal bool Entered { get; }
+            internal AttackKind? DetectedAttackKind { get; set; }
+            internal string DetectedAttackSource { get; set; }
         }
 
         private static IDictionary<string, object> CreateMetadata(string hostname, int? port, string privateIPAddress)
@@ -167,6 +154,43 @@ namespace Aikido.Zen.Core.Helpers
             }
 
             return metadata;
+        }
+
+        internal static void RecordDetectedAttack(AttackKind attackKind, string source)
+        {
+            var currentRequest = CurrentRequest.Value;
+            if (currentRequest == null)
+            {
+                return;
+            }
+
+            currentRequest.DetectedAttackKind = attackKind;
+            currentRequest.DetectedAttackSource = source;
+        }
+
+        internal static bool TryGetDetectedAttackException(out AikidoException exception)
+        {
+            exception = null;
+            var requestInfo = CurrentRequest.Value;
+
+            if (requestInfo?.DetectedAttackKind == null)
+            {
+                return false;
+            }
+
+            if (requestInfo.DetectedAttackKind == AttackKind.StoredSsrf)
+            {
+                exception = AikidoException.StoredSSRFDetected(requestInfo.Operation);
+                return true;
+            }
+
+            if (requestInfo.DetectedAttackKind == AttackKind.Ssrf)
+            {
+                exception = AikidoException.SSRFDetected(requestInfo.Operation, requestInfo.DetectedAttackSource);
+                return true;
+            }
+
+            return false;
         }
     }
 }
