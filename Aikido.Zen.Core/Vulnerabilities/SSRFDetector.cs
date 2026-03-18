@@ -1,9 +1,8 @@
 using System;
-using System.Globalization;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Net;
-using System.Net.Sockets;
 using System.Text.RegularExpressions;
 using Aikido.Zen.Core.Helpers;
 
@@ -24,60 +23,14 @@ namespace Aikido.Zen.Core.Vulnerabilities
             "metadata.google.internal",
             "metadata.goog"
         };
-        private static readonly HashSet<IPAddress> ImdsIPAddresses = new HashSet<IPAddress>
+        private static readonly HashSet<string> ImdsIPAddresses = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
-            IPAddress.Parse("169.254.169.254"),
-            IPAddress.Parse("::ffff:169.254.169.254"),
-            IPAddress.Parse("100.100.100.200"),
-            IPAddress.Parse("::ffff:100.100.100.200"),
-            IPAddress.Parse("fd00:ec2::254")
+            "169.254.169.254",
+            "::ffff:169.254.169.254",
+            "100.100.100.200",
+            "::ffff:100.100.100.200",
+            "fd00:ec2::254"
         };
-
-        internal static bool IsSuspiciousTarget(Uri targetUri, Uri serverUri, out string privateIPAddress)
-        {
-            privateIPAddress = null;
-
-            if (targetUri == null)
-            {
-                // targetUri is mandatory
-                // serverUri can be null in stored ssrf scenarios
-                return false;
-            }
-
-            // Skip request-to-self cases before doing any IP checks.
-            if (HasSameHostAndPort(targetUri, serverUri))
-            {
-                return false;
-            }
-
-            var normalizedTargetHost = NormalizeHostname(targetUri.Host);
-
-            // Direct private IPs are suspicious immediately and don't need DNS resolution.
-            if (IsPrivateIPAddress(normalizedTargetHost))
-            {
-                return true;
-            }
-
-            // Target hostname is suspicious when it resolves to a private or local IP.
-            try
-            {
-                var resolvedPrivateIPAddress = Dns
-                    .GetHostAddresses(normalizedTargetHost)
-                    .FirstOrDefault(address => IPHelper.IsPrivateOrLocalIp(address.ToString()));
-                if (resolvedPrivateIPAddress == null)
-                {
-                    return false;
-                }
-
-                privateIPAddress = resolvedPrivateIPAddress.ToString();
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-
-            return true;
-        }
 
         internal static bool HasSameHostAndPort(Uri uri1, Uri uri2)
         {
@@ -118,16 +71,35 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 return false;
             }
 
-            return IPAddress.TryParse(privateIPAddress, out var parsedPrivateIPAddress) &&
-                ImdsIPAddresses.Contains(parsedPrivateIPAddress);
+            return ImdsIPAddresses.Contains(privateIPAddress);
         }
 
-        private static bool IsPrivateIPAddress(string normalizedHostname)
+        internal static bool TryGetPrivateOrLocalIPAddress(string hostname, out string privateIPAddress)
         {
-            return IPAddress.TryParse(normalizedHostname, out var parsedAddress) && IPHelper.IsPrivateOrLocalIp(parsedAddress.ToString());
+            privateIPAddress = null;
+
+            if (string.IsNullOrWhiteSpace(hostname))
+            {
+                return false;
+            }
+
+            var normalizedCandidate = hostname.Trim().TrimStart('[').TrimEnd(']');
+            if (!IPAddress.TryParse(normalizedCandidate, out var parsedAddress))
+            {
+                return false;
+            }
+
+            var normalizedIPAddress = parsedAddress.ToString();
+            if (!IPHelper.IsPrivateOrLocalIp(normalizedIPAddress))
+            {
+                return false;
+            }
+
+            privateIPAddress = normalizedIPAddress;
+            return true;
         }
 
-        private static string NormalizeHostname(string hostname)
+        internal static string NormalizeHostname(string hostname)
         {
             if (string.IsNullOrWhiteSpace(hostname))
             {

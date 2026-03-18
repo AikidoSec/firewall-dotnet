@@ -35,7 +35,6 @@ namespace Aikido.Zen.Test
             Assert.That(_context.Xml, Is.Null);
             Assert.That(_context.Subdomains, Is.Empty);
             Assert.That(_context.Cache, Is.Empty);
-            Assert.That(_context.OutgoingRequestRedirects, Is.Empty);
             Assert.That(_context.ParsedUserInput, Is.Empty);
             Assert.That(_context.UserAgent, Is.EqualTo(string.Empty));
             Assert.That(_context.IsGraphQL, Is.False);
@@ -70,21 +69,6 @@ namespace Aikido.Zen.Test
 
             // Assert
             Assert.That(isGraphQL, Is.False);
-        }
-
-        [Test]
-        public void RedirectInfo_ShouldInitializeCorrectly()
-        {
-            // Arrange
-            var sourceUri = new Uri("http://source.com");
-            var destinationUri = new Uri("http://destination.com");
-
-            // Act
-            var redirectInfo = new Context.RedirectInfo(sourceUri, destinationUri);
-
-            // Assert
-            Assert.That(redirectInfo.Source, Is.EqualTo(sourceUri));
-            Assert.That(redirectInfo.Destination, Is.EqualTo(destinationUri));
         }
 
         [Test]
