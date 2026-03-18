@@ -36,18 +36,11 @@ namespace Aikido.Zen.DotNetCore.Patches
                 return true;
             }
 
-            var inspection = OutboundRequestPatcher.Inspect(
+            return OutboundRequestPatcher.Inspect(
                 __instance.RequestUri,
                 GetOperation(__originalMethod),
                 GetModule(__originalMethod),
                 Zen.GetContext());
-
-            if (inspection.ShouldProceed)
-            {
-                return true;
-            }
-
-            throw inspection.Exception;
         }
 
         private static bool PrefixGetResponseAsync(WebRequest __instance, MethodBase __originalMethod, ref Task<WebResponse> __result)
@@ -57,19 +50,11 @@ namespace Aikido.Zen.DotNetCore.Patches
                 return true;
             }
 
-            var inspection = OutboundRequestPatcher.Inspect(
+            return OutboundRequestPatcher.Inspect(
                 __instance.RequestUri,
                 GetOperation(__originalMethod),
                 GetModule(__originalMethod),
                 Zen.GetContext());
-
-            if (inspection.ShouldProceed)
-            {
-                return true;
-            }
-
-            __result = Task.FromException<WebResponse>(inspection.Exception);
-            return false;
         }
 
         private static string GetOperation(MethodBase originalMethod)

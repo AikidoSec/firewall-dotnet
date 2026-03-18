@@ -15,15 +15,8 @@ namespace Aikido.Zen.Core.Models.Events
         public AgentInfo Agent { get; set; }
         public long Time => DateTimeHelper.UTCNowUnixMilliseconds();
 
-        public static DetectedAttack Create(AttackKind kind, Source source, string payload, string operation, Context context, string module, IDictionary<string, object> metadata, bool blocked, string[] paths)
+        public static DetectedAttack Create(AttackKind kind, Source source, string payload, string operation, Context? context, string module, IDictionary<string, object> metadata, bool blocked, string[] paths)
         {
-            // if the context is null, throw an argument null exception
-            if (context == null)
-                throw new ArgumentNullException(nameof(context));
-
-            // in case the body is null, create an empty stream
-            if (context.Body == null)
-                context.Body = new MemoryStream();
 
             var stackTrace = StackTraceHelper.CleanedStackTrace();
             var attack = new Attack
@@ -32,7 +25,7 @@ namespace Aikido.Zen.Core.Models.Events
                 Kind = kind.ToJsonName(),
                 Module = module, // the qualified assembly name
                 Path = paths.Length > 0 ? paths[0] : string.Empty,
-                User = context.User,
+                User = context?.User,
                 Payload = payload,
                 Operation = operation, // the class + method where the attack was detected
                 Metadata = metadata,
@@ -40,17 +33,27 @@ namespace Aikido.Zen.Core.Models.Events
                 Source = source.ToJsonName()
             };
 
-            var request = new RequestInfo
+            RequestInfo request = null;
+            if (context != null)
             {
-                Headers = context.Headers.ToDictionary(h => h.Key, h => h.Value),
-                Method = context.Method,
-                Source = context.Source,
-                Url = context.Url,
-                Body = HttpHelper.GetRawBody(context.Body),
-                Route = context.Route,
-                IpAddress = context.RemoteAddress,
-                UserAgent = context.UserAgent
-            };
+                if (context.Body == null)
+                {
+                    context.Body = new MemoryStream();
+                }
+
+                request = new RequestInfo
+                {
+                    Headers = context.Headers.ToDictionary(h => h.Key, h => h.Value),
+                    Method = context.Method,
+                    Source = context.Source,
+                    Url = context.Url,
+                    Body = HttpHelper.GetRawBody(context.Body),
+                    Route = context.Route,
+                    IpAddress = context.RemoteAddress,
+                    UserAgent = context.UserAgent
+                };
+            }
+
             return new DetectedAttack
             {
                 Attack = attack,
