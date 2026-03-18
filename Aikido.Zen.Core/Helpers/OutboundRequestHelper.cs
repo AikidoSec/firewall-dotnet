@@ -1,24 +1,67 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Vulnerabilities;
 
 namespace Aikido.Zen.Core.Helpers
 {
     /// <summary>
-    /// A helper class for SSRF detection
+    /// A helper class for outbound request tracking
     /// </summary>
-    public class SSRFHelper
+    public class OutboundRequestHelper
     {
-        public static bool DetectSSRF(Uri targetUri, Context context, string moduleName, string operation, out AttackKind? attackKind, out string source)
+        private static readonly AsyncLocal<OutboundRequestInfo> CurrentRequest = new AsyncLocal<OutboundRequestInfo>();
+
+        internal static OutboundRequestInfo CurrentRequestScope => CurrentRequest.Value;
+
+        internal static RequestScopeState EnterRequestScope(Uri targetUri, string operation, string module)
+        {
+            var previous = CurrentRequest.Value;
+            CurrentRequest.Value = new OutboundRequestInfo(targetUri, operation, module);
+            return new RequestScopeState(previous);
+        }
+
+        internal static void ExitRequestScope(RequestScopeState state)
+        {
+            if (state == null || !state.Entered)
+            {
+                return;
+            }
+
+            CurrentRequest.Value = state.PreviousRequest;
+        }
+
+        public static bool InspectRequest(Uri targetUri, Context context, string moduleName, string operation, out AttackKind? attackKind, out string source)
         {
             attackKind = null;
             source = null;
 
-            Uri.TryCreate(context?.Url, UriKind.Absolute, out var serverUri);
+            if (targetUri == null)
+            {
+                return false;
+            }
 
-            // First classify the outbound target based on host/IP resolution only.
-            if (!SSRFDetector.IsSuspiciousTarget(targetUri, serverUri, out var privateIPAddress))
+            Uri.TryCreate(context?.Url, UriKind.Absolute, out var serverUri);
+            if (SSRFDetector.HasSameHostAndPort(targetUri, serverUri))
+            {
+                return false;
+            }
+
+            if (SSRFDetector.TryGetPrivateOrLocalIPAddress(targetUri.Host, out var privateIPAddress))
+            {
+                return DetectSSRF(targetUri, privateIPAddress, context, moduleName, operation, out attackKind, out source);
+            }
+
+            return false;
+        }
+
+        internal static bool DetectSSRF(Uri targetUri, string privateIPAddress, Context context, string moduleName, string operation, out AttackKind? attackKind, out string source)
+        {
+            attackKind = null;
+            source = null;
+
+            if (privateIPAddress == null)
             {
                 return false;
             }
@@ -26,16 +69,12 @@ namespace Aikido.Zen.Core.Helpers
             var hostname = targetUri.Host;
             var port = targetUri.Port;
 
-            // We only emit normal SSRF for non-service hostnames. Single-label internal names
-            // like "backend" or "redis" are common legitimate targets inside private networks,
-            // so matching them to request input would create false positives.
             if (!SSRFDetector.IsRequestToServiceHostname(hostname) && context?.ParsedUserInput != null)
             {
                 foreach (var userInput in context.ParsedUserInput)
                 {
-                    // Normal SSRF requires a match back to request input in the current context.
                     Uri.TryCreate(userInput.Value, UriKind.Absolute, out var userUri);
-                    if (!MatchesTargetOrRedirectedSource(targetUri, userUri, context))
+                    if (!SSRFDetector.HasSameHostAndPort(targetUri, userUri))
                     {
                         continue;
                     }
@@ -62,8 +101,6 @@ namespace Aikido.Zen.Core.Helpers
                 }
             }
 
-            // If the target resolves to IMDS and we did not emit a normal SSRF finding above,
-            // report it as stored SSRF instead.
             if (SSRFDetector.IsStoredSSRF(hostname, privateIPAddress))
             {
                 Agent.Instance.SendAttackEvent(
@@ -86,28 +123,30 @@ namespace Aikido.Zen.Core.Helpers
             return false;
         }
 
-        private static bool MatchesTargetOrRedirectedSource(Uri targetUri, Uri userUri, Context context)
+        internal sealed class OutboundRequestInfo
         {
-            if (SSRFDetector.HasSameHostAndPort(targetUri, userUri))
+            internal OutboundRequestInfo(Uri targetUri, string operation, string module)
             {
-                return true;
+                TargetUri = targetUri;
+                Operation = operation;
+                Module = module;
             }
 
-            if (context?.OutgoingRequestRedirects == null)
+            internal Uri TargetUri { get; }
+            internal string Operation { get; }
+            internal string Module { get; }
+        }
+
+        internal sealed class RequestScopeState
+        {
+            internal RequestScopeState(OutboundRequestInfo previousRequest)
             {
-                return false;
+                PreviousRequest = previousRequest;
+                Entered = true;
             }
 
-            foreach (var redirect in context.OutgoingRequestRedirects)
-            {
-                if (SSRFDetector.HasSameHostAndPort(userUri, redirect.Source) &&
-                    SSRFDetector.HasSameHostAndPort(targetUri, redirect.Destination))
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            internal OutboundRequestInfo PreviousRequest { get; }
+            internal bool Entered { get; }
         }
 
         private static IDictionary<string, object> CreateMetadata(string hostname, int? port, string privateIPAddress)

@@ -33,7 +33,6 @@ namespace Aikido.Zen.Core.Patches
 
                 if (IsAikidoInternalTarget(targetUri))
                 {
-                    // Skip inspecting Aikido requests
                     return true;
                 }
 
@@ -51,7 +50,7 @@ namespace Aikido.Zen.Core.Patches
                     return true;
                 }
 
-                attackDetected = SSRFHelper.DetectSSRF(targetUri, context, module, operation, out var attackKind, out var source);
+                attackDetected = OutboundRequestHelper.InspectRequest(targetUri, context, module, operation, out var attackKind, out var source);
                 blocked = attackDetected && !EnvironmentHelper.DryMode;
 
                 if (blocked)

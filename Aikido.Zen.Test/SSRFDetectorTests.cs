@@ -6,7 +6,7 @@ namespace Aikido.Zen.Test
     [TestFixture]
     public class SSRFDetectorTests
     {
-        private string _originalTrustProxy;
+        private string? _originalTrustProxy;
 
         [SetUp]
         public void SetUp()
@@ -22,107 +22,26 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void IsSuspiciousTarget_WhenTargetIsDirectPrivateIp_ReturnsTrue()
+        public void TryGetPrivateOrLocalIPAddress_WhenTargetIsDirectPrivateIp_ReturnsTrue()
         {
-            var result = SSRFDetector.IsSuspiciousTarget(
-                new Uri("http://127.0.0.1"),
-                new Uri("https://app.local/outbound"),
-                out var privateIPAddress);
+            var result = SSRFDetector.TryGetPrivateOrLocalIPAddress("127.0.0.1", out var privateIPAddress);
 
             Assert.Multiple(() =>
             {
                 Assert.That(result, Is.True);
-                Assert.That(privateIPAddress, Is.Null);
+                Assert.That(privateIPAddress, Is.EqualTo("127.0.0.1"));
             });
         }
 
         [Test]
-        public void IsSuspiciousTarget_WhenHostnameResolvesToPrivateIp_ReturnsTrueWithResolvedIp()
+        public void TryGetPrivateOrLocalIPAddress_WhenTargetIsPublicIp_ReturnsFalse()
         {
-            var result = SSRFDetector.IsSuspiciousTarget(
-                new Uri("http://localtest.me"),
-                new Uri("https://app.local/outbound"),
-                out var privateIPAddress);
-
-            Assert.Multiple(() =>
-            {
-                Assert.That(result, Is.True);
-                Assert.That(privateIPAddress, Is.AnyOf("127.0.0.1", "::1"));
-            });
-        }
-
-        [Test]
-        public void IsSuspiciousTarget_WhenHostnameNormalizesToLocalhost_ReturnsTrueWithResolvedIp()
-        {
-            var result = SSRFDetector.IsSuspiciousTarget(
-                new Uri("http://ⓛocalhost:4000"),
-                new Uri("https://app.local/outbound"),
-                out var privateIPAddress);
-
-            Assert.Multiple(() =>
-            {
-                Assert.That(result, Is.True);
-                Assert.That(privateIPAddress, Is.AnyOf("127.0.0.1", "::1"));
-            });
-        }
-
-        [Test]
-        public void IsSuspiciousTarget_WhenTargetIsPublicIp_ReturnsFalse()
-        {
-            var result = SSRFDetector.IsSuspiciousTarget(
-                new Uri("http://8.8.8.8"),
-                new Uri("https://app.local/outbound"),
-                out var privateIPAddress);
+            var result = SSRFDetector.TryGetPrivateOrLocalIPAddress("8.8.8.8", out var privateIPAddress);
 
             Assert.Multiple(() =>
             {
                 Assert.That(result, Is.False);
                 Assert.That(privateIPAddress, Is.Null);
-            });
-        }
-
-        [Test]
-        public void IsSuspiciousTarget_WhenHostnameDoesNotResolve_ReturnsFalse()
-        {
-            var result = SSRFDetector.IsSuspiciousTarget(
-                new Uri("http://backend"),
-                new Uri("https://app.local/outbound"),
-                out var privateIPAddress);
-
-            Assert.Multiple(() =>
-            {
-                Assert.That(result, Is.False);
-                Assert.That(privateIPAddress, Is.Null);
-            });
-        }
-
-        [Test]
-        public void IsSuspiciousTarget_WhenRequestTargetsItself_ReturnsFalse()
-        {
-            var result = SSRFDetector.IsSuspiciousTarget(
-                new Uri("http://app.local:4000/private"),
-                new Uri("http://app.local:4000/outbound"),
-                out var privateIPAddress);
-
-            Assert.Multiple(() =>
-            {
-                Assert.That(result, Is.False);
-                Assert.That(privateIPAddress, Is.Null);
-            });
-        }
-
-        [Test]
-        public void IsSuspiciousTarget_WhenServerUriIsNull_StillChecksResolvedHostnames()
-        {
-            var result = SSRFDetector.IsSuspiciousTarget(
-                new Uri("http://localtest.me"),
-                null,
-                out var privateIPAddress);
-
-            Assert.Multiple(() =>
-            {
-                Assert.That(result, Is.True);
-                Assert.That(privateIPAddress, Is.AnyOf("127.0.0.1", "::1"));
             });
         }
 
@@ -160,6 +79,17 @@ namespace Aikido.Zen.Test
         public void IsRequestToServiceHostname_MatchesNodeBehavior(string hostname, bool expected)
         {
             var result = SSRFDetector.IsRequestToServiceHostname(hostname);
+
+            Assert.That(result, Is.EqualTo(expected));
+        }
+
+        [TestCase("localhost", "localhost")]
+        [TestCase("LOCALHOST", "localhost")]
+        [TestCase("ⓛocalhost", "localhost")]
+        [TestCase("[::1]", "::1")]
+        public void NormalizeHostname_ReturnsExpectedValue(string hostname, string expected)
+        {
+            var result = SSRFDetector.NormalizeHostname(hostname);
 
             Assert.That(result, Is.EqualTo(expected));
         }
