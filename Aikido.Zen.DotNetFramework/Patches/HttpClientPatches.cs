@@ -2,6 +2,7 @@ using System;
 using System.Net.Http;
 using System.Reflection;
 using System.Threading;
+using System.Threading.Tasks;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Patches;
@@ -19,6 +20,8 @@ namespace Aikido.Zen.DotNetFramework.Patches
                 "HttpClient",
                 "SendAsync",
                 nameof(PrefixSendAsyncWithCompletionOption),
+                nameof(PostfixSendAsyncWithCompletionOption),
+                nameof(FinalizerSendAsyncWithCompletionOption),
                 "System.Net.Http.HttpRequestMessage",
                 "System.Net.Http.HttpCompletionOption",
                 "System.Threading.CancellationToken");
@@ -29,6 +32,8 @@ namespace Aikido.Zen.DotNetFramework.Patches
                 "HttpClient",
                 "SendAsync",
                 nameof(PrefixSendAsync),
+                nameof(PostfixSendAsync),
+                nameof(FinalizerSendAsync),
                 "System.Net.Http.HttpRequestMessage",
                 "System.Threading.CancellationToken");
 
@@ -38,11 +43,13 @@ namespace Aikido.Zen.DotNetFramework.Patches
                 "HttpClient",
                 "Send",
                 nameof(PrefixSend),
+                nameof(PostfixSend),
+                nameof(FinalizerSend),
                 "System.Net.Http.HttpRequestMessage",
                 "System.Threading.CancellationToken");
         }
 
-        private static void PatchMethod(Harmony harmony, string assemblyName, string typeName, string methodName, string prefixMethodName, params string[] parameterTypeNames)
+        private static void PatchMethod(Harmony harmony, string assemblyName, string typeName, string methodName, string prefixMethodName, string postfixMethodName, string finalizerMethodName, params string[] parameterTypeNames)
         {
             var method = ReflectionHelper.GetMethodFromAssembly(assemblyName, typeName, methodName, parameterTypeNames);
             if (method == null || method.IsAbstract)
@@ -51,7 +58,9 @@ namespace Aikido.Zen.DotNetFramework.Patches
             }
 
             var prefix = typeof(HttpClientPatches).GetMethod(prefixMethodName, BindingFlags.Static | BindingFlags.NonPublic);
-            harmony.Patch(method, prefix: new HarmonyMethod(prefix));
+            var postfix = typeof(HttpClientPatches).GetMethod(postfixMethodName, BindingFlags.Static | BindingFlags.NonPublic);
+            var finalizer = typeof(HttpClientPatches).GetMethod(finalizerMethodName, BindingFlags.Static | BindingFlags.NonPublic);
+            harmony.Patch(method, new HarmonyMethod(prefix), new HarmonyMethod(postfix), null, new HarmonyMethod(finalizer));
         }
 
         private static bool PrefixSendAsyncWithCompletionOption(HttpRequestMessage request, HttpClient __instance, MethodBase __originalMethod, CancellationToken cancellationToken)
@@ -59,14 +68,59 @@ namespace Aikido.Zen.DotNetFramework.Patches
             return InspectRequest(request, __instance, __originalMethod);
         }
 
+        private static void PostfixSendAsyncWithCompletionOption(ref Task<HttpResponseMessage> __result)
+        {
+            __result = ExitRequestScopeWhenCompletedAsync(__result);
+        }
+
+        private static Exception FinalizerSendAsyncWithCompletionOption(Exception __exception)
+        {
+            if (__exception != null)
+            {
+                OutboundRequestHelper.ExitRequestScope();
+            }
+
+            return __exception;
+        }
+
         private static bool PrefixSendAsync(HttpRequestMessage request, HttpClient __instance, MethodBase __originalMethod, CancellationToken cancellationToken)
         {
             return InspectRequest(request, __instance, __originalMethod);
         }
 
+        private static void PostfixSendAsync(ref Task<HttpResponseMessage> __result)
+        {
+            __result = ExitRequestScopeWhenCompletedAsync(__result);
+        }
+
+        private static Exception FinalizerSendAsync(Exception __exception)
+        {
+            if (__exception != null)
+            {
+                OutboundRequestHelper.ExitRequestScope();
+            }
+
+            return __exception;
+        }
+
         private static bool PrefixSend(HttpRequestMessage request, HttpClient __instance, MethodBase __originalMethod, CancellationToken cancellationToken)
         {
             return InspectRequest(request, __instance, __originalMethod);
+        }
+
+        private static void PostfixSend()
+        {
+            OutboundRequestHelper.ExitRequestScope();
+        }
+
+        private static Exception FinalizerSend(Exception __exception)
+        {
+            if (__exception != null)
+            {
+                OutboundRequestHelper.ExitRequestScope();
+            }
+
+            return __exception;
         }
 
         private static bool InspectRequest(HttpRequestMessage request, HttpClient client, MethodBase originalMethod)
@@ -77,11 +131,15 @@ namespace Aikido.Zen.DotNetFramework.Patches
                 return true;
             }
 
-            return OutboundRequestPatcher.Inspect(
-                targetUri,
-                GetOperation(originalMethod),
-                GetModule(originalMethod),
-                Zen.GetContext());
+            var operation = GetOperation(originalMethod);
+            var module = GetModule(originalMethod);
+            if (!OutboundRequestPatcher.Inspect(targetUri, operation, module, Zen.GetContext()))
+            {
+                return false;
+            }
+
+            OutboundRequestHelper.EnterRequestScope(targetUri, operation, module);
+            return true;
         }
 
         private static Uri ResolveUri(HttpRequestMessage request, HttpClient client)
@@ -109,6 +167,33 @@ namespace Aikido.Zen.DotNetFramework.Patches
         {
             var methodInfo = originalMethod as MethodInfo;
             return methodInfo?.DeclaringType?.Assembly.GetName().Name;
+        }
+
+        private static async Task<HttpResponseMessage> ExitRequestScopeWhenCompletedAsync(Task<HttpResponseMessage> responseTask)
+        {
+            if (responseTask == null)
+            {
+                OutboundRequestHelper.ExitRequestScope();
+                return null;
+            }
+
+            try
+            {
+                return await responseTask.ConfigureAwait(false);
+            }
+            catch (Exception)
+            {
+                if (OutboundRequestHelper.TryGetDetectedAttackException(out var aikidoException))
+                {
+                    throw aikidoException;
+                }
+
+                throw;
+            }
+            finally
+            {
+                OutboundRequestHelper.ExitRequestScope();
+            }
         }
     }
 }
