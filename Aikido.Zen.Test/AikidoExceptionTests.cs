@@ -110,7 +110,6 @@ namespace Aikido.Zen.Test
         public void SSRFDetected_WithSource_ShouldReturnCorrectMessage()
         {
             var exception = AikidoException.SSRFDetected(
-                "a server-side request forgery",
                 "HttpClient.SendAsync",
                 "query.url");
 
@@ -120,12 +119,9 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void SSRFDetected_WithUnknownSource_ShouldReturnCorrectMessage()
+        public void StoredSSRFDetected_ShouldReturnCorrectMessage()
         {
-            var exception = AikidoException.SSRFDetected(
-                "a stored server-side request forgery",
-                "HttpClient.SendAsync",
-                "unknown source");
+            var exception = AikidoException.StoredSSRFDetected("HttpClient.SendAsync");
 
             Assert.That(
                 exception.Message,
