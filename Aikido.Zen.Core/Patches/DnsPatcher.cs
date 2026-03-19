@@ -41,13 +41,17 @@ namespace Aikido.Zen.Core.Patches
                 return;
             }
 
+            // Record for potential later use by our HttpClient postfix
+            // AikidoException will be swallowed by HttpClient, but will be rethrown from our finalizer
             if (attackKind == AttackKind.StoredSsrf)
             {
+                OutboundRequestHelper.RecordDetectedAttack(AttackKind.StoredSsrf, "unknown source");
                 throw AikidoException.StoredSSRFDetected(outboundRequest.Operation);
             }
 
             if (attackKind == AttackKind.Ssrf)
             {
+                OutboundRequestHelper.RecordDetectedAttack(AttackKind.Ssrf, source);
                 throw AikidoException.SSRFDetected(outboundRequest.Operation, source);
             }
 
