@@ -96,6 +96,8 @@ namespace Aikido.Zen.Test
 
         [TestCase("imds.test.com", "169.254.169.254", true)]
         [TestCase("metadata.google.internal", "169.254.169.254", false)]
+        [TestCase("169.254.169.254", "169.254.169.254", false)]
+        [TestCase("100.100.100.200", "100.100.100.200", false)]
         [TestCase("example.com", "127.0.0.1", false)]
         [TestCase("example.com", null, false)]
         public void IsStoredSSRF_MatchesNodeBehavior(string hostname, string? privateIPAddress, bool expected)
