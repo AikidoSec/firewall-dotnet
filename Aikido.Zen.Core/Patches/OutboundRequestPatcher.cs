@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Threading;
 using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
@@ -11,8 +12,11 @@ namespace Aikido.Zen.Core.Patches
         private const string OperationKind = "outgoing_http_op";
         private static readonly Uri ParsedAikidoUrl = new Uri(EnvironmentHelper.AikidoUrl);
         private static readonly Uri ParsedAikidoRealtimeUrl = new Uri(EnvironmentHelper.AikidoRealtimeUrl);
+        private static readonly AsyncLocal<OutboundRequestInfo> CurrentRequest = new AsyncLocal<OutboundRequestInfo>();
 
-        internal static bool Inspect(Uri targetUri, string operation, string module, Context context)
+        internal static OutboundRequestInfo CurrentRequestScope => CurrentRequest.Value;
+
+        internal static void Inspect(Uri targetUri, string operation, string module, Context context)
         {
             var withoutContext = context == null;
             var stopwatch = Stopwatch.StartNew();
@@ -23,7 +27,7 @@ namespace Aikido.Zen.Core.Patches
             {
                 if (Agent.Instance.Context.BlockList.IsIPBypassed(context?.RemoteAddress))
                 {
-                    return true;
+                    return;
                 }
 
                 var hostname = targetUri.Host;
@@ -33,7 +37,7 @@ namespace Aikido.Zen.Core.Patches
 
                 if (IsAikidoInternalTarget(targetUri))
                 {
-                    return true;
+                    return;
                 }
 
                 if (Agent.Instance.Context.Config.ShouldBlockOutgoingRequest(hostname))
@@ -47,10 +51,10 @@ namespace Aikido.Zen.Core.Patches
 
                 if (Agent.Instance.Context.IsProtectionDisabledForEndpoint(context))
                 {
-                    return true;
+                    return;
                 }
 
-                attackDetected = OutboundRequestHelper.InspectRequest(targetUri, context, module, operation, out var attackKind, out var source);
+                attackDetected = SSRFHelper.InspectRequest(targetUri, context, module, operation, out var attackKind, out var source);
                 blocked = attackDetected && !EnvironmentHelper.DryMode;
 
                 if (blocked)
@@ -70,10 +74,10 @@ namespace Aikido.Zen.Core.Patches
 
                 if (Agent.Instance.Context.IsProtectionDisabledForEndpoint(context))
                 {
-                    return true;
+                    return;
                 }
 
-                return true;
+                EnterRequestScope(targetUri, operation, module);
             }
             finally
             {
@@ -86,6 +90,48 @@ namespace Aikido.Zen.Core.Patches
                     blocked,
                     withoutContext);
             }
+        }
+
+        internal static void ExitRequestScope()
+        {
+            CurrentRequest.Value = null;
+        }
+
+        internal static void RecordDetectedAttack(AttackKind attackKind, string source)
+        {
+            var currentRequest = CurrentRequest.Value;
+            if (currentRequest == null)
+            {
+                return;
+            }
+
+            currentRequest.DetectedAttackKind = attackKind;
+            currentRequest.DetectedAttackSource = source;
+        }
+
+        internal static bool TryGetDetectedAttackException(out AikidoException exception)
+        {
+            exception = null;
+            var requestInfo = CurrentRequest.Value;
+
+            if (requestInfo?.DetectedAttackKind == null)
+            {
+                return false;
+            }
+
+            if (requestInfo.DetectedAttackKind == AttackKind.StoredSsrf)
+            {
+                exception = AikidoException.StoredSSRFDetected(requestInfo.Operation);
+                return true;
+            }
+
+            if (requestInfo.DetectedAttackKind == AttackKind.Ssrf)
+            {
+                exception = AikidoException.SSRFDetected(requestInfo.Operation, requestInfo.DetectedAttackSource);
+                return true;
+            }
+
+            return false;
         }
 
         private static bool IsAikidoInternalTarget(Uri targetUri)
@@ -111,6 +157,27 @@ namespace Aikido.Zen.Core.Patches
             }
 
             return false;
+        }
+
+        private static void EnterRequestScope(Uri targetUri, string operation, string module)
+        {
+            CurrentRequest.Value = new OutboundRequestInfo(targetUri, operation, module);
+        }
+
+        internal sealed class OutboundRequestInfo
+        {
+            internal OutboundRequestInfo(Uri targetUri, string operation, string module)
+            {
+                TargetUri = targetUri;
+                Operation = operation;
+                Module = module;
+            }
+
+            internal Uri TargetUri { get; }
+            internal string Operation { get; }
+            internal string Module { get; }
+            internal AttackKind? DetectedAttackKind { get; set; }
+            internal string DetectedAttackSource { get; set; }
         }
     }
 }

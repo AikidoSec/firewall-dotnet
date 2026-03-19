@@ -77,7 +77,7 @@ namespace Aikido.Zen.DotNetCore.Patches
         {
             if (__exception != null)
             {
-                OutboundRequestHelper.ExitRequestScope();
+                OutboundRequestPatcher.ExitRequestScope();
             }
 
             return __exception;
@@ -97,7 +97,7 @@ namespace Aikido.Zen.DotNetCore.Patches
         {
             if (__exception != null)
             {
-                OutboundRequestHelper.ExitRequestScope();
+                OutboundRequestPatcher.ExitRequestScope();
             }
 
             return __exception;
@@ -110,14 +110,14 @@ namespace Aikido.Zen.DotNetCore.Patches
 
         private static void PostfixSend()
         {
-            OutboundRequestHelper.ExitRequestScope();
+            OutboundRequestPatcher.ExitRequestScope();
         }
 
         private static Exception FinalizerSend(Exception __exception)
         {
             if (__exception != null)
             {
-                OutboundRequestHelper.ExitRequestScope();
+                OutboundRequestPatcher.ExitRequestScope();
             }
 
             return __exception;
@@ -125,7 +125,7 @@ namespace Aikido.Zen.DotNetCore.Patches
 
         private static bool InspectRequest(HttpRequestMessage request, HttpClient client, MethodBase originalMethod)
         {
-            var targetUri = ResolveUri(request, client);
+            var targetUri = ExtractUri(request, client);
             if (targetUri == null)
             {
                 return true;
@@ -135,16 +135,11 @@ namespace Aikido.Zen.DotNetCore.Patches
             var operation = $"{methodInfo?.DeclaringType?.Name}.{methodInfo?.Name}";
             var module = methodInfo?.DeclaringType?.Assembly.GetName().Name;
 
-            if (!OutboundRequestPatcher.Inspect(targetUri, operation, module, Zen.GetContext()))
-            {
-                return false;
-            }
-
-            OutboundRequestHelper.EnterRequestScope(targetUri, operation, module);
+            OutboundRequestPatcher.Inspect(targetUri, operation, module, Zen.GetContext());
             return true;
         }
 
-        private static Uri ResolveUri(HttpRequestMessage request, HttpClient client)
+        private static Uri ExtractUri(HttpRequestMessage request, HttpClient client)
         {
             if (client?.BaseAddress == null)
             {
@@ -163,7 +158,7 @@ namespace Aikido.Zen.DotNetCore.Patches
         {
             if (responseTask == null)
             {
-                OutboundRequestHelper.ExitRequestScope();
+                OutboundRequestPatcher.ExitRequestScope();
                 return null;
             }
 
@@ -173,7 +168,7 @@ namespace Aikido.Zen.DotNetCore.Patches
             }
             catch (Exception)
             {
-                if (OutboundRequestHelper.TryGetDetectedAttackException(out var aikidoException))
+                if (OutboundRequestPatcher.TryGetDetectedAttackException(out var aikidoException))
                 {
                     throw aikidoException;
                 }
@@ -182,7 +177,7 @@ namespace Aikido.Zen.DotNetCore.Patches
             }
             finally
             {
-                OutboundRequestHelper.ExitRequestScope();
+                OutboundRequestPatcher.ExitRequestScope();
             }
         }
     }

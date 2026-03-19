@@ -1,32 +1,12 @@
 using System;
 using System.Collections.Generic;
-using System.Threading;
-using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Vulnerabilities;
 
 namespace Aikido.Zen.Core.Helpers
 {
-    /// <summary>
-    /// A helper class for outbound request tracking
-    /// </summary>
-    public class OutboundRequestHelper
+    public static class SSRFHelper
     {
-        private static readonly AsyncLocal<OutboundRequestInfo> CurrentRequest = new AsyncLocal<OutboundRequestInfo>();
-
-        internal static OutboundRequestInfo CurrentRequestScope => CurrentRequest.Value;
-
-        internal static void EnterRequestScope(Uri targetUri, string operation, string module)
-        {
-            var current = new OutboundRequestInfo(targetUri, operation, module);
-            CurrentRequest.Value = current;
-        }
-
-        internal static void ExitRequestScope()
-        {
-            CurrentRequest.Value = null;
-        }
-
         public static bool InspectRequest(Uri targetUri, Context context, string moduleName, string operation, out AttackKind? attackKind, out string source)
         {
             attackKind = null;
@@ -118,22 +98,6 @@ namespace Aikido.Zen.Core.Helpers
             return false;
         }
 
-        internal sealed class OutboundRequestInfo
-        {
-            internal OutboundRequestInfo(Uri targetUri, string operation, string module)
-            {
-                TargetUri = targetUri;
-                Operation = operation;
-                Module = module;
-            }
-
-            internal Uri TargetUri { get; }
-            internal string Operation { get; }
-            internal string Module { get; }
-            internal AttackKind? DetectedAttackKind { get; set; }
-            internal string DetectedAttackSource { get; set; }
-        }
-
         private static IDictionary<string, object> CreateMetadata(string hostname, int? port, string privateIPAddress)
         {
             var metadata = new Dictionary<string, object>
@@ -152,43 +116,6 @@ namespace Aikido.Zen.Core.Helpers
             }
 
             return metadata;
-        }
-
-        internal static void RecordDetectedAttack(AttackKind attackKind, string source)
-        {
-            var currentRequest = CurrentRequest.Value;
-            if (currentRequest == null)
-            {
-                return;
-            }
-
-            currentRequest.DetectedAttackKind = attackKind;
-            currentRequest.DetectedAttackSource = source;
-        }
-
-        internal static bool TryGetDetectedAttackException(out AikidoException exception)
-        {
-            exception = null;
-            var requestInfo = CurrentRequest.Value;
-
-            if (requestInfo?.DetectedAttackKind == null)
-            {
-                return false;
-            }
-
-            if (requestInfo.DetectedAttackKind == AttackKind.StoredSsrf)
-            {
-                exception = AikidoException.StoredSSRFDetected(requestInfo.Operation);
-                return true;
-            }
-
-            if (requestInfo.DetectedAttackKind == AttackKind.Ssrf)
-            {
-                exception = AikidoException.SSRFDetected(requestInfo.Operation, requestInfo.DetectedAttackSource);
-                return true;
-            }
-
-            return false;
         }
     }
 }

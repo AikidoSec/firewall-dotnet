@@ -40,14 +40,14 @@ namespace Aikido.Zen.DotNetFramework.Patches
 
         private static void PostfixGetResponse()
         {
-            OutboundRequestHelper.ExitRequestScope();
+            OutboundRequestPatcher.ExitRequestScope();
         }
 
         private static Exception FinalizerGetResponse(Exception __exception)
         {
             if (__exception != null)
             {
-                OutboundRequestHelper.ExitRequestScope();
+                OutboundRequestPatcher.ExitRequestScope();
             }
 
             return __exception;
@@ -67,7 +67,7 @@ namespace Aikido.Zen.DotNetFramework.Patches
         {
             if (__exception != null)
             {
-                OutboundRequestHelper.ExitRequestScope();
+                OutboundRequestPatcher.ExitRequestScope();
             }
 
             return __exception;
@@ -82,12 +82,7 @@ namespace Aikido.Zen.DotNetFramework.Patches
 
             var operation = GetOperation(originalMethod);
             var module = GetModule(originalMethod);
-            if (!OutboundRequestPatcher.Inspect(request.RequestUri, operation, module, Zen.GetContext()))
-            {
-                return false;
-            }
-
-            OutboundRequestHelper.EnterRequestScope(request.RequestUri, operation, module);
+            OutboundRequestPatcher.Inspect(request.RequestUri, operation, module, Zen.GetContext());
             return true;
         }
 
@@ -107,7 +102,7 @@ namespace Aikido.Zen.DotNetFramework.Patches
         {
             if (responseTask == null)
             {
-                OutboundRequestHelper.ExitRequestScope();
+                OutboundRequestPatcher.ExitRequestScope();
                 return null;
             }
 
@@ -117,7 +112,7 @@ namespace Aikido.Zen.DotNetFramework.Patches
             }
             catch (Exception)
             {
-                if (OutboundRequestHelper.TryGetDetectedAttackException(out var aikidoException))
+                if (OutboundRequestPatcher.TryGetDetectedAttackException(out var aikidoException))
                 {
                     throw aikidoException;
                 }
@@ -126,7 +121,7 @@ namespace Aikido.Zen.DotNetFramework.Patches
             }
             finally
             {
-                OutboundRequestHelper.ExitRequestScope();
+                OutboundRequestPatcher.ExitRequestScope();
             }
         }
     }

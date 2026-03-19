@@ -10,7 +10,7 @@ namespace Aikido.Zen.Core.Patches
     {
         internal static void Inspect(string hostNameOrAddress, IPAddress[] resolvedAddresses, Context context)
         {
-            var outboundRequest = OutboundRequestHelper.CurrentRequestScope;
+            var outboundRequest = OutboundRequestPatcher.CurrentRequestScope;
             if (outboundRequest == null)
             {
                 return;
@@ -27,7 +27,7 @@ namespace Aikido.Zen.Core.Patches
                 return;
             }
 
-            var attackDetected = OutboundRequestHelper.DetectSSRF(
+            var attackDetected = SSRFHelper.DetectSSRF(
                 outboundRequest.TargetUri,
                 privateIPAddress,
                 context,
@@ -41,17 +41,17 @@ namespace Aikido.Zen.Core.Patches
                 return;
             }
 
-            // Record for potential later use by our HttpClient postfix
-            // AikidoException will be swallowed by HttpClient, but will be rethrown from our finalizer
+            // Record for later use by the async HTTP/WebRequest wrappers when HttpClient
+            // swallows the original DNS-time AikidoException and surfaces its own exception type.
             if (attackKind == AttackKind.StoredSsrf)
             {
-                OutboundRequestHelper.RecordDetectedAttack(AttackKind.StoredSsrf, "unknown source");
+                OutboundRequestPatcher.RecordDetectedAttack(AttackKind.StoredSsrf, "unknown source");
                 throw AikidoException.StoredSSRFDetected(outboundRequest.Operation);
             }
 
             if (attackKind == AttackKind.Ssrf)
             {
-                OutboundRequestHelper.RecordDetectedAttack(AttackKind.Ssrf, source);
+                OutboundRequestPatcher.RecordDetectedAttack(AttackKind.Ssrf, source);
                 throw AikidoException.SSRFDetected(outboundRequest.Operation, source);
             }
 
