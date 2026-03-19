@@ -90,7 +90,6 @@ namespace Aikido.Zen.Core.Helpers
                     );
 
                     context.AttackDetected = true;
-                    RecordDetectedAttack(AttackKind.Ssrf, $"{attackSource.ToJsonName()}{attackPath}");
                     attackKind = AttackKind.Ssrf;
                     source = $"{attackSource.ToJsonName()}{attackPath}";
                     return true;
@@ -111,7 +110,6 @@ namespace Aikido.Zen.Core.Helpers
                     paths: Array.Empty<string>()
                 );
 
-                RecordDetectedAttack(AttackKind.StoredSsrf, "unknown source");
                 attackKind = AttackKind.StoredSsrf;
                 source = "unknown source";
                 return true;
