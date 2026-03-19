@@ -66,7 +66,17 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 return false;
             }
 
-            if (TrustedImdsHostnames.Contains(NormalizeHostname(hostname)))
+            var normalizedHostname = NormalizeHostname(hostname);
+            // These are legitimate metadata service hostnames, so reaching an IMDS IP through them
+            // is not evidence of hostname spoofing.
+            if (TrustedImdsHostnames.Contains(normalizedHostname))
+            {
+                return false;
+            }
+
+            // Stored SSRF only applies to hostname resolution spoofing. If the original target was
+            // already a literal IP address, this is not a stored SSRF case.
+            if (IPAddress.TryParse(normalizedHostname, out _))
             {
                 return false;
             }
