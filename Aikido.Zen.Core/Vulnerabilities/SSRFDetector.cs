@@ -18,19 +18,6 @@ namespace Aikido.Zen.Core.Vulnerabilities
             "localdomain",
             "metadata"
         };
-        private static readonly HashSet<string> TrustedImdsHostnames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        {
-            "metadata.google.internal",
-            "metadata.goog"
-        };
-        private static readonly HashSet<string> ImdsIPAddresses = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        {
-            "169.254.169.254",
-            "::ffff:169.254.169.254",
-            "100.100.100.200",
-            "::ffff:100.100.100.200",
-            "fd00:ec2::254"
-        };
 
         internal static bool HasSameHostAndPort(Uri uri1, Uri uri2)
         {
@@ -86,7 +73,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
             var normalizedHostname = NormalizeHostname(hostname);
             // These are legitimate metadata service hostnames, so reaching an IMDS IP through them
             // is not evidence of hostname spoofing.
-            if (TrustedImdsHostnames.Contains(normalizedHostname))
+            if (ImdsHelper.IsTrustedHostname(normalizedHostname))
             {
                 return false;
             }
@@ -98,7 +85,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 return false;
             }
 
-            return ImdsIPAddresses.Contains(privateIPAddress);
+            return ImdsHelper.IsImdsIPAddress(privateIPAddress);
         }
 
         internal static bool TryGetPrivateOrLocalIPAddress(string hostname, out string privateIPAddress)
