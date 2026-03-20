@@ -57,6 +57,14 @@ jobs:
                   dotnet tool restore
                   dotnet restore
 
+            - name: Add local.aikido.io to hosts
+              shell: powershell
+              run: |
+                  $hostsPath = "$env:WINDIR\System32\drivers\etc\hosts"
+                  if (-not (Select-String -Path $hostsPath -Pattern '(^|\s)local\.aikido\.io(\s|$)' -Quiet)) {
+                      Add-Content -Path $hostsPath -Value "`r`n127.0.0.1 local.aikido.io"
+                  }
+
             - name: Build and Test
               run: |
                   dotnet tool install --global Cake.Tool
