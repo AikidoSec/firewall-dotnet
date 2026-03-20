@@ -1,6 +1,8 @@
+using System;
 using System.Net;
 using System.Reflection;
 using System.Threading.Tasks;
+using Aikido.Zen.Core;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Patches;
 using HarmonyLib;
@@ -11,13 +13,13 @@ namespace Aikido.Zen.DotNetFramework.Patches
     {
         public static void ApplyPatches(Harmony harmony)
         {
-            PatchMethod(harmony, typeof(WebRequest), "GetResponse", nameof(PrefixGetResponse));
-            PatchMethod(harmony, typeof(WebRequest), "GetResponseAsync", nameof(PrefixGetResponseAsync));
-            PatchMethod(harmony, typeof(HttpWebRequest), "GetResponse", nameof(PrefixGetResponse));
-            PatchMethod(harmony, typeof(HttpWebRequest), "GetResponseAsync", nameof(PrefixGetResponseAsync));
+            PatchMethod(harmony, typeof(WebRequest), "GetResponse", nameof(PrefixGetResponse), nameof(PostfixGetResponse), nameof(FinalizerGetResponse));
+            PatchMethod(harmony, typeof(WebRequest), "GetResponseAsync", nameof(PrefixGetResponseAsync), nameof(PostfixGetResponseAsync), nameof(FinalizerGetResponseAsync));
+            PatchMethod(harmony, typeof(HttpWebRequest), "GetResponse", nameof(PrefixGetResponse), nameof(PostfixGetResponse), nameof(FinalizerGetResponse));
+            PatchMethod(harmony, typeof(HttpWebRequest), "GetResponseAsync", nameof(PrefixGetResponseAsync), nameof(PostfixGetResponseAsync), nameof(FinalizerGetResponseAsync));
         }
 
-        private static void PatchMethod(Harmony harmony, System.Type type, string methodName, string prefixMethodName)
+        private static void PatchMethod(Harmony harmony, System.Type type, string methodName, string prefixMethodName, string postfixMethodName, string finalizerMethodName)
         {
             var method = AccessTools.Method(type, methodName);
             if (method == null || method.IsAbstract)
@@ -26,50 +28,62 @@ namespace Aikido.Zen.DotNetFramework.Patches
             }
 
             var prefix = typeof(WebRequestPatches).GetMethod(prefixMethodName, BindingFlags.Static | BindingFlags.NonPublic);
-            harmony.Patch(method, new HarmonyMethod(prefix));
+            var postfix = typeof(WebRequestPatches).GetMethod(postfixMethodName, BindingFlags.Static | BindingFlags.NonPublic);
+            var finalizer = typeof(WebRequestPatches).GetMethod(finalizerMethodName, BindingFlags.Static | BindingFlags.NonPublic);
+            harmony.Patch(method, new HarmonyMethod(prefix), new HarmonyMethod(postfix), null, new HarmonyMethod(finalizer));
         }
 
-        private static bool PrefixGetResponse(WebRequest __instance, MethodBase __originalMethod, ref WebResponse __result)
+        private static bool PrefixGetResponse(WebRequest __instance, MethodBase __originalMethod)
         {
-            if (__instance?.RequestUri == null)
-            {
-                return true;
-            }
-
-            var inspection = OutboundRequestPatcher.Inspect(
-                __instance.RequestUri,
-                GetOperation(__originalMethod),
-                GetModule(__originalMethod),
-                Zen.GetContext());
-
-            if (inspection.ShouldProceed)
-            {
-                return true;
-            }
-
-            throw inspection.Exception;
+            return InspectRequest(__instance, __originalMethod);
         }
 
-        private static bool PrefixGetResponseAsync(WebRequest __instance, MethodBase __originalMethod, ref Task<WebResponse> __result)
+        private static void PostfixGetResponse()
         {
-            if (__instance?.RequestUri == null)
+            OutboundRequestPatcher.ExitRequestScope();
+        }
+
+        private static Exception FinalizerGetResponse(Exception __exception)
+        {
+            if (__exception != null)
+            {
+                OutboundRequestPatcher.ExitRequestScope();
+            }
+
+            return __exception;
+        }
+
+        private static bool PrefixGetResponseAsync(WebRequest __instance, MethodBase __originalMethod)
+        {
+            return InspectRequest(__instance, __originalMethod);
+        }
+
+        private static void PostfixGetResponseAsync(ref Task<WebResponse> __result)
+        {
+            __result = ExitRequestScopeWhenCompletedAsync(__result);
+        }
+
+        private static Exception FinalizerGetResponseAsync(Exception __exception)
+        {
+            if (__exception != null)
+            {
+                OutboundRequestPatcher.ExitRequestScope();
+            }
+
+            return __exception;
+        }
+
+        private static bool InspectRequest(WebRequest request, MethodBase originalMethod)
+        {
+            if (request?.RequestUri == null)
             {
                 return true;
             }
 
-            var inspection = OutboundRequestPatcher.Inspect(
-                __instance.RequestUri,
-                GetOperation(__originalMethod),
-                GetModule(__originalMethod),
-                Zen.GetContext());
-
-            if (inspection.ShouldProceed)
-            {
-                return true;
-            }
-
-            __result = Task.FromException<WebResponse>(inspection.Exception);
-            return false;
+            var operation = GetOperation(originalMethod);
+            var module = GetModule(originalMethod);
+            OutboundRequestPatcher.Inspect(request.RequestUri, operation, module, Zen.GetContext());
+            return true;
         }
 
         private static string GetOperation(MethodBase originalMethod)
@@ -82,6 +96,33 @@ namespace Aikido.Zen.DotNetFramework.Patches
         {
             var methodInfo = originalMethod as MethodInfo;
             return methodInfo?.DeclaringType?.Assembly.GetName().Name;
+        }
+
+        private static async Task<WebResponse> ExitRequestScopeWhenCompletedAsync(Task<WebResponse> responseTask)
+        {
+            if (responseTask == null)
+            {
+                OutboundRequestPatcher.ExitRequestScope();
+                return null;
+            }
+
+            try
+            {
+                return await responseTask.ConfigureAwait(false);
+            }
+            catch (Exception)
+            {
+                if (OutboundRequestPatcher.TryGetDetectedAttackException(out var aikidoException))
+                {
+                    throw aikidoException;
+                }
+
+                throw;
+            }
+            finally
+            {
+                OutboundRequestPatcher.ExitRequestScope();
+            }
         }
     }
 }

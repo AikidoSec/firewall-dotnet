@@ -26,7 +26,7 @@ namespace Aikido.Zen.DotNetCore.Patches
 
                 // Patch outbound HTTP methods outside of the core package so SSRF inspection can use Zen.GetContext().
                 HttpClientPatches.ApplyPatches(harmony);
-                WebRequestPatches.ApplyPatches(harmony);
+                DnsPatches.ApplyPatches(harmony);
 
                 // Patch LLM client methods to monitor LLM API calls
                 LLMPatches.ApplyPatches(harmony);
