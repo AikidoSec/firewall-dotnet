@@ -21,7 +21,9 @@ namespace Aikido.Zen.DotNetFramework.Patches
 
         private static void PatchMethod(Harmony harmony, System.Type type, string methodName, string prefixMethodName, string postfixMethodName, string finalizerMethodName)
         {
-            var method = AccessTools.Method(type, methodName);
+            var method = type.GetMethod(
+                methodName,
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
             if (method == null || method.IsAbstract)
             {
                 return;
