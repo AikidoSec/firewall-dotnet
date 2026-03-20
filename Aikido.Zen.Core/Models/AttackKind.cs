@@ -12,7 +12,8 @@ namespace Aikido.Zen.Core.Models
         SqlInjection,
         ShellInjection,
         PathTraversal,
-        Ssrf
+        Ssrf,
+        StoredSsrf
     }
 
     public static class AttackKindExtensions 
@@ -31,6 +32,8 @@ namespace Aikido.Zen.Core.Models
                     return "path_traversal";
                 case AttackKind.Ssrf:
                     return "ssrf";
+                case AttackKind.StoredSsrf:
+                    return "stored_ssrf";
                 default:
                     throw new ArgumentOutOfRangeException(nameof(kind));
             }
@@ -51,6 +54,8 @@ namespace Aikido.Zen.Core.Models
                     return "a path traversal attack";
                 case AttackKind.Ssrf:
                     return "a server-side request forgery";
+                case AttackKind.StoredSsrf:
+                    return "a stored server-side request forgery";
                 default:
                     throw new ArgumentOutOfRangeException(nameof(kind));
             }

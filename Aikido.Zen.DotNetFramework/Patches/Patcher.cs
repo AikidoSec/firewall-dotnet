@@ -26,6 +26,7 @@ namespace Aikido.Zen.DotNetFramework.Patches
                 ProcessPatches.ApplyPatches(harmony);
 
                 // Patch outbound HTTP methods outside of the core package so SSRF inspection can use Zen.GetContext().
+                DnsPatches.ApplyPatches(harmony);
                 HttpClientPatches.ApplyPatches(harmony);
                 WebRequestPatches.ApplyPatches(harmony);
 
