@@ -156,8 +156,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ContextModuleTests.cs" />
+    <Compile Include="Patches\HttpClientAndDnsPatchesTests.cs" />
+    <Compile Include="Patches\HttpClientRedirectTests.cs" />
     <Compile Include="Patches\IOPatchesTests.cs" />
     <Compile Include="Patches\LLMPatchesTests.cs" />
+    <Compile Include="Patches\WebRequestPatchesTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
