@@ -54,30 +54,39 @@ namespace Aikido.Zen.Core.Patches
                     return;
                 }
 
-                attackDetected = SSRFHelper.InspectRequest(targetUri, context, module, operation, out var attackKind, out var source);
-                blocked = attackDetected && !EnvironmentHelper.DryMode;
-
-                if (blocked)
-                {
-                    if (attackKind == AttackKind.StoredSsrf)
-                    {
-                        throw AikidoException.StoredSSRFDetected(operation);
-                    }
-
-                    if (attackKind == AttackKind.Ssrf)
-                    {
-                        throw AikidoException.SSRFDetected(operation, source);
-                    }
-
-                    throw new InvalidOperationException("SSRF attack detected without a concrete attack kind.");
-                }
-
-                if (Agent.Instance.Context.IsProtectionDisabledForEndpoint(context))
+                // SSRF skip non-suspicious requests
+                if (!SSRFHelper.IsSuspiciousRequest(targetUri, context, module, operation, out var privateIPAddress))
                 {
                     return;
                 }
 
-                EnterRequestScope(targetUri, operation, module);
+                if (privateIPAddress != null)
+                {
+                    // Request suspicious and we already have the ip
+                    attackDetected = SSRFHelper.DetectSSRF(targetUri, privateIPAddress, context, module, operation, out AttackKind? attackKind, out string source);
+                    blocked = attackDetected && !EnvironmentHelper.DryMode;
+
+                    if (blocked)
+                    {
+                        if (attackKind == AttackKind.StoredSsrf)
+                        {
+                            throw AikidoException.StoredSSRFDetected(operation);
+                        }
+
+                        if (attackKind == AttackKind.Ssrf)
+                        {
+                            throw AikidoException.SSRFDetected(operation, source);
+                        }
+
+                        throw new InvalidOperationException("SSRF attack detected without a concrete attack kind.");
+                    }
+                }
+                else
+                {
+                    // Request suspicious but we only have hostname and no resolution yet
+                    // Dns will come in later and resolve the ip
+                    EnterRequestScope(targetUri, operation, module);
+                }
             }
             finally
             {

@@ -70,6 +70,30 @@ namespace Aikido.Zen.Test
             Assert.That(result, Is.False);
         }
 
+        [TestCase("http://localhost:8080/outbound", "http://localhost:8080", true)]
+        [TestCase("http://localhost:80/outbound", "https://localhost/test/3", true)]
+        [TestCase("http://localhost:443/outbound", "http://localhost/test/4", true)]
+        [TestCase("http://localhost:4999/outbound", "http://localhost:5000/test/2", false)]
+        [TestCase("http://app.local/outbound", "http://localhost:80", false)]
+        public void IsRequestToItself_MatchesPythonBehavior(string serverUrl, string outboundUrl, bool expected)
+        {
+            var result = SSRFDetector.IsRequestToItself(new Uri(serverUrl), new Uri(outboundUrl));
+
+            Assert.That(result, Is.EqualTo(expected));
+        }
+
+        [Test]
+        public void IsRequestToItself_WhenTrustProxyDisabled_ReturnsFalse()
+        {
+            Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", "false");
+
+            var result = SSRFDetector.IsRequestToItself(
+                new Uri("http://localhost:80/outbound"),
+                new Uri("https://localhost/test/3"));
+
+            Assert.That(result, Is.False);
+        }
+
         [TestCase("backend", true)]
         [TestCase("valid_hostname", true)]
         [TestCase("localhost", false)]
