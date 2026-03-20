@@ -17,7 +17,6 @@ namespace Aikido.Zen.Tests.DotNetFramework.Patches
 {
     [TestFixture]
     [NonParallelizable]
-    [Ignore("The current net48 HttpClient redirect/hostname SSRF path does not match DotNetCore and is not stable under the test runner.")]
     public class HttpClientRedirectTests
     {
         private const string HarmonyId = "com.aikido.zen.tests.dotnetframework.httpclient.redirects";
