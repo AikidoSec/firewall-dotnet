@@ -7,10 +7,9 @@ namespace Aikido.Zen.Core.Helpers
 {
     public static class SSRFHelper
     {
-        public static bool InspectRequest(Uri targetUri, Context context, string moduleName, string operation, out AttackKind? attackKind, out string source)
+        public static bool IsSuspiciousRequest(Uri targetUri, Context context, string moduleName, string operation, out string privateIPAddress)
         {
-            attackKind = null;
-            source = null;
+            privateIPAddress = null;
 
             if (targetUri == null)
             {
@@ -18,17 +17,13 @@ namespace Aikido.Zen.Core.Helpers
             }
 
             Uri.TryCreate(context?.Url, UriKind.Absolute, out var serverUri);
-            if (SSRFDetector.HasSameHostAndPort(targetUri, serverUri))
+            if (SSRFDetector.IsRequestToItself(serverUri, targetUri))
             {
                 return false;
             }
 
-            if (SSRFDetector.TryGetPrivateOrLocalIPAddress(targetUri.Host, out var privateIPAddress))
-            {
-                return DetectSSRF(targetUri, privateIPAddress, context, moduleName, operation, out attackKind, out source);
-            }
-
-            return false;
+            SSRFDetector.TryGetPrivateOrLocalIPAddress(targetUri.Host, out privateIPAddress);
+            return true;
         }
 
         internal static bool DetectSSRF(Uri targetUri, string privateIPAddress, Context context, string moduleName, string operation, out AttackKind? attackKind, out string source)
@@ -38,6 +33,7 @@ namespace Aikido.Zen.Core.Helpers
 
             if (privateIPAddress == null)
             {
+                // We need the ip address at this point
                 return false;
             }
 

@@ -43,6 +43,23 @@ namespace Aikido.Zen.Core.Vulnerabilities
             return result == 0;
         }
 
+        internal static bool IsRequestToItself(Uri serverUri, Uri outboundUri)
+        {
+            if (!EnvironmentHelper.TrustProxy || serverUri == null || outboundUri == null)
+            {
+                return false;
+            }
+
+            var serverHostname = NormalizeHostname(serverUri.Host);
+            var outboundHostname = NormalizeHostname(outboundUri.Host);
+            if (!string.Equals(serverHostname, outboundHostname, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            return HaveEquivalentSelfRequestPorts(serverUri.Port, outboundUri.Port);
+        }
+
         internal static bool IsRequestToServiceHostname(string hostname)
         {
             if (string.IsNullOrWhiteSpace(hostname))
@@ -125,6 +142,26 @@ namespace Aikido.Zen.Core.Vulnerabilities
             {
                 return normalizedHostname;
             }
+        }
+
+        private static bool HaveEquivalentSelfRequestPorts(int serverPort, int outboundPort)
+        {
+            if (serverPort == outboundPort)
+            {
+                return true;
+            }
+
+            if (serverPort == 80 && outboundPort == 443)
+            {
+                return true;
+            }
+
+            if (serverPort == 443 && outboundPort == 80)
+            {
+                return true;
+            }
+
+            return false;
         }
     }
 }
