@@ -13,53 +13,49 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Azure.Core" Version="1.38.0" />
-    <PackageReference Include="Azure.Identity" Version="1.11.4" />
-    <PackageReference Include="BouncyCastle.Cryptography" Version="2.3.1" />
-    <PackageReference Include="EntityFramework" Version="6.4.4" />
-    <PackageReference Include="Google.Protobuf" Version="3.26.1" />
-    <PackageReference Include="K4os.Compression.LZ4" Version="1.3.8" />
-    <PackageReference Include="K4os.Compression.LZ4.Streams" Version="1.3.8" />
-    <PackageReference Include="K4os.Hash.xxHash" Version="1.0.8" />
-    <PackageReference Include="Lib.Harmony" Version="2.4.2" />
-    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.2.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Http.Features" Version="2.2.0" />
-    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="9.0.2" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.2" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="6.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Primitives" Version="6.0.0" />
-    <PackageReference Include="Microsoft.Identity.Client" Version="4.61.3" />
-    <PackageReference Include="Microsoft.Identity.Client.Extensions.Msal" Version="4.61.3" />
-    <PackageReference Include="Microsoft.IdentityModel.Abstractions" Version="6.35.0" />
-    <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="6.35.0" />
-    <PackageReference Include="Microsoft.IdentityModel.Logging" Version="6.35.0" />
-    <PackageReference Include="Microsoft.IdentityModel.Protocols" Version="6.35.0" />
-    <PackageReference Include="Microsoft.IdentityModel.Protocols.OpenIdConnect" Version="6.35.0" />
-    <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="6.35.0" />
-    <PackageReference Include="Microsoft.Web.Infrastructure" Version="1.0.0" />
-    <PackageReference Include="System.Buffers" Version="4.5.1" />
-    <PackageReference Include="System.ClientModel" Version="1.0.0" />
-    <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.7.0" />
-    <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="9.0.2" />
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.35.0" />
-    <PackageReference Include="System.IO.FileSystem.AccessControl" Version="5.0.0" />
-    <PackageReference Include="System.IO.Pipelines" Version="9.0.2" />
-    <PackageReference Include="System.Memory" Version="4.5.5" />
-    <PackageReference Include="System.Memory.Data" Version="1.0.2" />
-    <PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
-    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="6.0.0" />
-    <PackageReference Include="System.Runtime.InteropServices.RuntimeInformation" Version="4.3.0" />
-    <PackageReference Include="System.Security.AccessControl" Version="5.0.0" />
-    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="4.7.0" />
-    <PackageReference Include="System.Security.Principal.Windows" Version="5.0.0" />
-    <PackageReference Include="System.Text.Encodings.Web" Version="6.0.0" />
-    <PackageReference Include="System.Text.Json" Version="6.0.1" />
-    <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.4" />
-    <PackageReference Include="System.ValueTuple" Version="4.5.0" />
-    <PackageReference Include="ZstdSharp.Port" Version="0.8.0" />
-    <PackageReference Include="Fody" Version="6.9.0" PrivateAssets="All" />
-    <PackageReference Include="Costura.Fody" Version="6.0.0" PrivateAssets="All" />
+    <PackageReference Include="Azure.Core" />
+    <PackageReference Include="Azure.Identity" />
+    <PackageReference Include="BouncyCastle.Cryptography" />
+    <PackageReference Include="EntityFramework" />
+    <PackageReference Include="Google.Protobuf" />
+    <PackageReference Include="K4os.Compression.LZ4" />
+    <PackageReference Include="K4os.Compression.LZ4.Streams" />
+    <PackageReference Include="K4os.Hash.xxHash" />
+    <PackageReference Include="Lib.Harmony" />
+    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" />
+    <PackageReference Include="Microsoft.AspNetCore.Http.Features" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" />
+    <PackageReference Include="Microsoft.Extensions.Primitives" />
+    <PackageReference Include="Microsoft.Identity.Client" />
+    <PackageReference Include="Microsoft.Identity.Client.Extensions.Msal" />
+    <PackageReference Include="Microsoft.IdentityModel.Abstractions" />
+    <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" />
+    <PackageReference Include="Microsoft.IdentityModel.Logging" />
+    <PackageReference Include="Microsoft.IdentityModel.Protocols" />
+    <PackageReference Include="Microsoft.IdentityModel.Protocols.OpenIdConnect" />
+    <PackageReference Include="Microsoft.IdentityModel.Tokens" />
+    <PackageReference Include="Microsoft.Web.Infrastructure" />
+    <PackageReference Include="System.Buffers" />
+    <PackageReference Include="System.ClientModel" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" />
+    <PackageReference Include="System.IO.FileSystem.AccessControl" />
+    <PackageReference Include="System.Memory" />
+    <PackageReference Include="System.Memory.Data" />
+    <PackageReference Include="System.Numerics.Vectors" />
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" />
+    <PackageReference Include="System.Runtime.InteropServices.RuntimeInformation" />
+    <PackageReference Include="System.Security.AccessControl" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" />
+    <PackageReference Include="System.Security.Principal.Windows" />
+    <PackageReference Include="System.Text.Encodings.Web" />
+    <PackageReference Include="System.Text.Json" />
+    <PackageReference Include="System.Threading.Tasks.Extensions" />
+    <PackageReference Include="System.ValueTuple" />
+    <PackageReference Include="ZstdSharp.Port" />
+    <PackageReference Include="Fody" PrivateAssets="All" />
+    <PackageReference Include="Costura.Fody" PrivateAssets="All" />
     <Reference Include="System.Web" />
   </ItemGroup>
 

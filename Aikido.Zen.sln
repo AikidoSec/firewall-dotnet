@@ -6,7 +6,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Aikido.Zen.Core", "Aikido.Z
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Aikido.Zen.Tests", "Aikido.Zen.Test\Aikido.Zen.Tests.csproj", "{34D536F0-E863-41D3-B5DB-62372F25E713}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aikido.Zen.DotNetFramework", "Aikido.Zen.DotNetFramework\Aikido.Zen.DotNetFramework.csproj", "{E25D0127-765E-49E7-85E5-4B45E19499B2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Aikido.Zen.DotNetFramework", "Aikido.Zen.DotNetFramework\Aikido.Zen.DotNetFramework.csproj", "{E25D0127-765E-49E7-85E5-4B45E19499B2}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Aikido.Zen.DotNetCore", "Aikido.Zen.DotNetCore\Aikido.Zen.DotNetCore.csproj", "{E932836E-B927-41DC-937B-3328ACE8BCC1}"
 EndProject
@@ -25,7 +25,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "sample-apps", "sample-apps"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DotNetCore.Sample.App", "sample-apps\DotNetCore.Sample.App\DotNetCore.Sample.App.csproj", "{4624A4BD-6482-454A-B311-F44B801C97B3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotNetFramework.Sample.App", "sample-apps\DotNetFramework.Sample.App\DotNetFramework.Sample.App.csproj", "{2FECB1FE-D637-4E3B-806D-568CEAE234E7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DotNetFramework.Sample.App", "sample-apps\DotNetFramework.Sample.App\DotNetFramework.Sample.App.csproj", "{2FECB1FE-D637-4E3B-806D-568CEAE234E7}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "sample-apps", "sample-apps", "{2F12D7E2-3F23-469E-B94D-B36C13AC4466}"
 EndProject
@@ -37,19 +37,19 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SqlServerSampleApp", "e2e\s
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Aikido.Zen.Test.End2End", "Aikido.Zen.Test.End2End\Aikido.Zen.Test.End2End.csproj", "{9CC15A52-EB3D-4650-BEC0-F9581EF22849}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SqliteSampleApp", "e2e\sample-apps\SQLiteSampleApp\SqliteSampleApp.csproj", "{4891B10D-E986-487B-A1B4-277F18EAB185}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SqliteSampleApp", "e2e\sample-apps\SQLiteSampleApp\SqliteSampleApp.csproj", "{4891B10D-E986-487B-A1B4-277F18EAB185}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SampleApp.Common", "SampleApp.Common\SampleApp.Common.csproj", "{94D50DC6-1261-45D4-BFC7-FA003BB053B4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SampleApp.Common", "SampleApp.Common\SampleApp.Common.csproj", "{94D50DC6-1261-45D4-BFC7-FA003BB053B4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UmbracoSampleApp", "e2e\sample-apps\UmbracoSampleApp\UmbracoSampleApp.csproj", "{6E200EFE-8EBC-4226-A340-EB65D3CA0AEC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UmbracoSampleApp", "e2e\sample-apps\UmbracoSampleApp\UmbracoSampleApp.csproj", "{6E200EFE-8EBC-4226-A340-EB65D3CA0AEC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aikido.Zen.Tests.DotNetFramework", "Aikido.Zen.Tests.DotNetFramework\Aikido.Zen.Tests.DotNetFramework.csproj", "{8EB5DD53-9E86-47B5-8E4F-96D3D4D45B71}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Aikido.Zen.Tests.DotNetFramework", "Aikido.Zen.Tests.DotNetFramework\Aikido.Zen.Tests.DotNetFramework.csproj", "{8EB5DD53-9E86-47B5-8E4F-96D3D4D45B71}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aikido.Zen.Tests.DotNetCore", "Aikido.Zen.Tests.DotNetCore\Aikido.Zen.Tests.DotNetCore.csproj", "{A778053F-B458-4764-A967-C54EB05C70FE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Aikido.Zen.Tests.DotNetCore", "Aikido.Zen.Tests.DotNetCore\Aikido.Zen.Tests.DotNetCore.csproj", "{A778053F-B458-4764-A967-C54EB05C70FE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aikido.Zen.Tests.Mocks", "Aikido.Zen.Tests.Mocks\Aikido.Zen.Tests.Mocks.csproj", "{E9404338-175F-49B6-81FA-55ACBF93F1DE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Aikido.Zen.Tests.Mocks", "Aikido.Zen.Tests.Mocks\Aikido.Zen.Tests.Mocks.csproj", "{E9404338-175F-49B6-81FA-55ACBF93F1DE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EFCoreSqliteSampleApp", "e2e\sample-apps\EFCoreSqliteSampleApp\EFCoreSqliteSampleApp.csproj", "{5D8FB1C2-40DD-4253-9338-3BA7B3184CFA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFCoreSqliteSampleApp", "e2e\sample-apps\EFCoreSqliteSampleApp\EFCoreSqliteSampleApp.csproj", "{5D8FB1C2-40DD-4253-9338-3BA7B3184CFA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

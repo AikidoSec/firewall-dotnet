@@ -8,7 +8,7 @@
 
   <ItemGroup>
       <ProjectReference Include="..\..\..\Aikido.Zen.DotNetCore\Aikido.Zen.DotNetCore.csproj" />
-      <PackageReference Include="MongoDB.Driver" Version="2.24.0" />
+      <PackageReference Include="MongoDB.Driver" />
   </ItemGroup>
 
 </Project>

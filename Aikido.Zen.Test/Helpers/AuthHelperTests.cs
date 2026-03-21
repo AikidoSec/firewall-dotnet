@@ -34,7 +34,7 @@ namespace Aikido.Zen.Test.Helpers
 
             var result = AuthHelper.MergeApiAuthTypes(existing, newAuth);
 
-            Assert.That(result, Is.EqualTo(expected));
+            Assert.That(result, Is.EqualTo(expected).UsingPropertiesComparer());
         }
 
         [Test]

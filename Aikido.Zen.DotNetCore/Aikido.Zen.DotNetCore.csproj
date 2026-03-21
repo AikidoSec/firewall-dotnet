@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>net6.0;net7.0;net8.0;net9.0;net10.0</TargetFrameworks>
@@ -10,34 +10,18 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Lib.Harmony" Version="2.4.2" />
-    <PackageReference Include="Microsoft.AspNetCore.Hosting.Abstractions" Version="2.3.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Http" Version="2.2.2" />
-    <PackageReference Include="Microsoft.AspNetCore.Routing" Version="2.2.2" />
-    <PackageReference Include="Microsoft.AspNetCore.Routing.Abstractions" Version="2.2.0" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0" Condition="'$(TargetFramework)' == 'net6.0'" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" Condition="'$(TargetFramework)' == 'net7.0'" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" Condition="'$(TargetFramework)' == 'net8.0'" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.2" Condition="'$(TargetFramework)' == 'net9.0'" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.1" Condition="'$(TargetFramework)' == 'net10.0'" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="6.0.0" Condition="'$(TargetFramework)' == 'net6.0'" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="7.0.0" Condition="'$(TargetFramework)' == 'net7.0'" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.0" Condition="'$(TargetFramework)' == 'net8.0'" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.2" Condition="'$(TargetFramework)' == 'net9.0'" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.1" Condition="'$(TargetFramework)' == 'net10.0'" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="6.0.0" Condition="'$(TargetFramework)' == 'net6.0'" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="7.0.0" Condition="'$(TargetFramework)' == 'net7.0'" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.0" Condition="'$(TargetFramework)' == 'net8.0'" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.2" Condition="'$(TargetFramework)' == 'net9.0'" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.1" Condition="'$(TargetFramework)' == 'net10.0'" />
-    <PackageReference Include="System.Text.Json" Version="6.0.11" Condition="'$(TargetFramework)' == 'net6.0'" />
-    <PackageReference Include="System.Text.Json" Version="8.0.5" Condition="'$(TargetFramework)' == 'net7.0'" />
-    <PackageReference Include="System.Text.Json" Version="8.0.5" Condition="'$(TargetFramework)' == 'net8.0'" />
-    <PackageReference Include="System.Text.Json" Version="9.0.1" Condition="'$(TargetFramework)' == 'net9.0'" />
-    <PackageReference Include="System.Text.Json" Version="10.0.1" Condition="'$(TargetFramework)' == 'net10.0'" />
-    <PackageReference Include="Fody" Version="6.9.0" PrivateAssets="All" />
-    <PackageReference Include="Costura.Fody" Version="6.0.0" PrivateAssets="All" />
-    <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="[6.0,)" />
+    <PackageReference Include="Lib.Harmony" />
+    <PackageReference Include="Microsoft.AspNetCore.Hosting.Abstractions" />
+    <PackageReference Include="Microsoft.AspNetCore.Http" />
+    <PackageReference Include="Microsoft.AspNetCore.Routing" />
+    <PackageReference Include="Microsoft.AspNetCore.Routing.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Options" />
+    <PackageReference Include="System.Text.Json" />
+    <PackageReference Include="Fody" PrivateAssets="All" />
+    <PackageReference Include="Costura.Fody" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.Extensions.DependencyModel" />
   </ItemGroup>
 
   <ItemGroup>
