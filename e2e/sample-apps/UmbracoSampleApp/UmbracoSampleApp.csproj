@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="Umbraco.Cms" Version="17.2.2" />
+    <PackageReference Include="Umbraco.Cms.DevelopmentMode.Backoffice" Version="17.2.2" />
     <PackageReference Include="MimeKit" Version="4.15.1" />
     <ProjectReference Include="..\..\..\Aikido.Zen.DotNetCore\Aikido.Zen.DotNetCore.csproj" />
     <ProjectReference Include="..\..\..\SampleApp.Common\SampleApp.Common.csproj" />
