@@ -79,10 +79,10 @@ namespace Aikido.Zen.Test
 
         private class TestCase
         {
-            public string Command { get; set; }
+            public string? Command { get; set; }
             public int Dialect { get; set; }
-            public string UserInput { get; set; }
-            public string Description { get; set; }
+            public string? UserInput { get; set; }
+            public string? Description { get; set; }
             public bool IsInjection { get; set; }
         }
     }

@@ -6,7 +6,7 @@ namespace Aikido.Zen.Test
 {
     public class ZenApiTests
     {
-        private IZenApi _zenApi;
+        private IZenApi _zenApi = null!;
 
         [Test]
         public async Task ReportingApiClient_ReportAsync_ShouldReturnSuccess()

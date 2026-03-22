@@ -1,7 +1,6 @@
 using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Helpers;
 using NUnit.Framework;
-using System;
 using System.Net;
 using System.Net.Http;
 using System.Text;
@@ -164,7 +163,7 @@ namespace Aikido.Zen.Test.Helpers
             Uri nullBaseUrl = null;
 
             // Act & Assert
-            Assert.Throws<ArgumentNullException>(() => 
+            Assert.Throws<ArgumentNullException>(() =>
                 APIHelper.CreateRequest(TestToken, nullBaseUrl, "/test", HttpMethod.Get));
         }
 
@@ -172,13 +171,13 @@ namespace Aikido.Zen.Test.Helpers
         public void CreateRequest_WithNullToken_ShouldThrowArgumentNullException()
         {
             // Act & Assert
-            Assert.Throws<ArgumentNullException>(() => 
+            Assert.Throws<ArgumentNullException>(() =>
                 APIHelper.CreateRequest(null, _baseUrl, "/test", HttpMethod.Get));
         }
 
         private class TestAPIResponse : APIResponse
         {
-            public string TestProperty { get; set; }
+            public string TestProperty { get; set; } = string.Empty;
         }
     }
 }

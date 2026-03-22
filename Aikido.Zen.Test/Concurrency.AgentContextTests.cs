@@ -3,8 +3,6 @@ using System.Threading;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Models;
-using System.Collections.Generic;
-using System.Linq;
 using System.Collections.Concurrent;
 
 namespace Aikido.Zen.Test

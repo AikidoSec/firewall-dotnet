@@ -26,7 +26,7 @@ namespace Aikido.Zen.Test
         public void CleanStackTrace_WithNullOrEmpty_ShouldReturnAsIs()
         {
             // Arrange
-            string nullStackTrace = null;
+            string? nullStackTrace = null;
             var emptyStackTrace = "";
 
             // Act

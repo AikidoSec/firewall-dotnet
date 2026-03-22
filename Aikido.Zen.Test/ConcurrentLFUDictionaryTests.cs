@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks; // For potential concurrency tests later
 using Aikido.Zen.Core.Models;
@@ -23,7 +20,7 @@ namespace Aikido.Zen.Test
         }
 
         // Basic equality for testing purposes
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             // Compare Value only for simplicity in some tests, Hits checked separately
             return obj is TestItem item && Value == item.Value;
@@ -329,7 +326,6 @@ namespace Aikido.Zen.Test
             // Hit counts should reflect multiple AddOrUpdate calls.
             Assert.That(dict.Size, Is.LessThanOrEqualTo(keys.Count));
 
-            int totalExpectedHits = numTasks * iterations; // Rough estimate, depends on action distribution
             long actualTotalHits = 0;
             foreach (var key in dict.GetKeys()) // Use GetKeys()
             {

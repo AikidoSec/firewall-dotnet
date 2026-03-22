@@ -8,10 +8,6 @@
 
   <ItemGroup>
       <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.0" />
-      <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.1" />
-      <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.1" />
-      <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.1" />
-      <PackageReference Include="System.Text.Json" Version="10.0.1" />
   </ItemGroup>
 
     <ItemGroup>

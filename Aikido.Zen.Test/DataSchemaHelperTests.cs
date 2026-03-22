@@ -1,7 +1,6 @@
 using NUnit.Framework;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
-using System.Collections.Generic;
 using Aikido.Zen.Core.Helpers.OpenAPI;
 
 namespace Aikido.Zen.Test.Helpers
@@ -166,7 +165,7 @@ namespace Aikido.Zen.Test.Helpers
         }
 
         private object GenerateTestObjectWithDepth(int depth)
-            {
+        {
             if (depth == 0)
                 return "testValue";
 

@@ -1,4 +1,4 @@
-#load "nuget:https://www.nuget.org/api/v2?package=Cake.NuGet&version=5.0.0"
+#load "nuget:https://www.nuget.org/api/v2?package=Cake.NuGet&version=6.1.0"
 
 var target = Argument("target", "Default");
 var configuration = Argument("configuration", "Release");
@@ -119,7 +119,7 @@ Task("Build")
             var msBuildSettings = new MSBuildSettings
             {
                 Configuration = configuration,
-                ToolVersion = MSBuildToolVersion.VS2022,
+                ToolVersion = MSBuildToolVersion.VS2026,
                 Verbosity = Verbosity.Quiet,
                 PlatformTarget = PlatformTarget.MSIL,
                 MaxCpuCount = 1,
@@ -191,42 +191,28 @@ Task("Test")
             var stdOutput = new List<string>();
             var stdError = new List<string>();
 
-            var settings = new DotNetTestSettings
+            var testArguments = new ProcessArgumentBuilder()
+                .Append("test")
+                .AppendQuoted(project.FullPath)
+                .Append("--configuration")
+                .Append(configuration)
+                .Append("--no-build")
+                .Append("--no-restore")
+                .Append("--verbosity")
+                .Append("detailed")
+                .Append("--logger")
+                .AppendQuoted($"trx;LogFileName={logFilePath}");
+
+            // Only collect coverage for the main tests project.
+            if (project.FullPath.EndsWith("Aikido.Zen.Tests.csproj"))
             {
-                SetupProcessSettings = processSettings =>
-                {
-                    processSettings.RedirectStandardOutput = true;
-                    processSettings.RedirectStandardError = true;
-                },
-                Configuration = configuration,
-                NoBuild = true,
-                NoRestore = true,
-                ArgumentCustomization = args =>
-                {
-                    // for now, only collect coverage for the main tests project
-                    if (project.FullPath.EndsWith("Aikido.Zen.Tests.csproj"))
-                    {
-                        args = args
-                            .Append("/p:CollectCoverage=true")
-                            .Append("/p:CoverletOutputFormat=opencover")
-                            .Append($"/p:CoverletOutput={coverageDir.FullPath}/coverage.xml")
-                            .Append("/p:Include=[Aikido.Zen.*]*")
-                            .Append("/p:Exclude=[Aikido.Zen.Test]*");
-                    }
-                    // Increase verbosity to diagnostic for more information
-                    args = args
-                        .Append("--verbosity detailed")
-                        .Append($"--logger trx;LogFileName={logFilePath}");
-
-                    // If SDK version was extracted from framework argument, use it
-                    if (!string.IsNullOrEmpty(sdkVersion))
-                    {
-                        args = args.Append($"--sdk-version {sdkVersion}");
-                    }
-
-                    return args;
-                }
-            };
+                testArguments = testArguments
+                    .Append("/p:CollectCoverage=true")
+                    .Append("/p:CoverletOutputFormat=opencover")
+                    .Append($"/p:CoverletOutput={coverageDir.FullPath}/coverage.xml")
+                    .Append("/p:Include=[Aikido.Zen.*]*")
+                    .Append("/p:Exclude=[Aikido.Zen.Test]*");
+            }
 
             try
             {
@@ -234,7 +220,7 @@ Task("Test")
                     "dotnet",
                     new ProcessSettings
                     {
-                        Arguments = $"test {project.FullPath} --configuration {configuration} --no-build --no-restore --verbosity detailed --logger trx;LogFileName={logFilePath}",
+                        Arguments = testArguments,
                         RedirectStandardOutput = true,
                         RedirectStandardError = true,
                         Silent = true

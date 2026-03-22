@@ -1,8 +1,6 @@
 using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Models;
 using NUnit.Framework;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text.Json;
 
 namespace Aikido.Zen.Test
