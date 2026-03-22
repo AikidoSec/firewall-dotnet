@@ -1,7 +1,6 @@
 using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Helpers;
 using NUnit.Framework;
-using System;
 using System.Net;
 using System.Net.Http;
 using System.Text;

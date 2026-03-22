@@ -1,9 +1,5 @@
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Vulnerabilities;
-using NUnit.Framework;
 using NUnit.Framework;
 
 namespace Aikido.Zen.Test

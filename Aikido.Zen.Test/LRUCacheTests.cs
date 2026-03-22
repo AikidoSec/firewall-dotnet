@@ -1,9 +1,6 @@
 using Aikido.Zen.Core.Models;
 using NUnit.Framework;
-using System;
 using System.Threading.Tasks;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace Aikido.Zen.Test
 {

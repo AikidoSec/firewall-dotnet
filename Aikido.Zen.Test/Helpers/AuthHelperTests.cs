@@ -1,7 +1,6 @@
 using NUnit.Framework;
 using Aikido.Zen.Core.Helpers.OpenAPI;
 using Aikido.Zen.Core.Models;
-using System.Collections.Generic;
 
 namespace Aikido.Zen.Test.Helpers
 {

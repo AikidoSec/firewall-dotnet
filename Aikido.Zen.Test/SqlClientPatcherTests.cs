@@ -20,7 +20,9 @@ namespace Aikido.Zen.Test
         public void Setup()
         {
             _context = new Context();
-            _methodInfo = typeof(DbCommand).GetMethod("ExecuteNonQuery");
+            _methodInfo = typeof(DbCommand).GetMethod("ExecuteNonQuery")
+                    ?? throw new InvalidOperationException("Could not find DbCommand.ExecuteNonQuery.");
+
             // setup the agent, because when not running in drymode, SqlClientPatcher will trigger an attack event
             Environment.SetEnvironmentVariable("AIKIDO_TOKEN", "test-token");
             var reportingMock = new Mock<IReportingAPIClient>();
