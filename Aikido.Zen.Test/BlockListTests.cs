@@ -217,7 +217,6 @@ namespace Aikido.Zen.Test
         public void PerformanceWithDifferentSizes_ShouldPerformEfficiently()
         {
             // Arrange
-            var ip = "192.168.1.100";
             var blockedIps = new List<string>();
 
             // Act
@@ -326,7 +325,6 @@ namespace Aikido.Zen.Test
                 "192.168.1",
                 "192.168.1.1/33"
             };
-            var url = "http://localhost:80/testUrl";
 
             // Act & Assert
             // Invalid IPs should not be blocked by default

@@ -97,7 +97,7 @@ namespace Aikido.Zen.Test
                 Is.False);
         }
 
-        private static Context BuildContext(string ip, string path, string method, IDictionary<string, string> query = null)
+        private static Context BuildContext(string ip, string path, string method, IDictionary<string, string>? query = null)
         {
             return new Context
             {

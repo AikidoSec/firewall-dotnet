@@ -1,6 +1,5 @@
 using Aikido.Zen.Core.Models;
 using NUnit.Framework;
-using System;
 
 namespace Aikido.Zen.Test
 {
@@ -25,7 +24,7 @@ namespace Aikido.Zen.Test
         public void UserConstructor_ShouldThrowException_WhenIdIsNull()
         {
             // Arrange
-            string id = null;
+            string? id = null;
             var name = "John Doe";
 
             // Act & Assert
@@ -38,7 +37,7 @@ namespace Aikido.Zen.Test
         {
             // Arrange
             var id = "123";
-            string name = null;
+            string? name = null;
 
             // Act
             var user = new User(id, name);

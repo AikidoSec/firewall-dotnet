@@ -326,7 +326,6 @@ namespace Aikido.Zen.Test
             // Hit counts should reflect multiple AddOrUpdate calls.
             Assert.That(dict.Size, Is.LessThanOrEqualTo(keys.Count));
 
-            int totalExpectedHits = numTasks * iterations; // Rough estimate, depends on action distribution
             long actualTotalHits = 0;
             foreach (var key in dict.GetKeys()) // Use GetKeys()
             {

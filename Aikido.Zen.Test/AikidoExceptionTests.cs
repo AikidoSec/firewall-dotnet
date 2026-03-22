@@ -1,7 +1,6 @@
 using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.Core.Models;
 using NUnit.Framework;
-using System;
 using Microsoft.Extensions.Logging;
 using Moq;
 
