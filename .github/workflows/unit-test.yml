@@ -63,6 +63,7 @@ jobs:
                   dotnet cake --target=Test --configuration=Release --framework=${{ matrix.dotnet-version }}
 
             - name: Upload coverage to Codecov
+              if: ${{ matrix.dotnet-version == '10.0.x' }} # Aikido.Zen.Tests targets net10 only
               uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4
               continue-on-error: true
               with:
