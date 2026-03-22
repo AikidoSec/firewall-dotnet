@@ -165,7 +165,7 @@ namespace Aikido.Zen.Test.Helpers
         }
 
         private object GenerateTestObjectWithDepth(int depth)
-            {
+        {
             if (depth == 0)
                 return "testValue";
 

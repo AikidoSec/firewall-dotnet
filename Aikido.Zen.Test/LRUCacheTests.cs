@@ -151,12 +151,14 @@ namespace Aikido.Zen.Test
             var cache = new LRUCache<int, int>(100);
 
             // Act & Assert
-            Assert.That(async () => {
+            Assert.That(async () =>
+            {
                 for (int i = 0; i < 100; i++)
                 {
                     int value = i;
                     tasks.Add(Task.Run(() => cache.Set(value, value)));
-                    tasks.Add(Task.Run(() => {
+                    tasks.Add(Task.Run(() =>
+                    {
                         int outValue;
                         cache.TryGetValue(value, out outValue);
                     }));
@@ -178,10 +180,10 @@ namespace Aikido.Zen.Test
         {
             // Arrange
             _cache.Set("key1", "value1");
-            
+
             // Act
             _cache.Set("key1", "updatedValue");
-            
+
             // Assert
             string value;
             Assert.That(_cache.TryGetValue("key1", out value), Is.True);
@@ -206,13 +208,13 @@ namespace Aikido.Zen.Test
             // Arrange
             var cache = new LRUCache<string, string>(5, 200);
             cache.Set("key1", "value1");
-            
+
             Task.Delay(100).Wait(); // Wait half the TTL
-            
+
             // Act
             cache.Set("key1", "value2"); // Should reset TTL
             Task.Delay(150).Wait(); // Wait longer than original TTL but less than reset TTL
-            
+
             // Assert
             string value;
             Assert.That(cache.TryGetValue("key1", out value), Is.True);
@@ -225,10 +227,10 @@ namespace Aikido.Zen.Test
             // Arrange
             var cache = new LRUCache<string, string>(5, 0); // TTL = 0 means no expiration
             cache.Set("key1", "value1");
-            
+
             // Act
             Task.Delay(200).Wait(); // Wait some time
-            
+
             // Assert
             string value;
             Assert.That(cache.TryGetValue("key1", out value), Is.True);

@@ -188,7 +188,7 @@ namespace Aikido.Zen.Test
                 .Throws(new TaskCanceledException("Canceled"));
 
             // Act & Assert
-            Assert.DoesNotThrowAsync(async () => await _reportingApiClient.GetFirewallLists("token"),"Failed: Task Canceled, but the exception propagated.");
+            Assert.DoesNotThrowAsync(async () => await _reportingApiClient.GetFirewallLists("token"), "Failed: Task Canceled, but the exception propagated.");
         }
 
         [Test]
@@ -205,12 +205,12 @@ namespace Aikido.Zen.Test
                 .Returns(async (HttpRequestMessage req, CancellationToken token) =>
                 {
                     // Simulate waiting for longer than the cancellation timeout
-                    await Task.Delay(10000, token); 
+                    await Task.Delay(10000, token);
                     return new HttpResponseMessage();
                 });
 
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-            FirewallListsAPIResponse result = new ();
+            FirewallListsAPIResponse result = new();
 
             // Act
 
@@ -220,7 +220,7 @@ namespace Aikido.Zen.Test
 
             // Assert
             Assert.That(result!.Success, Is.False);
-            Assert.That(stopwatch.ElapsedMilliseconds, Is.InRange( 4500, 7000));
+            Assert.That(stopwatch.ElapsedMilliseconds, Is.InRange(4500, 7000));
         }
     }
 }

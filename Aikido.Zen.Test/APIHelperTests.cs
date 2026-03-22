@@ -163,7 +163,7 @@ namespace Aikido.Zen.Test.Helpers
             Uri nullBaseUrl = null;
 
             // Act & Assert
-            Assert.Throws<ArgumentNullException>(() => 
+            Assert.Throws<ArgumentNullException>(() =>
                 APIHelper.CreateRequest(TestToken, nullBaseUrl, "/test", HttpMethod.Get));
         }
 
@@ -171,7 +171,7 @@ namespace Aikido.Zen.Test.Helpers
         public void CreateRequest_WithNullToken_ShouldThrowArgumentNullException()
         {
             // Act & Assert
-            Assert.Throws<ArgumentNullException>(() => 
+            Assert.Throws<ArgumentNullException>(() =>
                 APIHelper.CreateRequest(null, _baseUrl, "/test", HttpMethod.Get));
         }
 

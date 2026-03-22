@@ -50,8 +50,8 @@ namespace Aikido.Zen.Test
             _handlerMock.Protected().Verify(
                 "SendAsync",
                 Times.Once(),
-                ItExpr.Is<HttpRequestMessage>(req => 
-                    req.Method == HttpMethod.Get && 
+                ItExpr.Is<HttpRequestMessage>(req =>
+                    req.Method == HttpMethod.Get &&
                     req.RequestUri.PathAndQuery.Contains("config")),
                 ItExpr.IsAny<CancellationToken>()
             );
@@ -151,8 +151,8 @@ namespace Aikido.Zen.Test
             _handlerMock.Protected().Verify(
                 "SendAsync",
                 Times.Once(),
-                ItExpr.Is<HttpRequestMessage>(req => 
-                    req.Method == HttpMethod.Get && 
+                ItExpr.Is<HttpRequestMessage>(req =>
+                    req.Method == HttpMethod.Get &&
                     req.RequestUri.PathAndQuery.Contains("/api/runtime/config")),
                 ItExpr.IsAny<CancellationToken>()
             );
