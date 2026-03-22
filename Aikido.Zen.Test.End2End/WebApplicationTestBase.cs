@@ -15,10 +15,10 @@ namespace Aikido.Zen.Test.End2End
     /// </summary>
     public abstract class WebApplicationTestBase
     {
-        protected List<IContainer> DbContainers { get; private set; }
-        protected HttpClient SampleAppClient { get; set; }
-        protected HttpClient MockServerClient { get; private set; }
-        protected WebApplicationFactory<Aikido.Zen.Server.Mock.MockServerStartup> MockServerFactory { get; private set; }
+        protected List<IContainer> DbContainers { get; private set; } = null!;
+        protected HttpClient SampleAppClient { get; set; } = null!;
+        protected HttpClient MockServerClient { get; private set; } = null!;
+        protected WebApplicationFactory<Aikido.Zen.Server.Mock.MockServerStartup> MockServerFactory { get; private set; } = null!;
         protected string MockServerToken = "test-token";
         protected const int MockServerPort = 3000;
 
@@ -164,7 +164,7 @@ namespace Aikido.Zen.Test.End2End
             /// <summary>
             /// The token for the created app
             /// </summary>
-            public string Token { get; set; }
+            public string? Token { get; set; }
         }
     }
 

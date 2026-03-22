@@ -572,8 +572,8 @@ namespace Aikido.Zen.Test
 
         private class MockStringTokenUsage
         {
-            public string InputTokenCount { get; set; }
-            public string OutputTokenCount { get; set; }
+            public string? InputTokenCount { get; set; }
+            public string? OutputTokenCount { get; set; }
         }
 
 

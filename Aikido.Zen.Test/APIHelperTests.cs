@@ -177,7 +177,7 @@ namespace Aikido.Zen.Test.Helpers
 
         private class TestAPIResponse : APIResponse
         {
-            public string TestProperty { get; set; }
+            public string TestProperty { get; set; } = string.Empty;
         }
     }
 }

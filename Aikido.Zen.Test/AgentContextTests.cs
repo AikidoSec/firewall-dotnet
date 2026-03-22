@@ -285,7 +285,7 @@ namespace Aikido.Zen.Test
         public void AddUser_ShouldHandleNullGracefully()
         {
             // Arrange
-            User user = null;
+            User? user = null;
             var ipAddress = "192.168.1.1";
 
             // Act
@@ -337,7 +337,7 @@ namespace Aikido.Zen.Test
         public void AddRoute_WithNullContext_HandlesGracefully()
         {
             // Act
-            _agentContext.AddRoute(null);
+            _agentContext.AddRoute(null!);
 
             // Assert
             Assert.That(_agentContext.Routes, Is.Empty);
@@ -364,7 +364,7 @@ namespace Aikido.Zen.Test
         public void AddRoute_WithInvalidContext_DoesNotAddToRoutes()
         {
             // Arrange
-            Context context = null;
+            Context? context = null;
 
             // Act
             _agentContext.AddRoute(context);

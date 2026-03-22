@@ -110,7 +110,7 @@ namespace Aikido.Zen.Test
         public void Exception_ShouldPreserveStackTrace()
         {
             // Arrange & Act
-            AikidoException exception = null;
+            AikidoException? exception = null;
             try
             {
                 ThrowAikidoException();
