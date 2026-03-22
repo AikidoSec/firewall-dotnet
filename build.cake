@@ -1,4 +1,4 @@
-#load "nuget:https://www.nuget.org/api/v2?package=Cake.NuGet&version=5.0.0"
+#load "nuget:https://www.nuget.org/api/v2?package=Cake.NuGet&version=6.1.0"
 
 var target = Argument("target", "Default");
 var configuration = Argument("configuration", "Release");
