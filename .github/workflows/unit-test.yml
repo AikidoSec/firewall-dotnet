@@ -8,7 +8,7 @@ permissions:
 
 jobs:
     build-and-test:
-        runs-on: windows-2022 # needs to be windows because we support .NET framework
+        runs-on: windows-2025-vs2026 # needs to be windows because we support .NET framework
         timeout-minutes: 30
         strategy:
             matrix:
