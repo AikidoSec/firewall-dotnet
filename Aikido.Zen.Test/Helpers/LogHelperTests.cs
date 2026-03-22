@@ -34,8 +34,8 @@ namespace Aikido.Zen.Test.Helpers
                 It.Is<LogLevel>(level => level == LogLevel.Debug),
                 It.IsAny<EventId>(),
                 It.Is<It.IsAnyType>((v, t) => v.ToString().EndsWith(message)),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()), Times.Once);
+                It.IsAny<Exception?>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Once);
         }
 
         [Test]
@@ -49,8 +49,8 @@ namespace Aikido.Zen.Test.Helpers
                 It.IsAny<LogLevel>(),
                 It.IsAny<EventId>(),
                 It.IsAny<It.IsAnyType>(),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()), Times.Never);
+                It.IsAny<Exception?>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Never);
         }
 
         [Test]
@@ -66,8 +66,8 @@ namespace Aikido.Zen.Test.Helpers
                 It.Is<LogLevel>(level => level == LogLevel.Debug),
                 It.IsAny<EventId>(),
                 It.Is<It.IsAnyType>((v, t) => v.ToString().Contains(expectedSanitizedContent)),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()), Times.Once);
+                It.IsAny<Exception?>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Once);
         }
 
         [Test]
@@ -83,8 +83,8 @@ namespace Aikido.Zen.Test.Helpers
                 It.Is<LogLevel>(level => level == LogLevel.Debug),
                 It.IsAny<EventId>(),
                 It.Is<It.IsAnyType>((v, t) => v.ToString().StartsWith(expectedPrefix) && v.ToString().EndsWith(message)),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()), Times.Once);
+                It.IsAny<Exception?>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Once);
         }
 
         [Test]
@@ -98,8 +98,8 @@ namespace Aikido.Zen.Test.Helpers
                 It.Is<LogLevel>(level => level == LogLevel.Information),
                 It.IsAny<EventId>(),
                 It.Is<It.IsAnyType>((v, t) => v.ToString().EndsWith(message)),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()), Times.Once);
+                It.IsAny<Exception?>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Once);
         }
 
         [Test]
@@ -114,8 +114,8 @@ namespace Aikido.Zen.Test.Helpers
                 It.Is<LogLevel>(level => level == LogLevel.Information),
                 It.IsAny<EventId>(),
                 It.Is<It.IsAnyType>((v, t) => v.ToString().Contains(expectedSanitizedContent)),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()), Times.Once);
+                It.IsAny<Exception?>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Once);
         }
 
         [Test]
@@ -132,8 +132,8 @@ namespace Aikido.Zen.Test.Helpers
                 It.Is<LogLevel>(level => level == LogLevel.Information),
                 It.IsAny<EventId>(),
                 It.Is<It.IsAnyType>((v, t) => v.ToString().StartsWith("AIKIDO: Rate limit test message")),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()), Times.Exactly(maxLogs));
+                It.IsAny<Exception?>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Exactly(maxLogs));
 
             LogHelper.AttackLog(_loggerMock.Object, $"{message} {maxLogs + 1}");
 
@@ -142,7 +142,7 @@ namespace Aikido.Zen.Test.Helpers
                 It.IsAny<EventId>(),
                 It.Is<It.IsAnyType>((v, t) => v.ToString().StartsWith("AIKIDO: Rate limit test message")),
                 It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()), Times.Exactly(maxLogs));
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Exactly(maxLogs));
         }
     }
 }

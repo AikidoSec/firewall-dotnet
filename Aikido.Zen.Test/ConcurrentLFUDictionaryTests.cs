@@ -20,7 +20,7 @@ namespace Aikido.Zen.Test
         }
 
         // Basic equality for testing purposes
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             // Compare Value only for simplicity in some tests, Hits checked separately
             return obj is TestItem item && Value == item.Value;

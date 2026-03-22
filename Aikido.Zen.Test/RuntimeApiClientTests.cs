@@ -43,7 +43,7 @@ namespace Aikido.Zen.Test
 
             // Act
             var result = await _runtimeApiClient.GetConfigLastUpdated("token");
-            Task.Delay(100);
+            await Task.Delay(100);
 
             // Assert
             Assert.That(result.Success);

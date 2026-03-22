@@ -163,15 +163,15 @@ namespace Aikido.Zen.Test.Helpers
                 Type.EmptyTypes)
                 .GetILGenerator();
 
-            il.Emit(OpCodes.Call, typeof(ReflectionHelper).GetMethod("ShouldSkipAssembly"));
+            il.Emit(OpCodes.Call, typeof(ReflectionHelper).GetMethod("ShouldSkipAssembly")!);
             il.Emit(OpCodes.Ret);
 
             var dynamicType = typeBuilder.CreateType();
-            var methodInfo = dynamicType.GetMethod("CallShouldSkipAssembly");
+            var methodInfo = dynamicType.GetMethod("CallShouldSkipAssembly")!;
 
 
             // Act
-            var result = (bool)methodInfo.Invoke(null, null);
+            var result = (bool)methodInfo.Invoke(null, null)!;
 
 
             // Assert
