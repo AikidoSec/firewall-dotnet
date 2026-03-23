@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Helpers.OpenAPI;
 using NUnit.Framework;

@@ -94,14 +94,14 @@ namespace Aikido.Zen.Test.Helpers
 
         private class TestCase
         {
-            public IDictionary<string, string> RouteParams { get; set; }
-            public IDictionary<string, string> QueryParams { get; set; }
-            public IDictionary<string, string> Headers { get; set; }
-            public IDictionary<string, string> Cookies { get; set; }
-            public string Body { get; set; }
-            public string ContentType { get; set; }
-            public IDictionary<string, string> ExpectedFlattenedData { get; set; }
-            public object ExpectedParsedBody { get; set; }
+            public IDictionary<string, string>? RouteParams { get; set; }
+            public IDictionary<string, string>? QueryParams { get; set; }
+            public IDictionary<string, string>? Headers { get; set; }
+            public IDictionary<string, string>? Cookies { get; set; }
+            public string? Body { get; set; }
+            public string? ContentType { get; set; }
+            public IDictionary<string, string>? ExpectedFlattenedData { get; set; }
+            public object? ExpectedParsedBody { get; set; }
         }
 
         [Test]

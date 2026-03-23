@@ -1,4 +1,3 @@
-using System;
 using System.Threading;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Models.Events;

@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using Aikido.Zen.Core;
@@ -17,9 +16,9 @@ namespace Aikido.Zen.Test
     /// </summary>
     public class ProcessExecutionPatcherTests
     {
-        private ProcessStartInfo _startInfo;
-        private Context _context;
-        private MethodInfo _methodInfo;
+        private ProcessStartInfo _startInfo = null!;
+        private Context _context = null!;
+        private MethodInfo _methodInfo = null!;
 
         [SetUp]
         public void Setup()

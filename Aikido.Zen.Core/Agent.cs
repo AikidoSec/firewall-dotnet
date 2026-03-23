@@ -134,13 +134,13 @@ namespace Aikido.Zen.Core
                 Token = EnvironmentHelper.Token,
                 EventFactory = ConstructHeartbeat,
                 Interval = Heartbeat.GetNextInterval(),
-                Callback = (evt, response) =>
+                Callback = async (evt, response) =>
                 {
                     var reportingResponse = response as ReportingAPIResponse;
                     if (reportingResponse != null && reportingResponse.Success)
                     {
                         LogHelper.DebugLog(Logger, "Heartbeat was sent successfully");
-                        UpdateConfig(reportingResponse);
+                        await UpdateConfig(reportingResponse);
                     }
                     else
                     {
@@ -261,7 +261,7 @@ namespace Aikido.Zen.Core
                             eventItem.Callback?.Invoke(eventItem.Event, response);
                             LogHelper.DebugLog(Logger, $"Event processed: {eventItem.Event.Type}");
                         }
-                        catch (Exception ex)
+                        catch (Exception)
                         {
                             // pass through
                             LogHelper.DebugLog(Logger, $"Error processing event: {eventItem.Event.Type}");

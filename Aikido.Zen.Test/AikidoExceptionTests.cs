@@ -1,7 +1,6 @@
 using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.Core.Models;
 using NUnit.Framework;
-using System;
 using Microsoft.Extensions.Logging;
 using Moq;
 
@@ -111,7 +110,7 @@ namespace Aikido.Zen.Test
         public void Exception_ShouldPreserveStackTrace()
         {
             // Arrange & Act
-            AikidoException exception = null;
+            AikidoException? exception = null;
             try
             {
                 ThrowAikidoException();
@@ -158,8 +157,8 @@ namespace Aikido.Zen.Test
                     LogLevel.Error,
                     It.IsAny<EventId>(),
                     It.Is<It.IsAnyType>((v, t) => true),
-                    It.IsAny<Exception>(),
-                    It.Is<Func<It.IsAnyType, Exception, string>>((v, t) => true)),
+                    It.IsAny<Exception?>(),
+                    It.Is<Func<It.IsAnyType, Exception?, string>>((v, t) => true)),
                 Times.Once);
         }
 

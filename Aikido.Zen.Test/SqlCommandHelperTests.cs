@@ -171,9 +171,9 @@ namespace Aikido.Zen.Test.Helpers
         public void DetectSQLInjection_WithNullValues_ShouldHandleGracefully()
         {
             // Arrange
-            string sqlCommand = null;
-            string moduleName = null;
-            string operation = null;
+            string? sqlCommand = null;
+            string? moduleName = null;
+            string? operation = null;
 
             // Act & Assert
             Assert.DoesNotThrow(() => SqlCommandHelper.DetectSQLInjection(
