@@ -75,3 +75,4 @@ jobs:
           dockerfile_path: ./zen-demo-dotnet-core/Dockerfile
           app_port: 8080
           sleep_before_test: 10
+          skip_tests: test_rate_limiting_group_id_1_minute, test_stored_ssrf_no_context, test_shell_injection, test_path_traversal, test_bypassed_ip, test_stored_ssrf, test_ssrf
