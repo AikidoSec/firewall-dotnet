@@ -1,6 +1,5 @@
 using Aikido.Zen.Core.Helpers;
 using NUnit.Framework;
-using System;
 
 namespace Aikido.Zen.Test.Helpers
 {

@@ -1,9 +1,5 @@
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Vulnerabilities;
-using NUnit.Framework;
 using NUnit.Framework;
 
 namespace Aikido.Zen.Test
@@ -101,7 +97,7 @@ namespace Aikido.Zen.Test
                 Is.False);
         }
 
-        private static Context BuildContext(string ip, string path, string method, IDictionary<string, string> query = null)
+        private static Context BuildContext(string ip, string path, string method, IDictionary<string, string>? query = null)
         {
             return new Context
             {

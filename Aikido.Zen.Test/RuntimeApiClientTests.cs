@@ -2,7 +2,6 @@ using Aikido.Zen.Core.Api;
 using Moq;
 using Moq.Protected;
 using NUnit.Framework;
-using System;
 using System.Net;
 using System.Net.Http;
 using System.Threading;
@@ -44,15 +43,15 @@ namespace Aikido.Zen.Test
 
             // Act
             var result = await _runtimeApiClient.GetConfigLastUpdated("token");
-            Task.Delay(100);
+            await Task.Delay(100);
 
             // Assert
             Assert.That(result.Success);
             _handlerMock.Protected().Verify(
                 "SendAsync",
                 Times.Once(),
-                ItExpr.Is<HttpRequestMessage>(req => 
-                    req.Method == HttpMethod.Get && 
+                ItExpr.Is<HttpRequestMessage>(req =>
+                    req.Method == HttpMethod.Get &&
                     req.RequestUri.PathAndQuery.Contains("config")),
                 ItExpr.IsAny<CancellationToken>()
             );
@@ -152,8 +151,8 @@ namespace Aikido.Zen.Test
             _handlerMock.Protected().Verify(
                 "SendAsync",
                 Times.Once(),
-                ItExpr.Is<HttpRequestMessage>(req => 
-                    req.Method == HttpMethod.Get && 
+                ItExpr.Is<HttpRequestMessage>(req =>
+                    req.Method == HttpMethod.Get &&
                     req.RequestUri.PathAndQuery.Contains("/api/runtime/config")),
                 ItExpr.IsAny<CancellationToken>()
             );

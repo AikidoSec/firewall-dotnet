@@ -548,14 +548,14 @@ namespace Aikido.Zen.Test
         // Base mock classes
         private class MockLLMResult
         {
-            public string Model { get; set; }
-            public object Usage { get; set; }
+            public string? Model { get; set; }
+            public object? Usage { get; set; }
         }
 
         private class MockUsage
         {
-            public long InputTokenCount { get; set; }
-            public long OutputTokenCount { get; set; }
+            public int? InputTokenCount { get; set; }
+            public int? OutputTokenCount { get; set; }
         }
 
         private class MockRystemUsage
@@ -572,8 +572,8 @@ namespace Aikido.Zen.Test
 
         private class MockStringTokenUsage
         {
-            public string InputTokenCount { get; set; }
-            public string OutputTokenCount { get; set; }
+            public string? InputTokenCount { get; set; }
+            public string? OutputTokenCount { get; set; }
         }
 
 

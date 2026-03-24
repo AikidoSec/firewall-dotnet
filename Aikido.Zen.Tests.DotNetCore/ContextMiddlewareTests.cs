@@ -108,7 +108,7 @@ namespace Aikido.Zen.Tests.DotNetCore
         public void GetParametrizedRoute_ReturnsForwardSlash_ForNullPath()
         {
             // Arrange
-            _mockHttpContext.Setup(c => c.Request.Path).Returns((string)null);
+            _mockHttpContext.Setup(c => c.Request.Path).Returns((string)null!);
 
             // Act
             var route = _contextMiddleware.GetParametrizedRoute(_mockHttpContext.Object);
@@ -255,11 +255,11 @@ namespace Aikido.Zen.Tests.DotNetCore
 
             // Act
             var method = typeof(ContextMiddleware).GetMethod("FlattenQueryParameters", BindingFlags.NonPublic | BindingFlags.Static);
-            var result = (IDictionary<string, string>)method.Invoke(null, new object[] { mockQuery.Object });
+            var result = (IDictionary<string, string>)method!.Invoke(null, new object[] { mockQuery.Object })!;
 
             // Assert
             Assert.That(result.ContainsKey("param1"), Is.True);
-            Assert.That(result["param1"], Is.EqualTo("value1"));
+            Assert.That("value1", Is.EqualTo(result["param1"]));
         }
 
         [Test]
@@ -275,7 +275,7 @@ namespace Aikido.Zen.Tests.DotNetCore
 
             // Act
             var method = typeof(ContextMiddleware).GetMethod("FlattenQueryParameters", BindingFlags.NonPublic | BindingFlags.Static);
-            var result = (IDictionary<string, string>)method.Invoke(null, new object[] { mockQuery.Object });
+            var result = (IDictionary<string, string>)method!.Invoke(null, new object[] { mockQuery.Object })!;
 
             // Assert
             Assert.That(result.ContainsKey("param1"), Is.True);
@@ -299,7 +299,7 @@ namespace Aikido.Zen.Tests.DotNetCore
 
             // Act
             var method = typeof(ContextMiddleware).GetMethod("FlattenHeaders", BindingFlags.NonPublic | BindingFlags.Static);
-            var result = (IDictionary<string, string>)method.Invoke(null, new object[] { mockHeaders.Object });
+            var result = (IDictionary<string, string>)method!.Invoke(null, new object[] { mockHeaders.Object })!;
 
             // Assert
             Assert.That(result.ContainsKey("X-Custom-Header"), Is.True);
@@ -319,7 +319,7 @@ namespace Aikido.Zen.Tests.DotNetCore
 
             // Act
             var method = typeof(ContextMiddleware).GetMethod("FlattenHeaders", BindingFlags.NonPublic | BindingFlags.Static);
-            var result = (IDictionary<string, string>)method.Invoke(null, new object[] { mockHeaders.Object });
+            var result = (IDictionary<string, string>)method!.Invoke(null, new object[] { mockHeaders.Object })!;
 
             // Assert
             Assert.That(result.ContainsKey("Accept"), Is.True);

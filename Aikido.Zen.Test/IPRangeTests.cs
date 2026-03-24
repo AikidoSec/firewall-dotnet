@@ -1,7 +1,6 @@
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models.Ip;
 using NUnit.Framework;
-using System.Collections.Generic;
 
 namespace Aikido.Zen.Test
 {

@@ -89,9 +89,9 @@ namespace Aikido.Zen.Test
 
         private class TestCase
         {
-            public string Input { get; set; }
-            public string Path { get; set; }
-            public string Description { get; set; }
+            public string? Input { get; set; }
+            public string? Path { get; set; }
+            public string? Description { get; set; }
             public bool IsTraversal { get; set; }
         }
     }

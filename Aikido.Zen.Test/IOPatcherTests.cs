@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Reflection;
 using System.Web;
 using Aikido.Zen.Core;
@@ -30,7 +27,7 @@ namespace Aikido.Zen.Test
         {
             _realContext = new Context();
             _mockContext = new Mock<Context>() { CallBase = true };
-            _methodInfo = typeof(File).GetMethod("ReadAllBytes", new[] { typeof(string) });
+            _methodInfo = typeof(File).GetMethod("ReadAllBytes", new[] { typeof(string) })!;
 
             _reportingMock = new Mock<IReportingAPIClient>();
             _runtimeMock = new Mock<IRuntimeAPIClient>();
@@ -125,7 +122,7 @@ namespace Aikido.Zen.Test
         public void OnFileOperation_MultiplePathsOneUnsafe_ThrowsExceptionWhenBlocking()
         {
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
-            var copyMethodInfo = typeof(File).GetMethod("Copy", new[] { typeof(string), typeof(string), typeof(bool) });
+            var copyMethodInfo = typeof(File).GetMethod("Copy", new[] { typeof(string), typeof(string), typeof(bool) })!;
             var unsafeInput = "../../secrets.txt";
             var safeSource = "/app/uploads/image.jpg";
             var unsafeDest = $"/app/static/{unsafeInput}";
@@ -138,7 +135,7 @@ namespace Aikido.Zen.Test
         public void OnFileOperation_MultiplePathsOneUnsafe_ReturnsTrueWhenNotBlocking()
         {
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "false");
-            var copyMethodInfo = typeof(File).GetMethod("Copy", new[] { typeof(string), typeof(string), typeof(bool) });
+            var copyMethodInfo = typeof(File).GetMethod("Copy", new[] { typeof(string), typeof(string), typeof(bool) })!;
             var unsafeInput = "../../secrets.txt";
             var safeSource = "/app/uploads/image.jpg";
             var unsafeDest = $"/app/static/{unsafeInput}";

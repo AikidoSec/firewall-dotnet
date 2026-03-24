@@ -13,6 +13,7 @@ namespace Aikido.Zen.DotNetCore
         public static void Initialize(IServiceProvider serviceProvider, IHttpContextAccessor httpContextAccessor)
         {
             _serviceProvider = serviceProvider;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public static void SetUser(string id, string name, HttpContext context)

@@ -34,10 +34,9 @@ namespace Aikido.Zen.Core.Api
         {
             using (var cts = new CancellationTokenSource(5000))
             {
-                var request = APIHelper.CreateRequest(token, new Uri(EnvironmentHelper.AikidoRealtimeUrl), "config", HttpMethod.Get);
-
                 try
                 {
+                    var request = APIHelper.CreateRequest(token, new Uri(EnvironmentHelper.AikidoRealtimeUrl), "config", HttpMethod.Get);
                     var response = await _httpClient.SendAsync(request, cts.Token);
                     return APIHelper.ToAPIResponse<ConfigLastUpdatedAPIResponse>(response);
                 }
