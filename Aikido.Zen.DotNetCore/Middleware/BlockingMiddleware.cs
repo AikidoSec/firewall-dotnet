@@ -23,12 +23,13 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 Agent.Instance.SetBlockingMiddlewareInstalled(true);
 
                 // if the context is not found, skip the blocking checks, this likely means that the request is bypassed
-                if (aikidoContext == null)
+                if (aikidoContext == null || agentContext.BlockList.IsIPBypassed(aikidoContext.RemoteAddress))
                 {
                     // call the next middleware
                     await next(context);
                     return;
                 }
+
                 var user = context.Items["Aikido.Zen.CurrentUser"] as User;
                 if (user != null)
                 {

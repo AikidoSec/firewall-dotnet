@@ -70,6 +70,53 @@ namespace Aikido.Zen.Test.Helpers
         }
 
         [Test]
+        public async Task DetectSQLInjection_WhenInjectionDetected_ReportsDialectMetadata()
+        {
+            var reportingApiMock = new Mock<IReportingAPIClient>();
+            reportingApiMock
+                .Setup(r => r.ReportAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<int>()))
+                .ReturnsAsync(new ReportingAPIResponse { Success = true });
+            reportingApiMock
+                .Setup(r => r.GetFirewallLists(It.IsAny<string>()))
+                .ReturnsAsync(new FirewallListsAPIResponse { Success = true });
+
+            var runtimeApiMock = new Mock<IRuntimeAPIClient>();
+            runtimeApiMock
+                .Setup(r => r.GetConfig(It.IsAny<string>()))
+                .ReturnsAsync(new ReportingAPIResponse { Success = true });
+            runtimeApiMock
+                .Setup(r => r.GetConfigLastUpdated(It.IsAny<string>()))
+                .ReturnsAsync(new ConfigLastUpdatedAPIResponse { Success = true });
+
+            Agent.NewInstance(ZenApiMock.CreateMock(reportingApiMock.Object, runtimeApiMock.Object).Object);
+            _context.ParsedUserInput = new Dictionary<string, string>
+            {
+                { "query.injection", "1' OR '1'='1" }
+            };
+
+            SqlCommandHelper.DetectSQLInjection(
+                "SELECT * FROM Users WHERE Id = '1' OR '1'='1'",
+                SQLDialect.MicrosoftSQL,
+                _context,
+                "TestModule",
+                "SELECT");
+
+            await Task.Delay(150);
+
+            reportingApiMock.Verify(
+                r => r.ReportAsync(
+                    It.IsAny<string>(),
+                    It.Is<DetectedAttack>(a =>
+                        a.Attack.Kind == "sql_injection" &&
+                        a.Attack.Path == ".injection" &&
+                        a.Attack.Metadata.ContainsKey("sql") &&
+                        a.Attack.Metadata.ContainsKey("dialect") &&
+                        (string)a.Attack.Metadata["dialect"] == "Microsoft SQL"),
+                    It.IsAny<int>()),
+                Times.Once);
+        }
+
+        [Test]
         public void DetectSQLInjection_WithSafeInput_ShouldNotSendAttackEvent()
         {
             // Arrange

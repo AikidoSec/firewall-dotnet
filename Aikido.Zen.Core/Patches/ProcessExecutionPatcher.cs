@@ -33,6 +33,11 @@ namespace Aikido.Zen.Core.Patches
                 return true;
             }
 
+            if (context != null && Agent.Instance.Context.BlockList.IsIPBypassed(context.RemoteAddress))
+            {
+                return true;
+            }
+
             var stopwatch = Stopwatch.StartNew();
             var methodInfo = __originalMethod as MethodInfo;
             var operation = $"{methodInfo?.DeclaringType?.Name}.{methodInfo?.Name}";
@@ -46,7 +51,8 @@ namespace Aikido.Zen.Core.Patches
             {
                 var processStartInfo = (__instance as Process)?.StartInfo;
                 // Only inspect if context and process info are available
-                if (processStartInfo != null && context != null)
+                if (processStartInfo != null && context != null &&
+                    !Agent.Instance.Context.IsProtectionDisabledForEndpoint(context))
                 {
                     command = processStartInfo.FileName + " " + processStartInfo.Arguments;
 
@@ -64,13 +70,14 @@ namespace Aikido.Zen.Core.Patches
                             };
                             Agent.Instance.SendAttackEvent(
                                 kind: AttackKind.ShellInjection,
-                                source: HttpHelper.GetSourceFromUserInputPath(userInput.Key),
+                                source: UserInputHelper.GetAttackSourceFromUserInputKey(userInput.Key),
                                 payload: userInput.Value,
                                 operation: operation,
                                 context: context,
                                 module: assemblyName,
                                 metadata: metadata,
-                                blocked: blocked
+                                blocked: blocked,
+                                paths: new[] { UserInputHelper.GetAttackPathFromUserInputKey(userInput.Key) }
                             );
                             context.AttackDetected = true; // Mark context
                             // Break after first detection for this process start
@@ -106,5 +113,6 @@ namespace Aikido.Zen.Core.Patches
 
             return true; // Allow original method execution
         }
+
     }
 }

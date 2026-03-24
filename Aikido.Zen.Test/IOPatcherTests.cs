@@ -170,5 +170,35 @@ namespace Aikido.Zen.Test
             _realContext.ParsedUserInput = new Dictionary<string, string> { { "path", absoluteInput } };
             RunAndVerifyAttackFlag(paths, _methodInfo, expectAttack: true, expectBlocked: false);
         }
+
+        [Test]
+        public void OnFileOperation_WithForceProtectionOffRoute_ReturnsTrueWithoutMarkingAttack()
+        {
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
+            var unsafeInput = "../secrets/key.txt";
+            var paths = new[] { $"/var/www/data/{unsafeInput}" };
+            var contextToPass = _mockContext.Object;
+
+            contextToPass.Method = "GET";
+            contextToPass.Route = "/api/read";
+            contextToPass.Path = "/api/read";
+            contextToPass.ParsedUserInput = new Dictionary<string, string> { { "query.path", unsafeInput } };
+            contextToPass.AttackDetected = false;
+
+            Agent.Instance.Context.Config.UpdateRatelimitedRoutes(new[]
+            {
+                new EndpointConfig
+                {
+                    Method = "GET",
+                    Route = "/api/read",
+                    ForceProtectionOff = true
+                }
+            });
+
+            var result = IOPatcher.OnFileOperation(paths, _methodInfo, contextToPass);
+
+            Assert.That(result, Is.True);
+            Assert.That(contextToPass.AttackDetected, Is.False);
+        }
     }
 }

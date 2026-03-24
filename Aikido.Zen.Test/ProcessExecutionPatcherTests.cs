@@ -108,6 +108,39 @@ namespace Aikido.Zen.Test
             Assert.That(result, Is.True);
         }
 
+        [Test]
+        public void OnProcessStart_WithForceProtectionOffRoute_ReturnsTrueWithoutMarkingAttack()
+        {
+            _context.Method = "POST";
+            _context.Route = "/api/execute";
+            _context.Path = "/api/execute";
+            _context.ParsedUserInput = new Dictionary<string, string>
+            {
+                { "body.command", "$(echo)" }
+            };
+            _startInfo.FileName = "sh";
+            _startInfo.Arguments = "-c \"$(echo)\"";
+
+            Agent.Instance.Context.Config.UpdateRatelimitedRoutes(new[]
+            {
+                new EndpointConfig
+                {
+                    Method = "POST",
+                    Route = "/api/execute",
+                    ForceProtectionOff = true
+                }
+            });
+
+            var result = ProcessExecutionPatcher.OnProcessStart(
+                new object[] { },
+                _methodInfo,
+                new Process { StartInfo = _startInfo },
+                _context);
+
+            Assert.That(result, Is.True);
+            Assert.That(_context.AttackDetected, Is.False);
+        }
+
         [TearDown]
         public void TearDown()
         {

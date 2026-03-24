@@ -1,7 +1,9 @@
+using Aikido.Zen.Core;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Models.Events;
 using NUnit.Framework;
 using System.Collections.Generic;
+using System.IO;
 
 namespace Aikido.Zen.Test
 {
@@ -99,6 +101,31 @@ namespace Aikido.Zen.Test
                 Assert.That(detectedAttack.Attack, Is.Null);
                 Assert.That(detectedAttack.Agent, Is.Null);
             });
+        }
+
+        [Test]
+        public void Create_WithPaths_UsesFirstPath()
+        {
+            var context = new Context
+            {
+                Url = "http://example.com/request",
+                Method = "GET",
+                Headers = new Dictionary<string, string>(),
+                Body = new MemoryStream()
+            };
+
+            var detectedAttack = DetectedAttack.Create(
+                AttackKind.Ssrf,
+                Source.Query,
+                "http://127.0.0.1/admin",
+                "HttpClient.SendAsync",
+                context,
+                "System.Net.Http",
+                new Dictionary<string, object> { { "hostname", "127.0.0.1" } },
+                true,
+                new[] { ".url", ".backup" });
+
+            Assert.That(detectedAttack.Attack.Path, Is.EqualTo(".url"));
         }
     }
 }
