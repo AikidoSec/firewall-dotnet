@@ -14,7 +14,7 @@ namespace Aikido.Zen.DotNetCore.Patches
             PatchMethod(harmony, typeof(WebRequest), "GetResponse", nameof(PrefixGetResponse));
             PatchMethod(harmony, typeof(WebRequest), "GetResponseAsync", nameof(PrefixGetResponseAsync));
             PatchMethod(harmony, typeof(HttpWebRequest), "GetResponse", nameof(PrefixGetResponse));
-            PatchMethod(harmony, typeof(HttpWebRequest), "GetResponseAsync", nameof(PrefixGetResponseAsync));
+            // HttpWebRequest inherits GetResponseAsync from WebRequest, so no need to patch it separately.
         }
 
         private static void PatchMethod(Harmony harmony, System.Type type, string methodName, string prefixMethodName)
