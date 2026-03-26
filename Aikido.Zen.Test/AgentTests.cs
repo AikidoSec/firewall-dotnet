@@ -4,6 +4,7 @@ using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Models.Events;
 using Aikido.Zen.Tests.Mocks;
 using Moq;
+using System.Reflection;
 
 namespace Aikido.Zen.Test
 {
@@ -181,6 +182,36 @@ namespace Aikido.Zen.Test
         {
             var ex = Assert.Throws<ArgumentNullException>(() => new Agent(null));
             Assert.That(ex.ParamName, Is.EqualTo("api"));
+        }
+
+        [Test]
+        public void Instance_WhenUninitialized_CreatesAndCachesDefaultAgent()
+        {
+            _agent.Dispose();
+
+            var instanceField = typeof(Agent).GetField("_instance", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.That(instanceField, Is.Not.Null);
+
+            instanceField!.SetValue(null, null);
+
+            try
+            {
+                var first = Agent.Instance;
+                var second = Agent.Instance;
+
+                Assert.That(first, Is.Not.Null);
+                Assert.That(second, Is.SameAs(first));
+            }
+            finally
+            {
+                if (instanceField.GetValue(null) is Agent instance)
+                {
+                    instance.Dispose();
+                }
+
+                instanceField.SetValue(null, null);
+                _agent = new Agent(_zenApiMock.Object);
+            }
         }
 
         [Test]

@@ -32,6 +32,28 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public async Task ZenApiMock_WithFailedResponses_ShouldReturnFailedResponses()
+        {
+            // Arrange
+            _zenApi = ZenApiMock.CreateMockWithFailedResponses().Object;
+
+            // Act
+            var reportResponse = await _zenApi.Reporting.ReportAsync("token", new { });
+            var firewallListsResponse = await _zenApi.Reporting.GetFirewallLists("token");
+            var configVersionResponse = await _zenApi.Runtime.GetConfigLastUpdated("token");
+            var configResponse = await _zenApi.Runtime.GetConfig("token");
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(reportResponse.Success, Is.False);
+                Assert.That(firewallListsResponse.Success, Is.False);
+                Assert.That(configVersionResponse.Success, Is.False);
+                Assert.That(configResponse.Success, Is.False);
+            });
+        }
+
+        [Test]
         public async Task RuntimeApiClient_GetConfigVersion_ShouldReturnSuccess()
         {
             // Arrange
