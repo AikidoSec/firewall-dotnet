@@ -40,7 +40,7 @@ namespace Aikido.Zen.Core.Api
                 }
                 catch (Exception ex)
                 {
-                    LogHelper.ErrorLog(Agent.Logger, $"Error sending event: {ex.Message}");
+                    LogHelper.ErrorLog(Agent.Logger, $"Error reporting event: {ex.Message}");
                     return new ReportingAPIResponse { Success = false, Error = "unknown_error" };
                 }
             }
@@ -58,12 +58,12 @@ namespace Aikido.Zen.Core.Api
                 }
                 catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
                 {
-                    LogHelper.ErrorLog(Agent.Logger, $"Error getting Firewall Lists (timeout): {ex.Message}");
+                    LogHelper.ErrorLog(Agent.Logger, $"Error retrieving Firewall Lists (timeout): {ex.Message}");
                     return new FirewallListsAPIResponse { Success = false, Error = "timeout" };
                 }
                 catch (Exception ex)
                 {
-                    LogHelper.ErrorLog(Agent.Logger, $"Error getting Firewall Lists: {ex.Message}");
+                    LogHelper.ErrorLog(Agent.Logger, $"Error retrieving Firewall Lists: {ex.Message}");
                     return new FirewallListsAPIResponse { Success = false, Error = "unknown_error" };
                 }
             }
