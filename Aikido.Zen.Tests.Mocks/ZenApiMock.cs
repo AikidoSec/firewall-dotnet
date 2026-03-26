@@ -11,7 +11,7 @@ namespace Aikido.Zen.Tests.Mocks
             {
                 var reportingMock = new Mock<IReportingAPIClient>();
                 reportingMock
-                    .Setup(r => r.ReportAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<int>()))
+                    .Setup(r => r.ReportAsync(It.IsAny<string>(), It.IsAny<object>()))
                     .ReturnsAsync(new ReportingAPIResponse { Success = true });
 
                 reportingMock
@@ -44,7 +44,7 @@ namespace Aikido.Zen.Tests.Mocks
         {
             var reportingApiClient = new Mock<IReportingAPIClient>();
             reportingApiClient
-                .Setup(r => r.ReportAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<int>()))
+                .Setup(r => r.ReportAsync(It.IsAny<string>(), It.IsAny<object>()))
                 .ReturnsAsync(new ReportingAPIResponse { Success = false, Error = "Test error" });
 
             reportingApiClient
@@ -71,7 +71,7 @@ namespace Aikido.Zen.Tests.Mocks
         {
             var reportingApiClient = new Mock<IReportingAPIClient>();
             reportingApiClient
-                .Setup(r => r.ReportAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<int>()))
+                .Setup(r => r.ReportAsync(It.IsAny<string>(), It.IsAny<object>()))
                     .ThrowsAsync(new System.Exception("Test exception"));
 
             reportingApiClient

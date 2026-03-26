@@ -57,11 +57,11 @@ namespace Aikido.Zen.DotNetCore
             {
                 _services.AddTransient<IReportingAPIClient>(provider =>
                 {
-                    return new ReportingAPIClient();
+                    return new ReportingAPIClient(ApiClientHttpClientFactory.Create());
                 });
                 _services.AddTransient<IRuntimeAPIClient>(provider =>
                 {
-                    return new RuntimeAPIClient();
+                    return new RuntimeAPIClient(ApiClientHttpClientFactory.Create());
                 });
             }
             _services.AddTransient<IZenApi, ZenApi>();
@@ -199,11 +199,11 @@ namespace Aikido.Zen.DotNetCore
         {
             services.AddTransient<IReportingAPIClient>(provider =>
             {
-                return new ReportingAPIClient();
+                return new ReportingAPIClient(ApiClientHttpClientFactory.Create());
             });
             services.AddTransient<IRuntimeAPIClient>(provider =>
             {
-                return new RuntimeAPIClient();
+                return new RuntimeAPIClient(ApiClientHttpClientFactory.Create());
             });
             services.AddTransient<IZenApi, ZenApi>();
             return services;

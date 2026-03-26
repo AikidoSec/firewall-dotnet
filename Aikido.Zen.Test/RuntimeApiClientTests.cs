@@ -19,7 +19,7 @@ namespace Aikido.Zen.Test
         {
             _handlerMock = new Mock<HttpMessageHandler>();
             var httpClient = new HttpClient(_handlerMock.Object);
-            _runtimeApiClient = new RuntimeAPIClient(httpClient);
+            _runtimeApiClient = new RuntimeAPIClient(httpClient, 5000);
         }
 
         [Test]

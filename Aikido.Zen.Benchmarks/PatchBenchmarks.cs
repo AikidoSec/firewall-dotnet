@@ -22,8 +22,9 @@ namespace Aikido.Zen.Benchmarks
         public void UnpatchedSetup()
         {
             _httpClient = new HttpClient();
-            var reportingAPIClient = new ReportingAPIClient();
-            var runtimeAPIClient = new RuntimeAPIClient();
+            var apiHttpClient = ApiClientHttpClientFactory.Create();
+            var reportingAPIClient = new ReportingAPIClient(apiHttpClient);
+            var runtimeAPIClient = new RuntimeAPIClient(apiHttpClient);
             Agent.NewInstance(new ZenApi(reportingAPIClient, runtimeAPIClient));
 
             Patcher.Unpatch();
@@ -33,8 +34,9 @@ namespace Aikido.Zen.Benchmarks
         public void PatchedSetup()
         {
             _httpClient = new HttpClient();
-            var reportingAPIClient = new ReportingAPIClient();
-            var runtimeAPIClient = new RuntimeAPIClient();
+            var apiHttpClient = ApiClientHttpClientFactory.Create();
+            var reportingAPIClient = new ReportingAPIClient(apiHttpClient);
+            var runtimeAPIClient = new RuntimeAPIClient(apiHttpClient);
             Agent.NewInstance(new ZenApi(reportingAPIClient, runtimeAPIClient));
 
             Patcher.Patch();

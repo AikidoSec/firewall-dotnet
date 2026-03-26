@@ -74,7 +74,7 @@ namespace Aikido.Zen.Test.Helpers
         {
             var reportingApiMock = new Mock<IReportingAPIClient>();
             reportingApiMock
-                .Setup(r => r.ReportAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<int>()))
+                .Setup(r => r.ReportAsync(It.IsAny<string>(), It.IsAny<object>()))
                 .ReturnsAsync(new ReportingAPIResponse { Success = true });
             reportingApiMock
                 .Setup(r => r.GetFirewallLists(It.IsAny<string>()))
@@ -111,8 +111,7 @@ namespace Aikido.Zen.Test.Helpers
                         a.Attack.Path == ".injection" &&
                         a.Attack.Metadata.ContainsKey("sql") &&
                         a.Attack.Metadata.ContainsKey("dialect") &&
-                        (string)a.Attack.Metadata["dialect"] == "Microsoft SQL"),
-                    It.IsAny<int>()),
+                        (string)a.Attack.Metadata["dialect"] == "Microsoft SQL")),
                 Times.Once);
         }
 

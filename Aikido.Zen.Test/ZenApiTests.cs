@@ -15,7 +15,7 @@ namespace Aikido.Zen.Test
             _zenApi = ZenApiMock.CreateMock().Object;
 
             // Act
-            var result = await _zenApi.Reporting.ReportAsync("token", new { }, 5000);
+            var result = await _zenApi.Reporting.ReportAsync("token", new { });
 
             // Assert
             Assert.That(result.Success);
@@ -28,7 +28,7 @@ namespace Aikido.Zen.Test
             _zenApi = ZenApiMock.CreateMockWithExceptions().Object;
 
             // Act & Assert
-            Assert.ThrowsAsync<Exception>(async () => await _zenApi.Reporting.ReportAsync("token", new { }, 5000));
+            Assert.ThrowsAsync<Exception>(async () => await _zenApi.Reporting.ReportAsync("token", new { }));
         }
 
         [Test]
@@ -101,4 +101,3 @@ namespace Aikido.Zen.Test
         }
     }
 }
-

@@ -1,7 +1,5 @@
 using System;
-using System.Net;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -13,37 +11,17 @@ namespace Aikido.Zen.Core.Api
     internal class ReportingAPIClient : IReportingAPIClient
     {
         private readonly HttpClient _httpClient;
+        private readonly int _timeoutInMS;
 
-        public ReportingAPIClient()
+        public ReportingAPIClient(HttpClient httpClient, int timeoutInMS = 30000)
         {
-            var handler = new HttpClientHandler();
-            handler.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
-
-            _httpClient = new HttpClient(handler);
+            _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+            _timeoutInMS = timeoutInMS;
         }
 
-        // used for testing purposes
-        public ReportingAPIClient(HttpClient httpClient)
+        public async Task<ReportingAPIResponse> ReportAsync(string token, object @event)
         {
-            if (httpClient == null)
-            {
-                var handler = new HttpClientHandler();
-                handler.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
-
-                _httpClient = new HttpClient(handler);
-            }
-            else
-            {
-                _httpClient = httpClient;
-            }
-
-            _httpClient.DefaultRequestHeaders.AcceptEncoding.Add(new StringWithQualityHeaderValue("gzip"));
-            _httpClient.DefaultRequestHeaders.AcceptEncoding.Add(new StringWithQualityHeaderValue("deflate"));
-        }
-
-        public async Task<ReportingAPIResponse> ReportAsync(string token, object @event, int timeoutInMS)
-        {
-            using (var cts = new CancellationTokenSource(timeoutInMS))
+            using (var cts = new CancellationTokenSource(_timeoutInMS))
             {
                 try
                 {
@@ -70,7 +48,7 @@ namespace Aikido.Zen.Core.Api
 
         public async Task<FirewallListsAPIResponse> GetFirewallLists(string token)
         {
-            using (var cts = new CancellationTokenSource(5000))
+            using (var cts = new CancellationTokenSource(_timeoutInMS))
             {
                 var request = APIHelper.CreateRequest(token, new Uri(EnvironmentHelper.AikidoUrl), "api/runtime/firewall/lists", HttpMethod.Get);
                 try

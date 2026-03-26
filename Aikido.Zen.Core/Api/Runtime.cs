@@ -1,38 +1,26 @@
 using System;
-using System.Net;
 using System.Net.Http;
-using System.Threading.Tasks;
 using System.Threading;
+using System.Threading.Tasks;
 using Aikido.Zen.Core.Helpers;
-using System.Net.Http.Headers;
-
 
 namespace Aikido.Zen.Core.Api
 {
     internal class RuntimeAPIClient : IRuntimeAPIClient
     {
         private readonly HttpClient _httpClient;
+        private readonly int _timeoutInMS;
 
-        public RuntimeAPIClient()
+        public RuntimeAPIClient(HttpClient httpClient, int timeoutInMS = 30000)
         {
-            var handler = new HttpClientHandler();
-            handler.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
-
-            _httpClient = new HttpClient(handler);
-        }
-
-        // used for testing purposes
-        public RuntimeAPIClient(HttpClient httpClient)
-        {
-            _httpClient = httpClient;
-            httpClient.DefaultRequestHeaders.AcceptEncoding.Add(new StringWithQualityHeaderValue("gzip"));
-            httpClient.DefaultRequestHeaders.AcceptEncoding.Add(new StringWithQualityHeaderValue("deflate"));
+            _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+            _timeoutInMS = timeoutInMS;
         }
 
 
         public async Task<ConfigLastUpdatedAPIResponse> GetConfigLastUpdated(string token)
         {
-            using (var cts = new CancellationTokenSource(5000))
+            using (var cts = new CancellationTokenSource(_timeoutInMS))
             {
                 try
                 {
@@ -55,7 +43,7 @@ namespace Aikido.Zen.Core.Api
 
         public async Task<ReportingAPIResponse> GetConfig(string token)
         {
-            using (var cts = new CancellationTokenSource(5000))
+            using (var cts = new CancellationTokenSource(_timeoutInMS))
             {
                 var request = APIHelper.CreateRequest(token, new Uri(EnvironmentHelper.AikidoUrl), "/api/runtime/config", HttpMethod.Get);
 

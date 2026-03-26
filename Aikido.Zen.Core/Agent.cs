@@ -25,7 +25,6 @@ namespace Aikido.Zen.Core
         private readonly ConcurrentQueue<QueuedItem> _eventQueue;
         private readonly CancellationTokenSource _cancellationSource;
         private readonly Task _backgroundTask;
-        private readonly int _batchTimeoutMs;
         private readonly ConcurrentDictionary<string, ScheduledItem> _scheduledEvents;
         private long _lastConfigCheck = DateTime.UtcNow.Ticks;
         public static ILogger Logger = new DefaultLogger();
@@ -62,14 +61,17 @@ namespace Aikido.Zen.Core
             get
             {
                 if (_instance == null)
-                    _instance = NewInstance(new ZenApi(new ReportingAPIClient(), new RuntimeAPIClient()));
+                {
+                    var httpClient = ApiClientHttpClientFactory.Create();
+                    _instance = NewInstance(new ZenApi(new ReportingAPIClient(httpClient), new RuntimeAPIClient(httpClient)));
+                }
                 return _instance;
             }
         }
 
-        internal static Agent NewInstance(IZenApi api, int batchTimeoutMs = 20000)
+        internal static Agent NewInstance(IZenApi api)
         {
-            _instance = new Agent(api, batchTimeoutMs);
+            _instance = new Agent(api);
             return _instance;
         }
 
@@ -77,21 +79,12 @@ namespace Aikido.Zen.Core
         /// Initializes a new instance of the Agent class.
         /// </summary>
         /// <param name="api">The Zen API client for reporting events</param>
-        /// <param name="batchTimeoutMs">Timeout in milliseconds for batch operations</param>
-        internal Agent(IZenApi api, int batchTimeoutMs = 20000)
+        internal Agent(IZenApi api)
         {
-            // batchTimeout default 20s timeout estimation based on cloud measurements
-            // should be at least 1 second
-            if (batchTimeoutMs < 1000)
-            {
-                throw new ArgumentException("Batch timeout must be at least 1000 ms", nameof(batchTimeoutMs));
-            }
-
             _api = api ?? throw new ArgumentNullException(nameof(api));
             _eventQueue = new ConcurrentQueue<QueuedItem>();
             _scheduledEvents = new ConcurrentDictionary<string, ScheduledItem>();
             _cancellationSource = new CancellationTokenSource();
-            _batchTimeoutMs = batchTimeoutMs;
             _backgroundTask = Task.Run(ProcessRecurringTasksAsync);
             _context = new AgentContext();
             _attackWaveDetector = new AttackWaveDetector();
@@ -254,7 +247,7 @@ namespace Aikido.Zen.Core
                     {
                         try
                         {
-                            var response = _api.Reporting.ReportAsync(eventItem.Token, eventItem.Event, _batchTimeoutMs)
+                            var response = _api.Reporting.ReportAsync(eventItem.Token, eventItem.Event)
                                 .ConfigureAwait(false)
                                 .GetAwaiter()
                                 .GetResult();
@@ -566,7 +559,7 @@ namespace Aikido.Zen.Core
             {
                 requestsThisSecond++;
                 LogHelper.DebugLog(Logger, $"Sending event: {queuedItem.Event.Type}");
-                var response = await _api.Reporting.ReportAsync(queuedItem.Token, queuedItem.Event, _batchTimeoutMs)
+                var response = await _api.Reporting.ReportAsync(queuedItem.Token, queuedItem.Event)
                     .ConfigureAwait(false);
 
                 _reportingStatus.OnEventReported(queuedItem.Event.Type, response.Success);

@@ -21,7 +21,7 @@ namespace Aikido.Zen.Test
             var httpClient = new HttpClient(_handlerMock.Object);
 
             // set the handler to the http client
-            _reportingApiClient = new ReportingAPIClient(httpClient);
+            _reportingApiClient = new ReportingAPIClient(httpClient, 5000);
         }
 
         [Test]
@@ -44,7 +44,7 @@ namespace Aikido.Zen.Test
                 .ReturnsAsync(response);
 
             // Act
-            var result = await _reportingApiClient.ReportAsync("token", new { }, 5000);
+            var result = await _reportingApiClient.ReportAsync("token", new { });
 
             // Assert
             Assert.That(result.Success);
@@ -72,7 +72,7 @@ namespace Aikido.Zen.Test
                 .ThrowsAsync(new Exception("An error occurred while reporting"));
 
             // Act & Assert
-            Assert.DoesNotThrowAsync(async () => await _reportingApiClient.ReportAsync("token", new { }, 5000));
+            Assert.DoesNotThrowAsync(async () => await _reportingApiClient.ReportAsync("token", new { }));
         }
         [Test]
         public void ReportAsync_ShouldContinueOnCanceledTaskCanceledException()
@@ -88,7 +88,7 @@ namespace Aikido.Zen.Test
                 .Throws(new TaskCanceledException("Canceled"));
 
             // Act & Assert
-            Assert.DoesNotThrowAsync(async () => await _reportingApiClient.ReportAsync("token", new { }, 5000), "Failed: Task Canceled, but the exception propagated.");
+            Assert.DoesNotThrowAsync(async () => await _reportingApiClient.ReportAsync("token", new { }), "Failed: Task Canceled, but the exception propagated.");
         }
 
         [Test]
@@ -114,7 +114,7 @@ namespace Aikido.Zen.Test
 
             // Act
 
-            Assert.DoesNotThrowAsync(async () => result = await _reportingApiClient.ReportAsync("token", new { }, 5000), "Failed: Task timed out, but the exception propagated.");
+            Assert.DoesNotThrowAsync(async () => result = await _reportingApiClient.ReportAsync("token", new { }), "Failed: Task timed out, but the exception propagated.");
 
             stopwatch.Stop();
 
