@@ -2,6 +2,7 @@ using Aikido.Zen.Core.Api;
 using Moq;
 using Moq.Protected;
 using NUnit.Framework;
+using System;
 using System.Net;
 using System.Net.Http;
 using System.Threading;
@@ -19,7 +20,8 @@ namespace Aikido.Zen.Test
         {
             _handlerMock = new Mock<HttpMessageHandler>();
             var httpClient = new HttpClient(_handlerMock.Object);
-            _runtimeApiClient = new RuntimeAPIClient(httpClient, 5000);
+            httpClient.Timeout = TimeSpan.FromMilliseconds(5000);
+            _runtimeApiClient = new RuntimeAPIClient(httpClient);
         }
 
         [Test]

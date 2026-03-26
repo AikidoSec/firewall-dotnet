@@ -1,4 +1,5 @@
 using Aikido.Zen.Core.Api;
+using System;
 using System.Linq;
 using System.Net.Http;
 
@@ -15,6 +16,14 @@ namespace Aikido.Zen.Test
 
             Assert.That(encodings, Does.Contain("gzip"));
             Assert.That(encodings, Does.Contain("deflate"));
+        }
+
+        [Test]
+        public void Create_SetsTimeout()
+        {
+            using var httpClient = ApiClientHttpClientFactory.Create(1234);
+
+            Assert.That(httpClient.Timeout, Is.EqualTo(TimeSpan.FromMilliseconds(1234)));
         }
 
         [Test]

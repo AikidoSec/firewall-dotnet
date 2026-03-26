@@ -62,8 +62,9 @@ namespace Aikido.Zen.Core
             {
                 if (_instance == null)
                 {
-                    var httpClient = ApiClientHttpClientFactory.Create();
-                    _instance = NewInstance(new ZenApi(new ReportingAPIClient(httpClient), new RuntimeAPIClient(httpClient)));
+                    var reportingHttpClient = ApiClientHttpClientFactory.Create();
+                    var runtimeHttpClient = ApiClientHttpClientFactory.Create();
+                    _instance = NewInstance(new ZenApi(new ReportingAPIClient(reportingHttpClient), new RuntimeAPIClient(runtimeHttpClient)));
                 }
                 return _instance;
             }
