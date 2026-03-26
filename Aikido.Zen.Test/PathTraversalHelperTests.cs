@@ -58,7 +58,7 @@ namespace Aikido.Zen.Test.Helpers
         {
             var reportingApiMock = new Mock<IReportingAPIClient>();
             reportingApiMock
-                .Setup(r => r.ReportAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<int>()))
+                .Setup(r => r.ReportAsync(It.IsAny<string>(), It.IsAny<object>()))
                 .ReturnsAsync(new ReportingAPIResponse { Success = true });
             reportingApiMock
                 .Setup(r => r.GetFirewallLists(It.IsAny<string>()))
@@ -91,8 +91,7 @@ namespace Aikido.Zen.Test.Helpers
                         a.Attack.Path == ".file" &&
                         a.Attack.Metadata.ContainsKey("filename") &&
                         (string)a.Attack.Metadata["filename"] == filename &&
-                        !a.Attack.Metadata.ContainsKey("path")),
-                    It.IsAny<int>()),
+                        !a.Attack.Metadata.ContainsKey("path"))),
                 Times.Once);
         }
     }

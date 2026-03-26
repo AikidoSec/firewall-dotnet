@@ -2,6 +2,7 @@ using Aikido.Zen.Core.Api;
 using Moq;
 using Moq.Protected;
 using NUnit.Framework;
+using System;
 using System.Net;
 using System.Net.Http;
 using System.Threading;
@@ -19,6 +20,7 @@ namespace Aikido.Zen.Test
         {
             _handlerMock = new Mock<HttpMessageHandler>();
             var httpClient = new HttpClient(_handlerMock.Object);
+            httpClient.Timeout = TimeSpan.FromMilliseconds(5000);
             _runtimeApiClient = new RuntimeAPIClient(httpClient);
         }
 
@@ -75,23 +77,6 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void GetConfigLastUpdated_ShouldContinueOnCanceledTaskCanceledException()
-        {
-            // Arrange
-            _handlerMock
-                .Protected()
-                .Setup<Task<HttpResponseMessage>>(
-                    "SendAsync",
-                    ItExpr.IsAny<HttpRequestMessage>(),
-                    ItExpr.IsAny<CancellationToken>()
-                )
-                .Throws(new TaskCanceledException("Canceled"));
-
-            // Act & Assert
-            Assert.DoesNotThrowAsync(async () => await _runtimeApiClient.GetConfigLastUpdated("token"), "Failed: Task Canceled, but the exception propagated.");
-        }
-
-        [Test]
         public async Task GetConfigLastUpdated_ShouldContinueOnTimeoutTaskCanceledException()
         {
             // Arrange
@@ -102,25 +87,17 @@ namespace Aikido.Zen.Test
                     ItExpr.IsAny<HttpRequestMessage>(),
                     ItExpr.IsAny<CancellationToken>()
                 )
-                .Returns(async (HttpRequestMessage req, CancellationToken token) =>
-                {
-                    // Simulate waiting for longer than the cancellation timeout
-                    await Task.Delay(10000, token);
-                    return new HttpResponseMessage();
-                });
+                .ThrowsAsync(new TaskCanceledException("Timed out", new TimeoutException()));
 
-            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
             ConfigLastUpdatedAPIResponse result = new();
 
             // Act
 
-            Assert.DoesNotThrowAsync(async () => result = await _runtimeApiClient.GetConfigLastUpdated("token"), "Failed: Task canceled, but the exception propagated.");
-
-            stopwatch.Stop();
+            Assert.DoesNotThrowAsync(async () => result = await _runtimeApiClient.GetConfigLastUpdated("token"), "Failed: Task timed out, but the exception propagated.");
 
             // Assert
             Assert.That(result!.Success, Is.False);
-            Assert.That(stopwatch.ElapsedMilliseconds, Is.InRange(4500, 7000));
+            Assert.That(result.Error, Is.EqualTo("timeout"));
         }
 
         [Test]
@@ -159,7 +136,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void GetConfig_ShouldThrowExceptionOnError()
+        public async Task GetConfig_ShouldReturnUnknownErrorOnError()
         {
             // Arrange
             _handlerMock
@@ -171,8 +148,38 @@ namespace Aikido.Zen.Test
                 )
                 .ThrowsAsync(new Exception("An error occurred while getting config"));
 
-            // Act & Assert
-            Assert.ThrowsAsync<Exception>(async () => await _runtimeApiClient.GetConfig("token"));
+            ReportingAPIResponse result = new();
+
+            // Act
+            Assert.DoesNotThrowAsync(async () => result = await _runtimeApiClient.GetConfig("token"));
+
+            // Assert
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.Error, Is.EqualTo("unknown_error"));
         }
+
+        [Test]
+        public async Task GetConfig_ShouldReturnTimeoutOnTimeoutTaskCanceledException()
+        {
+            // Arrange
+            _handlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>()
+                )
+                .ThrowsAsync(new TaskCanceledException("Timed out", new TimeoutException()));
+
+            ReportingAPIResponse result = new();
+
+            // Act
+            Assert.DoesNotThrowAsync(async () => result = await _runtimeApiClient.GetConfig("token"));
+
+            // Assert
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.Error, Is.EqualTo("timeout"));
+        }
+
     }
 }

@@ -5,7 +5,7 @@ namespace Aikido.Zen.Core.Api
 {
     internal interface IReportingAPIClient
     {
-        Task<ReportingAPIResponse> ReportAsync (string token, object @event, int timeoutInMS);
-        Task<FirewallListsAPIResponse> GetFirewallLists (string token);
+        Task<ReportingAPIResponse> ReportAsync(string token, object @event);
+        Task<FirewallListsAPIResponse> GetFirewallLists(string token);
     }
 }

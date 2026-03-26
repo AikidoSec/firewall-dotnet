@@ -26,7 +26,7 @@ namespace Aikido.Zen.Test
             Environment.SetEnvironmentVariable("AIKIDO_TOKEN", "test-token");
             var reportingMock = new Mock<IReportingAPIClient>();
             reportingMock
-                .Setup(r => r.ReportAsync(It.IsAny<string>(), It.IsAny<IEvent>(), It.IsAny<int>()))
+                .Setup(r => r.ReportAsync(It.IsAny<string>(), It.IsAny<IEvent>()))
                     .ReturnsAsync(new ReportingAPIResponse { Success = true });
             var runtimeMock = new Mock<IRuntimeAPIClient>();
             runtimeMock

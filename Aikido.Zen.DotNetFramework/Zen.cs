@@ -30,8 +30,10 @@ namespace Aikido.Zen.DotNetFramework
             // setup the agent
             if (Agent.Instance == null)
             {
-                var reportingApiClient = new ReportingAPIClient();
-                var runtimeApiClient = new RuntimeAPIClient();
+                var reportingHttpClient = ApiClientHttpClientFactory.Create();
+                var runtimeHttpClient = ApiClientHttpClientFactory.Create();
+                var reportingApiClient = new ReportingAPIClient(reportingHttpClient);
+                var runtimeApiClient = new RuntimeAPIClient(runtimeHttpClient);
                 var zenApi = new ZenApi(reportingApiClient, runtimeApiClient);
                 Agent.NewInstance(zenApi);
             }

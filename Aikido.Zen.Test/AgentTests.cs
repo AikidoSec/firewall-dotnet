@@ -4,6 +4,7 @@ using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Models.Events;
 using Aikido.Zen.Tests.Mocks;
 using Moq;
+using System.Reflection;
 
 namespace Aikido.Zen.Test
 {
@@ -12,14 +13,13 @@ namespace Aikido.Zen.Test
 
         private Agent _agent;
         private Mock<IZenApi> _zenApiMock;
-        private const int BatchTimeoutMs = 20000;
 
         [SetUp]
         public void Setup()
         {
             Environment.SetEnvironmentVariable("AIKIDO_TOKEN", "test-token");
             _zenApiMock = ZenApiMock.CreateMock();
-            _agent = new Agent(_zenApiMock.Object, BatchTimeoutMs);
+            _agent = new Agent(_zenApiMock.Object);
         }
 
         [TearDown]
@@ -124,8 +124,7 @@ namespace Aikido.Zen.Test
             _zenApiMock.Verify(
                 r => r.Reporting.ReportAsync(
                     token,
-                    It.Is<Started>(e => e.GetType() == typeof(Started)),
-                    BatchTimeoutMs
+                    It.Is<Started>(e => e.GetType() == typeof(Started))
                 ),
                 Times.AtLeastOnce()
             );
@@ -186,10 +185,33 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void Constructor_WithNegativeBatchTimeout_ThrowsArgumentException()
+        public void Instance_WhenUninitialized_CreatesAndCachesDefaultAgent()
         {
-            var ex = Assert.Throws<ArgumentException>(() => new Agent(_zenApiMock.Object, -1));
-            Assert.That(ex.ParamName, Is.EqualTo("batchTimeoutMs"));
+            _agent.Dispose();
+
+            var instanceField = typeof(Agent).GetField("_instance", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.That(instanceField, Is.Not.Null);
+
+            instanceField!.SetValue(null, null);
+
+            try
+            {
+                var first = Agent.Instance;
+                var second = Agent.Instance;
+
+                Assert.That(first, Is.Not.Null);
+                Assert.That(second, Is.SameAs(first));
+            }
+            finally
+            {
+                if (instanceField.GetValue(null) is Agent instance)
+                {
+                    instance.Dispose();
+                }
+
+                instanceField.SetValue(null, null);
+                _agent = new Agent(_zenApiMock.Object);
+            }
         }
 
         [Test]
@@ -207,8 +229,7 @@ namespace Aikido.Zen.Test
             _zenApiMock.Verify(
                 r => r.Reporting.ReportAsync(
                     It.IsAny<string>(),
-                    It.Is<Started>(s => s.GetType() == typeof(Started)),
-                    BatchTimeoutMs
+                    It.Is<Started>(s => s.GetType() == typeof(Started))
                 ),
                 Times.Once
             );
@@ -244,8 +265,7 @@ namespace Aikido.Zen.Test
             _zenApiMock.Verify(
                 r => r.Reporting.ReportAsync(
                     "token",
-                    It.Is<Started>(e => e == testEvent),
-                    BatchTimeoutMs
+                    It.Is<Started>(e => e == testEvent)
                 ),
                 Times.Once
             );
@@ -300,8 +320,7 @@ namespace Aikido.Zen.Test
             _zenApiMock.Verify(
                 r => r.Reporting.ReportAsync(
                     "token",
-                    It.IsAny<Started>(),
-                    BatchTimeoutMs
+                    It.IsAny<Started>()
                 ),
                 Times.AtLeast(2)
             );
@@ -338,8 +357,7 @@ namespace Aikido.Zen.Test
             _zenApiMock.Verify(
                 r => r.Reporting.ReportAsync(
                     "token",
-                    It.IsAny<Started>(),
-                    BatchTimeoutMs
+                    It.IsAny<Started>()
                 ),
                 Times.AtMost(2)
             );
@@ -470,8 +488,7 @@ namespace Aikido.Zen.Test
                         a.Request.Headers.ContainsKey("Content-Type") &&
                         a.Attack.Metadata.ContainsKey("sql")
 
-                    ),
-                    BatchTimeoutMs
+                    )
                 ),
                 Times.Once
             );
@@ -560,7 +577,7 @@ namespace Aikido.Zen.Test
 
             // Assert - verify no more events processed after dispose
             _zenApiMock.Verify(
-                r => r.Reporting.ReportAsync(It.IsAny<string>(), It.IsAny<IEvent>(), It.IsAny<int>()),
+                r => r.Reporting.ReportAsync(It.IsAny<string>(), It.IsAny<IEvent>()),
                 Times.Once // Only the first event before dispose
             );
         }

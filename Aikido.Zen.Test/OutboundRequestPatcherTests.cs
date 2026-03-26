@@ -25,7 +25,7 @@ namespace Aikido.Zen.Test
 
             _reportingApiMock = new Mock<IReportingAPIClient>();
             _reportingApiMock
-                .Setup(r => r.ReportAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<int>()))
+                .Setup(r => r.ReportAsync(It.IsAny<string>(), It.IsAny<object>()))
                 .ReturnsAsync(new ReportingAPIResponse { Success = true });
             _reportingApiMock
                 .Setup(r => r.GetFirewallLists(It.IsAny<string>()))
