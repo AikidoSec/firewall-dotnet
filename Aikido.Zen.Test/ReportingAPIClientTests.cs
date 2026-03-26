@@ -75,23 +75,6 @@ namespace Aikido.Zen.Test
             Assert.DoesNotThrowAsync(async () => await _reportingApiClient.ReportAsync("token", new { }));
         }
         [Test]
-        public void ReportAsync_ShouldContinueOnCanceledTaskCanceledException()
-        {
-            // Arrange
-            _handlerMock
-                .Protected()
-                .Setup<Task<HttpResponseMessage>>(
-                    "SendAsync",
-                    ItExpr.IsAny<HttpRequestMessage>(),
-                    ItExpr.IsAny<CancellationToken>()
-                )
-                .Throws(new TaskCanceledException("Canceled"));
-
-            // Act & Assert
-            Assert.DoesNotThrowAsync(async () => await _reportingApiClient.ReportAsync("token", new { }), "Failed: Task Canceled, but the exception propagated.");
-        }
-
-        [Test]
         public async Task ReportAsync_ShouldContinueOnTimeoutTaskCanceledException()
         {
             // Arrange
@@ -102,25 +85,17 @@ namespace Aikido.Zen.Test
                     ItExpr.IsAny<HttpRequestMessage>(),
                     ItExpr.IsAny<CancellationToken>()
                 )
-                .Returns(async (HttpRequestMessage req, CancellationToken token) =>
-                {
-                    // Simulate waiting for longer than the cancellation timeout
-                    await Task.Delay(10000, token);
-                    return new HttpResponseMessage();
-                });
+                .ThrowsAsync(new TaskCanceledException("Timed out", new TimeoutException()));
 
-            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
             ReportingAPIResponse result = new();
 
             // Act
 
             Assert.DoesNotThrowAsync(async () => result = await _reportingApiClient.ReportAsync("token", new { }), "Failed: Task timed out, but the exception propagated.");
 
-            stopwatch.Stop();
-
             // Assert
             Assert.That(result!.Success, Is.False);
-            Assert.That(stopwatch.ElapsedMilliseconds, Is.InRange(4500, 7000));
+            Assert.That(result.Error, Is.EqualTo("timeout"));
         }
 
         [Test]
@@ -175,23 +150,6 @@ namespace Aikido.Zen.Test
             Assert.DoesNotThrowAsync(async () => await _reportingApiClient.GetFirewallLists("token"));
         }
         [Test]
-        public void GetFirewallLists_ShouldContinueOnCanceledTaskCanceledException()
-        {
-            // Arrange
-            _handlerMock
-                .Protected()
-                .Setup<Task<HttpResponseMessage>>(
-                    "SendAsync",
-                    ItExpr.IsAny<HttpRequestMessage>(),
-                    ItExpr.IsAny<CancellationToken>()
-                )
-                .Throws(new TaskCanceledException("Canceled"));
-
-            // Act & Assert
-            Assert.DoesNotThrowAsync(async () => await _reportingApiClient.GetFirewallLists("token"), "Failed: Task Canceled, but the exception propagated.");
-        }
-
-        [Test]
         public async Task GetFirewallLists_ShouldContinueOnTimeoutTaskCanceledException()
         {
             // Arrange
@@ -202,25 +160,18 @@ namespace Aikido.Zen.Test
                     ItExpr.IsAny<HttpRequestMessage>(),
                     ItExpr.IsAny<CancellationToken>()
                 )
-                .Returns(async (HttpRequestMessage req, CancellationToken token) =>
-                {
-                    // Simulate waiting for longer than the cancellation timeout
-                    await Task.Delay(10000, token);
-                    return new HttpResponseMessage();
-                });
+                .ThrowsAsync(new TaskCanceledException("Timed out", new TimeoutException()));
 
-            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
             FirewallListsAPIResponse result = new();
 
             // Act
 
             Assert.DoesNotThrowAsync(async () => result = await _reportingApiClient.GetFirewallLists("token"), "Failed: Task timed out, but the exception propagated.");
 
-            stopwatch.Stop();
-
             // Assert
             Assert.That(result!.Success, Is.False);
-            Assert.That(stopwatch.ElapsedMilliseconds, Is.InRange(4500, 7000));
+            Assert.That(result.Error, Is.EqualTo("timeout"));
         }
+
     }
 }

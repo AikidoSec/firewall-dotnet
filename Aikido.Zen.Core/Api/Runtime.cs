@@ -28,14 +28,14 @@ namespace Aikido.Zen.Core.Api
                     var response = await _httpClient.SendAsync(request, cts.Token);
                     return APIHelper.ToAPIResponse<ConfigLastUpdatedAPIResponse>(response);
                 }
-                catch (TaskCanceledException)
+                catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
                 {
-                    LogHelper.ErrorLog(Agent.Logger, "Error retrieving config: Operation canceled");
-                    return new ConfigLastUpdatedAPIResponse { Success = false, Error = "cancelation" };
+                    LogHelper.ErrorLog(Agent.Logger, $"Error retrieving config last updated (timeout): {ex.Message}");
+                    return new ConfigLastUpdatedAPIResponse { Success = false, Error = "timeout" };
                 }
                 catch (Exception ex)
                 {
-                    LogHelper.ErrorLog(Agent.Logger, $"Error retrieving config: {ex.Message}");
+                    LogHelper.ErrorLog(Agent.Logger, $"Error retrieving config last updated: {ex.Message}");
                     return new ConfigLastUpdatedAPIResponse { Success = false, Error = "unknown_error" };
                 }
             }
@@ -52,16 +52,15 @@ namespace Aikido.Zen.Core.Api
                     var response = await _httpClient.SendAsync(request, cts.Token);
                     return APIHelper.ToAPIResponse<ReportingAPIResponse>(response);
                 }
-                catch (TaskCanceledException)
+                catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
                 {
-                    if (!cts.Token.IsCancellationRequested)
-                        return new ReportingAPIResponse { Success = false, Error = "timeout" };
-
-                    throw;
+                    LogHelper.ErrorLog(Agent.Logger, $"Error retrieving config (timeout): {ex.Message}");
+                    return new ReportingAPIResponse { Success = false, Error = "timeout" };
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception("An error occurred while reporting", ex);
+                    LogHelper.ErrorLog(Agent.Logger, $"Error retrieving config: {ex.Message}");
+                    return new ReportingAPIResponse { Success = false, Error = "unknown_error" };
                 }
             }
         }
