@@ -107,8 +107,9 @@ public void ConfigureServices(IServiceCollection services)
 public void Configure(IApplicationBuilder app)
 {
     // other middleware
+    // app.UseRouting()
     app.UseZenFirewall(); // place this after UseRouting, or after authorization, but high enough in the pipeline to catch all requests
-    // other middleware
+    // other middleware like app.UseEndpoints() or app.MapControllers() need to come after UseZenFirewall
 }
 ```
 
@@ -133,7 +134,8 @@ using Microsoft.AspNet.Identity;
         return next();
     })
     // add Zen middleware
-    .UseZenFirewall()
+    .UseZenFirewall(); // place this after UseRouting, or after authorization, but high enough in the pipeline to catch all requests
+    // other middleware like UseEndpoints() or MapControllers() need to come after UseZenFirewall
 ```
 
 ### .NET Framework
