@@ -67,7 +67,7 @@ Zen operates autonomously on the same server as your .NET app to:
 
 ### .NET Core
 
-Ensure that your project runs on .NET Core 6, 7, 8, 9 or 10.
+Ensure that your project runs on .NET Core 6, 7, 8, 9 or 10. Additionally, your application must use endpoint routing (`UseRouting`) so Zen Firewall can resolve route information correctly. Legacy routing middleware such as `UseMvc` is not supported. See the ASP.NET Core migration guide [here](https://learn.microsoft.com/en-us/aspnet/core/migration/22-to-30).
 
 - Install the package from NuGet:
 
@@ -107,8 +107,9 @@ public void ConfigureServices(IServiceCollection services)
 public void Configure(IApplicationBuilder app)
 {
     // other middleware
+    // app.UseRouting()
     app.UseZenFirewall(); // place this after UseRouting, or after authorization, but high enough in the pipeline to catch all requests
-    // other middleware
+    // other middleware like app.UseEndpoints() or app.MapControllers() need to come after UseZenFirewall
 }
 ```
 
@@ -133,7 +134,8 @@ using Microsoft.AspNet.Identity;
         return next();
     })
     // add Zen middleware
-    .UseZenFirewall()
+    .UseZenFirewall(); // place this after UseRouting, or after authorization, but high enough in the pipeline to catch all requests
+    // other middleware like UseEndpoints() or MapControllers() need to come after UseZenFirewall
 ```
 
 ### .NET Framework
