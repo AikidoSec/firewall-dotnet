@@ -74,12 +74,12 @@ namespace Aikido.Zen.Core.Vulnerabilities
         /// <param name="userInput">The user input to check for injection attempts</param>
         /// <param name="dialect">The SQL dialect identifier</param>
         /// <returns>True if SQL injection is detected, false otherwise. Returns false on errors or tokenization failures.</returns>
-        internal static bool IsSQLInjection(string query, string userInput, int dialect)
+        internal static int DetectSQLInjection(string query, string userInput, int dialect)
         {
             // Some quick checks are cheaper than calling the Rust library
             if (ShouldReturnEarly(query, userInput))
             {
-                return false;
+                return 0;
             }
 
             var queryBytes = UTF8Bytes(query);
@@ -159,18 +159,15 @@ namespace Aikido.Zen.Core.Vulnerabilities
             switch (result)
             {
                 case 0:
-                    return false; // return code 0 comes from zen-internals to indicate that there was no sql injection
                 case 1:
-                    return true; // return code 1 comes from zen-internals to indicate that there was a sql injection detected
+                case 3:
+                    return result;
                 case 2:
                     LogHelper.ErrorLog(Agent.Logger, "Error in detecting SQL injection: internal error");
-                    return false;
-                case 3:
-                    // return code 3 is what zen-internals returns when the sql tokenization has failed, we don't block this.
-                    return false;
+                    return 0;
                 default:
                     LogHelper.ErrorLog(Agent.Logger, $"Unexpected result from SQL injection detection: {result}");
-                    return false;
+                    return 0;
             }
         }
 

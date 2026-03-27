@@ -18,9 +18,14 @@ namespace Aikido.Zen.Core.Vulnerabilities
         /// <returns>True if SQL injection is detected, false otherwise</returns>
         public static bool IsSQLInjection(string query, string userInput, SQLDialect dialect)
         {
+            return DetectSQLInjection(query, userInput, dialect) == 1;
+        }
+
+        public static int DetectSQLInjection(string query, string userInput, SQLDialect dialect)
+        {
             query = query?.ToLower();
             userInput = userInput?.ToLower();
-            return ZenInternals.IsSQLInjection(query, userInput, dialect.ToRustDialectInt());
+            return ZenInternals.DetectSQLInjection(query, userInput, dialect.ToRustDialectInt());
         }
     }
 }

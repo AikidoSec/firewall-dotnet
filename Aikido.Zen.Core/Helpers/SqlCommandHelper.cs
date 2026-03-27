@@ -15,13 +15,14 @@ namespace Aikido.Zen.Core.Helpers
             // check for sql injection against the these inputs
             foreach (var userInput in context.ParsedUserInput)
             {
-                if (SQLInjectionDetector.IsSQLInjection(commandText, userInput.Value, dialect))
+                int result = SQLInjectionDetector.DetectSQLInjection(commandText, userInput.Value, dialect);
+
+                if (result == 1)
                 {
                     var metadata = new Dictionary<string, object> {
                         { "sql", commandText },
                         { "dialect", dialect.ToHumanName() }
                     };
-                    // send an attack event
                     Agent.Instance.SendAttackEvent(
                         kind: AttackKind.SqlInjection,
                         source: UserInputHelper.GetAttackSourceFromUserInputKey(userInput.Key),
@@ -33,7 +34,28 @@ namespace Aikido.Zen.Core.Helpers
                         blocked: !EnvironmentHelper.DryMode,
                         paths: new[] { UserInputHelper.GetAttackPathFromUserInputKey(userInput.Key) }
                     );
-                    // set attack detected to true
+                    context.AttackDetected = true;
+                    return true;
+                }
+
+                if (result == 3 && EnvironmentHelper.BlockInvalidSql)
+                {
+                    var metadata = new Dictionary<string, object> {
+                        { "sql", commandText },
+                        { "dialect", dialect.ToHumanName() },
+                        { "failedToTokenize", "true" }
+                    };
+                    Agent.Instance.SendAttackEvent(
+                        kind: AttackKind.SqlInjection,
+                        source: UserInputHelper.GetAttackSourceFromUserInputKey(userInput.Key),
+                        payload: userInput.Value,
+                        operation: operation,
+                        context: context,
+                        module: moduleName,
+                        metadata: metadata,
+                        blocked: !EnvironmentHelper.DryMode,
+                        paths: new[] { UserInputHelper.GetAttackPathFromUserInputKey(userInput.Key) }
+                    );
                     context.AttackDetected = true;
                     return true;
                 }
