@@ -2,6 +2,12 @@ using Aikido.Zen.Core.Models;
 
 namespace Aikido.Zen.Core.Vulnerabilities
 {
+    public enum SQLInjectionDetectionResult
+    {
+        NotDetected = 0,
+        Detected = 1,
+        FailedToTokenize = 3
+    }
 
     /// <summary>
     /// Detector for SQL injection vulnerabilities in query strings
@@ -18,10 +24,10 @@ namespace Aikido.Zen.Core.Vulnerabilities
         /// <returns>True if SQL injection is detected, false otherwise</returns>
         public static bool IsSQLInjection(string query, string userInput, SQLDialect dialect)
         {
-            return DetectSQLInjection(query, userInput, dialect) == 1;
+            return DetectSQLInjection(query, userInput, dialect) == SQLInjectionDetectionResult.Detected;
         }
 
-        public static int DetectSQLInjection(string query, string userInput, SQLDialect dialect)
+        public static SQLInjectionDetectionResult DetectSQLInjection(string query, string userInput, SQLDialect dialect)
         {
             query = query?.ToLower();
             userInput = userInput?.ToLower();

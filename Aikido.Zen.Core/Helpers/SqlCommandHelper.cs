@@ -15,50 +15,37 @@ namespace Aikido.Zen.Core.Helpers
             // check for sql injection against the these inputs
             foreach (var userInput in context.ParsedUserInput)
             {
-                int result = SQLInjectionDetector.DetectSQLInjection(commandText, userInput.Value, dialect);
+                var result = SQLInjectionDetector.DetectSQLInjection(commandText, userInput.Value, dialect);
 
-                if (result == 1)
+                if (result == SQLInjectionDetectionResult.NotDetected ||
+                    (result == SQLInjectionDetectionResult.FailedToTokenize && !EnvironmentHelper.BlockInvalidSql))
                 {
-                    var metadata = new Dictionary<string, object> {
-                        { "sql", commandText },
-                        { "dialect", dialect.ToHumanName() }
-                    };
-                    Agent.Instance.SendAttackEvent(
-                        kind: AttackKind.SqlInjection,
-                        source: UserInputHelper.GetAttackSourceFromUserInputKey(userInput.Key),
-                        payload: userInput.Value,
-                        operation: operation,
-                        context: context,
-                        module: moduleName,
-                        metadata: metadata,
-                        blocked: !EnvironmentHelper.DryMode,
-                        paths: new[] { UserInputHelper.GetAttackPathFromUserInputKey(userInput.Key) }
-                    );
-                    context.AttackDetected = true;
-                    return true;
+                    continue;
                 }
 
-                if (result == 3 && EnvironmentHelper.BlockInvalidSql)
+                var metadata = new Dictionary<string, object> {
+                    { "sql", commandText },
+                    { "dialect", dialect.ToHumanName() }
+                };
+
+                if (result == SQLInjectionDetectionResult.FailedToTokenize)
                 {
-                    var metadata = new Dictionary<string, object> {
-                        { "sql", commandText },
-                        { "dialect", dialect.ToHumanName() },
-                        { "failedToTokenize", "true" }
-                    };
-                    Agent.Instance.SendAttackEvent(
-                        kind: AttackKind.SqlInjection,
-                        source: UserInputHelper.GetAttackSourceFromUserInputKey(userInput.Key),
-                        payload: userInput.Value,
-                        operation: operation,
-                        context: context,
-                        module: moduleName,
-                        metadata: metadata,
-                        blocked: !EnvironmentHelper.DryMode,
-                        paths: new[] { UserInputHelper.GetAttackPathFromUserInputKey(userInput.Key) }
-                    );
-                    context.AttackDetected = true;
-                    return true;
+                    metadata["failedToTokenize"] = "true";
                 }
+
+                Agent.Instance.SendAttackEvent(
+                    kind: AttackKind.SqlInjection,
+                    source: UserInputHelper.GetAttackSourceFromUserInputKey(userInput.Key),
+                    payload: userInput.Value,
+                    operation: operation,
+                    context: context,
+                    module: moduleName,
+                    metadata: metadata,
+                    blocked: !EnvironmentHelper.DryMode,
+                    paths: new[] { UserInputHelper.GetAttackPathFromUserInputKey(userInput.Key) }
+                );
+                context.AttackDetected = true;
+                return true;
             }
             return false;
         }

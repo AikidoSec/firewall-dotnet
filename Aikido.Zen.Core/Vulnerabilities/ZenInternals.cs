@@ -73,13 +73,13 @@ namespace Aikido.Zen.Core.Vulnerabilities
         /// <param name="query">The SQL query to analyze</param>
         /// <param name="userInput">The user input to check for injection attempts</param>
         /// <param name="dialect">The SQL dialect identifier</param>
-        /// <returns>True if SQL injection is detected, false otherwise. Returns false on errors or tokenization failures.</returns>
-        internal static int DetectSQLInjection(string query, string userInput, int dialect)
+        /// <returns>The SQL injection detection result. Errors are logged and returned as NotDetected.</returns>
+        internal static SQLInjectionDetectionResult DetectSQLInjection(string query, string userInput, int dialect)
         {
             // Some quick checks are cheaper than calling the Rust library
             if (ShouldReturnEarly(query, userInput))
             {
-                return 0;
+                return SQLInjectionDetectionResult.NotDetected;
             }
 
             var queryBytes = UTF8Bytes(query);
@@ -158,16 +158,16 @@ namespace Aikido.Zen.Core.Vulnerabilities
 
             switch (result)
             {
-                case 0:
-                case 1:
-                case 3:
-                    return result;
+                case (int)SQLInjectionDetectionResult.NotDetected:
+                case (int)SQLInjectionDetectionResult.Detected:
+                case (int)SQLInjectionDetectionResult.FailedToTokenize:
+                    return (SQLInjectionDetectionResult)result;
                 case 2:
                     LogHelper.ErrorLog(Agent.Logger, "Error in detecting SQL injection: internal error");
-                    return 0;
+                    return SQLInjectionDetectionResult.NotDetected;
                 default:
                     LogHelper.ErrorLog(Agent.Logger, $"Unexpected result from SQL injection detection: {result}");
-                    return 0;
+                    return SQLInjectionDetectionResult.NotDetected;
             }
         }
 

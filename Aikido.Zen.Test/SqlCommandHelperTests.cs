@@ -10,12 +10,15 @@ namespace Aikido.Zen.Test.Helpers
 {
     public class SqlCommandHelperTests
     {
+        private const string InvalidSqlQuery = "SELECT * FROM users WHERE name = 'abc' OR 1=1 /*";
+        private const string InvalidSqlUserInput = "abc' OR 1=1 /*";
         private Context _context;
 
         [SetUp]
         public void Setup()
         {
             Environment.SetEnvironmentVariable("AIKIDO_TOKEN", "test");
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK_INVALID_SQL", null);
             // mock zen api
             var agentMock = new Agent(ZenApiMock.CreateMock().Object);
 
@@ -40,6 +43,12 @@ namespace Aikido.Zen.Test.Helpers
                     { "headers.auth", "token123" }
                 }
             };
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK_INVALID_SQL", null);
         }
 
         [Test]
@@ -116,6 +125,57 @@ namespace Aikido.Zen.Test.Helpers
         }
 
         [Test]
+        public async Task DetectSQLInjection_WhenInvalidSqlIsBlocked_ReportsFailedToTokenizeMetadata()
+        {
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK_INVALID_SQL", "true");
+
+            var reportingApiMock = new Mock<IReportingAPIClient>();
+            reportingApiMock
+                .Setup(r => r.ReportAsync(It.IsAny<string>(), It.IsAny<object>()))
+                .ReturnsAsync(new ReportingAPIResponse { Success = true });
+            reportingApiMock
+                .Setup(r => r.GetFirewallLists(It.IsAny<string>()))
+                .ReturnsAsync(new FirewallListsAPIResponse { Success = true });
+
+            var runtimeApiMock = new Mock<IRuntimeAPIClient>();
+            runtimeApiMock
+                .Setup(r => r.GetConfig(It.IsAny<string>()))
+                .ReturnsAsync(new ReportingAPIResponse { Success = true });
+            runtimeApiMock
+                .Setup(r => r.GetConfigLastUpdated(It.IsAny<string>()))
+                .ReturnsAsync(new ConfigLastUpdatedAPIResponse { Success = true });
+
+            Agent.NewInstance(ZenApiMock.CreateMock(reportingApiMock.Object, runtimeApiMock.Object).Object);
+            _context.ParsedUserInput = new Dictionary<string, string>
+            {
+                { "query.injection", InvalidSqlUserInput }
+            };
+
+            var result = SqlCommandHelper.DetectSQLInjection(
+                InvalidSqlQuery,
+                SQLDialect.Generic,
+                _context,
+                "TestModule",
+                "SELECT");
+
+            await Task.Delay(150);
+
+            Assert.That(result, Is.True);
+            Assert.That(_context.AttackDetected, Is.True);
+            reportingApiMock.Verify(
+                r => r.ReportAsync(
+                    It.IsAny<string>(),
+                    It.Is<DetectedAttack>(a =>
+                        a.Attack.Kind == "sql_injection" &&
+                        a.Attack.Path == ".injection" &&
+                        a.Attack.Metadata.ContainsKey("sql") &&
+                        a.Attack.Metadata.ContainsKey("dialect") &&
+                        a.Attack.Metadata.ContainsKey("failedToTokenize") &&
+                        (string)a.Attack.Metadata["failedToTokenize"] == "true")),
+                Times.Once);
+        }
+
+        [Test]
         public void DetectSQLInjection_WithSafeInput_ShouldNotSendAttackEvent()
         {
             // Arrange
@@ -138,6 +198,28 @@ namespace Aikido.Zen.Test.Helpers
             );
 
             // Assert
+            Assert.That(result, Is.False);
+            Assert.That(_context.AttackDetected, Is.False);
+        }
+
+        [Test]
+        public void DetectSQLInjection_WhenInvalidSqlBlockingIsDisabled_ShouldNotSendAttackEvent()
+        {
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK_INVALID_SQL", "false");
+
+            _context.ParsedUserInput = new Dictionary<string, string>
+            {
+                { "query.injection", InvalidSqlUserInput }
+            };
+
+            var result = SqlCommandHelper.DetectSQLInjection(
+                InvalidSqlQuery,
+                SQLDialect.Generic,
+                _context,
+                "TestModule",
+                "SELECT"
+            );
+
             Assert.That(result, Is.False);
             Assert.That(_context.AttackDetected, Is.False);
         }
