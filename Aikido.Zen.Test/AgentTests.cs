@@ -456,8 +456,7 @@ namespace Aikido.Zen.Test
                         a.Attack.Operation == operation &&
                         a.Attack.Module == module &&
                         a.Attack.Blocked == blocked &&
-                        a.Request == null),
-                    BatchTimeoutMs),
+                        a.Request == null)),
                 Times.Once);
         }
 

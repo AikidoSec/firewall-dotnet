@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Threading.Tasks;
 using System.Web;
 using System.Web.Routing;
 using Aikido.Zen.DotNetFramework.HttpModules;

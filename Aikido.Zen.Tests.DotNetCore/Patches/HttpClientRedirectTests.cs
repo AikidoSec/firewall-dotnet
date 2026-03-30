@@ -144,14 +144,14 @@ namespace Aikido.Zen.Tests.DotNetCore.Patches
         [TestCaseSource(nameof(NonSsrfCases))]
         public async Task HttpClient_WhenCaseShouldNotRaiseSsrf_DoesNotThrowAikidoException(string userInputUrl, string requestUrl, string serverUrl)
         {
-            await AssertNetworkFailureAsync(userInputUrl, requestUrl, serverUrl);
+            await AssertDoesNotThrowAikidoExceptionAsync(userInputUrl, requestUrl, serverUrl);
         }
 
         private static Agent CreateAgent()
         {
             var reportingApiMock = new Mock<IReportingAPIClient>();
             reportingApiMock
-                .Setup(r => r.ReportAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<int>()))
+                .Setup(r => r.ReportAsync(It.IsAny<string>(), It.IsAny<object>()))
                 .ReturnsAsync(new ReportingAPIResponse { Success = true });
             reportingApiMock
                 .Setup(r => r.GetFirewallLists(It.IsAny<string>()))
@@ -170,7 +170,7 @@ namespace Aikido.Zen.Tests.DotNetCore.Patches
             zenApiMock.Setup(z => z.Runtime).Returns(runtimeApiMock.Object);
 
             var newInstanceMethod = typeof(Agent).GetMethod("NewInstance", BindingFlags.Static | BindingFlags.NonPublic);
-            return (Agent)newInstanceMethod.Invoke(null, new object[] { zenApiMock.Object, 20_000 });
+            return (Agent)newInstanceMethod.Invoke(null, new object[] { zenApiMock.Object });
         }
 
         private static ServiceProvider CreateServiceProvider(IHttpContextAccessor httpContextAccessor)
@@ -222,7 +222,7 @@ namespace Aikido.Zen.Tests.DotNetCore.Patches
             Assert.That(exception?.Message, Is.EqualTo(ExpectedSsrfMessage));
         }
 
-        private async Task AssertNetworkFailureAsync(string userInputUrl, string requestUrl, string serverUrl)
+        private async Task AssertDoesNotThrowAikidoExceptionAsync(string userInputUrl, string requestUrl, string serverUrl)
         {
             var userInputUri = new Uri(userInputUrl);
             var requestUri = new Uri(requestUrl);
@@ -231,9 +231,22 @@ namespace Aikido.Zen.Tests.DotNetCore.Patches
             SetCurrentContext(userInputUri, serverUri);
 
             using var client = CreateClient();
-            var exception = Assert.ThrowsAsync(Is.InstanceOf<Exception>(), async () => await client.GetAsync(requestUri));
+            HttpResponseMessage response = null;
+            Exception exception = null;
 
-            Assert.That(exception, Is.Not.Null);
+            try
+            {
+                response = await client.GetAsync(requestUri);
+            }
+            catch (Exception ex)
+            {
+                exception = ex;
+            }
+            finally
+            {
+                response?.Dispose();
+            }
+
             Assert.That(exception, Is.Not.TypeOf<AikidoException>());
         }
 

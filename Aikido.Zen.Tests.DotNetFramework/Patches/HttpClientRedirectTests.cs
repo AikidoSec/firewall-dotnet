@@ -110,7 +110,7 @@ namespace Aikido.Zen.Tests.DotNetFramework.Patches
         {
             var reportingApiMock = new Mock<IReportingAPIClient>();
             reportingApiMock
-                .Setup(r => r.ReportAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<int>()))
+                .Setup(r => r.ReportAsync(It.IsAny<string>(), It.IsAny<object>()))
                 .ReturnsAsync(new ReportingAPIResponse { Success = true });
             reportingApiMock
                 .Setup(r => r.GetFirewallLists(It.IsAny<string>()))
@@ -129,7 +129,7 @@ namespace Aikido.Zen.Tests.DotNetFramework.Patches
             zenApiMock.Setup(z => z.Runtime).Returns(runtimeApiMock.Object);
 
             var newInstanceMethod = typeof(Agent).GetMethod("NewInstance", BindingFlags.Static | BindingFlags.NonPublic);
-            return (Agent)newInstanceMethod.Invoke(null, new object[] { zenApiMock.Object, 20000 });
+            return (Agent)newInstanceMethod.Invoke(null, new object[] { zenApiMock.Object });
         }
 
         private static HttpContext CreateHttpContext(string serverUrl)

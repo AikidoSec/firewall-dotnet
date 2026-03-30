@@ -144,8 +144,7 @@ namespace Aikido.Zen.Test
                         evt is DetectedAttack &&
                         ((DetectedAttack)evt).Attack.Kind == "ssrf" &&
                         ((DetectedAttack)evt).Attack.Source == "query" &&
-                        ((DetectedAttack)evt).Attack.Path == ".url"),
-                    It.IsAny<int>()),
+                        ((DetectedAttack)evt).Attack.Path == ".url")),
                 Times.Once);
         }
 
@@ -224,8 +223,7 @@ namespace Aikido.Zen.Test
             _reportingApiMock.Verify(
                 r => r.ReportAsync(
                     It.IsAny<string>(),
-                    It.Is<object>(evt => evt is DetectedAttack),
-                    It.IsAny<int>()),
+                    It.Is<object>(evt => evt is DetectedAttack)),
                 Times.Never);
         }
 
@@ -322,8 +320,7 @@ namespace Aikido.Zen.Test
                         ((DetectedAttack)evt).Request != null &&
                         ((DetectedAttack)evt).Request.Url == context.Url &&
                         ((DetectedAttack)evt).Attack.Metadata["hostname"].Equals("127.0.0.1") &&
-                        ((DetectedAttack)evt).Attack.Metadata["port"].Equals("80")),
-                    It.IsAny<int>()),
+                        ((DetectedAttack)evt).Attack.Metadata["port"].Equals("80"))),
                 Times.Once);
         }
 
@@ -364,8 +361,7 @@ namespace Aikido.Zen.Test
                         ((DetectedAttack)evt).Attack.Metadata["hostname"].Equals("localtest.me") &&
                         ((DetectedAttack)evt).Attack.Metadata["port"].Equals("80") &&
                         (((DetectedAttack)evt).Attack.Metadata["privateIP"].Equals("127.0.0.1") ||
-                         ((DetectedAttack)evt).Attack.Metadata["privateIP"].Equals("::1"))),
-                    It.IsAny<int>()),
+                         ((DetectedAttack)evt).Attack.Metadata["privateIP"].Equals("::1")))),
                 Times.Once);
         }
 
@@ -410,8 +406,7 @@ namespace Aikido.Zen.Test
                         ((DetectedAttack)evt).Attack.Payload == "http://ⓛocalhost:4000/" &&
                         ((DetectedAttack)evt).Attack.Metadata["hostname"].Equals("ⓛocalhost") &&
                         (((DetectedAttack)evt).Attack.Metadata["privateIP"].Equals("127.0.0.1") ||
-                         ((DetectedAttack)evt).Attack.Metadata["privateIP"].Equals("::1"))),
-                    It.IsAny<int>()),
+                         ((DetectedAttack)evt).Attack.Metadata["privateIP"].Equals("::1")))),
                 Times.Once);
         }
 
@@ -441,7 +436,7 @@ namespace Aikido.Zen.Test
             await Task.Delay(100);
 
             _reportingApiMock.Verify(
-                r => r.ReportAsync(It.IsAny<string>(), It.Is<object>(evt => evt is DetectedAttack), It.IsAny<int>()),
+                r => r.ReportAsync(It.IsAny<string>(), It.Is<object>(evt => evt is DetectedAttack)),
                 Times.Never);
         }
 
@@ -491,8 +486,7 @@ namespace Aikido.Zen.Test
                         ((DetectedAttack)evt).Request.Route == context.Route &&
                         ((DetectedAttack)evt).Request.IpAddress == context.RemoteAddress &&
                         ((DetectedAttack)evt).Attack.Metadata["hostname"].Equals("100.100.100.200.nip.io") &&
-                        ((DetectedAttack)evt).Attack.Metadata["privateIP"].Equals("100.100.100.200")),
-                    It.IsAny<int>()),
+                        ((DetectedAttack)evt).Attack.Metadata["privateIP"].Equals("100.100.100.200"))),
                 Times.Once);
         }
 
@@ -523,8 +517,7 @@ namespace Aikido.Zen.Test
                         ((DetectedAttack)evt).Attack.Payload == null &&
                         ((DetectedAttack)evt).Request == null &&
                         ((DetectedAttack)evt).Attack.Metadata["hostname"].Equals("100.100.100.200.nip.io") &&
-                        ((DetectedAttack)evt).Attack.Metadata["privateIP"].Equals("100.100.100.200")),
-                    It.IsAny<int>()),
+                        ((DetectedAttack)evt).Attack.Metadata["privateIP"].Equals("100.100.100.200"))),
                 Times.Once);
         }
 
@@ -554,7 +547,7 @@ namespace Aikido.Zen.Test
             await Task.Delay(100);
 
             _reportingApiMock.Verify(
-                r => r.ReportAsync(It.IsAny<string>(), It.Is<object>(evt => evt is DetectedAttack), It.IsAny<int>()),
+                r => r.ReportAsync(It.IsAny<string>(), It.Is<object>(evt => evt is DetectedAttack)),
                 Times.Never);
         }
 
@@ -584,7 +577,7 @@ namespace Aikido.Zen.Test
             await Task.Delay(100);
 
             _reportingApiMock.Verify(
-                r => r.ReportAsync(It.IsAny<string>(), It.Is<object>(evt => evt is DetectedAttack), It.IsAny<int>()),
+                r => r.ReportAsync(It.IsAny<string>(), It.Is<object>(evt => evt is DetectedAttack)),
                 Times.Never);
         }
 
