@@ -7,6 +7,9 @@ namespace Aikido.Zen.Test
 {
     public class SQLInjectionDetectorTests
     {
+        private const string InvalidSqlQuery = "SELECT * FROM users WHERE name = 'abc' OR 1=1 /*";
+        private const string InvalidSqlUserInput = "abc' OR 1=1 /*";
+
         [TestCaseSource(nameof(GetTestData))]
         public void IsSQLInjection_ShouldDetectInjection(string command, SQLDialect dialect, string userInput, string description, bool expectedResult)
         {
@@ -55,6 +58,32 @@ namespace Aikido.Zen.Test
 
             // Assert
             Assert.That(result, Is.False);
+        }
+
+        [Test]
+        public void DetectSQLInjection_WhenInjectionDetected_ReturnsDetected()
+        {
+            // Act
+            var result = SQLInjectionDetector.DetectSQLInjection(
+                "SELECT * FROM users WHERE name = '1' OR '1'='1'",
+                "1' OR '1'='1",
+                SQLDialect.Generic);
+
+            // Assert
+            Assert.That(result, Is.EqualTo(SQLInjectionDetectionResult.Detected));
+        }
+
+        [Test]
+        public void DetectSQLInjection_WhenQueryFailsTokenization_ReturnsFailedToTokenize()
+        {
+            // Act
+            var result = SQLInjectionDetector.DetectSQLInjection(
+                InvalidSqlQuery,
+                InvalidSqlUserInput,
+                SQLDialect.Generic);
+
+            // Assert
+            Assert.That(result, Is.EqualTo(SQLInjectionDetectionResult.FailedToTokenize));
         }
 
         public static IEnumerable<TestCaseData> GetTestData()
