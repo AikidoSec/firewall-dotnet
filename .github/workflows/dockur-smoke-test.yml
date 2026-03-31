@@ -12,7 +12,7 @@ on:
 jobs:
   dockur-smoke-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
 
     steps:
       - name: Check runner capabilities
@@ -27,6 +27,8 @@ jobs:
           docker run -d --name dockur-xp \
             -e VERSION=2019 \
             -p 8006:8006 \
+            -p 3389:3389/tcp \
+            -p 3389:3389/udp \
             --device /dev/kvm \
             --device /dev/net/tun \
             --cap-add NET_ADMIN \
@@ -39,12 +41,24 @@ jobs:
           for i in $(seq 1 60); do
             if curl -fsS http://127.0.0.1:8006 > /dev/null; then
               echo "Dockur UI is reachable."
-              exit 0
+              break
             fi
             sleep 5
           done
 
-          echo "Dockur UI never became reachable."
+          curl -fsS http://127.0.0.1:8006 > /dev/null
+
+      - name: Wait for Windows RDP
+        run: |
+          for i in $(seq 1 120); do
+            if timeout 5 bash -lc "</dev/tcp/127.0.0.1/3389" 2>/dev/null; then
+              echo "Windows RDP port is reachable."
+              exit 0
+            fi
+            sleep 15
+          done
+
+          echo "Windows RDP port never became reachable."
           exit 1
 
       - name: Show container status
