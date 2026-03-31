@@ -12,7 +12,7 @@ on:
 jobs:
   dockur-smoke-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
 
     steps:
       - name: Check runner capabilities
@@ -21,16 +21,16 @@ jobs:
           ls -l /dev/kvm /dev/net/tun
           grep -m 5 -E 'vmx|svm' /proc/cpuinfo || true
 
-      - name: Start Dockur with Windows XP
+      - name: Start Dockur with Windows Server 2019
         run: |
-          mkdir -p "$RUNNER_TEMP/dockur-xp"
+          mkdir -p "$RUNNER_TEMP/dockur-2019"
           docker run -d --name dockur-xp \
-            -e VERSION=xp \
+            -e VERSION=2019 \
             -p 8006:8006 \
             --device /dev/kvm \
             --device /dev/net/tun \
             --cap-add NET_ADMIN \
-            -v "$RUNNER_TEMP/dockur-xp:/storage" \
+            -v "$RUNNER_TEMP/dockur-2019:/storage" \
             --stop-timeout 120 \
             docker.io/dockurr/windows
 
