@@ -1,0 +1,55 @@
+name: Dockur Smoke Test
+
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  dockur-smoke-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check runner capabilities
+        run: |
+          uname -a
+          ls -l /dev/kvm /dev/net/tun
+          grep -m 5 -E 'vmx|svm' /proc/cpuinfo || true
+
+      - name: Start Dockur with Windows XP
+        run: |
+          mkdir -p "$RUNNER_TEMP/dockur-xp"
+          docker run -d --name dockur-xp \
+            -e VERSION=xp \
+            -p 8006:8006 \
+            --device /dev/kvm \
+            --device /dev/net/tun \
+            --cap-add NET_ADMIN \
+            -v "$RUNNER_TEMP/dockur-xp:/storage" \
+            --stop-timeout 120 \
+            docker.io/dockurr/windows
+
+      - name: Wait for Dockur web UI
+        run: |
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:8006 > /dev/null; then
+              echo "Dockur UI is reachable."
+              exit 0
+            fi
+            sleep 5
+          done
+
+          echo "Dockur UI never became reachable."
+          exit 1
+
+      - name: Show container status
+        if: always()
+        run: |
+          docker ps -a
+          docker inspect dockur-xp --format '{{.State.Status}}' || true
+
+      - name: Show Dockur logs
+        if: always()
+        run: docker logs --tail 200 dockur-xp || true
