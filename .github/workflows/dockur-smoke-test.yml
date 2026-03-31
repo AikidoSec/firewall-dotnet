@@ -4,6 +4,9 @@ permissions:
   contents: read
 
 on:
+  push:
+    branches:
+      - chore/dockur-xp-smoke-test
   workflow_dispatch: {}
 
 jobs:
