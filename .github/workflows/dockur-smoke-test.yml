@@ -21,18 +21,34 @@ jobs:
           ls -l /dev/kvm /dev/net/tun
           grep -m 5 -E 'vmx|svm' /proc/cpuinfo || true
 
+      - name: Prepare Dockur OEM installer
+        run: |
+          mkdir -p "$RUNNER_TEMP/dockur-oem"
+          cat > "$RUNNER_TEMP/dockur-oem/install.bat" <<'EOF'
+          @echo off
+          powershell -NoLogo -NoProfile -ExecutionPolicy Bypass -Command ^
+            "$ErrorActionPreference = 'Stop';" ^
+            "Install-WindowsFeature Web-Server -IncludeManagementTools;" ^
+            "Set-Content -Path 'C:\inetpub\wwwroot\index.html' -Value 'dockur-iis-ok' -Encoding Ascii;" ^
+            "if (-not (Get-NetFirewallRule -DisplayName 'Dockur IIS HTTP 80' -ErrorAction SilentlyContinue)) { New-NetFirewallRule -DisplayName 'Dockur IIS HTTP 80' -Direction Inbound -Action Allow -Protocol TCP -LocalPort 80 | Out-Null };" ^
+            "Start-Service W3SVC"
+          if errorlevel 1 exit /b 1
+          EOF
+
       - name: Start Dockur with Windows Server 2019
         run: |
           mkdir -p "$RUNNER_TEMP/dockur-2019"
-          docker run -d --name dockur-xp \
+          docker run -d --name dockur-win \
             -e VERSION=2019 \
             -p 8006:8006 \
+            -p 8080:80 \
             -p 3389:3389/tcp \
             -p 3389:3389/udp \
             --device /dev/kvm \
             --device /dev/net/tun \
             --cap-add NET_ADMIN \
             -v "$RUNNER_TEMP/dockur-2019:/storage" \
+            -v "$RUNNER_TEMP/dockur-oem:/oem" \
             --stop-timeout 120 \
             docker.io/dockurr/windows
 
@@ -61,12 +77,29 @@ jobs:
           echo "Windows RDP port never became reachable."
           exit 1
 
+      - name: Wait for IIS marker page
+        run: |
+          for i in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:8080 | tee /tmp/dockur-iis-page.txt | grep -q "dockur-iis-ok"; then
+              echo "IIS marker page is reachable."
+              exit 0
+            fi
+            sleep 15
+          done
+
+          echo "IIS marker page never became reachable."
+          exit 1
+
+      - name: Show IIS marker page
+        if: always()
+        run: curl -fsS http://127.0.0.1:8080 || true
+
       - name: Show container status
         if: always()
         run: |
           docker ps -a
-          docker inspect dockur-xp --format '{{.State.Status}}' || true
+          docker inspect dockur-win --format '{{.State.Status}}' || true
 
       - name: Show Dockur logs
         if: always()
-        run: docker logs --tail 200 dockur-xp || true
+        run: docker logs --tail 200 dockur-win || true
