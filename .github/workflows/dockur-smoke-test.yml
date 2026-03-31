@@ -128,6 +128,11 @@ jobs:
       - name: Wait for IIS self-test marker
         run: |
           for i in $(seq 1 40); do
+            echo "Poll $i/40"
+            ls -la "$RUNNER_TEMP/dockur-shared" || true
+            cat "$RUNNER_TEMP/dockur-shared/oem-status.txt" || true
+            cat "$RUNNER_TEMP/dockur-shared/iis-selftest.txt" || true
+
             if [ -f "$RUNNER_TEMP/dockur-shared/iis-selftest.txt" ] && grep -q "dockur-iis-ok" "$RUNNER_TEMP/dockur-shared/iis-selftest.txt"; then
               echo "IIS self-test marker is present."
               exit 0
