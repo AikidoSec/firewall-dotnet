@@ -24,14 +24,62 @@ jobs:
       - name: Prepare Dockur OEM installer
         run: |
           mkdir -p "$RUNNER_TEMP/dockur-oem"
+          mkdir -p "$RUNNER_TEMP/dockur-shared"
+          cat > "$RUNNER_TEMP/dockur-oem/install.ps1" <<'EOF'
+          $ErrorActionPreference = 'Stop'
+          $sharePath = '\\host.lan\Data'
+
+          function Write-SharedFile {
+            param(
+              [string]$Name,
+              [string]$Value
+            )
+
+            try {
+              Set-Content -Path (Join-Path $sharePath $Name) -Value $Value -Encoding Ascii
+            } catch {
+              Write-Host "Unable to write $Name to shared folder: $($_.Exception.Message)"
+            }
+          }
+
+          Write-SharedFile -Name 'oem-status.txt' -Value 'started'
+
+          Install-WindowsFeature Web-Server -IncludeManagementTools | Out-Null
+          Set-Content -Path 'C:\inetpub\wwwroot\index.html' -Value 'dockur-iis-ok' -Encoding Ascii
+
+          if (-not (Get-NetFirewallRule -DisplayName 'Dockur IIS HTTP 80' -ErrorAction SilentlyContinue)) {
+            New-NetFirewallRule -DisplayName 'Dockur IIS HTTP 80' -Direction Inbound -Action Allow -Protocol TCP -LocalPort 80 | Out-Null
+          }
+
+          Start-Service W3SVC
+
+          $iisOk = $false
+          for ($i = 0; $i -lt 40 -and -not $iisOk; $i++) {
+            try {
+              $response = Invoke-WebRequest -UseBasicParsing http://127.0.0.1/
+              if ($response.Content -match 'dockur-iis-ok') {
+                $iisOk = $true
+                break
+              }
+            } catch {
+            }
+
+            Start-Sleep -Seconds 5
+          }
+
+          if ($iisOk) {
+            Write-SharedFile -Name 'iis-selftest.txt' -Value 'dockur-iis-ok'
+            Write-SharedFile -Name 'oem-status.txt' -Value 'completed'
+            exit 0
+          }
+
+          Write-SharedFile -Name 'iis-selftest.txt' -Value 'iis-selftest-failed'
+          Write-SharedFile -Name 'oem-status.txt' -Value 'failed'
+          exit 1
+          EOF
           cat > "$RUNNER_TEMP/dockur-oem/install.bat" <<'EOF'
           @echo off
-          powershell -NoLogo -NoProfile -ExecutionPolicy Bypass -Command ^
-            "$ErrorActionPreference = 'Stop';" ^
-            "Install-WindowsFeature Web-Server -IncludeManagementTools;" ^
-            "Set-Content -Path 'C:\inetpub\wwwroot\index.html' -Value 'dockur-iis-ok' -Encoding Ascii;" ^
-            "if (-not (Get-NetFirewallRule -DisplayName 'Dockur IIS HTTP 80' -ErrorAction SilentlyContinue)) { New-NetFirewallRule -DisplayName 'Dockur IIS HTTP 80' -Direction Inbound -Action Allow -Protocol TCP -LocalPort 80 | Out-Null };" ^
-            "Start-Service W3SVC"
+          powershell -NoLogo -NoProfile -ExecutionPolicy Bypass -File C:\OEM\install.ps1
           if errorlevel 1 exit /b 1
           EOF
 
@@ -41,7 +89,6 @@ jobs:
           docker run -d --name dockur-win \
             -e VERSION=2019 \
             -p 8006:8006 \
-            -p 8080:80 \
             -p 3389:3389/tcp \
             -p 3389:3389/udp \
             --device /dev/kvm \
@@ -49,6 +96,7 @@ jobs:
             --cap-add NET_ADMIN \
             -v "$RUNNER_TEMP/dockur-2019:/storage" \
             -v "$RUNNER_TEMP/dockur-oem:/oem" \
+            -v "$RUNNER_TEMP/dockur-shared:/shared" \
             --stop-timeout 120 \
             docker.io/dockurr/windows
 
@@ -77,22 +125,25 @@ jobs:
           echo "Windows RDP port never became reachable."
           exit 1
 
-      - name: Wait for IIS marker page
+      - name: Wait for IIS self-test marker
         run: |
           for i in $(seq 1 40); do
-            if curl -fsS http://127.0.0.1:8080 | tee /tmp/dockur-iis-page.txt | grep -q "dockur-iis-ok"; then
-              echo "IIS marker page is reachable."
+            if [ -f "$RUNNER_TEMP/dockur-shared/iis-selftest.txt" ] && grep -q "dockur-iis-ok" "$RUNNER_TEMP/dockur-shared/iis-selftest.txt"; then
+              echo "IIS self-test marker is present."
               exit 0
             fi
             sleep 15
           done
 
-          echo "IIS marker page never became reachable."
+          echo "IIS self-test marker never appeared."
           exit 1
 
-      - name: Show IIS marker page
+      - name: Show shared status files
         if: always()
-        run: curl -fsS http://127.0.0.1:8080 || true
+        run: |
+          ls -la "$RUNNER_TEMP/dockur-shared" || true
+          cat "$RUNNER_TEMP/dockur-shared/oem-status.txt" || true
+          cat "$RUNNER_TEMP/dockur-shared/iis-selftest.txt" || true
 
       - name: Show container status
         if: always()
