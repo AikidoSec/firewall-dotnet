@@ -142,16 +142,18 @@ using Microsoft.AspNet.Identity;
 
 Ensure that your project runs on .NET Framework 4.6 or higher.
 
-- Install the package from NuGet:
+- Install the package from NuGet.
+
+If your .NET Framework project uses SDK-style `PackageReference`, run:
 
 ``` shell
 dotnet add package Aikido.Zen.DotNetFramework
 ```
 
-or
+If your project is a classic .NET Framework / ASP.NET project using `packages.config`, run this in Visual Studio's Package Manager Console (not a regular PowerShell window):
 
 ``` shell
-Install-Package Zen.Aikido.DotNetFramework
+Install-Package Aikido.Zen.DotNetFramework
 ```
 
 - To add the Aikido token in the Web.config file, follow these steps:
