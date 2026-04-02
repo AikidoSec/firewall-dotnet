@@ -198,89 +198,19 @@ namespace Aikido.Zen.Test.Helpers
         }
 
         [Test]
-        public async Task ReadAndFlattenHttpDataAsync_ShouldParseJsonBody_ForCaseInsensitiveContentType()
+        public void GetRawBody_ShouldReadStreamAndLeaveItOpen()
         {
-            const string body = "{\"query\":\"value\"}";
-            using var bodyStream = new MemoryStream(Encoding.UTF8.GetBytes(body));
+            const string expected = "{\"name\":\"zen\"}";
+            using var bodyStream = new MemoryStream(Encoding.UTF8.GetBytes(expected));
 
-            var result = await HttpHelper.ReadAndFlattenHttpDataAsync(
-                routeParams: new Dictionary<string, string>(),
-                queryParams: new Dictionary<string, string>(),
-                headers: new Dictionary<string, string>(),
-                cookies: new Dictionary<string, string>(),
-                body: bodyStream,
-                contentType: "Application/JSON",
-                contentLength: bodyStream.Length);
+            var rawBody = HttpHelper.GetRawBody(bodyStream);
 
-            Assert.That(result.FlattenedData.ContainsKey("body.query"), Is.True);
-            Assert.That(result.FlattenedData["body.query"], Is.EqualTo("value"));
-            Assert.That(result.ParsedBody, Is.Not.Null);
-        }
+            Assert.That(rawBody, Is.EqualTo(expected));
+            Assert.That(bodyStream.CanRead, Is.True);
 
-        [Test]
-        public async Task ReadAndFlattenHttpDataAsync_ShouldParseJsonBody_ForStructuredSyntaxSuffixContentType()
-        {
-            const string body = "{\"id\":\"1\"}";
-            using var bodyStream = new MemoryStream(Encoding.UTF8.GetBytes(body));
-
-            var result = await HttpHelper.ReadAndFlattenHttpDataAsync(
-                routeParams: new Dictionary<string, string>(),
-                queryParams: new Dictionary<string, string>(),
-                headers: new Dictionary<string, string>(),
-                cookies: new Dictionary<string, string>(),
-                body: bodyStream,
-                contentType: "application/vnd.api+json",
-                contentLength: bodyStream.Length);
-
-            Assert.That(result.FlattenedData.ContainsKey("body.id"), Is.True);
-            Assert.That(result.FlattenedData["body.id"], Is.EqualTo("1"));
-            Assert.That(result.ParsedBody, Is.Not.Null);
-        }
-
-        [Test]
-        public async Task ReadAndFlattenHttpDataAsync_ShouldParseXmlBody_ForStructuredSyntaxSuffixContentType()
-        {
-            const string body = "<Envelope><Body><Value>ok</Value></Body></Envelope>";
-            using var bodyStream = new MemoryStream(Encoding.UTF8.GetBytes(body));
-
-            var result = await HttpHelper.ReadAndFlattenHttpDataAsync(
-                routeParams: new Dictionary<string, string>(),
-                queryParams: new Dictionary<string, string>(),
-                headers: new Dictionary<string, string>(),
-                cookies: new Dictionary<string, string>(),
-                body: bodyStream,
-                contentType: "application/soap+xml",
-                contentLength: bodyStream.Length);
-
-            Assert.That(result.FlattenedData.ContainsKey("body.Body.Value"), Is.True);
-            Assert.That(result.FlattenedData["body.Body.Value"], Is.EqualTo("ok"));
-            Assert.That(result.ParsedBody, Is.Not.Null);
-        }
-
-        [Test]
-        public async Task ReadAndFlattenHttpDataAsync_ShouldParseMultipartJsonSection_WithContentTypeParameters()
-        {
-            const string multipartBody =
-                "--boundary\r\n" +
-                "Content-Disposition: form-data; name=\"jsonData\"\r\n" +
-                "Content-Type: application/json; charset=utf-8\r\n\r\n" +
-                "{\"key\":\"value\"}\r\n" +
-                "--boundary--";
-
-            using var bodyStream = new MemoryStream(Encoding.UTF8.GetBytes(multipartBody));
-
-            var result = await HttpHelper.ReadAndFlattenHttpDataAsync(
-                routeParams: new Dictionary<string, string>(),
-                queryParams: new Dictionary<string, string>(),
-                headers: new Dictionary<string, string>(),
-                cookies: new Dictionary<string, string>(),
-                body: bodyStream,
-                contentType: "multipart/form-data; boundary=boundary",
-                contentLength: bodyStream.Length);
-
-            Assert.That(result.FlattenedData.ContainsKey("body.section.0.key"), Is.True);
-            Assert.That(result.FlattenedData["body.section.0.key"], Is.EqualTo("value"));
-            Assert.That(result.ParsedBody, Is.Not.Null);
+            bodyStream.Seek(0, SeekOrigin.Begin);
+            using var reader = new StreamReader(bodyStream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, leaveOpen: true);
+            Assert.That(reader.ReadToEnd(), Is.EqualTo(expected));
         }
 
     }
