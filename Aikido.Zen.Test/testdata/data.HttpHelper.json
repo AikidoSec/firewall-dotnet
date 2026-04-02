@@ -280,9 +280,10 @@
             "route.param1": "value1",
             "query.param1": "value1",
             "headers.header1": "value1",
-            "cookies.cookie1": "value1"
+            "cookies.cookie1": "value1",
+            "body.textplain": "plain text body"
         },
-        "expectedParsedBody": null
+        "expectedParsedBody": "plain text body"
     },
     {
         "routeParams": {
@@ -416,9 +417,10 @@
             "query.param1": "value1",
             "headers.header1": "value1",
             "cookies.cookie1": "value1",
-            "cookies.cookie2": "value2"
+            "cookies.cookie2": "value2",
+            "body.textplain": "plain text body"
         },
-        "expectedParsedBody": null
+        "expectedParsedBody": "plain text body"
     },
     {
         "routeParams": {

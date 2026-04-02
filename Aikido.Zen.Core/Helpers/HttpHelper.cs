@@ -121,11 +121,13 @@ namespace Aikido.Zen.Core.Helpers
                 }
                 else
                 {
+                    var mediaType = GetMediaType(contentType);
+
                     // we read the stream, but leave it open so it can be read out later by http modules or middleware.
                     // we try to detect the encdoding by looking for byte order marks at the beginning of the file, and use UTF-8 as a fallback.
                     using (var reader = new StreamReader(body, detectEncodingFromByteOrderMarks: true, bufferSize: 4096, leaveOpen: true, encoding: System.Text.Encoding.UTF8))
                     {
-                        if (contentType.Contains("application/json"))
+                        if (IsJsonMediaType(mediaType))
                         {
                             string jsonContent = await reader.ReadToEndAsync();
                             using (JsonDocument document = JsonDocument.Parse(jsonContent))
@@ -134,7 +136,7 @@ namespace Aikido.Zen.Core.Helpers
                                 parsedBody = JsonHelper.ToJsonObj(document.RootElement);
                             }
                         }
-                        else if (contentType.Contains("application/xml") || contentType.Contains("text/xml"))
+                        else if (IsXmlMediaType(mediaType))
                         {
                             var xmlDoc = new XmlDocument();
                             using (var xmlReader = XmlReader.Create(reader, new XmlReaderSettings { Async = true, DtdProcessing = DtdProcessing.Ignore }))
@@ -144,7 +146,7 @@ namespace Aikido.Zen.Core.Helpers
                                 parsedBody = XmlHelper.XmlToObject(xmlDoc.DocumentElement);
                             }
                         }
-                        else if (contentType.Contains("application/x-www-form-urlencoded"))
+                        else if (IsFormUrlEncodedMediaType(mediaType))
                         {
                             string formString = await reader.ReadToEndAsync();
                             var formPairs = QueryHelpers.ParseQuery(formString);
@@ -155,6 +157,12 @@ namespace Aikido.Zen.Core.Helpers
                                 formDict[pair.Key] = pair.Value.ToString();
                             }
                             parsedBody = formDict;
+                        }
+                        else if (IsTextPlainMediaType(mediaType))
+                        {
+                            string textContent = await reader.ReadToEndAsync();
+                            result["body.textplain"] = textContent;
+                            parsedBody = textContent;
                         }
                     }
                 }
@@ -189,7 +197,9 @@ namespace Aikido.Zen.Core.Helpers
                 var contentDisposition = section.GetContentDispositionHeader();
                 if (contentDisposition != null)
                 {
-                    if (section.ContentType == "application/json")
+                    var sectionMediaType = GetMediaType(section.ContentType);
+
+                    if (IsJsonMediaType(sectionMediaType))
                     {
                         using (JsonDocument document = await JsonDocument.ParseAsync(section.Body))
                         {
@@ -201,7 +211,7 @@ namespace Aikido.Zen.Core.Helpers
                             }
                         }
                     }
-                    else if (section.ContentType == "application/xml" || section.ContentType == "text/xml")
+                    else if (IsXmlMediaType(sectionMediaType))
                     {
                         var xmlDoc = new XmlDocument();
                         using (var xmlReader = XmlReader.Create(section.Body, new XmlReaderSettings { Async = true, DtdProcessing = DtdProcessing.Ignore }))
@@ -245,6 +255,75 @@ namespace Aikido.Zen.Core.Helpers
             }
 
             return formData;
+        }
+
+        private static string GetMediaType(string contentType)
+        {
+            if (string.IsNullOrWhiteSpace(contentType))
+            {
+                return string.Empty;
+            }
+
+            if (MediaTypeHeaderValue.TryParse(contentType, out var parsedContentType))
+            {
+                var mediaType = parsedContentType.MediaType.Value;
+                if (!string.IsNullOrWhiteSpace(mediaType))
+                {
+                    return mediaType;
+                }
+            }
+
+            var separatorIndex = contentType.IndexOf(';');
+            if (separatorIndex >= 0)
+            {
+                return contentType.Substring(0, separatorIndex).Trim();
+            }
+
+            return contentType.Trim();
+        }
+
+        private static bool IsJsonMediaType(string mediaType)
+        {
+            if (string.IsNullOrWhiteSpace(mediaType))
+            {
+                return false;
+            }
+
+            return mediaType.Equals("application/json", StringComparison.OrdinalIgnoreCase)
+                   || mediaType.Equals("text/json", StringComparison.OrdinalIgnoreCase)
+                   || mediaType.EndsWith("+json", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsXmlMediaType(string mediaType)
+        {
+            if (string.IsNullOrWhiteSpace(mediaType))
+            {
+                return false;
+            }
+
+            return mediaType.Equals("application/xml", StringComparison.OrdinalIgnoreCase)
+                   || mediaType.Equals("text/xml", StringComparison.OrdinalIgnoreCase)
+                   || mediaType.EndsWith("+xml", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsFormUrlEncodedMediaType(string mediaType)
+        {
+            if (string.IsNullOrWhiteSpace(mediaType))
+            {
+                return false;
+            }
+
+            return mediaType.Equals("application/x-www-form-urlencoded", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsTextPlainMediaType(string mediaType)
+        {
+            if (string.IsNullOrWhiteSpace(mediaType))
+            {
+                return false;
+            }
+
+            return mediaType.Equals("text/plain", StringComparison.OrdinalIgnoreCase);
         }
 
     }
