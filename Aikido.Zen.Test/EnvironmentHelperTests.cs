@@ -95,5 +95,18 @@ namespace Aikido.Zen.Test.Helpers
             // Assert
             Assert.That(url, Is.EqualTo("https://runtime.aikido.dev"));
         }
+
+        [Test]
+        public void BlockInvalidSql_ShouldReturnFalse_WhenEnvironmentVariableIsNotSet()
+        {
+            // Arrange
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK_INVALID_SQL", null);
+
+            // Act
+            var blockInvalidSql = EnvironmentHelper.BlockInvalidSql;
+
+            // Assert
+            Assert.That(blockInvalidSql, Is.False);
+        }
     }
 }
