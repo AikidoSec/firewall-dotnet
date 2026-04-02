@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Concurrent;
 using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -60,7 +61,8 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 // since the feature could be missing, we need to check if it's null before accessing it
                 if (syncIOFeature?.AllowSynchronousIO != null)
                 {
-                    if (request.ContentType.Contains("xml") || request.ContentType.Contains("multipart"))
+                    if (request.ContentType.IndexOf("xml", StringComparison.OrdinalIgnoreCase) >= 0
+                        || request.ContentType.IndexOf("multipart", StringComparison.OrdinalIgnoreCase) >= 0)
                     {
                         syncIOFeature.AllowSynchronousIO = true;
                     }

@@ -280,9 +280,10 @@
             "route.param1": "value1",
             "query.param1": "value1",
             "headers.header1": "value1",
-            "cookies.cookie1": "value1"
+            "cookies.cookie1": "value1",
+            "body.textplain": "plain text body"
         },
-        "expectedParsedBody": null
+        "expectedParsedBody": "plain text body"
     },
     {
         "routeParams": {
@@ -416,9 +417,10 @@
             "query.param1": "value1",
             "headers.header1": "value1",
             "cookies.cookie1": "value1",
-            "cookies.cookie2": "value2"
+            "cookies.cookie2": "value2",
+            "body.textplain": "plain text body"
         },
-        "expectedParsedBody": null
+        "expectedParsedBody": "plain text body"
     },
     {
         "routeParams": {
@@ -449,5 +451,169 @@
             "key1": "value1",
             "key2": "value2"
         }
+    },
+    {
+        "routeParams": {},
+        "queryParams": {},
+        "headers": {},
+        "cookies": {},
+        "body": "{\"query\":\"value\"}",
+        "contentType": "Application/JSON",
+        "expectedFlattenedData": {
+            "body.query": "value"
+        },
+        "expectedParsedBody": {
+            "query": "value"
+        }
+    },
+    {
+        "routeParams": {},
+        "queryParams": {},
+        "headers": {},
+        "cookies": {},
+        "body": "{\"id\":\"42\"}",
+        "contentType": "text/json",
+        "expectedFlattenedData": {
+            "body.id": "42"
+        },
+        "expectedParsedBody": {
+            "id": "42"
+        }
+    },
+    {
+        "routeParams": {},
+        "queryParams": {},
+        "headers": {},
+        "cookies": {},
+        "body": "{\"id\":\"1\"}",
+        "contentType": "application/vnd.api+json",
+        "expectedFlattenedData": {
+            "body.id": "1"
+        },
+        "expectedParsedBody": {
+            "id": "1"
+        }
+    },
+    {
+        "routeParams": {},
+        "queryParams": {},
+        "headers": {},
+        "cookies": {},
+        "body": "<root><key>value</key></root>",
+        "contentType": "text/xml",
+        "expectedFlattenedData": {
+            "body.key": "value"
+        },
+        "expectedParsedBody": {
+            "key": "value"
+        }
+    },
+    {
+        "routeParams": {},
+        "queryParams": {},
+        "headers": {},
+        "cookies": {},
+        "body": "<root><key>value</key></root>",
+        "contentType": "application/atom+xml",
+        "expectedFlattenedData": {
+            "body.key": "value"
+        },
+        "expectedParsedBody": {
+            "key": "value"
+        }
+    },
+    {
+        "routeParams": {},
+        "queryParams": {},
+        "headers": {},
+        "cookies": {},
+        "body": "plain text body with charset",
+        "contentType": "text/plain; charset=utf-8",
+        "expectedFlattenedData": {
+            "body.textplain": "plain text body with charset"
+        },
+        "expectedParsedBody": "plain text body with charset"
+    },
+    {
+        "routeParams": {},
+        "queryParams": {},
+        "headers": {},
+        "cookies": {},
+        "body": "key1=value1&key2=value2",
+        "contentType": "application/x-www-form-urlencoded; charset=utf-8",
+        "expectedFlattenedData": {
+            "body.key1": "value1",
+            "body.key2": "value2"
+        },
+        "expectedParsedBody": {
+            "key1": "value1",
+            "key2": "value2"
+        }
+    },
+    {
+        "routeParams": {},
+        "queryParams": {},
+        "headers": {},
+        "cookies": {},
+        "body": "--boundary\r\nContent-Disposition: form-data; name=\"jsonData\"\r\nContent-Type: application/json; charset=utf-8\r\n\r\n{\"key\":\"value\"}\r\n--boundary--",
+        "contentType": "multipart/form-data; boundary=boundary",
+        "expectedFlattenedData": {
+            "body.section.0.key": "value"
+        },
+        "expectedParsedBody": {
+            "jsonData": {
+                "key": "value"
+            }
+        }
+    },
+    {
+        "routeParams": {},
+        "queryParams": {},
+        "headers": {},
+        "cookies": {},
+        "body": "unparsed body",
+        "contentType": "invalid media type",
+        "expectedFlattenedData": {},
+        "expectedParsedBody": null
+    },
+    {
+        "routeParams": {},
+        "queryParams": {},
+        "headers": {},
+        "cookies": {},
+        "body": "unparsed body",
+        "contentType": "invalid media type; charset=utf-8",
+        "expectedFlattenedData": {},
+        "expectedParsedBody": null
+    },
+    {
+        "routeParams": {},
+        "queryParams": {},
+        "headers": {},
+        "cookies": {},
+        "body": "unparsed body",
+        "contentType": "; charset=utf-8",
+        "expectedFlattenedData": {},
+        "expectedParsedBody": null
+    },
+    {
+        "routeParams": {},
+        "queryParams": {},
+        "headers": {},
+        "cookies": {},
+        "body": "unparsed body",
+        "contentType": null,
+        "expectedFlattenedData": {},
+        "expectedParsedBody": null
+    },
+    {
+        "routeParams": {},
+        "queryParams": {},
+        "headers": {},
+        "cookies": {},
+        "body": "unparsed body",
+        "contentType": "   ",
+        "expectedFlattenedData": {},
+        "expectedParsedBody": null
     }
 ]

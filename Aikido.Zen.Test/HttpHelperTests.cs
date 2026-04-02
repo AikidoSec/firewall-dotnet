@@ -196,5 +196,22 @@ namespace Aikido.Zen.Test.Helpers
             Assert.That(UserInputHelper.GetAttackSourceFromUserInputKey("cookies.someCookie"), Is.EqualTo(Source.Cookies));
             Assert.That(UserInputHelper.GetAttackSourceFromUserInputKey("route.someRoute"), Is.EqualTo(Source.RouteParams));
         }
+
+        [Test]
+        public void GetRawBody_ShouldReadStreamAndLeaveItOpen()
+        {
+            const string expected = "{\"name\":\"zen\"}";
+            using var bodyStream = new MemoryStream(Encoding.UTF8.GetBytes(expected));
+
+            var rawBody = HttpHelper.GetRawBody(bodyStream);
+
+            Assert.That(rawBody, Is.EqualTo(expected));
+            Assert.That(bodyStream.CanRead, Is.True);
+
+            bodyStream.Seek(0, SeekOrigin.Begin);
+            using var reader = new StreamReader(bodyStream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, leaveOpen: true);
+            Assert.That(reader.ReadToEnd(), Is.EqualTo(expected));
+        }
+
     }
 }
