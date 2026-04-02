@@ -155,6 +155,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BlockingModuleTests.cs" />
     <Compile Include="ContextModuleTests.cs" />
     <Compile Include="Patches\IOPatchesTests.cs" />
     <Compile Include="Patches\LLMPatchesTests.cs" />
