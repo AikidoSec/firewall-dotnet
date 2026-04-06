@@ -5,6 +5,7 @@ on:
         types: [created]
 permissions:
     contents: read
+    id-token: write
 
 jobs:
     publish:
@@ -14,6 +15,7 @@ jobs:
         env:
             DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
             DOTNET_CLI_TELEMETRY_OPTOUT: true
+            NUGET_USER: ${{ vars.NUGET_USER || secrets.NUGET_USER }}
 
         steps:
             - name: Checkout code
@@ -53,13 +55,26 @@ jobs:
             - name: Run Cake Script to Build and Pack
               run: dotnet cake build.cake --target=CreatePackages --libVersion=${{ github.ref_name }}
 
+            - name: Validate NuGet trusted publishing config
+              shell: pwsh
+              run: |
+                  if ([string]::IsNullOrWhiteSpace($env:NUGET_USER)) {
+                    throw "Set vars.NUGET_USER or secrets.NUGET_USER to the nuget.org profile name used for trusted publishing."
+                  }
+
+            - name: NuGet login (OIDC -> temp API key)
+              uses: NuGet/login@v1
+              id: login
+              with:
+                  user: ${{ env.NUGET_USER }}
+
             - name: Publish NuGet Packages
               # snupkg are discovered and pushed automatically along with the main package
               run: |
                   $ErrorActionPreference = "Stop"
                   Get-ChildItem -Path artifacts\*.nupkg | ForEach-Object {
                     try {
-                      dotnet nuget push $_.FullName --api-key ${{ secrets.NUGETAPIKEY }} --source https://api.nuget.org/v3/index.json
+                      dotnet nuget push $_.FullName --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
                       Write-Host "Pushed $($_.FullName)"
                     } catch {
                       Write-Host "Failed to push $($_.FullName)"
