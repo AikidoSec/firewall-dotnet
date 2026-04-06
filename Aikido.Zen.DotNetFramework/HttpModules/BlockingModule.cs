@@ -25,12 +25,15 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
 
         private void Context_PostAuthenticateRequest(object sender, EventArgs e)
         {
+            var application = (HttpApplication)sender;
+            HandleBlocking(application.Context, application.CompleteRequest);
+        }
+
+        internal static void HandleBlocking(HttpContext httpContext, Action completeRequest)
+        {
             try
             {
                 LogHelper.DebugLog(Agent.Logger, "Checking if request needs to be blocked");
-                var application = (HttpApplication)sender;
-                var httpContext = application.Context;
-                var user = (User)httpContext.Items["Aikido.Zen.CurrentUser"];
                 var aikidoContext = (Context)httpContext.Items["Aikido.Zen.Context"];
                 var agentContext = Agent.Instance.Context;
 
@@ -42,7 +45,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                     return;
                 }
 
-                var routeKey = $"{aikidoContext.Method}|{aikidoContext.Route}";
+                var user = aikidoContext.User;
                 if (user != null)
                 {
                     Agent.Instance.Context.AddUser(user, aikidoContext.RemoteAddress);
@@ -65,7 +68,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                         httpContext,
                         403,
                         $"Your request is blocked: {HttpUtility.HtmlEncode(reason)}",
-                        application.CompleteRequest);
+                        completeRequest);
                     return;
                 }
 
@@ -79,7 +82,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                         httpContext,
                         429,
                         $"You are rate limited by Aikido firewall. (Your IP: {HttpUtility.HtmlEncode(aikidoContext.RemoteAddress)})",
-                        application.CompleteRequest,
+                        completeRequest,
                         effectiveConfig?.WindowSizeInMS.ToString());
                     return;
                 }
