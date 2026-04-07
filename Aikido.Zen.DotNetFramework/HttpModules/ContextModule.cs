@@ -45,13 +45,23 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
         private void Context_PostAuthenticateRequest(object sender, EventArgs e)
         {
             var httpContext = ((HttpApplication)sender).Context;
-            var user = Zen.SetUserAction(httpContext);
-            httpContext.Items["Aikido.Zen.CurrentUser"] = user;
+            PopulateAuthenticatedUser(httpContext);
+        }
+
+        internal static void PopulateAuthenticatedUser(HttpContext httpContext)
+        {
             var aikidoContext = (Context)httpContext.Items["Aikido.Zen.Context"];
+
             if (aikidoContext == null)
             {
                 return;
             }
+
+            // We resolve the user here instead of BeginRequest because authentication-dependent user data
+            // may not be ready yet when the Aikido context is first created, e.g. context.User.Identity.Name.
+            var user = Zen.SetUserAction(httpContext);
+            aikidoContext.User = user;
+
             var clientIp = GetClientIp(httpContext);
             Agent.Instance.CaptureUser(user, clientIp);
         }
@@ -80,7 +90,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                     Headers = FlattenHeaders(httpContext.Request.Headers),
                     RemoteAddress = clientIp,
                     Cookies = httpContext.Request.Cookies.AllKeys.ToDictionary(k => k, k => httpContext.Request.Cookies[k].Value),
-                    User = (User)httpContext.Items["Aikido.Zen.CurrentUser"],
+                    // User is resolved later in PostAuthenticateRequest and then backfilled into this context.
                     UserAgent = httpContext.Request.UserAgent,
                     Source = "DotNetFramework",
                     Route = GetParametrizedRoute(httpContext),

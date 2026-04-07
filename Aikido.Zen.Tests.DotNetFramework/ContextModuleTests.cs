@@ -1,9 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Reflection;
-using System.Threading.Tasks;
 using System.Web;
 using System.Web.Routing;
+using Aikido.Zen.Core;
+using Aikido.Zen.Core.Models;
 using Aikido.Zen.DotNetFramework.HttpModules;
 using NUnit.Framework;
 
@@ -269,5 +272,47 @@ namespace Aikido.Zen.Tests.DotNetFramework
             Assert.That(result.ContainsKey("Accept[2]"), Is.True);
             Assert.That(result["Accept[2]"], Is.EqualTo("application/xml"));
         }
+
+        [Test]
+        public void PopulateAuthenticatedUser_UpdatesExistingContextUser_AndCapturesUser()
+        {
+            Agent.Instance.ClearContext();
+            var originalSetUserAction = Aikido.Zen.DotNetFramework.Zen.SetUserAction;
+
+            try
+            {
+                var user = new User("context-user", "Context User");
+                var httpContext = new HttpContext(
+                    new HttpRequest(string.Empty, "http://test.local/api/test", string.Empty),
+                    new HttpResponse(new StringWriter()));
+                var aikidoContext = new Context
+                {
+                    Url = "http://test.local/api/test",
+                    Path = "/api/test",
+                    Method = "GET",
+                    Route = "/api/test",
+                    RemoteAddress = "127.0.0.1"
+                };
+                httpContext.Items["Aikido.Zen.Context"] = aikidoContext;
+                Aikido.Zen.DotNetFramework.Zen.SetUserAction = _ => user;
+
+                ContextModule.PopulateAuthenticatedUser(httpContext);
+
+                var capturedUser = Agent.Instance.Context.Users.SingleOrDefault(u => u.Id == user.Id);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(aikidoContext.User, Is.SameAs(user));
+                    Assert.That(capturedUser, Is.Not.Null);
+                    Assert.That(capturedUser.Name, Is.EqualTo(user.Name));
+                });
+            }
+            finally
+            {
+                Aikido.Zen.DotNetFramework.Zen.SetUserAction = originalSetUserAction;
+                Agent.Instance.ClearContext();
+            }
+        }
+
     }
 }
