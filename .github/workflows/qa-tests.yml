@@ -53,7 +53,7 @@ jobs:
           path: zen-demo-dotnet-core
           submodules: true
 
-      - name: Checkout firewall-dotnet (for Dockerfile.qa)
+      - name: Checkout firewall-dotnet (for core QA files)
         uses: actions/checkout@v4
         with:
           path: firewall-dotnet
@@ -64,10 +64,10 @@ jobs:
           name: nuget-package
           path: zen-demo-dotnet-core/local-feed
 
-      - name: Replace Dockerfile with QA version
+      - name: Replace Dockerfile and NuGet.Config with core QA versions
         run: |
-          cp firewall-dotnet/.github/workflows/NuGet.Config zen-demo-dotnet-core/NuGet.Config
-          cp firewall-dotnet/.github/workflows/Dockerfile.qa zen-demo-dotnet-core/Dockerfile
+          cp firewall-dotnet/.github/workflows/NuGet.Config.dotnet-core zen-demo-dotnet-core/NuGet.Config
+          cp firewall-dotnet/.github/workflows/Dockerfile.qa.dotnet-core zen-demo-dotnet-core/Dockerfile
 
       - name: Run Firewall QA Tests
         uses: AikidoSec/firewall-tester-action@v1.0.11
