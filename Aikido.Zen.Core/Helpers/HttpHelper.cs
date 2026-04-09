@@ -45,7 +45,6 @@ namespace Aikido.Zen.Core.Helpers
         /// <param name="cookies">The cookies dictionary.</param>
         /// <param name="body">The request body stream.</param>
         /// <param name="contentType">The content type of the request.</param>
-        /// <param name="contentLength">The content length of the request body.</param>
         /// <returns>A HttpDataResult containing both flattened data and parsed body.</returns>
         public static async Task<HttpDataResult> ReadAndFlattenHttpDataAsync(
             IDictionary<string, string> routeParams,
@@ -53,8 +52,7 @@ namespace Aikido.Zen.Core.Helpers
             IDictionary<string, string> headers,
             IDictionary<string, string> cookies,
             Stream body,
-            string contentType,
-            long contentLength)
+            string contentType)
         {
             var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             object parsedBody = null;
@@ -74,7 +72,7 @@ namespace Aikido.Zen.Core.Helpers
             // Process Body
             try
             {
-                if (contentLength > 0)
+                if (body != null && body.CanRead)
                 {
                     parsedBody = await ProcessRequestBodyAsync(body, contentType, result);
                 }
@@ -177,7 +175,10 @@ namespace Aikido.Zen.Core.Helpers
             finally
             {
                 // reset the stream position
-                body.Seek(0, SeekOrigin.Begin);
+                if (body.CanSeek)
+                {
+                    body.Seek(0, SeekOrigin.Begin);
+                }
             }
 
             return parsedBody;

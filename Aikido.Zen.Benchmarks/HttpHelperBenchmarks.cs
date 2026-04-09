@@ -138,8 +138,7 @@ namespace Aikido.Zen.Benchmarks
                 _headers,
                 _cookies,
                 _jsonBody,
-                JsonContentType,
-                _jsonBody.Length
+                JsonContentType
             );
             _jsonBody.Position = 0;
         }
@@ -153,8 +152,7 @@ namespace Aikido.Zen.Benchmarks
                 _headers,
                 _cookies,
                 _xmlBody,
-                XmlContentType,
-                _xmlBody.Length
+                XmlContentType
             );
             _xmlBody.Position = 0;
         }
@@ -168,8 +166,7 @@ namespace Aikido.Zen.Benchmarks
                 _headers,
                 _cookies,
                 _formBody,
-                FormContentType,
-                _formBody.Length
+                FormContentType
             );
             _formBody.Position = 0;
         }
@@ -183,8 +180,7 @@ namespace Aikido.Zen.Benchmarks
                 _headers,
                 _cookies,
                 _multipartFormBody,
-                MultipartFormContentType,
-                _multipartFormBody.Length
+                MultipartFormContentType
             );
             _multipartFormBody.Position = 0;
         }
