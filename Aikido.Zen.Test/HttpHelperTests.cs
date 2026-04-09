@@ -152,6 +152,30 @@ namespace Aikido.Zen.Test.Helpers
             Assert.That(result.FlattenedData.ContainsKey("body.literal|decoded"), Is.False);
         }
 
+        [TestCase(0L)]
+        [TestCase(-1L)]
+        public async Task ReadAndFlattenHttpDataAsync_ShouldProcessBodyWhenContentLengthIsMissing(long contentLength)
+        {
+            const string body = "{\"userCommand\":\"whoami\"}";
+            using var bodyStream = new MemoryStream(Encoding.UTF8.GetBytes(body));
+
+            var result = await HttpHelper.ReadAndFlattenHttpDataAsync(
+                new Dictionary<string, string>(),
+                new Dictionary<string, string>(),
+                new Dictionary<string, string>(),
+                new Dictionary<string, string>(),
+                bodyStream,
+                "application/json",
+                contentLength);
+
+            Assert.That(result.FlattenedData["body.userCommand"], Is.EqualTo("whoami"));
+            Assert.That(result.ParsedBody, Is.TypeOf<Dictionary<string, object>>());
+
+            var parsedBody = (Dictionary<string, object>)result.ParsedBody;
+            Assert.That(parsedBody["userCommand"]?.ToString(), Is.EqualTo("whoami"));
+            Assert.That(bodyStream.Position, Is.EqualTo(0));
+        }
+
         [Test]
         public void ToJsonObj_ShouldHandleTrueFalseNull()
         {

@@ -74,7 +74,7 @@ namespace Aikido.Zen.Core.Helpers
             // Process Body
             try
             {
-                if (contentLength > 0)
+                if (body != null && body.CanRead)
                 {
                     parsedBody = await ProcessRequestBodyAsync(body, contentType, result);
                 }
@@ -177,7 +177,10 @@ namespace Aikido.Zen.Core.Helpers
             finally
             {
                 // reset the stream position
-                body.Seek(0, SeekOrigin.Begin);
+                if (body.CanSeek)
+                {
+                    body.Seek(0, SeekOrigin.Begin);
+                }
             }
 
             return parsedBody;
