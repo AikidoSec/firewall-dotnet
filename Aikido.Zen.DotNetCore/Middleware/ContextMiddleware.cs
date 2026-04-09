@@ -74,8 +74,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
                     headers: headersDictionary.ToDictionary(h => h.Key, h => string.Join(',', h.Value)),
                     cookies: context.Cookies,
                     body: request.Body,
-                    contentType: request.ContentType,
-                    contentLength: request.ContentLength ?? 0
+                    contentType: request.ContentType
                 );
 
                 // restore the original value of initialAllowSynchronousIOValue
