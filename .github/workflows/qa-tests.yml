@@ -118,10 +118,9 @@ jobs:
         shell: pwsh
         run: |
           $ruleName = 'Aikido Firewall Tester Action Core Mock'
-          $nodePath = (Get-Command node).Source
           Get-NetFirewallRule -DisplayName $ruleName -ErrorAction SilentlyContinue | Remove-NetFirewallRule
-          New-NetFirewallRule -DisplayName $ruleName -Direction Inbound -Action Allow -Profile Private,Public -Program $nodePath -Protocol TCP -LocalPort 3000 | Out-Null
-          Write-Host "Ensured inbound firewall rule for $nodePath on TCP 3000."
+          New-NetFirewallRule -DisplayName $ruleName -Direction Inbound -Action Allow -Profile Any -Protocol TCP -LocalPort 3000 | Out-Null
+          Write-Host "Ensured inbound firewall rule for TCP 3000 on all profiles."
 
       - name: Run Firewall QA Tests
         uses: AikidoSec/firewall-tester-action@make-tester-action-windows-compatible
