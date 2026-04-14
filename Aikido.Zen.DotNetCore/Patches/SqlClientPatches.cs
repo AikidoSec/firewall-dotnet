@@ -40,6 +40,10 @@ namespace Aikido.Zen.DotNetCore.Patches
             PatchMethod(harmony, "Npgsql", "NpgsqlCommand", "ExecuteNonQuery");
             PatchMethod(harmony, "Npgsql", "NpgsqlCommand", "ExecuteScalar");
             PatchMethod(harmony, "Npgsql", "NpgsqlCommand", "ExecuteReader", "System.Data.CommandBehavior");
+            PatchMethod(harmony, "Npgsql", "NpgsqlCommand", "ExecuteNonQueryAsync", "System.Threading.CancellationToken");
+            PatchMethod(harmony, "Npgsql", "NpgsqlCommand", "ExecuteReaderAsync", "System.Threading.CancellationToken");
+            PatchMethod(harmony, "Npgsql", "NpgsqlCommand", "ExecuteReaderAsync", "System.Data.CommandBehavior", "System.Threading.CancellationToken");
+            PatchMethod(harmony, "Npgsql", "NpgsqlCommand", "ExecuteScalarAsync", "System.Threading.CancellationToken");
 
             // MySqlX
             PatchMethod(harmony, "MySqlX", "XDevAPI.Relational.Table", "Select");
