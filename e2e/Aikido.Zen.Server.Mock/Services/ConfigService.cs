@@ -80,6 +80,7 @@ public class ConfigService
             ["heartbeatIntervalInMS"] = 10 * 60 * 1000,
             ["endpoints"] = new List<EndpointConfig>(),
             ["blockedUserIds"] = new List<string>(),
+            ["excludedUserIdsFromRateLimiting"] = new List<string>(),
             ["allowedIPAddresses"] = _largeBlockedIpList,
             ["receivedAnyStats"] = true,
             ["blockNewOutgoingRequests"] = false,

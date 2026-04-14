@@ -73,7 +73,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 }
 
                 // Use the helper to check all rate limiting rules
-                var (isAllowed, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(aikidoContext, agentContext.Endpoints);
+                var (isAllowed, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(aikidoContext, agentContext.Endpoints, agentContext.Config);
 
                 if (!isAllowed)
                 {

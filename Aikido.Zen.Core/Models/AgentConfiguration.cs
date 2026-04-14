@@ -19,6 +19,7 @@ namespace Aikido.Zen.Core.Models
     {
         private readonly IdnMapping _idnMapping = new IdnMapping();
         private readonly ConcurrentDictionary<string, string> _blockedUsers = new ConcurrentDictionary<string, string>();
+        private readonly ConcurrentDictionary<string, string> _usersExcludedFromRateLimiting = new ConcurrentDictionary<string, string>();
         private Regex _blockedUserAgents;
         private Regex _monitoredUserAgents;
         private BlockList _blockList = new BlockList();
@@ -39,6 +40,7 @@ namespace Aikido.Zen.Core.Models
         public void Clear()
         {
             _blockedUsers.Clear();
+            _usersExcludedFromRateLimiting.Clear();
             _endpoints.Clear();
             _blockedUserAgents = null;
             _monitoredUserAgents = null;
@@ -58,6 +60,16 @@ namespace Aikido.Zen.Core.Models
         public bool IsUserBlocked(string userId)
         {
             return _blockedUsers.ContainsKey(userId);
+        }
+
+        /// <summary>
+        /// Checks if a user is excluded from rate limiting.
+        /// </summary>
+        /// <param name="userId">The user ID to check.</param>
+        /// <returns>True if the user bypasses rate limiting, false otherwise.</returns>
+        public bool IsUserExcludedFromRateLimiting(string userId)
+        {
+            return _usersExcludedFromRateLimiting.ContainsKey(userId);
         }
 
         /// <summary>
@@ -159,6 +171,22 @@ namespace Aikido.Zen.Core.Models
         }
 
         /// <summary>
+        /// Updates the list of users that bypass rate limiting.
+        /// </summary>
+        /// <param name="users">The list of user IDs to exclude from rate limiting.</param>
+        public void UpdateUsersExcludedFromRateLimiting(IEnumerable<string> users)
+        {
+            _usersExcludedFromRateLimiting.Clear();
+            if (users != null)
+            {
+                foreach (var user in users)
+                {
+                    _usersExcludedFromRateLimiting.TryAdd(user, user);
+                }
+            }
+        }
+
+        /// <summary>
         /// Updates the list of rate-limited routes.
         /// </summary>
         /// <param name="endpoints">The list of endpoint configurations.</param>
@@ -196,6 +224,7 @@ namespace Aikido.Zen.Core.Models
             if (response == null) return;
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", response.Block ? "true" : "false");
             UpdateBlockedUsers(response.BlockedUserIds);
+            UpdateUsersExcludedFromRateLimiting(response.ExcludedUserIdsFromRateLimiting);
             BlockList.UpdateAllowedIpsPerEndpoint(response.Endpoints);
             BlockList.UpdateBypassedIps(response.BypassedIPAddresses);
             UpdateRatelimitedRoutes(response.Endpoints);
