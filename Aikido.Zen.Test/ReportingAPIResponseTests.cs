@@ -34,6 +34,7 @@ namespace Aikido.Zen.Test
                     }
                 },
                 BlockedUserIds = new[] { "user1", "user2" },
+                ExcludedUserIdsFromRateLimiting = new[] { "user3" },
                 BypassedIPAddresses = new[] { "1.1.1.1", "2.2.2.2" },
                 ReceivedAnyStats = true,
                 Success = true
@@ -47,6 +48,8 @@ namespace Aikido.Zen.Test
             Assert.That(response.BlockedUserIds, Has.Exactly(2).Items);
             Assert.That(response.BlockedUserIds, Contains.Item("user1"));
             Assert.That(response.BlockedUserIds, Contains.Item("user2"));
+            Assert.That(response.ExcludedUserIdsFromRateLimiting, Has.Exactly(1).Items);
+            Assert.That(response.ExcludedUserIdsFromRateLimiting, Contains.Item("user3"));
             Assert.That(response.BypassedIPAddresses, Has.Exactly(2).Items);
             Assert.That(response.BypassedIPAddresses, Contains.Item("1.1.1.1"));
             Assert.That(response.BypassedIPAddresses, Contains.Item("2.2.2.2"));
@@ -62,12 +65,14 @@ namespace Aikido.Zen.Test
             {
                 Endpoints = null,
                 BlockedUserIds = null,
+                ExcludedUserIdsFromRateLimiting = null,
                 BypassedIPAddresses = null
             };
 
             // Assert
             Assert.That(response.Endpoints, Is.Null);
             Assert.That(response.BlockedUserIds, Is.Null);
+            Assert.That(response.ExcludedUserIdsFromRateLimiting, Is.Null);
             Assert.That(response.BypassedIPAddresses, Is.Null);
         }
 
@@ -78,6 +83,7 @@ namespace Aikido.Zen.Test
             var json = """
                 {
                   "success": true,
+                  "excludedUserIdsFromRateLimiting": ["excluded-user"],
                   "blockNewOutgoingRequests": true,
                   "domains": [
                     { "hostname": "allowed.example", "mode": "allow" }
@@ -90,6 +96,7 @@ namespace Aikido.Zen.Test
 
             // Assert
             Assert.That(response, Is.Not.Null);
+            Assert.That(response.ExcludedUserIdsFromRateLimiting, Is.EquivalentTo(new[] { "excluded-user" }));
             Assert.That(response.BlockNewOutgoingRequests, Is.True);
             Assert.That(response.Domains.Count(), Is.EqualTo(1));
             Assert.That(response.Domains.First().Hostname, Is.EqualTo("allowed.example"));

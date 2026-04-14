@@ -63,12 +63,19 @@ namespace Aikido.Zen.Core.Helpers
         /// </summary>
         /// <param name="context">The context of the request</param>
         /// <param name="endpoints">The filtered list of endpoints</param>
+        /// <param name="configuration">The current agent configuration.</param>
         /// <returns>A tuple containing: (isAllowed, effectiveConfig) where effectiveConfig is the config that caused rate limiting (if any)</returns>
-        public static (bool isAllowed, RateLimitingConfig effectiveConfig) IsRequestAllowed(
+        internal static (bool isAllowed, RateLimitingConfig effectiveConfig) IsRequestAllowed(
             Context context,
-            IEnumerable<EndpointConfig> endpoints)
+            IEnumerable<EndpointConfig> endpoints,
+            AgentConfiguration configuration)
         {
             if (string.IsNullOrEmpty(context?.Method) || string.IsNullOrEmpty(context?.Route))
+            {
+                return (true, null);
+            }
+
+            if (context.User != null && configuration?.IsUserExcludedFromRateLimiting(context.User.Id) == true)
             {
                 return (true, null);
             }

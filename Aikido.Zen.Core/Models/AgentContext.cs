@@ -264,6 +264,11 @@ namespace Aikido.Zen.Core.Models
             return _config.IsUserBlocked(userId);
         }
 
+        public bool IsUserExcludedFromRateLimiting(string userId)
+        {
+            return _config.IsUserExcludedFromRateLimiting(userId);
+        }
+
         public bool IsUserAgentBlocked(string userAgent)
         {
             if (string.IsNullOrWhiteSpace(userAgent))
@@ -275,6 +280,11 @@ namespace Aikido.Zen.Core.Models
         public void UpdateBlockedUsers(IEnumerable<string> users)
         {
             _config.UpdateBlockedUsers(users);
+        }
+
+        public void UpdateUsersExcludedFromRateLimiting(IEnumerable<string> users)
+        {
+            _config.UpdateUsersExcludedFromRateLimiting(users);
         }
 
         public void UpdateRatelimitedRoutes(IEnumerable<EndpointConfig> endpoints)
