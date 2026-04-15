@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Net;
 
 namespace Aikido.Zen.Core.Helpers
 {
@@ -27,36 +28,28 @@ namespace Aikido.Zen.Core.Helpers
 
         public static string ParseSingleIp(string ip)
         {
-            // According to RFC7239 the X-Forwarded-For header can contain port numbers.
-            // If the IP includes a port number, remove it.
-            if (ip.Contains(':'))
-            {
-                // Split the IP to remove the port
-                // IPv4: Split using :
-                // IPv6: Split using ]: because the IP address itself contains colons
-                var splitWith = ip.StartsWith("[") ? "]:" : ":";
-                var parts = ip.Split(
-                    new[] { splitWith },
-                    StringSplitOptions.RemoveEmptyEntries
-                );
+            // According to RFC7239 the X-Forwarded-For header can contain port numbers
+            // We need to return the IP without any port
 
-                if (parts.Length == 2)
-                {
-                    ip = parts[0].Trim();
-                    // Remove opening bracket for IPv6 with port
-                    // the closing bracket will be removed by the split
-                    if (parts[0].StartsWith("["))
-                    {
-                        return parts[0].Substring(1);
-                    }
-                    return parts[0];
-                }
+            if (IPAddress.TryParse(ip, out var parsedIp))
+            {
+                // Covers ipv4 without port
+                // Covers all ipv6 (with/without brackets, with/without port, ipv4-mapped ipv6)
+                return parsedIp.ToString();
             }
 
-            // Normalize IPv6 by removing the brackets
-            if (ip.StartsWith("[") && ip.EndsWith("]"))
+            // The only supported IP form not extracted by TryParse is IPv4 with a port
+            if (ip.Contains('.'))
             {
-                return ip.Substring(1, ip.Length - 2);
+                var lastColon = ip.LastIndexOf(':');
+                if (lastColon > 0)
+                {
+                    var withoutPort = ip.Substring(0, lastColon);
+                    if (IPAddress.TryParse(withoutPort, out parsedIp))
+                    {
+                        return parsedIp.ToString();
+                    }
+                }
             }
 
             return ip;
