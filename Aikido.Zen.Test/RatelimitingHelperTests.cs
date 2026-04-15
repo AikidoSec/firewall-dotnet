@@ -339,6 +339,7 @@ namespace Aikido.Zen.Test.Helpers
             // Arrange
             var context = new Context { Method = "GET", Route = "api/{entity}", Path = "api/users" };
             context.User = new User("user123", "Test User");
+            var configuration = new AgentConfiguration();
 
             var endpoints = new List<EndpointConfig>
             {
@@ -352,9 +353,9 @@ namespace Aikido.Zen.Test.Helpers
 
             // Act & Assert
             // First two requests should be allowed
-            var (isAllowed1, _) = RateLimitingHelper.IsRequestAllowed(context, endpoints);
-            var (isAllowed2, _) = RateLimitingHelper.IsRequestAllowed(context, endpoints);
-            var (isAllowed3, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(context, endpoints);
+            var (isAllowed1, _) = RateLimitingHelper.IsRequestAllowed(context, endpoints, configuration);
+            var (isAllowed2, _) = RateLimitingHelper.IsRequestAllowed(context, endpoints, configuration);
+            var (isAllowed3, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(context, endpoints, configuration);
 
             Assert.That(isAllowed1, Is.True);
             Assert.That(isAllowed2, Is.True);
@@ -369,6 +370,7 @@ namespace Aikido.Zen.Test.Helpers
             // Arrange
             var context = new Context { Method = "GET", Route = "api/users", Path = "api/users" };
             context.User = new User("user123", "Test User");
+            var configuration = new AgentConfiguration();
 
             var endpoints = new List<EndpointConfig>
             {
@@ -382,9 +384,9 @@ namespace Aikido.Zen.Test.Helpers
 
             // Act & Assert
             // First two requests should be allowed
-            var (isAllowed1, _) = RateLimitingHelper.IsRequestAllowed(context, endpoints);
-            var (isAllowed2, _) = RateLimitingHelper.IsRequestAllowed(context, endpoints);
-            var (isAllowed3, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(context, endpoints);
+            var (isAllowed1, _) = RateLimitingHelper.IsRequestAllowed(context, endpoints, configuration);
+            var (isAllowed2, _) = RateLimitingHelper.IsRequestAllowed(context, endpoints, configuration);
+            var (isAllowed3, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(context, endpoints, configuration);
 
             Assert.That(isAllowed1, Is.True);
             Assert.That(isAllowed2, Is.True);
@@ -399,6 +401,7 @@ namespace Aikido.Zen.Test.Helpers
             // Arrange
             var context = new Context { Method = "GET", Route = "api/users" };
             context.User = new User("user123", "Test User");
+            var configuration = new AgentConfiguration();
 
             var endpoints = new List<EndpointConfig>
             {
@@ -418,10 +421,10 @@ namespace Aikido.Zen.Test.Helpers
 
             // Act & Assert
             // First three requests should be allowed by both exact and wildcard
-            var (isAllowed1, _) = RateLimitingHelper.IsRequestAllowed(context, endpoints);
-            var (isAllowed2, _) = RateLimitingHelper.IsRequestAllowed(context, endpoints);
-            var (isAllowed3, _) = RateLimitingHelper.IsRequestAllowed(context, endpoints);
-            var (isAllowed4, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(context, endpoints);
+            var (isAllowed1, _) = RateLimitingHelper.IsRequestAllowed(context, endpoints, configuration);
+            var (isAllowed2, _) = RateLimitingHelper.IsRequestAllowed(context, endpoints, configuration);
+            var (isAllowed3, _) = RateLimitingHelper.IsRequestAllowed(context, endpoints, configuration);
+            var (isAllowed4, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(context, endpoints, configuration);
 
             Assert.That(isAllowed1, Is.True);
             Assert.That(isAllowed2, Is.True);
@@ -438,6 +441,7 @@ namespace Aikido.Zen.Test.Helpers
             var context = new Context { Method = "GET", Route = "api/users/details" };
             context.User = new User("user123", "Test User");
             context.Path = "/api/users/details";
+            var configuration = new AgentConfiguration();
 
             var endpoints = new List<EndpointConfig>
             {
@@ -457,9 +461,9 @@ namespace Aikido.Zen.Test.Helpers
 
             // Act & Assert
             // First two requests should be allowed by both wildcards
-            var (isAllowed1, _) = RateLimitingHelper.IsRequestAllowed(context, endpoints);
-            var (isAllowed2, _) = RateLimitingHelper.IsRequestAllowed(context, endpoints);
-            var (isAllowed3, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(context, endpoints);
+            var (isAllowed1, _) = RateLimitingHelper.IsRequestAllowed(context, endpoints, configuration);
+            var (isAllowed2, _) = RateLimitingHelper.IsRequestAllowed(context, endpoints, configuration);
+            var (isAllowed3, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(context, endpoints, configuration);
 
             Assert.That(isAllowed1, Is.True);
             Assert.That(isAllowed2, Is.True);
@@ -474,6 +478,7 @@ namespace Aikido.Zen.Test.Helpers
             // Arrange
             var context = new Context { Method = "GET", Route = "api/users" };
             context.User = new User("user123", "Test User");
+            var configuration = new AgentConfiguration();
 
             var endpoints = new List<EndpointConfig>
             {
@@ -495,7 +500,7 @@ namespace Aikido.Zen.Test.Helpers
             // All requests should be allowed because both configs are disabled
             for (int i = 0; i < 5; i++)
             {
-                var (isAllowed, _) = RateLimitingHelper.IsRequestAllowed(context, endpoints);
+                var (isAllowed, _) = RateLimitingHelper.IsRequestAllowed(context, endpoints, configuration);
                 Assert.That(isAllowed, Is.True);
             }
         }
@@ -506,11 +511,12 @@ namespace Aikido.Zen.Test.Helpers
             // Arrange
             var context = new Context { Method = "GET", Route = "api/users" };
             context.User = new User("user123", "Test User");
+            var configuration = new AgentConfiguration();
 
             var endpoints = new List<EndpointConfig>();
 
             // Act
-            var (isAllowed, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(context, endpoints);
+            var (isAllowed, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(context, endpoints, configuration);
 
             // Assert
             Assert.That(isAllowed, Is.True);
@@ -523,13 +529,88 @@ namespace Aikido.Zen.Test.Helpers
             // Arrange
             var context = new Context { Method = "GET", Route = "api/users" };
             context.User = new User("user123", "Test User");
+            var configuration = new AgentConfiguration();
 
             // Act
-            var (isAllowed, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(context, null);
+            var (isAllowed, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(context, null, configuration);
 
             // Assert
             Assert.That(isAllowed, Is.True);
             Assert.That(effectiveConfig, Is.Null);
+        }
+
+        [Test]
+        public void IsRequestAllowed_ShouldBypassRateLimitingForExcludedUsers()
+        {
+            // Arrange
+            var context = new Context
+            {
+                Method = "GET",
+                Route = "api/users",
+                Path = "api/users",
+                RemoteAddress = "1.2.3.4",
+                User = new User("excluded-user", "Excluded User")
+            };
+
+            var endpoints = new List<EndpointConfig>
+            {
+                new EndpointConfig
+                {
+                    Method = "GET",
+                    Route = "api/users",
+                    RateLimiting = new RateLimitingConfig { Enabled = true, MaxRequests = 2, WindowSizeInMS = 1000 }
+                }
+            };
+
+            var configuration = new AgentConfiguration();
+            configuration.UpdateUsersExcludedFromRateLimiting(new[] { "excluded-user" });
+
+            // Act & Assert
+            for (int i = 0; i < 5; i++)
+            {
+                var (isAllowed, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(context, endpoints, configuration);
+                Assert.That(isAllowed, Is.True);
+                Assert.That(effectiveConfig, Is.Null);
+            }
+        }
+
+        [Test]
+        public void IsRequestAllowed_ShouldStillRateLimitNonExcludedUsers()
+        {
+            // Arrange
+            var context = new Context
+            {
+                Method = "GET",
+                Route = "api/users",
+                Path = "api/users",
+                RemoteAddress = "1.2.3.4",
+                User = new User("regular-user", "Regular User")
+            };
+
+            var endpoints = new List<EndpointConfig>
+            {
+                new EndpointConfig
+                {
+                    Method = "GET",
+                    Route = "api/users",
+                    RateLimiting = new RateLimitingConfig { Enabled = true, MaxRequests = 2, WindowSizeInMS = 1000 }
+                }
+            };
+
+            var configuration = new AgentConfiguration();
+            configuration.UpdateUsersExcludedFromRateLimiting(new[] { "excluded-user" });
+
+            // Act
+            var (isAllowed1, _) = RateLimitingHelper.IsRequestAllowed(context, endpoints, configuration);
+            var (isAllowed2, _) = RateLimitingHelper.IsRequestAllowed(context, endpoints, configuration);
+            var (isAllowed3, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(context, endpoints, configuration);
+
+            // Assert
+            Assert.That(isAllowed1, Is.True);
+            Assert.That(isAllowed2, Is.True);
+            Assert.That(isAllowed3, Is.False);
+            Assert.That(effectiveConfig, Is.Not.Null);
+            Assert.That(effectiveConfig.MaxRequests, Is.EqualTo(2));
         }
     }
 }

@@ -73,7 +73,7 @@ namespace Aikido.Zen.Test.Helpers
             var headerDict = headers ?? new Dictionary<string, string>();
             var routeParams = route ?? new Dictionary<string, string>();
 
-            var parsed = HttpHelper.ReadAndFlattenHttpDataAsync(routeParams, queryParams, headerDict, new Dictionary<string, string>(), bodyStream, contentType, bodyStream?.Length ?? 0).Result;
+            var parsed = HttpHelper.ReadAndFlattenHttpDataAsync(routeParams, queryParams, headerDict, new Dictionary<string, string>(), bodyStream, contentType).Result;
 
             return new Context
             {

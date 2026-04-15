@@ -23,7 +23,7 @@ namespace Aikido.Zen.Test.Helpers
             using var bodyStream = new MemoryStream(Encoding.UTF8.GetBytes(body));
 
             // Act
-            var result = await HttpHelper.ReadAndFlattenHttpDataAsync(routeParams, queryParams, headers, cookies, bodyStream, contentType, bodyStream.Length);
+            var result = await HttpHelper.ReadAndFlattenHttpDataAsync(routeParams, queryParams, headers, cookies, bodyStream, contentType);
 
             // Assert
             Assert.That(result.FlattenedData, Is.Not.Null);
@@ -127,8 +127,7 @@ namespace Aikido.Zen.Test.Helpers
                 headers,
                 cookies,
                 bodyStream,
-                "application/json",
-                bodyStream.Length);
+                "application/json");
 
             // Assert
             Assert.That(result.FlattenedData["route.command"], Is.EqualTo("who%61mi"));
@@ -150,6 +149,28 @@ namespace Aikido.Zen.Test.Helpers
             Assert.That(result.FlattenedData["body.cmd|decoded"], Is.EqualTo("whoami"));
             Assert.That(result.FlattenedData.ContainsKey("query.invalid|decoded"), Is.False);
             Assert.That(result.FlattenedData.ContainsKey("body.literal|decoded"), Is.False);
+        }
+
+        [Test]
+        public async Task ReadAndFlattenHttpDataAsync_ShouldProcessReadableBodyWithoutContentLengthHint()
+        {
+            const string body = "{\"userCommand\":\"whoami\"}";
+            using var bodyStream = new MemoryStream(Encoding.UTF8.GetBytes(body));
+
+            var result = await HttpHelper.ReadAndFlattenHttpDataAsync(
+                new Dictionary<string, string>(),
+                new Dictionary<string, string>(),
+                new Dictionary<string, string>(),
+                new Dictionary<string, string>(),
+                bodyStream,
+                "application/json");
+
+            Assert.That(result.FlattenedData["body.userCommand"], Is.EqualTo("whoami"));
+            Assert.That(result.ParsedBody, Is.TypeOf<Dictionary<string, object>>());
+
+            var parsedBody = (Dictionary<string, object>)result.ParsedBody;
+            Assert.That(parsedBody["userCommand"]?.ToString(), Is.EqualTo("whoami"));
+            Assert.That(bodyStream.Position, Is.EqualTo(0));
         }
 
         [Test]

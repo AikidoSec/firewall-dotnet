@@ -25,6 +25,7 @@ namespace Aikido.Zen.Test
             {
                 Block = true,
                 BlockedUserIds = new List<string> { "123" },
+                ExcludedUserIdsFromRateLimiting = new List<string> { "excluded-user" },
                 Endpoints = [ new EndpointConfig {
                     AllowedIPAddresses = ["234.234.234.234"],
                     Route = "/test",
@@ -45,6 +46,7 @@ namespace Aikido.Zen.Test
 
             // Assert
             Assert.That(_config.IsUserBlocked("123"), Is.False);
+            Assert.That(_config.IsUserExcludedFromRateLimiting("excluded-user"), Is.False);
             Assert.That(_config.BlockedUserAgents, Is.Null);
             Assert.That(_config.Endpoints, Is.Empty);
             Assert.That(_config.BlockList.IsIPBypassed("123.123.123.123"), Is.False);
@@ -101,6 +103,7 @@ namespace Aikido.Zen.Test
             {
                 Block = true,
                 BlockedUserIds = new List<string> { "123" },
+                ExcludedUserIdsFromRateLimiting = new List<string> { "excluded-user" },
                 Endpoints = new List<EndpointConfig>(),
                 BypassedIPAddresses = new List<string>(),
                 ConfigUpdatedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
@@ -112,6 +115,7 @@ namespace Aikido.Zen.Test
             // Assert
             Assert.That(_config.ConfigLastUpdated, Is.EqualTo(response.ConfigUpdatedAt));
             Assert.That(_config.IsUserBlocked("123"), Is.True);
+            Assert.That(_config.IsUserExcludedFromRateLimiting("excluded-user"), Is.True);
         }
 
         [Test]

@@ -74,7 +74,7 @@ namespace Aikido.Zen.DotNetFramework
 
         public static User GetUser()
         {
-            return (User)HttpContext.Current?.Items["Aikido.Zen.CurrentUser"];
+            return GetContext()?.User;
         }
 
         internal static void CheckModules()
