@@ -15,7 +15,7 @@ namespace Aikido.Zen.DotNetFramework.Patches
         /// <param name="harmony">The Harmony instance used for patching.</param>
         public static void ApplyPatches(Harmony harmony)
         {
-            // Use reflection to get the types dynamically
+            // Async DbCommand wrappers
             PatchMethod(harmony, "System.Data.Common", "DbCommand", "ExecuteNonQueryAsync");
             PatchMethod(harmony, "System.Data.Common", "DbCommand", "ExecuteReaderAsync", "System.Data.CommandBehavior");
             PatchMethod(harmony, "System.Data.Common", "DbCommand", "ExecuteScalarAsync");
@@ -53,6 +53,10 @@ namespace Aikido.Zen.DotNetFramework.Patches
             PatchMethod(harmony, "Npgsql", "NpgsqlCommand", "ExecuteNonQuery");
             PatchMethod(harmony, "Npgsql", "NpgsqlCommand", "ExecuteScalar");
             PatchMethod(harmony, "Npgsql", "NpgsqlCommand", "ExecuteReader", "System.Data.CommandBehavior");
+            PatchMethod(harmony, "Npgsql", "NpgsqlCommand", "ExecuteNonQueryAsync", "System.Threading.CancellationToken");
+            PatchMethod(harmony, "Npgsql", "NpgsqlCommand", "ExecuteReaderAsync", "System.Threading.CancellationToken");
+            PatchMethod(harmony, "Npgsql", "NpgsqlCommand", "ExecuteReaderAsync", "System.Data.CommandBehavior", "System.Threading.CancellationToken");
+            PatchMethod(harmony, "Npgsql", "NpgsqlCommand", "ExecuteScalarAsync", "System.Threading.CancellationToken");
 
             // MySqlX
             PatchMethod(harmony, "MySqlX", "XDevAPI.Relational.Table", "Select");
