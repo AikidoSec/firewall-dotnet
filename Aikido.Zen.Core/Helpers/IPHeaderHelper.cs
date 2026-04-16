@@ -29,7 +29,7 @@ namespace Aikido.Zen.Core.Helpers
         public static string ParseSingleIp(string ip)
         {
             // According to RFC7239 the X-Forwarded-For header can contain port numbers
-            // If the IP includes a port number, remove it
+            // We need to return the IP without any port
 
             if (IPAddress.TryParse(ip, out var parsedIp))
             {
@@ -38,7 +38,7 @@ namespace Aikido.Zen.Core.Helpers
                 return parsedIp.ToString();
             }
 
-            // The only supported form not extracted by TryParse is IPv4 with a port
+            // The only supported IP form not extracted by TryParse is IPv4 with a port
             if (ip.Contains('.'))
             {
                 var lastColon = ip.LastIndexOf(':');
