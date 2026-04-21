@@ -7,7 +7,7 @@ namespace Aikido.Zen.Core.Api
 {
     internal static class ApiClientHttpClientFactory
     {
-        internal static HttpClient Create(int timeoutInMS = 30000)
+        internal static HttpClient Create(int timeoutInMS = 60000)
         {
             var handler = new HttpClientHandler
             {
