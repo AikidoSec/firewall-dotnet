@@ -1,6 +1,15 @@
 using Aikido.Zen.Core;
+using Aikido.Zen.Core.Api;
+using Aikido.Zen.Core.Exceptions;
+using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
+using Aikido.Zen.DotNetCore.Patches;
+using Aikido.Zen.DotNetCore.RuntimeSca;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using System.Runtime.InteropServices;
 
 namespace Aikido.Zen.DotNetCore
 {
@@ -14,6 +23,46 @@ namespace Aikido.Zen.DotNetCore
         {
             _serviceProvider = serviceProvider;
             _httpContextAccessor = httpContextAccessor;
+        }
+
+        public static void Start()
+        {
+            if (!Environment.Is64BitProcess)
+            {
+                throw new PlatformNotSupportedException(
+                    $"Aikido Zen does not support 32-bit processes. Detected process architecture: {RuntimeInformation.ProcessArchitecture}");
+            }
+
+            if (_serviceProvider == null || _httpContextAccessor == null)
+            {
+                throw new InvalidOperationException("Aikido.Zen.DotNetCore.Zen.Initialize must be called before Zen.Start().");
+            }
+
+            AgentInfoHelper.SetVersion(typeof(Zen).Assembly.GetName().Version.ToString());
+            var options = _serviceProvider.GetRequiredService<IOptions<AikidoOptions>>();
+
+            if (!string.IsNullOrEmpty(options?.Value?.AikidoToken))
+            {
+                var agent = Agent.NewInstance(_serviceProvider.GetRequiredService<IZenApi>());
+                var agentLogger = _serviceProvider.GetService<ILogger<Agent>>();
+                if (agentLogger != null)
+                {
+                    Agent.ConfigureLogger(agentLogger);
+                }
+
+                agent.Start();
+
+                var exceptionLogger = _serviceProvider.GetService<ILogger<AikidoException>>();
+                if (exceptionLogger != null)
+                {
+                    AikidoException.ConfigureLogger(exceptionLogger);
+                }
+
+                EnvironmentHelper.ReportValues();
+                RuntimeAssemblyTracker.Instance.SubscribeToAppDomain(AppDomain.CurrentDomain);
+            }
+
+            Patcher.Patch();
         }
 
         public static void SetUser(string id, string name, HttpContext context)

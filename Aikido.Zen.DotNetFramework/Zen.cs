@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Web;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Api;
@@ -23,6 +24,13 @@ namespace Aikido.Zen.DotNetFramework
             {
                 return;
             }
+
+            if (!Environment.Is64BitProcess)
+            {
+                throw new PlatformNotSupportedException(
+                    $"Aikido Zen does not support 32-bit processes. Detected process architecture: {RuntimeInformation.ProcessArchitecture}");
+            }
+
             // set zen version
             AgentInfoHelper.SetVersion(typeof(Zen).Assembly.GetName().Version.ToString());
             // patch the sinks
