@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Web;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Api;
@@ -17,12 +18,20 @@ namespace Aikido.Zen.DotNetFramework
         private static HarmonyLib.Harmony harmony = new HarmonyLib.Harmony("reference");
         public static void Start()
         {
+            // libzen_internals only available on 64
+            if (!Environment.Is64BitProcess)
+            {
+                throw new PlatformNotSupportedException(
+                    $"Aikido Zen does not support 32-bit processes. Detected process architecture: {RuntimeInformation.ProcessArchitecture}");
+            }
+
             // initialize the options, this will ensure the environment variables are set
             AikidoConfiguration.Init();
             if (Environment.GetEnvironmentVariable("AIKIDO_DISABLE") == "true")
             {
                 return;
             }
+
             // set zen version
             AgentInfoHelper.SetVersion(typeof(Zen).Assembly.GetName().Version.ToString());
             // patch the sinks

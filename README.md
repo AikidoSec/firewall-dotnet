@@ -39,6 +39,8 @@ Zen operates autonomously on the same server as your .NET app to:
 
 ## Supported libraries and frameworks
 
+Zen only works in 64-bit processes.
+
 ### Web frameworks
 * ✅ ASP.NET Core 6.0
 * ✅ ASP.NET Core 7.0
@@ -64,6 +66,7 @@ Zen operates autonomously on the same server as your .NET app to:
 * ✅ EF Core
 
 ## Installation
+
 
 ### .NET Core
 

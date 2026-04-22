@@ -1,16 +1,11 @@
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Api;
-using Aikido.Zen.Core.Exceptions;
-using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.DotNetCore.Middleware;
-using Aikido.Zen.DotNetCore.Patches;
-using Aikido.Zen.DotNetCore.RuntimeSca;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Aikido.Zen.DotNetCore
 {
@@ -83,9 +78,6 @@ namespace Aikido.Zen.DotNetCore
                 return services;
             }
 
-            // set zen version
-            AgentInfoHelper.SetVersion(typeof(Zen).Assembly.GetName().Version.ToString());
-
             // register basic logging
             services.AddLogging(builder => builder.AddConsole());
 
@@ -131,27 +123,7 @@ namespace Aikido.Zen.DotNetCore
 
             var contextAccessor = app.ApplicationServices.GetRequiredService<IHttpContextAccessor>();
             Zen.Initialize(app.ApplicationServices, contextAccessor);
-            var options = app.ApplicationServices.GetRequiredService<IOptions<AikidoOptions>>();
-
-            if (!string.IsNullOrEmpty(options?.Value?.AikidoToken))
-            {
-                var agent = Agent.NewInstance(app.ApplicationServices.GetRequiredService<IZenApi>());
-                var agentLogger = app.ApplicationServices.GetService<ILogger<Agent>>();
-                if (agentLogger != null)
-                {
-                    Agent.ConfigureLogger(agentLogger);
-                }
-                agent.Start();
-
-                var exceptionLogger = app.ApplicationServices.GetService<ILogger<AikidoException>>();
-                if (exceptionLogger != null)
-                {
-                    AikidoException.ConfigureLogger(exceptionLogger);
-                }
-                EnvironmentHelper.ReportValues();
-                RuntimeAssemblyTracker.Instance.SubscribeToAppDomain(AppDomain.CurrentDomain);
-            }
-            Patcher.Patch();
+            Zen.Start();
             app.UseMiddleware<ContextMiddleware>();
             app.UseMiddleware<BlockingMiddleware>();
             return app;
