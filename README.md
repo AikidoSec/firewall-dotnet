@@ -67,7 +67,6 @@ Zen only works in 64-bit processes.
 
 ## Installation
 
-Zen requires a 64-bit process because `libzen_internals` is only available for 64-bit runtimes. 32-bit startup is not supported.
 
 ### .NET Core
 
