@@ -27,6 +27,7 @@ namespace Aikido.Zen.DotNetCore
 
         public static void Start()
         {
+            // libzen_internals only available on 64
             if (!Environment.Is64BitProcess)
             {
                 throw new PlatformNotSupportedException(

@@ -18,6 +18,7 @@ namespace Aikido.Zen.DotNetFramework
         private static HarmonyLib.Harmony harmony = new HarmonyLib.Harmony("reference");
         public static void Start()
         {
+            // libzen_internals only available on 64
             if (!Environment.Is64BitProcess)
             {
                 throw new PlatformNotSupportedException(
