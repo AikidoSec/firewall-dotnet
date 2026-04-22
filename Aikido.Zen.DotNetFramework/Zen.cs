@@ -18,17 +18,17 @@ namespace Aikido.Zen.DotNetFramework
         private static HarmonyLib.Harmony harmony = new HarmonyLib.Harmony("reference");
         public static void Start()
         {
+            if (!Environment.Is64BitProcess)
+            {
+                throw new PlatformNotSupportedException(
+                    $"Aikido Zen does not support 32-bit processes. Detected process architecture: {RuntimeInformation.ProcessArchitecture}");
+            }
+
             // initialize the options, this will ensure the environment variables are set
             AikidoConfiguration.Init();
             if (Environment.GetEnvironmentVariable("AIKIDO_DISABLE") == "true")
             {
                 return;
-            }
-
-            if (!Environment.Is64BitProcess)
-            {
-                throw new PlatformNotSupportedException(
-                    $"Aikido Zen does not support 32-bit processes. Detected process architecture: {RuntimeInformation.ProcessArchitecture}");
             }
 
             // set zen version
