@@ -134,12 +134,10 @@ namespace Aikido.Zen.DotNetCore
             // Based on the ASP.NET Core source for VerifyEndpointRoutingMiddlewareIsRegistered
             // https://github.com/dotnet/aspnetcore/blob/main/src/Http/Routing/src/Builder/EndpointRoutingApplicationBuilderExtensions.cs#L129
 
-            if (!app.Properties.TryGetValue("__EndpointRouteBuilder", out var routeBuilder))
-            {
-                return false;
-            }
-
-            return true;
+            // "__EndpointRouteBuilder" is typically set in regular ASP.NET Core apps
+            // "__GlobalEndpointRouteBuilder" is typically set in minimal hosting WebApplication apps (eg. Blazor)
+            return app.Properties.TryGetValue("__EndpointRouteBuilder", out _) ||
+                   app.Properties.TryGetValue("__GlobalEndpointRouteBuilder", out _);
         }
 
         internal static IServiceCollection AddAikidoZenMiddleware(this IServiceCollection services)
