@@ -79,7 +79,7 @@ jobs:
 
   qa-tests-dotnet-framework:
     needs: build-package
-    runs-on: windows-2025-vs2026
+    runs-on: windows-latest
     timeout-minutes: 120
     steps:
       - name: Checkout zen-demo-dotnet-framework
