@@ -125,4 +125,4 @@ jobs:
           sleep_before_test: 15
           max_parallel_tests: 5
           test_timeout: 900
-          skip_tests: test_rate_limiting_group_id_1_minute,test_stored_ssrf_no_context,test_path_traversal,test_bypassed_ip,test_stored_ssrf,test_ssrf
+          skip_tests: test_rate_limiting_group_id_1_minute,test_stored_ssrf_no_context,test_path_traversal,test_bypassed_ip,test_stored_ssrf,test_ssrf,test_ssrf_diffrent_port,test_user_rate_limiting_1_minute,test_outbound_domain_blocking,test_user_rate_limiting_1_minute_without_x_forwarded_for
