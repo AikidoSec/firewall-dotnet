@@ -41,7 +41,7 @@ jobs:
           name: nuget-package
           path: ./artifacts/*.nupkg
 
-  qa-tests:
+  qa-tests-netcore:
     needs: build-package
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -53,7 +53,7 @@ jobs:
           path: zen-demo-dotnet-core
           submodules: true
 
-      - name: Checkout firewall-dotnet (for Dockerfile.qa)
+      - name: Checkout firewall-dotnet (for NET Core QA Dockerfile and Nuget.Config)
         uses: actions/checkout@v4
         with:
           path: firewall-dotnet
@@ -64,15 +64,65 @@ jobs:
           name: nuget-package
           path: zen-demo-dotnet-core/local-feed
 
-      - name: Replace Dockerfile with QA version
+      - name: Replace Dockerfile and NuGet.Config with NET Core QA versions
         run: |
-          cp firewall-dotnet/.github/workflows/NuGet.Config zen-demo-dotnet-core/NuGet.Config
-          cp firewall-dotnet/.github/workflows/Dockerfile.qa zen-demo-dotnet-core/Dockerfile
+          cp firewall-dotnet/.github/workflows/NuGet.Config.dotnet-core zen-demo-dotnet-core/NuGet.Config
+          cp firewall-dotnet/.github/workflows/Dockerfile.qa.dotnet-core zen-demo-dotnet-core/Dockerfile
 
       - name: Run Firewall QA Tests
-        uses: AikidoSec/firewall-tester-action@v1.0.12
+        uses: AikidoSec/firewall-tester-action@v1.0.14
         with:
           dockerfile_path: ./zen-demo-dotnet-core/Dockerfile
           app_port: 8080
           sleep_before_test: 10
           skip_tests: test_rate_limiting_group_id_1_minute,test_stored_ssrf_no_context,test_path_traversal,test_bypassed_ip,test_stored_ssrf,test_ssrf
+
+  qa-tests-netfx:
+    needs: build-package
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout zen-demo-dotnet-framework
+        uses: actions/checkout@v4
+        with:
+          repository: Aikido-demo-apps/zen-demo-dotnet-framework
+          path: zen-demo-dotnet-framework
+          submodules: true
+
+      - name: Checkout firewall-dotnet
+        uses: actions/checkout@v4
+        with:
+          path: firewall-dotnet
+
+      - name: Download NuGet package artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: nuget-package
+          path: zen-demo-dotnet-framework/local-feed
+
+      - name: Replace Dockerfile and NuGet.Config with QA versions
+        shell: pwsh
+        run: |
+          Copy-Item firewall-dotnet\.github\workflows\NuGet.Config.dotnet-framework zen-demo-dotnet-framework\NuGet.Config -Force
+          Copy-Item firewall-dotnet\.github\workflows\Dockerfile.qa.dotnet-framework zen-demo-dotnet-framework\Dockerfile -Force
+
+      - name: Install Python test dependencies
+        run: python -m pip install requests==2.32.4
+
+      - name: Allow firewall-tester core mock through Windows Firewall
+        shell: pwsh
+        run: |
+          $ruleName = 'Aikido Firewall Tester Action Core Mock'
+          Get-NetFirewallRule -DisplayName $ruleName -ErrorAction SilentlyContinue | Remove-NetFirewallRule
+          New-NetFirewallRule -DisplayName $ruleName -Direction Inbound -Action Allow -Profile Any -Protocol TCP -LocalPort 3000 | Out-Null
+          Write-Host "Ensured inbound firewall rule for TCP 3000 on all profiles."
+        
+      - name: Run Firewall QA Tests
+        uses: AikidoSec/firewall-tester-action@main
+        with:
+          dockerfile_path: ./zen-demo-dotnet-framework/Dockerfile
+          app_port: 80
+          sleep_before_test: 15
+          max_parallel_tests: 5
+          test_timeout: 900
+          skip_tests: test_rate_limiting_group_id_1_minute,test_stored_ssrf_no_context,test_path_traversal,test_bypassed_ip,test_stored_ssrf,test_ssrf,test_ssrf_diffrent_port,test_user_rate_limiting_1_minute,test_outbound_domain_blocking,test_user_rate_limiting_1_minute_without_x_forwarded_for
