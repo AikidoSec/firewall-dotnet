@@ -118,7 +118,7 @@ jobs:
           Write-Host "Ensured inbound firewall rule for TCP 3000 on all profiles."
         
       - name: Run Firewall QA Tests
-        uses: AikidoSec/firewall-tester-action@fix-docker-host-ip
+        uses: AikidoSec/firewall-tester-action@main
         with:
           dockerfile_path: ./zen-demo-dotnet-framework/Dockerfile
           app_port: 80
