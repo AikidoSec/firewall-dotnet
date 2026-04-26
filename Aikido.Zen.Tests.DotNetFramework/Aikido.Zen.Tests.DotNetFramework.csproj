@@ -12,6 +12,7 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{8EB5DD53-9E86-47B5-8E4F-96D3D4D45B71}</ProjectGuid>
     <OutputType>Library</OutputType>
+    <IsTestProject>true</IsTestProject>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Aikido.Zen.Tests.DotNetFramework</RootNamespace>
     <AssemblyName>Aikido.Zen.Tests.DotNetFramework</AssemblyName>
@@ -63,6 +64,10 @@
       <HintPath>..\packages\Microsoft.Bcl.AsyncInterfaces.6.0.0\lib\net461\Microsoft.Bcl.AsyncInterfaces.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
+    <Reference Include="Microsoft.Extensions.Logging.Abstractions, Version=6.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Extensions.Logging.Abstractions.6.0.0\lib\net461\Microsoft.Extensions.Logging.Abstractions.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Microsoft.Testing.Extensions.MSBuild, Version=1.5.3.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.Testing.Platform.MSBuild.1.5.3\lib\netstandard2.0\Microsoft.Testing.Extensions.MSBuild.dll</HintPath>
     </Reference>
@@ -157,8 +162,11 @@
   <ItemGroup>
     <Compile Include="BlockingModuleTests.cs" />
     <Compile Include="ContextModuleTests.cs" />
+    <Compile Include="Patches\HttpClientAndDnsPatchesTests.cs" />
+    <Compile Include="Patches\HttpClientRedirectTests.cs" />
     <Compile Include="Patches\IOPatchesTests.cs" />
     <Compile Include="Patches\LLMPatchesTests.cs" />
+    <Compile Include="Patches\WebRequestPatchesTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
