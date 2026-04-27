@@ -195,9 +195,10 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 // Example: for ?foo=a&foo=b, the dictionary will be:
                 // { "foo": "a", "foo[1]": "b" }
                 // The first value ("a") is used as the default ("foo"), matching ASP.NET Core's default behavior for query and header collections.
+                // ASP.NET Framework can return a null key for unnamed query values like ?#fragment, so store it under an empty key.
                 for (int i = 0; i < values.Length; i++)
                 {
-                    string dictKey = i == 0 ? key : $"{key}[{i}]";
+                    string dictKey = i == 0 ? key ?? string.Empty : $"{key}[{i}]";
                     result[dictKey] = values[i];
                 }
 
