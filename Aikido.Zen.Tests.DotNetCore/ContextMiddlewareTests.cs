@@ -68,6 +68,53 @@ namespace Aikido.Zen.Tests.DotNetCore
         }
 
         [Test]
+        public async Task InvokeAsync_BypassedIp_CallsNextWithoutCapturingContextOrStats()
+        {
+            var originalDisable = Environment.GetEnvironmentVariable("AIKIDO_DISABLE");
+            const string bypassedIp = "93.184.216.34";
+            var context = new DefaultHttpContext();
+            context.Request.Scheme = "http";
+            context.Request.Host = new HostString("test.local");
+            context.Request.Path = "/api/create";
+            context.Request.Method = "POST";
+            context.Request.ContentType = "application/json";
+            context.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes("""{"name":"test"}"""));
+            context.Connection.RemoteIpAddress = IPAddress.Parse(bypassedIp);
+
+            var nextCalled = false;
+            RequestDelegate next = httpContext =>
+            {
+                nextCalled = true;
+                httpContext.Response.StatusCode = StatusCodes.Status200OK;
+                return Task.CompletedTask;
+            };
+
+            try
+            {
+                Environment.SetEnvironmentVariable("AIKIDO_DISABLE", "false");
+                Agent.Instance.Context.Config.Clear();
+                Agent.Instance.ClearContext();
+                Agent.Instance.Context.BlockList.UpdateBypassedIps(new[] { bypassedIp });
+
+                await _contextMiddleware.InvokeAsync(context, next);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(nextCalled, Is.True);
+                    Assert.That(context.Items.ContainsKey("Aikido.Zen.Context"), Is.False);
+                    Assert.That(Agent.Instance.Context.Requests, Is.EqualTo(0));
+                    Assert.That(Agent.Instance.Context.Routes, Is.Empty);
+                });
+            }
+            finally
+            {
+                Agent.Instance.ClearContext();
+                Agent.Instance.Context.Config.Clear();
+                Environment.SetEnvironmentVariable("AIKIDO_DISABLE", originalDisable);
+            }
+        }
+
+        [Test]
         public void GetParametrizedRoute_ReturnsCorrectRoutePattern()
         {
             // Arrange

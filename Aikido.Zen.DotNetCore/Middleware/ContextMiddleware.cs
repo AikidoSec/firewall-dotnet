@@ -43,7 +43,16 @@ namespace Aikido.Zen.DotNetCore.Middleware
             {
                 // if preparing the context failed, we can't capture the request, so we just call the next middleware
                 await next(httpContext);
+                return;
             }
+
+            if (Agent.Instance.Context.BlockList.IsIPBypassed(context.RemoteAddress))
+            {
+                // Bypassed IPs skip all Zen handling, including API discovery and request stats.
+                await next(httpContext);
+                return;
+            }
+
             try
             {
                 LogHelper.DebugLog(Agent.Logger, "Capturing request context");
