@@ -105,6 +105,7 @@ namespace Aikido.Zen.Core.Models
             {
                 Total = 0,
                 Aborted = 0,
+                RateLimited = 0,
                 AttacksDetected = new AttacksDetected
                 {
                     Total = 0,
@@ -182,6 +183,14 @@ namespace Aikido.Zen.Core.Models
         public void OnAbortedRequest()
         {
             Interlocked.Increment(ref _requests.Aborted);
+        }
+
+        /// <summary>
+        /// Records that a request was rate limited.
+        /// </summary>
+        public void OnRateLimitedRequest()
+        {
+            Interlocked.Increment(ref _requests.RateLimited);
         }
 
         /// <summary>

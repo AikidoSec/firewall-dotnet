@@ -63,6 +63,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 if (!isAllowed)
                 {
                     Agent.Instance.Context.AddAbortedRequest();
+                    Agent.Instance.Context.AddRateLimitedRequest();
                     context.Response.StatusCode = 429;
 
                     if (effectiveConfig != null)

@@ -78,6 +78,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 if (!isAllowed)
                 {
                     Agent.Instance.Context.AddAbortedRequest();
+                    Agent.Instance.Context.AddRateLimitedRequest();
                     CompleteRequestWithResponse(
                         httpContext,
                         429,

@@ -38,6 +38,11 @@ namespace Aikido.Zen.Core.Models
             _stats.OnAbortedRequest();
         }
 
+        public void AddRateLimitedRequest()
+        {
+            _stats.OnRateLimitedRequest();
+        }
+
         public void AddAttackDetected(bool blocked = false)
         {
             _stats.OnDetectedAttack(blocked);
@@ -320,6 +325,7 @@ namespace Aikido.Zen.Core.Models
         public IEnumerable<EndpointConfig> Endpoints => _config.Endpoints;
         public int Requests => _stats.Requests.Total;
         public int RequestsAborted => _stats.Requests.Aborted;
+        public int RequestsRateLimited => _stats.Requests.RateLimited;
         public int AttacksDetected => _stats.Requests.AttacksDetected.Total;
         public int AttacksBlocked => _stats.Requests.AttacksDetected.Blocked;
         public int AttackWavesDetected => _stats.Requests.AttackWaves.Total;

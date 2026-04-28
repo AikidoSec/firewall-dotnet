@@ -282,6 +282,16 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void BypassedIPs_ShouldMatchIPv4MappedIPv6AgainstIPv4Cidr()
+        {
+            // Arrange
+            _blockList.UpdateBypassedIps(new[] { "23.45.67.89/24" });
+
+            // Act & Assert
+            Assert.That(_blockList.IsIPBypassed("::ffff:23.45.67.89"), Is.True);
+        }
+
+        [Test]
         public void PrivateIPs_ShouldAlwaysBeAllowed()
         {
             // Arrange

@@ -65,6 +65,7 @@ namespace Aikido.Zen.Core.Models.Events
             heartbeat.Stats.CopyIpAddressBreakdown(context.Stats.IpAddresses.Breakdown);
             heartbeat.Stats.Requests.Total = context.Requests;
             heartbeat.Stats.Requests.Aborted = context.RequestsAborted;
+            heartbeat.Stats.Requests.RateLimited = context.RequestsRateLimited;
             heartbeat.Stats.Requests.AttacksDetected = new AttacksDetected
             {
                 Blocked = context.AttacksBlocked,
