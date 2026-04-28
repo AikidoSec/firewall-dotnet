@@ -75,7 +75,7 @@ jobs:
           dockerfile_path: ./zen-demo-dotnet-core/Dockerfile
           app_port: 8080
           sleep_before_test: 10
-          skip_tests: test_rate_limiting_group_id_1_minute,test_stored_ssrf_no_context,test_path_traversal,test_bypassed_ip,test_stored_ssrf,test_ssrf
+          skip_tests: test_rate_limiting_group_id_1_minute,test_stored_ssrf_no_context,test_path_traversal,test_stored_ssrf,test_ssrf
 
   qa-tests-netfx:
     needs: build-package
@@ -125,4 +125,4 @@ jobs:
           sleep_before_test: 15
           max_parallel_tests: 5
           test_timeout: 900
-          skip_tests: test_rate_limiting_group_id_1_minute,test_stored_ssrf_no_context,test_path_traversal,test_bypassed_ip,test_stored_ssrf,test_ssrf,test_ssrf_diffrent_port,test_outbound_domain_blocking
+          skip_tests: test_rate_limiting_group_id_1_minute,test_stored_ssrf_no_context,test_path_traversal,test_stored_ssrf,test_ssrf,test_ssrf_diffrent_port,test_outbound_domain_blocking
