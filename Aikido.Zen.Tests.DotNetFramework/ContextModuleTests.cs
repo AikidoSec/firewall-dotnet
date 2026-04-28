@@ -199,6 +199,7 @@ namespace Aikido.Zen.Tests.DotNetFramework
             // Arrange
             var queryString = new System.Collections.Specialized.NameValueCollection();
             queryString.Add("param1", "value1");
+            queryString.Add(null, "#fragment");
 
             // Act
             var method = typeof(ContextModule).GetMethod("FlattenQueryParameters", BindingFlags.NonPublic | BindingFlags.Static);
@@ -208,6 +209,7 @@ namespace Aikido.Zen.Tests.DotNetFramework
             Assert.That(result, Is.Not.Null);
             Assert.That(result.ContainsKey("param1"), Is.True);
             Assert.That(result["param1"], Is.EqualTo("value1"));
+            Assert.That(result[string.Empty], Is.EqualTo("#fragment"));
         }
 
         [Test]
