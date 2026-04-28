@@ -105,34 +105,49 @@ class IPRange
                 return false;
             }
 
-            bool isIPv6 = ipAddress.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6;
-            var currentNode = isIPv6 ? _ipv6Root : _ipv4Root;
-            var addressBytes = ipAddress.GetAddressBytes();
-
-            foreach (var byteValue in addressBytes)
+            if (IsIpInRange(ipAddress))
             {
-                for (int bitIndex = 7; bitIndex >= 0; bitIndex--)
-                {
-                    if (currentNode.IsTerminal)
-                    {
-                        return true;
-                    }
-
-                    int bit = (byteValue >> bitIndex) & 1;
-                    if (currentNode.Children[bit] == null)
-                    {
-                        return false;
-                    }
-
-                    currentNode = currentNode.Children[bit];
-                }
+                return true;
             }
 
-            return currentNode.IsTerminal;
+            if (ipAddress.IsIPv4MappedToIPv6)
+            {
+                return IsIpInRange(ipAddress.MapToIPv4());
+            }
+
+            return false;
         }
         finally
         {
             _lock.ExitReadLock();
         }
+    }
+
+    private bool IsIpInRange(IPAddress ipAddress)
+    {
+        bool isIPv6 = ipAddress.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6;
+        var currentNode = isIPv6 ? _ipv6Root : _ipv4Root;
+        var addressBytes = ipAddress.GetAddressBytes();
+
+        foreach (var byteValue in addressBytes)
+        {
+            for (int bitIndex = 7; bitIndex >= 0; bitIndex--)
+            {
+                if (currentNode.IsTerminal)
+                {
+                    return true;
+                }
+
+                int bit = (byteValue >> bitIndex) & 1;
+                if (currentNode.Children[bit] == null)
+                {
+                    return false;
+                }
+
+                currentNode = currentNode.Children[bit];
+            }
+        }
+
+        return currentNode.IsTerminal;
     }
 }

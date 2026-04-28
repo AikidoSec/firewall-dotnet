@@ -251,20 +251,7 @@ namespace Aikido.Zen.Core.Models.Ip
 
                 if (_bypassedIps.HasItems)
                 {
-                    if (IPAddress.TryParse(ip, out var parsedIp))
-                    {
-                        // Check the IP as provided, including normal IPv4 or IPv6 ranges.
-                        if (_bypassedIps.IsIpInRange(parsedIp.ToString()))
-                        {
-                            return true;
-                        }
-
-                        // Also match IPv4-mapped IPv6 requests against IPv4 bypass ranges.
-                        if (parsedIp.IsIPv4MappedToIPv6)
-                        {
-                            return _bypassedIps.IsIpInRange(parsedIp.MapToIPv4().ToString());
-                        }
-                    }
+                    return _bypassedIps.IsIpInRange(ip);
                 }
 
                 return false;
