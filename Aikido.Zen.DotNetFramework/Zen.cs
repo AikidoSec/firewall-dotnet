@@ -58,9 +58,16 @@ namespace Aikido.Zen.DotNetFramework
             // otherwise, return null
             : null;
 
+        internal static Func<HttpContext, string> SetRateLimitGroupAction { get; set; } = _ => string.Empty;
+
         public static void SetUser(Func<HttpContext, User> setUser)
         {
             SetUserAction = setUser;
+        }
+
+        public static void SetRateLimitGroup(Func<HttpContext, string> setRateLimitGroup)
+        {
+            SetRateLimitGroupAction = setRateLimitGroup ?? (_ => string.Empty);
         }
 
         private static HttpApplication GetApplicationInstanceOrThrow()

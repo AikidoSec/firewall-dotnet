@@ -95,14 +95,13 @@ namespace Aikido.Zen.Core.Helpers
                 return (true, null);
             }
 
-            // Get the user ID or IP address for the key
-            string userOrIp = context.User?.Id ?? context.RemoteAddress ?? "unknown";
+            var rateLimitKeySuffix = GetRateLimitKeySuffix(context);
 
             // Check exact match first if it exists
             if (RouteHelper.HasExactMatch(context, rateLimitedEndpoints, out var exactMatch))
             {
                 var config = exactMatch.RateLimiting;
-                var exactKey = $"{exactMatch.Method}|{exactMatch.Route}:user-or-ip:{userOrIp}";
+                var exactKey = $"{exactMatch.Method}|{exactMatch.Route}:{rateLimitKeySuffix}";
                 if (!IsAllowed(exactKey, config.WindowSizeInMS, config.MaxRequests))
                 {
                     return (false, config);
@@ -120,7 +119,7 @@ namespace Aikido.Zen.Core.Helpers
                 var config = endpoint.RateLimiting;
                 if (config != null && config.Enabled)
                 {
-                    var matchKey = $"{endpoint.Method}|{endpoint.Route}:user-or-ip:{userOrIp}";
+                    var matchKey = $"{endpoint.Method}|{endpoint.Route}:{rateLimitKeySuffix}";
                     if (!IsAllowed(matchKey, config.WindowSizeInMS, config.MaxRequests))
                     {
                         return (false, config);
@@ -130,6 +129,26 @@ namespace Aikido.Zen.Core.Helpers
 
             // If we get here, all checks passed
             return (true, null);
+        }
+
+        private static string GetRateLimitKeySuffix(Context context)
+        {
+            if (!string.IsNullOrEmpty(context?.RateLimitGroup))
+            {
+                return $"group:{context.RateLimitGroup}";
+            }
+
+            if (!string.IsNullOrEmpty(context?.User?.Id))
+            {
+                return $"user:{context.User.Id}";
+            }
+
+            if (!string.IsNullOrEmpty(context?.RemoteAddress))
+            {
+                return $"ip:{context.RemoteAddress}";
+            }
+
+            return "unknown";
         }
 
         private static long GetCurrentTimestamp()

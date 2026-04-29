@@ -61,3 +61,41 @@ Using `SetUser` has the following benefits:
 - Whenever attacks are detected, the user will be included in the report to Aikido.
 - The dashboard will show all your users, where you can also block them.
 - Passing the user's name is optional, but it can help you identify the user in the dashboard. You will be required to list Aikido Security as a subprocessor if you choose to share personal identifiable information (PII).
+
+# Rate limiting groups
+
+To limit the number of requests for a group of users, set a rate limit group for the current request. When a rate limit group is set, configured rate limits are applied to the group instead of individual users or IP addresses.
+
+In the examples below, `GetTeamId(context)` is a placeholder that returns a team ID for the current request.
+
+## .NET Core
+
+Call `Zen.SetRateLimitGroup` in middleware before `UseZenFirewall()`:
+
+```csharp
+using Aikido.Zen.DotNetCore;
+
+// ...
+    .UseRouting()
+    .Use((context, next) =>
+    {
+        var teamId = GetTeamId(context);
+        if (!string.IsNullOrEmpty(teamId))
+            Zen.SetRateLimitGroup(teamId, context);
+        return next();
+    })
+    .UseZenFirewall()
+```
+
+## .NET Framework
+
+In your `Global.asax.cs` file:
+
+```csharp
+public void Application_Start()
+{
+    // other code
+    Zen.SetRateLimitGroup(context => GetTeamId(context));
+    Zen.Start();
+}
+```
