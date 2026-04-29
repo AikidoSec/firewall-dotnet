@@ -299,6 +299,7 @@ namespace Aikido.Zen.Test
 
             // Assert
             Assert.That(_config.GetMatchingMonitoredIPListKeys("9.9.9.9"), Is.EquivalentTo(new[] { "tor/exit_nodes" }));
+            Assert.That(_config.GetMatchingMonitoredIPListKeys("::ffff:9.9.9.9"), Is.EquivalentTo(new[] { "tor/exit_nodes" }));
             Assert.That(_config.IsMonitoredUserAgent("GoogleBot/2.1"), Is.True);
             Assert.That(_config.GetMatchingUserAgentKeys("GoogleBot/2.1"), Is.EquivalentTo(new[] { "googlebot" }));
         }
@@ -322,6 +323,7 @@ namespace Aikido.Zen.Test
 
             // Assert
             Assert.That(_config.GetMatchingBlockedIPListKeys("8.8.8.8"), Is.EquivalentTo(new[] { "known_threat_actors/public_scanners" }));
+            Assert.That(_config.GetMatchingBlockedIPListKeys("::ffff:8.8.8.8"), Is.EquivalentTo(new[] { "known_threat_actors/public_scanners" }));
         }
 
         [Test]

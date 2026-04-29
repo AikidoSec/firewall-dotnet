@@ -4,6 +4,7 @@ namespace Aikido.Zen.Core.Models
     {
         public int Total; // must be a field to be thread safe
         public int Aborted; // must be a field to be thread safe
+        public int RateLimited; // must be a field to be thread safe
         public AttacksDetected AttacksDetected { get; set; }
         public AttacksDetected AttackWaves { get; set; }
     }

@@ -26,24 +26,27 @@ namespace Aikido.Zen.DotNetCore.Middleware
 
         public async Task InvokeAsync(HttpContext httpContext, RequestDelegate next)
         {
-            try
+            if (EnvironmentHelper.IsDisabled)
             {
-                if (EnvironmentHelper.IsDisabled)
-                {
-                    // call the next middleware
-                    await next(httpContext);
-                    return;
-                }
+                // call the next middleware
+                await next(httpContext);
+                return;
             }
-            catch (Exception ex)
-            {
-                LogHelper.ErrorLog(Agent.Logger, $"Error while checking if the ip is bypassed: {ex.Message}");
-            }
+
             if (!TryPrepareContext(httpContext, out var queryDictionary, out var headersDictionary, out var context))
             {
                 // if preparing the context failed, we can't capture the request, so we just call the next middleware
                 await next(httpContext);
+                return;
             }
+
+            if (Agent.Instance.Context.BlockList.IsIPBypassed(context.RemoteAddress))
+            {
+                // Bypassed IPs skip all Zen handling, including API discovery and request stats.
+                await next(httpContext);
+                return;
+            }
+
             try
             {
                 LogHelper.DebugLog(Agent.Logger, "Capturing request context");
