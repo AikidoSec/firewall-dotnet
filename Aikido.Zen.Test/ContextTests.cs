@@ -29,6 +29,7 @@ namespace Aikido.Zen.Test
             Assert.That(_context.Cookies, Is.Empty);
             Assert.That(_context.AttackDetected, Is.False);
             Assert.That(_context.User, Is.Null);
+            Assert.That(_context.RateLimitGroup, Is.EqualTo(string.Empty));
             Assert.That(_context.Source, Is.EqualTo(string.Empty));
             Assert.That(_context.Route, Is.EqualTo(string.Empty));
             Assert.That(_context.Graphql, Is.Null);

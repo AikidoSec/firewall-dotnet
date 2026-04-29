@@ -135,7 +135,8 @@ namespace Aikido.Zen.DotNetCore.Middleware
                     Source = Environment.Version.Major >= 5 ? "DotNetCore" : "DotNetFramework",
                     Route = GetParametrizedRoute(httpContext),
                     RouteParams = FlattenRouteParameters(httpContext.GetRouteData().Values),
-                    User = httpContext.Items["Aikido.Zen.CurrentUser"] as User
+                    User = httpContext.Items["Aikido.Zen.CurrentUser"] as User,
+                    RateLimitGroup = httpContext.Items["Aikido.Zen.RateLimitGroup"] as string ?? string.Empty
                 };
                 return true;
             }
