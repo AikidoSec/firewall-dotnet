@@ -18,6 +18,7 @@ namespace Aikido.Zen.Core
         public IDictionary<string, string> Cookies { get; set; } = new Dictionary<string, string>();
         public bool AttackDetected { get; set; }
         public User User { get; set; }
+        public string RateLimitGroup { get; set; } = string.Empty;
         public string Source { get; set; } = string.Empty;
         public string Route { get; set; } = string.Empty;
         public string[] Graphql { get; set; }

@@ -612,5 +612,179 @@ namespace Aikido.Zen.Test.Helpers
             Assert.That(effectiveConfig, Is.Not.Null);
             Assert.That(effectiveConfig.MaxRequests, Is.EqualTo(2));
         }
+
+        [Test]
+        public void IsRequestAllowed_ShouldRateLimitByIPWhenNoGroupOrUser()
+        {
+            // Arrange
+            var endpoints = new List<EndpointConfig>
+            {
+                new EndpointConfig
+                {
+                    Method = "GET",
+                    Route = "api/pets",
+                    RateLimiting = new RateLimitingConfig { Enabled = true, MaxRequests = 1, WindowSizeInMS = 1000 }
+                }
+            };
+
+            var context = new Context
+            {
+                Method = "GET",
+                Route = "api/pets",
+                Path = "api/pets",
+                RemoteAddress = "1.2.3.4"
+            };
+
+            var configuration = new AgentConfiguration();
+
+            // Act
+            var (isAllowed1, _) = RateLimitingHelper.IsRequestAllowed(context, endpoints, configuration);
+            var (isAllowed2, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(context, endpoints, configuration);
+
+            // Assert
+            Assert.That(isAllowed1, Is.True);
+            Assert.That(isAllowed2, Is.False);
+            Assert.That(effectiveConfig, Is.Not.Null);
+        }
+
+        [Test]
+        public void IsRequestAllowed_ShouldNotRateLimitWhenNoGroupUserOrIP()
+        {
+            // Arrange
+            var endpoints = new List<EndpointConfig>
+            {
+                new EndpointConfig
+                {
+                    Method = "GET",
+                    Route = "api/pets",
+                    RateLimiting = new RateLimitingConfig { Enabled = true, MaxRequests = 1, WindowSizeInMS = 1000 }
+                }
+            };
+
+            var context = new Context
+            {
+                Method = "GET",
+                Route = "api/pets",
+                Path = "api/pets"
+            };
+
+            var configuration = new AgentConfiguration();
+
+            // Act
+            var (isAllowed1, _) = RateLimitingHelper.IsRequestAllowed(context, endpoints, configuration);
+            var (isAllowed2, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(context, endpoints, configuration);
+
+            // Assert
+            Assert.That(isAllowed1, Is.True);
+            Assert.That(isAllowed2, Is.True);
+            Assert.That(effectiveConfig, Is.Null);
+        }
+
+        [Test]
+        public void IsRequestAllowed_ShouldRateLimitDifferentIPsAndUsersInSameGroup()
+        {
+            // Arrange
+            var endpoints = new List<EndpointConfig>
+            {
+                new EndpointConfig
+                {
+                    Method = "GET",
+                    Route = "api/pets",
+                    RateLimiting = new RateLimitingConfig { Enabled = true, MaxRequests = 2, WindowSizeInMS = 1000 }
+                }
+            };
+
+            var configuration = new AgentConfiguration();
+
+            var firstContext = new Context
+            {
+                Method = "GET",
+                Route = "api/pets",
+                Path = "api/pets",
+                RemoteAddress = "1.2.3.4",
+                User = new User("user-1", "User 1"),
+                RateLimitGroup = "group-1"
+            };
+
+            var secondContext = new Context
+            {
+                Method = "GET",
+                Route = "api/pets",
+                Path = "api/pets",
+                RemoteAddress = "4.3.2.1",
+                User = new User("user-2", "User 2"),
+                RateLimitGroup = "group-1"
+            };
+
+            var thirdContext = new Context
+            {
+                Method = "GET",
+                Route = "api/pets",
+                Path = "api/pets",
+                RemoteAddress = "5.6.7.8",
+                User = new User("user-3", "User 3"),
+                RateLimitGroup = "group-1"
+            };
+
+            // Act
+            var (isAllowed1, _) = RateLimitingHelper.IsRequestAllowed(firstContext, endpoints, configuration);
+            var (isAllowed2, _) = RateLimitingHelper.IsRequestAllowed(secondContext, endpoints, configuration);
+            var (isAllowed3, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(thirdContext, endpoints, configuration);
+
+            // Assert
+            Assert.That(isAllowed1, Is.True);
+            Assert.That(isAllowed2, Is.True);
+            Assert.That(isAllowed3, Is.False);
+            Assert.That(effectiveConfig, Is.Not.Null);
+            Assert.That(effectiveConfig.MaxRequests, Is.EqualTo(2));
+        }
+
+        [Test]
+        public void IsRequestAllowed_ShouldTrackDifferentGroupsIndependently()
+        {
+            // Arrange
+            var endpoints = new List<EndpointConfig>
+            {
+                new EndpointConfig
+                {
+                    Method = "GET",
+                    Route = "api/pets",
+                    RateLimiting = new RateLimitingConfig { Enabled = true, MaxRequests = 1, WindowSizeInMS = 1000 }
+                }
+            };
+
+            var configuration = new AgentConfiguration();
+            var groupOneContext = new Context
+            {
+                Method = "GET",
+                Route = "api/pets",
+                Path = "api/pets",
+                RemoteAddress = "1.2.3.4",
+                RateLimitGroup = "group-1"
+            };
+
+            var groupTwoContext = new Context
+            {
+                Method = "GET",
+                Route = "api/pets",
+                Path = "api/pets",
+                RemoteAddress = "1.2.3.4",
+                RateLimitGroup = "group-2"
+            };
+
+            // Act
+            var (groupOneAllowed1, _) = RateLimitingHelper.IsRequestAllowed(groupOneContext, endpoints, configuration);
+            var (groupTwoAllowed1, _) = RateLimitingHelper.IsRequestAllowed(groupTwoContext, endpoints, configuration);
+            var (groupOneAllowed2, groupOneConfig) = RateLimitingHelper.IsRequestAllowed(groupOneContext, endpoints, configuration);
+            var (groupTwoAllowed2, groupTwoConfig) = RateLimitingHelper.IsRequestAllowed(groupTwoContext, endpoints, configuration);
+
+            // Assert
+            Assert.That(groupOneAllowed1, Is.True);
+            Assert.That(groupTwoAllowed1, Is.True);
+            Assert.That(groupOneAllowed2, Is.False);
+            Assert.That(groupTwoAllowed2, Is.False);
+            Assert.That(groupOneConfig, Is.Not.Null);
+            Assert.That(groupTwoConfig, Is.Not.Null);
+        }
     }
 }

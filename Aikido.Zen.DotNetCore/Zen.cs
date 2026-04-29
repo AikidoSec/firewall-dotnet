@@ -72,6 +72,16 @@ namespace Aikido.Zen.DotNetCore
             context.Items["Aikido.Zen.CurrentUser"] = user;
         }
 
+        public static void SetRateLimitGroup(string id, HttpContext context)
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                return;
+            }
+
+            context.Items["Aikido.Zen.RateLimitGroup"] = id;
+        }
+
         public static Context GetContext()
         {
             if (_serviceProvider != null)

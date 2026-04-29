@@ -316,5 +316,73 @@ namespace Aikido.Zen.Tests.DotNetFramework
             }
         }
 
+        [Test]
+        public void PopulateRateLimitGroup_UpdatesExistingContextGroup()
+        {
+            var originalSetRateLimitGroupAction = Aikido.Zen.DotNetFramework.Zen.SetRateLimitGroupAction;
+
+            try
+            {
+                var httpContext = new HttpContext(
+                    new HttpRequest(string.Empty, "http://test.local/api/test", string.Empty),
+                    new HttpResponse(new StringWriter()));
+                var aikidoContext = new Context();
+                httpContext.Items["Aikido.Zen.Context"] = aikidoContext;
+                Aikido.Zen.DotNetFramework.Zen.SetRateLimitGroupAction = _ => "configured-group";
+
+                ContextModule.PopulateRateLimitGroup(httpContext);
+
+                Assert.That(aikidoContext.RateLimitGroup, Is.EqualTo("configured-group"));
+            }
+            finally
+            {
+                Aikido.Zen.DotNetFramework.Zen.SetRateLimitGroupAction = originalSetRateLimitGroupAction;
+            }
+        }
+
+        [Test]
+        public void PopulateRateLimitGroup_DoesNothingWithoutContext()
+        {
+            var originalSetRateLimitGroupAction = Aikido.Zen.DotNetFramework.Zen.SetRateLimitGroupAction;
+
+            try
+            {
+                var httpContext = new HttpContext(
+                    new HttpRequest(string.Empty, "http://test.local/api/test", string.Empty),
+                    new HttpResponse(new StringWriter()));
+                Aikido.Zen.DotNetFramework.Zen.SetRateLimitGroupAction = _ => "configured-group";
+
+                Assert.DoesNotThrow(() => ContextModule.PopulateRateLimitGroup(httpContext));
+            }
+            finally
+            {
+                Aikido.Zen.DotNetFramework.Zen.SetRateLimitGroupAction = originalSetRateLimitGroupAction;
+            }
+        }
+
+        [Test]
+        public void PopulateRateLimitGroup_DoesNotOverwriteContextGroupWhenConfiguredGroupIsEmpty()
+        {
+            var originalSetRateLimitGroupAction = Aikido.Zen.DotNetFramework.Zen.SetRateLimitGroupAction;
+
+            try
+            {
+                var httpContext = new HttpContext(
+                    new HttpRequest(string.Empty, "http://test.local/api/test", string.Empty),
+                    new HttpResponse(new StringWriter()));
+                var aikidoContext = new Context { RateLimitGroup = "existing-group" };
+                httpContext.Items["Aikido.Zen.Context"] = aikidoContext;
+                Aikido.Zen.DotNetFramework.Zen.SetRateLimitGroupAction = _ => string.Empty;
+
+                ContextModule.PopulateRateLimitGroup(httpContext);
+
+                Assert.That(aikidoContext.RateLimitGroup, Is.EqualTo("existing-group"));
+            }
+            finally
+            {
+                Aikido.Zen.DotNetFramework.Zen.SetRateLimitGroupAction = originalSetRateLimitGroupAction;
+            }
+        }
+
     }
 }

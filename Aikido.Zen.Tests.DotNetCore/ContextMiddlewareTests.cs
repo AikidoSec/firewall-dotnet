@@ -165,6 +165,27 @@ namespace Aikido.Zen.Tests.DotNetCore
         }
 
         [Test]
+        public void TryPrepareContext_SetsRateLimitGroupFromHttpContextItems()
+        {
+            var httpContext = new DefaultHttpContext();
+            httpContext.Request.Scheme = "http";
+            httpContext.Request.Host = new HostString("test.local");
+            httpContext.Request.Path = "/api/test";
+            httpContext.Request.Method = "GET";
+            httpContext.Connection.RemoteIpAddress = IPAddress.Parse("1.2.3.4");
+            Aikido.Zen.DotNetCore.Zen.SetRateLimitGroup("team-1", httpContext);
+
+            var method = typeof(ContextMiddleware).GetMethod("TryPrepareContext", BindingFlags.NonPublic | BindingFlags.Instance)!;
+            var args = new object?[] { httpContext, null, null, null };
+
+            var prepared = (bool)method.Invoke(_contextMiddleware, args)!;
+            var context = (Context)args[3]!;
+
+            Assert.That(prepared, Is.True);
+            Assert.That(context.RateLimitGroup, Is.EqualTo("team-1"));
+        }
+
+        [Test]
         public void GetParametrizedRoute_ReturnsMostSpecificRoutePattern_WhenMultipleRoutesMatch()
         {
             // Arrange

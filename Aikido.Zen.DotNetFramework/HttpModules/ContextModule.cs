@@ -46,6 +46,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
         {
             var httpContext = ((HttpApplication)sender).Context;
             PopulateAuthenticatedUser(httpContext);
+            PopulateRateLimitGroup(httpContext);
         }
 
         internal static void PopulateAuthenticatedUser(HttpContext httpContext)
@@ -64,6 +65,22 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
 
             var clientIp = GetClientIp(httpContext);
             Agent.Instance.CaptureUser(user, clientIp);
+        }
+
+        internal static void PopulateRateLimitGroup(HttpContext httpContext)
+        {
+            var aikidoContext = (Context)httpContext.Items["Aikido.Zen.Context"];
+
+            if (aikidoContext == null)
+            {
+                return;
+            }
+
+            var groupId = Zen.SetRateLimitGroupAction(httpContext);
+            if (!string.IsNullOrEmpty(groupId))
+            {
+                aikidoContext.RateLimitGroup = groupId;
+            }
         }
 
         private async Task Context_BeginRequest(object sender, EventArgs e)
