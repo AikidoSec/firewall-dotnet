@@ -15,21 +15,20 @@ namespace Aikido.Zen.DotNetCore.Middleware
     {
         public async Task InvokeAsync(HttpContext context, RequestDelegate next)
         {
-            var agentContext = Agent.Instance.Context;
-            var aikidoContext = context.Items["Aikido.Zen.Context"] as Context;
-            Agent.Instance.SetBlockingMiddlewareInstalled(true);
-
-            // If the context is missing or bypassed, skip blocking checks
-            if (aikidoContext == null || aikidoContext is BypassedContext)
-            {
-                // call the next middleware
-                await next(context);
-                return;
-            }
-
             try
             {
                 LogHelper.DebugLog(Agent.Logger, "Checking if request should be blocked");
+                var agentContext = Agent.Instance.Context;
+                var aikidoContext = context.Items["Aikido.Zen.Context"] as Context;
+                Agent.Instance.SetBlockingMiddlewareInstalled(true);
+
+                // If the context is missing or bypassed, skip blocking checks
+                if (aikidoContext == null || aikidoContext is BypassedContext)
+                {
+                    // call the next middleware
+                    await next(context);
+                    return;
+                }
 
                 var user = context.Items["Aikido.Zen.CurrentUser"] as User;
                 if (user != null)
