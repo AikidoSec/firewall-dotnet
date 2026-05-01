@@ -98,7 +98,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 }
 
                 // Store bypass marker context so patches can still honor bypass
-                if (Agent.Instance.Context.Blocklist.IsIPBypassed(clientIp))
+                if (Agent.Instance.Context.BlockList.IsIPBypassed(clientIp))
                 {
                     httpContext.Items["Aikido.Zen.Context"] = new BypassedContext();
                     return;

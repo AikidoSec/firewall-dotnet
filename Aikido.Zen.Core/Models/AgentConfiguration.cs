@@ -22,7 +22,7 @@ namespace Aikido.Zen.Core.Models
         private readonly ConcurrentDictionary<string, string> _usersExcludedFromRateLimiting = new ConcurrentDictionary<string, string>();
         private Regex _blockedUserAgents;
         private Regex _monitoredUserAgents;
-        private Blocklist _blocklist = new Blocklist();
+        private BlockList _blockList = new BlockList();
         private List<EndpointConfig> _endpoints = new List<EndpointConfig>();
         private List<(string Key, Regex Pattern)> _userAgentDetails = new List<(string Key, Regex Pattern)>();
         private List<(string Key, IPRange List)> _monitoredIPAddresses = new List<(string Key, IPRange List)>();
@@ -48,7 +48,7 @@ namespace Aikido.Zen.Core.Models
             _monitoredIPAddresses = new List<(string Key, IPRange List)>();
             _domains.Clear();
             _blockNewOutgoingRequests = false;
-            _blocklist = new Blocklist();
+            _blockList = new BlockList();
             HeartbeatIntervalInMS = 0;
         }
 
@@ -151,7 +151,7 @@ namespace Aikido.Zen.Core.Models
         /// <returns>A list of matching blocked IP keys.</returns>
         public IEnumerable<string> GetMatchingBlockedIPListKeys(string ip)
         {
-            return Blocklist.GetMatchingBlockedIPListKeys(ip);
+            return BlockList.GetMatchingBlockedIPListKeys(ip);
         }
 
         /// <summary>
@@ -225,8 +225,8 @@ namespace Aikido.Zen.Core.Models
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", response.Block ? "true" : "false");
             UpdateBlockedUsers(response.BlockedUserIds);
             UpdateUsersExcludedFromRateLimiting(response.ExcludedUserIdsFromRateLimiting);
-            Blocklist.UpdateAllowedIpsPerEndpoint(response.Endpoints);
-            Blocklist.UpdateBypassedIps(response.BypassedIPAddresses);
+            BlockList.UpdateAllowedIpsPerEndpoint(response.Endpoints);
+            BlockList.UpdateBypassedIps(response.BypassedIPAddresses);
             UpdateRatelimitedRoutes(response.Endpoints);
             ConfigLastUpdated = response.ConfigUpdatedAt;
 
@@ -450,14 +450,14 @@ namespace Aikido.Zen.Core.Models
 
         private void UpdateBlockedIps(IEnumerable<FirewallListsAPIResponse.IPList> blockedIPAddresses)
         {
-            Blocklist.UpdateBlockedIps((blockedIPAddresses ?? Enumerable.Empty<FirewallListsAPIResponse.IPList>())
+            BlockList.UpdateBlockedIps((blockedIPAddresses ?? Enumerable.Empty<FirewallListsAPIResponse.IPList>())
                 .Where(list => list != null)
                 .Select(list => (list.Key, list.Ips ?? Enumerable.Empty<string>())));
         }
 
         private void UpdateAllowedIps(IEnumerable<FirewallListsAPIResponse.IPList> allowedIPAddresses)
         {
-            Blocklist.UpdateAllowedIps((allowedIPAddresses ?? Enumerable.Empty<FirewallListsAPIResponse.IPList>())
+            BlockList.UpdateAllowedIps((allowedIPAddresses ?? Enumerable.Empty<FirewallListsAPIResponse.IPList>())
                 .Where(list => list != null)
                 .SelectMany(list => list.Ips ?? Enumerable.Empty<string>()));
         }
@@ -473,7 +473,7 @@ namespace Aikido.Zen.Core.Models
                 }
             }
         }
-        internal Blocklist Blocklist => _blocklist;
+        internal BlockList BlockList => _blockList;
         public Regex BlockedUserAgents => _blockedUserAgents;
     }
 }

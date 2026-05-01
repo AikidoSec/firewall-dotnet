@@ -31,7 +31,7 @@ namespace Aikido.Zen.Benchmarks
             summaries.Add(BenchmarkRunner.Run<LRUCacheBenchmarks>());
 
             Console.WriteLine("Running block list benchmarks...");
-            summaries.Add(BenchmarkRunner.Run<BlocklistBenchmarks>());
+            summaries.Add(BenchmarkRunner.Run<BlockListBenchmarks>());
 
             Console.WriteLine("Running agent context benchmarks...");
             summaries.Add(BenchmarkRunner.Run<AgentContextBenchmarks>());

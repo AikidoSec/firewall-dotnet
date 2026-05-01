@@ -40,7 +40,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 return;
             }
 
-            if (Agent.Instance.Context.Blocklist.IsIPBypassed(context.RemoteAddress))
+            if (Agent.Instance.Context.BlockList.IsIPBypassed(context.RemoteAddress))
             {
                 // Store bypass marker context so patches can still honor bypass.
                 httpContext.Items["Aikido.Zen.Context"] = new BypassedContext();

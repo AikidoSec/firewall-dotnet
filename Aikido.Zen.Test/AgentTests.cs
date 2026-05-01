@@ -52,7 +52,7 @@ namespace Aikido.Zen.Test
             // Assert
             Assert.That(_agent.Context.Users.Count, Is.EqualTo(0));
 
-            Assert.That(_agent.Context.Config.Blocklist.IsEmpty(), Is.True);
+            Assert.That(_agent.Context.Config.BlockList.IsEmpty(), Is.True);
             Assert.That(_agent.Context.Config.BlockedUserAgents, Is.EqualTo(null));
             Assert.That(_agent.Context.Config.Endpoints, Is.Empty);
 

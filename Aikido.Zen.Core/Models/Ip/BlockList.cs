@@ -12,7 +12,7 @@ namespace Aikido.Zen.Core.Models.Ip
     /// <summary>
     /// Manages IP blocklists and allowed subnet rules
     /// </summary>
-    internal class Blocklist
+    internal class BlockList
     {
         // The state of our blocklist needs to be thread-safe, as incoming ASP requests can be multithreaded, and the agent, which runs on a background thread, can also update/access the state.
         private List<(string Key, IPRange Range)> _blockedIpLists = new List<(string Key, IPRange Range)>();

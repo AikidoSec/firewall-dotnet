@@ -11,9 +11,9 @@ namespace Aikido.Zen.Benchmarks
     [SimpleJob(RuntimeMoniker.Net48, baseline: false, warmupCount: 1, iterationCount: 2)]
     [SimpleJob(RuntimeMoniker.Net80, baseline: true, warmupCount: 1, iterationCount: 2)]
     [HideColumns(Column.StdErr, Column.StdDev, Column.Error, Column.Min, Column.Max, Column.RatioSD)]
-    public class BlocklistBenchmarks
+    public class BlockListBenchmarks
     {
-        private Blocklist _blocklist;
+        private BlockList _blockList;
         private List<string> _ipRanges;
         private List<string> _checkIps;
 
@@ -26,7 +26,7 @@ namespace Aikido.Zen.Benchmarks
         [GlobalSetup]
         public void Setup()
         {
-            _blocklist = new Blocklist();
+            _blockList = new BlockList();
             _ipRanges = new List<string>(BlockedIpRangeCount);
             _checkIps = new List<string>();
 
@@ -49,7 +49,7 @@ namespace Aikido.Zen.Benchmarks
             }
 
             // Update blocked subnets
-            _blocklist.UpdateBlockedIps(_ipRanges);
+            _blockList.UpdateBlockedIps(_ipRanges);
         }
 
         [Benchmark]
@@ -58,7 +58,7 @@ namespace Aikido.Zen.Benchmarks
             // Check if IPs are blocked
             foreach (var ip in _checkIps.Take(IpsToCheck))
             {
-                _blocklist.IsIPBlocked(ip);
+                _blockList.IsIPBlocked(ip);
             }
         }
 
@@ -75,7 +75,7 @@ namespace Aikido.Zen.Benchmarks
                     RemoteAddress = ip,
                     Url = "http://localhost:80/path"
                 };
-                _blocklist.IsBlocked(context, out var reason);
+                _blockList.IsBlocked(context, out var reason);
             }
         }
     }

@@ -226,14 +226,14 @@ namespace Aikido.Zen.Core.Models
             }
 
             // Evaluate route-level IP allow rules before collecting IP stats
-            if (!_config.Blocklist.IsIpAllowedForEndpoint(context))
+            if (!_config.BlockList.IsIpAllowedForEndpoint(context))
             {
                 reason = "Your IP address is not allowed to access this resource.";
                 return true;
             }
 
             // if the ip is bypassed, we DON'T block the request (return false)
-            if (_config.Blocklist.IsIPBypassed(context.RemoteAddress))
+            if (_config.BlockList.IsIPBypassed(context.RemoteAddress))
             {
                 return false;
             }
@@ -241,7 +241,7 @@ namespace Aikido.Zen.Core.Models
             // Keep track of monitored IP list matches per request.
             _stats.OnIPAddressMatches(_config.GetMatchingMonitoredIPListKeys(context.RemoteAddress));
 
-            if (_config.Blocklist.IsBlocked(context, out reason))
+            if (_config.BlockList.IsBlocked(context, out reason))
             {
                 // Keep track of blocked IP list matches only when the request is blocked by IP rules.
                 _stats.OnIPAddressMatches(_config.GetMatchingBlockedIPListKeys(context.RemoteAddress));
@@ -331,7 +331,7 @@ namespace Aikido.Zen.Core.Models
         public int AttackWavesDetected => _stats.Requests.AttackWaves.Total;
         public int AttackWavesBlocked => _stats.Requests.AttackWaves.Blocked;
         public long Started => _stats.StartedAt;
-        internal Blocklist Blocklist => _config.Blocklist;
+        internal BlockList BlockList => _config.BlockList;
         public Regex BlockedUserAgents => _config.BlockedUserAgents;
         public AgentStats Stats => _stats;
         public AiStats AiStats => _aiStats;
