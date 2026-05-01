@@ -168,7 +168,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void Inspect_WhenRequestIsFromBypassedIp_DoesNotCaptureHostname()
+        public void Inspect_WhenContextIsBypassed_DoesNotCaptureHostname()
         {
             // Arrange
             _agent.Context.Config.UpdateConfig(new ReportingAPIResponse
@@ -180,7 +180,7 @@ namespace Aikido.Zen.Test
                 BypassedIPAddresses = new[] { "1.2.3.4" }
             });
 
-            var context = new Context
+            var context = new BypassedContext
             {
                 RemoteAddress = "1.2.3.4",
                 Method = "POST",

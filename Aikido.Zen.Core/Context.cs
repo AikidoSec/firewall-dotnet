@@ -50,4 +50,8 @@ namespace Aikido.Zen.Core
             public Uri Destination { get; set; }
         }
     }
+
+    internal sealed class BypassedContext : Context
+    {
+    }
 }

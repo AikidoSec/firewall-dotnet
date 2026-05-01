@@ -88,8 +88,8 @@ namespace Aikido.Zen.Test
             var blockedUserAgents = "googlebot|bingbot|yandexbot";
 
             _agentContext.UpdateBlockedUsers(new[] { "user1" });
-            _agentContext.BlockList.UpdateBlockedIps(new[] { ("manual", (IEnumerable<string>)new[] { "8.8.8.101" }) });  // Using public IP
-            _agentContext.BlockList.UpdateAllowedIpsPerEndpoint(endpoints);
+            _agentContext.Blocklist.UpdateBlockedIps(new[] { ("manual", (IEnumerable<string>)new[] { "8.8.8.101" }) });  // Using public IP
+            _agentContext.Blocklist.UpdateAllowedIpsPerEndpoint(endpoints);
             _agentContext.UpdateBlockedUserAgents(blockedUserAgents);
 
             // Act & Assert
@@ -167,7 +167,7 @@ namespace Aikido.Zen.Test
                 MonitoredIPAddresses = new[] { monitoredIpList }
             });
 
-            _agentContext.BlockList.UpdateAllowedIpsPerEndpoint(new[]
+            _agentContext.Blocklist.UpdateAllowedIpsPerEndpoint(new[]
             {
                 new EndpointConfig
                 {
@@ -654,9 +654,9 @@ namespace Aikido.Zen.Test
             // Assert
             Assert.Multiple(() =>
             {
-                Assert.That(_agentContext.BlockList.IsIPBlocked("192.168.1.100"), Is.True);
-                Assert.That(_agentContext.BlockList.IsIPBlocked("10.0.0.1"), Is.True);
-                Assert.That(_agentContext.BlockList.IsIPBlocked("172.16.0.1"), Is.False);
+                Assert.That(_agentContext.Blocklist.IsIPBlocked("192.168.1.100"), Is.True);
+                Assert.That(_agentContext.Blocklist.IsIPBlocked("10.0.0.1"), Is.True);
+                Assert.That(_agentContext.Blocklist.IsIPBlocked("172.16.0.1"), Is.False);
             });
         }
 
@@ -678,7 +678,7 @@ namespace Aikido.Zen.Test
             _agentContext.UpdateFirewallLists((FirewallListsAPIResponse?)null);
 
             // Assert
-            Assert.That(_agentContext.BlockList.IsIPBlocked("192.168.1.1"), Is.False);
+            Assert.That(_agentContext.Blocklist.IsIPBlocked("192.168.1.1"), Is.False);
         }
 
         [Test]
@@ -699,9 +699,9 @@ namespace Aikido.Zen.Test
             // Assert
             Assert.Multiple(() =>
             {
-                Assert.That(_agentContext.BlockList.IsIPBlocked("192.168.1.1"), Is.True);
-                Assert.That(_agentContext.BlockList.IsIPBlocked("invalid-ip"), Is.False);
-                Assert.That(_agentContext.BlockList.IsIPBlocked("not-an-ip"), Is.False);
+                Assert.That(_agentContext.Blocklist.IsIPBlocked("192.168.1.1"), Is.True);
+                Assert.That(_agentContext.Blocklist.IsIPBlocked("invalid-ip"), Is.False);
+                Assert.That(_agentContext.Blocklist.IsIPBlocked("not-an-ip"), Is.False);
             });
         }
 

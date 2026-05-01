@@ -53,7 +53,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
         {
             var aikidoContext = (Context)httpContext.Items["Aikido.Zen.Context"];
 
-            if (aikidoContext == null)
+            if (aikidoContext == null || aikidoContext is BypassedContext)
             {
                 return;
             }
@@ -71,7 +71,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
         {
             var aikidoContext = (Context)httpContext.Items["Aikido.Zen.Context"];
 
-            if (aikidoContext == null)
+            if (aikidoContext == null || aikidoContext is BypassedContext)
             {
                 return;
             }
@@ -92,9 +92,15 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 responseHandled = false;
                 string clientIp = GetClientIp(httpContext);
 
-                // if the ip is bypassed, skip the handling of the request
-                if (Agent.Instance.Context.BlockList.IsIPBypassed(clientIp) || EnvironmentHelper.IsDisabled)
+                if (EnvironmentHelper.IsDisabled)
                 {
+                    return;
+                }
+
+                // Store bypass marker context so patches can still honor bypass
+                if (Agent.Instance.Context.Blocklist.IsIPBypassed(clientIp))
+                {
+                    httpContext.Items["Aikido.Zen.Context"] = new BypassedContext();
                     return;
                 }
 
@@ -159,6 +165,12 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 if (aikidoContext == null)
                 {
                     LogHelper.DebugLog(Agent.Logger, "Aikido context is null, skipping route");
+                    return;
+                }
+                if (aikidoContext is BypassedContext)
+                {
+                    LogHelper.DebugLog(Agent.Logger, "Aikido context is bypassed, skipping route");
+                    responseHandled = true;
                     return;
                 }
                 responseHandled = true;

@@ -12,7 +12,7 @@ namespace Aikido.Zen.Core.Models.Ip
     /// <summary>
     /// Manages IP blocklists and allowed subnet rules
     /// </summary>
-    public class BlockList
+    internal class Blocklist
     {
         // The state of our blocklist needs to be thread-safe, as incoming ASP requests can be multithreaded, and the agent, which runs on a background thread, can also update/access the state.
         private List<(string Key, IPRange Range)> _blockedIpLists = new List<(string Key, IPRange Range)>();
@@ -25,7 +25,7 @@ namespace Aikido.Zen.Core.Models.Ip
         /// Updates the allowed ip addresses or ranges per URL.
         /// </summary>
         /// <param name="endpoints">The endpoint configurations containing allowed IP addresses.</param>
-        public void UpdateAllowedIpsPerEndpoint(IEnumerable<EndpointConfig> endpoints)
+        internal void UpdateAllowedIpsPerEndpoint(IEnumerable<EndpointConfig> endpoints)
         {
             _lock.EnterWriteLock();
             try
@@ -56,7 +56,7 @@ namespace Aikido.Zen.Core.Models.Ip
         /// Updates the blocked subnet ranges.
         /// </summary>
         /// <param name="blockedIpLists">Blocked IP lists with keys and ranges.</param>
-        public void UpdateBlockedIps(IEnumerable<(string Key, IEnumerable<string> Ips)> blockedIpLists)
+        internal void UpdateBlockedIps(IEnumerable<(string Key, IEnumerable<string> Ips)> blockedIpLists)
         {
             _lock.EnterWriteLock();
             try
@@ -90,7 +90,7 @@ namespace Aikido.Zen.Core.Models.Ip
         /// Updates the bypassed ip addresses or ranges, they bypass all blocking rules
         /// </summary>
         /// <param name="ips">The ip addresses or ranges to be bypassed.</param>
-        public void UpdateBypassedIps(IEnumerable<string> ips)
+        internal void UpdateBypassedIps(IEnumerable<string> ips)
         {
             _lock.EnterWriteLock();
             try
@@ -115,7 +115,7 @@ namespace Aikido.Zen.Core.Models.Ip
         /// They are used for things like geo-fencing (e.g. only allow IPs from a certain country)
         /// </summary>
         /// <param name="ips">The ip addresses or ranges to allow.</param>
-        public void UpdateAllowedIps(IEnumerable<string> ips)
+        internal void UpdateAllowedIps(IEnumerable<string> ips)
         {
             _lock.EnterWriteLock();
             try
@@ -140,7 +140,7 @@ namespace Aikido.Zen.Core.Models.Ip
         /// </summary>
         /// <param name="ip">The IP address to check.</param>
         /// <returns>True if the IP is blocked, false otherwise.</returns>
-        public bool IsIPBlocked(string ip)
+        internal bool IsIPBlocked(string ip)
         {
             _lock.EnterReadLock();
             try
@@ -166,7 +166,7 @@ namespace Aikido.Zen.Core.Models.Ip
         /// </summary>
         /// <param name="ip">The IP address to check.</param>
         /// <returns>A list of matching blocked IP keys.</returns>
-        public IEnumerable<string> GetMatchingBlockedIPListKeys(string ip)
+        internal IEnumerable<string> GetMatchingBlockedIPListKeys(string ip)
         {
             _lock.EnterReadLock();
             try
@@ -192,7 +192,7 @@ namespace Aikido.Zen.Core.Models.Ip
         /// </summary>
         /// <param name="context">The context of the request.</param>
         /// <returns>True if the IP is allowed, false otherwise.</returns>
-        public bool IsIpAllowedForEndpoint(Context context)
+        internal bool IsIpAllowedForEndpoint(Context context)
         {
             _lock.EnterReadLock();
             try
@@ -239,7 +239,7 @@ namespace Aikido.Zen.Core.Models.Ip
         /// </summary>
         /// <param name="ip">The IP address to check.</param>
         /// <returns>True if the IP is bypassed, false otherwise.</returns>
-        public bool IsIPBypassed(string ip)
+        internal bool IsIPBypassed(string ip)
         {
             _lock.EnterReadLock();
             try
@@ -267,7 +267,7 @@ namespace Aikido.Zen.Core.Models.Ip
         /// </summary>
         /// <param name="ip">The IP address to check.</param>
         /// <returns>True if the IP is allowed, false otherwise.</returns>
-        public bool IsIPAllowed(string ip)
+        internal bool IsIPAllowed(string ip)
         {
             _lock.EnterReadLock();
             try
@@ -295,7 +295,7 @@ namespace Aikido.Zen.Core.Models.Ip
         /// </summary>
         /// <param name="context">The context of the request.</param>
         /// <returns>True if access is blocked, false otherwise.</returns>
-        public bool IsBlocked(Context context, out string reason)
+        internal bool IsBlocked(Context context, out string reason)
         {
             reason = null;
             if (IsPrivateOrLocalIp(context.RemoteAddress))

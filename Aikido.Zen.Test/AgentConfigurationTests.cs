@@ -49,8 +49,8 @@ namespace Aikido.Zen.Test
             Assert.That(_config.IsUserExcludedFromRateLimiting("excluded-user"), Is.False);
             Assert.That(_config.BlockedUserAgents, Is.Null);
             Assert.That(_config.Endpoints, Is.Empty);
-            Assert.That(_config.BlockList.IsIPBypassed("123.123.123.123"), Is.False);
-            Assert.That(_config.BlockList.IsEmpty(), Is.True);
+            Assert.That(_config.Blocklist.IsIPBypassed("123.123.123.123"), Is.False);
+            Assert.That(_config.Blocklist.IsEmpty(), Is.True);
         }
 
         [Test]
@@ -365,8 +365,8 @@ namespace Aikido.Zen.Test
 
             // Act + Assert
             Assert.DoesNotThrow(() => _config.UpdateFirewallLists(response));
-            Assert.That(_config.BlockList.IsIPBlocked("203.0.113.10"), Is.True);
-            Assert.That(_config.BlockList.IsIPAllowed("198.51.100.10"), Is.True);
+            Assert.That(_config.Blocklist.IsIPBlocked("203.0.113.10"), Is.True);
+            Assert.That(_config.Blocklist.IsIPAllowed("198.51.100.10"), Is.True);
         }
     }
 }

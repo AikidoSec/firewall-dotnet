@@ -28,7 +28,7 @@ namespace Aikido.Zen.Core.Patches
                 return true;
             }
 
-            if (context != null && Agent.Instance.Context.BlockList.IsIPBypassed(context.RemoteAddress))
+            if (context is BypassedContext)
             {
                 return true;
             }

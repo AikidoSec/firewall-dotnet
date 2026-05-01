@@ -68,7 +68,7 @@ namespace Aikido.Zen.Tests.DotNetCore
         }
 
         [Test]
-        public async Task InvokeAsync_BypassedIp_CallsNextWithoutCapturingContextOrStats()
+        public async Task InvokeAsync_BypassedIp_CallsNextWithBypassedContextWithoutCapturingStats()
         {
             var originalDisable = Environment.GetEnvironmentVariable("AIKIDO_DISABLE");
             const string bypassedIp = "93.184.216.34";
@@ -94,14 +94,18 @@ namespace Aikido.Zen.Tests.DotNetCore
                 Environment.SetEnvironmentVariable("AIKIDO_DISABLE", "false");
                 Agent.Instance.Context.Config.Clear();
                 Agent.Instance.ClearContext();
-                Agent.Instance.Context.BlockList.UpdateBypassedIps(new[] { bypassedIp });
+                Agent.Instance.Context.Blocklist.UpdateBypassedIps(new[] { bypassedIp });
 
                 await _contextMiddleware.InvokeAsync(context, next);
 
                 Assert.Multiple(() =>
                 {
                     Assert.That(nextCalled, Is.True);
-                    Assert.That(context.Items.ContainsKey("Aikido.Zen.Context"), Is.False);
+                    Assert.That(context.Items.ContainsKey("Aikido.Zen.Context"), Is.True);
+                    var aikidoContext = context.Items["Aikido.Zen.Context"] as Context;
+                    Assert.That(aikidoContext, Is.TypeOf<BypassedContext>());
+                    Assert.That(aikidoContext?.Method, Is.Empty);
+                    Assert.That(aikidoContext?.Route, Is.Empty);
                     Assert.That(Agent.Instance.Context.Requests, Is.EqualTo(0));
                     Assert.That(Agent.Instance.Context.Routes, Is.Empty);
                 });
