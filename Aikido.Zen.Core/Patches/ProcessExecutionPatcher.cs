@@ -33,7 +33,7 @@ namespace Aikido.Zen.Core.Patches
                 return true;
             }
 
-            if (context is BypassedContext)
+            if (Context.IsBypassed(context))
             {
                 return true;
             }

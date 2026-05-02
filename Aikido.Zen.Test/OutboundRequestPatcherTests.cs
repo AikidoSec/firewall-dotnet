@@ -184,8 +184,9 @@ namespace Aikido.Zen.Test
                 new OutboundDomainConfig { Hostname = "domain1.example.com", Mode = "block" }
             });
 
-            var context = new BypassedContext
+            var context = new Context
             {
+                Bypassed = true,
                 RemoteAddress = "1.2.3.4",
                 Method = "POST",
                 Route = "/api/request",

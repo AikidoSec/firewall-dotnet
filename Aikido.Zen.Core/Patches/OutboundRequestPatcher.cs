@@ -32,7 +32,7 @@ namespace Aikido.Zen.Core.Patches
                 var port = UriHelper.GetPort(targetUri);
                 Agent.Instance.CaptureOutboundRequest(hostname, port);
 
-                if (context is BypassedContext)
+                if (Context.IsBypassed(context))
                 {
                     return result;
                 }

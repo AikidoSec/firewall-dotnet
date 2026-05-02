@@ -53,7 +53,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
         {
             var aikidoContext = (Context)httpContext.Items["Aikido.Zen.Context"];
 
-            if (aikidoContext == null || aikidoContext is BypassedContext)
+            if (Context.IsNullOrBypassed(aikidoContext))
             {
                 return;
             }
@@ -71,7 +71,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
         {
             var aikidoContext = (Context)httpContext.Items["Aikido.Zen.Context"];
 
-            if (aikidoContext == null || aikidoContext is BypassedContext)
+            if (Context.IsNullOrBypassed(aikidoContext))
             {
                 return;
             }
@@ -100,7 +100,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 // Store bypass marker context so patches can still honor bypass
                 if (Agent.Instance.Context.BlockList.IsIPBypassed(clientIp))
                 {
-                    httpContext.Items["Aikido.Zen.Context"] = new BypassedContext();
+                    httpContext.Items["Aikido.Zen.Context"] = new Context { Bypassed = true };
                     return;
                 }
 
@@ -167,7 +167,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                     LogHelper.DebugLog(Agent.Logger, "Aikido context is null, skipping route");
                     return;
                 }
-                if (aikidoContext is BypassedContext)
+                if (Context.IsBypassed(aikidoContext))
                 {
                     LogHelper.DebugLog(Agent.Logger, "Aikido context is bypassed, skipping route");
                     responseHandled = true;

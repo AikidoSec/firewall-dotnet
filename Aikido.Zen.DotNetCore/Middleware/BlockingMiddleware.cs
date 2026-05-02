@@ -23,7 +23,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 Agent.Instance.SetBlockingMiddlewareInstalled(true);
 
                 // If the context is missing or bypassed, skip blocking checks
-                if (aikidoContext == null || aikidoContext is BypassedContext)
+                if (Context.IsNullOrBypassed(aikidoContext))
                 {
                     // call the next middleware
                     await next(context);

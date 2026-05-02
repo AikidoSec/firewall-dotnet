@@ -31,6 +31,7 @@ namespace Aikido.Zen.Core
         public bool IsGraphQL => Graphql != null && Graphql.Length > 0;
         public object ParsedBody { get; set; }
 
+        internal bool Bypassed { get; set; }
         internal bool ContextMiddlewareInstalled { get; set; }
         internal bool BlockingMiddlewareInstalled { get; set; }
 
@@ -49,9 +50,15 @@ namespace Aikido.Zen.Core
             public Uri Source { get; set; }
             public Uri Destination { get; set; }
         }
-    }
 
-    internal sealed class BypassedContext : Context
-    {
+        internal static bool IsNullOrBypassed(Context context)
+        {
+            return context == null || context.Bypassed;
+        }
+
+        internal static bool IsBypassed(Context context)
+        {
+            return context != null && context.Bypassed;
+        }
     }
 }
