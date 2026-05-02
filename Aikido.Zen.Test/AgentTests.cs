@@ -215,6 +215,33 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void NewInstance_DisposesPreviousInstance()
+        {
+            var instanceField = typeof(Agent).GetField("_instance", BindingFlags.NonPublic | BindingFlags.Static);
+            var cancellationSourceField = typeof(Agent).GetField("_cancellationSource", BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.That(instanceField, Is.Not.Null);
+            Assert.That(cancellationSourceField, Is.Not.Null);
+
+            var first = Agent.NewInstance(_zenApiMock.Object);
+            var firstCancellationSource = cancellationSourceField!.GetValue(first) as CancellationTokenSource;
+            Assert.That(firstCancellationSource, Is.Not.Null);
+
+            var second = Agent.NewInstance(ZenApiMock.CreateMock().Object);
+
+            try
+            {
+                Assert.That(firstCancellationSource!.IsCancellationRequested, Is.True);
+                Assert.That(Agent.Instance, Is.SameAs(second));
+            }
+            finally
+            {
+                second.Dispose();
+                instanceField!.SetValue(null, null);
+                _agent = new Agent(_zenApiMock.Object);
+            }
+        }
+
+        [Test]
         public async Task Start_QueuesStartedEventAndSchedulesHeartbeat()
         {
             // Arrange
