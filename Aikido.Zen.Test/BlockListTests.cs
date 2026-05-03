@@ -47,6 +47,26 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void UpdateBlockedIps_WithNullList_ShouldClearBlockedSubnets()
+        {
+            _blockList.UpdateBlockedIps(new[] { ("manual", (IEnumerable<string>)new[] { "192.168.1.0/24" }) });
+
+            _blockList.UpdateBlockedIps(null);
+
+            Assert.That(_blockList.IsIPBlocked("192.168.1.100"), Is.False);
+        }
+
+        [Test]
+        public void UpdateBlockedIps_WithNullIps_ShouldIgnoreList()
+        {
+            IEnumerable<string> ips = null!;
+
+            _blockList.UpdateBlockedIps(new[] { ("manual", ips) });
+
+            Assert.That(_blockList.IsEmpty(), Is.True);
+        }
+
+        [Test]
         public void UpdateAlllowedIps_ShouldUpdateAlllowedIpsPerUrl()
         {
             // Arrange
@@ -128,6 +148,28 @@ namespace Aikido.Zen.Test
 
             // Act & Assert
             Assert.That(_blockList.IsIPBlocked(invalidIp), Is.False);
+        }
+
+        [Test]
+        public void GetMatchingBlockedIPListKeys_WithInvalidIP_ShouldReturnEmpty()
+        {
+            Assert.That(_blockList.GetMatchingBlockedIPListKeys("invalid.ip"), Is.Empty);
+        }
+
+        [Test]
+        public void GetMatchingBlockedIPListKeys_WithEmptyKey_ShouldReturnEmpty()
+        {
+            _blockList.UpdateBlockedIps(new[] { ("", (IEnumerable<string>)new[] { "192.168.1.0/24" }) });
+
+            Assert.That(_blockList.GetMatchingBlockedIPListKeys("192.168.1.100"), Is.Empty);
+        }
+
+        [Test]
+        public void IsEmpty_WithBlockedIps_ShouldReturnFalse()
+        {
+            _blockList.UpdateBlockedIps(new[] { ("manual", (IEnumerable<string>)new[] { "192.168.1.0/24" }) });
+
+            Assert.That(_blockList.IsEmpty(), Is.False);
         }
 
         [Test]
@@ -610,12 +652,12 @@ namespace Aikido.Zen.Test
             var endpoints = new List<EndpointConfig> {
                 new EndpointConfig {
                     Method = "GET",
-                    Route = "/api/users",
+                    Route = "api/users",
                     AllowedIPAddresses = new string[] { }
                 },
                 new EndpointConfig {
                     Method = "GET",
-                    Route = "/api/products",
+                    Route = "api/products",
                     AllowedIPAddresses = null
                 }
             };

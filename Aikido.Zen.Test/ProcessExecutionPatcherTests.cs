@@ -56,6 +56,27 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void OnProcessStart_WithBypassedContext_ReturnsTrue()
+        {
+            _context.Bypassed = true;
+            _context.ParsedUserInput = new Dictionary<string, string>
+            {
+                { "body.command", "$(echo)" }
+            };
+            _startInfo.FileName = "sh";
+            _startInfo.Arguments = "-c \"$(echo)\"";
+
+            var result = ProcessExecutionPatcher.OnProcessStart(
+                new object[] { },
+                _methodInfo,
+                new Process { StartInfo = _startInfo },
+                _context);
+
+            Assert.That(result, Is.True);
+            Assert.That(_context.AttackDetected, Is.False);
+        }
+
+        [Test]
         public void OnProcessStart_WithSafeCommand_ReturnsTrue()
         {
             // Arrange
