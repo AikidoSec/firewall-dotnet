@@ -128,13 +128,16 @@ namespace Aikido.Zen.Core.Vulnerabilities
 
             if (checkPathStart)
             {
+                ReadOnlySpan<char> normalizedInputSpan = SkipPathStartNoise(inputSpan);
+                ReadOnlySpan<char> normalizedPathSpan = SkipPathStartNoise(pathSpan);
+
                 // Check for absolute path traversal
                 foreach (var start in DangerousPathStarts)
                 {
                     ReadOnlySpan<char> startSpan = start.AsSpan();
 
-                    if (inputSpan.StartsWith(startSpan, StringComparison.OrdinalIgnoreCase) &&
-                        pathSpan.StartsWith(startSpan, StringComparison.OrdinalIgnoreCase))
+                    if (normalizedInputSpan.StartsWith(startSpan, StringComparison.OrdinalIgnoreCase) &&
+                        normalizedPathSpan.StartsWith(startSpan, StringComparison.OrdinalIgnoreCase))
                         return true;
                 }
             }
@@ -153,6 +156,31 @@ namespace Aikido.Zen.Core.Vulnerabilities
             }
 
             return false;
+        }
+
+        private static ReadOnlySpan<char> SkipPathStartNoise(ReadOnlySpan<char> path)
+        {
+            // //./etc/passwd -> /etc/passwd
+            // /././etc/passwd -> /etc/passwd
+
+            var i = 1; // start from second char
+
+            while (i < path.Length)
+            {
+                if (path[i] == '/' ||
+                    path[i] == '\\' ||
+                    path[i] == '.')
+                {
+                    i++;
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            // Slice one char behind so we do not trim the real prefix.
+            return path.Slice(i - 1);
         }
     }
 }

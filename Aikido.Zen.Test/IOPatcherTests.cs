@@ -144,6 +144,35 @@ namespace Aikido.Zen.Test
             RunAndVerifyAttackFlag(paths, copyMethodInfo, expectAttack: true, expectBlocked: false);
         }
 
+        [TestCase("../secrets/key.txt")]
+        [TestCase("./../secrets/key.txt")]
+        [TestCase("..//secrets/key.txt")]
+        [TestCase("../../../etc/passwd")]
+        public void OnFileOperation_GetFullPathWithTraversal_ThrowsExceptionWhenBlocking(string unsafeInput)
+        {
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
+            var getFullPathMethodInfo = typeof(Path).GetMethod("GetFullPath", new[] { typeof(string) })!;
+            var pathArgument = Path.Combine("wwwroot/blogs", unsafeInput);
+            var paths = new[] { pathArgument };
+            _realContext.ParsedUserInput = new Dictionary<string, string> { { "query.path", unsafeInput } };
+
+            RunAndVerifyAttackFlag(paths, getFullPathMethodInfo, expectAttack: true, expectBlocked: true);
+        }
+
+        [TestCase("//./etc/passwd")]
+        [TestCase("/.//etc/passwd")]
+        [TestCase("/././etc/passwd")]
+        public void OnFileOperation_GetFullPathWithNormalizedAbsolutePayload_ThrowsExceptionWhenBlocking(string unsafeInput)
+        {
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
+            var getFullPathMethodInfo = typeof(Path).GetMethod("GetFullPath", new[] { typeof(string) })!;
+            var pathArgument = Path.Combine("wwwroot/blogs", unsafeInput);
+            var paths = new[] { pathArgument };
+            _realContext.ParsedUserInput = new Dictionary<string, string> { { "query.path", unsafeInput } };
+
+            RunAndVerifyAttackFlag(paths, getFullPathMethodInfo, expectAttack: true, expectBlocked: true);
+        }
+
         [TestCase("/etc/shadow")]
         [TestCase("c:/windows/system32/cmd.exe")]
         [TestCase("C:\\Windows\\System32\\cmd.exe")]

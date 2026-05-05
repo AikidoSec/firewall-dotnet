@@ -31,6 +31,10 @@ namespace Aikido.Zen.DotNetCore.Patches
             Patch(harmony, typeof(File).GetMethod("WriteAllBytes", new[] { typeof(string), typeof(byte[]) }), nameof(PrefixFileWriteAllBytes));
             Patch(harmony, typeof(File).GetMethod("AppendAllText", new[] { typeof(string), typeof(string) }), nameof(PrefixFileAppendAllText));
 
+            // Path operations
+            Patch(harmony, typeof(Path).GetMethod("GetFullPath", new[] { typeof(string) }), nameof(PrefixPathGetFullPath));
+            Patch(harmony, typeof(Path).GetMethod("GetFullPath", new[] { typeof(string), typeof(string) }), nameof(PrefixPathGetFullPathWithBasePath));
+
             // Directory operations
             Patch(harmony, typeof(Directory).GetMethod("CreateDirectory", new[] { typeof(string) }), nameof(PrefixDirectoryCreateDirectory));
             Patch(harmony, typeof(Directory).GetMethod("Delete", new[] { typeof(string), typeof(bool) }), nameof(PrefixDirectoryDelete));
@@ -62,6 +66,11 @@ namespace Aikido.Zen.DotNetCore.Patches
         private static bool PrefixFileWriteAllText(string path, MethodBase __originalMethod) => OnFileOperation(new[] { path }, __originalMethod);
         private static bool PrefixFileWriteAllBytes(string path, MethodBase __originalMethod) => OnFileOperation(new[] { path }, __originalMethod);
         private static bool PrefixFileAppendAllText(string path, MethodBase __originalMethod) => OnFileOperation(new[] { path }, __originalMethod);
+        #endregion
+
+        #region Path Operation Prefixes
+        private static bool PrefixPathGetFullPath(string path, MethodBase __originalMethod) => OnFileOperation(new[] { path }, __originalMethod);
+        private static bool PrefixPathGetFullPathWithBasePath(string path, string basePath, MethodBase __originalMethod) => OnFileOperation(new[] { path, basePath }, __originalMethod);
         #endregion
 
         #region Directory Operation Prefixes
