@@ -72,8 +72,11 @@ namespace Aikido.Zen.Core
 
         internal static Agent NewInstance(IZenApi api)
         {
-            _instance = new Agent(api);
-            return _instance;
+            var newInstance = new Agent(api);
+            var oldInstance = Interlocked.Exchange(ref _instance, newInstance);
+            // Stop previous background work like config polls
+            oldInstance?.Dispose();
+            return newInstance;
         }
 
         /// <summary>

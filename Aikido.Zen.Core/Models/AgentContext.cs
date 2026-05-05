@@ -331,7 +331,7 @@ namespace Aikido.Zen.Core.Models
         public int AttackWavesDetected => _stats.Requests.AttackWaves.Total;
         public int AttackWavesBlocked => _stats.Requests.AttackWaves.Blocked;
         public long Started => _stats.StartedAt;
-        public BlockList BlockList => _config.BlockList;
+        internal BlockList BlockList => _config.BlockList;
         public Regex BlockedUserAgents => _config.BlockedUserAgents;
         public AgentStats Stats => _stats;
         public AiStats AiStats => _aiStats;

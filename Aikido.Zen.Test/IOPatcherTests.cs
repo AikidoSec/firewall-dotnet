@@ -77,6 +77,23 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void OnFileOperation_WithBypassedContext_ReturnsTrue()
+        {
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
+            var paths = new[] { "/var/www/data/../secret.txt" };
+            var context = new Context
+            {
+                Bypassed = true,
+                ParsedUserInput = new Dictionary<string, string> { { "query.path", "../secret.txt" } }
+            };
+
+            var result = IOPatcher.OnFileOperation(paths, _methodInfo, context);
+
+            Assert.That(result, Is.True);
+            Assert.That(context.AttackDetected, Is.False);
+        }
+
+        [Test]
         public void OnFileOperation_WithSafePathAndNoMatchingUserInput_ReturnsTrue()
         {
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");

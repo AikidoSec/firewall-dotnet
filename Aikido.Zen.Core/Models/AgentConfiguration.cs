@@ -462,7 +462,7 @@ namespace Aikido.Zen.Core.Models
                 .SelectMany(list => list.Ips ?? Enumerable.Empty<string>()));
         }
 
-        // Public properties
+        // Properties
         public IEnumerable<EndpointConfig> Endpoints
         {
             get
@@ -473,7 +473,7 @@ namespace Aikido.Zen.Core.Models
                 }
             }
         }
-        public BlockList BlockList => _blockList;
+        internal BlockList BlockList => _blockList;
         public Regex BlockedUserAgents => _blockedUserAgents;
     }
 }

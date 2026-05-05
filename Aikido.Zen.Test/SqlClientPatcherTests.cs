@@ -67,6 +67,28 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void OnCommandExecuting_WithBypassedContext_ReturnsTrue()
+        {
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
+            _context.Bypassed = true;
+            _context.ParsedUserInput = new Dictionary<string, string>
+            {
+                { "body.query", "1' OR '1'='1'" }
+            };
+            var sql = "SELECT * FROM users WHERE id = '1' OR '1'='1'";
+
+            var result = SqlClientPatcher.OnCommandExecuting(
+                new object[] { },
+                _methodInfo,
+                sql,
+                "System.Data.SqlClient",
+                _context);
+
+            Assert.That(result, Is.True);
+            Assert.That(_context.AttackDetected, Is.False);
+        }
+
+        [Test]
         public void OnCommandExecuting_WithSafeQuery_ReturnsTrue()
         {
             // Arrange

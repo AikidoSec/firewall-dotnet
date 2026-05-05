@@ -168,7 +168,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void Inspect_WhenRequestIsFromBypassedIp_DoesNotCaptureHostname()
+        public void Inspect_WhenContextIsBypassed_CapturesHostnameWithoutBlocking()
         {
             // Arrange
             _agent.Context.Config.UpdateConfig(new ReportingAPIResponse
@@ -179,9 +179,14 @@ namespace Aikido.Zen.Test
                 BlockedUserIds = new string[0],
                 BypassedIPAddresses = new[] { "1.2.3.4" }
             });
+            _agent.Context.Config.UpdateOutboundDomains(false, new[]
+            {
+                new OutboundDomainConfig { Hostname = "domain1.example.com", Mode = "block" }
+            });
 
             var context = new Context
             {
+                Bypassed = true,
                 RemoteAddress = "1.2.3.4",
                 Method = "POST",
                 Route = "/api/request",
@@ -197,7 +202,8 @@ namespace Aikido.Zen.Test
 
             // Assert
             Assert.That(result.ShouldProceed, Is.True);
-            Assert.That(_agent.Context.Hostnames.Any(h => h.Hostname == "domain1.example.com"), Is.False);
+            Assert.That(result.Blocked, Is.False);
+            Assert.That(_agent.Context.Hostnames.Any(h => h.Hostname == "domain1.example.com" && h.Port == 80), Is.True);
         }
     }
 }

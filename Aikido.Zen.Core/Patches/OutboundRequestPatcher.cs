@@ -28,14 +28,14 @@ namespace Aikido.Zen.Core.Patches
 
             try
             {
-                if (context != null && Agent.Instance.Context.BlockList.IsIPBypassed(context.RemoteAddress))
-                {
-                    return result;
-                }
-
                 var hostname = targetUri.Host;
                 var port = UriHelper.GetPort(targetUri);
                 Agent.Instance.CaptureOutboundRequest(hostname, port);
+
+                if (Context.IsBypassed(context))
+                {
+                    return result;
+                }
 
                 if (EnvironmentHelper.DryMode || IsAikidoInternalTarget(targetUri))
                 {
