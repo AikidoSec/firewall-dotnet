@@ -39,8 +39,8 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
 
                 Agent.Instance.SetBlockingMiddlewareInstalled(true);
 
-                // if the context is not found, skip the blocking module, this likely means that the request is bypassed
-                if (aikidoContext == null)
+                // If the context is missing or bypassed, skip blocking checks
+                if (Context.IsNullOrBypassed(aikidoContext))
                 {
                     return;
                 }

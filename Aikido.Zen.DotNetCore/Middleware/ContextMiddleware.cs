@@ -42,7 +42,8 @@ namespace Aikido.Zen.DotNetCore.Middleware
 
             if (Agent.Instance.Context.BlockList.IsIPBypassed(context.RemoteAddress))
             {
-                // Bypassed IPs skip all Zen handling, including API discovery and request stats.
+                // Store bypass marker context so patches can still honor bypass.
+                httpContext.Items["Aikido.Zen.Context"] = new Context { Bypassed = true };
                 await next(httpContext);
                 return;
             }

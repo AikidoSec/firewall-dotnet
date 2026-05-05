@@ -74,6 +74,14 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void IsNullOrBypassed_ShouldReturnExpectedResult()
+        {
+            Assert.That(Context.IsNullOrBypassed(null), Is.True);
+            Assert.That(Context.IsNullOrBypassed(new Context()), Is.False);
+            Assert.That(Context.IsNullOrBypassed(new Context { Bypassed = true }), Is.True);
+        }
+
+        [Test]
         public void RedirectInfo_ShouldInitializeCorrectly()
         {
             // Arrange
