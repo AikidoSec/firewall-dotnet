@@ -23,36 +23,36 @@ namespace Aikido.Zen.Core.Vulnerabilities
         private static readonly string[] DangerousPathStarts = new[]
         {
             // Linux specific
-            "/bin/",
-            "/boot/",
-            "/dev/",
-            "/etc/",
-            "/home/",
-            "/init/",
-            "/lib/",
-            "/media/",
-            "/mnt/",
-            "/opt/",
-            "/proc/",
-            "/root/",
-            "/run/",
-            "/sbin/",
-            "/srv/",
-            "/sys/",
-            "/tmp/",
-            "/usr/",
-            "/var/",
+            "bin/",
+            "boot/",
+            "dev/",
+            "etc/",
+            "home/",
+            "init/",
+            "lib/",
+            "media/",
+            "mnt/",
+            "opt/",
+            "proc/",
+            "root/",
+            "run/",
+            "sbin/",
+            "srv/",
+            "sys/",
+            "tmp/",
+            "usr/",
+            "var/",
             // Common container/cloud directories
-            "/app/",
-            "/code/",
+            "app/",
+            "code/",
             // macOS specific
-            "/applications/",
-            "/cores/",
-            "/library/",
-            "/private/",
-            "/users/",
-            "/system/",
-            "/volumes/",
+            "applications/",
+            "cores/",
+            "library/",
+            "private/",
+            "users/",
+            "system/",
+            "volumes/",
             // Windows specific
             "c:/",
             "c:\\",
@@ -116,9 +116,8 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 // If URL decode fails, check the raw input
             }
 
-            // Convert to lowercase for case-insensitive matching
-            ReadOnlySpan<char> inputSpan = input.ToLowerInvariant().AsSpan();
-            ReadOnlySpan<char> pathSpan = path.ToLowerInvariant().AsSpan();
+            ReadOnlySpan<char> inputSpan = input.AsSpan();
+            ReadOnlySpan<char> pathSpan = path.AsSpan();
 
 
             bool inputHasUnsafeParts = ContainsUnsafePathParts(inputSpan);
@@ -128,8 +127,8 @@ namespace Aikido.Zen.Core.Vulnerabilities
 
             if (checkPathStart)
             {
-                ReadOnlySpan<char> normalizedInputSpan = SkipPathStartNoise(inputSpan);
-                ReadOnlySpan<char> normalizedPathSpan = SkipPathStartNoise(pathSpan);
+                ReadOnlySpan<char> normalizedInputSpan = inputSpan.TrimStart("/\\.?".AsSpan());
+                ReadOnlySpan<char> normalizedPathSpan = pathSpan.TrimStart("/\\.?".AsSpan());
 
                 // Check for absolute path traversal
                 foreach (var start in DangerousPathStarts)
@@ -158,29 +157,5 @@ namespace Aikido.Zen.Core.Vulnerabilities
             return false;
         }
 
-        private static ReadOnlySpan<char> SkipPathStartNoise(ReadOnlySpan<char> path)
-        {
-            // //./etc/passwd -> /etc/passwd
-            // /././etc/passwd -> /etc/passwd
-
-            var i = 1; // start from second char
-
-            while (i < path.Length)
-            {
-                if (path[i] == '/' ||
-                    path[i] == '\\' ||
-                    path[i] == '.')
-                {
-                    i++;
-                }
-                else
-                {
-                    break;
-                }
-            }
-
-            // Slice one char behind so we do not trim the real prefix.
-            return path.Slice(i - 1);
-        }
     }
 }
