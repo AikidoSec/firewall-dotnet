@@ -38,7 +38,6 @@ namespace Aikido.Zen.DotNetFramework.Patches
 
             // Path operations
             Patch(harmony, typeof(Path).GetMethod("GetFullPath", new[] { typeof(string) }), nameof(PrefixPathGetFullPath));
-            Patch(harmony, typeof(Path).GetMethod("GetFullPath", new[] { typeof(string), typeof(string) }), nameof(PrefixPathGetFullPathWithBasePath));
 
             // Directory operations
             Patch(harmony, typeof(Directory).GetMethod("CreateDirectory", new[] { typeof(string), typeof(DirectorySecurity) }), nameof(PrefixDirectoryCreateDirectory));
@@ -75,7 +74,6 @@ namespace Aikido.Zen.DotNetFramework.Patches
 
         #region Path Operation Prefixes
         private static bool PrefixPathGetFullPath(string path, MethodBase __originalMethod) => OnFileOperation(new[] { path }, __originalMethod);
-        private static bool PrefixPathGetFullPathWithBasePath(string path, string basePath, MethodBase __originalMethod) => OnFileOperation(new[] { path, basePath }, __originalMethod);
         #endregion
 
         #region Directory Operation Prefixes
