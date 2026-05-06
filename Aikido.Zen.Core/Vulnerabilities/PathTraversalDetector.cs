@@ -23,36 +23,36 @@ namespace Aikido.Zen.Core.Vulnerabilities
         private static readonly string[] DangerousPathStarts = new[]
         {
             // Linux specific
-            "bin/",
-            "boot/",
-            "dev/",
-            "etc/",
-            "home/",
-            "init/",
-            "lib/",
-            "media/",
-            "mnt/",
-            "opt/",
-            "proc/",
-            "root/",
-            "run/",
-            "sbin/",
-            "srv/",
-            "sys/",
-            "tmp/",
-            "usr/",
-            "var/",
+            "/bin/",
+            "/boot/",
+            "/dev/",
+            "/etc/",
+            "/home/",
+            "/init/",
+            "/lib/",
+            "/media/",
+            "/mnt/",
+            "/opt/",
+            "/proc/",
+            "/root/",
+            "/run/",
+            "/sbin/",
+            "/srv/",
+            "/sys/",
+            "/tmp/",
+            "/usr/",
+            "/var/",
             // Common container/cloud directories
-            "app/",
-            "code/",
+            "/app/",
+            "/code/",
             // macOS specific
-            "applications/",
-            "cores/",
-            "library/",
-            "private/",
-            "users/",
-            "system/",
-            "volumes/",
+            "/applications/",
+            "/cores/",
+            "/library/",
+            "/private/",
+            "/users/",
+            "/system/",
+            "/volumes/",
             // Windows specific
             "c:/",
             "c:\\",
@@ -77,6 +77,10 @@ namespace Aikido.Zen.Core.Vulnerabilities
             "%TEMP%",
             "%TMP%",
         };
+
+        private static readonly char[] PathStartNoise = { '/', '\\', '.', '?' };
+
+        private static readonly string[] NormalizedDangerousPathStarts = Array.ConvertAll(DangerousPathStarts, pathStart => pathStart.TrimStart(PathStartNoise));
 
         /// <summary>
         /// Detects potential path traversal attacks in a string
@@ -119,7 +123,6 @@ namespace Aikido.Zen.Core.Vulnerabilities
             ReadOnlySpan<char> inputSpan = input.AsSpan();
             ReadOnlySpan<char> pathSpan = path.AsSpan();
 
-
             bool inputHasUnsafeParts = ContainsUnsafePathParts(inputSpan);
             bool pathHasUnsafeParts = ContainsUnsafePathParts(pathSpan);
             if (inputHasUnsafeParts && pathHasUnsafeParts)
@@ -127,11 +130,11 @@ namespace Aikido.Zen.Core.Vulnerabilities
 
             if (checkPathStart)
             {
-                ReadOnlySpan<char> normalizedInputSpan = inputSpan.TrimStart("/\\.?".AsSpan());
-                ReadOnlySpan<char> normalizedPathSpan = pathSpan.TrimStart("/\\.?".AsSpan());
+                ReadOnlySpan<char> normalizedInputSpan = inputSpan.TrimStart(PathStartNoise.AsSpan());
+                ReadOnlySpan<char> normalizedPathSpan = pathSpan.TrimStart(PathStartNoise.AsSpan());
 
                 // Check for absolute path traversal
-                foreach (var start in DangerousPathStarts)
+                foreach (var start in NormalizedDangerousPathStarts)
                 {
                     ReadOnlySpan<char> startSpan = start.AsSpan();
 
