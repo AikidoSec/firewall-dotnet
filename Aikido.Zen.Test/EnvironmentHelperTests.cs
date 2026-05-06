@@ -108,5 +108,27 @@ namespace Aikido.Zen.Test.Helpers
             // Assert
             Assert.That(blockInvalidSql, Is.False);
         }
+
+        [TestCase(null, false)]
+        [TestCase("false", false)]
+        [TestCase("true", true)]
+        [TestCase("1", true)]
+        public void DisableEndpointRoutingCheck_ShouldReturnExpectedValue(string? value, bool expected)
+        {
+            var originalValue = Environment.GetEnvironmentVariable("AIKIDO_DISABLE_ENDPOINT_ROUTING_CHECK");
+
+            try
+            {
+                Environment.SetEnvironmentVariable("AIKIDO_DISABLE_ENDPOINT_ROUTING_CHECK", value);
+
+                var disableEndpointRoutingCheck = EnvironmentHelper.DisableEndpointRoutingCheck;
+
+                Assert.That(disableEndpointRoutingCheck, Is.EqualTo(expected));
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("AIKIDO_DISABLE_ENDPOINT_ROUTING_CHECK", originalValue);
+            }
+        }
     }
 }
