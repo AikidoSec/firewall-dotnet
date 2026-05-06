@@ -61,6 +61,12 @@ namespace Aikido.Zen.Core.Helpers
         public static string ClientIpHeader => Environment.GetEnvironmentVariable("AIKIDO_CLIENT_IP_HEADER") ?? "X-FORWARDED-FOR";
 
         /// <summary>
+        /// Determines whether to skip the ASP.NET Core endpoint routing startup guard.
+        /// Defaults to false so route discovery and endpoint-specific policies use complete routing information.
+        /// </summary>
+        public static bool DisableEndpointRoutingCheck => GetBooleanValue("AIKIDO_DISABLE_ENDPOINT_ROUTING_CHECK");
+
+        /// <summary>
         /// Helper method to determine if an environment variable is set to "true" or "1".
         /// </summary>
         /// <param name="variableName">The name of the environment variable to check.</param>

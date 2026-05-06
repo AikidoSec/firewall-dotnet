@@ -70,7 +70,7 @@ Zen only works in 64-bit processes.
 
 ### .NET Core
 
-Ensure that your project runs on .NET Core 6, 7, 8, 9 or 10. Additionally, your application must use endpoint routing (`UseRouting`) so Zen Firewall can resolve route information correctly. Legacy routing middleware such as `UseMvc` is not supported. See the ASP.NET Core migration guide [here](https://learn.microsoft.com/en-us/aspnet/core/migration/22-to-30).
+Ensure that your project runs on .NET Core 6, 7, 8, 9 or 10. For Zen to resolve route information correctly, your application must use endpoint routing (`UseRouting`). Legacy routing middleware such as `UseMvc` is not supported. See the ASP.NET Core migration guide [here](https://learn.microsoft.com/en-us/aspnet/core/migration/22-to-30).
 
 - Install the package from NuGet:
 

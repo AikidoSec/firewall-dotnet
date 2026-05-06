@@ -13,11 +13,23 @@ namespace Aikido.Zen.Tests.DotNetCore
         [Test]
         public void UseZenFirewall_WithoutUseRouting_Throws()
         {
-            var services = new ServiceCollection();
-            var serviceProvider = services.BuildServiceProvider();
-            var app = new ApplicationBuilder(serviceProvider);
+            var originalValue = Environment.GetEnvironmentVariable("AIKIDO_DISABLE_ENDPOINT_ROUTING_CHECK");
 
-            Assert.Throws<InvalidOperationException>(() => app.UseZenFirewall());
+            try
+            {
+                Environment.SetEnvironmentVariable("AIKIDO_DISABLE_ENDPOINT_ROUTING_CHECK", null);
+
+                var services = new ServiceCollection();
+                var serviceProvider = services.BuildServiceProvider();
+                var app = new ApplicationBuilder(serviceProvider);
+
+                var exception = Assert.Throws<InvalidOperationException>(() => app.UseZenFirewall());
+                Assert.That(exception?.Message, Does.Contain("AIKIDO_DISABLE_ENDPOINT_ROUTING_CHECK=true"));
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("AIKIDO_DISABLE_ENDPOINT_ROUTING_CHECK", originalValue);
+            }
         }
 
         [Test]
@@ -34,6 +46,30 @@ namespace Aikido.Zen.Tests.DotNetCore
             app.UseRouting();
 
             Assert.DoesNotThrow(() => app.UseZenFirewall());
+        }
+
+        [Test]
+        public void UseZenFirewall_WithoutUseRouting_WhenEndpointRoutingCheckDisabled_DoesNotThrow()
+        {
+            var originalValue = Environment.GetEnvironmentVariable("AIKIDO_DISABLE_ENDPOINT_ROUTING_CHECK");
+
+            try
+            {
+                Environment.SetEnvironmentVariable("AIKIDO_DISABLE_ENDPOINT_ROUTING_CHECK", "true");
+
+                var services = new ServiceCollection();
+                services.AddSingleton<IConfiguration>(new ConfigurationBuilder().Build());
+                services.AddZenFirewall();
+
+                var serviceProvider = services.BuildServiceProvider();
+                var app = new ApplicationBuilder(serviceProvider);
+
+                Assert.DoesNotThrow(() => app.UseZenFirewall());
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("AIKIDO_DISABLE_ENDPOINT_ROUTING_CHECK", originalValue);
+            }
         }
     }
 }

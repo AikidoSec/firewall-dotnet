@@ -1,5 +1,6 @@
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Api;
+using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.DotNetCore.Middleware;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -116,9 +117,9 @@ namespace Aikido.Zen.DotNetCore
             {
                 return app;
             }
-            if (!HasEndpointRouting(app))
+            if (!EnvironmentHelper.DisableEndpointRoutingCheck && !HasEndpointRouting(app))
             {
-                throw new InvalidOperationException("UseZenFirewall must be called after routing is configured, either directly via UseRouting or indirectly if using a custom framework.");
+                throw new InvalidOperationException("UseZenFirewall must be called after routing is configured, either directly via UseRouting or indirectly if using a custom framework. If you intentionally need to bypass this guard, set AIKIDO_DISABLE_ENDPOINT_ROUTING_CHECK=true.");
             }
 
             var contextAccessor = app.ApplicationServices.GetRequiredService<IHttpContextAccessor>();
