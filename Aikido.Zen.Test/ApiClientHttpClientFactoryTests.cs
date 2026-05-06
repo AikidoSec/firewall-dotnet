@@ -19,11 +19,11 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void Create_Uses100SecondDefaultTimeout()
+        public void Create_Uses90SecondDefaultTimeout()
         {
             using var httpClient = ApiClientHttpClientFactory.Create();
 
-            Assert.That(httpClient.Timeout, Is.EqualTo(TimeSpan.FromMilliseconds(100000)));
+            Assert.That(httpClient.Timeout, Is.EqualTo(TimeSpan.FromMilliseconds(90000)));
         }
 
         [Test]
