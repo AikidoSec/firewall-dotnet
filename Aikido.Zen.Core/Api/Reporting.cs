@@ -49,7 +49,7 @@ namespace Aikido.Zen.Core.Api
             }
             catch (TaskCanceledException ex)
             {
-                LogHelper.ErrorLog(Agent.Logger, $"Error retrieving Firewall Lists (possible timeout): {ex.Message}");
+                LogHelper.DebugLog(Agent.Logger, $"Retrieving Firewall Lists timed out; will retry on a future config update: {ex.Message}");
                 return new FirewallListsAPIResponse { Success = false, Error = "timeout" };
             }
             catch (Exception ex)

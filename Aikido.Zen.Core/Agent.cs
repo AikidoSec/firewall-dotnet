@@ -131,13 +131,12 @@ namespace Aikido.Zen.Core
                 Token = EnvironmentHelper.Token,
                 EventFactory = ConstructHeartbeat,
                 Interval = Heartbeat.GetNextInterval(),
-                Callback = async (evt, response) =>
+                Callback = (evt, response) =>
                 {
                     var reportingResponse = response as ReportingAPIResponse;
                     if (reportingResponse != null && reportingResponse.Success)
                     {
                         LogHelper.DebugLog(Logger, "Heartbeat was sent successfully");
-                        await UpdateConfig(reportingResponse);
                     }
                     else
                     {
