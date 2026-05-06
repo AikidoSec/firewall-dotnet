@@ -216,6 +216,30 @@
     "isTraversal": true
   },
   {
+    "input": "../secrets/key.txt",
+    "path": "wwwroot/blogs/../secrets/key.txt",
+    "description": "GetFullPath traversal payload with parent directory",
+    "isTraversal": true
+  },
+  {
+    "input": "./../secrets/key.txt",
+    "path": "wwwroot/blogs/./../secrets/key.txt",
+    "description": "GetFullPath traversal payload with current directory",
+    "isTraversal": true
+  },
+  {
+    "input": "..//secrets/key.txt",
+    "path": "wwwroot/blogs/..//secrets/key.txt",
+    "description": "GetFullPath traversal payload with repeated slash",
+    "isTraversal": true
+  },
+  {
+    "input": "../../../etc/passwd",
+    "path": "wwwroot/blogs/../../../etc/passwd",
+    "description": "GetFullPath traversal payload with multiple parent directories",
+    "isTraversal": true
+  },
+  {
     "input": "~/.ssh/id_rsa",
     "path": "C:\\files\\~/.ssh/id_rsa",
     "description": "Linux home directory shorthand",
@@ -232,6 +256,66 @@
     "path": "C:\\files\\\\\\.\\test.txt",
     "description": "Windows device namespace syntax (backslash)",
     "isTraversal": false
+  },
+  {
+    "input": "//./etc/passwd",
+    "path": "//./etc/passwd",
+    "description": "Normalized absolute Linux path with Windows device-style prefix",
+    "isTraversal": true
+  },
+  {
+    "input": "/.//etc/passwd",
+    "path": "/.//etc/passwd",
+    "description": "Normalized absolute Linux path with mixed current-directory markers",
+    "isTraversal": true
+  },
+  {
+    "input": "/././etc/passwd",
+    "path": "/././etc/passwd",
+    "description": "Normalized absolute Linux path with repeated current-directory markers",
+    "isTraversal": true
+  },
+  {
+    "input": "\\\\?\\C:\\Windows\\System32\\cmd.exe",
+    "path": "\\\\?\\C:\\Windows\\System32\\cmd.exe",
+    "description": "Windows extended-length device path with backslashes",
+    "isTraversal": true
+  },
+  {
+    "input": "\\\\.\\C:\\Windows\\System32\\cmd.exe",
+    "path": "\\\\.\\C:\\Windows\\System32\\cmd.exe",
+    "description": "Windows device namespace path with backslashes",
+    "isTraversal": true
+  },
+  {
+    "input": "//?/C:/Windows/System32/cmd.exe",
+    "path": "//?/C:/Windows/System32/cmd.exe",
+    "description": "Windows extended-length device path with slashes",
+    "isTraversal": true
+  },
+  {
+    "input": "//./C:/Windows/System32/cmd.exe",
+    "path": "//./C:/Windows/System32/cmd.exe",
+    "description": "Windows device namespace path with slashes",
+    "isTraversal": true
+  },
+  {
+    "input": "c:/windows/system32/cmd.exe",
+    "path": "c:/windows/system32/cmd.exe",
+    "description": "Windows drive absolute path with forward slashes",
+    "isTraversal": true
+  },
+  {
+    "input": "C:\\Windows\\System32\\cmd.exe",
+    "path": "C:\\Windows\\System32\\cmd.exe",
+    "description": "Windows drive absolute path with backslashes",
+    "isTraversal": true
+  },
+  {
+    "input": "%WINDIR%\\system32\\notepad.exe",
+    "path": "%WINDIR%\\system32\\notepad.exe",
+    "description": "Windows windir environment variable absolute path",
+    "isTraversal": true
   },
   {
     "input": "%PROGRAMFILES%",

@@ -78,6 +78,10 @@ namespace Aikido.Zen.Core.Vulnerabilities
             "%TMP%",
         };
 
+        private static readonly char[] PathStartNoise = { '/', '\\', '.', '?' };
+
+        private static readonly string[] NormalizedDangerousPathStarts = Array.ConvertAll(DangerousPathStarts, pathStart => pathStart.TrimStart(PathStartNoise));
+
         /// <summary>
         /// Detects potential path traversal attacks in a string
         /// </summary>
@@ -116,10 +120,8 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 // If URL decode fails, check the raw input
             }
 
-            // Convert to lowercase for case-insensitive matching
-            ReadOnlySpan<char> inputSpan = input.ToLowerInvariant().AsSpan();
-            ReadOnlySpan<char> pathSpan = path.ToLowerInvariant().AsSpan();
-
+            ReadOnlySpan<char> inputSpan = input.AsSpan();
+            ReadOnlySpan<char> pathSpan = path.AsSpan();
 
             bool inputHasUnsafeParts = ContainsUnsafePathParts(inputSpan);
             bool pathHasUnsafeParts = ContainsUnsafePathParts(pathSpan);
@@ -128,13 +130,16 @@ namespace Aikido.Zen.Core.Vulnerabilities
 
             if (checkPathStart)
             {
+                ReadOnlySpan<char> normalizedInputSpan = inputSpan.TrimStart(PathStartNoise.AsSpan());
+                ReadOnlySpan<char> normalizedPathSpan = pathSpan.TrimStart(PathStartNoise.AsSpan());
+
                 // Check for absolute path traversal
-                foreach (var start in DangerousPathStarts)
+                foreach (var start in NormalizedDangerousPathStarts)
                 {
                     ReadOnlySpan<char> startSpan = start.AsSpan();
 
-                    if (inputSpan.StartsWith(startSpan, StringComparison.OrdinalIgnoreCase) &&
-                        pathSpan.StartsWith(startSpan, StringComparison.OrdinalIgnoreCase))
+                    if (normalizedInputSpan.StartsWith(startSpan, StringComparison.OrdinalIgnoreCase) &&
+                        normalizedPathSpan.StartsWith(startSpan, StringComparison.OrdinalIgnoreCase))
                         return true;
                 }
             }
@@ -154,5 +159,6 @@ namespace Aikido.Zen.Core.Vulnerabilities
 
             return false;
         }
+
     }
 }
