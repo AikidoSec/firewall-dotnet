@@ -20,4 +20,19 @@
     <ProjectReference Include="..\Aikido.Zen.Core\Aikido.Zen.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Remove="BenchmarkPatcher.DotNetCore.cs" />
+    <Compile Remove="BenchmarkPatcher.DotNetFramework.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+    <Compile Include="BenchmarkPatcher.DotNetCore.cs" />
+    <ProjectReference Include="..\Aikido.Zen.DotNetCore\Aikido.Zen.DotNetCore.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
+    <Compile Include="BenchmarkPatcher.DotNetFramework.cs" />
+    <ProjectReference Include="..\Aikido.Zen.DotNetFramework\Aikido.Zen.DotNetFramework.csproj" />
+  </ItemGroup>
+
 </Project>

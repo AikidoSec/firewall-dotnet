@@ -281,8 +281,6 @@ namespace Aikido.Zen.Test
                 context));
 
             // Assert
-            Assert.That(result.ShouldProceed, Is.True);
-            Assert.That(result.Blocked, Is.False);
             Assert.That(_agent.Context.Hostnames.Any(h => h.Hostname == "domain1.example.com" && h.Port == 80), Is.True);
         }
 

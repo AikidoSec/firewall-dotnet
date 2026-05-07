@@ -75,7 +75,6 @@ jobs:
           dockerfile_path: ./zen-demo-dotnet-core/Dockerfile
           app_port: 8080
           sleep_before_test: 10
-          skip_tests: test_stored_ssrf_no_context,test_stored_ssrf,test_ssrf
 
   qa-tests-netfx:
     needs: build-package

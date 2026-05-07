@@ -32,10 +32,10 @@ namespace Aikido.Zen.Core.Patches
 
                 if (Context.IsBypassed(context))
                 {
-                    return result;
+                    return;
                 }
 
-                if (EnvironmentHelper.DryMode || IsAikidoInternalTarget(targetUri))
+                if (IsAikidoInternalTarget(targetUri))
                 {
                     return;
                 }
