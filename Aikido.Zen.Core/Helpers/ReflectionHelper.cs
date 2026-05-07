@@ -66,7 +66,7 @@ namespace Aikido.Zen.Core.Helpers
                     {
                         // The app is not self-contained or the dll was not included with the app
                         // Try loading from the default shared framework path
-                        // Useful for late loaded assemblies (eg. `System.Diagnostics.Process` in ProcessPatches)
+                        // Useful for late loaded assemblies (eg. `System.Diagnostics.Process` in ProcessExecutionSink)
                         try
                         {
                             assembly = Assembly.Load(new AssemblyName(assemblyName));

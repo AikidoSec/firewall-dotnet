@@ -8,12 +8,14 @@ using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.DotNetFramework.Configuration;
 using Aikido.Zen.DotNetFramework.HttpModules;
-using Aikido.Zen.DotNetFramework.Patches;
+using CorePatcher = Aikido.Zen.Core.Patches.Patcher;
 
 namespace Aikido.Zen.DotNetFramework
 {
     public class Zen
     {
+        private const string HarmonyId = "aikido.zen.dotnetframework";
+
         // we need to reference Harmony somewhere to ensure it is copied with our package
         private static HarmonyLib.Harmony harmony = new HarmonyLib.Harmony("reference");
         public static void Start()
@@ -35,7 +37,7 @@ namespace Aikido.Zen.DotNetFramework
             // set zen version
             AgentInfoHelper.SetVersion(typeof(Zen).Assembly.GetName().Version.ToString());
             // patch the sinks
-            Patcher.Patch();
+            CorePatcher.Patch(HarmonyId, GetContext);
             // setup the agent
             if (Agent.Instance == null)
             {

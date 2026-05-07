@@ -157,8 +157,8 @@
   <ItemGroup>
     <Compile Include="BlockingModuleTests.cs" />
     <Compile Include="ContextModuleTests.cs" />
-    <Compile Include="Patches\IOPatchesTests.cs" />
-    <Compile Include="Patches\LLMPatchesTests.cs" />
+    <Compile Include="Patches\IOSinkTests.cs" />
+    <Compile Include="Patches\LLMSinkTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

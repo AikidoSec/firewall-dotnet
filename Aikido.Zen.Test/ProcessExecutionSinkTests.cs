@@ -12,9 +12,9 @@ using NUnit.Framework;
 namespace Aikido.Zen.Test
 {
     /// <summary>
-    /// Tests for the ProcessExecutionPatcher class.
+    /// Tests for the ProcessExecutionSink class.
     /// </summary>
-    public class ProcessExecutionPatcherTests
+    public class ProcessExecutionSinkTests
     {
         private ProcessStartInfo _startInfo = null!;
         private Context _context = null!;
@@ -27,7 +27,7 @@ namespace Aikido.Zen.Test
             _context = new Context();
             _methodInfo = typeof(Process).GetMethod("Start", BindingFlags.Public | BindingFlags.Instance);
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
-            // setup the agent, because when not running in drymode, SqlClientPatcher will trigger an attack event
+            // setup the agent, because when not running in drymode, SqlClientSink will trigger an attack event
             Environment.SetEnvironmentVariable("AIKIDO_TOKEN", "test-token");
             var reportingMock = new Mock<IReportingAPIClient>();
             reportingMock
@@ -49,7 +49,7 @@ namespace Aikido.Zen.Test
             var args = new object[] { };
 
             // Act
-            var result = ProcessExecutionPatcher.OnProcessStart(args, _methodInfo, new Process { StartInfo = _startInfo }, null);
+            var result = ProcessExecutionSink.OnProcessStart(args, _methodInfo, new Process { StartInfo = _startInfo }, null);
 
             // Assert
             Assert.That(result, Is.True);
@@ -66,7 +66,7 @@ namespace Aikido.Zen.Test
             _startInfo.FileName = "sh";
             _startInfo.Arguments = "-c \"$(echo)\"";
 
-            var result = ProcessExecutionPatcher.OnProcessStart(
+            var result = ProcessExecutionSink.OnProcessStart(
                 new object[] { },
                 _methodInfo,
                 new Process { StartInfo = _startInfo },
@@ -85,7 +85,7 @@ namespace Aikido.Zen.Test
             var args = new object[] { };
 
             // Act
-            var result = ProcessExecutionPatcher.OnProcessStart(args, _methodInfo, new Process { StartInfo = _startInfo }, _context);
+            var result = ProcessExecutionSink.OnProcessStart(args, _methodInfo, new Process { StartInfo = _startInfo }, _context);
 
             // Assert
             Assert.That(result, Is.True);
@@ -104,7 +104,7 @@ namespace Aikido.Zen.Test
 
             // Act & Assert
             var ex = Assert.Throws<AikidoException>(() =>
-                ProcessExecutionPatcher.OnProcessStart(args, _methodInfo, new Process { StartInfo = _startInfo }, _context)
+                ProcessExecutionSink.OnProcessStart(args, _methodInfo, new Process { StartInfo = _startInfo }, _context)
             );
             Assert.That(ex.Message, Does.Contain("Shell injection detected"));
         }
@@ -122,7 +122,7 @@ namespace Aikido.Zen.Test
             var args = new object[] { };
 
             // Act
-            var result = ProcessExecutionPatcher.OnProcessStart(args, _methodInfo, new Process { StartInfo = _startInfo }, _context);
+            var result = ProcessExecutionSink.OnProcessStart(args, _methodInfo, new Process { StartInfo = _startInfo }, _context);
 
             // Assert
             Assert.That(result, Is.True);
@@ -151,7 +151,7 @@ namespace Aikido.Zen.Test
                 }
             });
 
-            var result = ProcessExecutionPatcher.OnProcessStart(
+            var result = ProcessExecutionSink.OnProcessStart(
                 new object[] { },
                 _methodInfo,
                 new Process { StartInfo = _startInfo },

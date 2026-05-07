@@ -10,7 +10,7 @@ using Moq;
 
 namespace Aikido.Zen.Test
 {
-    public class SqlClientPatcherTests
+    public class SqlClientSinkTests
     {
         private Context _context;
         private MethodInfo _methodInfo;
@@ -22,7 +22,7 @@ namespace Aikido.Zen.Test
             _methodInfo = typeof(DbCommand).GetMethod("ExecuteNonQuery")
                     ?? throw new InvalidOperationException("Could not find DbCommand.ExecuteNonQuery.");
 
-            // setup the agent, because when not running in drymode, SqlClientPatcher will trigger an attack event
+            // setup the agent, because when not running in drymode, SqlClientSink will trigger an attack event
             Environment.SetEnvironmentVariable("AIKIDO_TOKEN", "test-token");
             var reportingMock = new Mock<IReportingAPIClient>();
             reportingMock
@@ -46,7 +46,7 @@ namespace Aikido.Zen.Test
         public void GetDialect_ShouldReturnCorrectDialect(string assembly, SQLDialect expectedDialect)
         {
             // Act
-            var result = SqlClientPatcher.GetDialect(assembly);
+            var result = SqlClientSink.GetDialect(assembly);
 
             // Assert
             Assert.That(result, Is.EqualTo(expectedDialect));
@@ -60,7 +60,7 @@ namespace Aikido.Zen.Test
             var args = new object[] { };
 
             // Act
-            var result = SqlClientPatcher.OnCommandExecuting(args, _methodInfo, sql, "System.Data.SqlClient", null);
+            var result = SqlClientSink.OnCommandExecuting(args, _methodInfo, sql, "System.Data.SqlClient", null);
 
             // Assert
             Assert.That(result, Is.True);
@@ -77,7 +77,7 @@ namespace Aikido.Zen.Test
             };
             var sql = "SELECT * FROM users WHERE id = '1' OR '1'='1'";
 
-            var result = SqlClientPatcher.OnCommandExecuting(
+            var result = SqlClientSink.OnCommandExecuting(
                 new object[] { },
                 _methodInfo,
                 sql,
@@ -97,7 +97,7 @@ namespace Aikido.Zen.Test
             var args = new object[] { };
 
             // Act
-            var result = SqlClientPatcher.OnCommandExecuting(args, _methodInfo, sql, "System.Data.SqlClient", _context);
+            var result = SqlClientSink.OnCommandExecuting(args, _methodInfo, sql, "System.Data.SqlClient", _context);
 
             // Assert
             Assert.That(result, Is.True);
@@ -116,7 +116,7 @@ namespace Aikido.Zen.Test
 
             // Act & Assert
             var ex = Assert.Throws<AikidoException>(() =>
-                SqlClientPatcher.OnCommandExecuting(args, _methodInfo, sql, "System.Data.SqlClient", _context)
+                SqlClientSink.OnCommandExecuting(args, _methodInfo, sql, "System.Data.SqlClient", _context)
             );
             Assert.That(ex.Message, Does.Contain("SQL injection detected"));
         }
@@ -130,7 +130,7 @@ namespace Aikido.Zen.Test
             var args = new object[] { };
 
             // Act
-            var result = SqlClientPatcher.OnCommandExecuting(args, _methodInfo, sql, "System.Data.SqlClient", _context);
+            var result = SqlClientSink.OnCommandExecuting(args, _methodInfo, sql, "System.Data.SqlClient", _context);
 
             // Assert
             Assert.That(result, Is.True);
@@ -160,7 +160,7 @@ namespace Aikido.Zen.Test
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
             var sql = "SELECT * FROM users WHERE id = '1' OR '1'='1'";
 
-            var result = SqlClientPatcher.OnCommandExecuting(
+            var result = SqlClientSink.OnCommandExecuting(
                 new object[] { },
                 _methodInfo,
                 sql,

@@ -8,7 +8,7 @@ using Moq;
 namespace Aikido.Zen.Test
 {
     [TestFixture]
-    public class OutboundRequestPatcherTests
+    public class OutboundRequestSinkTests
     {
         private Mock<IReportingAPIClient> _reportingApiMock;
         private Mock<IRuntimeAPIClient> _runtimeApiMock;
@@ -59,7 +59,7 @@ namespace Aikido.Zen.Test
             });
 
             // Act
-            var result = OutboundRequestPatcher.Inspect(
+            var result = OutboundRequestSink.Inspect(
                 new Uri("https://blocked.example/path"),
                 "HttpClient.SendAsync",
                 "System.Net.Http",
@@ -90,7 +90,7 @@ namespace Aikido.Zen.Test
             });
 
             // Act
-            var result = OutboundRequestPatcher.Inspect(
+            var result = OutboundRequestSink.Inspect(
                 new Uri("https://blocked.example/path"),
                 "HttpClient.SendAsync",
                 "System.Net.Http",
@@ -135,7 +135,7 @@ namespace Aikido.Zen.Test
             };
 
             // Act
-            var result = OutboundRequestPatcher.Inspect(
+            var result = OutboundRequestSink.Inspect(
                 new Uri("https://blocked.example/path"),
                 "HttpClient.SendAsync",
                 "System.Net.Http",
@@ -156,7 +156,7 @@ namespace Aikido.Zen.Test
             });
 
             // Act
-            var result = OutboundRequestPatcher.Inspect(
+            var result = OutboundRequestSink.Inspect(
                 new Uri("http://localhost:3000/api/runtime/events"),
                 "HttpClient.SendAsync",
                 "System.Net.Http",
@@ -194,7 +194,7 @@ namespace Aikido.Zen.Test
             };
 
             // Act
-            var result = OutboundRequestPatcher.Inspect(
+            var result = OutboundRequestSink.Inspect(
                 new Uri("http://domain1.example.com/test"),
                 "HttpClient.SendAsync",
                 "System.Net.Http",

@@ -13,7 +13,7 @@ using NUnit.Framework;
 namespace Aikido.Zen.Test
 {
     [TestFixture]
-    public class IOPatcherTests
+    public class IOSinkTests
     {
         private Context _realContext;
         private Mock<Context> _mockContext; // Mock to allow verification if needed, CallBase ensures real logic runs
@@ -55,13 +55,13 @@ namespace Aikido.Zen.Test
             if (expectBlocked)
             {
                 Assert.Throws<AikidoException>(
-                    () => IOPatcher.OnFileOperation(paths, methodInfo, contextToPass),
+                    () => IOSink.OnFileOperation(paths, methodInfo, contextToPass),
                     "Expected AikidoException for blocked path traversal."
                 );
             }
             else
             {
-                var result = IOPatcher.OnFileOperation(paths, methodInfo, contextToPass);
+                var result = IOSink.OnFileOperation(paths, methodInfo, contextToPass);
                 Assert.That(result, Is.True, "OnFileOperation should return true when not blocking.");
             }
 
@@ -72,7 +72,7 @@ namespace Aikido.Zen.Test
         public void OnFileOperation_WithNullContext_ReturnsTrue()
         {
             var paths = new[] { "safe/path/file.txt" };
-            var result = IOPatcher.OnFileOperation(paths, _methodInfo, null);
+            var result = IOSink.OnFileOperation(paths, _methodInfo, null);
             Assert.That(result, Is.True);
         }
 
@@ -87,7 +87,7 @@ namespace Aikido.Zen.Test
                 ParsedUserInput = new Dictionary<string, string> { { "query.path", "../secret.txt" } }
             };
 
-            var result = IOPatcher.OnFileOperation(paths, _methodInfo, context);
+            var result = IOSink.OnFileOperation(paths, _methodInfo, context);
 
             Assert.That(result, Is.True);
             Assert.That(context.AttackDetected, Is.False);
@@ -231,7 +231,7 @@ namespace Aikido.Zen.Test
                 }
             });
 
-            var result = IOPatcher.OnFileOperation(paths, _methodInfo, contextToPass);
+            var result = IOSink.OnFileOperation(paths, _methodInfo, contextToPass);
 
             Assert.That(result, Is.True);
             Assert.That(contextToPass.AttackDetected, Is.False);

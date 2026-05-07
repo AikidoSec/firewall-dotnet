@@ -7,7 +7,7 @@ using Moq;
 namespace Aikido.Zen.Test
 {
     [TestFixture]
-    public class LLMPatcherTests
+    public class LLMSinkTests
     {
 
         #region OnLLMCallExecuting Tests
@@ -26,7 +26,7 @@ namespace Aikido.Zen.Test
             var result = new MockLLMResult { Model = "gpt-4" };
 
             // Act & Assert
-            Assert.DoesNotThrow(() => LLMPatcher.OnLLMCallCompleted(args, method, assembly, result, null));
+            Assert.DoesNotThrow(() => LLMSink.OnLLMCallCompleted(args, method, assembly, result, null));
         }
 
         [Test]
@@ -39,7 +39,7 @@ namespace Aikido.Zen.Test
             var context = new Context();
 
             // Act & Assert
-            Assert.DoesNotThrow(() => LLMPatcher.OnLLMCallCompleted(args, method, assembly, null, context));
+            Assert.DoesNotThrow(() => LLMSink.OnLLMCallCompleted(args, method, assembly, null, context));
         }
 
         [Test]
@@ -57,7 +57,7 @@ namespace Aikido.Zen.Test
             var context = new Context { Route = "/api/test" };
 
             // Act & Assert
-            Assert.DoesNotThrow(() => LLMPatcher.OnLLMCallCompleted(args, method, assembly, result, context));
+            Assert.DoesNotThrow(() => LLMSink.OnLLMCallCompleted(args, method, assembly, result, context));
         }
 
         [Test]
@@ -76,7 +76,7 @@ namespace Aikido.Zen.Test
             var context = new Context { Route = "/llm-usage/request/provider/openai/model/gpt-4o" };
 
             // Act & Assert
-            Assert.DoesNotThrow(() => LLMPatcher.OnLLMCallCompleted(args, method, assembly, result, context));
+            Assert.DoesNotThrow(() => LLMSink.OnLLMCallCompleted(args, method, assembly, result, context));
         }
 
         [Test]
@@ -95,7 +95,7 @@ namespace Aikido.Zen.Test
             var context = new Context { Route = "/llm-usage/request/provider/azure/model/gpt-3.5-turbo" };
 
             // Act & Assert
-            Assert.DoesNotThrow(() => LLMPatcher.OnLLMCallCompleted(args, method, assembly, result, context));
+            Assert.DoesNotThrow(() => LLMSink.OnLLMCallCompleted(args, method, assembly, result, context));
         }
 
         [Test]
@@ -114,7 +114,7 @@ namespace Aikido.Zen.Test
             var context = new Context { Route = "/llm-usage/request/provider/rystem/model/gpt-4-turbo" };
 
             // Act & Assert
-            Assert.DoesNotThrow(() => LLMPatcher.OnLLMCallCompleted(args, method, assembly, result, context));
+            Assert.DoesNotThrow(() => LLMSink.OnLLMCallCompleted(args, method, assembly, result, context));
         }
 
         [Test]
@@ -133,7 +133,7 @@ namespace Aikido.Zen.Test
             var context = new Context { Route = "/llm-usage/request/provider/anthropic/model/claude-3-5-haiku-latest" };
 
             // Act & Assert
-            Assert.DoesNotThrow(() => LLMPatcher.OnLLMCallCompleted(args, method, assembly, result, context));
+            Assert.DoesNotThrow(() => LLMSink.OnLLMCallCompleted(args, method, assembly, result, context));
         }
 
         [Test]
@@ -157,7 +157,7 @@ namespace Aikido.Zen.Test
             var context = new Context { Route = "/llm-usage/request/provider/openai/model/gpt-4o-mini" };
 
             // Act & Assert
-            Assert.DoesNotThrow(() => LLMPatcher.OnLLMCallCompleted(args, method, assembly, result, context));
+            Assert.DoesNotThrow(() => LLMSink.OnLLMCallCompleted(args, method, assembly, result, context));
         }
 
         [Test]
@@ -180,7 +180,7 @@ namespace Aikido.Zen.Test
             var context = new Context { Route = "/llm-usage/request/provider/azure/model/gpt-35-turbo" };
 
             // Act & Assert
-            Assert.DoesNotThrow(() => LLMPatcher.OnLLMCallCompleted(args, method, assembly, result, context));
+            Assert.DoesNotThrow(() => LLMSink.OnLLMCallCompleted(args, method, assembly, result, context));
         }
 
         [Test]
@@ -203,7 +203,7 @@ namespace Aikido.Zen.Test
             var context = new Context { Route = "/llm-usage/request/provider/rystem/model/gpt-4" };
 
             // Act & Assert
-            Assert.DoesNotThrow(() => LLMPatcher.OnLLMCallCompleted(args, method, assembly, result, context));
+            Assert.DoesNotThrow(() => LLMSink.OnLLMCallCompleted(args, method, assembly, result, context));
         }
 
         #endregion
@@ -218,7 +218,7 @@ namespace Aikido.Zen.Test
         public void TryGetProvider_WithKnownProviders_ReturnsCorrectProvider(string searchString, string expectedProvider)
         {
             // Act
-            var result = LLMPatcher.TryGetCloudProvider(searchString, out var actualProvider);
+            var result = LLMSink.TryGetCloudProvider(searchString, out var actualProvider);
 
             // Assert
             Assert.That(result, Is.True);
@@ -232,7 +232,7 @@ namespace Aikido.Zen.Test
         public void TryGetProvider_WithUnknownProviders_ReturnsFalse(string searchString)
         {
             // Act
-            var result = LLMPatcher.TryGetCloudProvider(searchString, out var actualProvider);
+            var result = LLMSink.TryGetCloudProvider(searchString, out var actualProvider);
 
             // Assert
             Assert.That(result, Is.False);
@@ -243,7 +243,7 @@ namespace Aikido.Zen.Test
         public void TryGetProvider_WithMultipleProviders_ReturnsFirstMatch()
         {
             // Azure should take precedence over OpenAI
-            var result = LLMPatcher.TryGetCloudProvider("gpt-4o Azure.OpenAI.ChatClient", out var actualProvider);
+            var result = LLMSink.TryGetCloudProvider("gpt-4o Azure.OpenAI.ChatClient", out var actualProvider);
 
             Assert.That(result, Is.True);
             Assert.That(actualProvider, Is.EqualTo("azure"));
@@ -253,7 +253,7 @@ namespace Aikido.Zen.Test
         public void TryGetProvider_WithCaseInsensitivity_ReturnsCorrectProvider()
         {
             // Test case insensitivity
-            var result = LLMPatcher.TryGetCloudProvider("GPT-4O AZURE.AI.OPENAI.CHATCLIENT", out var actualProvider);
+            var result = LLMSink.TryGetCloudProvider("GPT-4O AZURE.AI.OPENAI.CHATCLIENT", out var actualProvider);
 
             Assert.That(result, Is.True);
             Assert.That(actualProvider, Is.EqualTo("azure"));
@@ -263,7 +263,7 @@ namespace Aikido.Zen.Test
         public void TryGetProvider_WithClaudeInModelName_ReturnsAnthropic()
         {
             // Test that "claude" in model name correctly identifies Anthropic
-            var result = LLMPatcher.TryGetCloudProvider("claude-3-sonnet OpenAI.Chat.ChatClient", out var actualProvider);
+            var result = LLMSink.TryGetCloudProvider("claude-3-sonnet OpenAI.Chat.ChatClient", out var actualProvider);
 
             Assert.That(result, Is.True);
             Assert.That(actualProvider, Is.EqualTo("anthropic"));
@@ -361,7 +361,7 @@ namespace Aikido.Zen.Test
             var input = new MockLLMResult { Model = "gpt-4-turbo" };
 
             // Act
-            var result = LLMPatcher.TryExtractModelFromResult(input, out var model);
+            var result = LLMSink.TryExtractModelFromResult(input, out var model);
 
             // Assert
             Assert.That(result, Is.True);
@@ -375,7 +375,7 @@ namespace Aikido.Zen.Test
             var input = new MockLLMResult { Model = null };
 
             // Act
-            var result = LLMPatcher.TryExtractModelFromResult(input, out var model);
+            var result = LLMSink.TryExtractModelFromResult(input, out var model);
 
             // Assert
             Assert.That(result, Is.False);
@@ -389,7 +389,7 @@ namespace Aikido.Zen.Test
             var input = new { SomeProperty = "value" };
 
             // Act
-            var result = LLMPatcher.TryExtractModelFromResult(input, out var model);
+            var result = LLMSink.TryExtractModelFromResult(input, out var model);
 
             // Assert
             Assert.That(result, Is.False);
@@ -403,7 +403,7 @@ namespace Aikido.Zen.Test
             var input = new { };
 
             // Act
-            var result = LLMPatcher.TryExtractModelFromResult(input, out var model);
+            var result = LLMSink.TryExtractModelFromResult(input, out var model);
 
             // Assert
             Assert.That(result, Is.False);
@@ -424,7 +424,7 @@ namespace Aikido.Zen.Test
             };
 
             // Act
-            var result = LLMPatcher.TryExtractTokensFromResult(input, out var tokens);
+            var result = LLMSink.TryExtractTokensFromResult(input, out var tokens);
 
             // Assert
             Assert.That(result, Is.True);
@@ -442,7 +442,7 @@ namespace Aikido.Zen.Test
             };
 
             // Act
-            var result = LLMPatcher.TryExtractTokensFromResult(input, out var tokens);
+            var result = LLMSink.TryExtractTokensFromResult(input, out var tokens);
 
             // Assert
             Assert.That(result, Is.True);
@@ -464,7 +464,7 @@ namespace Aikido.Zen.Test
             };
 
             // Act
-            var result = LLMPatcher.TryExtractTokensFromResult(input, out var tokens);
+            var result = LLMSink.TryExtractTokensFromResult(input, out var tokens);
 
             // Assert
             Assert.That(result, Is.True);
@@ -482,7 +482,7 @@ namespace Aikido.Zen.Test
             };
 
             // Act
-            var result = LLMPatcher.TryExtractTokensFromResult(input, out var tokens);
+            var result = LLMSink.TryExtractTokensFromResult(input, out var tokens);
 
             // Assert
             Assert.That(result, Is.True);
@@ -497,7 +497,7 @@ namespace Aikido.Zen.Test
             var input = new MockLLMResult { Model = "gpt-4" }; // No Usage property
 
             // Act
-            var result = LLMPatcher.TryExtractTokensFromResult(input, out var tokens);
+            var result = LLMSink.TryExtractTokensFromResult(input, out var tokens);
 
             // Assert
             Assert.That(result, Is.False);
@@ -515,7 +515,7 @@ namespace Aikido.Zen.Test
             };
 
             // Act
-            var result = LLMPatcher.TryExtractTokensFromResult(input, out var tokens);
+            var result = LLMSink.TryExtractTokensFromResult(input, out var tokens);
 
             // Assert
             Assert.That(result, Is.False);
@@ -533,7 +533,7 @@ namespace Aikido.Zen.Test
             };
 
             // Act
-            var result = LLMPatcher.TryExtractTokensFromResult(input, out var tokens);
+            var result = LLMSink.TryExtractTokensFromResult(input, out var tokens);
 
             // Assert
             Assert.That(result, Is.True);

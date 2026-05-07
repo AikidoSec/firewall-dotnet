@@ -4,35 +4,23 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using Aikido.Zen.Core.Helpers;
-using Aikido.Zen.DotNetFramework.Patches;
+using Aikido.Zen.Core.Patches;
 using HarmonyLib;
 using NUnit.Framework;
-using OpenAI.Chat;
 
-namespace Aikido.Zen.Tests.DotNetFramework.Patches
+namespace Aikido.Zen.Tests.DotNetCore.Patches
 {
     [TestFixture]
-    public class LLMPatchesTests
+    public class LLMSinkTests
     {
         private Harmony _harmony;
-        private static readonly string HarmonyId = "com.aikido.zen.tests.dotnetframework.llmpatches";
+        private static readonly string HarmonyId = "com.aikido.zen.tests.dotnetcore.llmsink";
 
         [SetUp]
         public void OneTimeSetUp()
         {
             _harmony = new Harmony(HarmonyId);
-            LLMPatches.ApplyPatches(_harmony);
-
-            // Force OpenAI assembly to be loaded
-            try
-            {
-                // This will cause the OpenAI assembly to be loaded into the AppDomain
-                var _ = typeof(ChatClient); // Updated to use the correct namespace and type
-            }
-            catch
-            {
-                // Ignore if OpenAI types aren't available
-            }
+            Patcher.ApplyPatches(_harmony, () => null);
         }
 
         [TearDown]
@@ -80,11 +68,45 @@ namespace Aikido.Zen.Tests.DotNetFramework.Patches
         }
 
         [Test]
-        public void LLMPatches_ApplyPatches_DoesNotThrow()
+        public void RystemOpenAi_OpenAiChat_ExecuteAsync_IsPatched()
+        {
+            var method = ReflectionHelper.GetMethodFromAssembly("Rystem.OpenAi", "Rystem.OpenAi.Chat.OpenAiChat", "ExecuteAsync",
+                "System.Threading.CancellationToken");
+
+            if (method == null)
+            {
+                Assert.Inconclusive("Rystem.OpenAi package not available or ExecuteAsync method not found");
+                return;
+            }
+
+            var patches = Harmony.GetPatchInfo(method);
+            Assert.That(patches, Is.Not.Null, "Harmony patches should exist for Rystem.OpenAi ExecuteAsync.");
+            Assert.That(patches.Postfixes.Any(p => p.owner == HarmonyId), Is.True, "Our postfix should be applied to Rystem.OpenAi ExecuteAsync.");
+        }
+
+        [Test]
+        public void RystemOpenAi_OpenAiChat_ExecuteAsStreamAsync_IsPatched()
+        {
+            var method = ReflectionHelper.GetMethodFromAssembly("Rystem.OpenAi", "Rystem.OpenAi.Chat.OpenAiChat", "ExecuteAsStreamAsync",
+                "System.Boolean", "System.Threading.CancellationToken");
+
+            if (method == null)
+            {
+                Assert.Inconclusive("Rystem.OpenAi package not available or ExecuteAsStreamAsync method not found");
+                return;
+            }
+
+            var patches = Harmony.GetPatchInfo(method);
+            Assert.That(patches, Is.Not.Null, "Harmony patches should exist for Rystem.OpenAi ExecuteAsStreamAsync.");
+            Assert.That(patches.Postfixes.Any(p => p.owner == HarmonyId), Is.True, "Our postfix should be applied to Rystem.OpenAi ExecuteAsStreamAsync.");
+        }
+
+        [Test]
+        public void LLMSink_ApplyPatches_DoesNotThrow()
         {
             // Test that applying patches doesn't throw exceptions even if some assemblies are missing
             var testHarmony = new Harmony("test.harmony.llm");
-            Assert.DoesNotThrow(() => LLMPatches.ApplyPatches(testHarmony));
+            Assert.DoesNotThrow(() => Patcher.ApplyPatches(testHarmony, () => null));
             testHarmony.UnpatchAll("test.harmony.llm");
         }
     }
