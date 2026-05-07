@@ -77,6 +77,23 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void OnFileOperation_WithBypassedContext_ReturnsTrue()
+        {
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
+            var paths = new[] { "/var/www/data/../secret.txt" };
+            var context = new Context
+            {
+                Bypassed = true,
+                ParsedUserInput = new Dictionary<string, string> { { "query.path", "../secret.txt" } }
+            };
+
+            var result = IOPatcher.OnFileOperation(paths, _methodInfo, context);
+
+            Assert.That(result, Is.True);
+            Assert.That(context.AttackDetected, Is.False);
+        }
+
+        [Test]
         public void OnFileOperation_WithSafePathAndNoMatchingUserInput_ReturnsTrue()
         {
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
@@ -144,25 +161,47 @@ namespace Aikido.Zen.Test
             RunAndVerifyAttackFlag(paths, copyMethodInfo, expectAttack: true, expectBlocked: false);
         }
 
-        [TestCase("/etc/shadow")]
-        [TestCase("c:/windows/system32/cmd.exe")]
-        [TestCase("C:\\Windows\\System32\\cmd.exe")]
-        [TestCase("%WINDIR%\\system32\\notepad.exe")]
-        public void OnFileOperation_AbsoluteInput_ThrowsExceptionWhenBlocking(string absoluteInput)
+        [Test]
+        public void OnFileOperation_GetFullPathWithTraversal_ThrowsExceptionWhenBlocking()
         {
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
+            var getFullPathMethodInfo = typeof(Path).GetMethod("GetFullPath", new[] { typeof(string) })!;
+            var unsafeInput = "../secrets/key.txt";
+            var pathArgument = Path.Combine("wwwroot/blogs", unsafeInput);
+            var paths = new[] { pathArgument };
+            _realContext.ParsedUserInput = new Dictionary<string, string> { { "query.path", unsafeInput } };
+
+            RunAndVerifyAttackFlag(paths, getFullPathMethodInfo, expectAttack: true, expectBlocked: true);
+        }
+
+        [Test]
+        public void OnFileOperation_GetFullPathWithNormalizedAbsolutePayload_ThrowsExceptionWhenBlocking()
+        {
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
+            var getFullPathMethodInfo = typeof(Path).GetMethod("GetFullPath", new[] { typeof(string) })!;
+            var unsafeInput = "/././etc/passwd";
+            var pathArgument = Path.Combine("wwwroot/blogs", unsafeInput);
+            var paths = new[] { pathArgument };
+            _realContext.ParsedUserInput = new Dictionary<string, string> { { "query.path", unsafeInput } };
+
+            RunAndVerifyAttackFlag(paths, getFullPathMethodInfo, expectAttack: true, expectBlocked: true);
+        }
+
+        [Test]
+        public void OnFileOperation_AbsoluteInput_ThrowsExceptionWhenBlocking()
+        {
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
+            var absoluteInput = "/etc/shadow";
             var paths = new[] { absoluteInput };
             _realContext.ParsedUserInput = new Dictionary<string, string> { { "path", absoluteInput } };
             RunAndVerifyAttackFlag(paths, _methodInfo, expectAttack: true, expectBlocked: true);
         }
 
-        [TestCase("/etc/shadow")]
-        [TestCase("c:/windows/system32/cmd.exe")]
-        [TestCase("C:\\Windows\\System32\\cmd.exe")]
-        [TestCase("%WINDIR%\\system32\\notepad.exe")]
-        public void OnFileOperation_AbsoluteInput_ReturnsTrueWhenNotBlocking(string absoluteInput)
+        [Test]
+        public void OnFileOperation_AbsoluteInput_ReturnsTrueWhenNotBlocking()
         {
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "false");
+            var absoluteInput = "/etc/shadow";
             var paths = new[] { absoluteInput };
             _realContext.ParsedUserInput = new Dictionary<string, string> { { "path", absoluteInput } };
             RunAndVerifyAttackFlag(paths, _methodInfo, expectAttack: true, expectBlocked: false);

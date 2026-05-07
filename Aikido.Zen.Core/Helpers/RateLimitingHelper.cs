@@ -63,12 +63,19 @@ namespace Aikido.Zen.Core.Helpers
         /// </summary>
         /// <param name="context">The context of the request</param>
         /// <param name="endpoints">The filtered list of endpoints</param>
+        /// <param name="configuration">The current agent configuration.</param>
         /// <returns>A tuple containing: (isAllowed, effectiveConfig) where effectiveConfig is the config that caused rate limiting (if any)</returns>
-        public static (bool isAllowed, RateLimitingConfig effectiveConfig) IsRequestAllowed(
+        internal static (bool isAllowed, RateLimitingConfig effectiveConfig) IsRequestAllowed(
             Context context,
-            IEnumerable<EndpointConfig> endpoints)
+            IEnumerable<EndpointConfig> endpoints,
+            AgentConfiguration configuration)
         {
             if (string.IsNullOrEmpty(context?.Method) || string.IsNullOrEmpty(context?.Route))
+            {
+                return (true, null);
+            }
+
+            if (context.User != null && configuration?.IsUserExcludedFromRateLimiting(context.User.Id) == true)
             {
                 return (true, null);
             }
@@ -88,14 +95,17 @@ namespace Aikido.Zen.Core.Helpers
                 return (true, null);
             }
 
-            // Get the user ID or IP address for the key
-            string userOrIp = context.User?.Id ?? context.RemoteAddress ?? "unknown";
+            var rateLimitKeySuffix = GetRateLimitKeySuffix(context);
+            if (string.IsNullOrEmpty(rateLimitKeySuffix))
+            {
+                return (true, null);
+            }
 
             // Check exact match first if it exists
             if (RouteHelper.HasExactMatch(context, rateLimitedEndpoints, out var exactMatch))
             {
                 var config = exactMatch.RateLimiting;
-                var exactKey = $"{exactMatch.Method}|{exactMatch.Route}:user-or-ip:{userOrIp}";
+                var exactKey = $"{exactMatch.Method}|{exactMatch.Route}:{rateLimitKeySuffix}";
                 if (!IsAllowed(exactKey, config.WindowSizeInMS, config.MaxRequests))
                 {
                     return (false, config);
@@ -113,7 +123,7 @@ namespace Aikido.Zen.Core.Helpers
                 var config = endpoint.RateLimiting;
                 if (config != null && config.Enabled)
                 {
-                    var matchKey = $"{endpoint.Method}|{endpoint.Route}:user-or-ip:{userOrIp}";
+                    var matchKey = $"{endpoint.Method}|{endpoint.Route}:{rateLimitKeySuffix}";
                     if (!IsAllowed(matchKey, config.WindowSizeInMS, config.MaxRequests))
                     {
                         return (false, config);
@@ -123,6 +133,30 @@ namespace Aikido.Zen.Core.Helpers
 
             // If we get here, all checks passed
             return (true, null);
+        }
+
+        private static string GetRateLimitKeySuffix(Context context)
+        {
+            var group = context.RateLimitGroup;
+            var user = context.User?.Id;
+            var ip = context.RemoteAddress;
+
+            if (!string.IsNullOrEmpty(group))
+            {
+                return $"group:{group}";
+            }
+
+            if (!string.IsNullOrEmpty(user))
+            {
+                return $"user:{user}";
+            }
+
+            if (!string.IsNullOrEmpty(ip))
+            {
+                return $"ip:{ip}";
+            }
+
+            return null;
         }
 
         private static long GetCurrentTimestamp()

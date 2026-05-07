@@ -44,9 +44,9 @@ namespace Aikido.Zen.Core.Helpers
 
         /// <summary>
         /// Determines whether to block SQL queries that fail tokenization when user input is present.
-        /// Defaults to true (block by default).
+        /// Defaults to false (allow by default).
         /// </summary>
-        public static bool BlockInvalidSql => GetBooleanValue("AIKIDO_BLOCK_INVALID_SQL", true);
+        public static bool BlockInvalidSql => GetBooleanValue("AIKIDO_BLOCK_INVALID_SQL");
 
         /// <summary>
         /// Determines whether to trust the X-Forwarded-For header.
@@ -59,6 +59,12 @@ namespace Aikido.Zen.Core.Helpers
         /// Should be set to false if the application is not behind a reverse proxy.
         /// </summary>
         public static string ClientIpHeader => Environment.GetEnvironmentVariable("AIKIDO_CLIENT_IP_HEADER") ?? "X-FORWARDED-FOR";
+
+        /// <summary>
+        /// Determines whether to skip the ASP.NET Core endpoint routing startup guard.
+        /// Defaults to false so route discovery and endpoint-specific policies use complete routing information.
+        /// </summary>
+        public static bool DisableEndpointRoutingCheck => GetBooleanValue("AIKIDO_DISABLE_ENDPOINT_ROUTING_CHECK");
 
         /// <summary>
         /// Helper method to determine if an environment variable is set to "true" or "1".

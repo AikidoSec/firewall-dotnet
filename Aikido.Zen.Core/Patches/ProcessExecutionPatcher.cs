@@ -33,7 +33,7 @@ namespace Aikido.Zen.Core.Patches
                 return true;
             }
 
-            if (context != null && Agent.Instance.Context.BlockList.IsIPBypassed(context.RemoteAddress))
+            if (Context.IsBypassed(context))
             {
                 return true;
             }

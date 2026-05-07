@@ -25,17 +25,17 @@ namespace Aikido.Zen.Core.Patches
 
             try
             {
-                if (Agent.Instance.Context.BlockList.IsIPBypassed(context?.RemoteAddress))
-                {
-                    return;
-                }
-
                 var hostname = targetUri.Host;
                 var port = targetUri.Port;
 
                 Agent.Instance.CaptureOutboundRequest(hostname, port);
 
-                if (IsAikidoInternalTarget(targetUri))
+                if (Context.IsBypassed(context))
+                {
+                    return result;
+                }
+
+                if (EnvironmentHelper.DryMode || IsAikidoInternalTarget(targetUri))
                 {
                     return;
                 }

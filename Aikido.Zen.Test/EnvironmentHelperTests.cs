@@ -95,5 +95,40 @@ namespace Aikido.Zen.Test.Helpers
             // Assert
             Assert.That(url, Is.EqualTo("https://runtime.aikido.dev"));
         }
+
+        [Test]
+        public void BlockInvalidSql_ShouldReturnFalse_WhenEnvironmentVariableIsNotSet()
+        {
+            // Arrange
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK_INVALID_SQL", null);
+
+            // Act
+            var blockInvalidSql = EnvironmentHelper.BlockInvalidSql;
+
+            // Assert
+            Assert.That(blockInvalidSql, Is.False);
+        }
+
+        [TestCase(null, false)]
+        [TestCase("false", false)]
+        [TestCase("true", true)]
+        [TestCase("1", true)]
+        public void DisableEndpointRoutingCheck_ShouldReturnExpectedValue(string? value, bool expected)
+        {
+            var originalValue = Environment.GetEnvironmentVariable("AIKIDO_DISABLE_ENDPOINT_ROUTING_CHECK");
+
+            try
+            {
+                Environment.SetEnvironmentVariable("AIKIDO_DISABLE_ENDPOINT_ROUTING_CHECK", value);
+
+                var disableEndpointRoutingCheck = EnvironmentHelper.DisableEndpointRoutingCheck;
+
+                Assert.That(disableEndpointRoutingCheck, Is.EqualTo(expected));
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("AIKIDO_DISABLE_ENDPOINT_ROUTING_CHECK", originalValue);
+            }
+        }
     }
 }

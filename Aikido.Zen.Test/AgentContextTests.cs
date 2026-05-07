@@ -43,6 +43,35 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void UpdateUsersExcludedFromRateLimiting_ShouldUpdateExcludedUsersList()
+        {
+            // Arrange
+            var users = new[] { "user1", "user2", "user3" };
+
+            // Act
+            _agentContext.UpdateUsersExcludedFromRateLimiting(users);
+
+            // Assert
+            Assert.That(_agentContext.IsUserExcludedFromRateLimiting("user1"), Is.True);
+            Assert.That(_agentContext.IsUserExcludedFromRateLimiting("user2"), Is.True);
+            Assert.That(_agentContext.IsUserExcludedFromRateLimiting("user3"), Is.True);
+            Assert.That(_agentContext.IsUserExcludedFromRateLimiting("user4"), Is.False);
+        }
+
+        [Test]
+        public void UpdateUsersExcludedFromRateLimiting_WithEmptyList_ShouldClearExcludedUsers()
+        {
+            // Arrange
+            _agentContext.UpdateUsersExcludedFromRateLimiting(new[] { "user1" });
+
+            // Act
+            _agentContext.UpdateUsersExcludedFromRateLimiting(System.Array.Empty<string>());
+
+            // Assert
+            Assert.That(_agentContext.IsUserExcludedFromRateLimiting("user1"), Is.False);
+        }
+
+        [Test]
         public void IsBlocked_ShouldCheckAllBlockingConditions()
         {
             // Arrange

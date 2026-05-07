@@ -47,6 +47,26 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void UpdateBlockedIps_WithNullList_ShouldClearBlockedSubnets()
+        {
+            _blockList.UpdateBlockedIps(new[] { ("manual", (IEnumerable<string>)new[] { "192.168.1.0/24" }) });
+
+            _blockList.UpdateBlockedIps(null);
+
+            Assert.That(_blockList.IsIPBlocked("192.168.1.100"), Is.False);
+        }
+
+        [Test]
+        public void UpdateBlockedIps_WithNullIps_ShouldIgnoreList()
+        {
+            IEnumerable<string> ips = null!;
+
+            _blockList.UpdateBlockedIps(new[] { ("manual", ips) });
+
+            Assert.That(_blockList.IsEmpty(), Is.True);
+        }
+
+        [Test]
         public void UpdateAlllowedIps_ShouldUpdateAlllowedIpsPerUrl()
         {
             // Arrange
@@ -131,6 +151,28 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void GetMatchingBlockedIPListKeys_WithInvalidIP_ShouldReturnEmpty()
+        {
+            Assert.That(_blockList.GetMatchingBlockedIPListKeys("invalid.ip"), Is.Empty);
+        }
+
+        [Test]
+        public void GetMatchingBlockedIPListKeys_WithEmptyKey_ShouldReturnEmpty()
+        {
+            _blockList.UpdateBlockedIps(new[] { ("", (IEnumerable<string>)new[] { "192.168.1.0/24" }) });
+
+            Assert.That(_blockList.GetMatchingBlockedIPListKeys("192.168.1.100"), Is.Empty);
+        }
+
+        [Test]
+        public void IsEmpty_WithBlockedIps_ShouldReturnFalse()
+        {
+            _blockList.UpdateBlockedIps(new[] { ("manual", (IEnumerable<string>)new[] { "192.168.1.0/24" }) });
+
+            Assert.That(_blockList.IsEmpty(), Is.False);
+        }
+
+        [Test]
         public void IsIPAllowed_WithEmptyAllowedIpAddresses_ShouldAllowIP()
         {
             // Arrange
@@ -196,7 +238,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void LargeBlocklistHandling_ShouldHandleLargeNumberOfIPs()
+        public void LargeBlockListHandling_ShouldHandleLargeNumberOfIPs()
         {
             // Arrange
             var blockedIps = new List<string>();
@@ -279,6 +321,61 @@ namespace Aikido.Zen.Test
             var context = new Context { RemoteAddress = ip, Method = "GET", Url = url, Route = "testUrl" };
             Assert.That(_blockList.IsBlocked(context, out var reason), Is.False);
             Assert.That(reason, Is.EqualTo("IP is bypassed"));
+        }
+
+        [Test]
+        public void BypassedIPs_ShouldMatchIPv4MappedIPv6AgainstIPv4Cidr()
+        {
+            // Arrange
+            _blockList.UpdateBypassedIps(new[] { "23.45.67.89/24" });
+
+            // Act & Assert
+            Assert.That(_blockList.IsIPBypassed("::ffff:23.45.67.89"), Is.True);
+        }
+
+        [Test]
+        public void IPv4MappedIPv6_ShouldMatchIPv4RangesAcrossIpRules()
+        {
+            // Arrange
+            _blockList.UpdateBlockedIps(new[] { ("blocked", (IEnumerable<string>)new[] { "23.45.67.0/24" }) });
+            _blockList.UpdateAllowedIps(new[] { "23.45.67.0/24" });
+            _blockList.UpdateBypassedIps(new[] { "23.45.67.0/24" });
+            _blockList.UpdateAllowedIpsPerEndpoint(new[]
+            {
+                new EndpointConfig
+                {
+                    Method = "GET",
+                    Route = "testUrl",
+                    AllowedIPAddresses = new[] { "23.45.67.0/24" }
+                }
+            });
+
+            var allowedContext = new Context
+            {
+                RemoteAddress = "::ffff:23.45.67.89",
+                Method = "GET",
+                Url = "http://localhost:80/testUrl",
+                Route = "testUrl"
+            };
+            var deniedContext = new Context
+            {
+                RemoteAddress = "::ffff:23.45.68.89",
+                Method = "GET",
+                Url = "http://localhost:80/testUrl",
+                Route = "testUrl"
+            };
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(_blockList.IsIPBlocked("::ffff:23.45.67.89"), Is.True);
+                Assert.That(_blockList.GetMatchingBlockedIPListKeys("::ffff:23.45.67.89"), Is.EquivalentTo(new[] { "blocked" }));
+                Assert.That(_blockList.IsIPAllowed("::ffff:23.45.67.89"), Is.True);
+                Assert.That(_blockList.IsIPAllowed("::ffff:23.45.68.89"), Is.False);
+                Assert.That(_blockList.IsIPBypassed("::ffff:23.45.67.89"), Is.True);
+                Assert.That(_blockList.IsIpAllowedForEndpoint(allowedContext), Is.True);
+                Assert.That(_blockList.IsIpAllowedForEndpoint(deniedContext), Is.False);
+            });
         }
 
         [Test]
@@ -555,12 +652,12 @@ namespace Aikido.Zen.Test
             var endpoints = new List<EndpointConfig> {
                 new EndpointConfig {
                     Method = "GET",
-                    Route = "/api/users",
+                    Route = "api/users",
                     AllowedIPAddresses = new string[] { }
                 },
                 new EndpointConfig {
                     Method = "GET",
-                    Route = "/api/products",
+                    Route = "api/products",
                     AllowedIPAddresses = null
                 }
             };

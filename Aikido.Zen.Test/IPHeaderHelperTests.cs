@@ -28,6 +28,10 @@ namespace Aikido.Zen.Test.Helpers
                     IPHeaderHelper.ParseIpHeader("::1, [2001:db8::1] "),
                     Is.EqualTo(new[] { "::1", "2001:db8::1" })
                 );
+                Assert.That(
+                    IPHeaderHelper.ParseIpHeader("::ffff:185.245.255.212"),
+                    Is.EqualTo(new[] { "::ffff:185.245.255.212" })
+                );
             });
         }
 

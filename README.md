@@ -39,6 +39,8 @@ Zen operates autonomously on the same server as your .NET app to:
 
 ## Supported libraries and frameworks
 
+Zen only works in 64-bit processes.
+
 ### Web frameworks
 * ✅ ASP.NET Core 6.0
 * ✅ ASP.NET Core 7.0
@@ -65,9 +67,10 @@ Zen operates autonomously on the same server as your .NET app to:
 
 ## Installation
 
+
 ### .NET Core
 
-Ensure that your project runs on .NET Core 6, 7, 8, 9 or 10. Additionally, your application must use endpoint routing (`UseRouting`) so Zen Firewall can resolve route information correctly. Legacy routing middleware such as `UseMvc` is not supported. See the ASP.NET Core migration guide [here](https://learn.microsoft.com/en-us/aspnet/core/migration/22-to-30).
+Ensure that your project runs on .NET Core 6, 7, 8, 9 or 10. For Zen to resolve route information correctly, your application must use endpoint routing (`UseRouting`). Legacy routing middleware such as `UseMvc` is not supported. See the ASP.NET Core migration guide [here](https://learn.microsoft.com/en-us/aspnet/core/migration/22-to-30).
 
 - Install the package from NuGet:
 
@@ -142,16 +145,18 @@ using Microsoft.AspNet.Identity;
 
 Ensure that your project runs on .NET Framework 4.6 or higher.
 
-- Install the package from NuGet:
+- Install the package from NuGet.
+
+If your .NET Framework project uses SDK-style `PackageReference`, run:
 
 ``` shell
 dotnet add package Aikido.Zen.DotNetFramework
 ```
 
-or
+If your project is a classic .NET Framework / ASP.NET project using `packages.config`, run this in Visual Studio's Package Manager Console (not a regular PowerShell window):
 
 ``` shell
-Install-Package Zen.Aikido.DotNetFramework
+Install-Package Aikido.Zen.DotNetFramework
 ```
 
 - To add the Aikido token in the Web.config file, follow these steps:
@@ -231,6 +236,7 @@ public void Configuration(IAppBuilder app)
 - [Azure Key Vault](docs/azure-key-vault.md) — using Azure Key Vault with Zen
 - [AWS Secrets Manager](docs/aws-secrets-manager.md) — using AWS Secrets Manager with Zen
 - [Set the current user](docs/user.md) — identify users for rate limiting, blocking, and attack reports
+- [Rate limiting groups](docs/user.md#rate-limiting-groups) — apply rate limits per team, tenant, or company
 
 ## Reporting to your Aikido Security dashboard
 

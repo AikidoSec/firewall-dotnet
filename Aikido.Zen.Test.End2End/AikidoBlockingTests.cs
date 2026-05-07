@@ -182,6 +182,44 @@ namespace Aikido.Zen.Test.End2End
         }
 
         [Test]
+        public async Task WhenUserIsExcludedFromRateLimiting_ShouldAllowRequestBeyondLimit()
+        {
+            // Arrange
+            var rateLimitConfig = new Dictionary<string, object>
+            {
+                ["endpoints"] = new List<EndpointConfig>
+                {
+                    new EndpointConfig
+                    {
+                        Route = "/api/pets",
+                        Method = "GET",
+                        RateLimiting = new RateLimitingConfig
+                        {
+                            Enabled = true,
+                            MaxRequests = 2,
+                            WindowSizeInMS = 1000
+                        }
+                    }
+                },
+                ["excludedUserIdsFromRateLimiting"] = new[] { "excluded_user" }
+            };
+            await MockServerClient.PostAsJsonAsync("/api/runtime/config", rateLimitConfig);
+            SampleAppClient = CreateSampleAppFactory().CreateClient();
+            Thread.Sleep(250);
+
+            for (int i = 0; i < 5; i++)
+            {
+                var request = new HttpRequestMessage(HttpMethod.Get, "/api/pets");
+                request.Headers.Add("X-Forwarded-For", "127.0.0.1");
+                request.Headers.Add("user", "excluded_user");
+
+                var response = await SampleAppClient.SendAsync(request);
+
+                Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+            }
+        }
+
+        [Test]
         public async Task WhenEndpointSpecificIPAllowed_ShouldAllowRequest()
         {
             // Arrange

@@ -66,6 +66,7 @@ namespace Aikido.Zen.Test
             Assert.That(stats.Operations, Is.Empty, "Operations dictionary should be empty after reset.");
             Assert.That(stats.Requests.Total, Is.EqualTo(0), "Requests total should be 0 after reset.");
             Assert.That(stats.Requests.Aborted, Is.EqualTo(0), "Requests aborted should be 0 after reset.");
+            Assert.That(stats.Requests.RateLimited, Is.EqualTo(0), "Requests rate limited should be 0 after reset.");
             Assert.That(stats.Requests.AttacksDetected.Total, Is.EqualTo(0), "Requests attacks total should be 0 after reset.");
             Assert.That(stats.Requests.AttacksDetected.Blocked, Is.EqualTo(0), "Requests attacks blocked should be 0 after reset.");
             Assert.That(newStartedAt, Is.GreaterThan(initialStartedAt), "StartedAt should be updated after reset.");
@@ -93,6 +94,14 @@ namespace Aikido.Zen.Test
             stats.OnRequest(); // Make non-empty
             Assert.That(stats.IsEmpty(), Is.False);
 
+        }
+
+        [Test]
+        public void OnRateLimitedRequest_IncrementsRequestsRateLimited()
+        {
+            var stats = new AgentStats();
+            stats.OnRateLimitedRequest();
+            Assert.That(stats.Requests.RateLimited, Is.EqualTo(1));
         }
 
         [Test]

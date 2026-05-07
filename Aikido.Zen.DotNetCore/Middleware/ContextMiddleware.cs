@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Concurrent;
 using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -25,24 +26,28 @@ namespace Aikido.Zen.DotNetCore.Middleware
 
         public async Task InvokeAsync(HttpContext httpContext, RequestDelegate next)
         {
-            try
+            if (EnvironmentHelper.IsDisabled)
             {
-                if (EnvironmentHelper.IsDisabled)
-                {
-                    // call the next middleware
-                    await next(httpContext);
-                    return;
-                }
+                // call the next middleware
+                await next(httpContext);
+                return;
             }
-            catch (Exception ex)
-            {
-                LogHelper.ErrorLog(Agent.Logger, $"Error while checking if the ip is bypassed: {ex.Message}");
-            }
+
             if (!TryPrepareContext(httpContext, out var queryDictionary, out var headersDictionary, out var context))
             {
                 // if preparing the context failed, we can't capture the request, so we just call the next middleware
                 await next(httpContext);
+                return;
             }
+
+            if (Agent.Instance.Context.BlockList.IsIPBypassed(context.RemoteAddress))
+            {
+                // Store bypass marker context so patches can still honor bypass.
+                httpContext.Items["Aikido.Zen.Context"] = new Context { Bypassed = true };
+                await next(httpContext);
+                return;
+            }
+
             try
             {
                 LogHelper.DebugLog(Agent.Logger, "Capturing request context");
@@ -60,7 +65,8 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 // since the feature could be missing, we need to check if it's null before accessing it
                 if (syncIOFeature?.AllowSynchronousIO != null)
                 {
-                    if (request.ContentType.Contains("xml") || request.ContentType.Contains("multipart"))
+                    if (request.ContentType.IndexOf("xml", StringComparison.OrdinalIgnoreCase) >= 0
+                        || request.ContentType.IndexOf("multipart", StringComparison.OrdinalIgnoreCase) >= 0)
                     {
                         syncIOFeature.AllowSynchronousIO = true;
                     }
@@ -72,8 +78,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
                     headers: headersDictionary.ToDictionary(h => h.Key, h => string.Join(',', h.Value)),
                     cookies: context.Cookies,
                     body: request.Body,
-                    contentType: request.ContentType,
-                    contentLength: request.ContentLength ?? 0
+                    contentType: request.ContentType
                 );
 
                 // restore the original value of initialAllowSynchronousIOValue
@@ -134,7 +139,8 @@ namespace Aikido.Zen.DotNetCore.Middleware
                     Source = Environment.Version.Major >= 5 ? "DotNetCore" : "DotNetFramework",
                     Route = GetParametrizedRoute(httpContext),
                     RouteParams = FlattenRouteParameters(httpContext.GetRouteData().Values),
-                    User = httpContext.Items["Aikido.Zen.CurrentUser"] as User
+                    User = httpContext.Items["Aikido.Zen.CurrentUser"] as User,
+                    RateLimitGroup = httpContext.Items["Aikido.Zen.RateLimitGroup"] as string ?? string.Empty
                 };
                 return true;
             }

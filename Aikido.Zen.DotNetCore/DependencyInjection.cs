@@ -1,16 +1,12 @@
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Api;
-using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.DotNetCore.Middleware;
-using Aikido.Zen.DotNetCore.Patches;
-using Aikido.Zen.DotNetCore.RuntimeSca;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Aikido.Zen.DotNetCore
 {
@@ -83,9 +79,6 @@ namespace Aikido.Zen.DotNetCore
                 return services;
             }
 
-            // set zen version
-            AgentInfoHelper.SetVersion(typeof(Zen).Assembly.GetName().Version.ToString());
-
             // register basic logging
             services.AddLogging(builder => builder.AddConsole());
 
@@ -124,34 +117,14 @@ namespace Aikido.Zen.DotNetCore
             {
                 return app;
             }
-            if (!HasEndpointRouting(app))
+            if (!EnvironmentHelper.DisableEndpointRoutingCheck && !HasEndpointRouting(app))
             {
-                throw new InvalidOperationException("UseZenFirewall must be called after routing is configured, either directly via UseRouting or indirectly if using a custom framework.");
+                throw new InvalidOperationException("UseZenFirewall must be called after routing is configured, either directly via UseRouting or indirectly if using a custom framework. If you intentionally need to bypass this guard, set AIKIDO_DISABLE_ENDPOINT_ROUTING_CHECK=true.");
             }
 
             var contextAccessor = app.ApplicationServices.GetRequiredService<IHttpContextAccessor>();
             Zen.Initialize(app.ApplicationServices, contextAccessor);
-            var options = app.ApplicationServices.GetRequiredService<IOptions<AikidoOptions>>();
-
-            if (!string.IsNullOrEmpty(options?.Value?.AikidoToken))
-            {
-                var agent = Agent.NewInstance(app.ApplicationServices.GetRequiredService<IZenApi>());
-                var agentLogger = app.ApplicationServices.GetService<ILogger<Agent>>();
-                if (agentLogger != null)
-                {
-                    Agent.ConfigureLogger(agentLogger);
-                }
-                agent.Start();
-
-                var exceptionLogger = app.ApplicationServices.GetService<ILogger<AikidoException>>();
-                if (exceptionLogger != null)
-                {
-                    AikidoException.ConfigureLogger(exceptionLogger);
-                }
-                EnvironmentHelper.ReportValues();
-                RuntimeAssemblyTracker.Instance.SubscribeToAppDomain(AppDomain.CurrentDomain);
-            }
-            Patcher.Patch();
+            Zen.Start();
             app.UseMiddleware<ContextMiddleware>();
             app.UseMiddleware<BlockingMiddleware>();
             return app;
@@ -162,12 +135,10 @@ namespace Aikido.Zen.DotNetCore
             // Based on the ASP.NET Core source for VerifyEndpointRoutingMiddlewareIsRegistered
             // https://github.com/dotnet/aspnetcore/blob/main/src/Http/Routing/src/Builder/EndpointRoutingApplicationBuilderExtensions.cs#L129
 
-            if (!app.Properties.TryGetValue("__EndpointRouteBuilder", out var routeBuilder))
-            {
-                return false;
-            }
-
-            return true;
+            // "__EndpointRouteBuilder" is typically set in regular ASP.NET Core apps
+            // "__GlobalEndpointRouteBuilder" is typically set in minimal hosting WebApplication apps (eg. Blazor)
+            return app.Properties.TryGetValue("__EndpointRouteBuilder", out _) ||
+                   app.Properties.TryGetValue("__GlobalEndpointRouteBuilder", out _);
         }
 
         internal static IServiceCollection AddAikidoZenMiddleware(this IServiceCollection services)

@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Web;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Api;
@@ -17,12 +18,20 @@ namespace Aikido.Zen.DotNetFramework
         private static HarmonyLib.Harmony harmony = new HarmonyLib.Harmony("reference");
         public static void Start()
         {
+            // libzen_internals only available on 64
+            if (!Environment.Is64BitProcess)
+            {
+                throw new PlatformNotSupportedException(
+                    $"Aikido Zen does not support 32-bit processes. Detected process architecture: {RuntimeInformation.ProcessArchitecture}");
+            }
+
             // initialize the options, this will ensure the environment variables are set
             AikidoConfiguration.Init();
             if (Environment.GetEnvironmentVariable("AIKIDO_DISABLE") == "true")
             {
                 return;
             }
+
             // set zen version
             AgentInfoHelper.SetVersion(typeof(Zen).Assembly.GetName().Version.ToString());
             // patch the sinks
@@ -49,9 +58,16 @@ namespace Aikido.Zen.DotNetFramework
             // otherwise, return null
             : null;
 
+        internal static Func<HttpContext, string> SetRateLimitGroupAction { get; set; } = _ => string.Empty;
+
         public static void SetUser(Func<HttpContext, User> setUser)
         {
             SetUserAction = setUser;
+        }
+
+        public static void SetRateLimitGroup(Func<HttpContext, string> setRateLimitGroup)
+        {
+            SetRateLimitGroupAction = setRateLimitGroup ?? (_ => string.Empty);
         }
 
         private static HttpApplication GetApplicationInstanceOrThrow()
@@ -74,7 +90,7 @@ namespace Aikido.Zen.DotNetFramework
 
         public static User GetUser()
         {
-            return (User)HttpContext.Current?.Items["Aikido.Zen.CurrentUser"];
+            return GetContext()?.User;
         }
 
         internal static void CheckModules()

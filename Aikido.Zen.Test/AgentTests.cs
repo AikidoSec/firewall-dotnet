@@ -215,6 +215,33 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void NewInstance_DisposesPreviousInstance()
+        {
+            var instanceField = typeof(Agent).GetField("_instance", BindingFlags.NonPublic | BindingFlags.Static);
+            var cancellationSourceField = typeof(Agent).GetField("_cancellationSource", BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.That(instanceField, Is.Not.Null);
+            Assert.That(cancellationSourceField, Is.Not.Null);
+
+            var first = Agent.NewInstance(_zenApiMock.Object);
+            var firstCancellationSource = cancellationSourceField!.GetValue(first) as CancellationTokenSource;
+            Assert.That(firstCancellationSource, Is.Not.Null);
+
+            var second = Agent.NewInstance(ZenApiMock.CreateMock().Object);
+
+            try
+            {
+                Assert.That(firstCancellationSource!.IsCancellationRequested, Is.True);
+                Assert.That(Agent.Instance, Is.SameAs(second));
+            }
+            finally
+            {
+                second.Dispose();
+                instanceField!.SetValue(null, null);
+                _agent = new Agent(_zenApiMock.Object);
+            }
+        }
+
+        [Test]
         public async Task Start_QueuesStartedEventAndSchedulesHeartbeat()
         {
             // Arrange
@@ -636,6 +663,7 @@ namespace Aikido.Zen.Test
             _agent.Context.AddUser(context.User, context.RemoteAddress);
             _agent.Context.AddRoute(context);
             _agent.Context.AddRequest();
+            _agent.Context.AddRateLimitedRequest();
             _agent.Context.AddAttackDetected(true);
             _agent.Context.IsBlocked(context, out _);
             _agent.SetContextMiddlewareInstalled(true);
@@ -650,6 +678,7 @@ namespace Aikido.Zen.Test
                 Assert.That(heartbeat.Users.Count, Is.EqualTo(1));
                 Assert.That(heartbeat.Routes.FirstOrDefault()?.Path ?? "", Is.EqualTo("/test"));
                 Assert.That(heartbeat.Stats.Requests.Total, Is.EqualTo(1));
+                Assert.That(heartbeat.Stats.Requests.RateLimited, Is.EqualTo(1));
                 Assert.That(heartbeat.Stats.Requests.AttacksDetected.Blocked, Is.EqualTo(1));
                 Assert.That(heartbeat.Stats.Requests.AttacksDetected.Total, Is.EqualTo(1));
                 Assert.That(heartbeat.Stats.StartedAt, Is.GreaterThan(0));

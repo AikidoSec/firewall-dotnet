@@ -1,8 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Web;
 using System.Web.Routing;
+using Aikido.Zen.Core;
+using Aikido.Zen.Core.Models;
 using Aikido.Zen.DotNetFramework.HttpModules;
 using NUnit.Framework;
 
@@ -195,6 +199,7 @@ namespace Aikido.Zen.Tests.DotNetFramework
             // Arrange
             var queryString = new System.Collections.Specialized.NameValueCollection();
             queryString.Add("param1", "value1");
+            queryString.Add(null, "#fragment");
 
             // Act
             var method = typeof(ContextModule).GetMethod("FlattenQueryParameters", BindingFlags.NonPublic | BindingFlags.Static);
@@ -204,6 +209,7 @@ namespace Aikido.Zen.Tests.DotNetFramework
             Assert.That(result, Is.Not.Null);
             Assert.That(result.ContainsKey("param1"), Is.True);
             Assert.That(result["param1"], Is.EqualTo("value1"));
+            Assert.That(result[string.Empty], Is.EqualTo("#fragment"));
         }
 
         [Test]
@@ -268,5 +274,115 @@ namespace Aikido.Zen.Tests.DotNetFramework
             Assert.That(result.ContainsKey("Accept[2]"), Is.True);
             Assert.That(result["Accept[2]"], Is.EqualTo("application/xml"));
         }
+
+        [Test]
+        public void PopulateAuthenticatedUser_UpdatesExistingContextUser_AndCapturesUser()
+        {
+            Agent.Instance.ClearContext();
+            var originalSetUserAction = Aikido.Zen.DotNetFramework.Zen.SetUserAction;
+
+            try
+            {
+                var user = new User("context-user", "Context User");
+                var httpContext = new HttpContext(
+                    new HttpRequest(string.Empty, "http://test.local/api/test", string.Empty),
+                    new HttpResponse(new StringWriter()));
+                var aikidoContext = new Context
+                {
+                    Url = "http://test.local/api/test",
+                    Path = "/api/test",
+                    Method = "GET",
+                    Route = "/api/test",
+                    RemoteAddress = "127.0.0.1"
+                };
+                httpContext.Items["Aikido.Zen.Context"] = aikidoContext;
+                Aikido.Zen.DotNetFramework.Zen.SetUserAction = _ => user;
+
+                ContextModule.PopulateAuthenticatedUser(httpContext);
+
+                var capturedUser = Agent.Instance.Context.Users.SingleOrDefault(u => u.Id == user.Id);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(aikidoContext.User, Is.SameAs(user));
+                    Assert.That(capturedUser, Is.Not.Null);
+                    Assert.That(capturedUser.Name, Is.EqualTo(user.Name));
+                });
+            }
+            finally
+            {
+                Aikido.Zen.DotNetFramework.Zen.SetUserAction = originalSetUserAction;
+                Agent.Instance.ClearContext();
+            }
+        }
+
+        [Test]
+        public void PopulateRateLimitGroup_UpdatesExistingContextGroup()
+        {
+            var originalSetRateLimitGroupAction = Aikido.Zen.DotNetFramework.Zen.SetRateLimitGroupAction;
+
+            try
+            {
+                var httpContext = new HttpContext(
+                    new HttpRequest(string.Empty, "http://test.local/api/test", string.Empty),
+                    new HttpResponse(new StringWriter()));
+                var aikidoContext = new Context();
+                httpContext.Items["Aikido.Zen.Context"] = aikidoContext;
+                Aikido.Zen.DotNetFramework.Zen.SetRateLimitGroupAction = _ => "configured-group";
+
+                ContextModule.PopulateRateLimitGroup(httpContext);
+
+                Assert.That(aikidoContext.RateLimitGroup, Is.EqualTo("configured-group"));
+            }
+            finally
+            {
+                Aikido.Zen.DotNetFramework.Zen.SetRateLimitGroupAction = originalSetRateLimitGroupAction;
+            }
+        }
+
+        [Test]
+        public void PopulateRateLimitGroup_DoesNothingWithoutContext()
+        {
+            var originalSetRateLimitGroupAction = Aikido.Zen.DotNetFramework.Zen.SetRateLimitGroupAction;
+
+            try
+            {
+                var httpContext = new HttpContext(
+                    new HttpRequest(string.Empty, "http://test.local/api/test", string.Empty),
+                    new HttpResponse(new StringWriter()));
+                Aikido.Zen.DotNetFramework.Zen.SetRateLimitGroupAction = _ => "configured-group";
+
+                Assert.DoesNotThrow(() => ContextModule.PopulateRateLimitGroup(httpContext));
+            }
+            finally
+            {
+                Aikido.Zen.DotNetFramework.Zen.SetRateLimitGroupAction = originalSetRateLimitGroupAction;
+            }
+        }
+
+        [Test]
+        public void PopulateRateLimitGroup_DoesNotOverwriteContextGroupWhenConfiguredGroupIsEmpty()
+        {
+            var originalSetRateLimitGroupAction = Aikido.Zen.DotNetFramework.Zen.SetRateLimitGroupAction;
+
+            try
+            {
+                var httpContext = new HttpContext(
+                    new HttpRequest(string.Empty, "http://test.local/api/test", string.Empty),
+                    new HttpResponse(new StringWriter()));
+                var aikidoContext = new Context { RateLimitGroup = "existing-group" };
+                httpContext.Items["Aikido.Zen.Context"] = aikidoContext;
+                Aikido.Zen.DotNetFramework.Zen.SetRateLimitGroupAction = _ => string.Empty;
+
+                ContextModule.PopulateRateLimitGroup(httpContext);
+
+                Assert.That(aikidoContext.RateLimitGroup, Is.EqualTo("existing-group"));
+            }
+            finally
+            {
+                Aikido.Zen.DotNetFramework.Zen.SetRateLimitGroupAction = originalSetRateLimitGroupAction;
+            }
+        }
+
     }
 }

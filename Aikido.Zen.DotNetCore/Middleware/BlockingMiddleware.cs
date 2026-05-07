@@ -22,8 +22,8 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 var aikidoContext = context.Items["Aikido.Zen.Context"] as Context;
                 Agent.Instance.SetBlockingMiddlewareInstalled(true);
 
-                // if the context is not found, skip the blocking checks, this likely means that the request is bypassed
-                if (aikidoContext == null || agentContext.BlockList.IsIPBypassed(aikidoContext.RemoteAddress))
+                // If the context is missing or bypassed, skip blocking checks
+                if (Context.IsNullOrBypassed(aikidoContext))
                 {
                     // call the next middleware
                     await next(context);
@@ -58,11 +58,11 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 var remoteAddress = HttpUtility.HtmlEncode(aikidoContext.RemoteAddress); // HTML escape the remote address
 
                 // Use the helper to check all rate limiting rules
-                var (isAllowed, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(aikidoContext, agentContext.Endpoints);
+                var (isAllowed, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(aikidoContext, agentContext.Endpoints, agentContext.Config);
 
                 if (!isAllowed)
                 {
-                    Agent.Instance.Context.AddAbortedRequest();
+                    Agent.Instance.Context.AddRateLimitedRequest();
                     context.Response.StatusCode = 429;
 
                     if (effectiveConfig != null)

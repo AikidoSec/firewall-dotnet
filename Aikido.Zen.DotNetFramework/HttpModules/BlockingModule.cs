@@ -25,23 +25,27 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
 
         private void Context_PostAuthenticateRequest(object sender, EventArgs e)
         {
+            var application = (HttpApplication)sender;
+            HandleBlocking(application.Context, application.CompleteRequest);
+        }
+
+        internal static void HandleBlocking(HttpContext httpContext, Action completeRequest)
+        {
             try
             {
                 LogHelper.DebugLog(Agent.Logger, "Checking if request needs to be blocked");
-                var httpContext = ((HttpApplication)sender).Context;
-                var user = (User)httpContext.Items["Aikido.Zen.CurrentUser"];
                 var aikidoContext = (Context)httpContext.Items["Aikido.Zen.Context"];
                 var agentContext = Agent.Instance.Context;
 
                 Agent.Instance.SetBlockingMiddlewareInstalled(true);
 
-                // if the context is not found, skip the blocking module, this likely means that the request is bypassed
-                if (aikidoContext == null)
+                // If the context is missing or bypassed, skip blocking checks
+                if (Context.IsNullOrBypassed(aikidoContext))
                 {
                     return;
                 }
 
-                var routeKey = $"{aikidoContext.Method}|{aikidoContext.Route}";
+                var user = aikidoContext.User;
                 if (user != null)
                 {
                     Agent.Instance.Context.AddUser(user, aikidoContext.RemoteAddress);
@@ -60,24 +64,26 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 {
                     Agent.Instance.Context.AddAbortedRequest();
                     LogHelper.DebugLog(Agent.Logger, $"Request blocked: {HttpUtility.HtmlEncode(reason)}");
-                    throw new HttpException(403, $"Your request is blocked: {HttpUtility.HtmlEncode(reason)}");
+                    CompleteRequestWithResponse(
+                        httpContext,
+                        403,
+                        $"Your request is blocked: {HttpUtility.HtmlEncode(reason)}",
+                        completeRequest);
+                    return;
                 }
 
                 // Use the helper to check all rate limiting rules
-                var (isAllowed, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(aikidoContext, agentContext.Endpoints);
+                var (isAllowed, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(aikidoContext, agentContext.Endpoints, agentContext.Config);
 
                 if (!isAllowed)
                 {
-                    Agent.Instance.Context.AddAbortedRequest();
-                    httpContext.Response.StatusCode = 429;
-
-                    if (effectiveConfig != null)
-                    {
-                        httpContext.Response.Headers.Add("Retry-After", effectiveConfig.WindowSizeInMS.ToString());
-                    }
-
-                    httpContext.Response.Write($"You are rate limited by Aikido firewall. (Your IP: {aikidoContext.RemoteAddress})");
-                    httpContext.Response.End();
+                    Agent.Instance.Context.AddRateLimitedRequest();
+                    CompleteRequestWithResponse(
+                        httpContext,
+                        429,
+                        $"You are rate limited by Aikido firewall. (Your IP: {HttpUtility.HtmlEncode(aikidoContext.RemoteAddress)})",
+                        completeRequest,
+                        effectiveConfig?.WindowSizeInMS.ToString());
                     return;
                 }
             }
@@ -85,6 +91,26 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             {
                 LogHelper.ErrorLog(Agent.Logger, $"Error blocking request: {ex.Message}");
             }
+        }
+
+        internal static void CompleteRequestWithResponse(HttpContext httpContext, int statusCode, string responseBody, Action completeRequest, string retryAfter = null)
+        {
+            httpContext.Response.TrySkipIisCustomErrors = true;
+            httpContext.Response.StatusCode = statusCode;
+
+            if (!string.IsNullOrEmpty(retryAfter))
+            {
+                httpContext.Response.AppendHeader("Retry-After", retryAfter);
+            }
+
+            if (!string.IsNullOrEmpty(responseBody))
+            {
+                httpContext.Response.Write(responseBody);
+            }
+
+            // CompleteRequest short-circuits pipeline nicer than Response.End (no ThreadAbortException)
+            // Stored as Action for easy unit testing
+            completeRequest?.Invoke();
         }
     }
 }

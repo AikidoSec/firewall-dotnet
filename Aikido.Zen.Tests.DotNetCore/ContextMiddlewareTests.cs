@@ -68,6 +68,58 @@ namespace Aikido.Zen.Tests.DotNetCore
         }
 
         [Test]
+        public async Task InvokeAsync_BypassedIp_CallsNextWithBypassedFlagWithoutCapturingStats()
+        {
+            var originalDisable = Environment.GetEnvironmentVariable("AIKIDO_DISABLE");
+            const string bypassedIp = "93.184.216.34";
+            var context = new DefaultHttpContext();
+            context.Request.Scheme = "http";
+            context.Request.Host = new HostString("test.local");
+            context.Request.Path = "/api/create";
+            context.Request.Method = "POST";
+            context.Request.ContentType = "application/json";
+            context.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes("""{"name":"test"}"""));
+            context.Connection.RemoteIpAddress = IPAddress.Parse(bypassedIp);
+
+            var nextCalled = false;
+            RequestDelegate next = httpContext =>
+            {
+                nextCalled = true;
+                httpContext.Response.StatusCode = StatusCodes.Status200OK;
+                return Task.CompletedTask;
+            };
+
+            try
+            {
+                Environment.SetEnvironmentVariable("AIKIDO_DISABLE", "false");
+                Agent.Instance.Context.Config.Clear();
+                Agent.Instance.ClearContext();
+                Agent.Instance.Context.BlockList.UpdateBypassedIps(new[] { bypassedIp });
+
+                await _contextMiddleware.InvokeAsync(context, next);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(nextCalled, Is.True);
+                    Assert.That(context.Items.ContainsKey("Aikido.Zen.Context"), Is.True);
+                    var aikidoContext = context.Items["Aikido.Zen.Context"] as Context;
+                    Assert.That(aikidoContext, Is.Not.Null);
+                    Assert.That(Context.IsBypassed(aikidoContext), Is.True);
+                    Assert.That(aikidoContext?.Method, Is.Empty);
+                    Assert.That(aikidoContext?.Route, Is.Empty);
+                    Assert.That(Agent.Instance.Context.Requests, Is.EqualTo(0));
+                    Assert.That(Agent.Instance.Context.Routes, Is.Empty);
+                });
+            }
+            finally
+            {
+                Agent.Instance.ClearContext();
+                Agent.Instance.Context.Config.Clear();
+                Environment.SetEnvironmentVariable("AIKIDO_DISABLE", originalDisable);
+            }
+        }
+
+        [Test]
         public void GetParametrizedRoute_ReturnsCorrectRoutePattern()
         {
             // Arrange
@@ -115,6 +167,27 @@ namespace Aikido.Zen.Tests.DotNetCore
 
             // Assert
             Assert.That("/", Is.EqualTo(route));
+        }
+
+        [Test]
+        public void TryPrepareContext_SetsRateLimitGroupFromHttpContextItems()
+        {
+            var httpContext = new DefaultHttpContext();
+            httpContext.Request.Scheme = "http";
+            httpContext.Request.Host = new HostString("test.local");
+            httpContext.Request.Path = "/api/test";
+            httpContext.Request.Method = "GET";
+            httpContext.Connection.RemoteIpAddress = IPAddress.Parse("1.2.3.4");
+            Aikido.Zen.DotNetCore.Zen.SetRateLimitGroup("team-1", httpContext);
+
+            var method = typeof(ContextMiddleware).GetMethod("TryPrepareContext", BindingFlags.NonPublic | BindingFlags.Instance)!;
+            var args = new object?[] { httpContext, null, null, null };
+
+            var prepared = (bool)method.Invoke(_contextMiddleware, args)!;
+            var context = (Context)args[3]!;
+
+            Assert.That(prepared, Is.True);
+            Assert.That(context.RateLimitGroup, Is.EqualTo("team-1"));
         }
 
         [Test]

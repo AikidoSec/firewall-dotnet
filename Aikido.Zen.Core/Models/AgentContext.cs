@@ -38,6 +38,11 @@ namespace Aikido.Zen.Core.Models
             _stats.OnAbortedRequest();
         }
 
+        public void AddRateLimitedRequest()
+        {
+            _stats.OnRateLimitedRequest();
+        }
+
         public void AddAttackDetected(bool blocked = false)
         {
             _stats.OnDetectedAttack(blocked);
@@ -264,6 +269,11 @@ namespace Aikido.Zen.Core.Models
             return _config.IsUserBlocked(userId);
         }
 
+        public bool IsUserExcludedFromRateLimiting(string userId)
+        {
+            return _config.IsUserExcludedFromRateLimiting(userId);
+        }
+
         public bool IsUserAgentBlocked(string userAgent)
         {
             if (string.IsNullOrWhiteSpace(userAgent))
@@ -275,6 +285,11 @@ namespace Aikido.Zen.Core.Models
         public void UpdateBlockedUsers(IEnumerable<string> users)
         {
             _config.UpdateBlockedUsers(users);
+        }
+
+        public void UpdateUsersExcludedFromRateLimiting(IEnumerable<string> users)
+        {
+            _config.UpdateUsersExcludedFromRateLimiting(users);
         }
 
         public void UpdateRatelimitedRoutes(IEnumerable<EndpointConfig> endpoints)
@@ -310,12 +325,13 @@ namespace Aikido.Zen.Core.Models
         public IEnumerable<EndpointConfig> Endpoints => _config.Endpoints;
         public int Requests => _stats.Requests.Total;
         public int RequestsAborted => _stats.Requests.Aborted;
+        public int RequestsRateLimited => _stats.Requests.RateLimited;
         public int AttacksDetected => _stats.Requests.AttacksDetected.Total;
         public int AttacksBlocked => _stats.Requests.AttacksDetected.Blocked;
         public int AttackWavesDetected => _stats.Requests.AttackWaves.Total;
         public int AttackWavesBlocked => _stats.Requests.AttackWaves.Blocked;
         public long Started => _stats.StartedAt;
-        public BlockList BlockList => _config.BlockList;
+        internal BlockList BlockList => _config.BlockList;
         public Regex BlockedUserAgents => _config.BlockedUserAgents;
         public AgentStats Stats => _stats;
         public AiStats AiStats => _aiStats;

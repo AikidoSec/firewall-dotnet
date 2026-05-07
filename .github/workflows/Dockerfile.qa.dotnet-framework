@@ -1,0 +1,36 @@
+# escape=`
+ARG NETFX_TAG=4.8-windowsservercore-ltsc2022
+
+FROM mcr.microsoft.com/dotnet/framework/sdk:${NETFX_TAG} AS build
+
+SHELL ["powershell", "-NoLogo", "-NoProfile", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
+
+WORKDIR C:\\src
+
+COPY . ./
+
+RUN $packagesConfigPath = 'C:\\src\\packages.config'; `
+    [xml]$packagesConfig = Get-Content -LiteralPath $packagesConfigPath; `
+    $aikidoPackage = $packagesConfig.packages.package | Where-Object { $_.id -eq 'Aikido.Zen.DotNetFramework' }; `
+    if ($null -eq $aikidoPackage) { throw 'Aikido.Zen.DotNetFramework package entry not found in packages.config.' }; `
+    $aikidoPackage.version = '0.0.0-qa'; `
+    $packagesConfig.Save($packagesConfigPath); `
+    $projectFilePath = 'C:\\src\\zen-demo-dotnet-framework.csproj'; `
+    $projectFile = Get-Content -LiteralPath $projectFilePath -Raw; `
+    $projectFile = [System.Text.RegularExpressions.Regex]::Replace($projectFile, 'packages\\Aikido\.Zen\.DotNetFramework\.[^\\]+\\', 'packages\Aikido.Zen.DotNetFramework.0.0.0-qa\', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase); `
+    [System.IO.File]::WriteAllText($projectFilePath, $projectFile, [System.Text.UTF8Encoding]::new($false))
+
+RUN nuget restore .\\zen-demo-dotnet-framework.csproj -ConfigFile .\\NuGet.Config -PackagesDirectory .\\packages
+
+RUN msbuild .\\zen-demo-dotnet-framework.csproj /t:Build /p:Configuration=Release
+
+FROM mcr.microsoft.com/dotnet/framework/aspnet:${NETFX_TAG} AS runtime
+
+WORKDIR C:\\inetpub\\wwwroot
+
+COPY --from=build C:\\src\\Global.asax .\\
+COPY --from=build C:\\src\\Web.config .\\
+COPY --from=build C:\\src\\bin\\ .\\bin\\
+COPY --from=build C:\\src\\wwwroot\\ .\\wwwroot\\
+
+EXPOSE 80

@@ -29,6 +29,7 @@ namespace Aikido.Zen.Test
             Assert.That(_context.Cookies, Is.Empty);
             Assert.That(_context.AttackDetected, Is.False);
             Assert.That(_context.User, Is.Null);
+            Assert.That(_context.RateLimitGroup, Is.EqualTo(string.Empty));
             Assert.That(_context.Source, Is.EqualTo(string.Empty));
             Assert.That(_context.Route, Is.EqualTo(string.Empty));
             Assert.That(_context.Graphql, Is.Null);
@@ -69,6 +70,29 @@ namespace Aikido.Zen.Test
 
             // Assert
             Assert.That(isGraphQL, Is.False);
+        }
+
+        [Test]
+        public void IsNullOrBypassed_ShouldReturnExpectedResult()
+        {
+            Assert.That(Context.IsNullOrBypassed(null), Is.True);
+            Assert.That(Context.IsNullOrBypassed(new Context()), Is.False);
+            Assert.That(Context.IsNullOrBypassed(new Context { Bypassed = true }), Is.True);
+        }
+
+        [Test]
+        public void RedirectInfo_ShouldInitializeCorrectly()
+        {
+            // Arrange
+            var sourceUri = new Uri("http://source.com");
+            var destinationUri = new Uri("http://destination.com");
+
+            // Act
+            var redirectInfo = new Context.RedirectInfo(sourceUri, destinationUri);
+
+            // Assert
+            Assert.That(redirectInfo.Source, Is.EqualTo(sourceUri));
+            Assert.That(redirectInfo.Destination, Is.EqualTo(destinationUri));
         }
 
         [Test]

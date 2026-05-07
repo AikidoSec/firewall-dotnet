@@ -160,6 +160,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BlockingModuleTests.cs" />
     <Compile Include="ContextModuleTests.cs" />
     <Compile Include="Patches\HttpClientAndDnsPatchesTests.cs" />
     <Compile Include="Patches\HttpClientRedirectTests.cs" />

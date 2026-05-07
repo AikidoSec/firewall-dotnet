@@ -40,6 +40,7 @@ namespace Aikido.Zen.Tests.DotNetFramework.Patches
         [TestCase(typeof(File), "WriteAllText", new[] { typeof(string), typeof(string) })]
         [TestCase(typeof(File), "WriteAllBytes", new[] { typeof(string), typeof(byte[]) })]
         [TestCase(typeof(File), "AppendAllText", new[] { typeof(string), typeof(string) })]
+        [TestCase(typeof(Path), "GetFullPath", new[] { typeof(string) })]
         [TestCase(typeof(Directory), "CreateDirectory", new[] { typeof(string), typeof(DirectorySecurity) })]
         [TestCase(typeof(Directory), "Delete", new[] { typeof(string), typeof(bool) })]
         [TestCase(typeof(Directory), "GetFiles", new[] { typeof(string) })]
