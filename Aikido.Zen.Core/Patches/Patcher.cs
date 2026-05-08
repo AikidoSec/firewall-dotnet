@@ -211,9 +211,7 @@ namespace Aikido.Zen.Core.Patches
         {
             var methods = type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
 
-            var exactMatch = methods.FirstOrDefault(m =>
-                m.Name == definition.TargetMethodName &&
-                m.GetParameters().Select(p => p.ParameterType.FullName).SequenceEqual(definition.TargetParameterTypeNames));
+            var exactMatch = methods.FirstOrDefault(m => MethodMatches(m, definition));
 
             if (definition.TargetParameterTypeNames.Length > 0)
             {
@@ -224,6 +222,31 @@ namespace Aikido.Zen.Core.Patches
                 .Where(m => m.Name == definition.TargetMethodName)
                 .OrderByDescending(m => m.GetParameters().Length)
                 .FirstOrDefault();
+        }
+
+        private static bool MethodMatches(MethodInfo method, PatchDefinition definition)
+        {
+            if (method.Name != definition.TargetMethodName)
+            {
+                return false;
+            }
+
+            var parameters = method.GetParameters();
+            if (parameters.Length != definition.TargetParameterTypeNames.Length)
+            {
+                return false;
+            }
+
+            return parameters
+                .Select((parameter, index) => ParameterTypeMatches(parameter.ParameterType, definition.TargetParameterTypeNames[index]))
+                .All(matches => matches);
+        }
+
+        private static bool ParameterTypeMatches(Type parameterType, string targetParameterTypeName)
+        {
+            return parameterType.FullName == targetParameterTypeName ||
+                parameterType.Name == targetParameterTypeName ||
+                parameterType.ToString() == targetParameterTypeName;
         }
 
         private static Type ResolveTargetTypeFromAssembly(PatchDefinition definition, string assemblyName)
