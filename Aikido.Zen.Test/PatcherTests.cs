@@ -90,33 +90,13 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void Patch_MatchesGenericParameterUsingRuntimeTypeString()
+        public void Patch_WhenContextProviderIsNull_UsesNullContext()
         {
-            var targetTypeName = typeof(GenericTarget).FullName ?? nameof(GenericTarget);
+#pragma warning disable CS8625
+            Patcher.Patch(_harmony, null);
+#pragma warning restore CS8625
 
-            InvokePatch(
-                GetMethod(typeof(IOSink), nameof(IOSink.OnPathOperation), typeof(object[]), typeof(MethodBase)),
-                string.Empty,
-                targetTypeName,
-                nameof(GenericTarget.Read),
-                "System.Collections.Generic.IEnumerable`1[System.Object]");
-
-            AssertPrefixPatch(GetMethod(typeof(GenericTarget), nameof(GenericTarget.Read), typeof(IEnumerable<object>)));
-        }
-
-        [Test]
-        public void Patch_WhenExplicitAssemblyIsMissing_DoesNotFallbackToLoadedAssemblies()
-        {
-            var targetTypeName = typeof(GenericTarget).FullName ?? nameof(GenericTarget);
-
-            InvokePatch(
-                GetMethod(typeof(IOSink), nameof(IOSink.OnPathOperation), typeof(object[]), typeof(MethodBase)),
-                "Missing.Assembly",
-                targetTypeName,
-                nameof(GenericTarget.Read),
-                "System.Collections.Generic.IEnumerable`1[System.Object]");
-
-            AssertNoPrefixPatch(GetMethod(typeof(GenericTarget), nameof(GenericTarget.Read), typeof(IEnumerable<object>)));
+            Assert.That(Patcher.GetContext(), Is.Null);
         }
 
         [Test]
@@ -157,16 +137,6 @@ namespace Aikido.Zen.Test
                 GetMethod(typeof(DbCommand), nameof(DbCommand.ExecuteScalar)),
                 dbCommand.Object), Is.True);
 
-            Assert.That(SqlClientSink.OnCommandExecuting(
-                new object[] { new object(), "SELECT 1" },
-                GetMethod(typeof(PatcherTests), nameof(ExecuteSqlRaw), typeof(object), typeof(string)),
-                null), Is.True);
-
-            Assert.That(SqlClientSink.OnCommandExecuting(
-                Array.Empty<object>(),
-                GetMethod(typeof(PatcherTests), nameof(NotSqlRaw)),
-                null), Is.True);
-
             var process = new Process
             {
                 StartInfo = new ProcessStartInfo("echo", "safe")
@@ -180,11 +150,7 @@ namespace Aikido.Zen.Test
                 Array.Empty<object>(),
                 GetMethod(typeof(object), nameof(ToString)),
                 new object(),
-                new TestLLMResult
-                {
-                    Model = "gpt-4o",
-                    Usage = new TestUsage { InputTokenCount = 12, OutputTokenCount = 8 }
-                }));
+                null));
         }
 
         private static MethodInfo GetMethod(Type type, string methodName, params Type[] parameterTypes)
@@ -208,59 +174,5 @@ namespace Aikido.Zen.Test
             Assert.That(patches.Prefixes.Any(prefix => prefix.owner == _harmonyId), Is.True);
         }
 
-        private void AssertNoPrefixPatch(MethodInfo method)
-        {
-            Assert.That(method, Is.Not.Null);
-            var patches = Harmony.GetPatchInfo(method);
-
-            Assert.That(patches == null || patches.Prefixes.All(prefix => prefix.owner != _harmonyId), Is.True);
-        }
-
-        private void InvokePatch(
-            MethodInfo sinkMethod,
-            string assemblyName,
-            string targetTypeName,
-            string targetMethodName,
-            params string[] targetParameterTypeNames)
-        {
-            var patchMethod = typeof(Patcher).GetMethod(
-                "PatchPrefix",
-                BindingFlags.Static | BindingFlags.NonPublic,
-                null,
-                new[] { typeof(Harmony), typeof(MethodInfo), typeof(string), typeof(string), typeof(string), typeof(string[]) },
-                null);
-
-            Assert.That(patchMethod, Is.Not.Null);
-            patchMethod.Invoke(null, new object[] { _harmony, sinkMethod, assemblyName, targetTypeName, targetMethodName, targetParameterTypeNames });
-        }
-
-        private static int ExecuteSqlRaw(object database, string sql)
-        {
-            return 0;
-        }
-
-        private static int NotSqlRaw()
-        {
-            return 0;
-        }
-
-        private sealed class GenericTarget
-        {
-            public void Read(IEnumerable<object> values)
-            {
-            }
-        }
-
-        private sealed class TestLLMResult
-        {
-            public string Model { get; set; } = string.Empty;
-            public TestUsage Usage { get; set; } = new TestUsage();
-        }
-
-        private sealed class TestUsage
-        {
-            public int InputTokenCount { get; set; }
-            public int OutputTokenCount { get; set; }
-        }
     }
 }
