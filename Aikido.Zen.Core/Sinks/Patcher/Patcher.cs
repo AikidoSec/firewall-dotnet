@@ -5,7 +5,7 @@ using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 using HarmonyLib;
 
-namespace Aikido.Zen.Core.Patches
+namespace Aikido.Zen.Core.Sinks
 {
     public class Patcher
     {

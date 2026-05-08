@@ -1,6 +1,6 @@
 using System;
 
-namespace Aikido.Zen.Core.Patches
+namespace Aikido.Zen.Core.Sinks
 {
     internal enum PatchKind
     {

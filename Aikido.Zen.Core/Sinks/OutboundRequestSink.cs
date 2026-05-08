@@ -7,7 +7,7 @@ using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 
-namespace Aikido.Zen.Core.Patches
+namespace Aikido.Zen.Core.Sinks
 {
     internal sealed class OutboundInspectionResult
     {

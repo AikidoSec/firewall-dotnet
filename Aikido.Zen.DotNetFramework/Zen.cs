@@ -8,7 +8,7 @@ using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.DotNetFramework.Configuration;
 using Aikido.Zen.DotNetFramework.HttpModules;
-using CorePatcher = Aikido.Zen.Core.Patches.Patcher;
+using CorePatcher = Aikido.Zen.Core.Sinks.Patcher;
 
 namespace Aikido.Zen.DotNetFramework
 {

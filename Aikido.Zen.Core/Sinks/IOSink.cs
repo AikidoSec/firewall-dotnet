@@ -7,7 +7,7 @@ using System.Threading;
 using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.Core.Helpers;
 
-namespace Aikido.Zen.Core.Patches
+namespace Aikido.Zen.Core.Sinks
 {
     /// <summary>
     /// Provides the core logic for handling patched file system operations.

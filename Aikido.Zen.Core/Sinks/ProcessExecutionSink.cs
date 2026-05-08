@@ -7,7 +7,7 @@ using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Vulnerabilities;
 
-namespace Aikido.Zen.Core.Patches
+namespace Aikido.Zen.Core.Sinks
 {
     /// <summary>
     /// Intercepts and inspects process execution methods to catch and report shell injection attacks.

@@ -7,7 +7,7 @@ using Aikido.Zen.Core.Helpers;
 
 [assembly: InternalsVisibleTo("Aikido.Zen.Test")]
 
-namespace Aikido.Zen.Core.Patches
+namespace Aikido.Zen.Core.Sinks
 {
     /// <summary>
     /// Patches for LLM client operations to track and monitor LLM API calls

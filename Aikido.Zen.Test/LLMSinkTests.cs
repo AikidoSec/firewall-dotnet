@@ -1,7 +1,7 @@
 using System.Reflection;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Helpers;
-using Aikido.Zen.Core.Patches;
+using Aikido.Zen.Core.Sinks;
 using Moq;
 
 namespace Aikido.Zen.Test

@@ -9,7 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Runtime.InteropServices;
-using CorePatcher = Aikido.Zen.Core.Patches.Patcher;
+using CorePatcher = Aikido.Zen.Core.Sinks.Patcher;
 
 namespace Aikido.Zen.DotNetCore
 {
