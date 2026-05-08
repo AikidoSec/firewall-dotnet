@@ -1,5 +1,9 @@
+using System.Net.Http;
+using System.Reflection;
+using System.Threading;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Api;
+using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Sinks;
 using Aikido.Zen.Tests.Mocks;
@@ -204,6 +208,69 @@ namespace Aikido.Zen.Test
             Assert.That(result.ShouldProceed, Is.True);
             Assert.That(result.Blocked, Is.False);
             Assert.That(_agent.Context.Hostnames.Any(h => h.Hostname == "domain1.example.com" && h.Port == 80), Is.True);
+        }
+
+        [Test]
+        public void OnRequest_WhenDomainRuleBlocks_ThrowsOutboundBlockedException()
+        {
+            // Arrange
+            _agent.Context.Config.UpdateOutboundDomains(false, new[]
+            {
+                new OutboundDomainConfig { Hostname = "blocked.example", Mode = "block" }
+            });
+
+            using var httpClient = new HttpClient { BaseAddress = new Uri("https://blocked.example") };
+            var request = new HttpRequestMessage(HttpMethod.Get, "/path");
+
+            // Act / Assert
+            var exception = Assert.Throws<AikidoException>(() => OutboundRequestSink.OnRequest(
+                new object[] { request, CancellationToken.None },
+                GetHttpClientSendAsyncMethod(),
+                httpClient));
+
+            Assert.That(exception?.Message, Does.Contain("blocked.example"));
+        }
+
+        [Test]
+        public void OnRequest_WithAbsoluteHttpClientRequest_CapturesRequestUri()
+        {
+            // Arrange
+            using var httpClient = new HttpClient();
+            var request = new HttpRequestMessage(HttpMethod.Get, "https://absolute.example/path");
+
+            // Act
+            var result = OutboundRequestSink.OnRequest(
+                new object[] { request, CancellationToken.None },
+                GetHttpClientSendAsyncMethod(),
+                httpClient);
+
+            // Assert
+            Assert.That(result, Is.True);
+            Assert.That(_agent.Context.Hostnames.Any(h => h.Hostname == "absolute.example" && h.Port == 443), Is.True);
+        }
+
+        [Test]
+        public void OnRequest_WithBaseAddressAndNoRequest_CapturesBaseAddress()
+        {
+            // Arrange
+            using var httpClient = new HttpClient { BaseAddress = new Uri("https://base-only.example") };
+
+            // Act
+            var result = OutboundRequestSink.OnRequest(
+                Array.Empty<object>(),
+                GetHttpClientSendAsyncMethod(),
+                httpClient);
+
+            // Assert
+            Assert.That(result, Is.True);
+            Assert.That(_agent.Context.Hostnames.Any(h => h.Hostname == "base-only.example" && h.Port == 443), Is.True);
+        }
+
+        private static MethodInfo GetHttpClientSendAsyncMethod()
+        {
+            return typeof(HttpClient).GetMethod(
+                nameof(HttpClient.SendAsync),
+                new[] { typeof(HttpRequestMessage), typeof(CancellationToken) })!;
         }
     }
 }
