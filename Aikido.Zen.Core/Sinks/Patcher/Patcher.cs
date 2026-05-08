@@ -203,6 +203,11 @@ namespace Aikido.Zen.Core.Sinks
                 }
             }
 
+            if (definition.AssemblyNames.Length > 0)
+            {
+                return null;
+            }
+
             var fallbackType = ResolveTargetTypeFromLoadedAssemblies(definition);
             return fallbackType == null ? null : ResolveTargetMethod(definition, fallbackType);
         }

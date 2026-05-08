@@ -106,6 +106,21 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void Patch_WhenExplicitAssemblyIsMissing_DoesNotFallbackToLoadedAssemblies()
+        {
+            var definition = PatchDefinition.Prefix(
+                SinkKind.IOPath,
+                "Missing.Assembly",
+                typeof(GenericTarget).FullName,
+                nameof(GenericTarget.Read),
+                "System.Collections.Generic.IEnumerable`1[System.Object]");
+
+            InvokePatch(definition);
+
+            AssertNoPrefixPatch(GetMethod(typeof(GenericTarget), nameof(GenericTarget.Read), typeof(IEnumerable<object>)));
+        }
+
+        [Test]
         public void SinkWrappers_UseConfiguredContextAndReturnTrueForSafeCalls()
         {
             Patcher.Patch(_harmony, () => _context);
@@ -192,6 +207,14 @@ namespace Aikido.Zen.Test
 
             Assert.That(patches, Is.Not.Null);
             Assert.That(patches.Prefixes.Any(prefix => prefix.owner == _harmonyId), Is.True);
+        }
+
+        private void AssertNoPrefixPatch(MethodInfo method)
+        {
+            Assert.That(method, Is.Not.Null);
+            var patches = Harmony.GetPatchInfo(method);
+
+            Assert.That(patches == null || patches.Prefixes.All(prefix => prefix.owner != _harmonyId), Is.True);
         }
 
         private void InvokePatch(PatchDefinition definition)
