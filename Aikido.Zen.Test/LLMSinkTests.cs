@@ -2,6 +2,7 @@ using System.Reflection;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Sinks;
+using Aikido.Zen.Tests.Mocks;
 using Moq;
 
 namespace Aikido.Zen.Test
@@ -9,6 +10,22 @@ namespace Aikido.Zen.Test
     [TestFixture]
     public class LLMSinkTests
     {
+        private Agent _agent;
+
+        [SetUp]
+        public void SetUp()
+        {
+            Environment.SetEnvironmentVariable("AIKIDO_TOKEN", "test-token");
+            _agent = Agent.NewInstance(ZenApiMock.CreateMock().Object);
+            _agent.ClearContext();
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            _agent?.Dispose();
+            Environment.SetEnvironmentVariable("AIKIDO_TOKEN", null);
+        }
 
         #region OnLLMCallExecuting Tests
 
@@ -206,6 +223,53 @@ namespace Aikido.Zen.Test
             Assert.DoesNotThrow(() => LLMSink.OnLLMCallCompleted(args, method, assembly, result, context));
         }
 
+        [Test]
+        public void OnLLMCallCompleted_WithUnknownProviderAndMissingTokens_RecordsUnknownProviderWithZeroTokens()
+        {
+            // Arrange
+            var method = typeof(string).GetMethod(nameof(string.ToString), Type.EmptyTypes);
+            var result = new MockLLMResult
+            {
+                Model = "local-model",
+                Usage = new { }
+            };
+            var context = new Context { Route = "/llm/local" };
+
+            // Act
+            LLMSink.OnLLMCallCompleted(Array.Empty<object>(), method, "Custom.LLM.Client", result, context);
+
+            // Assert
+            var aiInfo = _agent.Context.AiStats.Providers.Values.Single();
+            Assert.That(aiInfo.Provider, Is.EqualTo("unknown"));
+            Assert.That(aiInfo.Model, Is.EqualTo("local-model"));
+            Assert.That(aiInfo.Calls, Is.EqualTo(1));
+            Assert.That(aiInfo.Tokens.Input, Is.EqualTo(0));
+            Assert.That(aiInfo.Tokens.Output, Is.EqualTo(0));
+            Assert.That(aiInfo.Routes.Single().Path, Is.EqualTo("/llm/local"));
+        }
+
+        [Test]
+        public void OnLLMCallCompleted_WithMissingModel_RecordsUnknownModel()
+        {
+            // Arrange
+            var method = typeof(string).GetMethod(nameof(string.ToString), Type.EmptyTypes);
+            var result = new MockLLMResult
+            {
+                Usage = new MockUsage { InputTokenCount = 10, OutputTokenCount = 20 }
+            };
+            var context = new Context { Route = "/llm/openai" };
+
+            // Act
+            LLMSink.OnLLMCallCompleted(Array.Empty<object>(), method, "OpenAI", result, context);
+
+            // Assert
+            var aiInfo = _agent.Context.AiStats.Providers.Values.Single();
+            Assert.That(aiInfo.Provider, Is.EqualTo("openai"));
+            Assert.That(aiInfo.Model, Is.EqualTo("unknown"));
+            Assert.That(aiInfo.Tokens.Input, Is.EqualTo(10));
+            Assert.That(aiInfo.Tokens.Output, Is.EqualTo(20));
+        }
+
         #endregion
 
         #region TryGetProvider Tests
@@ -213,6 +277,8 @@ namespace Aikido.Zen.Test
         [TestCase("gpt-4o Azure.AI.OpenAI.OpenAIClient", "azure")]
         [TestCase("gpt-3.5-turbo Azure.AI.OpenAI.ChatClient", "azure")]
         [TestCase("claude-3-5-haiku-latest OpenAI.ChatClient", "anthropic")]
+        [TestCase("gemini-1.5-pro Google.GenAI.Client", "gemini")]
+        [TestCase("mistral-large-latest Mistral.AI.Client", "mistral")]
         [TestCase("gpt-4o OpenAI.Chat.ChatClient", "openai")]
         [TestCase("o3-mini Rystem.OpenAI.OpenAIClient.Chat", "openai")]
         public void TryGetProvider_WithKnownProviders_ReturnsCorrectProvider(string searchString, string expectedProvider)
@@ -524,6 +590,21 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void TryExtractTokensFromResult_WithEmptyResult_ReturnsFalse()
+        {
+            // Arrange
+            var input = new { };
+
+            // Act
+            var result = LLMSink.TryExtractTokensFromResult(input, out var tokens);
+
+            // Assert
+            Assert.That(result, Is.False);
+            Assert.That(tokens.inputTokens, Is.EqualTo(0));
+            Assert.That(tokens.outputTokens, Is.EqualTo(0));
+        }
+
+        [Test]
         public void TryExtractTokensFromResult_WithStringTokenValues_ConvertsCorrectly()
         {
             // Arrange
@@ -539,6 +620,24 @@ namespace Aikido.Zen.Test
             Assert.That(result, Is.True);
             Assert.That(tokens.inputTokens, Is.EqualTo(100));
             Assert.That(tokens.outputTokens, Is.EqualTo(50));
+        }
+
+        [Test]
+        public void TryExtractTokensFromResult_WithInvalidTokenValues_ReturnsFalse()
+        {
+            // Arrange
+            var input = new MockLLMResult
+            {
+                Usage = new MockStringTokenUsage { InputTokenCount = "many", OutputTokenCount = "few" }
+            };
+
+            // Act
+            var result = LLMSink.TryExtractTokensFromResult(input, out var tokens);
+
+            // Assert
+            Assert.That(result, Is.False);
+            Assert.That(tokens.inputTokens, Is.EqualTo(0));
+            Assert.That(tokens.outputTokens, Is.EqualTo(0));
         }
 
         #endregion
