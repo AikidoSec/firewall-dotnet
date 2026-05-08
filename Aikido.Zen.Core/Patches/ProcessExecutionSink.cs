@@ -12,8 +12,7 @@ namespace Aikido.Zen.Core.Patches
     {
         private const string OperationKind = "exec_op";
 
-        [PatchTarget(PatchKind.Prefix, new string[] { "System.Diagnostics.Process", "System" }, "System.Diagnostics.Process", "Start")]
-        private static bool OnProcessStart(object[] __args, MethodBase __originalMethod, object __instance)
+        internal static bool OnProcessStart(object[] __args, MethodBase __originalMethod, object __instance)
         {
             return OnProcessStart(__args, __originalMethod, __instance, Patcher.GetContext());
         }

@@ -19,7 +19,7 @@ namespace Aikido.Zen.Tests.DotNetFramework.Patches
         public void OneTimeSetUp()
         {
             _harmony = new Harmony(HarmonyId);
-            Patcher.ApplyPatches(_harmony, () => null);
+            Patcher.Patch(_harmony, () => null);
         }
 
         [OneTimeTearDown]

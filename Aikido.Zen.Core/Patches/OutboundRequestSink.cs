@@ -3,8 +3,6 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Http;
 using System.Reflection;
-using System.Threading;
-using System.Threading.Tasks;
 using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
@@ -25,22 +23,9 @@ namespace Aikido.Zen.Core.Patches
         private static readonly Uri ParsedAikidoUrl = new Uri(EnvironmentHelper.AikidoUrl);
         private static readonly Uri ParsedAikidoRealtimeUrl = new Uri(EnvironmentHelper.AikidoRealtimeUrl);
 
-        [PatchTarget(PatchKind.Prefix, "System.Net.Http", "HttpClient", "SendAsync", "System.Net.Http.HttpRequestMessage", "System.Net.Http.HttpCompletionOption", "System.Threading.CancellationToken")]
-        private static bool OnHttpClientSendAsyncWithCompletionOption(HttpRequestMessage request, HttpClient __instance, MethodBase __originalMethod, ref Task<HttpResponseMessage> __result, CancellationToken cancellationToken)
+        internal static bool OnRequest(object[] __args, MethodBase __originalMethod, object __instance)
         {
-            return InspectRequest(request, __instance, __originalMethod, ref __result);
-        }
-
-        [PatchTarget(PatchKind.Prefix, "System.Net.Http", "HttpClient", "SendAsync", "System.Net.Http.HttpRequestMessage", "System.Threading.CancellationToken")]
-        private static bool OnHttpClientSendAsync(HttpRequestMessage request, HttpClient __instance, MethodBase __originalMethod, ref Task<HttpResponseMessage> __result, CancellationToken cancellationToken)
-        {
-            return InspectRequest(request, __instance, __originalMethod, ref __result);
-        }
-
-        [PatchTarget(PatchKind.Prefix, "System.Net.Http", "HttpClient", "Send", "System.Net.Http.HttpRequestMessage", "System.Threading.CancellationToken")]
-        private static bool OnHttpClientSend(HttpRequestMessage request, HttpClient __instance, MethodBase __originalMethod, ref HttpResponseMessage __result, CancellationToken cancellationToken)
-        {
-            var targetUri = ResolveUri(request, __instance);
+            var targetUri = ResolveOutboundUri(__args, __instance);
             if (targetUri == null)
             {
                 return true;
@@ -58,75 +43,6 @@ namespace Aikido.Zen.Core.Patches
             }
 
             throw inspection.Exception;
-        }
-
-        [PatchTarget(PatchKind.Prefix, "", "System.Net.WebRequest", "GetResponse")]
-        [PatchTarget(PatchKind.Prefix, "", "System.Net.HttpWebRequest", "GetResponse")]
-        private static bool OnWebRequestGetResponse(WebRequest __instance, MethodBase __originalMethod, ref WebResponse __result)
-        {
-            if (__instance?.RequestUri == null)
-            {
-                return true;
-            }
-
-            var inspection = Inspect(
-                __instance.RequestUri,
-                GetOperation(__originalMethod),
-                GetModule(__originalMethod),
-                Patcher.GetContext());
-
-            if (inspection.ShouldProceed)
-            {
-                return true;
-            }
-
-            throw inspection.Exception;
-        }
-
-        [PatchTarget(PatchKind.Prefix, "", "System.Net.WebRequest", "GetResponseAsync")]
-        private static bool OnWebRequestGetResponseAsync(WebRequest __instance, MethodBase __originalMethod, ref Task<WebResponse> __result)
-        {
-            if (__instance?.RequestUri == null)
-            {
-                return true;
-            }
-
-            var inspection = Inspect(
-                __instance.RequestUri,
-                GetOperation(__originalMethod),
-                GetModule(__originalMethod),
-                Patcher.GetContext());
-
-            if (inspection.ShouldProceed)
-            {
-                return true;
-            }
-
-            __result = Task.FromException<WebResponse>(inspection.Exception);
-            return false;
-        }
-
-        private static bool InspectRequest(HttpRequestMessage request, HttpClient client, MethodBase originalMethod, ref Task<HttpResponseMessage> result)
-        {
-            var targetUri = ResolveUri(request, client);
-            if (targetUri == null)
-            {
-                return true;
-            }
-
-            var inspection = Inspect(
-                targetUri,
-                GetOperation(originalMethod),
-                GetModule(originalMethod),
-                Patcher.GetContext());
-
-            if (inspection.ShouldProceed)
-            {
-                return true;
-            }
-
-            result = Task.FromException<HttpResponseMessage>(inspection.Exception);
-            return false;
         }
 
         internal static OutboundInspectionResult Inspect(Uri targetUri, string operation, string module, Context context)
@@ -202,6 +118,19 @@ namespace Aikido.Zen.Core.Patches
             }
 
             return false;
+        }
+
+        private static Uri ResolveOutboundUri(object[] args, object instance)
+        {
+            var httpClient = instance as HttpClient;
+            if (httpClient != null)
+            {
+                var request = args != null && args.Length > 0 ? args[0] as HttpRequestMessage : null;
+                return ResolveUri(request, httpClient);
+            }
+
+            var webRequest = instance as WebRequest;
+            return webRequest?.RequestUri;
         }
 
         private static Uri ResolveUri(HttpRequestMessage request, HttpClient client)

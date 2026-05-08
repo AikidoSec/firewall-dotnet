@@ -20,7 +20,7 @@ namespace Aikido.Zen.Tests.DotNetCore.Patches
         public void OneTimeSetUp()
         {
             _harmony = new Harmony(HarmonyId);
-            Patcher.ApplyPatches(_harmony, () => null);
+            Patcher.Patch(_harmony, () => null);
         }
 
         [TearDown]
@@ -102,11 +102,11 @@ namespace Aikido.Zen.Tests.DotNetCore.Patches
         }
 
         [Test]
-        public void LLMSink_ApplyPatches_DoesNotThrow()
+        public void LLMSink_Patch_DoesNotThrow()
         {
             // Test that applying patches doesn't throw exceptions even if some assemblies are missing
             var testHarmony = new Harmony("test.harmony.llm");
-            Assert.DoesNotThrow(() => Patcher.ApplyPatches(testHarmony, () => null));
+            Assert.DoesNotThrow(() => Patcher.Patch(testHarmony, () => null));
             testHarmony.UnpatchAll("test.harmony.llm");
         }
     }

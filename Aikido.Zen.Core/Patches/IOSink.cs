@@ -13,31 +13,17 @@ namespace Aikido.Zen.Core.Patches
         private const string OperationKind = "fs_op";
         private static readonly ThreadLocal<bool> IsProcessing = new ThreadLocal<bool>(() => false);
 
-        [PatchTarget(PatchKind.Prefix, "", "System.IO.File", "Open", "System.String", "System.IO.FileMode", PathArgumentIndexes = new int[] { 0 })]
-        [PatchTarget(PatchKind.Prefix, "", "System.IO.File", "OpenRead", "System.String", PathArgumentIndexes = new int[] { 0 })]
-        [PatchTarget(PatchKind.Prefix, "", "System.IO.File", "OpenWrite", "System.String", PathArgumentIndexes = new int[] { 0 })]
-        [PatchTarget(PatchKind.Prefix, "", "System.IO.File", "Create", "System.String", "System.Int32", "System.IO.FileOptions", PathArgumentIndexes = new int[] { 0 })]
-        [PatchTarget(PatchKind.Prefix, "", "System.IO.File", "Delete", "System.String", PathArgumentIndexes = new int[] { 0 })]
-        [PatchTarget(PatchKind.Prefix, "", "System.IO.File", "Copy", "System.String", "System.String", "System.Boolean", PathArgumentIndexes = new int[] { 0, 1 })]
-        [PatchTarget(PatchKind.Prefix, "", "System.IO.File", "Move", "System.String", "System.String", PathArgumentIndexes = new int[] { 0, 1 })]
-        [PatchTarget(PatchKind.Prefix, "", "System.IO.File", "Move", "System.String", "System.String", "System.Boolean", PathArgumentIndexes = new int[] { 0, 1 })]
-        [PatchTarget(PatchKind.Prefix, "", "System.IO.File", "ReadAllText", "System.String", PathArgumentIndexes = new int[] { 0 })]
-        [PatchTarget(PatchKind.Prefix, "", "System.IO.File", "ReadAllBytes", "System.String", PathArgumentIndexes = new int[] { 0 })]
-        [PatchTarget(PatchKind.Prefix, "", "System.IO.File", "WriteAllText", "System.String", "System.String", PathArgumentIndexes = new int[] { 0 })]
-        [PatchTarget(PatchKind.Prefix, "", "System.IO.File", "WriteAllBytes", "System.String", "System.Byte[]", PathArgumentIndexes = new int[] { 0 })]
-        [PatchTarget(PatchKind.Prefix, "", "System.IO.File", "AppendAllText", "System.String", "System.String", PathArgumentIndexes = new int[] { 0 })]
-        [PatchTarget(PatchKind.Prefix, "", "System.IO.Path", "GetFullPath", "System.String", PathArgumentIndexes = new int[] { 0 })]
-        [PatchTarget(PatchKind.Prefix, "", "System.IO.Path", "GetFullPath", "System.String", "System.String", PathArgumentIndexes = new int[] { 0, 1 })]
-        [PatchTarget(PatchKind.Prefix, "", "System.IO.Directory", "CreateDirectory", "System.String", PathArgumentIndexes = new int[] { 0 })]
-        [PatchTarget(PatchKind.Prefix, "", "System.IO.Directory", "CreateDirectory", "System.String", "System.Security.AccessControl.DirectorySecurity", PathArgumentIndexes = new int[] { 0 })]
-        [PatchTarget(PatchKind.Prefix, "", "System.IO.Directory", "Delete", "System.String", "System.Boolean", PathArgumentIndexes = new int[] { 0 })]
-        [PatchTarget(PatchKind.Prefix, "", "System.IO.Directory", "GetFiles", "System.String", PathArgumentIndexes = new int[] { 0 })]
-        [PatchTarget(PatchKind.Prefix, "", "System.IO.Directory", "GetFiles", "System.String", "System.String", PathArgumentIndexes = new int[] { 0 })]
-        [PatchTarget(PatchKind.Prefix, "", "System.IO.Directory", "GetFiles", "System.String", "System.String", "System.IO.SearchOption", PathArgumentIndexes = new int[] { 0 })]
-        [PatchTarget(PatchKind.Prefix, "", "System.IO.Directory", "GetDirectories", "System.String", PathArgumentIndexes = new int[] { 0 })]
-        [PatchTarget(PatchKind.Prefix, "", "System.IO.Directory", "GetDirectories", "System.String", "System.String", PathArgumentIndexes = new int[] { 0 })]
-        [PatchTarget(PatchKind.Prefix, "", "System.IO.Directory", "GetDirectories", "System.String", "System.String", "System.IO.SearchOption", PathArgumentIndexes = new int[] { 0 })]
-        private static bool OnFileOperation(object[] __args, MethodBase __originalMethod)
+        internal static bool OnPathOperation(object[] __args, MethodBase __originalMethod)
+        {
+            return OnFileOperation(GetStringArguments(__args, 1), __originalMethod);
+        }
+
+        internal static bool OnTwoPathOperation(object[] __args, MethodBase __originalMethod)
+        {
+            return OnFileOperation(GetStringArguments(__args, 2), __originalMethod);
+        }
+
+        private static bool OnFileOperation(string[] paths, MethodBase originalMethod)
         {
             if (IsProcessing.Value)
             {
@@ -47,10 +33,9 @@ namespace Aikido.Zen.Core.Patches
             try
             {
                 IsProcessing.Value = true;
-                var paths = GetPaths(__args, __originalMethod);
                 return paths.Length == 0
                     ? true
-                    : OnFileOperation(paths, __originalMethod, Patcher.GetContext());
+                    : OnFileOperation(paths, originalMethod, Patcher.GetContext());
             }
             finally
             {
@@ -120,18 +105,17 @@ namespace Aikido.Zen.Core.Patches
             return true;
         }
 
-        private static string[] GetPaths(object[] args, MethodBase originalMethod)
+        private static string[] GetStringArguments(object[] args, int count)
         {
-            var pathArgumentIndexes = Patcher.GetPatchTarget(originalMethod)?.PathArgumentIndexes;
-            if (args == null || pathArgumentIndexes == null || pathArgumentIndexes.Length == 0)
+            if (args == null || count <= 0)
             {
                 return Array.Empty<string>();
             }
 
-            return pathArgumentIndexes
-                .Where(index => index >= 0 && index < args.Length)
-                .Select(index => args[index] as string)
+            return args
+                .OfType<string>()
                 .Where(path => !string.IsNullOrEmpty(path))
+                .Take(count)
                 .ToArray();
         }
 

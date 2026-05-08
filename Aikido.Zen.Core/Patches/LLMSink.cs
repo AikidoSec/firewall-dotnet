@@ -12,11 +12,7 @@ namespace Aikido.Zen.Core.Patches
     {
         private const string OperationKind = "ai_op";
 
-        [PatchTarget(PatchKind.Postfix, "OpenAI", "OpenAI.Chat.ChatClient", "CompleteChat")]
-        [PatchTarget(PatchKind.Postfix, "OpenAI", "OpenAI.Chat.ChatClient", "CompleteChatAsync")]
-        [PatchTarget(PatchKind.Postfix, "Rystem.OpenAi", "Rystem.OpenAi.Chat.OpenAiChat", "ExecuteAsync")]
-        [PatchTarget(PatchKind.Postfix, "Rystem.OpenAi", "Rystem.OpenAi.Chat.OpenAiChat", "ExecuteAsStreamAsync")]
-        private static void OnLLMCallCompleted(object[] __args, MethodBase __originalMethod, object __instance, object __result)
+        internal static void OnLLMCallCompleted(object[] __args, MethodBase __originalMethod, object __instance, object __result)
         {
             var assembly = __instance?.GetType().Assembly.FullName?.Split(new[] { ", Culture=" }, StringSplitOptions.RemoveEmptyEntries)[0] ?? string.Empty;
             var resolvedResult = LLMResultHelper.ResolveResult(__result);
