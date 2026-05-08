@@ -35,7 +35,7 @@ namespace Aikido.Zen.DotNetFramework
             // set zen version
             AgentInfoHelper.SetVersion(typeof(Zen).Assembly.GetName().Version.ToString());
             // patch the sinks
-            CorePatcher.Patch(GetContext);
+            CorePatcher.PatchSinks(GetContext);
             // setup the agent
             if (Agent.Instance == null)
             {

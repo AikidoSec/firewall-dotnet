@@ -11,6 +11,7 @@ namespace Aikido.Zen.Core.Sinks
     public class Patcher
     {
         private const string HarmonyId = "aikido.zen";
+        private static readonly Harmony _harmony = new Harmony(HarmonyId);
         private static Func<Context> _getContext = () => null;
 
         private static readonly MethodInfo IOPathPatch = GetRequiredMethod(typeof(IOSink), nameof(IOSink.OnPathOperation), typeof(object[]), typeof(MethodBase));
@@ -20,20 +21,93 @@ namespace Aikido.Zen.Core.Sinks
         private static readonly MethodInfo ProcessExecutionPatch = GetRequiredMethod(typeof(ProcessExecutionSink), nameof(ProcessExecutionSink.OnProcessStart), typeof(object[]), typeof(MethodBase), typeof(object));
         private static readonly MethodInfo SqlClientPatch = GetRequiredMethod(typeof(SqlClientSink), nameof(SqlClientSink.OnCommandExecuting), typeof(object[]), typeof(MethodBase), typeof(object));
 
-        public static void Patch()
-        {
-            Patch(() => null);
-        }
-
-        public static void Patch(Func<Context> getContext)
+        public static void PatchSinks(Func<Context> getContext)
         {
             try
             {
-                Patch(new Harmony(HarmonyId), getContext);
+                _getContext = getContext ?? (() => null);
+
+                PatchPrefix(IOPathPatch, "", "System.IO.File", "Open", "System.String", "System.IO.FileMode");
+                PatchPrefix(IOPathPatch, "", "System.IO.File", "OpenRead", "System.String");
+                PatchPrefix(IOPathPatch, "", "System.IO.File", "OpenWrite", "System.String");
+                PatchPrefix(IOPathPatch, "", "System.IO.File", "Create", "System.String", "System.Int32", "System.IO.FileOptions");
+                PatchPrefix(IOPathPatch, "", "System.IO.File", "Delete", "System.String");
+                PatchPrefix(IOTwoPathsPatch, "", "System.IO.File", "Copy", "System.String", "System.String", "System.Boolean");
+                PatchPrefix(IOTwoPathsPatch, "", "System.IO.File", "Move", "System.String", "System.String");
+                PatchPrefix(IOTwoPathsPatch, "", "System.IO.File", "Move", "System.String", "System.String", "System.Boolean");
+                PatchPrefix(IOPathPatch, "", "System.IO.File", "ReadAllText", "System.String");
+                PatchPrefix(IOPathPatch, "", "System.IO.File", "ReadAllBytes", "System.String");
+                PatchPrefix(IOPathPatch, "", "System.IO.File", "WriteAllText", "System.String", "System.String");
+                PatchPrefix(IOPathPatch, "", "System.IO.File", "WriteAllBytes", "System.String", "System.Byte[]");
+                PatchPrefix(IOPathPatch, "", "System.IO.File", "AppendAllText", "System.String", "System.String");
+                PatchPrefix(IOPathPatch, "", "System.IO.Path", "GetFullPath", "System.String");
+                PatchPrefix(IOTwoPathsPatch, "", "System.IO.Path", "GetFullPath", "System.String", "System.String");
+                PatchPrefix(IOPathPatch, "", "System.IO.Directory", "CreateDirectory", "System.String");
+                PatchPrefix(IOPathPatch, "", "System.IO.Directory", "CreateDirectory", "System.String", "System.Security.AccessControl.DirectorySecurity");
+                PatchPrefix(IOPathPatch, "", "System.IO.Directory", "Delete", "System.String", "System.Boolean");
+                PatchPrefix(IOPathPatch, "", "System.IO.Directory", "GetFiles", "System.String");
+                PatchPrefix(IOPathPatch, "", "System.IO.Directory", "GetFiles", "System.String", "System.String");
+                PatchPrefix(IOPathPatch, "", "System.IO.Directory", "GetFiles", "System.String", "System.String", "System.IO.SearchOption");
+                PatchPrefix(IOPathPatch, "", "System.IO.Directory", "GetDirectories", "System.String");
+                PatchPrefix(IOPathPatch, "", "System.IO.Directory", "GetDirectories", "System.String", "System.String");
+                PatchPrefix(IOPathPatch, "", "System.IO.Directory", "GetDirectories", "System.String", "System.String", "System.IO.SearchOption");
+
+                PatchPostfix(LLMPatch, "OpenAI", "OpenAI.Chat.ChatClient", "CompleteChat");
+                PatchPostfix(LLMPatch, "OpenAI", "OpenAI.Chat.ChatClient", "CompleteChatAsync");
+                PatchPostfix(LLMPatch, "Rystem.OpenAi", "Rystem.OpenAi.Chat.OpenAiChat", "ExecuteAsync");
+                PatchPostfix(LLMPatch, "Rystem.OpenAi", "Rystem.OpenAi.Chat.OpenAiChat", "ExecuteAsStreamAsync");
+
+                PatchPrefix(OutboundRequestPatch, "System.Net.Http", "HttpClient", "SendAsync", "System.Net.Http.HttpRequestMessage", "System.Net.Http.HttpCompletionOption", "System.Threading.CancellationToken");
+                PatchPrefix(OutboundRequestPatch, "System.Net.Http", "HttpClient", "SendAsync", "System.Net.Http.HttpRequestMessage", "System.Threading.CancellationToken");
+                PatchPrefix(OutboundRequestPatch, "System.Net.Http", "HttpClient", "Send", "System.Net.Http.HttpRequestMessage", "System.Threading.CancellationToken");
+                PatchPrefix(OutboundRequestPatch, "", "System.Net.WebRequest", "GetResponse");
+                PatchPrefix(OutboundRequestPatch, "", "System.Net.HttpWebRequest", "GetResponse");
+                PatchPrefix(OutboundRequestPatch, "", "System.Net.WebRequest", "GetResponseAsync");
+
+                PatchPrefix(ProcessExecutionPatch, "System.Diagnostics.Process", "System.Diagnostics.Process", "Start");
+                PatchPrefix(ProcessExecutionPatch, "System", "System.Diagnostics.Process", "Start");
+
+                PatchPrefix(SqlClientPatch, "System.Data.Common", "DbCommand", "ExecuteNonQueryAsync");
+                PatchPrefix(SqlClientPatch, "System.Data.Common", "DbCommand", "ExecuteReaderAsync", "System.Data.CommandBehavior");
+                PatchPrefix(SqlClientPatch, "System.Data.Common", "DbCommand", "ExecuteScalarAsync");
+                PatchPrefix(SqlClientPatch, "Microsoft.Data.SqlClient", "SqlCommand", "ExecuteNonQuery");
+                PatchPrefix(SqlClientPatch, "Microsoft.Data.SqlClient", "SqlCommand", "ExecuteScalar");
+                PatchPrefix(SqlClientPatch, "Microsoft.Data.SqlClient", "SqlCommand", "ExecuteReader", "System.Data.CommandBehavior");
+                PatchPrefix(SqlClientPatch, "System.Data.SqlClient", "SqlCommand", "ExecuteNonQuery");
+                PatchPrefix(SqlClientPatch, "System.Data.SqlClient", "SqlCommand", "ExecuteScalar");
+                PatchPrefix(SqlClientPatch, "System.Data.SqlClient", "SqlCommand", "ExecuteReader", "System.Data.CommandBehavior");
+                PatchPrefix(SqlClientPatch, "System.Data.SqlServerCe", "SqlCeCommand", "ExecuteNonQuery");
+                PatchPrefix(SqlClientPatch, "System.Data.SqlServerCe", "SqlCeCommand", "ExecuteScalar");
+                PatchPrefix(SqlClientPatch, "System.Data.SqlServerCe", "SqlCeCommand", "ExecuteReader", "System.Data.CommandBehavior");
+                PatchPrefix(SqlClientPatch, "Microsoft.Data.Sqlite", "SqliteCommand", "ExecuteNonQuery");
+                PatchPrefix(SqlClientPatch, "Microsoft.Data.Sqlite", "SqliteCommand", "ExecuteScalar");
+                PatchPrefix(SqlClientPatch, "Microsoft.Data.Sqlite", "SqliteCommand", "ExecuteReader", "System.Data.CommandBehavior");
+                PatchPrefix(SqlClientPatch, "MySql.Data", "MySqlClient.MySqlCommand", "ExecuteNonQuery");
+                PatchPrefix(SqlClientPatch, "MySql.Data", "MySqlClient.MySqlCommand", "ExecuteScalar");
+                PatchPrefix(SqlClientPatch, "MySql.Data", "MySqlClient.MySqlCommand", "ExecuteReader", "System.Data.CommandBehavior");
+                PatchPrefix(SqlClientPatch, "MySqlConnector", "MySqlCommand", "ExecuteNonQuery");
+                PatchPrefix(SqlClientPatch, "MySqlConnector", "MySqlCommand", "ExecuteScalar");
+                PatchPrefix(SqlClientPatch, "MySqlConnector", "MySqlCommand", "ExecuteReader", "System.Data.CommandBehavior");
+                PatchPrefix(SqlClientPatch, "Npgsql", "NpgsqlCommand", "ExecuteNonQuery");
+                PatchPrefix(SqlClientPatch, "Npgsql", "NpgsqlCommand", "ExecuteScalar");
+                PatchPrefix(SqlClientPatch, "Npgsql", "NpgsqlCommand", "ExecuteReader", "System.Data.CommandBehavior");
+                PatchPrefix(SqlClientPatch, "Npgsql", "NpgsqlCommand", "ExecuteNonQueryAsync", "System.Threading.CancellationToken");
+                PatchPrefix(SqlClientPatch, "Npgsql", "NpgsqlCommand", "ExecuteReaderAsync", "System.Threading.CancellationToken");
+                PatchPrefix(SqlClientPatch, "Npgsql", "NpgsqlCommand", "ExecuteReaderAsync", "System.Data.CommandBehavior", "System.Threading.CancellationToken");
+                PatchPrefix(SqlClientPatch, "Npgsql", "NpgsqlCommand", "ExecuteScalarAsync", "System.Threading.CancellationToken");
+                PatchPrefix(SqlClientPatch, "MySqlX", "XDevAPI.Relational.Table", "Select");
+                PatchPrefix(SqlClientPatch, "MySqlX", "XDevAPI.Relational.Table", "Insert");
+                PatchPrefix(SqlClientPatch, "MySqlX", "XDevAPI.Relational.Table", "Update");
+                PatchPrefix(SqlClientPatch, "MySqlX", "XDevAPI.Relational.Table", "Delete");
+                PatchPrefix(SqlClientPatch, "NPoco", "Database", "ExecuteReaderHelper", "System.Data.Common.DbCommand");
+                PatchPrefix(SqlClientPatch, "NPoco", "Database", "ExecuteNonQueryHelper", "System.Data.Common.DbCommand");
+                PatchPrefix(SqlClientPatch, "NPoco", "Database", "ExecuteScalarHelper", "System.Data.Common.DbCommand");
+                PatchPrefix(SqlClientPatch, "Microsoft.EntityFrameworkCore.Relational", "RelationalDatabaseFacadeExtensions", "ExecuteSqlRaw", "Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacade", "System.String", "System.Collections.Generic.IEnumerable`1[System.Object]");
+                PatchPrefix(SqlClientPatch, "Microsoft.EntityFrameworkCore.Relational", "RelationalDatabaseFacadeExtensions", "ExecuteSqlRawAsync", "Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacade", "System.String", "System.Collections.Generic.IEnumerable`1[System.Object]", "System.Threading.CancellationToken");
             }
             catch (Exception ex)
             {
-                LogHelper.ErrorLog(Agent.Logger, $"Error patching: {ex.Message}");
+                LogHelper.ErrorLog(Agent.Logger, $"Error patching sinks: {ex.Message}");
             }
         }
 
@@ -41,15 +115,8 @@ namespace Aikido.Zen.Core.Sinks
         {
             if (Harmony.HasAnyPatches(HarmonyId))
             {
-                var harmony = new Harmony(HarmonyId);
-                harmony.UnpatchAll(HarmonyId);
+                _harmony.UnpatchAll(HarmonyId);
             }
-        }
-
-        internal static void Patch(Harmony harmony, Func<Context> getContext)
-        {
-            _getContext = getContext ?? (() => null);
-            PatchSinks(harmony);
         }
 
         internal static Context GetContext()
@@ -57,89 +124,7 @@ namespace Aikido.Zen.Core.Sinks
             return _getContext();
         }
 
-        private static void PatchSinks(Harmony harmony)
-        {
-            PatchPrefix(harmony, IOPathPatch, "", "System.IO.File", "Open", "System.String", "System.IO.FileMode");
-            PatchPrefix(harmony, IOPathPatch, "", "System.IO.File", "OpenRead", "System.String");
-            PatchPrefix(harmony, IOPathPatch, "", "System.IO.File", "OpenWrite", "System.String");
-            PatchPrefix(harmony, IOPathPatch, "", "System.IO.File", "Create", "System.String", "System.Int32", "System.IO.FileOptions");
-            PatchPrefix(harmony, IOPathPatch, "", "System.IO.File", "Delete", "System.String");
-            PatchPrefix(harmony, IOTwoPathsPatch, "", "System.IO.File", "Copy", "System.String", "System.String", "System.Boolean");
-            PatchPrefix(harmony, IOTwoPathsPatch, "", "System.IO.File", "Move", "System.String", "System.String");
-            PatchPrefix(harmony, IOTwoPathsPatch, "", "System.IO.File", "Move", "System.String", "System.String", "System.Boolean");
-            PatchPrefix(harmony, IOPathPatch, "", "System.IO.File", "ReadAllText", "System.String");
-            PatchPrefix(harmony, IOPathPatch, "", "System.IO.File", "ReadAllBytes", "System.String");
-            PatchPrefix(harmony, IOPathPatch, "", "System.IO.File", "WriteAllText", "System.String", "System.String");
-            PatchPrefix(harmony, IOPathPatch, "", "System.IO.File", "WriteAllBytes", "System.String", "System.Byte[]");
-            PatchPrefix(harmony, IOPathPatch, "", "System.IO.File", "AppendAllText", "System.String", "System.String");
-            PatchPrefix(harmony, IOPathPatch, "", "System.IO.Path", "GetFullPath", "System.String");
-            PatchPrefix(harmony, IOTwoPathsPatch, "", "System.IO.Path", "GetFullPath", "System.String", "System.String");
-            PatchPrefix(harmony, IOPathPatch, "", "System.IO.Directory", "CreateDirectory", "System.String");
-            PatchPrefix(harmony, IOPathPatch, "", "System.IO.Directory", "CreateDirectory", "System.String", "System.Security.AccessControl.DirectorySecurity");
-            PatchPrefix(harmony, IOPathPatch, "", "System.IO.Directory", "Delete", "System.String", "System.Boolean");
-            PatchPrefix(harmony, IOPathPatch, "", "System.IO.Directory", "GetFiles", "System.String");
-            PatchPrefix(harmony, IOPathPatch, "", "System.IO.Directory", "GetFiles", "System.String", "System.String");
-            PatchPrefix(harmony, IOPathPatch, "", "System.IO.Directory", "GetFiles", "System.String", "System.String", "System.IO.SearchOption");
-            PatchPrefix(harmony, IOPathPatch, "", "System.IO.Directory", "GetDirectories", "System.String");
-            PatchPrefix(harmony, IOPathPatch, "", "System.IO.Directory", "GetDirectories", "System.String", "System.String");
-            PatchPrefix(harmony, IOPathPatch, "", "System.IO.Directory", "GetDirectories", "System.String", "System.String", "System.IO.SearchOption");
-
-            PatchPostfix(harmony, LLMPatch, "OpenAI", "OpenAI.Chat.ChatClient", "CompleteChat");
-            PatchPostfix(harmony, LLMPatch, "OpenAI", "OpenAI.Chat.ChatClient", "CompleteChatAsync");
-            PatchPostfix(harmony, LLMPatch, "Rystem.OpenAi", "Rystem.OpenAi.Chat.OpenAiChat", "ExecuteAsync");
-            PatchPostfix(harmony, LLMPatch, "Rystem.OpenAi", "Rystem.OpenAi.Chat.OpenAiChat", "ExecuteAsStreamAsync");
-
-            PatchPrefix(harmony, OutboundRequestPatch, "System.Net.Http", "HttpClient", "SendAsync", "System.Net.Http.HttpRequestMessage", "System.Net.Http.HttpCompletionOption", "System.Threading.CancellationToken");
-            PatchPrefix(harmony, OutboundRequestPatch, "System.Net.Http", "HttpClient", "SendAsync", "System.Net.Http.HttpRequestMessage", "System.Threading.CancellationToken");
-            PatchPrefix(harmony, OutboundRequestPatch, "System.Net.Http", "HttpClient", "Send", "System.Net.Http.HttpRequestMessage", "System.Threading.CancellationToken");
-            PatchPrefix(harmony, OutboundRequestPatch, "", "System.Net.WebRequest", "GetResponse");
-            PatchPrefix(harmony, OutboundRequestPatch, "", "System.Net.HttpWebRequest", "GetResponse");
-            PatchPrefix(harmony, OutboundRequestPatch, "", "System.Net.WebRequest", "GetResponseAsync");
-
-            PatchPrefix(harmony, ProcessExecutionPatch, "System.Diagnostics.Process", "System.Diagnostics.Process", "Start");
-            PatchPrefix(harmony, ProcessExecutionPatch, "System", "System.Diagnostics.Process", "Start");
-
-            PatchPrefix(harmony, SqlClientPatch, "System.Data.Common", "DbCommand", "ExecuteNonQueryAsync");
-            PatchPrefix(harmony, SqlClientPatch, "System.Data.Common", "DbCommand", "ExecuteReaderAsync", "System.Data.CommandBehavior");
-            PatchPrefix(harmony, SqlClientPatch, "System.Data.Common", "DbCommand", "ExecuteScalarAsync");
-            PatchPrefix(harmony, SqlClientPatch, "Microsoft.Data.SqlClient", "SqlCommand", "ExecuteNonQuery");
-            PatchPrefix(harmony, SqlClientPatch, "Microsoft.Data.SqlClient", "SqlCommand", "ExecuteScalar");
-            PatchPrefix(harmony, SqlClientPatch, "Microsoft.Data.SqlClient", "SqlCommand", "ExecuteReader", "System.Data.CommandBehavior");
-            PatchPrefix(harmony, SqlClientPatch, "System.Data.SqlClient", "SqlCommand", "ExecuteNonQuery");
-            PatchPrefix(harmony, SqlClientPatch, "System.Data.SqlClient", "SqlCommand", "ExecuteScalar");
-            PatchPrefix(harmony, SqlClientPatch, "System.Data.SqlClient", "SqlCommand", "ExecuteReader", "System.Data.CommandBehavior");
-            PatchPrefix(harmony, SqlClientPatch, "System.Data.SqlServerCe", "SqlCeCommand", "ExecuteNonQuery");
-            PatchPrefix(harmony, SqlClientPatch, "System.Data.SqlServerCe", "SqlCeCommand", "ExecuteScalar");
-            PatchPrefix(harmony, SqlClientPatch, "System.Data.SqlServerCe", "SqlCeCommand", "ExecuteReader", "System.Data.CommandBehavior");
-            PatchPrefix(harmony, SqlClientPatch, "Microsoft.Data.Sqlite", "SqliteCommand", "ExecuteNonQuery");
-            PatchPrefix(harmony, SqlClientPatch, "Microsoft.Data.Sqlite", "SqliteCommand", "ExecuteScalar");
-            PatchPrefix(harmony, SqlClientPatch, "Microsoft.Data.Sqlite", "SqliteCommand", "ExecuteReader", "System.Data.CommandBehavior");
-            PatchPrefix(harmony, SqlClientPatch, "MySql.Data", "MySqlClient.MySqlCommand", "ExecuteNonQuery");
-            PatchPrefix(harmony, SqlClientPatch, "MySql.Data", "MySqlClient.MySqlCommand", "ExecuteScalar");
-            PatchPrefix(harmony, SqlClientPatch, "MySql.Data", "MySqlClient.MySqlCommand", "ExecuteReader", "System.Data.CommandBehavior");
-            PatchPrefix(harmony, SqlClientPatch, "MySqlConnector", "MySqlCommand", "ExecuteNonQuery");
-            PatchPrefix(harmony, SqlClientPatch, "MySqlConnector", "MySqlCommand", "ExecuteScalar");
-            PatchPrefix(harmony, SqlClientPatch, "MySqlConnector", "MySqlCommand", "ExecuteReader", "System.Data.CommandBehavior");
-            PatchPrefix(harmony, SqlClientPatch, "Npgsql", "NpgsqlCommand", "ExecuteNonQuery");
-            PatchPrefix(harmony, SqlClientPatch, "Npgsql", "NpgsqlCommand", "ExecuteScalar");
-            PatchPrefix(harmony, SqlClientPatch, "Npgsql", "NpgsqlCommand", "ExecuteReader", "System.Data.CommandBehavior");
-            PatchPrefix(harmony, SqlClientPatch, "Npgsql", "NpgsqlCommand", "ExecuteNonQueryAsync", "System.Threading.CancellationToken");
-            PatchPrefix(harmony, SqlClientPatch, "Npgsql", "NpgsqlCommand", "ExecuteReaderAsync", "System.Threading.CancellationToken");
-            PatchPrefix(harmony, SqlClientPatch, "Npgsql", "NpgsqlCommand", "ExecuteReaderAsync", "System.Data.CommandBehavior", "System.Threading.CancellationToken");
-            PatchPrefix(harmony, SqlClientPatch, "Npgsql", "NpgsqlCommand", "ExecuteScalarAsync", "System.Threading.CancellationToken");
-            PatchPrefix(harmony, SqlClientPatch, "MySqlX", "XDevAPI.Relational.Table", "Select");
-            PatchPrefix(harmony, SqlClientPatch, "MySqlX", "XDevAPI.Relational.Table", "Insert");
-            PatchPrefix(harmony, SqlClientPatch, "MySqlX", "XDevAPI.Relational.Table", "Update");
-            PatchPrefix(harmony, SqlClientPatch, "MySqlX", "XDevAPI.Relational.Table", "Delete");
-            PatchPrefix(harmony, SqlClientPatch, "NPoco", "Database", "ExecuteReaderHelper", "System.Data.Common.DbCommand");
-            PatchPrefix(harmony, SqlClientPatch, "NPoco", "Database", "ExecuteNonQueryHelper", "System.Data.Common.DbCommand");
-            PatchPrefix(harmony, SqlClientPatch, "NPoco", "Database", "ExecuteScalarHelper", "System.Data.Common.DbCommand");
-            PatchPrefix(harmony, SqlClientPatch, "Microsoft.EntityFrameworkCore.Relational", "RelationalDatabaseFacadeExtensions", "ExecuteSqlRaw", "Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacade", "System.String", "System.Collections.Generic.IEnumerable`1[System.Object]");
-            PatchPrefix(harmony, SqlClientPatch, "Microsoft.EntityFrameworkCore.Relational", "RelationalDatabaseFacadeExtensions", "ExecuteSqlRawAsync", "Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacade", "System.String", "System.Collections.Generic.IEnumerable`1[System.Object]", "System.Threading.CancellationToken");
-        }
-
         private static void PatchPrefix(
-            Harmony harmony,
             MethodInfo patchMethod,
             string assemblyName,
             string targetTypeName,
@@ -155,7 +140,7 @@ namespace Aikido.Zen.Core.Sinks
                     return;
                 }
 
-                harmony.Patch(targetMethod, prefix: new HarmonyMethod(patchMethod));
+                _harmony.Patch(targetMethod, prefix: new HarmonyMethod(patchMethod));
             }
             catch (Exception ex)
             {
@@ -164,7 +149,6 @@ namespace Aikido.Zen.Core.Sinks
         }
 
         private static void PatchPostfix(
-            Harmony harmony,
             MethodInfo patchMethod,
             string assemblyName,
             string targetTypeName,
@@ -180,7 +164,7 @@ namespace Aikido.Zen.Core.Sinks
                     return;
                 }
 
-                harmony.Patch(targetMethod, postfix: new HarmonyMethod(patchMethod));
+                _harmony.Patch(targetMethod, postfix: new HarmonyMethod(patchMethod));
             }
             catch (Exception ex)
             {

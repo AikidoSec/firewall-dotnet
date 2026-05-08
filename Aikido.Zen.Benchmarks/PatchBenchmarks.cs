@@ -39,7 +39,7 @@ namespace Aikido.Zen.Benchmarks
             var runtimeAPIClient = new RuntimeAPIClient(apiHttpClient);
             Agent.NewInstance(new ZenApi(reportingAPIClient, runtimeAPIClient));
 
-            Patcher.Patch();
+            Patcher.PatchSinks(() => null);
         }
 
         [Benchmark()]

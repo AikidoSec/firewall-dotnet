@@ -18,16 +18,14 @@ namespace Aikido.Zen.Test
     [TestFixture]
     public class PatcherTests
     {
-        private string _harmonyId;
-        private Harmony _harmony;
+        private const string HarmonyId = "aikido.zen";
         private Context _context;
         private Agent _agent;
 
         [SetUp]
         public void SetUp()
         {
-            _harmonyId = "com.aikido.zen.test.patcher." + Guid.NewGuid().ToString("N");
-            _harmony = new Harmony(_harmonyId);
+            Patcher.Unpatch();
             _context = new Context
             {
                 Method = "GET",
@@ -52,7 +50,6 @@ namespace Aikido.Zen.Test
         [TearDown]
         public void TearDown()
         {
-            _harmony.UnpatchAll(_harmonyId);
             Patcher.Unpatch();
             _agent?.Dispose();
 
@@ -65,10 +62,9 @@ namespace Aikido.Zen.Test
         [Test]
         public void PublicPatchMethods_DoNotThrowWhenOptionalTargetsAreMissing()
         {
-            Assert.DoesNotThrow(() => Patcher.Patch());
+            Assert.DoesNotThrow(() => Patcher.PatchSinks(() => null));
             Assert.DoesNotThrow(() => Patcher.Unpatch());
-
-            Assert.DoesNotThrow(() => Patcher.Patch(() => _context));
+            Assert.DoesNotThrow(() => Patcher.PatchSinks(() => _context));
             Assert.DoesNotThrow(() => Patcher.Unpatch());
             Assert.DoesNotThrow(() => Patcher.Unpatch());
         }
@@ -76,7 +72,7 @@ namespace Aikido.Zen.Test
         [Test]
         public void Patch_AppliesSharedDefinitionsToAvailableRuntimeMethods()
         {
-            Patcher.Patch(_harmony, () => _context);
+            Patcher.PatchSinks(() => _context);
 
             AssertPrefixPatch(GetMethod(typeof(File), nameof(File.ReadAllText), typeof(string)));
             AssertPrefixPatch(GetMethod(typeof(File), nameof(File.Copy), typeof(string), typeof(string), typeof(bool)));
@@ -93,7 +89,7 @@ namespace Aikido.Zen.Test
         public void Patch_WhenContextProviderIsNull_UsesNullContext()
         {
 #pragma warning disable CS8625
-            Patcher.Patch(_harmony, null);
+            Patcher.PatchSinks(null);
 #pragma warning restore CS8625
 
             Assert.That(Patcher.GetContext(), Is.Null);
@@ -102,7 +98,7 @@ namespace Aikido.Zen.Test
         [Test]
         public void SinkWrappers_UseConfiguredContextAndReturnTrueForSafeCalls()
         {
-            Patcher.Patch(_harmony, () => _context);
+            Patcher.PatchSinks(() => _context);
 
             Assert.That(IOSink.OnPathOperation(new object[] { "safe.txt" }, GetMethod(typeof(File), nameof(File.ReadAllText), typeof(string))), Is.True);
             Assert.That(IOSink.OnPathOperation(null, GetMethod(typeof(File), nameof(File.ReadAllText), typeof(string))), Is.True);
@@ -171,7 +167,7 @@ namespace Aikido.Zen.Test
             var patches = Harmony.GetPatchInfo(method);
 
             Assert.That(patches, Is.Not.Null);
-            Assert.That(patches.Prefixes.Any(prefix => prefix.owner == _harmonyId), Is.True);
+            Assert.That(patches.Prefixes.Any(prefix => prefix.owner == HarmonyId), Is.True);
         }
 
     }

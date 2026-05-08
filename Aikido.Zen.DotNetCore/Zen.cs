@@ -62,7 +62,7 @@ namespace Aikido.Zen.DotNetCore
                 RuntimeAssemblyTracker.Instance.SubscribeToAppDomain(AppDomain.CurrentDomain);
             }
 
-            CorePatcher.Patch(GetContext);
+            CorePatcher.PatchSinks(GetContext);
         }
 
         public static void SetUser(string id, string name, HttpContext context)
