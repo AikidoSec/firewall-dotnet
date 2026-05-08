@@ -3,11 +3,15 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
+
 using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.Core.Helpers;
 
 namespace Aikido.Zen.Core.Patches
 {
+    /// <summary>
+    /// Provides the core logic for handling patched file system operations.
+    /// </summary>
     public static class IOSink
     {
         private const string OperationKind = "fs_op";
@@ -43,8 +47,16 @@ namespace Aikido.Zen.Core.Patches
             }
         }
 
+        /// <summary>
+        /// A generic handler for file operations that checks for path traversal attacks.
+        /// </summary>
+        /// <param name="paths">The file or directory paths involved in the operation.</param>
+        /// <param name="originalMethod">The original method being patched.</param>
+        /// <param name="context">The context for the current operation.</param>
+        /// <returns>Always returns true. Throws an exception if a blocked attack is detected.</returns>
         public static bool OnFileOperation(string[] paths, MethodBase originalMethod, Context context)
         {
+            // Exclude certain assemblies to avoid stack overflow issues
             if (ReflectionHelper.ShouldSkipAssembly())
             {
                 return true;

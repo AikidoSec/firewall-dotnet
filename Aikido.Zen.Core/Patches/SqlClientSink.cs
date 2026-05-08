@@ -1,23 +1,26 @@
-using System;
 using System.Data.Common;
 using System.Diagnostics;
 using System.Reflection;
+
 using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 
 namespace Aikido.Zen.Core.Patches
 {
+    /// <summary>
+    /// Patches for SQL client operations to detect and prevent SQL injection attacks
+    /// </summary>
     public static class SqlClientSink
     {
-        private const string OperationKind = "sql_op";
+        private const string operationKind = "sql_op";
 
         internal static bool OnCommandExecuting(object[] __args, MethodBase __originalMethod, object __instance)
         {
             var dbCommand = __instance as DbCommand
                 ?? (__args != null && __args.Length > 0 ? __args[0] as DbCommand : null);
 
-            var assembly = __instance?.GetType().Assembly.FullName?.Split(new[] { ", Culture=" }, StringSplitOptions.RemoveEmptyEntries)[0] ?? string.Empty;
+            var assembly = __instance?.GetType().Assembly.FullName?.Split(new[] { ", Culture=" }, System.StringSplitOptions.RemoveEmptyEntries)[0] ?? string.Empty;
             string sql = null;
 
             if (dbCommand != null)
@@ -37,8 +40,15 @@ namespace Aikido.Zen.Core.Patches
             return OnCommandExecuting(__args, __originalMethod, sql, assembly, Patcher.GetContext());
         }
 
+        /// <summary>
+        /// Patches the OnCommandExecuting method to detect and prevent SQL injection attacks
+        /// </summary>
+        /// <param name="__args">The arguments passed to the method.</param>
+        /// <param name="__originalMethod">The original method being patched.</param>
+        /// <param name="sql">The SQL command to execute.</param>
         public static bool OnCommandExecuting(object[] __args, MethodBase __originalMethod, string sql, string assembly, Context context)
         {
+            // Exclude certain assemblies to avoid stack overflow issues
             if (ReflectionHelper.ShouldSkipAssembly())
             {
                 return true;
@@ -49,16 +59,19 @@ namespace Aikido.Zen.Core.Patches
                 return true;
             }
 
+
+            // Determine sink and context status regardless of detection outcome
             var stopwatch = Stopwatch.StartNew();
             var methodInfo = __originalMethod as MethodInfo;
             var operation = $"{methodInfo?.DeclaringType?.Name}.{methodInfo?.Name}";
             var assemblyName = methodInfo?.DeclaringType?.Assembly.GetName().Name;
-            var withoutContext = context == null;
-            var attackDetected = false;
-            var blocked = false;
+            bool withoutContext = context == null;
+            bool attackDetected = false;
+            bool blocked = false;
 
             try
             {
+                // Perform detection only if context and sql are available
                 if (context != null && sql != null &&
                     !Agent.Instance.Context.IsProtectionDisabledForEndpoint(context))
                 {
@@ -70,38 +83,38 @@ namespace Aikido.Zen.Core.Patches
             }
             catch
             {
-                try
-                {
-                    LogHelper.ErrorLog(Agent.Logger, "Error during SQL injection detection.");
-                }
-                catch
-                {
-                }
-
+                // Use Agent.Logger (assuming static logger)
+                try { LogHelper.ErrorLog(Agent.Logger, "Error during SQL injection detection."); } catch {/*ignore*/}
+                // Reset flags as detection failed
                 attackDetected = false;
                 blocked = false;
+                // Allow original method execution despite detection error
             }
 
+            // Record the call attempt statistics
             try
             {
-                Agent.Instance.Context.OnInspectedCall(operation, OperationKind, stopwatch.Elapsed.TotalMilliseconds, attackDetected, blocked, withoutContext);
+                Agent.Instance.Context.OnInspectedCall(operation, operationKind, stopwatch.Elapsed.TotalMilliseconds, attackDetected, blocked, withoutContext);
             }
             catch
             {
                 LogHelper.ErrorLog(Agent.Logger, "Error recording OnInspectedCall stats.");
             }
 
+            // Handle blocking if an attack was detected and not in dry mode
             if (blocked)
             {
+                // Throwing the exception prevents the original method from running
                 throw AikidoException.SQLInjectionDetected(GetDialect(assembly).ToHumanName());
             }
 
+            // Allow the original method to execute
             return true;
         }
 
         public static SQLDialect GetDialect(string assembly)
         {
-            var assemblyName = assembly.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)?[0]?.Trim();
+            var assemblyName = assembly.Split(new[] { ',' }, System.StringSplitOptions.RemoveEmptyEntries)?[0]?.Trim();
             switch (assemblyName)
             {
                 case "System.Data.SqlClient":
@@ -118,6 +131,5 @@ namespace Aikido.Zen.Core.Patches
                     return SQLDialect.Generic;
             }
         }
-
     }
 }
