@@ -18,7 +18,10 @@ namespace Aikido.Zen.Test
         [SetUp]
         public void Setup()
         {
-            _context = new Context();
+            _context = new Context
+            {
+                ParsedUserInput = new Dictionary<string, string>()
+            };
             _methodInfo = typeof(DbCommand).GetMethod("ExecuteNonQuery")
                     ?? throw new InvalidOperationException("Could not find DbCommand.ExecuteNonQuery.");
 
@@ -171,10 +174,74 @@ namespace Aikido.Zen.Test
             Assert.That(_context.AttackDetected, Is.False);
         }
 
+        [Test]
+        public void OnCommandExecuting_WithDbCommandInArgs_UsesCommandFromArgs()
+        {
+            Patcher.PatchSinks(() => null);
+            var dbCommand = new Mock<DbCommand>();
+            dbCommand.SetupGet(command => command.CommandText).Returns("SELECT 1");
+
+            var result = SqlClientSink.OnCommandExecuting(
+                new object[] { dbCommand.Object },
+                _methodInfo,
+                null);
+
+            Assert.That(result, Is.True);
+        }
+
+        [Test]
+        public void OnCommandExecuting_WithExecuteSqlRawMethod_UsesSqlArgument()
+        {
+            Patcher.PatchSinks(() => _context);
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
+            _context.ParsedUserInput = new Dictionary<string, string>
+            {
+                { "body.query", "1' OR '1'='1'" }
+            };
+            var methodInfo = typeof(TestSqlMethods).GetMethod(nameof(TestSqlMethods.ExecuteSqlRaw));
+            var sql = "SELECT * FROM users WHERE id = '1' OR '1'='1'";
+
+            var ex = Assert.Throws<AikidoException>(() =>
+                SqlClientSink.OnCommandExecuting(
+                    new object[] { new object(), sql, Array.Empty<object>() },
+                    methodInfo!,
+                    null));
+
+            Assert.That(ex.Message, Does.Contain("SQL injection detected"));
+        }
+
+        [Test]
+        public void OnCommandExecuting_WithUnsupportedMethodAndNoDbCommand_ReturnsTrue()
+        {
+            var methodInfo = typeof(TestSqlMethods).GetMethod(nameof(TestSqlMethods.Query));
+
+            var result = SqlClientSink.OnCommandExecuting(
+                new object[] { new object(), "SELECT 1" },
+                methodInfo!,
+                null);
+
+            Assert.That(result, Is.True);
+        }
+
         [TearDown]
         public void TearDown()
         {
+            Patcher.Unpatch();
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", null);
             Environment.SetEnvironmentVariable("AIKIDO_DRY_MODE", null);
+        }
+
+        private static class TestSqlMethods
+        {
+            public static int ExecuteSqlRaw(object databaseFacade, string sql, IEnumerable<object> parameters)
+            {
+                return 0;
+            }
+
+            public static int Query(string sql)
+            {
+                return 0;
+            }
         }
     }
 }
