@@ -25,7 +25,7 @@ namespace Aikido.Zen.Test
             Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", "true");
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
             Environment.SetEnvironmentVariable("AIKIDO_URL", "http://localhost:3000");
-            Environment.SetEnvironmentVariable("AIKIDO_REALTIME_URL", "http://localhost:3000");
+            Environment.SetEnvironmentVariable("AIKIDO_REALTIME_URL", "http://localhost:3001");
 
             _reportingApiMock = new Mock<IReportingAPIClient>();
             _reportingApiMock
@@ -162,6 +162,27 @@ namespace Aikido.Zen.Test
             // Act
             var result = OutboundRequestSink.Inspect(
                 new Uri("http://localhost:3000/api/runtime/events"),
+                "HttpClient.SendAsync",
+                "System.Net.Http",
+                null);
+
+            // Assert
+            Assert.That(result.ShouldProceed, Is.True);
+            Assert.That(result.Blocked, Is.False);
+        }
+
+        [Test]
+        public void Inspect_WhenRequestTargetsConfiguredAikidoRealtime_DoesNotBlock()
+        {
+            // Arrange
+            _agent.Context.Config.UpdateOutboundDomains(true, new[]
+            {
+                new OutboundDomainConfig { Hostname = "safe.example", Mode = "allow" }
+            });
+
+            // Act
+            var result = OutboundRequestSink.Inspect(
+                new Uri("http://localhost:3001/config"),
                 "HttpClient.SendAsync",
                 "System.Net.Http",
                 null);
