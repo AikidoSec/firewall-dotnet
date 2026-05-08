@@ -1,4 +1,5 @@
 using System;
+using System.Reflection;
 
 namespace Aikido.Zen.Core.Sinks
 {
@@ -8,28 +9,18 @@ namespace Aikido.Zen.Core.Sinks
         Postfix
     }
 
-    internal enum SinkKind
-    {
-        IOPath,
-        IOTwoPaths,
-        LLM,
-        OutboundRequest,
-        ProcessExecution,
-        SqlClient
-    }
-
     internal sealed class PatchDefinition
     {
         private PatchDefinition(
             PatchKind kind,
-            SinkKind sink,
+            MethodInfo patchMethod,
             string[] assemblyNames,
             string targetTypeName,
             string targetMethodName,
             string[] targetParameterTypeNames)
         {
             Kind = kind;
-            Sink = sink;
+            PatchMethod = patchMethod ?? throw new ArgumentNullException(nameof(patchMethod));
             AssemblyNames = assemblyNames ?? Array.Empty<string>();
             TargetTypeName = targetTypeName;
             TargetMethodName = targetMethodName;
@@ -37,21 +28,21 @@ namespace Aikido.Zen.Core.Sinks
         }
 
         internal PatchKind Kind { get; private set; }
-        internal SinkKind Sink { get; private set; }
+        internal MethodInfo PatchMethod { get; private set; }
         internal string[] AssemblyNames { get; private set; }
         internal string TargetTypeName { get; private set; }
         internal string TargetMethodName { get; private set; }
         internal string[] TargetParameterTypeNames { get; private set; }
 
         internal static PatchDefinition Prefix(
-            SinkKind sink,
+            MethodInfo patchMethod,
             string assemblyName,
             string targetTypeName,
             string targetMethodName,
             params string[] targetParameterTypeNames)
         {
             return Prefix(
-                sink,
+                patchMethod,
                 string.IsNullOrEmpty(assemblyName) ? Array.Empty<string>() : new[] { assemblyName },
                 targetTypeName,
                 targetMethodName,
@@ -59,7 +50,7 @@ namespace Aikido.Zen.Core.Sinks
         }
 
         internal static PatchDefinition Prefix(
-            SinkKind sink,
+            MethodInfo patchMethod,
             string[] assemblyNames,
             string targetTypeName,
             string targetMethodName,
@@ -67,7 +58,7 @@ namespace Aikido.Zen.Core.Sinks
         {
             return new PatchDefinition(
                 PatchKind.Prefix,
-                sink,
+                patchMethod,
                 assemblyNames,
                 targetTypeName,
                 targetMethodName,
@@ -75,7 +66,7 @@ namespace Aikido.Zen.Core.Sinks
         }
 
         internal static PatchDefinition Postfix(
-            SinkKind sink,
+            MethodInfo patchMethod,
             string assemblyName,
             string targetTypeName,
             string targetMethodName,
@@ -83,7 +74,7 @@ namespace Aikido.Zen.Core.Sinks
         {
             return new PatchDefinition(
                 PatchKind.Postfix,
-                sink,
+                patchMethod,
                 string.IsNullOrEmpty(assemblyName) ? Array.Empty<string>() : new[] { assemblyName },
                 targetTypeName,
                 targetMethodName,

@@ -54,7 +54,6 @@ namespace Aikido.Zen.Test
         {
             _harmony.UnpatchAll(_harmonyId);
             Patcher.Unpatch();
-            Patcher.Unpatch(_harmonyId);
             _agent?.Dispose();
 
             Environment.SetEnvironmentVariable("AIKIDO_TOKEN", null);
@@ -69,9 +68,9 @@ namespace Aikido.Zen.Test
             Assert.DoesNotThrow(() => Patcher.Patch());
             Assert.DoesNotThrow(() => Patcher.Unpatch());
 
-            Assert.DoesNotThrow(() => Patcher.Patch(_harmonyId, () => _context));
-            Assert.DoesNotThrow(() => Patcher.Unpatch(_harmonyId));
-            Assert.DoesNotThrow(() => Patcher.Unpatch(_harmonyId));
+            Assert.DoesNotThrow(() => Patcher.Patch(() => _context));
+            Assert.DoesNotThrow(() => Patcher.Unpatch());
+            Assert.DoesNotThrow(() => Patcher.Unpatch());
         }
 
         [Test]
@@ -94,7 +93,7 @@ namespace Aikido.Zen.Test
         public void Patch_MatchesGenericParameterUsingRuntimeTypeString()
         {
             var definition = PatchDefinition.Prefix(
-                SinkKind.IOPath,
+                GetMethod(typeof(IOSink), nameof(IOSink.OnPathOperation), typeof(object[]), typeof(MethodBase)),
                 string.Empty,
                 typeof(GenericTarget).FullName,
                 nameof(GenericTarget.Read),
@@ -109,7 +108,7 @@ namespace Aikido.Zen.Test
         public void Patch_WhenExplicitAssemblyIsMissing_DoesNotFallbackToLoadedAssemblies()
         {
             var definition = PatchDefinition.Prefix(
-                SinkKind.IOPath,
+                GetMethod(typeof(IOSink), nameof(IOSink.OnPathOperation), typeof(object[]), typeof(MethodBase)),
                 "Missing.Assembly",
                 typeof(GenericTarget).FullName,
                 nameof(GenericTarget.Read),

@@ -15,8 +15,6 @@ namespace Aikido.Zen.DotNetCore
 {
     public class Zen
     {
-        private const string HarmonyId = "aikido.zen.dotnetcore";
-
         private static IServiceProvider _serviceProvider;
         private static IHttpContextAccessor _httpContextAccessor;
 
@@ -64,7 +62,7 @@ namespace Aikido.Zen.DotNetCore
                 RuntimeAssemblyTracker.Instance.SubscribeToAppDomain(AppDomain.CurrentDomain);
             }
 
-            CorePatcher.Patch(HarmonyId, GetContext);
+            CorePatcher.Patch(GetContext);
         }
 
         public static void SetUser(string id, string name, HttpContext context)

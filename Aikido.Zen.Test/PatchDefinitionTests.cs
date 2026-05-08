@@ -1,3 +1,4 @@
+using System.Reflection;
 using Aikido.Zen.Core.Sinks;
 
 namespace Aikido.Zen.Test
@@ -9,14 +10,14 @@ namespace Aikido.Zen.Test
         public void Prefix_WithSingleAssemblyName_CreatesPrefixDefinition()
         {
             var definition = PatchDefinition.Prefix(
-                SinkKind.SqlClient,
+                PatchMethod,
                 "Npgsql",
                 "NpgsqlCommand",
                 "ExecuteScalar",
                 "System.Threading.CancellationToken");
 
             Assert.That(definition.Kind, Is.EqualTo(PatchKind.Prefix));
-            Assert.That(definition.Sink, Is.EqualTo(SinkKind.SqlClient));
+            Assert.That(definition.PatchMethod, Is.SameAs(PatchMethod));
             Assert.That(definition.AssemblyNames, Is.EqualTo(new[] { "Npgsql" }));
             Assert.That(definition.TargetTypeName, Is.EqualTo("NpgsqlCommand"));
             Assert.That(definition.TargetMethodName, Is.EqualTo("ExecuteScalar"));
@@ -27,13 +28,13 @@ namespace Aikido.Zen.Test
         public void Prefix_WithMultipleAssemblyNames_CreatesPrefixDefinition()
         {
             var definition = PatchDefinition.Prefix(
-                SinkKind.ProcessExecution,
+                PatchMethod,
                 new[] { "System.Diagnostics.Process", "System" },
                 "System.Diagnostics.Process",
                 "Start");
 
             Assert.That(definition.Kind, Is.EqualTo(PatchKind.Prefix));
-            Assert.That(definition.Sink, Is.EqualTo(SinkKind.ProcessExecution));
+            Assert.That(definition.PatchMethod, Is.SameAs(PatchMethod));
             Assert.That(definition.AssemblyNames, Is.EqualTo(new[] { "System.Diagnostics.Process", "System" }));
             Assert.That(definition.TargetTypeName, Is.EqualTo("System.Diagnostics.Process"));
             Assert.That(definition.TargetMethodName, Is.EqualTo("Start"));
@@ -44,7 +45,7 @@ namespace Aikido.Zen.Test
         public void Prefix_WithEmptyAssemblyName_UsesNoAssemblyNames()
         {
             var definition = PatchDefinition.Prefix(
-                SinkKind.IOPath,
+                PatchMethod,
                 string.Empty,
                 "System.IO.File",
                 "ReadAllText",
@@ -59,17 +60,32 @@ namespace Aikido.Zen.Test
         public void Postfix_WithSingleAssemblyName_CreatesPostfixDefinition()
         {
             var definition = PatchDefinition.Postfix(
-                SinkKind.LLM,
+                PatchMethod,
                 "OpenAI",
                 "OpenAI.Chat.ChatClient",
                 "CompleteChat");
 
             Assert.That(definition.Kind, Is.EqualTo(PatchKind.Postfix));
-            Assert.That(definition.Sink, Is.EqualTo(SinkKind.LLM));
+            Assert.That(definition.PatchMethod, Is.SameAs(PatchMethod));
             Assert.That(definition.AssemblyNames, Is.EqualTo(new[] { "OpenAI" }));
             Assert.That(definition.TargetTypeName, Is.EqualTo("OpenAI.Chat.ChatClient"));
             Assert.That(definition.TargetMethodName, Is.EqualTo("CompleteChat"));
             Assert.That(definition.TargetParameterTypeNames, Is.Empty);
+        }
+
+        private static readonly MethodInfo PatchMethod = GetPatchMethod();
+
+        private static MethodInfo GetPatchMethod()
+        {
+            return typeof(PatchDefinitionTests).GetMethod(
+                nameof(TestPatch),
+                BindingFlags.Static | BindingFlags.NonPublic)
+                ?? throw new MissingMethodException(nameof(PatchDefinitionTests), nameof(TestPatch));
+        }
+
+        private static bool TestPatch()
+        {
+            return true;
         }
     }
 }
