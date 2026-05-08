@@ -41,10 +41,13 @@ namespace Aikido.Zen.Test
         }
 
         [TestCase("System.Data.SqlClient", SQLDialect.MicrosoftSQL)]
+        [TestCase("Microsoft.Data.SqlClient", SQLDialect.MicrosoftSQL)]
+        [TestCase("System.Data.SqlServerCe", SQLDialect.MicrosoftSQL)]
         [TestCase("Microsoft.Data.Sqlite", SQLDialect.Generic)]
         [TestCase("MySql.Data", SQLDialect.MySQL)]
         [TestCase("Npgsql", SQLDialect.PostgreSQL)]
         [TestCase("MySqlConnector", SQLDialect.MySQL)]
+        [TestCase("MySqlX", SQLDialect.MySQL)]
         [TestCase("Unknown.Assembly", SQLDialect.Generic)]
         public void GetDialect_ShouldReturnCorrectDialect(string assembly, SQLDialect expectedDialect)
         {
@@ -101,6 +104,25 @@ namespace Aikido.Zen.Test
 
             // Act
             var result = SqlClientSink.OnCommandExecuting(args, _methodInfo, sql, "System.Data.SqlClient", _context);
+
+            // Assert
+            Assert.That(result, Is.True);
+        }
+
+        [Test]
+        public void OnCommandExecuting_WithNullAssembly_UsesOriginalMethodAssembly()
+        {
+            // Arrange
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
+            var sql = "SELECT * FROM users WHERE id = @id";
+
+            // Act
+            var result = SqlClientSink.OnCommandExecuting(
+                Array.Empty<object>(),
+                _methodInfo,
+                sql,
+                null,
+                _context);
 
             // Assert
             Assert.That(result, Is.True);
@@ -175,6 +197,34 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void OnCommandExecuting_WithNoCommandArgument_ReturnsTrue()
+        {
+            Patcher.PatchSinks(() => _context);
+
+            var result = SqlClientSink.OnCommandExecuting(
+                Array.Empty<object>(),
+                _methodInfo,
+                null);
+
+            Assert.That(result, Is.True);
+        }
+
+        [Test]
+        public void OnCommandExecuting_WithDbCommandInstance_UsesCommandFromInstance()
+        {
+            Patcher.PatchSinks(() => _context);
+            var dbCommand = new Mock<DbCommand>();
+            dbCommand.SetupGet(command => command.CommandText).Returns("SELECT 1");
+
+            var result = SqlClientSink.OnCommandExecuting(
+                Array.Empty<object>(),
+                _methodInfo,
+                dbCommand.Object);
+
+            Assert.That(result, Is.True);
+        }
+
+        [Test]
         public void OnCommandExecuting_WithDbCommandInArgs_UsesCommandFromArgs()
         {
             Patcher.PatchSinks(() => null);
@@ -184,6 +234,20 @@ namespace Aikido.Zen.Test
             var result = SqlClientSink.OnCommandExecuting(
                 new object[] { dbCommand.Object },
                 _methodInfo,
+                null);
+
+            Assert.That(result, Is.True);
+        }
+
+        [Test]
+        public void OnCommandExecuting_WithExecuteSqlRawMethodWithoutSqlArgument_ReturnsTrue()
+        {
+            Patcher.PatchSinks(() => _context);
+            var methodInfo = typeof(TestSqlMethods).GetMethod(nameof(TestSqlMethods.ExecuteSqlRaw));
+
+            var result = SqlClientSink.OnCommandExecuting(
+                new object[] { new object() },
+                methodInfo!,
                 null);
 
             Assert.That(result, Is.True);

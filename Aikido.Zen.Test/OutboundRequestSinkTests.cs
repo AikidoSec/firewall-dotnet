@@ -193,6 +193,28 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void Inspect_WhenAikidoHostUsesDifferentPort_AppliesOutboundRules()
+        {
+            // Arrange
+            _agent.Context.Config.UpdateOutboundDomains(true, new[]
+            {
+                new OutboundDomainConfig { Hostname = "safe.example", Mode = "allow" }
+            });
+
+            // Act
+            var result = OutboundRequestSink.Inspect(
+                new Uri("http://localhost:3002/api/runtime/events"),
+                "HttpClient.SendAsync",
+                "System.Net.Http",
+                null);
+
+            // Assert
+            Assert.That(result.ShouldProceed, Is.False);
+            Assert.That(result.Blocked, Is.True);
+            Assert.That(result.Exception?.Message, Does.Contain("localhost"));
+        }
+
+        [Test]
         public void Inspect_WhenContextIsBypassed_CapturesHostnameWithoutBlocking()
         {
             // Arrange
@@ -285,6 +307,22 @@ namespace Aikido.Zen.Test
             // Assert
             Assert.That(result, Is.True);
             Assert.That(_agent.Context.Hostnames.Any(h => h.Hostname == "base-only.example" && h.Port == 443), Is.True);
+        }
+
+        [Test]
+        public void OnRequest_WithHttpClientAndNoRequestOrBaseAddress_ReturnsTrue()
+        {
+            // Arrange
+            using var httpClient = new HttpClient();
+
+            // Act
+            var result = OutboundRequestSink.OnRequest(
+                Array.Empty<object>(),
+                GetHttpClientSendAsyncMethod(),
+                httpClient);
+
+            // Assert
+            Assert.That(result, Is.True);
         }
 
         private static MethodInfo GetHttpClientSendAsyncMethod()
