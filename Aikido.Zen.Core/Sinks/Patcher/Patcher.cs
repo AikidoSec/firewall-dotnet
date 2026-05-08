@@ -49,7 +49,7 @@ namespace Aikido.Zen.Core.Sinks
         internal static void Patch(Harmony harmony, Func<Context> getContext)
         {
             _getContext = getContext ?? (() => null);
-            PatchDefinitions(harmony);
+            PatchSinks(harmony);
         }
 
         internal static Context GetContext()
@@ -57,105 +57,134 @@ namespace Aikido.Zen.Core.Sinks
             return _getContext();
         }
 
-        private static void PatchDefinitions(Harmony harmony)
+        private static void PatchSinks(Harmony harmony)
         {
-            Patch(harmony, PatchDefinition.Prefix(IOPathPatch, "", "System.IO.File", "Open", "System.String", "System.IO.FileMode"));
-            Patch(harmony, PatchDefinition.Prefix(IOPathPatch, "", "System.IO.File", "OpenRead", "System.String"));
-            Patch(harmony, PatchDefinition.Prefix(IOPathPatch, "", "System.IO.File", "OpenWrite", "System.String"));
-            Patch(harmony, PatchDefinition.Prefix(IOPathPatch, "", "System.IO.File", "Create", "System.String", "System.Int32", "System.IO.FileOptions"));
-            Patch(harmony, PatchDefinition.Prefix(IOPathPatch, "", "System.IO.File", "Delete", "System.String"));
-            Patch(harmony, PatchDefinition.Prefix(IOTwoPathsPatch, "", "System.IO.File", "Copy", "System.String", "System.String", "System.Boolean"));
-            Patch(harmony, PatchDefinition.Prefix(IOTwoPathsPatch, "", "System.IO.File", "Move", "System.String", "System.String"));
-            Patch(harmony, PatchDefinition.Prefix(IOTwoPathsPatch, "", "System.IO.File", "Move", "System.String", "System.String", "System.Boolean"));
-            Patch(harmony, PatchDefinition.Prefix(IOPathPatch, "", "System.IO.File", "ReadAllText", "System.String"));
-            Patch(harmony, PatchDefinition.Prefix(IOPathPatch, "", "System.IO.File", "ReadAllBytes", "System.String"));
-            Patch(harmony, PatchDefinition.Prefix(IOPathPatch, "", "System.IO.File", "WriteAllText", "System.String", "System.String"));
-            Patch(harmony, PatchDefinition.Prefix(IOPathPatch, "", "System.IO.File", "WriteAllBytes", "System.String", "System.Byte[]"));
-            Patch(harmony, PatchDefinition.Prefix(IOPathPatch, "", "System.IO.File", "AppendAllText", "System.String", "System.String"));
-            Patch(harmony, PatchDefinition.Prefix(IOPathPatch, "", "System.IO.Path", "GetFullPath", "System.String"));
-            Patch(harmony, PatchDefinition.Prefix(IOTwoPathsPatch, "", "System.IO.Path", "GetFullPath", "System.String", "System.String"));
-            Patch(harmony, PatchDefinition.Prefix(IOPathPatch, "", "System.IO.Directory", "CreateDirectory", "System.String"));
-            Patch(harmony, PatchDefinition.Prefix(IOPathPatch, "", "System.IO.Directory", "CreateDirectory", "System.String", "System.Security.AccessControl.DirectorySecurity"));
-            Patch(harmony, PatchDefinition.Prefix(IOPathPatch, "", "System.IO.Directory", "Delete", "System.String", "System.Boolean"));
-            Patch(harmony, PatchDefinition.Prefix(IOPathPatch, "", "System.IO.Directory", "GetFiles", "System.String"));
-            Patch(harmony, PatchDefinition.Prefix(IOPathPatch, "", "System.IO.Directory", "GetFiles", "System.String", "System.String"));
-            Patch(harmony, PatchDefinition.Prefix(IOPathPatch, "", "System.IO.Directory", "GetFiles", "System.String", "System.String", "System.IO.SearchOption"));
-            Patch(harmony, PatchDefinition.Prefix(IOPathPatch, "", "System.IO.Directory", "GetDirectories", "System.String"));
-            Patch(harmony, PatchDefinition.Prefix(IOPathPatch, "", "System.IO.Directory", "GetDirectories", "System.String", "System.String"));
-            Patch(harmony, PatchDefinition.Prefix(IOPathPatch, "", "System.IO.Directory", "GetDirectories", "System.String", "System.String", "System.IO.SearchOption"));
+            PatchPrefix(harmony, IOPathPatch, "", "System.IO.File", "Open", "System.String", "System.IO.FileMode");
+            PatchPrefix(harmony, IOPathPatch, "", "System.IO.File", "OpenRead", "System.String");
+            PatchPrefix(harmony, IOPathPatch, "", "System.IO.File", "OpenWrite", "System.String");
+            PatchPrefix(harmony, IOPathPatch, "", "System.IO.File", "Create", "System.String", "System.Int32", "System.IO.FileOptions");
+            PatchPrefix(harmony, IOPathPatch, "", "System.IO.File", "Delete", "System.String");
+            PatchPrefix(harmony, IOTwoPathsPatch, "", "System.IO.File", "Copy", "System.String", "System.String", "System.Boolean");
+            PatchPrefix(harmony, IOTwoPathsPatch, "", "System.IO.File", "Move", "System.String", "System.String");
+            PatchPrefix(harmony, IOTwoPathsPatch, "", "System.IO.File", "Move", "System.String", "System.String", "System.Boolean");
+            PatchPrefix(harmony, IOPathPatch, "", "System.IO.File", "ReadAllText", "System.String");
+            PatchPrefix(harmony, IOPathPatch, "", "System.IO.File", "ReadAllBytes", "System.String");
+            PatchPrefix(harmony, IOPathPatch, "", "System.IO.File", "WriteAllText", "System.String", "System.String");
+            PatchPrefix(harmony, IOPathPatch, "", "System.IO.File", "WriteAllBytes", "System.String", "System.Byte[]");
+            PatchPrefix(harmony, IOPathPatch, "", "System.IO.File", "AppendAllText", "System.String", "System.String");
+            PatchPrefix(harmony, IOPathPatch, "", "System.IO.Path", "GetFullPath", "System.String");
+            PatchPrefix(harmony, IOTwoPathsPatch, "", "System.IO.Path", "GetFullPath", "System.String", "System.String");
+            PatchPrefix(harmony, IOPathPatch, "", "System.IO.Directory", "CreateDirectory", "System.String");
+            PatchPrefix(harmony, IOPathPatch, "", "System.IO.Directory", "CreateDirectory", "System.String", "System.Security.AccessControl.DirectorySecurity");
+            PatchPrefix(harmony, IOPathPatch, "", "System.IO.Directory", "Delete", "System.String", "System.Boolean");
+            PatchPrefix(harmony, IOPathPatch, "", "System.IO.Directory", "GetFiles", "System.String");
+            PatchPrefix(harmony, IOPathPatch, "", "System.IO.Directory", "GetFiles", "System.String", "System.String");
+            PatchPrefix(harmony, IOPathPatch, "", "System.IO.Directory", "GetFiles", "System.String", "System.String", "System.IO.SearchOption");
+            PatchPrefix(harmony, IOPathPatch, "", "System.IO.Directory", "GetDirectories", "System.String");
+            PatchPrefix(harmony, IOPathPatch, "", "System.IO.Directory", "GetDirectories", "System.String", "System.String");
+            PatchPrefix(harmony, IOPathPatch, "", "System.IO.Directory", "GetDirectories", "System.String", "System.String", "System.IO.SearchOption");
 
-            Patch(harmony, PatchDefinition.Postfix(LLMPatch, "OpenAI", "OpenAI.Chat.ChatClient", "CompleteChat"));
-            Patch(harmony, PatchDefinition.Postfix(LLMPatch, "OpenAI", "OpenAI.Chat.ChatClient", "CompleteChatAsync"));
-            Patch(harmony, PatchDefinition.Postfix(LLMPatch, "Rystem.OpenAi", "Rystem.OpenAi.Chat.OpenAiChat", "ExecuteAsync"));
-            Patch(harmony, PatchDefinition.Postfix(LLMPatch, "Rystem.OpenAi", "Rystem.OpenAi.Chat.OpenAiChat", "ExecuteAsStreamAsync"));
+            PatchPostfix(harmony, LLMPatch, "OpenAI", "OpenAI.Chat.ChatClient", "CompleteChat");
+            PatchPostfix(harmony, LLMPatch, "OpenAI", "OpenAI.Chat.ChatClient", "CompleteChatAsync");
+            PatchPostfix(harmony, LLMPatch, "Rystem.OpenAi", "Rystem.OpenAi.Chat.OpenAiChat", "ExecuteAsync");
+            PatchPostfix(harmony, LLMPatch, "Rystem.OpenAi", "Rystem.OpenAi.Chat.OpenAiChat", "ExecuteAsStreamAsync");
 
-            Patch(harmony, PatchDefinition.Prefix(OutboundRequestPatch, "System.Net.Http", "HttpClient", "SendAsync", "System.Net.Http.HttpRequestMessage", "System.Net.Http.HttpCompletionOption", "System.Threading.CancellationToken"));
-            Patch(harmony, PatchDefinition.Prefix(OutboundRequestPatch, "System.Net.Http", "HttpClient", "SendAsync", "System.Net.Http.HttpRequestMessage", "System.Threading.CancellationToken"));
-            Patch(harmony, PatchDefinition.Prefix(OutboundRequestPatch, "System.Net.Http", "HttpClient", "Send", "System.Net.Http.HttpRequestMessage", "System.Threading.CancellationToken"));
-            Patch(harmony, PatchDefinition.Prefix(OutboundRequestPatch, "", "System.Net.WebRequest", "GetResponse"));
-            Patch(harmony, PatchDefinition.Prefix(OutboundRequestPatch, "", "System.Net.HttpWebRequest", "GetResponse"));
-            Patch(harmony, PatchDefinition.Prefix(OutboundRequestPatch, "", "System.Net.WebRequest", "GetResponseAsync"));
+            PatchPrefix(harmony, OutboundRequestPatch, "System.Net.Http", "HttpClient", "SendAsync", "System.Net.Http.HttpRequestMessage", "System.Net.Http.HttpCompletionOption", "System.Threading.CancellationToken");
+            PatchPrefix(harmony, OutboundRequestPatch, "System.Net.Http", "HttpClient", "SendAsync", "System.Net.Http.HttpRequestMessage", "System.Threading.CancellationToken");
+            PatchPrefix(harmony, OutboundRequestPatch, "System.Net.Http", "HttpClient", "Send", "System.Net.Http.HttpRequestMessage", "System.Threading.CancellationToken");
+            PatchPrefix(harmony, OutboundRequestPatch, "", "System.Net.WebRequest", "GetResponse");
+            PatchPrefix(harmony, OutboundRequestPatch, "", "System.Net.HttpWebRequest", "GetResponse");
+            PatchPrefix(harmony, OutboundRequestPatch, "", "System.Net.WebRequest", "GetResponseAsync");
 
-            Patch(harmony, PatchDefinition.Prefix(ProcessExecutionPatch, new[] { "System.Diagnostics.Process", "System" }, "System.Diagnostics.Process", "Start"));
+            PatchPrefix(harmony, ProcessExecutionPatch, "System.Diagnostics.Process", "System.Diagnostics.Process", "Start");
+            PatchPrefix(harmony, ProcessExecutionPatch, "System", "System.Diagnostics.Process", "Start");
 
-            Patch(harmony, PatchDefinition.Prefix(SqlClientPatch, "System.Data.Common", "DbCommand", "ExecuteNonQueryAsync"));
-            Patch(harmony, PatchDefinition.Prefix(SqlClientPatch, "System.Data.Common", "DbCommand", "ExecuteReaderAsync", "System.Data.CommandBehavior"));
-            Patch(harmony, PatchDefinition.Prefix(SqlClientPatch, "System.Data.Common", "DbCommand", "ExecuteScalarAsync"));
-            Patch(harmony, PatchDefinition.Prefix(SqlClientPatch, "Microsoft.Data.SqlClient", "SqlCommand", "ExecuteNonQuery"));
-            Patch(harmony, PatchDefinition.Prefix(SqlClientPatch, "Microsoft.Data.SqlClient", "SqlCommand", "ExecuteScalar"));
-            Patch(harmony, PatchDefinition.Prefix(SqlClientPatch, "Microsoft.Data.SqlClient", "SqlCommand", "ExecuteReader", "System.Data.CommandBehavior"));
-            Patch(harmony, PatchDefinition.Prefix(SqlClientPatch, "System.Data.SqlClient", "SqlCommand", "ExecuteNonQuery"));
-            Patch(harmony, PatchDefinition.Prefix(SqlClientPatch, "System.Data.SqlClient", "SqlCommand", "ExecuteScalar"));
-            Patch(harmony, PatchDefinition.Prefix(SqlClientPatch, "System.Data.SqlClient", "SqlCommand", "ExecuteReader", "System.Data.CommandBehavior"));
-            Patch(harmony, PatchDefinition.Prefix(SqlClientPatch, "System.Data.SqlServerCe", "SqlCeCommand", "ExecuteNonQuery"));
-            Patch(harmony, PatchDefinition.Prefix(SqlClientPatch, "System.Data.SqlServerCe", "SqlCeCommand", "ExecuteScalar"));
-            Patch(harmony, PatchDefinition.Prefix(SqlClientPatch, "System.Data.SqlServerCe", "SqlCeCommand", "ExecuteReader", "System.Data.CommandBehavior"));
-            Patch(harmony, PatchDefinition.Prefix(SqlClientPatch, "Microsoft.Data.Sqlite", "SqliteCommand", "ExecuteNonQuery"));
-            Patch(harmony, PatchDefinition.Prefix(SqlClientPatch, "Microsoft.Data.Sqlite", "SqliteCommand", "ExecuteScalar"));
-            Patch(harmony, PatchDefinition.Prefix(SqlClientPatch, "Microsoft.Data.Sqlite", "SqliteCommand", "ExecuteReader", "System.Data.CommandBehavior"));
-            Patch(harmony, PatchDefinition.Prefix(SqlClientPatch, "MySql.Data", "MySqlClient.MySqlCommand", "ExecuteNonQuery"));
-            Patch(harmony, PatchDefinition.Prefix(SqlClientPatch, "MySql.Data", "MySqlClient.MySqlCommand", "ExecuteScalar"));
-            Patch(harmony, PatchDefinition.Prefix(SqlClientPatch, "MySql.Data", "MySqlClient.MySqlCommand", "ExecuteReader", "System.Data.CommandBehavior"));
-            Patch(harmony, PatchDefinition.Prefix(SqlClientPatch, "MySqlConnector", "MySqlCommand", "ExecuteNonQuery"));
-            Patch(harmony, PatchDefinition.Prefix(SqlClientPatch, "MySqlConnector", "MySqlCommand", "ExecuteScalar"));
-            Patch(harmony, PatchDefinition.Prefix(SqlClientPatch, "MySqlConnector", "MySqlCommand", "ExecuteReader", "System.Data.CommandBehavior"));
-            Patch(harmony, PatchDefinition.Prefix(SqlClientPatch, "Npgsql", "NpgsqlCommand", "ExecuteNonQuery"));
-            Patch(harmony, PatchDefinition.Prefix(SqlClientPatch, "Npgsql", "NpgsqlCommand", "ExecuteScalar"));
-            Patch(harmony, PatchDefinition.Prefix(SqlClientPatch, "Npgsql", "NpgsqlCommand", "ExecuteReader", "System.Data.CommandBehavior"));
-            Patch(harmony, PatchDefinition.Prefix(SqlClientPatch, "Npgsql", "NpgsqlCommand", "ExecuteNonQueryAsync", "System.Threading.CancellationToken"));
-            Patch(harmony, PatchDefinition.Prefix(SqlClientPatch, "Npgsql", "NpgsqlCommand", "ExecuteReaderAsync", "System.Threading.CancellationToken"));
-            Patch(harmony, PatchDefinition.Prefix(SqlClientPatch, "Npgsql", "NpgsqlCommand", "ExecuteReaderAsync", "System.Data.CommandBehavior", "System.Threading.CancellationToken"));
-            Patch(harmony, PatchDefinition.Prefix(SqlClientPatch, "Npgsql", "NpgsqlCommand", "ExecuteScalarAsync", "System.Threading.CancellationToken"));
-            Patch(harmony, PatchDefinition.Prefix(SqlClientPatch, "MySqlX", "XDevAPI.Relational.Table", "Select"));
-            Patch(harmony, PatchDefinition.Prefix(SqlClientPatch, "MySqlX", "XDevAPI.Relational.Table", "Insert"));
-            Patch(harmony, PatchDefinition.Prefix(SqlClientPatch, "MySqlX", "XDevAPI.Relational.Table", "Update"));
-            Patch(harmony, PatchDefinition.Prefix(SqlClientPatch, "MySqlX", "XDevAPI.Relational.Table", "Delete"));
-            Patch(harmony, PatchDefinition.Prefix(SqlClientPatch, "NPoco", "Database", "ExecuteReaderHelper", "System.Data.Common.DbCommand"));
-            Patch(harmony, PatchDefinition.Prefix(SqlClientPatch, "NPoco", "Database", "ExecuteNonQueryHelper", "System.Data.Common.DbCommand"));
-            Patch(harmony, PatchDefinition.Prefix(SqlClientPatch, "NPoco", "Database", "ExecuteScalarHelper", "System.Data.Common.DbCommand"));
-            Patch(harmony, PatchDefinition.Prefix(SqlClientPatch, "Microsoft.EntityFrameworkCore.Relational", "RelationalDatabaseFacadeExtensions", "ExecuteSqlRaw", "Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacade", "System.String", "System.Collections.Generic.IEnumerable`1[System.Object]"));
-            Patch(harmony, PatchDefinition.Prefix(SqlClientPatch, "Microsoft.EntityFrameworkCore.Relational", "RelationalDatabaseFacadeExtensions", "ExecuteSqlRawAsync", "Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacade", "System.String", "System.Collections.Generic.IEnumerable`1[System.Object]", "System.Threading.CancellationToken"));
+            PatchPrefix(harmony, SqlClientPatch, "System.Data.Common", "DbCommand", "ExecuteNonQueryAsync");
+            PatchPrefix(harmony, SqlClientPatch, "System.Data.Common", "DbCommand", "ExecuteReaderAsync", "System.Data.CommandBehavior");
+            PatchPrefix(harmony, SqlClientPatch, "System.Data.Common", "DbCommand", "ExecuteScalarAsync");
+            PatchPrefix(harmony, SqlClientPatch, "Microsoft.Data.SqlClient", "SqlCommand", "ExecuteNonQuery");
+            PatchPrefix(harmony, SqlClientPatch, "Microsoft.Data.SqlClient", "SqlCommand", "ExecuteScalar");
+            PatchPrefix(harmony, SqlClientPatch, "Microsoft.Data.SqlClient", "SqlCommand", "ExecuteReader", "System.Data.CommandBehavior");
+            PatchPrefix(harmony, SqlClientPatch, "System.Data.SqlClient", "SqlCommand", "ExecuteNonQuery");
+            PatchPrefix(harmony, SqlClientPatch, "System.Data.SqlClient", "SqlCommand", "ExecuteScalar");
+            PatchPrefix(harmony, SqlClientPatch, "System.Data.SqlClient", "SqlCommand", "ExecuteReader", "System.Data.CommandBehavior");
+            PatchPrefix(harmony, SqlClientPatch, "System.Data.SqlServerCe", "SqlCeCommand", "ExecuteNonQuery");
+            PatchPrefix(harmony, SqlClientPatch, "System.Data.SqlServerCe", "SqlCeCommand", "ExecuteScalar");
+            PatchPrefix(harmony, SqlClientPatch, "System.Data.SqlServerCe", "SqlCeCommand", "ExecuteReader", "System.Data.CommandBehavior");
+            PatchPrefix(harmony, SqlClientPatch, "Microsoft.Data.Sqlite", "SqliteCommand", "ExecuteNonQuery");
+            PatchPrefix(harmony, SqlClientPatch, "Microsoft.Data.Sqlite", "SqliteCommand", "ExecuteScalar");
+            PatchPrefix(harmony, SqlClientPatch, "Microsoft.Data.Sqlite", "SqliteCommand", "ExecuteReader", "System.Data.CommandBehavior");
+            PatchPrefix(harmony, SqlClientPatch, "MySql.Data", "MySqlClient.MySqlCommand", "ExecuteNonQuery");
+            PatchPrefix(harmony, SqlClientPatch, "MySql.Data", "MySqlClient.MySqlCommand", "ExecuteScalar");
+            PatchPrefix(harmony, SqlClientPatch, "MySql.Data", "MySqlClient.MySqlCommand", "ExecuteReader", "System.Data.CommandBehavior");
+            PatchPrefix(harmony, SqlClientPatch, "MySqlConnector", "MySqlCommand", "ExecuteNonQuery");
+            PatchPrefix(harmony, SqlClientPatch, "MySqlConnector", "MySqlCommand", "ExecuteScalar");
+            PatchPrefix(harmony, SqlClientPatch, "MySqlConnector", "MySqlCommand", "ExecuteReader", "System.Data.CommandBehavior");
+            PatchPrefix(harmony, SqlClientPatch, "Npgsql", "NpgsqlCommand", "ExecuteNonQuery");
+            PatchPrefix(harmony, SqlClientPatch, "Npgsql", "NpgsqlCommand", "ExecuteScalar");
+            PatchPrefix(harmony, SqlClientPatch, "Npgsql", "NpgsqlCommand", "ExecuteReader", "System.Data.CommandBehavior");
+            PatchPrefix(harmony, SqlClientPatch, "Npgsql", "NpgsqlCommand", "ExecuteNonQueryAsync", "System.Threading.CancellationToken");
+            PatchPrefix(harmony, SqlClientPatch, "Npgsql", "NpgsqlCommand", "ExecuteReaderAsync", "System.Threading.CancellationToken");
+            PatchPrefix(harmony, SqlClientPatch, "Npgsql", "NpgsqlCommand", "ExecuteReaderAsync", "System.Data.CommandBehavior", "System.Threading.CancellationToken");
+            PatchPrefix(harmony, SqlClientPatch, "Npgsql", "NpgsqlCommand", "ExecuteScalarAsync", "System.Threading.CancellationToken");
+            PatchPrefix(harmony, SqlClientPatch, "MySqlX", "XDevAPI.Relational.Table", "Select");
+            PatchPrefix(harmony, SqlClientPatch, "MySqlX", "XDevAPI.Relational.Table", "Insert");
+            PatchPrefix(harmony, SqlClientPatch, "MySqlX", "XDevAPI.Relational.Table", "Update");
+            PatchPrefix(harmony, SqlClientPatch, "MySqlX", "XDevAPI.Relational.Table", "Delete");
+            PatchPrefix(harmony, SqlClientPatch, "NPoco", "Database", "ExecuteReaderHelper", "System.Data.Common.DbCommand");
+            PatchPrefix(harmony, SqlClientPatch, "NPoco", "Database", "ExecuteNonQueryHelper", "System.Data.Common.DbCommand");
+            PatchPrefix(harmony, SqlClientPatch, "NPoco", "Database", "ExecuteScalarHelper", "System.Data.Common.DbCommand");
+            PatchPrefix(harmony, SqlClientPatch, "Microsoft.EntityFrameworkCore.Relational", "RelationalDatabaseFacadeExtensions", "ExecuteSqlRaw", "Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacade", "System.String", "System.Collections.Generic.IEnumerable`1[System.Object]");
+            PatchPrefix(harmony, SqlClientPatch, "Microsoft.EntityFrameworkCore.Relational", "RelationalDatabaseFacadeExtensions", "ExecuteSqlRawAsync", "Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacade", "System.String", "System.Collections.Generic.IEnumerable`1[System.Object]", "System.Threading.CancellationToken");
         }
 
-        private static void Patch(Harmony harmony, PatchDefinition definition)
+        private static void PatchPrefix(
+            Harmony harmony,
+            MethodInfo patchMethod,
+            string assemblyName,
+            string targetTypeName,
+            string targetMethodName,
+            params string[] targetParameterTypeNames)
         {
             try
             {
-                var targetMethod = ResolveTargetMethod(definition);
+                var assemblyNames = string.IsNullOrEmpty(assemblyName) ? Array.Empty<string>() : new[] { assemblyName };
+                var targetMethod = ResolveTargetMethod(assemblyNames, targetTypeName, targetMethodName, targetParameterTypeNames);
                 if (targetMethod == null || targetMethod.IsAbstract)
                 {
                     return;
                 }
 
-                var harmonyMethod = new HarmonyMethod(definition.PatchMethod);
-                harmony.Patch(
-                    targetMethod,
-                    definition.Kind == PatchKind.Prefix ? harmonyMethod : null,
-                    definition.Kind == PatchKind.Postfix ? harmonyMethod : null);
+                harmony.Patch(targetMethod, prefix: new HarmonyMethod(patchMethod));
             }
             catch (Exception ex)
             {
-                LogHelper.ErrorLog(Agent.Logger, $"Error applying patch {definition.TargetTypeName}.{definition.TargetMethodName}: {ex.Message}");
+                LogHelper.ErrorLog(Agent.Logger, $"Error applying patch {targetTypeName}.{targetMethodName}: {ex.Message}");
+            }
+        }
+
+        private static void PatchPostfix(
+            Harmony harmony,
+            MethodInfo patchMethod,
+            string assemblyName,
+            string targetTypeName,
+            string targetMethodName,
+            params string[] targetParameterTypeNames)
+        {
+            try
+            {
+                var assemblyNames = string.IsNullOrEmpty(assemblyName) ? Array.Empty<string>() : new[] { assemblyName };
+                var targetMethod = ResolveTargetMethod(assemblyNames, targetTypeName, targetMethodName, targetParameterTypeNames);
+                if (targetMethod == null || targetMethod.IsAbstract)
+                {
+                    return;
+                }
+
+                harmony.Patch(targetMethod, postfix: new HarmonyMethod(patchMethod));
+            }
+            catch (Exception ex)
+            {
+                LogHelper.ErrorLog(Agent.Logger, $"Error applying patch {targetTypeName}.{targetMethodName}: {ex.Message}");
             }
         }
 
@@ -170,19 +199,26 @@ namespace Aikido.Zen.Core.Sinks
             return method;
         }
 
-        private static MethodInfo ResolveTargetMethod(PatchDefinition definition)
+        private static MethodInfo ResolveTargetMethod(
+            string[] assemblyNames,
+            string targetTypeName,
+            string targetMethodName,
+            string[] targetParameterTypeNames)
         {
-            if (definition.AssemblyNames.Length == 0)
+            assemblyNames = assemblyNames ?? Array.Empty<string>();
+            targetParameterTypeNames = targetParameterTypeNames ?? Array.Empty<string>();
+
+            if (assemblyNames.Length == 0)
             {
-                var type = ResolveLoadedType(definition.TargetTypeName);
-                return type == null ? null : FindTargetMethod(type, definition);
+                var type = ResolveLoadedType(targetTypeName);
+                return type == null ? null : FindTargetMethod(type, targetMethodName, targetParameterTypeNames);
             }
 
-            foreach (var assemblyName in definition.AssemblyNames)
+            foreach (var assemblyName in assemblyNames)
             {
                 var assembly = LoadAssembly(assemblyName);
-                var type = assembly == null ? null : FindTargetType(assembly, definition.TargetTypeName);
-                var method = type == null ? null : FindTargetMethod(type, definition);
+                var type = assembly == null ? null : FindTargetType(assembly, targetTypeName);
+                var method = type == null ? null : FindTargetMethod(type, targetMethodName, targetParameterTypeNames);
                 if (method != null)
                 {
                     return method;
@@ -192,38 +228,38 @@ namespace Aikido.Zen.Core.Sinks
             return null;
         }
 
-        private static MethodInfo FindTargetMethod(Type type, PatchDefinition definition)
+        private static MethodInfo FindTargetMethod(Type type, string targetMethodName, string[] targetParameterTypeNames)
         {
             var methods = type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
 
-            var exactMatch = methods.FirstOrDefault(m => MethodMatches(m, definition));
+            var exactMatch = methods.FirstOrDefault(m => MethodMatches(m, targetMethodName, targetParameterTypeNames));
 
-            if (definition.TargetParameterTypeNames.Length > 0)
+            if (targetParameterTypeNames.Length > 0)
             {
                 return exactMatch;
             }
 
             return exactMatch ?? methods
-                .Where(m => m.Name == definition.TargetMethodName)
+                .Where(m => m.Name == targetMethodName)
                 .OrderByDescending(m => m.GetParameters().Length)
                 .FirstOrDefault();
         }
 
-        private static bool MethodMatches(MethodInfo method, PatchDefinition definition)
+        private static bool MethodMatches(MethodInfo method, string targetMethodName, string[] targetParameterTypeNames)
         {
-            if (method.Name != definition.TargetMethodName)
+            if (method.Name != targetMethodName)
             {
                 return false;
             }
 
             var parameters = method.GetParameters();
-            if (parameters.Length != definition.TargetParameterTypeNames.Length)
+            if (parameters.Length != targetParameterTypeNames.Length)
             {
                 return false;
             }
 
             return parameters
-                .Select((parameter, index) => ParameterTypeMatches(parameter.ParameterType, definition.TargetParameterTypeNames[index]))
+                .Select((parameter, index) => ParameterTypeMatches(parameter.ParameterType, targetParameterTypeNames[index]))
                 .All(matches => matches);
         }
 

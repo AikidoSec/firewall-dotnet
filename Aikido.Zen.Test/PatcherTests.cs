@@ -92,14 +92,14 @@ namespace Aikido.Zen.Test
         [Test]
         public void Patch_MatchesGenericParameterUsingRuntimeTypeString()
         {
-            var definition = PatchDefinition.Prefix(
+            var targetTypeName = typeof(GenericTarget).FullName ?? nameof(GenericTarget);
+
+            InvokePatch(
                 GetMethod(typeof(IOSink), nameof(IOSink.OnPathOperation), typeof(object[]), typeof(MethodBase)),
                 string.Empty,
-                typeof(GenericTarget).FullName,
+                targetTypeName,
                 nameof(GenericTarget.Read),
                 "System.Collections.Generic.IEnumerable`1[System.Object]");
-
-            InvokePatch(definition);
 
             AssertPrefixPatch(GetMethod(typeof(GenericTarget), nameof(GenericTarget.Read), typeof(IEnumerable<object>)));
         }
@@ -107,14 +107,14 @@ namespace Aikido.Zen.Test
         [Test]
         public void Patch_WhenExplicitAssemblyIsMissing_DoesNotFallbackToLoadedAssemblies()
         {
-            var definition = PatchDefinition.Prefix(
+            var targetTypeName = typeof(GenericTarget).FullName ?? nameof(GenericTarget);
+
+            InvokePatch(
                 GetMethod(typeof(IOSink), nameof(IOSink.OnPathOperation), typeof(object[]), typeof(MethodBase)),
                 "Missing.Assembly",
-                typeof(GenericTarget).FullName,
+                targetTypeName,
                 nameof(GenericTarget.Read),
                 "System.Collections.Generic.IEnumerable`1[System.Object]");
-
-            InvokePatch(definition);
 
             AssertNoPrefixPatch(GetMethod(typeof(GenericTarget), nameof(GenericTarget.Read), typeof(IEnumerable<object>)));
         }
@@ -216,17 +216,22 @@ namespace Aikido.Zen.Test
             Assert.That(patches == null || patches.Prefixes.All(prefix => prefix.owner != _harmonyId), Is.True);
         }
 
-        private void InvokePatch(PatchDefinition definition)
+        private void InvokePatch(
+            MethodInfo sinkMethod,
+            string assemblyName,
+            string targetTypeName,
+            string targetMethodName,
+            params string[] targetParameterTypeNames)
         {
             var patchMethod = typeof(Patcher).GetMethod(
-                "Patch",
+                "PatchPrefix",
                 BindingFlags.Static | BindingFlags.NonPublic,
                 null,
-                new[] { typeof(Harmony), typeof(PatchDefinition) },
+                new[] { typeof(Harmony), typeof(MethodInfo), typeof(string), typeof(string), typeof(string), typeof(string[]) },
                 null);
 
             Assert.That(patchMethod, Is.Not.Null);
-            patchMethod.Invoke(null, new object[] { _harmony, definition });
+            patchMethod.Invoke(null, new object[] { _harmony, sinkMethod, assemblyName, targetTypeName, targetMethodName, targetParameterTypeNames });
         }
 
         private static int ExecuteSqlRaw(object database, string sql)
