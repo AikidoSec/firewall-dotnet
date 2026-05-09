@@ -23,6 +23,7 @@ namespace Aikido.Zen.Test
         [TearDown]
         public void TearDown()
         {
+            Patcher.Unpatch();
             _agent?.Dispose();
             Environment.SetEnvironmentVariable("AIKIDO_TOKEN", null);
         }
@@ -221,6 +222,31 @@ namespace Aikido.Zen.Test
 
             // Act & Assert
             Assert.DoesNotThrow(() => LLMSink.OnLLMCallCompleted(args, method, assembly, result, context));
+        }
+
+        [Test]
+        public void OnLLMCallCompletedWrapper_WithNullInstance_UsesConfiguredContext()
+        {
+            // Arrange
+            var context = new Context { Route = "/llm/static" };
+            Patcher.PatchSinks(() => context);
+            var method = typeof(string).GetMethod(nameof(string.ToString), Type.EmptyTypes);
+            var result = new MockLLMResult
+            {
+                Model = "gpt-4o-mini",
+                Usage = new MockUsage { InputTokenCount = 5, OutputTokenCount = 7 }
+            };
+
+            // Act
+            LLMSink.OnLLMCallCompleted(Array.Empty<object>(), method, null, result);
+
+            // Assert
+            var aiInfo = _agent.Context.AiStats.Providers.Values.Single();
+            Assert.That(aiInfo.Provider, Is.EqualTo("unknown"));
+            Assert.That(aiInfo.Model, Is.EqualTo("gpt-4o-mini"));
+            Assert.That(aiInfo.Tokens.Input, Is.EqualTo(5));
+            Assert.That(aiInfo.Tokens.Output, Is.EqualTo(7));
+            Assert.That(aiInfo.Routes.Single().Path, Is.EqualTo("/llm/static"));
         }
 
         [Test]
@@ -594,6 +620,21 @@ namespace Aikido.Zen.Test
         {
             // Arrange
             var input = new { };
+
+            // Act
+            var result = LLMSink.TryExtractTokensFromResult(input, out var tokens);
+
+            // Assert
+            Assert.That(result, Is.False);
+            Assert.That(tokens.inputTokens, Is.EqualTo(0));
+            Assert.That(tokens.outputTokens, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void TryExtractTokensFromResult_WithResultWithoutUsageProperty_ReturnsFalse()
+        {
+            // Arrange
+            var input = new { Model = "gpt-4o-mini" };
 
             // Act
             var result = LLMSink.TryExtractTokensFromResult(input, out var tokens);
