@@ -10,7 +10,7 @@ namespace Aikido.Zen.Core.Sinks
         [SinkPrefix("System.Net.Http", "HttpClient", "SendAsync", "System.Net.Http.HttpRequestMessage", "System.Net.Http.HttpCompletionOption", "System.Threading.CancellationToken")]
         [SinkPrefix("System.Net.Http", "HttpClient", "SendAsync", "System.Net.Http.HttpRequestMessage", "System.Threading.CancellationToken")]
         [SinkPrefix("System.Net.Http", "HttpClient", "Send", "System.Net.Http.HttpRequestMessage", "System.Threading.CancellationToken")]
-        private static bool HttpClientRequest(HttpRequestMessage request, HttpClient __instance, MethodBase __originalMethod)
+        internal static bool HttpClientRequest(HttpRequestMessage request, HttpClient __instance, MethodBase __originalMethod)
         {
             return OutboundRequestSink.OnRequest(ResolveUri(request, __instance), __originalMethod, Patcher.GetContext());
         }
@@ -18,7 +18,7 @@ namespace Aikido.Zen.Core.Sinks
         [SinkPrefix("", "System.Net.WebRequest", "GetResponse")]
         [SinkPrefix("", "System.Net.HttpWebRequest", "GetResponse")]
         [SinkPrefix("", "System.Net.WebRequest", "GetResponseAsync")]
-        private static bool WebRequest(WebRequest __instance, MethodBase __originalMethod)
+        internal static bool WebRequest(WebRequest __instance, MethodBase __originalMethod)
         {
             return OutboundRequestSink.OnRequest(__instance?.RequestUri, __originalMethod, Patcher.GetContext());
         }

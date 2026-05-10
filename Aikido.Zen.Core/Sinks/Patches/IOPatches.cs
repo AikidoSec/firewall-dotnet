@@ -24,7 +24,7 @@ namespace Aikido.Zen.Core.Sinks
         [SinkPrefix("", "System.IO.Directory", "GetDirectories", "System.String")]
         [SinkPrefix("", "System.IO.Directory", "GetDirectories", "System.String", "System.String")]
         [SinkPrefix("", "System.IO.Directory", "GetDirectories", "System.String", "System.String", "System.IO.SearchOption")]
-        private static bool OnePath(string path, MethodBase __originalMethod)
+        internal static bool OnePath(string path, MethodBase __originalMethod)
         {
             var context = Patcher.GetContext();
             var pathAllowed = IOSink.OnFileOperation(path, __originalMethod, context);
@@ -35,7 +35,7 @@ namespace Aikido.Zen.Core.Sinks
         [SinkPrefix("", "System.IO.File", "Copy", "System.String", "System.String", "System.Boolean")]
         [SinkPrefix("", "System.IO.File", "Move", "System.String", "System.String")]
         [SinkPrefix("", "System.IO.File", "Move", "System.String", "System.String", "System.Boolean")]
-        private static bool TwoFilePaths(string sourceFileName, string destFileName, MethodBase __originalMethod)
+        internal static bool TwoFilePaths(string sourceFileName, string destFileName, MethodBase __originalMethod)
         {
             var context = Patcher.GetContext();
             var sourceAllowed = IOSink.OnFileOperation(sourceFileName, __originalMethod, context);
@@ -45,7 +45,7 @@ namespace Aikido.Zen.Core.Sinks
         }
 
         [SinkPrefix("", "System.IO.Path", "GetFullPath", "System.String", "System.String")]
-        private static bool PathWithBasePath(string path, string basePath, MethodBase __originalMethod)
+        internal static bool PathWithBasePath(string path, string basePath, MethodBase __originalMethod)
         {
             var context = Patcher.GetContext();
             var pathAllowed = IOSink.OnFileOperation(path, __originalMethod, context);
