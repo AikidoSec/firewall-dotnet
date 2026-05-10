@@ -228,6 +228,37 @@ namespace Aikido.Zen.Test
             Assert.That(contextToPass.AttackDetected, Is.False);
         }
 
+        [Test]
+        public void OnFileOperation_WithMalformedEndpointConfig_ReturnsTrueWithoutMarkingAttack()
+        {
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
+            var unsafeInput = "../secrets/key.txt";
+            var contextToPass = _mockContext.Object;
+
+            contextToPass.Method = "GET";
+            contextToPass.Route = "/api/read";
+            contextToPass.Path = "/api/read";
+            contextToPass.ParsedUserInput = new Dictionary<string, string> { { "query.path", unsafeInput } };
+            contextToPass.AttackDetected = false;
+
+#pragma warning disable CS8625
+            Agent.Instance.Context.Config.UpdateRatelimitedRoutes(new[]
+            {
+                new EndpointConfig
+                {
+                    Method = null,
+                    Route = "/api/read",
+                    ForceProtectionOff = true
+                }
+            });
+#pragma warning restore CS8625
+
+            var result = OnFileOperation($"/var/www/data/{unsafeInput}", _methodInfo, contextToPass);
+
+            Assert.That(result, Is.True);
+            Assert.That(contextToPass.AttackDetected, Is.False);
+        }
+
         private static bool OnFileOperation(string path, MethodInfo methodInfo, Context context)
         {
             return IOSink.OnFileOperation(path, methodInfo, context);
