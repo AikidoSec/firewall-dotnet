@@ -38,7 +38,6 @@ namespace Aikido.Zen.Core.Sinks
                 if (context == null || result == null) return;
 
                 var clientType = instance?.GetType();
-                var clientName = clientType?.ToString() ?? string.Empty;
 
                 var operation = ReflectionHelper.GetMethodOperation(originalMethod);
                 var module = ReflectionHelper.GetMethodModule(originalMethod);
@@ -48,7 +47,7 @@ namespace Aikido.Zen.Core.Sinks
                     LogHelper.ErrorLog(Agent.Logger, $"Failed to extract model from LLM result for model: {model}");
                 }
 
-                if (!TryGetCloudProvider($"{model} {module} {clientName} {result.GetType().ToString()}", out var provider))
+                if (!TryGetCloudProvider($"{model} {module} {clientType}", out var provider))
                 {
                     LogHelper.ErrorLog(Agent.Logger, $"Failed to extract provider from LLM for model: {model}, provider: {provider}");
                 }
