@@ -7,18 +7,20 @@ namespace Aikido.Zen.Core.Sinks
     internal abstract class SinkTargetAttribute : Attribute
     {
         protected SinkTargetAttribute(
+            HarmonyPatchType patchType,
             string assemblyName,
             string targetTypeName,
             string targetMethodName,
             params string[] targetParameterTypeNames)
         {
+            PatchType = patchType;
             AssemblyName = assemblyName;
             TargetTypeName = targetTypeName;
             TargetMethodName = targetMethodName;
             TargetParameterTypeNames = targetParameterTypeNames ?? Array.Empty<string>();
         }
 
-        public abstract HarmonyPatchType PatchType { get; }
+        public HarmonyPatchType PatchType { get; }
         public string AssemblyName { get; }
         public string TargetTypeName { get; }
         public string TargetMethodName { get; }
@@ -32,11 +34,9 @@ namespace Aikido.Zen.Core.Sinks
             string targetTypeName,
             string targetMethodName,
             params string[] targetParameterTypeNames)
-            : base(assemblyName, targetTypeName, targetMethodName, targetParameterTypeNames)
+            : base(HarmonyPatchType.Prefix, assemblyName, targetTypeName, targetMethodName, targetParameterTypeNames)
         {
         }
-
-        public override HarmonyPatchType PatchType => HarmonyPatchType.Prefix;
     }
 
     internal sealed class SinkPostfixAttribute : SinkTargetAttribute
@@ -46,10 +46,8 @@ namespace Aikido.Zen.Core.Sinks
             string targetTypeName,
             string targetMethodName,
             params string[] targetParameterTypeNames)
-            : base(assemblyName, targetTypeName, targetMethodName, targetParameterTypeNames)
+            : base(HarmonyPatchType.Postfix, assemblyName, targetTypeName, targetMethodName, targetParameterTypeNames)
         {
         }
-
-        public override HarmonyPatchType PatchType => HarmonyPatchType.Postfix;
     }
 }

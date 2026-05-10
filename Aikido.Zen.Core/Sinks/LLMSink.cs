@@ -12,7 +12,7 @@ namespace Aikido.Zen.Core.Sinks
     /// <summary>
     /// Patches for LLM client operations to track and monitor LLM API calls
     /// </summary>
-    public static class LLMSink
+    internal static class LLMSink
     {
         private const string operationKind = "ai_op";
 
@@ -23,7 +23,7 @@ namespace Aikido.Zen.Core.Sinks
         /// <param name="result">The result returned by the LLM API call.</param>
         /// <param name="originalMethod">The original LLM method being inspected.</param>
         /// <param name="context">The current Aikido context.</param>
-        public static void OnLLMCallCompleted(object instance, object result, MethodBase originalMethod, Context context)
+        internal static void OnLLMCallCompleted(object instance, object result, MethodBase originalMethod, Context context)
         {
             // Exclude certain assemblies to avoid stack overflow issues
             if (ReflectionHelper.ShouldSkipAssembly())

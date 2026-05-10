@@ -10,7 +10,7 @@ namespace Aikido.Zen.Core.Sinks
     /// <summary>
     /// Patches for SQL client operations to detect and prevent SQL injection attacks
     /// </summary>
-    public static class SqlClientSink
+    internal static class SqlClientSink
     {
         private const string operationKind = "sql_op";
 
@@ -20,7 +20,7 @@ namespace Aikido.Zen.Core.Sinks
         /// <param name="sql">The SQL command to execute.</param>
         /// <param name="originalMethod">The original SQL method being inspected.</param>
         /// <param name="context">The current Aikido context.</param>
-        public static bool OnCommandExecuting(string sql, MethodBase originalMethod, Context context)
+        internal static bool OnCommandExecuting(string sql, MethodBase originalMethod, Context context)
         {
             // Exclude certain assemblies to avoid stack overflow issues
             if (ReflectionHelper.ShouldSkipAssembly())
@@ -86,7 +86,7 @@ namespace Aikido.Zen.Core.Sinks
             return true;
         }
 
-        public static SQLDialect GetDialect(string assembly)
+        internal static SQLDialect GetDialect(string assembly)
         {
             var assemblyName = assembly.Split(new[] { ',' }, System.StringSplitOptions.RemoveEmptyEntries)?[0]?.Trim();
             switch (assemblyName)

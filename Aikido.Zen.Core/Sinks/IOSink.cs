@@ -10,7 +10,7 @@ namespace Aikido.Zen.Core.Sinks
     /// <summary>
     /// Provides the core logic for handling patched file system operations.
     /// </summary>
-    public static class IOSink
+    internal static class IOSink
     {
         private const string OperationKind = "fs_op";
         private static readonly ThreadLocal<bool> IsProcessing = new ThreadLocal<bool>(() => false);
@@ -22,7 +22,7 @@ namespace Aikido.Zen.Core.Sinks
         /// <param name="originalMethod">The original method being patched.</param>
         /// <param name="context">The context for the current operation.</param>
         /// <returns>Always returns true. Throws an exception if a blocked attack is detected.</returns>
-        public static bool OnFileOperation(string path, MethodBase originalMethod, Context context)
+        internal static bool OnFileOperation(string path, MethodBase originalMethod, Context context)
         {
             if (IsProcessing.Value)
             {

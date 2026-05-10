@@ -8,7 +8,7 @@ using HarmonyLib;
 
 namespace Aikido.Zen.Core.Sinks
 {
-    public class Patcher
+    internal static class Patcher
     {
         private const string HarmonyId = "aikido.zen";
         private static readonly Harmony _harmony = new Harmony(HarmonyId);
@@ -23,7 +23,7 @@ namespace Aikido.Zen.Core.Sinks
             typeof(SqlClientPatches)
         };
 
-        public static void PatchSinks(Func<Context> getContext)
+        internal static void PatchSinks(Func<Context> getContext)
         {
             _getContext = getContext ?? (() => null);
 
@@ -33,7 +33,7 @@ namespace Aikido.Zen.Core.Sinks
             }
         }
 
-        public static void Unpatch()
+        internal static void Unpatch()
         {
             if (Harmony.HasAnyPatches(HarmonyId))
             {

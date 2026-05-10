@@ -11,7 +11,7 @@ namespace Aikido.Zen.Core.Sinks
     /// <summary>
     /// Intercepts and inspects process execution methods to catch and report shell injection attacks.
     /// </summary>
-    public static class ProcessExecutionSink
+    internal static class ProcessExecutionSink
     {
         private const string kind = "exec_op";
 
@@ -22,7 +22,7 @@ namespace Aikido.Zen.Core.Sinks
         /// <param name="originalMethod">The original process method being inspected.</param>
         /// <param name="context">The context of the process execution.</param>
         /// <returns>True if the original method should continue execution; otherwise, false.</returns>
-        public static bool OnProcessStart(Process process, MethodBase originalMethod, Context context)
+        internal static bool OnProcessStart(Process process, MethodBase originalMethod, Context context)
         {
 
             // Exclude certain assemblies to avoid stack overflow issues
