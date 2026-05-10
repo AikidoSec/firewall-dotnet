@@ -556,15 +556,46 @@ namespace Aikido.Zen.Test
                 try
                 {
                     using var client = await _listener.AcceptTcpClientAsync();
-                    using var stream = client.GetStream();
+                    client.ReceiveTimeout = 5000;
+                    client.SendTimeout = 5000;
 
-                    var response = Encoding.ASCII.GetBytes("HTTP/1.1 200 OK\r\nContent-Length: 2\r\nConnection: close\r\n\r\nOK");
+                    using var stream = client.GetStream();
+                    using var reader = new StreamReader(stream, Encoding.ASCII, false, 1024, leaveOpen: true);
+
+                    while (true)
+                    {
+                        var line = await reader.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(5));
+                        if (string.IsNullOrEmpty(line))
+                        {
+                            break;
+                        }
+                    }
+
+                    var response = Encoding.ASCII.GetBytes("HTTP/1.1 200 OK\r\nContent-Length: 2\r\nContent-Type: text/plain\r\nConnection: close\r\n\r\nOK");
                     await stream.WriteAsync(response.AsMemory(0, response.Length));
+                    await stream.FlushAsync();
+
+                    try
+                    {
+                        client.Client.Shutdown(SocketShutdown.Send);
+                    }
+                    catch (ObjectDisposedException)
+                    {
+                    }
+                    catch (SocketException)
+                    {
+                    }
                 }
                 catch (ObjectDisposedException)
                 {
                 }
                 catch (SocketException)
+                {
+                }
+                catch (IOException)
+                {
+                }
+                catch (TimeoutException)
                 {
                 }
             }
