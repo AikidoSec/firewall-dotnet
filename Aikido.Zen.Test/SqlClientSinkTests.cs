@@ -49,6 +49,7 @@ namespace Aikido.Zen.Test
         [TestCase("MySqlConnector", SQLDialect.MySQL)]
         [TestCase("MySqlX", SQLDialect.MySQL)]
         [TestCase("Unknown.Assembly", SQLDialect.Generic)]
+        [TestCase("", SQLDialect.Generic)]
         public void GetDialect_ShouldReturnCorrectDialect(string assembly, SQLDialect expectedDialect)
         {
             // Act
