@@ -128,6 +128,34 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void OnRequest_WhenForceProtectionOffRouteHasNoDomainBlock_ReturnsTrue()
+        {
+            // Arrange
+            _agent.Context.Config.UpdateOutboundDomains(false, Array.Empty<OutboundDomainConfig>());
+            _agent.Context.Config.UpdateRatelimitedRoutes(new[]
+            {
+                new EndpointConfig
+                {
+                    Method = "GET",
+                    Route = "/outbound",
+                    ForceProtectionOff = true
+                }
+            });
+
+            var context = CreateContext();
+
+            // Act
+            var result = OutboundRequestSink.OnRequest(
+                new Uri("https://safe.example/path"),
+                GetHttpClientSendAsyncMethod(),
+                context);
+
+            // Assert
+            Assert.That(result, Is.True);
+            Assert.That(_agent.Context.Hostnames.Any(h => h.Hostname == "safe.example" && h.Port == 443), Is.True);
+        }
+
+        [Test]
         public void OnRequest_WhenRequestTargetsConfiguredAikidoCore_DoesNotBlock()
         {
             // Arrange

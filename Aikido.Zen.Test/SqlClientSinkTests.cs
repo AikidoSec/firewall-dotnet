@@ -178,6 +178,21 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void OnCommandExecuting_WithMissingUserInputCollection_ReturnsTrue()
+        {
+#pragma warning disable CS8625
+            _context.ParsedUserInput = null;
+#pragma warning restore CS8625
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
+            var sql = "SELECT * FROM users WHERE id = '1' OR '1'='1'";
+
+            var result = OnCommandExecuting(_methodInfo, sql, _context);
+
+            Assert.That(result, Is.True);
+            Assert.That(_context.AttackDetected, Is.False);
+        }
+
+        [Test]
         public void OnCommandExecuting_WithNullSql_ReturnsTrue()
         {
             var result = OnCommandExecuting(_methodInfo, null, _context);

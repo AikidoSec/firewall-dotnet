@@ -149,6 +149,21 @@ namespace Aikido.Zen.Test
             Assert.That(_context.AttackDetected, Is.False);
         }
 
+        [Test]
+        public void OnProcessStart_WithMissingUserInputCollection_ReturnsTrue()
+        {
+#pragma warning disable CS8625
+            _context.ParsedUserInput = null;
+#pragma warning restore CS8625
+            _startInfo.FileName = "sh";
+            _startInfo.Arguments = "-c \"$(echo)\"";
+
+            var result = OnProcessStart(new Process { StartInfo = _startInfo }, _context);
+
+            Assert.That(result, Is.True);
+            Assert.That(_context.AttackDetected, Is.False);
+        }
+
         [TearDown]
         public void TearDown()
         {
