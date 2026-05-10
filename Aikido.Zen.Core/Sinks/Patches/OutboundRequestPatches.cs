@@ -15,9 +15,9 @@ namespace Aikido.Zen.Core.Sinks
             return OutboundRequestSink.OnRequest(ResolveUri(request, __instance), __originalMethod, Patcher.GetContext());
         }
 
-        [SinkPrefix("", "System.Net.WebRequest", "GetResponse")]
-        [SinkPrefix("", "System.Net.HttpWebRequest", "GetResponse")]
-        [SinkPrefix("", "System.Net.WebRequest", "GetResponseAsync")]
+        [SinkPrefix(new[] { "System.Net.Requests", "System" }, "System.Net.WebRequest", "GetResponse")]
+        [SinkPrefix(new[] { "System.Net.Requests", "System" }, "System.Net.HttpWebRequest", "GetResponse")]
+        [SinkPrefix(new[] { "System.Net.Requests", "System" }, "System.Net.WebRequest", "GetResponseAsync")]
         internal static bool WebRequest(WebRequest __instance, MethodBase __originalMethod)
         {
             return OutboundRequestSink.OnRequest(__instance?.RequestUri, __originalMethod, Patcher.GetContext());

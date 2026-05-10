@@ -38,16 +38,17 @@ namespace Aikido.Zen.Core.Sinks
                 if (context == null || result == null) return;
 
                 var clientType = instance?.GetType();
-                var assembly = clientType?.Assembly.FullName?.Split(new[] { ", Culture=" }, StringSplitOptions.RemoveEmptyEntries)[0] ?? string.Empty;
                 var clientName = clientType?.ToString() ?? string.Empty;
-                var operation = GetOperation(originalMethod);
+
+                var operation = ReflectionHelper.GetMethodOperation(originalMethod);
+                var module = ReflectionHelper.GetMethodModule(originalMethod);
 
                 if (!TryExtractModelFromResult(result, out var model))
                 {
                     LogHelper.ErrorLog(Agent.Logger, $"Failed to extract model from LLM result for model: {model}");
                 }
 
-                if (!TryGetCloudProvider($"{model} {assembly} {clientName} {result.GetType().ToString()}", out var provider))
+                if (!TryGetCloudProvider($"{model} {module} {clientName} {result.GetType().ToString()}", out var provider))
                 {
                     LogHelper.ErrorLog(Agent.Logger, $"Failed to extract provider from LLM for model: {model}, provider: {provider}");
                 }
@@ -76,12 +77,6 @@ namespace Aikido.Zen.Core.Sinks
                 // Silently handle any errors to avoid affecting the original LLM call
                 LogHelper.ErrorLog(Agent.Logger, "Error tracking LLM call statistics.");
             }
-        }
-
-        private static string GetOperation(MethodBase originalMethod)
-        {
-            var declaringType = originalMethod?.DeclaringType;
-            return $"{declaringType?.Namespace}.{declaringType?.Name}.{originalMethod?.Name}";
         }
 
         /// <summary>

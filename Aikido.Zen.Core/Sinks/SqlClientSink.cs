@@ -34,9 +34,8 @@ namespace Aikido.Zen.Core.Sinks
             }
 
 
-            var methodInfo = originalMethod as MethodInfo;
-            var operation = $"{methodInfo?.DeclaringType?.Name}.{methodInfo?.Name}";
-            var module = methodInfo?.DeclaringType?.Assembly.GetName().Name ?? string.Empty;
+            var operation = ReflectionHelper.GetMethodOperation(originalMethod);
+            var module = ReflectionHelper.GetMethodModule(originalMethod);
 
             // Determine sink and context status regardless of detection outcome
             var stopwatch = Stopwatch.StartNew();

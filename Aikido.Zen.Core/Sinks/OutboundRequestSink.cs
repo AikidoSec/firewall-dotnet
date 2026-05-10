@@ -20,8 +20,7 @@ namespace Aikido.Zen.Core.Sinks
                 return true;
             }
 
-            var methodInfo = originalMethod as MethodInfo;
-            var operation = $"{methodInfo?.DeclaringType?.Name}.{methodInfo?.Name}";
+            var operation = ReflectionHelper.GetMethodOperation(originalMethod);
             var withoutContext = context == null;
             var blocked = false;
             var stopwatch = Stopwatch.StartNew();

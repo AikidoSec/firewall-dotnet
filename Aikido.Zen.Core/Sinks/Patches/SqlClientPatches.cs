@@ -5,9 +5,9 @@ namespace Aikido.Zen.Core.Sinks
 {
     internal static class SqlClientPatches
     {
-        [SinkPrefix("", "System.Data.Common.DbCommand", "ExecuteNonQueryAsync")]
-        [SinkPrefix("", "System.Data.Common.DbCommand", "ExecuteReaderAsync", "System.Data.CommandBehavior")]
-        [SinkPrefix("", "System.Data.Common.DbCommand", "ExecuteScalarAsync")]
+        [SinkPrefix(new[] { "System.Data.Common", "System.Data" }, "System.Data.Common.DbCommand", "ExecuteNonQueryAsync")]
+        [SinkPrefix(new[] { "System.Data.Common", "System.Data" }, "System.Data.Common.DbCommand", "ExecuteReaderAsync", "System.Data.CommandBehavior")]
+        [SinkPrefix(new[] { "System.Data.Common", "System.Data" }, "System.Data.Common.DbCommand", "ExecuteScalarAsync")]
         [SinkPrefix("Microsoft.Data.SqlClient", "Microsoft.Data.SqlClient.SqlCommand", "ExecuteNonQuery")]
         [SinkPrefix("Microsoft.Data.SqlClient", "Microsoft.Data.SqlClient.SqlCommand", "ExecuteScalar")]
         [SinkPrefix("Microsoft.Data.SqlClient", "Microsoft.Data.SqlClient.SqlCommand", "ExecuteReader", "System.Data.CommandBehavior")]

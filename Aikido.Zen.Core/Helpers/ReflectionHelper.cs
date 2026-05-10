@@ -115,6 +115,16 @@ namespace Aikido.Zen.Core.Helpers
             return method;
         }
 
+        internal static string GetMethodOperation(MethodBase method)
+        {
+            return $"{method?.DeclaringType?.Name}.{method?.Name}";
+        }
+
+        internal static string GetMethodModule(MethodBase method)
+        {
+            return method?.DeclaringType?.Assembly.GetName().Name ?? string.Empty;
+        }
+
         /// <summary>
         /// Checks if we should skip patching of the current assembly. Crucial for preventing re-entrancy issues with certain IL weavers and patchers.
         /// </summary>

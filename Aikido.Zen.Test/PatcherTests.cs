@@ -146,15 +146,15 @@ namespace Aikido.Zen.Test
 
         private static class ScannerCatalog
         {
-            [SinkPrefix("", "Aikido.Zen.Test.PatcherTests+ScannerTarget", nameof(ScannerTarget.PrefixTarget))]
-            [SinkPrefix("", "Aikido.Zen.Test.PatcherTests+ScannerTarget", "MissingTarget")]
+            [SinkPrefix("Aikido.Zen.Tests", "Aikido.Zen.Test.PatcherTests+ScannerTarget", nameof(ScannerTarget.PrefixTarget))]
+            [SinkPrefix("Aikido.Zen.Tests", "Aikido.Zen.Test.PatcherTests+ScannerTarget", "MissingTarget")]
             private static bool Prefix(ref string __result)
             {
                 __result = "prefix";
                 return false;
             }
 
-            [SinkPostfix("", "Aikido.Zen.Test.PatcherTests+ScannerTarget", nameof(ScannerTarget.PostfixTarget))]
+            [SinkPostfix("Aikido.Zen.Tests", "Aikido.Zen.Test.PatcherTests+ScannerTarget", nameof(ScannerTarget.PostfixTarget))]
             private static void Postfix(ref string __result)
             {
                 __result = "postfix";
@@ -171,13 +171,13 @@ namespace Aikido.Zen.Test
 
         private static class BrokenPatchCatalog
         {
-            [SinkPrefix("", "Aikido.Zen.Test.PatcherTests+BrokenPatchTarget", nameof(BrokenPatchTarget.ValidTarget))]
+            [SinkPrefix("Aikido.Zen.Tests", "Aikido.Zen.Test.PatcherTests+BrokenPatchTarget", nameof(BrokenPatchTarget.ValidTarget))]
             private static bool BrokenPrefix(string missingArgument)
             {
                 return true;
             }
 
-            [SinkPrefix("", "Aikido.Zen.Test.PatcherTests+BrokenPatchTarget", nameof(BrokenPatchTarget.ValidTarget))]
+            [SinkPrefix("Aikido.Zen.Tests", "Aikido.Zen.Test.PatcherTests+BrokenPatchTarget", nameof(BrokenPatchTarget.ValidTarget))]
             private static bool ValidPrefix(ref string __result)
             {
                 __result = "patched-after-error";
@@ -202,7 +202,7 @@ namespace Aikido.Zen.Test
                 return false;
             }
 
-            [SinkPrefix("", "Aikido.Zen.Test.PatcherTests+UnsafeAssemblyTarget", nameof(UnsafeAssemblyTarget.ValidTarget))]
+            [SinkPrefix("Aikido.Zen.Tests", "Aikido.Zen.Test.PatcherTests+UnsafeAssemblyTarget", nameof(UnsafeAssemblyTarget.ValidTarget))]
             private static bool ValidPrefix(ref string __result)
             {
                 __result = "patched-after-unsafe-assembly";
@@ -225,7 +225,7 @@ namespace Aikido.Zen.Test
 
         private static class OverloadFallbackCatalog
         {
-            [SinkPrefix("", "Aikido.Zen.Test.PatcherTests+OverloadFallbackTarget", nameof(OverloadFallbackTarget.Execute))]
+            [SinkPrefix("Aikido.Zen.Tests", "Aikido.Zen.Test.PatcherTests+OverloadFallbackTarget", nameof(OverloadFallbackTarget.Execute))]
             private static bool Prefix(ref string __result)
             {
                 __result = "patched-overload";
