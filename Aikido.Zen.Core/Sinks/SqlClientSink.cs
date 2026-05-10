@@ -88,7 +88,7 @@ namespace Aikido.Zen.Core.Sinks
 
         internal static SQLDialect GetDialect(string assembly)
         {
-            var assemblyName = assembly.Split(new[] { ',' }, System.StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()?.Trim();
+            var assemblyName = assembly?.Split(',').FirstOrDefault()?.Trim();
             switch (assemblyName)
             {
                 case "System.Data.SqlClient":
