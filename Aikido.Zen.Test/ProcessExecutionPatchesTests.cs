@@ -55,6 +55,10 @@ namespace Aikido.Zen.Test
                     process,
                     GetMethod(typeof(Process), nameof(Process.Start))), Is.True);
             }
+
+            Assert.That(ProcessExecutionPatches.ProcessStart(
+                null!,
+                GetMethod(typeof(Process), nameof(Process.Start))), Is.True);
         }
 
         private static MethodInfo GetMethod(Type type, string methodName, params Type[] parameterTypes)

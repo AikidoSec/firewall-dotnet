@@ -55,6 +55,8 @@ namespace Aikido.Zen.Test
 
             Assert.That(SqlClientPatches.DbCommand(dbCommand.Object, dbMethod), Is.True);
             Assert.That(SqlClientPatches.NPocoCommand(dbCommand.Object, dbMethod), Is.True);
+            Assert.That(SqlClientPatches.DbCommand(null!, dbMethod), Is.True);
+            Assert.That(SqlClientPatches.NPocoCommand(null!, dbMethod), Is.True);
             Assert.That(SqlClientPatches.ExecuteSqlRaw(
                 "SELECT 1",
                 GetMethod(typeof(TestSqlMethods), nameof(TestSqlMethods.ExecuteSqlRaw), typeof(object), typeof(string), typeof(IEnumerable<object>))), Is.True);

@@ -89,10 +89,18 @@ namespace Aikido.Zen.Test
                 Assert.That(OutboundRequestPatches.HttpClientRequest(null!, httpClient, method), Is.True);
             }
 
+            using (var request = new HttpRequestMessage(HttpMethod.Get, "https://safe.example/path"))
+            {
+                Assert.That(OutboundRequestPatches.HttpClientRequest(request, null!, method), Is.True);
+            }
+
+            Assert.That(OutboundRequestPatches.HttpClientRequest(null!, null!, method), Is.True);
+
 #pragma warning disable SYSLIB0014
             var webRequest = WebRequest.Create("https://safe.example/path");
 #pragma warning restore SYSLIB0014
             Assert.That(OutboundRequestPatches.WebRequest(webRequest, GetMethod(typeof(WebRequest), nameof(WebRequest.GetResponse))), Is.True);
+            Assert.That(OutboundRequestPatches.WebRequest(null!, GetMethod(typeof(WebRequest), nameof(WebRequest.GetResponse))), Is.True);
         }
 
         private static MethodInfo GetMethod(Type type, string methodName, params Type[] parameterTypes)
