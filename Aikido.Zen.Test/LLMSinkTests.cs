@@ -1,9 +1,7 @@
-using System.Reflection;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Sinks;
 using Aikido.Zen.Tests.Mocks;
-using Moq;
 
 namespace Aikido.Zen.Test
 {
@@ -38,35 +36,29 @@ namespace Aikido.Zen.Test
         public void OnLLMCallCompleted_WithNullContext_DoesNotThrow()
         {
             // Arrange
-            var args = new object[] { };
             var method = typeof(string).GetMethod("ToString", Type.EmptyTypes);
-            var assembly = "OpenAI";
             var result = new MockLLMResult { Model = "gpt-4" };
 
             // Act & Assert
-            Assert.DoesNotThrow(() => LLMSink.OnLLMCallCompleted(args, method, assembly, result, null));
+            Assert.DoesNotThrow(() => LLMSink.OnLLMCallCompleted(new OpenAIClientInstance(), result, method, null));
         }
 
         [Test]
         public void OnLLMCallCompleted_WithNullResult_DoesNotThrow()
         {
             // Arrange
-            var args = new object[] { };
             var method = typeof(string).GetMethod("ToString", Type.EmptyTypes);
-            var assembly = "OpenAI";
             var context = new Context();
 
             // Act & Assert
-            Assert.DoesNotThrow(() => LLMSink.OnLLMCallCompleted(args, method, assembly, null, context));
+            Assert.DoesNotThrow(() => LLMSink.OnLLMCallCompleted(new OpenAIClientInstance(), null, method, context));
         }
 
         [Test]
         public void OnLLMCallCompleted_WithValidInputs_DoesNotThrow()
         {
             // Arrange
-            var args = new object[] { };
             var method = typeof(string).GetMethod("ToString", Type.EmptyTypes);
-            var assembly = "OpenAI";
             var result = new MockLLMResult
             {
                 Model = "gpt-4",
@@ -75,17 +67,15 @@ namespace Aikido.Zen.Test
             var context = new Context { Route = "/api/test" };
 
             // Act & Assert
-            Assert.DoesNotThrow(() => LLMSink.OnLLMCallCompleted(args, method, assembly, result, context));
+            Assert.DoesNotThrow(() => LLMSink.OnLLMCallCompleted(new OpenAIClientInstance(), result, method, context));
         }
 
         [Test]
         public void OnLLMCallCompleted_WithOpenAIChatCompletion_TracksTokensCorrectly()
         {
             // Arrange - Mock OpenAI ChatClient.CompleteChat call
-            var mockChatClient = new Mock<object>(); // Mocking the actual OpenAI ChatClient
-            var args = new object[] { "Tell me a joke" };
-            var method = mockChatClient.Object.GetType().GetMethod("ToString"); // Using available method for test
-            var assembly = "OpenAI";
+            var client = new OpenAIClientInstance();
+            var method = client.GetType().GetMethod("ToString"); // Using available method for test
             var result = new MockLLMResult
             {
                 Model = "gpt-4o",
@@ -94,17 +84,15 @@ namespace Aikido.Zen.Test
             var context = new Context { Route = "/llm-usage/request/provider/openai/model/gpt-4o" };
 
             // Act & Assert
-            Assert.DoesNotThrow(() => LLMSink.OnLLMCallCompleted(args, method, assembly, result, context));
+            Assert.DoesNotThrow(() => LLMSink.OnLLMCallCompleted(client, result, method, context));
         }
 
         [Test]
         public void OnLLMCallCompleted_WithAzureOpenAIChatCompletion_TracksTokensCorrectly()
         {
             // Arrange - Mock Azure OpenAI ChatClient.CompleteChat call
-            var mockAzureChatClient = new Mock<object>(); // Mocking the actual Azure OpenAI ChatClient
-            var args = new object[] { "What is the weather like?" };
-            var method = mockAzureChatClient.Object.GetType().GetMethod("ToString");
-            var assembly = "Azure.AI.OpenAI";
+            var client = new AzureOpenAIClientInstance();
+            var method = client.GetType().GetMethod("ToString");
             var result = new MockLLMResult
             {
                 Model = "gpt-3.5-turbo",
@@ -113,17 +101,15 @@ namespace Aikido.Zen.Test
             var context = new Context { Route = "/llm-usage/request/provider/azure/model/gpt-3.5-turbo" };
 
             // Act & Assert
-            Assert.DoesNotThrow(() => LLMSink.OnLLMCallCompleted(args, method, assembly, result, context));
+            Assert.DoesNotThrow(() => LLMSink.OnLLMCallCompleted(client, result, method, context));
         }
 
         [Test]
         public void OnLLMCallCompleted_WithRystemOpenAI_TracksTokensCorrectly()
         {
             // Arrange - Mock Rystem.OpenAi ExecuteAsync call
-            var mockRystemClient = new Mock<object>(); // Mocking the actual Rystem OpenAI client
-            var args = new object[] { };
-            var method = mockRystemClient.Object.GetType().GetMethod("ToString");
-            var assembly = "Rystem.OpenAi";
+            var client = new RystemOpenAIClientInstance();
+            var method = client.GetType().GetMethod("ToString");
             var result = new MockLLMResult
             {
                 Model = "gpt-4-turbo",
@@ -132,17 +118,15 @@ namespace Aikido.Zen.Test
             var context = new Context { Route = "/llm-usage/request/provider/rystem/model/gpt-4-turbo" };
 
             // Act & Assert
-            Assert.DoesNotThrow(() => LLMSink.OnLLMCallCompleted(args, method, assembly, result, context));
+            Assert.DoesNotThrow(() => LLMSink.OnLLMCallCompleted(client, result, method, context));
         }
 
         [Test]
         public void OnLLMCallCompleted_WithAnthropicClaude_IdentifiesProviderCorrectly()
         {
             // Arrange - Mock Anthropic Claude call through OpenAI SDK
-            var mockOpenAIClient = new Mock<object>(); // Mocking OpenAI client used for Anthropic
-            var args = new object[] { "Explain quantum computing" };
-            var method = mockOpenAIClient.Object.GetType().GetMethod("ToString");
-            var assembly = "OpenAI";
+            var client = new OpenAIClientInstance();
+            var method = client.GetType().GetMethod("ToString");
             var result = new MockLLMResult
             {
                 Model = "claude-3-5-haiku-latest",
@@ -151,20 +135,17 @@ namespace Aikido.Zen.Test
             var context = new Context { Route = "/llm-usage/request/provider/anthropic/model/claude-3-5-haiku-latest" };
 
             // Act & Assert
-            Assert.DoesNotThrow(() => LLMSink.OnLLMCallCompleted(args, method, assembly, result, context));
+            Assert.DoesNotThrow(() => LLMSink.OnLLMCallCompleted(client, result, method, context));
         }
 
         [Test]
         public void OnLLMCallCompleted_WithMockedOpenAIClient_ExtractsTokensCorrectly()
         {
             // Arrange - Mock the actual OpenAI client pattern like in LlmUsageController
-            var mockOpenAIClient = new Mock<object>(); // Would be Mock<OpenAIClient> in real scenario
-            var mockChatClient = new Mock<object>(); // Would be Mock<ChatClient> in real scenario
+            var client = new OpenAIClientInstance();
 
             // Setup mock method call
-            var args = new object[] { "What is the capital of France?" };
-            var method = mockChatClient.Object.GetType().GetMethod("ToString");
-            var assembly = "OpenAI";
+            var method = client.GetType().GetMethod("ToString");
 
             // Mock the response structure that matches real OpenAI SDK
             var result = new MockLLMResult
@@ -175,19 +156,15 @@ namespace Aikido.Zen.Test
             var context = new Context { Route = "/llm-usage/request/provider/openai/model/gpt-4o-mini" };
 
             // Act & Assert
-            Assert.DoesNotThrow(() => LLMSink.OnLLMCallCompleted(args, method, assembly, result, context));
+            Assert.DoesNotThrow(() => LLMSink.OnLLMCallCompleted(client, result, method, context));
         }
 
         [Test]
         public void OnLLMCallCompleted_WithMockedAzureClient_ExtractsTokensCorrectly()
         {
             // Arrange - Mock the actual Azure OpenAI client pattern like in LlmUsageController
-            var mockAzureClient = new Mock<object>(); // Would be Mock<AzureOpenAIClient> in real scenario
-            var mockChatClient = new Mock<object>(); // Would be Mock<ChatClient> in real scenario
-
-            var args = new object[] { "Generate a summary" };
-            var method = mockChatClient.Object.GetType().GetMethod("ToString");
-            var assembly = "Azure.AI.OpenAI";
+            var client = new AzureOpenAIClientInstance();
+            var method = client.GetType().GetMethod("ToString");
 
             // Mock the response structure that matches real Azure OpenAI SDK
             var result = new MockLLMResult
@@ -198,19 +175,15 @@ namespace Aikido.Zen.Test
             var context = new Context { Route = "/llm-usage/request/provider/azure/model/gpt-35-turbo" };
 
             // Act & Assert
-            Assert.DoesNotThrow(() => LLMSink.OnLLMCallCompleted(args, method, assembly, result, context));
+            Assert.DoesNotThrow(() => LLMSink.OnLLMCallCompleted(client, result, method, context));
         }
 
         [Test]
         public void OnLLMCallCompleted_WithMockedRystemClient_ExtractsTokensCorrectly()
         {
             // Arrange - Mock the actual Rystem OpenAI client pattern like in LlmUsageController
-            var mockRystemClient = new Mock<object>(); // Would be Mock<IOpenAi> in real scenario
-            var mockChatRequest = new Mock<object>(); // Mock for the fluent API chain
-
-            var args = new object[] { };
-            var method = mockRystemClient.Object.GetType().GetMethod("ToString");
-            var assembly = "Rystem.OpenAi";
+            var client = new RystemOpenAIClientInstance();
+            var method = client.GetType().GetMethod("ToString");
 
             // Mock the response structure that matches real Rystem SDK
             var result = new MockLLMResult
@@ -221,7 +194,7 @@ namespace Aikido.Zen.Test
             var context = new Context { Route = "/llm-usage/request/provider/rystem/model/gpt-4" };
 
             // Act & Assert
-            Assert.DoesNotThrow(() => LLMSink.OnLLMCallCompleted(args, method, assembly, result, context));
+            Assert.DoesNotThrow(() => LLMSink.OnLLMCallCompleted(client, result, method, context));
         }
 
         [Test]
@@ -238,7 +211,7 @@ namespace Aikido.Zen.Test
             };
 
             // Act
-            LLMSink.OnLLMCallCompleted(Array.Empty<object>(), method, null, result);
+            LLMSink.OnLLMCallCompleted(null, result, method, context);
 
             // Assert
             var aiInfo = _agent.Context.AiStats.Providers.Values.Single();
@@ -262,7 +235,7 @@ namespace Aikido.Zen.Test
             var context = new Context { Route = "/llm/local" };
 
             // Act
-            LLMSink.OnLLMCallCompleted(Array.Empty<object>(), method, "Custom.LLM.Client", result, context);
+            LLMSink.OnLLMCallCompleted(new CustomLLMClientInstance(), result, method, context);
 
             // Assert
             var aiInfo = _agent.Context.AiStats.Providers.Values.Single();
@@ -286,7 +259,7 @@ namespace Aikido.Zen.Test
             var context = new Context { Route = "/llm/openai" };
 
             // Act
-            LLMSink.OnLLMCallCompleted(Array.Empty<object>(), method, "OpenAI", result, context);
+            LLMSink.OnLLMCallCompleted(new OpenAIClientInstance(), result, method, context);
 
             // Assert
             var aiInfo = _agent.Context.AiStats.Providers.Values.Single();
@@ -716,7 +689,21 @@ namespace Aikido.Zen.Test
             public string? OutputTokenCount { get; set; }
         }
 
+        private class OpenAIClientInstance
+        {
+        }
 
+        private class AzureOpenAIClientInstance
+        {
+        }
+
+        private class RystemOpenAIClientInstance
+        {
+        }
+
+        private class CustomLLMClientInstance
+        {
+        }
 
         private class MockObjectWithBrokenProperty
         {

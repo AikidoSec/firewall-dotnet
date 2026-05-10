@@ -1,6 +1,4 @@
-using System;
 using System.Diagnostics;
-using System.Linq;
 using System.Reflection;
 using System.Threading;
 
@@ -17,17 +15,14 @@ namespace Aikido.Zen.Core.Sinks
         private const string OperationKind = "fs_op";
         private static readonly ThreadLocal<bool> IsProcessing = new ThreadLocal<bool>(() => false);
 
-        internal static bool OnPathOperation(object[] __args, MethodBase __originalMethod)
-        {
-            return OnFileOperation(GetStringArguments(__args, 1), __originalMethod);
-        }
-
-        internal static bool OnTwoPathOperation(object[] __args, MethodBase __originalMethod)
-        {
-            return OnFileOperation(GetStringArguments(__args, 2), __originalMethod);
-        }
-
-        private static bool OnFileOperation(string[] paths, MethodBase originalMethod)
+        /// <summary>
+        /// A generic handler for file operations that checks for path traversal attacks.
+        /// </summary>
+        /// <param name="path">The file or directory path involved in the operation.</param>
+        /// <param name="originalMethod">The original method being patched.</param>
+        /// <param name="context">The context for the current operation.</param>
+        /// <returns>Always returns true. Throws an exception if a blocked attack is detected.</returns>
+        public static bool OnFileOperation(string path, MethodBase originalMethod, Context context)
         {
             if (IsProcessing.Value)
             {
@@ -37,98 +32,63 @@ namespace Aikido.Zen.Core.Sinks
             try
             {
                 IsProcessing.Value = true;
-                return paths.Length == 0
-                    ? true
-                    : OnFileOperation(paths, originalMethod, Patcher.GetContext());
+                // Exclude certain assemblies to avoid stack overflow issues
+                if (ReflectionHelper.ShouldSkipAssembly())
+                {
+                    return true;
+                }
+
+                if (Context.IsBypassed(context))
+                {
+                    return true;
+                }
+
+                var methodInfo = originalMethod as MethodInfo;
+                var operation = $"{methodInfo?.DeclaringType?.Name}.{methodInfo?.Name}";
+                var module = methodInfo?.DeclaringType?.Assembly.GetName().Name;
+                var stopwatch = Stopwatch.StartNew();
+                var withoutContext = context == null;
+                var attackDetected = false;
+                var blocked = false;
+
+                try
+                {
+                    if (!string.IsNullOrEmpty(path) &&
+                        !Agent.Instance.Context.IsProtectionDisabledForEndpoint(context))
+                    {
+                        attackDetected = PathTraversalHelper.DetectPathTraversal(path, context, module, operation);
+                    }
+
+                    blocked = attackDetected && !EnvironmentHelper.DryMode;
+                }
+                catch
+                {
+                    LogHelper.ErrorLog(Agent.Logger, "Error during Path Traversal detection.");
+                }
+                finally
+                {
+                    stopwatch.Stop();
+                    try
+                    {
+                        Agent.Instance?.Context?.OnInspectedCall(operation, OperationKind, stopwatch.Elapsed.TotalMilliseconds, attackDetected, blocked, withoutContext);
+                    }
+                    catch
+                    {
+                        LogHelper.ErrorLog(Agent.Logger, "Error recording OnInspectedCall stats.");
+                    }
+                }
+
+                if (blocked)
+                {
+                    throw AikidoException.PathTraversalDetected(operation);
+                }
+
+                return true;
             }
             finally
             {
                 IsProcessing.Value = false;
             }
-        }
-
-        /// <summary>
-        /// A generic handler for file operations that checks for path traversal attacks.
-        /// </summary>
-        /// <param name="paths">The file or directory paths involved in the operation.</param>
-        /// <param name="originalMethod">The original method being patched.</param>
-        /// <param name="context">The context for the current operation.</param>
-        /// <returns>Always returns true. Throws an exception if a blocked attack is detected.</returns>
-        public static bool OnFileOperation(string[] paths, MethodBase originalMethod, Context context)
-        {
-            // Exclude certain assemblies to avoid stack overflow issues
-            if (ReflectionHelper.ShouldSkipAssembly())
-            {
-                return true;
-            }
-
-            if (Context.IsBypassed(context))
-            {
-                return true;
-            }
-
-            var methodInfo = originalMethod as MethodInfo;
-            var operation = $"{methodInfo?.DeclaringType?.Name}.{methodInfo?.Name}";
-            var assemblyName = methodInfo?.DeclaringType?.Assembly.GetName().Name;
-            var stopwatch = Stopwatch.StartNew();
-            var withoutContext = context == null;
-            var attackDetected = false;
-            var blocked = false;
-
-            try
-            {
-                if (paths != null && paths.Length > 0 &&
-                    !Agent.Instance.Context.IsProtectionDisabledForEndpoint(context))
-                {
-                    foreach (var path in paths)
-                    {
-                        if (PathTraversalHelper.DetectPathTraversal(path, context, assemblyName, operation))
-                        {
-                            attackDetected = true;
-                            break;
-                        }
-                    }
-                }
-
-                blocked = attackDetected && !EnvironmentHelper.DryMode;
-            }
-            catch
-            {
-                LogHelper.ErrorLog(Agent.Logger, "Error during Path Traversal detection.");
-            }
-            finally
-            {
-                stopwatch.Stop();
-                try
-                {
-                    Agent.Instance?.Context?.OnInspectedCall(operation, OperationKind, stopwatch.Elapsed.TotalMilliseconds, attackDetected, blocked, withoutContext);
-                }
-                catch
-                {
-                    LogHelper.ErrorLog(Agent.Logger, "Error recording OnInspectedCall stats.");
-                }
-            }
-
-            if (blocked)
-            {
-                throw AikidoException.PathTraversalDetected(operation);
-            }
-
-            return true;
-        }
-
-        private static string[] GetStringArguments(object[] args, int count)
-        {
-            if (args == null || count <= 0)
-            {
-                return Array.Empty<string>();
-            }
-
-            return args
-                .OfType<string>()
-                .Where(path => !string.IsNullOrEmpty(path))
-                .Take(count)
-                .ToArray();
         }
 
     }

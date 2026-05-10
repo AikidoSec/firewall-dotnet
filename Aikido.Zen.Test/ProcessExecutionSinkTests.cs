@@ -46,10 +46,9 @@ namespace Aikido.Zen.Test
         public void OnProcessStart_WithNullContext_ReturnsTrue()
         {
             // Arrange
-            var args = new object[] { };
 
             // Act
-            var result = ProcessExecutionSink.OnProcessStart(args, _methodInfo, new Process { StartInfo = _startInfo }, null);
+            var result = OnProcessStart(new Process { StartInfo = _startInfo }, null);
 
             // Assert
             Assert.That(result, Is.True);
@@ -66,11 +65,7 @@ namespace Aikido.Zen.Test
             _startInfo.FileName = "sh";
             _startInfo.Arguments = "-c \"$(echo)\"";
 
-            var result = ProcessExecutionSink.OnProcessStart(
-                new object[] { },
-                _methodInfo,
-                new Process { StartInfo = _startInfo },
-                _context);
+            var result = OnProcessStart(new Process { StartInfo = _startInfo }, _context);
 
             Assert.That(result, Is.True);
             Assert.That(_context.AttackDetected, Is.False);
@@ -82,10 +77,9 @@ namespace Aikido.Zen.Test
             // Arrange
             _startInfo.FileName = "safeCommand";
             _startInfo.Arguments = "--safe";
-            var args = new object[] { };
 
             // Act
-            var result = ProcessExecutionSink.OnProcessStart(args, _methodInfo, new Process { StartInfo = _startInfo }, _context);
+            var result = OnProcessStart(new Process { StartInfo = _startInfo }, _context);
 
             // Assert
             Assert.That(result, Is.True);
@@ -100,11 +94,10 @@ namespace Aikido.Zen.Test
             };
             _startInfo.FileName = "sh";
             _startInfo.Arguments = "-c \"$(echo)\"";
-            var args = new object[] { };
 
             // Act & Assert
             var ex = Assert.Throws<AikidoException>(() =>
-                ProcessExecutionSink.OnProcessStart(args, _methodInfo, new Process { StartInfo = _startInfo }, _context)
+                OnProcessStart(new Process { StartInfo = _startInfo }, _context)
             );
             Assert.That(ex.Message, Does.Contain("Shell injection detected"));
         }
@@ -119,10 +112,9 @@ namespace Aikido.Zen.Test
             };
             _startInfo.FileName = "maliciousCommand";
             _startInfo.Arguments = "--inject";
-            var args = new object[] { };
 
             // Act
-            var result = ProcessExecutionSink.OnProcessStart(args, _methodInfo, new Process { StartInfo = _startInfo }, _context);
+            var result = OnProcessStart(new Process { StartInfo = _startInfo }, _context);
 
             // Assert
             Assert.That(result, Is.True);
@@ -151,11 +143,7 @@ namespace Aikido.Zen.Test
                 }
             });
 
-            var result = ProcessExecutionSink.OnProcessStart(
-                new object[] { },
-                _methodInfo,
-                new Process { StartInfo = _startInfo },
-                _context);
+            var result = OnProcessStart(new Process { StartInfo = _startInfo }, _context);
 
             Assert.That(result, Is.True);
             Assert.That(_context.AttackDetected, Is.False);
@@ -165,6 +153,14 @@ namespace Aikido.Zen.Test
         public void TearDown()
         {
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", null);
+        }
+
+        private bool OnProcessStart(Process process, Context context)
+        {
+            return ProcessExecutionSink.OnProcessStart(
+                process,
+                _methodInfo,
+                context);
         }
     }
 }

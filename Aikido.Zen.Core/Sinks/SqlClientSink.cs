@@ -1,4 +1,3 @@
-using System.Data.Common;
 using System.Diagnostics;
 using System.Reflection;
 
@@ -15,38 +14,13 @@ namespace Aikido.Zen.Core.Sinks
     {
         private const string operationKind = "sql_op";
 
-        internal static bool OnCommandExecuting(object[] __args, MethodBase __originalMethod, object __instance)
-        {
-            var dbCommand = __instance as DbCommand
-                ?? (__args != null && __args.Length > 0 ? __args[0] as DbCommand : null);
-
-            var assembly = __instance?.GetType().Assembly.FullName?.Split(new[] { ", Culture=" }, System.StringSplitOptions.RemoveEmptyEntries)[0] ?? string.Empty;
-            string sql = null;
-
-            if (dbCommand != null)
-            {
-                sql = dbCommand.CommandText;
-            }
-            else if (__originalMethod.Name.StartsWith("ExecuteSqlRaw"))
-            {
-                sql = __args != null && __args.Length > 1 ? __args[1] as string : null;
-                assembly = "Microsoft.EntityFrameworkCore.Relational";
-            }
-            else
-            {
-                return true;
-            }
-
-            return OnCommandExecuting(__args, __originalMethod, sql, assembly, Patcher.GetContext());
-        }
-
         /// <summary>
         /// Patches the OnCommandExecuting method to detect and prevent SQL injection attacks
         /// </summary>
-        /// <param name="__args">The arguments passed to the method.</param>
-        /// <param name="__originalMethod">The original method being patched.</param>
         /// <param name="sql">The SQL command to execute.</param>
-        public static bool OnCommandExecuting(object[] __args, MethodBase __originalMethod, string sql, string assembly, Context context)
+        /// <param name="originalMethod">The original SQL method being inspected.</param>
+        /// <param name="context">The current Aikido context.</param>
+        public static bool OnCommandExecuting(string sql, MethodBase originalMethod, Context context)
         {
             // Exclude certain assemblies to avoid stack overflow issues
             if (ReflectionHelper.ShouldSkipAssembly())
@@ -60,14 +34,16 @@ namespace Aikido.Zen.Core.Sinks
             }
 
 
+            var methodInfo = originalMethod as MethodInfo;
+            var operation = $"{methodInfo?.DeclaringType?.Name}.{methodInfo?.Name}";
+            var module = methodInfo?.DeclaringType?.Assembly.GetName().Name ?? string.Empty;
+
             // Determine sink and context status regardless of detection outcome
             var stopwatch = Stopwatch.StartNew();
-            var methodInfo = __originalMethod as MethodInfo;
-            var operation = $"{methodInfo?.DeclaringType?.Name}.{methodInfo?.Name}";
-            var assemblyName = methodInfo?.DeclaringType?.Assembly.GetName().Name;
             bool withoutContext = context == null;
             bool attackDetected = false;
             bool blocked = false;
+            var dialect = GetDialect(module ?? string.Empty);
 
             try
             {
@@ -75,9 +51,7 @@ namespace Aikido.Zen.Core.Sinks
                 if (context != null && sql != null &&
                     !Agent.Instance.Context.IsProtectionDisabledForEndpoint(context))
                 {
-                    var dialect = GetDialect(assembly ?? assemblyName);
-
-                    attackDetected = SqlCommandHelper.DetectSQLInjection(sql, dialect, context, assemblyName, operation);
+                    attackDetected = SqlCommandHelper.DetectSQLInjection(sql, dialect, context, module, operation);
                     blocked = attackDetected && !EnvironmentHelper.DryMode;
                 }
             }
@@ -105,7 +79,7 @@ namespace Aikido.Zen.Core.Sinks
             if (blocked)
             {
                 // Throwing the exception prevents the original method from running
-                throw AikidoException.SQLInjectionDetected(GetDialect(assembly).ToHumanName());
+                throw AikidoException.SQLInjectionDetected(dialect.ToHumanName());
             }
 
             // Allow the original method to execute

@@ -96,57 +96,69 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void SinkWrappers_UseConfiguredContextAndReturnTrueForSafeCalls()
+        public void TypedSinkMethods_UseConfiguredContextAndReturnTrueForSafeCalls()
         {
             Patcher.PatchSinks(() => _context);
 
-            Assert.That(IOSink.OnPathOperation(new object[] { "safe.txt" }, GetMethod(typeof(File), nameof(File.ReadAllText), typeof(string))), Is.True);
-            Assert.That(IOSink.OnPathOperation(null, GetMethod(typeof(File), nameof(File.ReadAllText), typeof(string))), Is.True);
-            Assert.That(IOSink.OnTwoPathOperation(new object[] { "source.txt", "dest.txt", true }, GetMethod(typeof(File), nameof(File.Copy), typeof(string), typeof(string), typeof(bool))), Is.True);
+            Assert.That(IOSink.OnFileOperation("safe.txt", GetMethod(typeof(File), nameof(File.ReadAllText), typeof(string)), _context), Is.True);
+            Assert.That(IOSink.OnFileOperation(null, GetMethod(typeof(File), nameof(File.ReadAllText), typeof(string)), _context), Is.True);
+            Assert.That(IOSink.OnFileOperation("source.txt", GetMethod(typeof(File), nameof(File.Copy), typeof(string), typeof(string), typeof(bool)), _context), Is.True);
+            Assert.That(IOSink.OnFileOperation("dest.txt", GetMethod(typeof(File), nameof(File.Copy), typeof(string), typeof(string), typeof(bool)), _context), Is.True);
 
             using (var httpClient = new HttpClient { BaseAddress = new Uri("https://safe.example") })
             {
                 var request = new HttpRequestMessage(HttpMethod.Get, "/path");
                 Assert.That(OutboundRequestSink.OnRequest(
-                    new object[] { request, CancellationToken.None },
+                    new Uri(httpClient.BaseAddress, request.RequestUri!),
                     GetMethod(typeof(HttpClient), nameof(HttpClient.SendAsync), typeof(HttpRequestMessage), typeof(CancellationToken)),
-                    httpClient), Is.True);
+                    _context), Is.True);
             }
 
             Assert.That(OutboundRequestSink.OnRequest(
                 null,
                 GetMethod(typeof(HttpClient), nameof(HttpClient.SendAsync), typeof(HttpRequestMessage), typeof(CancellationToken)),
-                null), Is.True);
+                _context), Is.True);
 
 #pragma warning disable SYSLIB0014
             var webRequest = WebRequest.Create("https://safe.example/path");
 #pragma warning restore SYSLIB0014
             Assert.That(OutboundRequestSink.OnRequest(
-                Array.Empty<object>(),
+                webRequest.RequestUri,
                 GetMethod(typeof(WebRequest), nameof(WebRequest.GetResponse)),
-                webRequest), Is.True);
+                _context), Is.True);
 
             var dbCommand = new Mock<DbCommand>();
             dbCommand.SetupGet(command => command.CommandText).Returns("SELECT 1");
             Assert.That(SqlClientSink.OnCommandExecuting(
-                Array.Empty<object>(),
+                dbCommand.Object.CommandText,
                 GetMethod(typeof(DbCommand), nameof(DbCommand.ExecuteScalar)),
-                dbCommand.Object), Is.True);
+                _context), Is.True);
 
             var process = new Process
             {
                 StartInfo = new ProcessStartInfo("echo", "safe")
             };
             Assert.That(ProcessExecutionSink.OnProcessStart(
-                Array.Empty<object>(),
+                process,
                 GetMethod(typeof(Process), nameof(Process.Start)),
-                process), Is.True);
+                _context), Is.True);
 
             Assert.DoesNotThrow(() => LLMSink.OnLLMCallCompleted(
-                Array.Empty<object>(),
+                null,
+                null,
                 GetMethod(typeof(object), nameof(ToString)),
-                new object(),
-                null));
+                _context));
+        }
+
+        [Test]
+        public void PatchCatalog_SkipsMissingTargetsAndStillPatchesValidTargets()
+        {
+            Assert.DoesNotThrow(() => Patcher.PatchCatalog(typeof(ScannerCatalog)));
+
+            Assert.That(ScannerTarget.PrefixTarget(), Is.EqualTo("prefix"));
+            Assert.That(ScannerTarget.PostfixTarget(), Is.EqualTo("postfix"));
+            AssertPrefixPatch(GetMethod(typeof(ScannerTarget), nameof(ScannerTarget.PrefixTarget)));
+            AssertPostfixPatch(GetMethod(typeof(ScannerTarget), nameof(ScannerTarget.PostfixTarget)));
         }
 
         private static MethodInfo GetMethod(Type type, string methodName, params Type[] parameterTypes)
@@ -168,6 +180,45 @@ namespace Aikido.Zen.Test
 
             Assert.That(patches, Is.Not.Null);
             Assert.That(patches.Prefixes.Any(prefix => prefix.owner == HarmonyId), Is.True);
+        }
+
+        private void AssertPostfixPatch(MethodInfo method)
+        {
+            Assert.That(method, Is.Not.Null);
+            var patches = Harmony.GetPatchInfo(method);
+
+            Assert.That(patches, Is.Not.Null);
+            Assert.That(patches.Postfixes.Any(postfix => postfix.owner == HarmonyId), Is.True);
+        }
+
+        private static class ScannerTarget
+        {
+            public static string PrefixTarget()
+            {
+                return "original";
+            }
+
+            public static string PostfixTarget()
+            {
+                return "original";
+            }
+        }
+
+        private static class ScannerCatalog
+        {
+            [SinkPrefix("", "Aikido.Zen.Test.PatcherTests+ScannerTarget", nameof(ScannerTarget.PrefixTarget))]
+            [SinkPrefix("", "Aikido.Zen.Test.PatcherTests+ScannerTarget", "MissingTarget")]
+            private static bool Prefix(ref string __result)
+            {
+                __result = "prefix";
+                return false;
+            }
+
+            [SinkPostfix("", "Aikido.Zen.Test.PatcherTests+ScannerTarget", nameof(ScannerTarget.PostfixTarget))]
+            private static void Postfix(ref string __result)
+            {
+                __result = "postfix";
+            }
         }
 
     }

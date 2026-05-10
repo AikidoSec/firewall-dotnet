@@ -63,10 +63,9 @@ namespace Aikido.Zen.Test
         {
             // Arrange
             var sql = "SELECT * FROM users";
-            var args = new object[] { };
 
             // Act
-            var result = SqlClientSink.OnCommandExecuting(args, _methodInfo, sql, "System.Data.SqlClient", null);
+            var result = OnCommandExecuting(_methodInfo, sql, null);
 
             // Assert
             Assert.That(result, Is.True);
@@ -83,12 +82,7 @@ namespace Aikido.Zen.Test
             };
             var sql = "SELECT * FROM users WHERE id = '1' OR '1'='1'";
 
-            var result = SqlClientSink.OnCommandExecuting(
-                new object[] { },
-                _methodInfo,
-                sql,
-                "System.Data.SqlClient",
-                _context);
+            var result = OnCommandExecuting(_methodInfo, sql, _context);
 
             Assert.That(result, Is.True);
             Assert.That(_context.AttackDetected, Is.False);
@@ -100,29 +94,23 @@ namespace Aikido.Zen.Test
             // Arrange
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
             var sql = "SELECT * FROM users WHERE id = @id";
-            var args = new object[] { };
 
             // Act
-            var result = SqlClientSink.OnCommandExecuting(args, _methodInfo, sql, "System.Data.SqlClient", _context);
+            var result = OnCommandExecuting(_methodInfo, sql, _context);
 
             // Assert
             Assert.That(result, Is.True);
         }
 
         [Test]
-        public void OnCommandExecuting_WithNullAssembly_UsesOriginalMethodAssembly()
+        public void OnCommandExecuting_WithNullInstance_UsesOriginalMethodAssembly()
         {
             // Arrange
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
             var sql = "SELECT * FROM users WHERE id = @id";
 
             // Act
-            var result = SqlClientSink.OnCommandExecuting(
-                Array.Empty<object>(),
-                _methodInfo,
-                sql,
-                null,
-                _context);
+            var result = OnCommandExecuting(_methodInfo, sql, _context);
 
             // Assert
             Assert.That(result, Is.True);
@@ -137,11 +125,10 @@ namespace Aikido.Zen.Test
             };
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
             var sql = "SELECT * FROM users WHERE id = '1' OR '1'='1'";
-            var args = new object[] { };
 
             // Act & Assert
             var ex = Assert.Throws<AikidoException>(() =>
-                SqlClientSink.OnCommandExecuting(args, _methodInfo, sql, "System.Data.SqlClient", _context)
+                OnCommandExecuting(_methodInfo, sql, _context)
             );
             Assert.That(ex.Message, Does.Contain("SQL injection detected"));
         }
@@ -152,10 +139,9 @@ namespace Aikido.Zen.Test
             // Arrange
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "false");
             var sql = "SELECT * FROM users WHERE id = '1' OR '1'='1'";
-            var args = new object[] { };
 
             // Act
-            var result = SqlClientSink.OnCommandExecuting(args, _methodInfo, sql, "System.Data.SqlClient", _context);
+            var result = OnCommandExecuting(_methodInfo, sql, _context);
 
             // Assert
             Assert.That(result, Is.True);
@@ -185,70 +171,34 @@ namespace Aikido.Zen.Test
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
             var sql = "SELECT * FROM users WHERE id = '1' OR '1'='1'";
 
-            var result = SqlClientSink.OnCommandExecuting(
-                new object[] { },
-                _methodInfo,
-                sql,
-                "System.Data.SqlClient",
-                _context);
+            var result = OnCommandExecuting(_methodInfo, sql, _context);
 
             Assert.That(result, Is.True);
             Assert.That(_context.AttackDetected, Is.False);
         }
 
         [Test]
-        public void OnCommandExecuting_WithNoCommandArgument_ReturnsTrue()
+        public void OnCommandExecuting_WithNullSql_ReturnsTrue()
         {
-            Patcher.PatchSinks(() => _context);
-
-            var result = SqlClientSink.OnCommandExecuting(
-                Array.Empty<object>(),
-                _methodInfo,
-                null);
+            var result = OnCommandExecuting(_methodInfo, null, _context);
 
             Assert.That(result, Is.True);
         }
 
         [Test]
-        public void OnCommandExecuting_WithDbCommandInstance_UsesCommandFromInstance()
+        public void OnCommandExecuting_WithCommandText_ReturnsTrue()
         {
-            Patcher.PatchSinks(() => _context);
-            var dbCommand = new Mock<DbCommand>();
-            dbCommand.SetupGet(command => command.CommandText).Returns("SELECT 1");
-
-            var result = SqlClientSink.OnCommandExecuting(
-                Array.Empty<object>(),
-                _methodInfo,
-                dbCommand.Object);
+            var result = OnCommandExecuting(_methodInfo, "SELECT 1", _context);
 
             Assert.That(result, Is.True);
         }
 
         [Test]
-        public void OnCommandExecuting_WithDbCommandInArgs_UsesCommandFromArgs()
+        public void OnCommandExecuting_WithExecuteSqlRawMethodAndNullSql_ReturnsTrue()
         {
-            Patcher.PatchSinks(() => null);
-            var dbCommand = new Mock<DbCommand>();
-            dbCommand.SetupGet(command => command.CommandText).Returns("SELECT 1");
-
-            var result = SqlClientSink.OnCommandExecuting(
-                new object[] { dbCommand.Object },
-                _methodInfo,
-                null);
-
-            Assert.That(result, Is.True);
-        }
-
-        [Test]
-        public void OnCommandExecuting_WithExecuteSqlRawMethodWithoutSqlArgument_ReturnsTrue()
-        {
-            Patcher.PatchSinks(() => _context);
             var methodInfo = typeof(TestSqlMethods).GetMethod(nameof(TestSqlMethods.ExecuteSqlRaw));
 
-            var result = SqlClientSink.OnCommandExecuting(
-                new object[] { new object() },
-                methodInfo!,
-                null);
+            var result = OnCommandExecuting(methodInfo!, null, _context);
 
             Assert.That(result, Is.True);
         }
@@ -256,7 +206,6 @@ namespace Aikido.Zen.Test
         [Test]
         public void OnCommandExecuting_WithExecuteSqlRawMethod_UsesSqlArgument()
         {
-            Patcher.PatchSinks(() => _context);
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
             _context.ParsedUserInput = new Dictionary<string, string>
             {
@@ -266,25 +215,9 @@ namespace Aikido.Zen.Test
             var sql = "SELECT * FROM users WHERE id = '1' OR '1'='1'";
 
             var ex = Assert.Throws<AikidoException>(() =>
-                SqlClientSink.OnCommandExecuting(
-                    new object[] { new object(), sql, Array.Empty<object>() },
-                    methodInfo!,
-                    null));
+                OnCommandExecuting(methodInfo!, sql, _context));
 
             Assert.That(ex.Message, Does.Contain("SQL injection detected"));
-        }
-
-        [Test]
-        public void OnCommandExecuting_WithUnsupportedMethodAndNoDbCommand_ReturnsTrue()
-        {
-            var methodInfo = typeof(TestSqlMethods).GetMethod(nameof(TestSqlMethods.Query));
-
-            var result = SqlClientSink.OnCommandExecuting(
-                new object[] { new object(), "SELECT 1" },
-                methodInfo!,
-                null);
-
-            Assert.That(result, Is.True);
         }
 
         [TearDown]
@@ -302,10 +235,14 @@ namespace Aikido.Zen.Test
                 return 0;
             }
 
-            public static int Query(string sql)
-            {
-                return 0;
-            }
+        }
+
+        private static bool OnCommandExecuting(MethodInfo methodInfo, string? sql, Context? context)
+        {
+            return SqlClientSink.OnCommandExecuting(
+                sql,
+                methodInfo,
+                context);
         }
     }
 }

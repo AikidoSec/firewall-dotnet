@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
-
 using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
@@ -16,20 +15,14 @@ namespace Aikido.Zen.Core.Sinks
     {
         private const string kind = "exec_op";
 
-        internal static bool OnProcessStart(object[] __args, MethodBase __originalMethod, object __instance)
-        {
-            return OnProcessStart(__args, __originalMethod, __instance, Patcher.GetContext());
-        }
-
         /// <summary>
         /// Inspects the process start arguments for potential shell injection vulnerabilities.
         /// </summary>
-        /// <param name="__args">The arguments passed to the original method.</param>
-        /// <param name="__originalMethod">The original method being patched.</param>
-        /// <param name="__instance">The instance of the process being executed.</param>
+        /// <param name="process">The process being executed.</param>
+        /// <param name="originalMethod">The original process method being inspected.</param>
         /// <param name="context">The context of the process execution.</param>
         /// <returns>True if the original method should continue execution; otherwise, false.</returns>
-        public static bool OnProcessStart(object[] __args, MethodBase __originalMethod, object __instance, Context context)
+        public static bool OnProcessStart(Process process, MethodBase originalMethod, Context context)
         {
 
             // Exclude certain assemblies to avoid stack overflow issues
@@ -43,10 +36,10 @@ namespace Aikido.Zen.Core.Sinks
                 return true;
             }
 
-            var stopwatch = Stopwatch.StartNew();
-            var methodInfo = __originalMethod as MethodInfo;
+            var methodInfo = originalMethod as MethodInfo;
             var operation = $"{methodInfo?.DeclaringType?.Name}.{methodInfo?.Name}";
-            var assemblyName = methodInfo?.DeclaringType?.Assembly.GetName().Name;
+            var module = methodInfo?.DeclaringType?.Assembly.GetName().Name;
+            var stopwatch = Stopwatch.StartNew();
             bool withoutContext = context == null;
             bool attackDetected = false;
             bool blocked = false;
@@ -54,7 +47,7 @@ namespace Aikido.Zen.Core.Sinks
 
             try
             {
-                var processStartInfo = (__instance as Process)?.StartInfo;
+                var processStartInfo = process?.StartInfo;
                 // Only inspect if context and process info are available
                 if (processStartInfo != null && context != null &&
                     !Agent.Instance.Context.IsProtectionDisabledForEndpoint(context))
@@ -79,7 +72,7 @@ namespace Aikido.Zen.Core.Sinks
                                 payload: userInput.Value,
                                 operation: operation,
                                 context: context,
-                                module: assemblyName,
+                                module: module,
                                 metadata: metadata,
                                 blocked: blocked,
                                 paths: new[] { UserInputHelper.GetAttackPathFromUserInputKey(userInput.Key) }

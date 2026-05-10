@@ -54,7 +54,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void Inspect_WhenDomainRuleBlocks_CapturesHostnameWithoutAttack()
+        public void OnRequest_WhenDomainRuleBlocks_CapturesHostnameWithoutAttack()
         {
             // Arrange
             _agent.Context.Config.UpdateOutboundDomains(false, new[]
@@ -62,29 +62,19 @@ namespace Aikido.Zen.Test
                 new OutboundDomainConfig { Hostname = "blocked.example", Mode = "block" }
             });
 
-            // Act
-            var result = OutboundRequestSink.Inspect(
+            // Act / Assert
+            var exception = Assert.Throws<AikidoException>(() => OutboundRequestSink.OnRequest(
                 new Uri("https://blocked.example/path"),
-                "HttpClient.SendAsync",
-                "System.Net.Http",
-                new Context
-                {
-                    Method = "GET",
-                    Route = "/outbound",
-                    Url = "https://app.local/outbound",
-                    RemoteAddress = "203.0.113.10"
-                });
+                GetHttpClientSendAsyncMethod(),
+                CreateContext()));
 
-            // Assert
-            Assert.That(result.ShouldProceed, Is.False);
-            Assert.That(result.AttackDetected, Is.False);
-            Assert.That(result.Blocked, Is.True);
+            Assert.That(exception?.Message, Does.Contain("blocked.example"));
             Assert.That(_agent.Context.AttacksDetected, Is.EqualTo(0));
             Assert.That(_agent.Context.Hostnames.Any(h => h.Hostname == "blocked.example" && h.Port == 443), Is.True);
         }
 
         [Test]
-        public void Inspect_WhenDryMode_DomainRuleDoesNotBlock()
+        public void OnRequest_WhenDryMode_DomainRuleDoesNotBlock()
         {
             // Arrange
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "false");
@@ -94,26 +84,18 @@ namespace Aikido.Zen.Test
             });
 
             // Act
-            var result = OutboundRequestSink.Inspect(
+            var result = OutboundRequestSink.OnRequest(
                 new Uri("https://blocked.example/path"),
-                "HttpClient.SendAsync",
-                "System.Net.Http",
-                new Context
-                {
-                    Method = "GET",
-                    Route = "/outbound",
-                    Url = "https://app.local/outbound",
-                    RemoteAddress = "203.0.113.10"
-                });
+                GetHttpClientSendAsyncMethod(),
+                CreateContext());
 
             // Assert
-            Assert.That(result.ShouldProceed, Is.True);
-            Assert.That(result.Blocked, Is.False);
+            Assert.That(result, Is.True);
             Assert.That(_agent.Context.Hostnames.Any(h => h.Hostname == "blocked.example" && h.Port == 443), Is.True);
         }
 
         [Test]
-        public void Inspect_WhenForceProtectionOffRoute_DomainBlockingStillApplies()
+        public void OnRequest_WhenForceProtectionOffRoute_DomainBlockingStillApplies()
         {
             // Arrange
             _agent.Context.Config.UpdateOutboundDomains(true, new[]
@@ -138,20 +120,15 @@ namespace Aikido.Zen.Test
                 RemoteAddress = "203.0.113.10"
             };
 
-            // Act
-            var result = OutboundRequestSink.Inspect(
+            // Act / Assert
+            Assert.Throws<AikidoException>(() => OutboundRequestSink.OnRequest(
                 new Uri("https://blocked.example/path"),
-                "HttpClient.SendAsync",
-                "System.Net.Http",
-                context);
-
-            // Assert
-            Assert.That(result.ShouldProceed, Is.False);
-            Assert.That(result.Blocked, Is.True);
+                GetHttpClientSendAsyncMethod(),
+                context));
         }
 
         [Test]
-        public void Inspect_WhenRequestTargetsConfiguredAikidoCore_DoesNotBlock()
+        public void OnRequest_WhenRequestTargetsConfiguredAikidoCore_DoesNotBlock()
         {
             // Arrange
             _agent.Context.Config.UpdateOutboundDomains(true, new[]
@@ -160,19 +137,17 @@ namespace Aikido.Zen.Test
             });
 
             // Act
-            var result = OutboundRequestSink.Inspect(
+            var result = OutboundRequestSink.OnRequest(
                 new Uri("http://localhost:3000/api/runtime/events"),
-                "HttpClient.SendAsync",
-                "System.Net.Http",
+                GetHttpClientSendAsyncMethod(),
                 null);
 
             // Assert
-            Assert.That(result.ShouldProceed, Is.True);
-            Assert.That(result.Blocked, Is.False);
+            Assert.That(result, Is.True);
         }
 
         [Test]
-        public void Inspect_WhenRequestTargetsConfiguredAikidoRealtime_DoesNotBlock()
+        public void OnRequest_WhenRequestTargetsConfiguredAikidoRealtime_DoesNotBlock()
         {
             // Arrange
             _agent.Context.Config.UpdateOutboundDomains(true, new[]
@@ -181,19 +156,17 @@ namespace Aikido.Zen.Test
             });
 
             // Act
-            var result = OutboundRequestSink.Inspect(
+            var result = OutboundRequestSink.OnRequest(
                 new Uri("http://localhost:3001/config"),
-                "HttpClient.SendAsync",
-                "System.Net.Http",
+                GetHttpClientSendAsyncMethod(),
                 null);
 
             // Assert
-            Assert.That(result.ShouldProceed, Is.True);
-            Assert.That(result.Blocked, Is.False);
+            Assert.That(result, Is.True);
         }
 
         [Test]
-        public void Inspect_WhenAikidoHostUsesDifferentPort_AppliesOutboundRules()
+        public void OnRequest_WhenAikidoHostUsesDifferentPort_AppliesOutboundRules()
         {
             // Arrange
             _agent.Context.Config.UpdateOutboundDomains(true, new[]
@@ -201,21 +174,17 @@ namespace Aikido.Zen.Test
                 new OutboundDomainConfig { Hostname = "safe.example", Mode = "allow" }
             });
 
-            // Act
-            var result = OutboundRequestSink.Inspect(
+            // Act / Assert
+            var exception = Assert.Throws<AikidoException>(() => OutboundRequestSink.OnRequest(
                 new Uri("http://localhost:3002/api/runtime/events"),
-                "HttpClient.SendAsync",
-                "System.Net.Http",
-                null);
+                GetHttpClientSendAsyncMethod(),
+                null));
 
-            // Assert
-            Assert.That(result.ShouldProceed, Is.False);
-            Assert.That(result.Blocked, Is.True);
-            Assert.That(result.Exception?.Message, Does.Contain("localhost"));
+            Assert.That(exception?.Message, Does.Contain("localhost"));
         }
 
         [Test]
-        public void Inspect_WhenContextIsBypassed_CapturesHostnameWithoutBlocking()
+        public void OnRequest_WhenContextIsBypassed_CapturesHostnameWithoutBlocking()
         {
             // Arrange
             _agent.Context.Config.UpdateConfig(new ReportingAPIResponse
@@ -241,15 +210,13 @@ namespace Aikido.Zen.Test
             };
 
             // Act
-            var result = OutboundRequestSink.Inspect(
+            var result = OutboundRequestSink.OnRequest(
                 new Uri("http://domain1.example.com/test"),
-                "HttpClient.SendAsync",
-                "System.Net.Http",
+                GetHttpClientSendAsyncMethod(),
                 context);
 
             // Assert
-            Assert.That(result.ShouldProceed, Is.True);
-            Assert.That(result.Blocked, Is.False);
+            Assert.That(result, Is.True);
             Assert.That(_agent.Context.Hostnames.Any(h => h.Hostname == "domain1.example.com" && h.Port == 80), Is.True);
         }
 
@@ -262,14 +229,11 @@ namespace Aikido.Zen.Test
                 new OutboundDomainConfig { Hostname = "blocked.example", Mode = "block" }
             });
 
-            using var httpClient = new HttpClient { BaseAddress = new Uri("https://blocked.example") };
-            var request = new HttpRequestMessage(HttpMethod.Get, "/path");
-
             // Act / Assert
             var exception = Assert.Throws<AikidoException>(() => OutboundRequestSink.OnRequest(
-                new object[] { request, CancellationToken.None },
+                new Uri("https://blocked.example/path"),
                 GetHttpClientSendAsyncMethod(),
-                httpClient));
+                CreateContext()));
 
             Assert.That(exception?.Message, Does.Contain("blocked.example"));
         }
@@ -278,14 +242,11 @@ namespace Aikido.Zen.Test
         public void OnRequest_WithAbsoluteHttpClientRequest_CapturesRequestUri()
         {
             // Arrange
-            using var httpClient = new HttpClient();
-            var request = new HttpRequestMessage(HttpMethod.Get, "https://absolute.example/path");
-
             // Act
             var result = OutboundRequestSink.OnRequest(
-                new object[] { request, CancellationToken.None },
+                new Uri("https://absolute.example/path"),
                 GetHttpClientSendAsyncMethod(),
-                httpClient);
+                CreateContext());
 
             // Assert
             Assert.That(result, Is.True);
@@ -295,14 +256,11 @@ namespace Aikido.Zen.Test
         [Test]
         public void OnRequest_WithBaseAddressAndNoRequest_CapturesBaseAddress()
         {
-            // Arrange
-            using var httpClient = new HttpClient { BaseAddress = new Uri("https://base-only.example") };
-
             // Act
             var result = OutboundRequestSink.OnRequest(
-                Array.Empty<object>(),
+                new Uri("https://base-only.example"),
                 GetHttpClientSendAsyncMethod(),
-                httpClient);
+                CreateContext());
 
             // Assert
             Assert.That(result, Is.True);
@@ -312,14 +270,11 @@ namespace Aikido.Zen.Test
         [Test]
         public void OnRequest_WithHttpClientAndNoRequestOrBaseAddress_ReturnsTrue()
         {
-            // Arrange
-            using var httpClient = new HttpClient();
-
             // Act
             var result = OutboundRequestSink.OnRequest(
-                Array.Empty<object>(),
+                null,
                 GetHttpClientSendAsyncMethod(),
-                httpClient);
+                CreateContext());
 
             // Assert
             Assert.That(result, Is.True);
@@ -331,5 +286,17 @@ namespace Aikido.Zen.Test
                 nameof(HttpClient.SendAsync),
                 new[] { typeof(HttpRequestMessage), typeof(CancellationToken) })!;
         }
+
+        private static Context CreateContext()
+        {
+            return new Context
+            {
+                Method = "GET",
+                Route = "/outbound",
+                Url = "https://app.local/outbound",
+                RemoteAddress = "203.0.113.10"
+            };
+        }
+
     }
 }

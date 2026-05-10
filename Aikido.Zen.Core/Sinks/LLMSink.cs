@@ -16,23 +16,14 @@ namespace Aikido.Zen.Core.Sinks
     {
         private const string operationKind = "ai_op";
 
-        internal static void OnLLMCallCompleted(object[] __args, MethodBase __originalMethod, object __instance, object __result)
-        {
-            var assembly = __instance?.GetType().Assembly.FullName?.Split(new[] { ", Culture=" }, StringSplitOptions.RemoveEmptyEntries)[0] ?? string.Empty;
-            var resolvedResult = LLMResultHelper.ResolveResult(__result);
-
-            OnLLMCallCompleted(__args, __originalMethod, assembly, resolvedResult, Patcher.GetContext());
-        }
-
         /// <summary>
         /// Handles completed LLM API calls to extract token usage and track statistics
         /// </summary>
-        /// <param name="__args">The arguments passed to the method.</param>
-        /// <param name="__originalMethod">The original method being patched.</param>
-        /// <param name="assembly">The assembly name containing the LLM client.</param>
+        /// <param name="instance">The LLM client instance.</param>
         /// <param name="result">The result returned by the LLM API call.</param>
+        /// <param name="originalMethod">The original LLM method being inspected.</param>
         /// <param name="context">The current Aikido context.</param>
-        public static void OnLLMCallCompleted(object[] __args, MethodBase __originalMethod, string assembly, object result, Context context)
+        public static void OnLLMCallCompleted(object instance, object result, MethodBase originalMethod, Context context)
         {
             // Exclude certain assemblies to avoid stack overflow issues
             if (ReflectionHelper.ShouldSkipAssembly())
@@ -43,15 +34,20 @@ namespace Aikido.Zen.Core.Sinks
             try
             {
                 var stopWatch = Stopwatch.StartNew();
+                result = LLMResultHelper.ResolveResult(result);
                 if (context == null || result == null) return;
 
+                var clientType = instance?.GetType();
+                var assembly = clientType?.Assembly.FullName?.Split(new[] { ", Culture=" }, StringSplitOptions.RemoveEmptyEntries)[0] ?? string.Empty;
+                var clientName = clientType?.ToString() ?? string.Empty;
+                var operation = GetOperation(originalMethod);
 
                 if (!TryExtractModelFromResult(result, out var model))
                 {
                     LogHelper.ErrorLog(Agent.Logger, $"Failed to extract model from LLM result for model: {model}");
                 }
 
-                if (!TryGetCloudProvider($"{model} {assembly} {result.GetType().ToString()}", out var provider))
+                if (!TryGetCloudProvider($"{model} {assembly} {clientName} {result.GetType().ToString()}", out var provider))
                 {
                     LogHelper.ErrorLog(Agent.Logger, $"Failed to extract provider from LLM for model: {model}, provider: {provider}");
                 }
@@ -67,7 +63,7 @@ namespace Aikido.Zen.Core.Sinks
 
                 // record sink statistics
                 Agent.Instance.Context.OnInspectedCall(
-                    operation: $"{__originalMethod.DeclaringType.Namespace}.{__originalMethod.DeclaringType.Name}.{__originalMethod.Name}",
+                    operation: operation,
                     kind: operationKind,
                     durationInMs: stopWatch.ElapsedMilliseconds,
                     attackDetected: false,
@@ -80,6 +76,12 @@ namespace Aikido.Zen.Core.Sinks
                 // Silently handle any errors to avoid affecting the original LLM call
                 LogHelper.ErrorLog(Agent.Logger, "Error tracking LLM call statistics.");
             }
+        }
+
+        private static string GetOperation(MethodBase originalMethod)
+        {
+            var declaringType = originalMethod?.DeclaringType;
+            return $"{declaringType?.Namespace}.{declaringType?.Name}.{originalMethod?.Name}";
         }
 
         /// <summary>
