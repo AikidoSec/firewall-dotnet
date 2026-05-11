@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Linq;
 using System.Reflection;
 
 using Aikido.Zen.Core.Exceptions;
@@ -88,8 +87,7 @@ namespace Aikido.Zen.Core.Sinks
 
         internal static SQLDialect GetDialect(string assembly)
         {
-            var assemblyName = assembly?.Split(',').FirstOrDefault()?.Trim();
-            switch (assemblyName)
+            switch (assembly)
             {
                 case "System.Data.SqlClient":
                 case "Microsoft.Data.SqlClient":

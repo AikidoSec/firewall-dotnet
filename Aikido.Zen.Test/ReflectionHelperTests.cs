@@ -103,6 +103,17 @@ namespace Aikido.Zen.Test.Helpers
         }
 
         [Test]
+        public void GetMethodModule_ReturnsSimpleAssemblyName()
+        {
+            var method = typeof(string).GetMethod("Contains", new[] { typeof(string) });
+
+            var module = ReflectionHelper.GetMethodModule(method);
+
+            Assert.That(module, Is.EqualTo(typeof(string).Assembly.GetName().Name));
+            Assert.That(module, Does.Not.Contain(","));
+        }
+
+        [Test]
         public void GetMethodFromAssembly_PatchTraversal_ReturnsNull()
         {
             // Arrange
