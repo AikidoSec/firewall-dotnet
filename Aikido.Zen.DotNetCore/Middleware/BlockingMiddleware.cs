@@ -33,7 +33,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 var user = context.Items["Aikido.Zen.CurrentUser"] as User;
                 if (user != null)
                 {
-                    Agent.Instance.Context.AddUser(user, ipAddress: context.Connection.RemoteIpAddress?.ToString());
+                    Agent.Instance.Context.AddUser(user, ipAddress: aikidoContext.RemoteAddress);
                 }
 
                 // Attack wave detection needs to be run manually as it doesn't rely on method patching
