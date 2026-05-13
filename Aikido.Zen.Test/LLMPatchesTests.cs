@@ -26,7 +26,7 @@ namespace Aikido.Zen.Test
         [Test]
         public void PatchMethod_ForwardsCompletedCallToSink()
         {
-            Assert.DoesNotThrow(() => LLMPatches.OnLLMCallCompleted(
+            Assert.DoesNotThrow(() => LLMPatches.OnLLMCallCompletedGeneric(
                 null!,
                 null!,
                 GetMethod(typeof(object), nameof(ToString))));
