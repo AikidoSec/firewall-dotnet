@@ -6,9 +6,9 @@ namespace Aikido.Zen.Core.Sinks
 {
     internal static class SqlClientPatches
     {
-        [SinkPrefix(new[] { "System.Data.Common", "System.Data" }, "System.Data.Common.DbCommand", "ExecuteNonQueryAsync")]
-        [SinkPrefix(new[] { "System.Data.Common", "System.Data" }, "System.Data.Common.DbCommand", "ExecuteReaderAsync", "System.Data.CommandBehavior")]
-        [SinkPrefix(new[] { "System.Data.Common", "System.Data" }, "System.Data.Common.DbCommand", "ExecuteScalarAsync")]
+        [SinkPrefix(typeof(DbCommand), "ExecuteNonQueryAsync")]
+        [SinkPrefix(typeof(DbCommand), "ExecuteReaderAsync", "System.Data.CommandBehavior")]
+        [SinkPrefix(typeof(DbCommand), "ExecuteScalarAsync")]
         [SinkPrefix("Microsoft.Data.SqlClient", "Microsoft.Data.SqlClient.SqlCommand", "ExecuteNonQuery")]
         [SinkPrefix("Microsoft.Data.SqlClient", "Microsoft.Data.SqlClient.SqlCommand", "ExecuteScalar")]
         [SinkPrefix("Microsoft.Data.SqlClient", "Microsoft.Data.SqlClient.SqlCommand", "ExecuteReader", "System.Data.CommandBehavior")]
@@ -34,7 +34,7 @@ namespace Aikido.Zen.Core.Sinks
         [SinkPrefix("Npgsql", "Npgsql.NpgsqlCommand", "ExecuteReaderAsync", "System.Threading.CancellationToken")]
         [SinkPrefix("Npgsql", "Npgsql.NpgsqlCommand", "ExecuteReaderAsync", "System.Data.CommandBehavior", "System.Threading.CancellationToken")]
         [SinkPrefix("Npgsql", "Npgsql.NpgsqlCommand", "ExecuteScalarAsync", "System.Threading.CancellationToken")]
-        internal static bool DbCommand(DbCommand __instance, MethodBase __originalMethod)
+        internal static bool OnCommandExecutingDbCommand(DbCommand __instance, MethodBase __originalMethod)
         {
             return SqlClientSink.OnCommandExecuting(__instance?.CommandText, __originalMethod, Patcher.GetContext());
         }
@@ -42,20 +42,20 @@ namespace Aikido.Zen.Core.Sinks
         [SinkPrefix("NPoco", "NPoco.Database", "ExecuteReaderHelper", "System.Data.Common.DbCommand")]
         [SinkPrefix("NPoco", "NPoco.Database", "ExecuteNonQueryHelper", "System.Data.Common.DbCommand")]
         [SinkPrefix("NPoco", "NPoco.Database", "ExecuteScalarHelper", "System.Data.Common.DbCommand")]
-        internal static bool NPocoCommand(DbCommand cmd, MethodBase __originalMethod)
+        internal static bool OnCommandExecutingNPocoCommand(DbCommand cmd, MethodBase __originalMethod)
         {
             return SqlClientSink.OnCommandExecuting(cmd?.CommandText, __originalMethod, Patcher.GetContext());
         }
 
         [SinkPrefix("Microsoft.EntityFrameworkCore.Relational", "Microsoft.EntityFrameworkCore.RelationalDatabaseFacadeExtensions", "ExecuteSqlRaw", "Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacade", "System.String", "System.Collections.Generic.IEnumerable`1[System.Object]")]
         [SinkPrefix("Microsoft.EntityFrameworkCore.Relational", "Microsoft.EntityFrameworkCore.RelationalDatabaseFacadeExtensions", "ExecuteSqlRawAsync", "Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacade", "System.String", "System.Collections.Generic.IEnumerable`1[System.Object]", "System.Threading.CancellationToken")]
-        internal static bool ExecuteSqlRaw(string sql, MethodBase __originalMethod)
+        internal static bool OnCommandExecutingSqlRaw(string sql, MethodBase __originalMethod)
         {
             return SqlClientSink.OnCommandExecuting(sql, __originalMethod, Patcher.GetContext());
         }
 
         [SinkPrefix("MySql.Data", "MySqlX.XDevAPI.Relational.SqlStatement", "Execute")]
-        internal static bool MySqlXSqlStatement(object __instance, MethodBase __originalMethod)
+        internal static bool OnCommandExecutingMySqlXSqlStatement(object __instance, MethodBase __originalMethod)
         {
             return SqlClientSink.OnCommandExecuting(ReflectionHelper.GetStringMember(__instance, "SQL"), __originalMethod, Patcher.GetContext());
         }

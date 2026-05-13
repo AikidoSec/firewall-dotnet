@@ -7,18 +7,18 @@ namespace Aikido.Zen.Core.Sinks
 {
     internal static class OutboundRequestPatches
     {
-        [SinkPrefix("System.Net.Http", "HttpClient", "SendAsync", "System.Net.Http.HttpRequestMessage", "System.Net.Http.HttpCompletionOption", "System.Threading.CancellationToken")]
-        [SinkPrefix("System.Net.Http", "HttpClient", "SendAsync", "System.Net.Http.HttpRequestMessage", "System.Threading.CancellationToken")]
-        [SinkPrefix("System.Net.Http", "HttpClient", "Send", "System.Net.Http.HttpRequestMessage", "System.Threading.CancellationToken")]
-        internal static bool HttpClientRequest(HttpRequestMessage request, HttpClient __instance, MethodBase __originalMethod)
+        [SinkPrefix(typeof(HttpClient), "SendAsync", "System.Net.Http.HttpRequestMessage", "System.Net.Http.HttpCompletionOption", "System.Threading.CancellationToken")]
+        [SinkPrefix(typeof(HttpClient), "SendAsync", "System.Net.Http.HttpRequestMessage", "System.Threading.CancellationToken")]
+        [SinkPrefix(typeof(HttpClient), "Send", "System.Net.Http.HttpRequestMessage", "System.Threading.CancellationToken")]
+        internal static bool OnRequestHttpClient(HttpRequestMessage request, HttpClient __instance, MethodBase __originalMethod)
         {
             return OutboundRequestSink.OnRequest(ResolveUri(request, __instance), __originalMethod, Patcher.GetContext());
         }
 
-        [SinkPrefix(new[] { "System.Net.Requests", "System" }, "System.Net.WebRequest", "GetResponse")]
-        [SinkPrefix(new[] { "System.Net.Requests", "System" }, "System.Net.HttpWebRequest", "GetResponse")]
-        [SinkPrefix(new[] { "System.Net.Requests", "System" }, "System.Net.WebRequest", "GetResponseAsync")]
-        internal static bool WebRequest(WebRequest __instance, MethodBase __originalMethod)
+        [SinkPrefix(typeof(WebRequest), "GetResponse")]
+        [SinkPrefix(typeof(HttpWebRequest), "GetResponse")]
+        [SinkPrefix(typeof(WebRequest), "GetResponseAsync")]
+        internal static bool OnRequestWebRequest(WebRequest __instance, MethodBase __originalMethod)
         {
             return OutboundRequestSink.OnRequest(__instance?.RequestUri, __originalMethod, Patcher.GetContext());
         }

@@ -51,12 +51,12 @@ namespace Aikido.Zen.Test
         {
             using (var process = new Process { StartInfo = new ProcessStartInfo("echo", "safe") })
             {
-                Assert.That(ProcessExecutionPatches.ProcessStart(
+                Assert.That(ProcessExecutionPatches.OnProcessStart(
                     process,
                     GetMethod(typeof(Process), nameof(Process.Start))), Is.True);
             }
 
-            Assert.That(ProcessExecutionPatches.ProcessStart(
+            Assert.That(ProcessExecutionPatches.OnProcessStart(
                 null!,
                 GetMethod(typeof(Process), nameof(Process.Start))), Is.True);
         }

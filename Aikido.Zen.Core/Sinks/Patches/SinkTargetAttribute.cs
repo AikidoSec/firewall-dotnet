@@ -12,26 +12,36 @@ namespace Aikido.Zen.Core.Sinks
             string targetTypeName,
             string targetMethodName,
             params string[] targetParameterTypeNames)
-            : this(patchType, new[] { assemblyName }, targetTypeName, targetMethodName, targetParameterTypeNames)
-        {
-        }
-
-        protected SinkTargetAttribute(
-            HarmonyPatchType patchType,
-            string[] assemblyNames,
-            string targetTypeName,
-            string targetMethodName,
-            params string[] targetParameterTypeNames)
         {
             PatchType = patchType;
-            AssemblyNames = assemblyNames ?? Array.Empty<string>();
+            AssemblyName = assemblyName;
             TargetTypeName = targetTypeName;
             TargetMethodName = targetMethodName;
             TargetParameterTypeNames = targetParameterTypeNames ?? Array.Empty<string>();
         }
 
+        /// <summary>
+        /// Use this constructor for framework/runtime types that Core already references.
+        /// The Type is immediately converted to assembly/type names, so the patcher can use the same reflection path
+        /// while still letting the runtime choose the correct implementation assembly for .NET Core or .NET Framework.
+        /// This avoids fallback assembly lists such as System.Private.CoreLib/mscorlib or System.Data.Common/System.Data.
+        /// Keep the assembly-name constructor for optional third-party libraries so they do not become package dependencies.
+        /// </summary>
+        protected SinkTargetAttribute(
+            HarmonyPatchType patchType,
+            Type targetType,
+            string targetMethodName,
+            params string[] targetParameterTypeNames)
+        {
+            PatchType = patchType;
+            AssemblyName = targetType?.Assembly.GetName().Name;
+            TargetTypeName = targetType?.FullName;
+            TargetMethodName = targetMethodName;
+            TargetParameterTypeNames = targetParameterTypeNames ?? Array.Empty<string>();
+        }
+
         public HarmonyPatchType PatchType { get; }
-        public string[] AssemblyNames { get; }
+        public string AssemblyName { get; }
         public string TargetTypeName { get; }
         public string TargetMethodName { get; }
         public string[] TargetParameterTypeNames { get; }
@@ -48,12 +58,15 @@ namespace Aikido.Zen.Core.Sinks
         {
         }
 
+        /// <summary>
+        /// Targets framework/runtime types that are already referenced by Core, while allowing the runtime
+        /// to choose the correct implementation assembly for .NET Core or .NET Framework.
+        /// </summary>
         public SinkPrefixAttribute(
-            string[] assemblyNames,
-            string targetTypeName,
+            Type targetType,
             string targetMethodName,
             params string[] targetParameterTypeNames)
-            : base(HarmonyPatchType.Prefix, assemblyNames, targetTypeName, targetMethodName, targetParameterTypeNames)
+            : base(HarmonyPatchType.Prefix, targetType, targetMethodName, targetParameterTypeNames)
         {
         }
     }
@@ -69,12 +82,15 @@ namespace Aikido.Zen.Core.Sinks
         {
         }
 
+        /// <summary>
+        /// Targets framework/runtime types that are already referenced by Core, while allowing the runtime
+        /// to choose the correct implementation assembly for .NET Core or .NET Framework.
+        /// </summary>
         public SinkPostfixAttribute(
-            string[] assemblyNames,
-            string targetTypeName,
+            Type targetType,
             string targetMethodName,
             params string[] targetParameterTypeNames)
-            : base(HarmonyPatchType.Postfix, assemblyNames, targetTypeName, targetMethodName, targetParameterTypeNames)
+            : base(HarmonyPatchType.Postfix, targetType, targetMethodName, targetParameterTypeNames)
         {
         }
     }

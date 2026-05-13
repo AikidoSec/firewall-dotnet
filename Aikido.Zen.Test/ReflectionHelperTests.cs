@@ -83,6 +83,18 @@ namespace Aikido.Zen.Test.Helpers
         }
 
         [Test]
+        public void GetMethodFromType_ValidMethod_ReturnsMethodInfo()
+        {
+            var methodInfo = ReflectionHelper.GetMethodFromType(
+                typeof(string),
+                nameof(string.Contains),
+                "System.String");
+
+            Assert.That(methodInfo, Is.Not.Null);
+            Assert.That(methodInfo.Name, Is.EqualTo(nameof(string.Contains)));
+        }
+
+        [Test]
         public void ClearCache_ClearsAllCachedData()
         {
             // Arrange

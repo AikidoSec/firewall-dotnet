@@ -101,6 +101,14 @@ namespace Aikido.Zen.Test
             Assert.That(OverloadFallbackTarget.Execute("value", 1), Is.EqualTo("patched-overload"));
         }
 
+        [Test]
+        public void PatchCatalog_WithTypeTarget_PatchesRuntimeTypeDirectly()
+        {
+            Patcher.PatchCatalog(typeof(TypeTargetCatalog));
+
+            Assert.That(TypeTarget.PrefixTarget(), Is.EqualTo("type-target"));
+        }
+
         private static MethodInfo GetMethod(Type type, string methodName, params Type[] parameterTypes)
         {
             var method = type.GetMethod(
@@ -229,6 +237,24 @@ namespace Aikido.Zen.Test
             private static bool Prefix(ref string __result)
             {
                 __result = "patched-overload";
+                return false;
+            }
+        }
+
+        private static class TypeTarget
+        {
+            public static string PrefixTarget()
+            {
+                return "original";
+            }
+        }
+
+        private static class TypeTargetCatalog
+        {
+            [SinkPrefix(typeof(TypeTarget), "PrefixTarget")]
+            private static bool Prefix(ref string __result)
+            {
+                __result = "type-target";
                 return false;
             }
         }

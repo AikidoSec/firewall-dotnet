@@ -75,32 +75,32 @@ namespace Aikido.Zen.Test
             using (var httpClient = new HttpClient())
             using (var request = new HttpRequestMessage(HttpMethod.Get, "https://safe.example/path"))
             {
-                Assert.That(OutboundRequestPatches.HttpClientRequest(request, httpClient, method), Is.True);
+                Assert.That(OutboundRequestPatches.OnRequestHttpClient(request, httpClient, method), Is.True);
             }
 
             using (var httpClient = new HttpClient { BaseAddress = new Uri("https://base.example") })
             using (var request = new HttpRequestMessage(HttpMethod.Get, "/relative"))
             {
-                Assert.That(OutboundRequestPatches.HttpClientRequest(request, httpClient, method), Is.True);
+                Assert.That(OutboundRequestPatches.OnRequestHttpClient(request, httpClient, method), Is.True);
             }
 
             using (var httpClient = new HttpClient { BaseAddress = new Uri("https://base-only.example") })
             {
-                Assert.That(OutboundRequestPatches.HttpClientRequest(null!, httpClient, method), Is.True);
+                Assert.That(OutboundRequestPatches.OnRequestHttpClient(null!, httpClient, method), Is.True);
             }
 
             using (var request = new HttpRequestMessage(HttpMethod.Get, "https://safe.example/path"))
             {
-                Assert.That(OutboundRequestPatches.HttpClientRequest(request, null!, method), Is.True);
+                Assert.That(OutboundRequestPatches.OnRequestHttpClient(request, null!, method), Is.True);
             }
 
-            Assert.That(OutboundRequestPatches.HttpClientRequest(null!, null!, method), Is.True);
+            Assert.That(OutboundRequestPatches.OnRequestHttpClient(null!, null!, method), Is.True);
 
 #pragma warning disable SYSLIB0014
             var webRequest = WebRequest.Create("https://safe.example/path");
 #pragma warning restore SYSLIB0014
-            Assert.That(OutboundRequestPatches.WebRequest(webRequest, GetMethod(typeof(WebRequest), nameof(WebRequest.GetResponse))), Is.True);
-            Assert.That(OutboundRequestPatches.WebRequest(null!, GetMethod(typeof(WebRequest), nameof(WebRequest.GetResponse))), Is.True);
+            Assert.That(OutboundRequestPatches.OnRequestWebRequest(webRequest, GetMethod(typeof(WebRequest), nameof(WebRequest.GetResponse))), Is.True);
+            Assert.That(OutboundRequestPatches.OnRequestWebRequest(null!, GetMethod(typeof(WebRequest), nameof(WebRequest.GetResponse))), Is.True);
         }
 
         private static MethodInfo GetMethod(Type type, string methodName, params Type[] parameterTypes)

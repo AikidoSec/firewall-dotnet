@@ -49,14 +49,14 @@ namespace Aikido.Zen.Test
         [Test]
         public void PatchMethods_ForwardPathArgumentsToSink()
         {
-            Assert.That(IOPatches.OnePath(
+            Assert.That(IOPatches.OnFileOperationOnePath(
                 "safe.txt",
                 GetMethod(typeof(File), nameof(File.ReadAllText), typeof(string))), Is.True);
-            Assert.That(IOPatches.TwoFilePaths(
+            Assert.That(IOPatches.OnFileOperationTwoPaths(
                 "source.txt",
                 "destination.txt",
                 GetMethod(typeof(File), nameof(File.Copy), typeof(string), typeof(string), typeof(bool))), Is.True);
-            Assert.That(IOPatches.PathWithBasePath(
+            Assert.That(IOPatches.OnFileOperationPathWithBasePath(
                 "child.txt",
                 Path.GetTempPath(),
                 GetMethod(typeof(Path), nameof(Path.GetFullPath), typeof(string), typeof(string))), Is.True);

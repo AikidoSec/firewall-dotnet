@@ -54,14 +54,14 @@ namespace Aikido.Zen.Test
             dbCommand.SetupGet(command => command.CommandText).Returns("SELECT 1");
             var dbMethod = GetMethod(typeof(DbCommand), nameof(DbCommand.ExecuteScalar));
 
-            Assert.That(SqlClientPatches.DbCommand(dbCommand.Object, dbMethod), Is.True);
-            Assert.That(SqlClientPatches.NPocoCommand(dbCommand.Object, dbMethod), Is.True);
-            Assert.That(SqlClientPatches.DbCommand(null!, dbMethod), Is.True);
-            Assert.That(SqlClientPatches.NPocoCommand(null!, dbMethod), Is.True);
-            Assert.That(SqlClientPatches.ExecuteSqlRaw(
+            Assert.That(SqlClientPatches.OnCommandExecutingDbCommand(dbCommand.Object, dbMethod), Is.True);
+            Assert.That(SqlClientPatches.OnCommandExecutingNPocoCommand(dbCommand.Object, dbMethod), Is.True);
+            Assert.That(SqlClientPatches.OnCommandExecutingDbCommand(null!, dbMethod), Is.True);
+            Assert.That(SqlClientPatches.OnCommandExecutingNPocoCommand(null!, dbMethod), Is.True);
+            Assert.That(SqlClientPatches.OnCommandExecutingSqlRaw(
                 "SELECT 1",
                 GetMethod(typeof(TestSqlMethods), nameof(TestSqlMethods.ExecuteSqlRaw), typeof(object), typeof(string), typeof(IEnumerable<object>))), Is.True);
-            Assert.That(SqlClientPatches.MySqlXSqlStatement(
+            Assert.That(SqlClientPatches.OnCommandExecutingMySqlXSqlStatement(
                 new TestSqlStatement { SQL = "SELECT 1" },
                 GetMethod(typeof(TestSqlStatement), nameof(TestSqlStatement.Execute))), Is.True);
         }
@@ -71,14 +71,14 @@ namespace Aikido.Zen.Test
         {
             var sqlStatementMethod = GetMethod(
                 typeof(SqlClientPatches),
-                nameof(SqlClientPatches.MySqlXSqlStatement),
+                nameof(SqlClientPatches.OnCommandExecutingMySqlXSqlStatement),
                 typeof(object),
                 typeof(MethodBase));
 
             var sqlStatementTargets = sqlStatementMethod.GetCustomAttributes<SinkPrefixAttribute>().ToArray();
 
             Assert.That(sqlStatementTargets, Has.Length.EqualTo(1));
-            Assert.That(sqlStatementTargets[0].AssemblyNames, Is.EqualTo(new[] { "MySql.Data" }));
+            Assert.That(sqlStatementTargets[0].AssemblyName, Is.EqualTo("MySql.Data"));
             Assert.That(sqlStatementTargets[0].TargetTypeName, Is.EqualTo("MySqlX.XDevAPI.Relational.SqlStatement"));
             Assert.That(sqlStatementTargets[0].TargetMethodName, Is.EqualTo("Execute"));
         }
@@ -97,7 +97,7 @@ namespace Aikido.Zen.Test
             };
 
             var ex = Assert.Throws<AikidoException>(() =>
-                SqlClientPatches.MySqlXSqlStatement(
+                SqlClientPatches.OnCommandExecutingMySqlXSqlStatement(
                     statement,
                     GetMethod(typeof(TestSqlStatement), nameof(TestSqlStatement.Execute))));
 

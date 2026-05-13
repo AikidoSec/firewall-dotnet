@@ -89,21 +89,11 @@ namespace Aikido.Zen.Core.Sinks
 
         private static MethodInfo ResolveTargetMethod(SinkTargetAttribute sinkPatch)
         {
-            foreach (var assemblyName in sinkPatch.AssemblyNames)
-            {
-                var targetMethod = ReflectionHelper.GetMethodFromAssembly(
-                    assemblyName,
-                    sinkPatch.TargetTypeName,
-                    sinkPatch.TargetMethodName,
-                    sinkPatch.TargetParameterTypeNames);
-
-                if (targetMethod != null)
-                {
-                    return targetMethod;
-                }
-            }
-
-            return null;
+            return ReflectionHelper.GetMethodFromAssembly(
+                sinkPatch.AssemblyName,
+                sinkPatch.TargetTypeName,
+                sinkPatch.TargetMethodName,
+                sinkPatch.TargetParameterTypeNames);
         }
     }
 }

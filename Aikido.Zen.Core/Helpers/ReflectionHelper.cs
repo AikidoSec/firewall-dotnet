@@ -97,22 +97,51 @@ namespace Aikido.Zen.Core.Helpers
                 _types[typeKey] = type;
             }
 
-            // Use reflection to get the method, make sure to check for public, internal and private methods
-            var method = type
-                .GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static)
-                .FirstOrDefault(m => m.Name == methodName &&
-                                     m.GetParameters().Select(p => p.ParameterType.FullName).SequenceEqual(parameterTypeNames));
+            return GetMethodFromType(type, methodName, parameterTypeNames);
+        }
+
+        internal static MethodInfo GetMethodFromType(Type type, string methodName, params string[] parameterTypeNames)
+        {
+            if (type == null || string.IsNullOrEmpty(methodName))
+            {
+                return null;
+            }
+
+            parameterTypeNames = parameterTypeNames ?? Array.Empty<string>();
+
+            // Use reflection to get the method, make sure to check for public, internal and private methods.
+            var methods = type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+            var method = methods.FirstOrDefault(m => m.Name == methodName && ParametersMatch(m, parameterTypeNames));
 
             // fallback to the method with the most parameters
             // this is done because in case of multiple methods with the same name, they usually wrap the one with the most parameters
             // by doing this, we reduce the risk of not being able to patch the correct method in case of library updates
-            method = method ?? type
-                .GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static)
+            method = method ?? methods
                 .Where(m => m.Name == methodName)
                 .OrderByDescending(m => m.GetParameters().Length)
                 .FirstOrDefault();
 
             return method;
+        }
+
+        private static bool ParametersMatch(MethodInfo method, string[] parameterTypeNames)
+        {
+            var parameters = method.GetParameters();
+            if (parameters.Length != parameterTypeNames.Length)
+            {
+                return false;
+            }
+
+            return parameters
+                .Select((parameter, index) => ParameterTypeMatches(parameter.ParameterType, parameterTypeNames[index]))
+                .All(matches => matches);
+        }
+
+        private static bool ParameterTypeMatches(Type parameterType, string targetParameterTypeName)
+        {
+            return parameterType.FullName == targetParameterTypeName ||
+                parameterType.Name == targetParameterTypeName ||
+                parameterType.ToString() == targetParameterTypeName;
         }
 
         internal static string GetMethodOperation(MethodBase method)
