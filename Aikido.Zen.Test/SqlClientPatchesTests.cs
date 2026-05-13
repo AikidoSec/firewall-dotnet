@@ -2,6 +2,7 @@ using System.Data.Common;
 using System.Reflection;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Api;
+using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.Core.Sinks;
 using Aikido.Zen.Tests.Mocks;
 using Moq;
@@ -60,6 +61,47 @@ namespace Aikido.Zen.Test
             Assert.That(SqlClientPatches.ExecuteSqlRaw(
                 "SELECT 1",
                 GetMethod(typeof(TestSqlMethods), nameof(TestSqlMethods.ExecuteSqlRaw), typeof(object), typeof(string), typeof(IEnumerable<object>))), Is.True);
+            Assert.That(SqlClientPatches.MySqlXSqlStatement(
+                new TestSqlStatement { SQL = "SELECT 1" },
+                GetMethod(typeof(TestSqlStatement), nameof(TestSqlStatement.Execute))), Is.True);
+        }
+
+        [Test]
+        public void MySqlXPatchTargets_RawSqlExecuteOnly()
+        {
+            var sqlStatementMethod = GetMethod(
+                typeof(SqlClientPatches),
+                nameof(SqlClientPatches.MySqlXSqlStatement),
+                typeof(object),
+                typeof(MethodBase));
+
+            var sqlStatementTargets = sqlStatementMethod.GetCustomAttributes<SinkPrefixAttribute>().ToArray();
+
+            Assert.That(sqlStatementTargets, Has.Length.EqualTo(1));
+            Assert.That(sqlStatementTargets[0].AssemblyNames, Is.EqualTo(new[] { "MySql.Data" }));
+            Assert.That(sqlStatementTargets[0].TargetTypeName, Is.EqualTo("MySqlX.XDevAPI.Relational.SqlStatement"));
+            Assert.That(sqlStatementTargets[0].TargetMethodName, Is.EqualTo("Execute"));
+        }
+
+        [Test]
+        public void MySqlXSqlStatement_WithInterpolatedInput_Throws()
+        {
+            _context.ParsedUserInput = new Dictionary<string, string>
+            {
+                { "body.query", "1' OR '1'='1" }
+            };
+
+            var statement = new TestSqlStatement
+            {
+                SQL = "SELECT * FROM users WHERE id = '1' OR '1'='1'"
+            };
+
+            var ex = Assert.Throws<AikidoException>(() =>
+                SqlClientPatches.MySqlXSqlStatement(
+                    statement,
+                    GetMethod(typeof(TestSqlStatement), nameof(TestSqlStatement.Execute))));
+
+            Assert.That(ex!.Message, Does.Contain("SQL injection detected"));
         }
 
         private static MethodInfo GetMethod(Type type, string methodName, params Type[] parameterTypes)
@@ -79,6 +121,16 @@ namespace Aikido.Zen.Test
             public static int ExecuteSqlRaw(object databaseFacade, string sql, IEnumerable<object> parameters)
             {
                 return 0;
+            }
+        }
+
+        private sealed class TestSqlStatement
+        {
+            public string SQL { get; set; } = string.Empty;
+
+            public object Execute()
+            {
+                return new object();
             }
         }
     }

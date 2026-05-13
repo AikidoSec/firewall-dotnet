@@ -1,5 +1,6 @@
 using System.Data.Common;
 using System.Reflection;
+using Aikido.Zen.Core.Helpers;
 
 namespace Aikido.Zen.Core.Sinks
 {
@@ -51,6 +52,12 @@ namespace Aikido.Zen.Core.Sinks
         internal static bool ExecuteSqlRaw(string sql, MethodBase __originalMethod)
         {
             return SqlClientSink.OnCommandExecuting(sql, __originalMethod, Patcher.GetContext());
+        }
+
+        [SinkPrefix("MySql.Data", "MySqlX.XDevAPI.Relational.SqlStatement", "Execute")]
+        internal static bool MySqlXSqlStatement(object __instance, MethodBase __originalMethod)
+        {
+            return SqlClientSink.OnCommandExecuting(ReflectionHelper.GetStringMember(__instance, "SQL"), __originalMethod, Patcher.GetContext());
         }
     }
 }

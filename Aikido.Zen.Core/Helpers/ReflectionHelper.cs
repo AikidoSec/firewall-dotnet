@@ -125,6 +125,44 @@ namespace Aikido.Zen.Core.Helpers
             return method?.DeclaringType?.Assembly.GetName().Name ?? string.Empty;
         }
 
+        internal static string GetStringMember(object instance, string memberName)
+        {
+            return GetMemberValue(instance, memberName) as string;
+        }
+
+        internal static object GetMemberValue(object instance, string memberName)
+        {
+            if (instance == null || string.IsNullOrEmpty(memberName))
+            {
+                return null;
+            }
+
+            const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+            for (var type = instance.GetType(); type != null; type = type.BaseType)
+            {
+                try
+                {
+                    var property = type.GetProperty(memberName, flags);
+                    if (property != null && property.GetIndexParameters().Length == 0)
+                    {
+                        return property.GetValue(instance, null);
+                    }
+
+                    var field = type.GetField(memberName, flags);
+                    if (field != null)
+                    {
+                        return field.GetValue(instance);
+                    }
+                }
+                catch
+                {
+                    return null;
+                }
+            }
+
+            return null;
+        }
+
         /// <summary>
         /// Checks if we should skip patching of the current assembly. Crucial for preventing re-entrancy issues with certain IL weavers and patchers.
         /// </summary>

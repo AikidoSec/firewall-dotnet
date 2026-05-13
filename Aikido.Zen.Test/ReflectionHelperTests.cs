@@ -114,6 +114,18 @@ namespace Aikido.Zen.Test.Helpers
         }
 
         [Test]
+        public void GetMemberValue_ReturnsPropertyOrFieldFromTypeHierarchy()
+        {
+            var instance = new DerivedReflectionTarget();
+
+            Assert.That(ReflectionHelper.GetStringMember(instance, "PublicText"), Is.EqualTo("public"));
+            Assert.That(ReflectionHelper.GetStringMember(instance, "PrivateText"), Is.EqualTo("private"));
+            Assert.That(ReflectionHelper.GetMemberValue(instance, "InheritedField"), Is.EqualTo(42));
+            Assert.That(ReflectionHelper.GetMemberValue(instance, "Missing"), Is.Null);
+            Assert.That(ReflectionHelper.GetMemberValue(null, "PublicText"), Is.Null);
+        }
+
+        [Test]
         public void GetMethodFromAssembly_PatchTraversal_ReturnsNull()
         {
             // Arrange
@@ -127,6 +139,17 @@ namespace Aikido.Zen.Test.Helpers
 
             // Assert
             Assert.That(methodInfo, Is.Null);
+        }
+
+        private class BaseReflectionTarget
+        {
+            public int InheritedField = 42;
+        }
+
+        private class DerivedReflectionTarget : BaseReflectionTarget
+        {
+            public string PublicText { get; set; } = "public";
+            private string PrivateText { get; set; } = "private";
         }
 
 
