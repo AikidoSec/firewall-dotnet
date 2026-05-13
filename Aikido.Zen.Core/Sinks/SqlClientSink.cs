@@ -18,9 +18,10 @@ namespace Aikido.Zen.Core.Sinks
         /// Patches the OnCommandExecuting method to detect and prevent SQL injection attacks
         /// </summary>
         /// <param name="sql">The SQL command to execute.</param>
+        /// <param name="dialect">The SQL dialect to use for detection.</param>
         /// <param name="originalMethod">The original SQL method being inspected.</param>
         /// <param name="context">The current Aikido context.</param>
-        internal static bool OnCommandExecuting(string sql, MethodBase originalMethod, Context context)
+        internal static bool OnCommandExecuting(string sql, SQLDialect dialect, MethodBase originalMethod, Context context)
         {
             // Exclude certain assemblies to avoid stack overflow issues
             if (ReflectionHelper.ShouldSkipAssembly())
@@ -42,7 +43,6 @@ namespace Aikido.Zen.Core.Sinks
             bool withoutContext = context == null;
             bool attackDetected = false;
             bool blocked = false;
-            var dialect = GetDialect(module ?? string.Empty);
 
             try
             {
@@ -83,25 +83,6 @@ namespace Aikido.Zen.Core.Sinks
 
             // Allow the original method to execute
             return true;
-        }
-
-        internal static SQLDialect GetDialect(string assembly)
-        {
-            switch (assembly)
-            {
-                case "System.Data.SqlClient":
-                case "Microsoft.Data.SqlClient":
-                case "System.Data.SqlServerCe":
-                    return SQLDialect.MicrosoftSQL;
-                case "MySql.Data":
-                case "MySqlConnector":
-                case "MySqlX":
-                    return SQLDialect.MySQL;
-                case "Npgsql":
-                    return SQLDialect.PostgreSQL;
-                default:
-                    return SQLDialect.Generic;
-            }
         }
     }
 }

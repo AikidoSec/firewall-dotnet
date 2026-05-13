@@ -1,6 +1,7 @@
 using System.Data.Common;
 using System.Reflection;
 using Aikido.Zen.Core.Helpers;
+using Aikido.Zen.Core.Models;
 
 namespace Aikido.Zen.Core.Sinks
 {
@@ -36,7 +37,11 @@ namespace Aikido.Zen.Core.Sinks
         [SinkPrefix("Npgsql", "Npgsql.NpgsqlCommand", "ExecuteScalarAsync", "System.Threading.CancellationToken")]
         internal static bool OnCommandExecutingDbCommand(DbCommand __instance, MethodBase __originalMethod)
         {
-            return SqlClientSink.OnCommandExecuting(__instance?.CommandText, __originalMethod, Patcher.GetContext());
+            return SqlClientSink.OnCommandExecuting(
+                __instance?.CommandText,
+                GetDialect(__instance, __originalMethod),
+                __originalMethod,
+                Patcher.GetContext());
         }
 
         [SinkPrefix("NPoco", "NPoco.Database", "ExecuteReaderHelper", "System.Data.Common.DbCommand")]
@@ -44,20 +49,58 @@ namespace Aikido.Zen.Core.Sinks
         [SinkPrefix("NPoco", "NPoco.Database", "ExecuteScalarHelper", "System.Data.Common.DbCommand")]
         internal static bool OnCommandExecutingNPocoCommand(DbCommand cmd, MethodBase __originalMethod)
         {
-            return SqlClientSink.OnCommandExecuting(cmd?.CommandText, __originalMethod, Patcher.GetContext());
+            return SqlClientSink.OnCommandExecuting(
+                cmd?.CommandText,
+                GetDialect(cmd, __originalMethod),
+                __originalMethod,
+                Patcher.GetContext());
         }
 
         [SinkPrefix("Microsoft.EntityFrameworkCore.Relational", "Microsoft.EntityFrameworkCore.RelationalDatabaseFacadeExtensions", "ExecuteSqlRaw", "Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacade", "System.String", "System.Collections.Generic.IEnumerable`1[System.Object]")]
         [SinkPrefix("Microsoft.EntityFrameworkCore.Relational", "Microsoft.EntityFrameworkCore.RelationalDatabaseFacadeExtensions", "ExecuteSqlRawAsync", "Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacade", "System.String", "System.Collections.Generic.IEnumerable`1[System.Object]", "System.Threading.CancellationToken")]
         internal static bool OnCommandExecutingSqlRaw(string sql, MethodBase __originalMethod)
         {
-            return SqlClientSink.OnCommandExecuting(sql, __originalMethod, Patcher.GetContext());
+            return SqlClientSink.OnCommandExecuting(
+                sql,
+                GetDialect(null, __originalMethod),
+                __originalMethod,
+                Patcher.GetContext());
         }
 
         [SinkPrefix("MySql.Data", "MySqlX.XDevAPI.Relational.SqlStatement", "Execute")]
         internal static bool OnCommandExecutingMySqlXSqlStatement(object __instance, MethodBase __originalMethod)
         {
-            return SqlClientSink.OnCommandExecuting(ReflectionHelper.GetStringMember(__instance, "SQL"), __originalMethod, Patcher.GetContext());
+            return SqlClientSink.OnCommandExecuting(
+                ReflectionHelper.GetStringMember(__instance, "SQL"),
+                GetDialect(__instance, __originalMethod),
+                __originalMethod,
+                Patcher.GetContext());
+        }
+
+        internal static SQLDialect GetDialect(object instance, MethodBase originalMethod)
+        {
+            // Prefer the runtime command/provider assembly for base DbCommand patches.
+            // Static raw-SQL patches and null instances do not have a useful provider instance,
+            // so fall back to the patched method's declaring assembly before defaulting to Generic.
+            var assembly = instance?.GetType().Assembly.GetName().Name
+                ?? ReflectionHelper.GetMethodModule(originalMethod)
+                ?? string.Empty;
+
+            switch (assembly)
+            {
+                case "System.Data.SqlClient":
+                case "Microsoft.Data.SqlClient":
+                case "System.Data.SqlServerCe":
+                    return SQLDialect.MicrosoftSQL;
+                case "MySql.Data":
+                case "MySqlConnector":
+                case "MySqlX":
+                    return SQLDialect.MySQL;
+                case "Npgsql":
+                    return SQLDialect.PostgreSQL;
+                default:
+                    return SQLDialect.Generic;
+            }
         }
     }
 }

@@ -1,8 +1,10 @@
 using System.Data.Common;
 using System.Reflection;
+using System.Reflection.Emit;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Exceptions;
+using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Sinks;
 using Aikido.Zen.Tests.Mocks;
 using Moq;
@@ -66,6 +68,38 @@ namespace Aikido.Zen.Test
                 GetMethod(typeof(TestSqlStatement), nameof(TestSqlStatement.Execute))), Is.True);
         }
 
+        [TestCase("System.Data.SqlClient", SQLDialect.MicrosoftSQL)]
+        [TestCase("Microsoft.Data.SqlClient", SQLDialect.MicrosoftSQL)]
+        [TestCase("System.Data.SqlServerCe", SQLDialect.MicrosoftSQL)]
+        [TestCase("Microsoft.Data.Sqlite", SQLDialect.Generic)]
+        [TestCase("MySql.Data", SQLDialect.MySQL)]
+        [TestCase("Npgsql", SQLDialect.PostgreSQL)]
+        [TestCase("MySqlConnector", SQLDialect.MySQL)]
+        [TestCase("MySqlX", SQLDialect.MySQL)]
+        [TestCase("Unknown.Assembly", SQLDialect.Generic)]
+        [TestCase("", SQLDialect.Generic)]
+        public void GetDialect_WithRuntimeInstance_ReturnsCorrectDialect(string assembly, SQLDialect expectedDialect)
+        {
+            var instance = string.IsNullOrEmpty(assembly)
+                ? null
+                : CreateInstanceFromAssembly(assembly);
+
+            var result = SqlClientPatches.GetDialect(instance!, null!);
+
+            Assert.That(result, Is.EqualTo(expectedDialect));
+        }
+
+        [Test]
+        public void GetDialect_WithRuntimeInstance_PrefersInstanceAssembly()
+        {
+            var instance = CreateInstanceFromAssembly("Npgsql");
+            var baseMethod = GetMethod(typeof(DbCommand), nameof(DbCommand.ExecuteNonQueryAsync));
+
+            var result = SqlClientPatches.GetDialect(instance, baseMethod);
+
+            Assert.That(result, Is.EqualTo(SQLDialect.PostgreSQL));
+        }
+
         [Test]
         public void MySqlXPatchTargets_RawSqlExecuteOnly()
         {
@@ -114,6 +148,19 @@ namespace Aikido.Zen.Test
                 null);
             Assert.That(method, Is.Not.Null, $"{type.FullName}.{methodName} should exist.");
             return method;
+        }
+
+        private static object CreateInstanceFromAssembly(string assemblyName)
+        {
+            var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
+                new AssemblyName(assemblyName),
+                AssemblyBuilderAccess.Run);
+            var moduleBuilder = assemblyBuilder.DefineDynamicModule($"{assemblyName}.Module");
+            var typeBuilder = moduleBuilder.DefineType(
+                $"{assemblyName}.RuntimeInstance",
+                TypeAttributes.Public);
+
+            return Activator.CreateInstance(typeBuilder.CreateTypeInfo()!.AsType())!;
         }
 
         private static class TestSqlMethods

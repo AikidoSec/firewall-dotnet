@@ -40,25 +40,6 @@ namespace Aikido.Zen.Test
             Agent.NewInstance(zenApiMock);
         }
 
-        [TestCase("System.Data.SqlClient", SQLDialect.MicrosoftSQL)]
-        [TestCase("Microsoft.Data.SqlClient", SQLDialect.MicrosoftSQL)]
-        [TestCase("System.Data.SqlServerCe", SQLDialect.MicrosoftSQL)]
-        [TestCase("Microsoft.Data.Sqlite", SQLDialect.Generic)]
-        [TestCase("MySql.Data", SQLDialect.MySQL)]
-        [TestCase("Npgsql", SQLDialect.PostgreSQL)]
-        [TestCase("MySqlConnector", SQLDialect.MySQL)]
-        [TestCase("MySqlX", SQLDialect.MySQL)]
-        [TestCase("Unknown.Assembly", SQLDialect.Generic)]
-        [TestCase("", SQLDialect.Generic)]
-        public void GetDialect_ShouldReturnCorrectDialect(string assembly, SQLDialect expectedDialect)
-        {
-            // Act
-            var result = SqlClientSink.GetDialect(assembly);
-
-            // Assert
-            Assert.That(result, Is.EqualTo(expectedDialect));
-        }
-
         [Test]
         public void OnCommandExecuting_WithNullContext_ReturnsTrue()
         {
@@ -104,7 +85,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void OnCommandExecuting_WithNullInstance_UsesOriginalMethodAssembly()
+        public void OnCommandExecuting_WithExplicitDialect_ReturnsTrue()
         {
             // Arrange
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
@@ -257,6 +238,7 @@ namespace Aikido.Zen.Test
         {
             return SqlClientSink.OnCommandExecuting(
                 sql,
+                SQLDialect.Generic,
                 methodInfo,
                 context);
         }
