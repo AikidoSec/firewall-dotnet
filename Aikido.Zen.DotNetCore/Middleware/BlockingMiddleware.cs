@@ -67,7 +67,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
 
                     if (effectiveConfig != null)
                     {
-                        context.Response.Headers.Add("Retry-After", effectiveConfig.WindowSizeInMS.ToString());
+                        context.Response.Headers.Add("Retry-After", GetRetryAfterHeaderValue(effectiveConfig));
                     }
 
                     await context.Response.WriteAsync($"You are rate limited by Aikido firewall. (Your IP: {remoteAddress})");
@@ -79,6 +79,11 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 LogHelper.ErrorLog(Agent.Logger, $"Error blocking request: {ex.Message}");
             }
             await next(context);
+        }
+
+        internal static string GetRetryAfterHeaderValue(RateLimitingConfig config)
+        {
+            return Math.Ceiling(config.WindowSizeInMS / 1000.0).ToString();
         }
     }
 }

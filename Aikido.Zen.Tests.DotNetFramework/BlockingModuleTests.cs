@@ -106,6 +106,16 @@ namespace Aikido.Zen.Tests.DotNetFramework
         }
 
         [Test]
+        public void GetRetryAfterHeaderValue_ConvertsWindowMillisecondsToSeconds()
+        {
+            Assert.Multiple(() =>
+            {
+                Assert.That(BlockingModule.GetRetryAfterHeaderValue(new RateLimitingConfig { WindowSizeInMS = 60000 }), Is.EqualTo("60"));
+                Assert.That(BlockingModule.GetRetryAfterHeaderValue(new RateLimitingConfig { WindowSizeInMS = 1500 }), Is.EqualTo("2"));
+            });
+        }
+
+        [Test]
         public void GetUser_ReturnsContextUser()
         {
             var originalCurrent = HttpContext.Current;
@@ -134,5 +144,6 @@ namespace Aikido.Zen.Tests.DotNetFramework
                 HttpContext.Current = originalCurrent;
             }
         }
+
     }
 }
