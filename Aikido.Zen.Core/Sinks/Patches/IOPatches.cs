@@ -27,10 +27,7 @@ namespace Aikido.Zen.Core.Sinks
         [SinkPrefix(typeof(Directory), "GetDirectories", "System.String", "System.String", "System.IO.SearchOption")]
         internal static bool OnFileOperationOnePath(string path, MethodBase __originalMethod)
         {
-            var context = Patcher.GetContext();
-            var pathAllowed = IOSink.OnFileOperation(path, __originalMethod, context);
-
-            return pathAllowed;
+            return IOSink.OnFileOperation(new[] { path }, __originalMethod, Patcher.GetContext());
         }
 
         [SinkPrefix(typeof(File), "Copy", "System.String", "System.String", "System.Boolean")]
@@ -38,21 +35,13 @@ namespace Aikido.Zen.Core.Sinks
         [SinkPrefix(typeof(File), "Move", "System.String", "System.String", "System.Boolean")]
         internal static bool OnFileOperationTwoPaths(string sourceFileName, string destFileName, MethodBase __originalMethod)
         {
-            var context = Patcher.GetContext();
-            var sourceAllowed = IOSink.OnFileOperation(sourceFileName, __originalMethod, context);
-            var destinationAllowed = IOSink.OnFileOperation(destFileName, __originalMethod, context);
-
-            return sourceAllowed && destinationAllowed;
+            return IOSink.OnFileOperation(new[] { sourceFileName, destFileName }, __originalMethod, Patcher.GetContext());
         }
 
         [SinkPrefix(typeof(Path), "GetFullPath", "System.String", "System.String")]
         internal static bool OnFileOperationPathWithBasePath(string path, string basePath, MethodBase __originalMethod)
         {
-            var context = Patcher.GetContext();
-            var pathAllowed = IOSink.OnFileOperation(path, __originalMethod, context);
-            var basePathAllowed = IOSink.OnFileOperation(basePath, __originalMethod, context);
-
-            return pathAllowed && basePathAllowed;
+            return IOSink.OnFileOperation(new[] { path, basePath }, __originalMethod, Patcher.GetContext());
         }
     }
 }

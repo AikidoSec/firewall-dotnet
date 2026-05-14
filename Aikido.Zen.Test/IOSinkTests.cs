@@ -261,7 +261,7 @@ namespace Aikido.Zen.Test
 
         private static bool OnFileOperation(string path, MethodInfo methodInfo, Context context)
         {
-            return IOSink.OnFileOperation(path, methodInfo, context);
+            return IOSink.OnFileOperation(new[] { path }, methodInfo, context);
         }
     }
 }

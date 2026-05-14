@@ -18,11 +18,11 @@ namespace Aikido.Zen.Core.Sinks
         /// <summary>
         /// A generic handler for file operations that checks for path traversal attacks.
         /// </summary>
-        /// <param name="path">The file or directory path involved in the operation.</param>
+        /// <param name="paths">The file or directory paths involved in the operation.</param>
         /// <param name="originalMethod">The original method being patched.</param>
         /// <param name="context">The context for the current operation.</param>
         /// <returns>Always returns true. Throws an exception if a blocked attack is detected.</returns>
-        internal static bool OnFileOperation(string path, MethodBase originalMethod, Context context)
+        internal static bool OnFileOperation(string[] paths, MethodBase originalMethod, Context context)
         {
             if (IsProcessing.Value)
             {
@@ -52,10 +52,20 @@ namespace Aikido.Zen.Core.Sinks
 
                 try
                 {
-                    if (!string.IsNullOrEmpty(path) &&
-                        !Agent.Instance.Context.IsProtectionDisabledForEndpoint(context))
+                    if (paths != null && !Agent.Instance.Context.IsProtectionDisabledForEndpoint(context))
                     {
-                        attackDetected = PathTraversalHelper.DetectPathTraversal(path, context, module, operation);
+                        foreach (var path in paths)
+                        {
+                            if (!string.IsNullOrEmpty(path))
+                            {
+                                attackDetected |= PathTraversalHelper.DetectPathTraversal(path, context, module, operation);
+
+                                if (attackDetected)
+                                {
+                                    break;
+                                }
+                            }
+                        }
                     }
 
                     blocked = attackDetected && !EnvironmentHelper.DryMode;
