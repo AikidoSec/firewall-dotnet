@@ -14,7 +14,7 @@ namespace Aikido.Zen.Core.Sinks
     /// </summary>
     internal static class LLMSink
     {
-        internal const string OperationKind = "ai_op";
+        private const string OperationKind = "ai_op";
 
         [SinkPostfix("OpenAI", "OpenAI.Chat.ChatClient", "CompleteChat")]
         [SinkPostfix("OpenAI", "OpenAI.Chat.ChatClient", "CompleteChatAsync")]
@@ -34,7 +34,7 @@ namespace Aikido.Zen.Core.Sinks
         /// <param name="instance">The LLM client instance.</param>
         /// <param name="result">The result returned by the LLM API call.</param>
         /// <param name="context">The current Aikido context.</param>
-        internal static InspectionResult OnLLMCallCompleted(object instance, object result, Context context)
+        private static InspectionResult OnLLMCallCompleted(object instance, object result, Context context)
         {
             result = LLMResultHelper.ResolveResult(result);
             if (context == null || result == null)
@@ -71,7 +71,7 @@ namespace Aikido.Zen.Core.Sinks
         /// <param name="searchString">The search string to extract the provider from.</param>
         /// <param name="provider">The extracted provider name.</param>
         /// <returns>True if the provider was extracted successfully, false otherwise. Not being used at the moment.</returns>
-        internal static bool TryGetCloudProvider(string searchString, out string provider)
+        private static bool TryGetCloudProvider(string searchString, out string provider)
         {
             provider = "unknown";
             searchString = searchString.ToLower();
@@ -109,7 +109,7 @@ namespace Aikido.Zen.Core.Sinks
         /// <summary>
         /// Extracts the model name from the result based on the provider
         /// </summary>
-        internal static bool TryExtractModelFromResult(object result, out string model)
+        private static bool TryExtractModelFromResult(object result, out string model)
         {
             model = "unknown";
             try
@@ -132,7 +132,7 @@ namespace Aikido.Zen.Core.Sinks
             }
         }
 
-        internal static bool TryExtractTokensFromResult(object result, out (long inputTokens, long outputTokens) tokens)
+        private static bool TryExtractTokensFromResult(object result, out (long inputTokens, long outputTokens) tokens)
         {
             try
             {

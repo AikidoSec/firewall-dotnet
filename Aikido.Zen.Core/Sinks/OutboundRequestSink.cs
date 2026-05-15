@@ -10,7 +10,7 @@ namespace Aikido.Zen.Core.Sinks
 {
     internal static class OutboundRequestSink
     {
-        internal const string OperationKind = "outgoing_http_op";
+        private const string OperationKind = "outgoing_http_op";
 
         [SinkPrefix(typeof(HttpClient), "SendAsync", "System.Net.Http.HttpRequestMessage", "System.Net.Http.HttpCompletionOption", "System.Threading.CancellationToken")]
         [SinkPrefix(typeof(HttpClient), "SendAsync", "System.Net.Http.HttpRequestMessage", "System.Threading.CancellationToken")]
@@ -34,7 +34,7 @@ namespace Aikido.Zen.Core.Sinks
                 context => OnRequest(__instance?.RequestUri, context));
         }
 
-        internal static InspectionResult OnRequest(Uri targetUri, Context context)
+        private static InspectionResult OnRequest(Uri targetUri, Context context)
         {
             if (targetUri == null)
             {

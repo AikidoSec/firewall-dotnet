@@ -19,6 +19,7 @@ namespace Aikido.Zen.Test
         private ProcessStartInfo _startInfo = null!;
         private Context _context = null!;
         private MethodInfo _methodInfo = null!;
+        private Context? _activeContext;
 
         [SetUp]
         public void Setup()
@@ -40,6 +41,8 @@ namespace Aikido.Zen.Test
             var zenApiMock = new ZenApi(reportingMock.Object, runtimeMock.Object);
 
             Agent.NewInstance(zenApiMock);
+            Patcher.Unpatch();
+            Patcher.PatchSinks(() => _activeContext!);
         }
 
         [Test]
@@ -51,6 +54,14 @@ namespace Aikido.Zen.Test
             var result = OnProcessStart(new Process { StartInfo = _startInfo }, null);
 
             // Assert
+            Assert.That(result, Is.True);
+        }
+
+        [Test]
+        public void OnProcessStart_WithNullProcess_ReturnsTrue()
+        {
+            var result = OnProcessStart(null, _context);
+
             Assert.That(result, Is.True);
         }
 
@@ -167,16 +178,14 @@ namespace Aikido.Zen.Test
         [TearDown]
         public void TearDown()
         {
+            Patcher.Unpatch();
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", null);
         }
 
-        private bool OnProcessStart(Process process, Context context)
+        private bool OnProcessStart(Process? process, Context? context)
         {
-            return SinkAnalyzer.Analyze(
-                _methodInfo,
-                ProcessExecutionSink.OperationKind,
-                context,
-                currentContext => ProcessExecutionSink.OnProcessStart(process, currentContext));
+            _activeContext = context;
+            return ProcessExecutionSink.OnProcessStartInstance(process!, _methodInfo);
         }
     }
 }

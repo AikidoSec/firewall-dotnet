@@ -21,6 +21,7 @@ namespace Aikido.Zen.Test
         private Mock<IReportingAPIClient> _reportingMock;
         private Mock<IRuntimeAPIClient> _runtimeMock;
         private Mock<ZenApi> _zenApiMock;
+        private Context? _activeContext;
 
         [SetUp]
         public void Setup()
@@ -37,11 +38,15 @@ namespace Aikido.Zen.Test
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", null);
 
             Agent.NewInstance(_zenApiMock.Object);
+            _activeContext = _mockContext.Object;
+            Patcher.Unpatch();
+            Patcher.PatchSinks(() => _activeContext!);
         }
 
         [TearDown]
         public void TearDown()
         {
+            Patcher.Unpatch();
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", null);
             Environment.SetEnvironmentVariable("AIKIDO_TOKEN", null);
         }
@@ -138,9 +143,14 @@ namespace Aikido.Zen.Test
             var safeSource = "/app/uploads/image.jpg";
             var unsafeDest = $"/app/static/{unsafeInput}";
             _realContext.ParsedUserInput = new Dictionary<string, string> { { "form.dest_path", unsafeInput } };
+            var contextToPass = _mockContext.Object;
+            contextToPass.ParsedUserInput = _realContext.ParsedUserInput;
+            contextToPass.AttackDetected = false;
 
-            Assert.That(OnFileOperation(safeSource, copyMethodInfo, _mockContext.Object), Is.True);
-            RunAndVerifyAttackFlag(unsafeDest, copyMethodInfo, expectAttack: true, expectBlocked: true);
+            Assert.Throws<AikidoException>(
+                () => OnFileOperationTwoPaths(safeSource, unsafeDest, copyMethodInfo, contextToPass),
+                "Expected AikidoException for blocked path traversal.");
+            Assert.That(contextToPass.AttackDetected, Is.True);
         }
 
         [Test]
@@ -152,9 +162,12 @@ namespace Aikido.Zen.Test
             var safeSource = "/app/uploads/image.jpg";
             var unsafeDest = $"/app/static/{unsafeInput}";
             _realContext.ParsedUserInput = new Dictionary<string, string> { { "form.dest_path", unsafeInput } };
+            var contextToPass = _mockContext.Object;
+            contextToPass.ParsedUserInput = _realContext.ParsedUserInput;
+            contextToPass.AttackDetected = false;
 
-            Assert.That(OnFileOperation(safeSource, copyMethodInfo, _mockContext.Object), Is.True);
-            RunAndVerifyAttackFlag(unsafeDest, copyMethodInfo, expectAttack: true, expectBlocked: false);
+            Assert.That(OnFileOperationTwoPaths(safeSource, unsafeDest, copyMethodInfo, contextToPass), Is.True);
+            Assert.That(contextToPass.AttackDetected, Is.True);
         }
 
         [Test]
@@ -179,6 +192,20 @@ namespace Aikido.Zen.Test
             _realContext.ParsedUserInput = new Dictionary<string, string> { { "query.path", unsafeInput } };
 
             RunAndVerifyAttackFlag(pathArgument, getFullPathMethodInfo, expectAttack: true, expectBlocked: true);
+        }
+
+        [Test]
+        public void OnFileOperation_GetFullPathWithBasePath_ReturnsTrueForSafePath()
+        {
+            var getFullPathMethodInfo = typeof(Path).GetMethod("GetFullPath", new[] { typeof(string), typeof(string) })!;
+
+            var result = OnFileOperationPathWithBasePath(
+                "child.txt",
+                Path.GetTempPath(),
+                getFullPathMethodInfo,
+                _mockContext.Object);
+
+            Assert.That(result, Is.True);
         }
 
         [Test]
@@ -259,13 +286,22 @@ namespace Aikido.Zen.Test
             Assert.That(contextToPass.AttackDetected, Is.False);
         }
 
-        private static bool OnFileOperation(string path, MethodInfo methodInfo, Context context)
+        private bool OnFileOperation(string path, MethodInfo methodInfo, Context? context)
         {
-            return SinkAnalyzer.Analyze(
-                methodInfo,
-                IOSink.OperationKind,
-                context,
-                currentContext => PathTraversalHelper.DetectPathTraversal(path, currentContext));
+            _activeContext = context;
+            return IOSink.OnFileOperationOnePath(path, methodInfo);
+        }
+
+        private bool OnFileOperationTwoPaths(string sourceFileName, string destFileName, MethodInfo methodInfo, Context? context)
+        {
+            _activeContext = context;
+            return IOSink.OnFileOperationTwoPaths(sourceFileName, destFileName, methodInfo);
+        }
+
+        private bool OnFileOperationPathWithBasePath(string path, string basePath, MethodInfo methodInfo, Context? context)
+        {
+            _activeContext = context;
+            return IOSink.OnFileOperationPathWithBasePath(path, basePath, methodInfo);
         }
     }
 }

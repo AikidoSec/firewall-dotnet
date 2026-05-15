@@ -13,7 +13,7 @@ namespace Aikido.Zen.Core.Sinks
     /// </summary>
     internal static class ProcessExecutionSink
     {
-        internal const string OperationKind = "exec_op";
+        private const string OperationKind = "exec_op";
 
         [SinkPrefix(typeof(Process), "Start")]
         internal static bool OnProcessStartInstance(Process __instance, MethodBase __originalMethod)
@@ -30,7 +30,7 @@ namespace Aikido.Zen.Core.Sinks
         /// <param name="process">The process being executed.</param>
         /// <param name="context">The context of the process execution.</param>
         /// <returns>The inspection result. Contains a blocking exception if a blocked attack is detected.</returns>
-        internal static InspectionResult OnProcessStart(Process process, Context context)
+        private static InspectionResult OnProcessStart(Process process, Context context)
         {
             var result = InspectionResult.Continue();
             string command; // Store command for logging/stats if needed

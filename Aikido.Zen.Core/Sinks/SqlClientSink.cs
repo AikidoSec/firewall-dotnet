@@ -10,7 +10,7 @@ namespace Aikido.Zen.Core.Sinks
     /// </summary>
     internal static class SqlClientSink
     {
-        internal const string OperationKind = "sql_op";
+        private const string OperationKind = "sql_op";
 
         [SinkPrefix(typeof(DbCommand), "ExecuteNonQueryAsync")]
         [SinkPrefix(typeof(DbCommand), "ExecuteReaderAsync", "System.Data.CommandBehavior")]
@@ -96,7 +96,7 @@ namespace Aikido.Zen.Core.Sinks
         /// <param name="sql">The SQL command to execute.</param>
         /// <param name="dialect">The SQL dialect to use for detection.</param>
         /// <param name="context">The current Aikido context.</param>
-        internal static InspectionResult OnCommandExecuting(string sql, SQLDialect dialect, Context context)
+        private static InspectionResult OnCommandExecuting(string sql, SQLDialect dialect, Context context)
         {
             var result = InspectionResult.Continue();
 
@@ -119,7 +119,7 @@ namespace Aikido.Zen.Core.Sinks
             return result;
         }
 
-        internal static SQLDialect GetDialect(object instance, MethodBase originalMethod)
+        private static SQLDialect GetDialect(object instance, MethodBase originalMethod)
         {
             // Prefer the runtime command/provider assembly for base DbCommand patches.
             // Static raw-SQL patches and null instances do not have a useful provider instance,

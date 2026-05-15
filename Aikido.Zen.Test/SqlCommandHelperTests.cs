@@ -393,7 +393,7 @@ namespace Aikido.Zen.Test.Helpers
             var result = SqlCommandHelper.DetectSQLInjection(commandText, dialect, context);
             SinkAnalyzer.Analyze(
                 method,
-                SqlClientSink.OperationKind,
+                "sql_op",
                 context,
                 _ => result);
             return result.AttackDetected;

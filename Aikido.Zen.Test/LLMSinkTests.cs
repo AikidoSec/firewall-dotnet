@@ -10,6 +10,7 @@ namespace Aikido.Zen.Test
     public class LLMSinkTests
     {
         private Agent _agent;
+        private Context? _activeContext;
 
         [SetUp]
         public void SetUp()
@@ -17,6 +18,8 @@ namespace Aikido.Zen.Test
             Environment.SetEnvironmentVariable("AIKIDO_TOKEN", "test-token");
             _agent = Agent.NewInstance(ZenApiMock.CreateMock().Object);
             _agent.ClearContext();
+            Patcher.Unpatch();
+            Patcher.PatchSinks(() => _activeContext!);
         }
 
         [TearDown]
@@ -272,67 +275,33 @@ namespace Aikido.Zen.Test
 
         #endregion
 
-        #region TryGetProvider Tests
+        #region Provider Detection Tests
 
-        [TestCase("gpt-4o Azure.AI.OpenAI.OpenAIClient", "azure")]
-        [TestCase("gpt-3.5-turbo Azure.AI.OpenAI.ChatClient", "azure")]
-        [TestCase("claude-3-5-haiku-latest OpenAI.ChatClient", "anthropic")]
-        [TestCase("gemini-1.5-pro Google.GenAI.Client", "gemini")]
-        [TestCase("mistral-large-latest Mistral.AI.Client", "mistral")]
-        [TestCase("gpt-4o OpenAI.Chat.ChatClient", "openai")]
-        [TestCase("o3-mini Rystem.OpenAI.OpenAIClient.Chat", "openai")]
-        public void TryGetProvider_WithKnownProviders_ReturnsCorrectProvider(string searchString, string expectedProvider)
+        [TestCase(typeof(AzureOpenAIClientInstance), "gpt-4o", "azure")]
+        [TestCase(typeof(OpenAIClientInstance), "claude-3-5-haiku-latest", "anthropic")]
+        [TestCase(typeof(GoogleGeminiClientInstance), "gemini-1.5-pro", "gemini")]
+        [TestCase(typeof(MistralClientInstance), "mistral-large-latest", "mistral")]
+        [TestCase(typeof(OpenAIClientInstance), "gpt-4o", "openai")]
+        [TestCase(typeof(RystemOpenAIClientInstance), "o3-mini", "openai")]
+        [TestCase(typeof(CustomLLMClientInstance), "llama-2-70b", "unknown")]
+        public void OnLLMCallCompleted_RecordsExpectedProvider(Type clientType, string model, string expectedProvider)
         {
-            // Act
-            var result = LLMSink.TryGetCloudProvider(searchString, out var actualProvider);
+            var method = typeof(string).GetMethod(nameof(string.ToString), Type.EmptyTypes);
+            var result = new MockLLMResult
+            {
+                Model = model,
+                Usage = new MockUsage { InputTokenCount = 1, OutputTokenCount = 2 }
+            };
+            var context = new Context { Route = "/llm/provider" };
+            var client = Activator.CreateInstance(clientType);
 
-            // Assert
-            Assert.That(result, Is.True);
-            Assert.That(actualProvider, Is.EqualTo(expectedProvider));
-        }
+            OnLLMCallCompleted(client!, result, method, context);
 
-        [TestCase("llama-2-70b Meta.AI.LlamaClient")]
-        [TestCase("custom-model CustomLLM.SDK.Client")]
-        [TestCase("")]
-        [TestCase("unknown-model Unknown.Provider.Client")]
-        public void TryGetProvider_WithUnknownProviders_ReturnsFalse(string searchString)
-        {
-            // Act
-            var result = LLMSink.TryGetCloudProvider(searchString, out var actualProvider);
-
-            // Assert
-            Assert.That(result, Is.False);
-            Assert.That(actualProvider, Is.EqualTo("unknown"));
-        }
-
-        [Test]
-        public void TryGetProvider_WithMultipleProviders_ReturnsFirstMatch()
-        {
-            // Azure should take precedence over OpenAI
-            var result = LLMSink.TryGetCloudProvider("gpt-4o Azure.OpenAI.ChatClient", out var actualProvider);
-
-            Assert.That(result, Is.True);
-            Assert.That(actualProvider, Is.EqualTo("azure"));
-        }
-
-        [Test]
-        public void TryGetProvider_WithCaseInsensitivity_ReturnsCorrectProvider()
-        {
-            // Test case insensitivity
-            var result = LLMSink.TryGetCloudProvider("GPT-4O AZURE.AI.OPENAI.CHATCLIENT", out var actualProvider);
-
-            Assert.That(result, Is.True);
-            Assert.That(actualProvider, Is.EqualTo("azure"));
-        }
-
-        [Test]
-        public void TryGetProvider_WithClaudeInModelName_ReturnsAnthropic()
-        {
-            // Test that "claude" in model name correctly identifies Anthropic
-            var result = LLMSink.TryGetCloudProvider("claude-3-sonnet OpenAI.Chat.ChatClient", out var actualProvider);
-
-            Assert.That(result, Is.True);
-            Assert.That(actualProvider, Is.EqualTo("anthropic"));
+            var aiInfo = _agent.Context.AiStats.Providers.Values.Single();
+            Assert.That(aiInfo.Provider, Is.EqualTo(expectedProvider));
+            Assert.That(aiInfo.Model, Is.EqualTo(model));
+            Assert.That(aiInfo.Tokens.Input, Is.EqualTo(1));
+            Assert.That(aiInfo.Tokens.Output, Is.EqualTo(2));
         }
 
         #endregion
@@ -418,241 +387,82 @@ namespace Aikido.Zen.Test
 
         #endregion
 
-        #region TryExtractModelFromResult Tests
+        #region Token Extraction Tests
 
         [Test]
-        public void TryExtractModelFromResult_WithValidModel_ReturnsTrue()
+        public void OnLLMCallCompleted_WithMixedUsage_RecordsTokens()
         {
-            // Arrange
-            var input = new MockLLMResult { Model = "gpt-4-turbo" };
-
-            // Act
-            var result = LLMSink.TryExtractModelFromResult(input, out var model);
-
-            // Assert
-            Assert.That(result, Is.True);
-            Assert.That(model, Is.EqualTo("gpt-4-turbo"));
-        }
-
-        [Test]
-        public void TryExtractModelFromResult_WithNullModel_ReturnsFalse()
-        {
-            // Arrange
-            var input = new MockLLMResult { Model = null };
-
-            // Act
-            var result = LLMSink.TryExtractModelFromResult(input, out var model);
-
-            // Assert
-            Assert.That(result, Is.False);
-            Assert.That(model, Is.EqualTo("unknown"));
-        }
-
-        [Test]
-        public void TryExtractModelFromResult_WithObjectWithoutModel_ReturnsFalse()
-        {
-            // Arrange
-            var input = new { SomeProperty = "value" };
-
-            // Act
-            var result = LLMSink.TryExtractModelFromResult(input, out var model);
-
-            // Assert
-            Assert.That(result, Is.False);
-            Assert.That(model, Is.EqualTo("unknown"));
-        }
-
-        [Test]
-        public void TryExtractModelFromResult_WithEmptyObject_ReturnsFalse()
-        {
-            // Arrange
-            var input = new { };
-
-            // Act
-            var result = LLMSink.TryExtractModelFromResult(input, out var model);
-
-            // Assert
-            Assert.That(result, Is.False);
-            Assert.That(model, Is.EqualTo("unknown"));
-        }
-
-        #endregion
-
-        #region TryExtractTokensFromResult Tests
-
-        [Test]
-        public void TryExtractTokensFromResult_WithOpenAIFormat_ReturnsTrue()
-        {
-            // Arrange
-            var input = new MockLLMResult
+            var method = typeof(string).GetMethod(nameof(string.ToString), Type.EmptyTypes);
+            var result = new MockLLMResult
             {
-                Usage = new MockUsage { InputTokenCount = 150, OutputTokenCount = 75 }
-            };
-
-            // Act
-            var result = LLMSink.TryExtractTokensFromResult(input, out var tokens);
-
-            // Assert
-            Assert.That(result, Is.True);
-            Assert.That(tokens.inputTokens, Is.EqualTo(150)); // Input tokens
-            Assert.That(tokens.outputTokens, Is.EqualTo(75));  // Output tokens
-        }
-
-        [Test]
-        public void TryExtractTokensFromResult_WithRystemFormat_ReturnsTrue()
-        {
-            // Arrange
-            var input = new MockLLMResult
-            {
-                Usage = new MockRystemUsage { PromptTokens = 200, CompletionTokens = 100 }
-            };
-
-            // Act
-            var result = LLMSink.TryExtractTokensFromResult(input, out var tokens);
-
-            // Assert
-            Assert.That(result, Is.True);
-            Assert.That(tokens.inputTokens, Is.EqualTo(200)); // Input tokens
-            Assert.That(tokens.outputTokens, Is.EqualTo(100)); // Output tokens
-        }
-
-        [Test]
-        public void TryExtractTokensFromResult_WithMixedFormat_ReturnsTrue()
-        {
-            // Arrange
-            var input = new MockLLMResult
-            {
+                Model = "gpt-4o",
                 Usage = new MockMixedUsage
                 {
                     InputTokenCount = 300,
                     CompletionTokens = 150
                 }
             };
+            var context = new Context { Route = "/llm/mixed" };
 
-            // Act
-            var result = LLMSink.TryExtractTokensFromResult(input, out var tokens);
+            OnLLMCallCompleted(new OpenAIClientInstance(), result, method, context);
 
-            // Assert
-            Assert.That(result, Is.True);
-            Assert.That(tokens.inputTokens, Is.EqualTo(300)); // Input tokens
-            Assert.That(tokens.outputTokens, Is.EqualTo(150)); // Output tokens
+            var aiInfo = _agent.Context.AiStats.Providers.Values.Single();
+            Assert.That(aiInfo.Tokens.Input, Is.EqualTo(300));
+            Assert.That(aiInfo.Tokens.Output, Is.EqualTo(150));
         }
 
         [Test]
-        public void TryExtractTokensFromResult_WithPartialTokens_ReturnsPartialValues()
+        public void OnLLMCallCompleted_WithPartialTokens_RecordsAvailableTokens()
         {
-            // Arrange
-            var input = new MockLLMResult
+            var method = typeof(string).GetMethod(nameof(string.ToString), Type.EmptyTypes);
+            var result = new MockLLMResult
             {
-                Usage = new MockUsage { InputTokenCount = 50 } // Only input tokens
+                Model = "gpt-4o",
+                Usage = new MockUsage { InputTokenCount = 50 }
             };
+            var context = new Context { Route = "/llm/partial" };
 
-            // Act
-            var result = LLMSink.TryExtractTokensFromResult(input, out var tokens);
+            OnLLMCallCompleted(new OpenAIClientInstance(), result, method, context);
 
-            // Assert
-            Assert.That(result, Is.True);
-            Assert.That(tokens.inputTokens, Is.EqualTo(50)); // Input tokens
-            Assert.That(tokens.outputTokens, Is.EqualTo(0));  // Output tokens (default)
+            var aiInfo = _agent.Context.AiStats.Providers.Values.Single();
+            Assert.That(aiInfo.Tokens.Input, Is.EqualTo(50));
+            Assert.That(aiInfo.Tokens.Output, Is.EqualTo(0));
         }
 
         [Test]
-        public void TryExtractTokensFromResult_WithNoUsage_ReturnsFalse()
+        public void OnLLMCallCompleted_WithStringTokenValues_RecordsConvertedTokens()
         {
-            // Arrange
-            var input = new MockLLMResult { Model = "gpt-4" }; // No Usage property
-
-            // Act
-            var result = LLMSink.TryExtractTokensFromResult(input, out var tokens);
-
-            // Assert
-            Assert.That(result, Is.False);
-            Assert.That(tokens.inputTokens, Is.EqualTo(0));
-            Assert.That(tokens.outputTokens, Is.EqualTo(0));
-        }
-
-        [Test]
-        public void TryExtractTokensFromResult_WithEmptyUsage_ReturnsFalse()
-        {
-            // Arrange
-            var input = new MockLLMResult
+            var method = typeof(string).GetMethod(nameof(string.ToString), Type.EmptyTypes);
+            var result = new MockLLMResult
             {
-                Usage = new { } // Empty usage object
-            };
-
-            // Act
-            var result = LLMSink.TryExtractTokensFromResult(input, out var tokens);
-
-            // Assert
-            Assert.That(result, Is.False);
-            Assert.That(tokens.inputTokens, Is.EqualTo(0));
-            Assert.That(tokens.outputTokens, Is.EqualTo(0));
-        }
-
-        [Test]
-        public void TryExtractTokensFromResult_WithEmptyResult_ReturnsFalse()
-        {
-            // Arrange
-            var input = new { };
-
-            // Act
-            var result = LLMSink.TryExtractTokensFromResult(input, out var tokens);
-
-            // Assert
-            Assert.That(result, Is.False);
-            Assert.That(tokens.inputTokens, Is.EqualTo(0));
-            Assert.That(tokens.outputTokens, Is.EqualTo(0));
-        }
-
-        [Test]
-        public void TryExtractTokensFromResult_WithResultWithoutUsageProperty_ReturnsFalse()
-        {
-            // Arrange
-            var input = new { Model = "gpt-4o-mini" };
-
-            // Act
-            var result = LLMSink.TryExtractTokensFromResult(input, out var tokens);
-
-            // Assert
-            Assert.That(result, Is.False);
-            Assert.That(tokens.inputTokens, Is.EqualTo(0));
-            Assert.That(tokens.outputTokens, Is.EqualTo(0));
-        }
-
-        [Test]
-        public void TryExtractTokensFromResult_WithStringTokenValues_ConvertsCorrectly()
-        {
-            // Arrange
-            var input = new MockLLMResult
-            {
+                Model = "gpt-4o",
                 Usage = new MockStringTokenUsage { InputTokenCount = "100", OutputTokenCount = "50" }
             };
+            var context = new Context { Route = "/llm/string-tokens" };
 
-            // Act
-            var result = LLMSink.TryExtractTokensFromResult(input, out var tokens);
+            OnLLMCallCompleted(new OpenAIClientInstance(), result, method, context);
 
-            // Assert
-            Assert.That(result, Is.True);
-            Assert.That(tokens.inputTokens, Is.EqualTo(100));
-            Assert.That(tokens.outputTokens, Is.EqualTo(50));
+            var aiInfo = _agent.Context.AiStats.Providers.Values.Single();
+            Assert.That(aiInfo.Tokens.Input, Is.EqualTo(100));
+            Assert.That(aiInfo.Tokens.Output, Is.EqualTo(50));
         }
 
         [Test]
-        public void TryExtractTokensFromResult_WithInvalidTokenValues_ReturnsFalse()
+        public void OnLLMCallCompleted_WithInvalidTokenValues_RecordsZeroTokens()
         {
-            // Arrange
-            var input = new MockLLMResult
+            var method = typeof(string).GetMethod(nameof(string.ToString), Type.EmptyTypes);
+            var result = new MockLLMResult
             {
+                Model = "gpt-4o",
                 Usage = new MockStringTokenUsage { InputTokenCount = "many", OutputTokenCount = "few" }
             };
+            var context = new Context { Route = "/llm/invalid-tokens" };
 
-            // Act
-            var result = LLMSink.TryExtractTokensFromResult(input, out var tokens);
+            OnLLMCallCompleted(new OpenAIClientInstance(), result, method, context);
 
-            // Assert
-            Assert.That(result, Is.False);
-            Assert.That(tokens.inputTokens, Is.EqualTo(0));
-            Assert.That(tokens.outputTokens, Is.EqualTo(0));
+            var aiInfo = _agent.Context.AiStats.Providers.Values.Single();
+            Assert.That(aiInfo.Tokens.Input, Is.EqualTo(0));
+            Assert.That(aiInfo.Tokens.Output, Is.EqualTo(0));
         }
 
         #endregion
@@ -702,6 +512,14 @@ namespace Aikido.Zen.Test
         {
         }
 
+        private class GoogleGeminiClientInstance
+        {
+        }
+
+        private class MistralClientInstance
+        {
+        }
+
         private class CustomLLMClientInstance
         {
         }
@@ -716,13 +534,10 @@ namespace Aikido.Zen.Test
             }
         }
 
-        private static bool OnLLMCallCompleted(object instance, object result, MethodInfo method, Context context)
+        private void OnLLMCallCompleted(object instance, object result, MethodInfo method, Context? context)
         {
-            return SinkAnalyzer.Analyze(
-                method,
-                LLMSink.OperationKind,
-                context,
-                currentContext => LLMSink.OnLLMCallCompleted(instance, result, currentContext));
+            _activeContext = context;
+            LLMSink.OnLLMCallCompletedGeneric(instance, result, method);
         }
 
         #endregion

@@ -103,7 +103,7 @@ namespace Aikido.Zen.Test.Helpers
             var result = PathTraversalHelper.DetectPathTraversal(path, context);
             SinkAnalyzer.Analyze(
                 method,
-                IOSink.OperationKind,
+                "fs_op",
                 context,
                 _ => result);
             return result.AttackDetected;

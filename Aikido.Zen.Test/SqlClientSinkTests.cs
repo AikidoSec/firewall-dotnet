@@ -14,6 +14,7 @@ namespace Aikido.Zen.Test
     {
         private Context _context;
         private MethodInfo _methodInfo;
+        private Context? _activeContext;
 
         [SetUp]
         public void Setup()
@@ -27,6 +28,7 @@ namespace Aikido.Zen.Test
 
             // setup the agent, because when not running in drymode, SqlClientSink will trigger an attack event
             Environment.SetEnvironmentVariable("AIKIDO_TOKEN", "test-token");
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
             var reportingMock = new Mock<IReportingAPIClient>();
             reportingMock
                 .Setup(r => r.ReportAsync(It.IsAny<string>(), It.IsAny<IEvent>()))
@@ -38,6 +40,8 @@ namespace Aikido.Zen.Test
             var zenApiMock = new ZenApi(reportingMock.Object, runtimeMock.Object);
 
             Agent.NewInstance(zenApiMock);
+            Patcher.Unpatch();
+            Patcher.PatchSinks(() => _activeContext!);
         }
 
         [Test]
@@ -195,7 +199,7 @@ namespace Aikido.Zen.Test
         {
             var methodInfo = typeof(TestSqlMethods).GetMethod(nameof(TestSqlMethods.ExecuteSqlRaw));
 
-            var result = OnCommandExecuting(methodInfo!, null, _context);
+            var result = OnCommandExecutingSqlRaw(methodInfo!, null, _context);
 
             Assert.That(result, Is.True);
         }
@@ -212,9 +216,63 @@ namespace Aikido.Zen.Test
             var sql = "SELECT * FROM users WHERE id = '1' OR '1'='1'";
 
             var ex = Assert.Throws<AikidoException>(() =>
-                OnCommandExecuting(methodInfo!, sql, _context));
+                OnCommandExecutingSqlRaw(methodInfo!, sql, _context));
 
             Assert.That(ex.Message, Does.Contain("SQL injection detected"));
+        }
+
+        [Test]
+        public void OnCommandExecuting_NPocoAndMySqlXEntryPoints_ReturnTrueForSafeSql()
+        {
+            var dbCommand = new Mock<DbCommand>();
+            dbCommand.SetupGet(command => command.CommandText).Returns("SELECT 1");
+            var dbMethod = GetMethod(typeof(DbCommand), nameof(DbCommand.ExecuteScalar));
+
+            Assert.That(OnNPocoCommandExecuting(dbMethod, dbCommand.Object, _context), Is.True);
+            Assert.That(OnNPocoCommandExecuting(dbMethod, null, _context), Is.True);
+            Assert.That(OnMySqlXSqlStatement(
+                GetMethod(typeof(TestSqlStatement), nameof(TestSqlStatement.Execute)),
+                new TestSqlStatement { SQL = "SELECT 1" },
+                _context), Is.True);
+        }
+
+        [Test]
+        public void OnCommandExecuting_MySqlXPatchTargetsRawSqlExecuteOnly()
+        {
+            var sqlStatementMethod = GetMethod(
+                typeof(SqlClientSink),
+                nameof(SqlClientSink.OnCommandExecutingMySqlXSqlStatement),
+                typeof(object),
+                typeof(MethodBase));
+
+            var sqlStatementTargets = sqlStatementMethod.GetCustomAttributes<SinkPrefixAttribute>().ToArray();
+
+            Assert.That(sqlStatementTargets, Has.Length.EqualTo(1));
+            Assert.That(sqlStatementTargets[0].AssemblyName, Is.EqualTo("MySql.Data"));
+            Assert.That(sqlStatementTargets[0].TargetTypeName, Is.EqualTo("MySqlX.XDevAPI.Relational.SqlStatement"));
+            Assert.That(sqlStatementTargets[0].TargetMethodName, Is.EqualTo("Execute"));
+        }
+
+        [Test]
+        public void OnCommandExecuting_MySqlXSqlStatementWithInterpolatedInput_Throws()
+        {
+            _context.ParsedUserInput = new Dictionary<string, string>
+            {
+                { "body.query", "1' OR '1'='1" }
+            };
+
+            var statement = new TestSqlStatement
+            {
+                SQL = "SELECT * FROM users WHERE id = '1' OR '1'='1'"
+            };
+
+            var ex = Assert.Throws<AikidoException>(() =>
+                OnMySqlXSqlStatement(
+                    GetMethod(typeof(TestSqlStatement), nameof(TestSqlStatement.Execute)),
+                    statement,
+                    _context));
+
+            Assert.That(ex!.Message, Does.Contain("SQL injection detected"));
         }
 
         [TearDown]
@@ -234,16 +292,52 @@ namespace Aikido.Zen.Test
 
         }
 
-        private static bool OnCommandExecuting(MethodInfo methodInfo, string? sql, Context? context)
+        private sealed class TestSqlStatement
         {
-            return SinkAnalyzer.Analyze(
-                methodInfo,
-                SqlClientSink.OperationKind,
-                context,
-                currentContext => SqlClientSink.OnCommandExecuting(
-                    sql,
-                    SQLDialect.Generic,
-                    currentContext));
+            public string SQL { get; set; } = string.Empty;
+
+            public object Execute()
+            {
+                return new object();
+            }
+        }
+
+        private bool OnCommandExecuting(MethodInfo methodInfo, string? sql, Context? context)
+        {
+            _activeContext = context;
+            var dbCommand = new Mock<DbCommand>();
+            dbCommand.SetupGet(command => command.CommandText).Returns(sql);
+            return SqlClientSink.OnCommandExecutingDbCommand(dbCommand.Object, methodInfo);
+        }
+
+        private bool OnCommandExecutingSqlRaw(MethodInfo methodInfo, string? sql, Context? context)
+        {
+            _activeContext = context;
+            return SqlClientSink.OnCommandExecutingSqlRaw(sql!, methodInfo);
+        }
+
+        private bool OnNPocoCommandExecuting(MethodInfo methodInfo, DbCommand? dbCommand, Context? context)
+        {
+            _activeContext = context;
+            return SqlClientSink.OnCommandExecutingNPocoCommand(dbCommand!, methodInfo);
+        }
+
+        private bool OnMySqlXSqlStatement(MethodInfo methodInfo, object statement, Context? context)
+        {
+            _activeContext = context;
+            return SqlClientSink.OnCommandExecutingMySqlXSqlStatement(statement, methodInfo);
+        }
+
+        private static MethodInfo GetMethod(Type type, string methodName, params Type[] parameterTypes)
+        {
+            var method = type.GetMethod(
+                methodName,
+                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static,
+                null,
+                parameterTypes,
+                null);
+            Assert.That(method, Is.Not.Null, $"{type.FullName}.{methodName} should exist.");
+            return method;
         }
     }
 }

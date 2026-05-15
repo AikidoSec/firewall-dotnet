@@ -12,7 +12,7 @@ namespace Aikido.Zen.Core.Sinks
     /// </summary>
     internal static class IOSink
     {
-        internal const string OperationKind = "fs_op";
+        private const string OperationKind = "fs_op";
         private static readonly ThreadLocal<bool> IsProcessing = new ThreadLocal<bool>(() => false);
 
         [SinkPrefix(typeof(File), "Open", "System.String", "System.IO.FileMode")]

@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http;
 using System.Reflection;
 using System.Threading;
@@ -17,6 +18,7 @@ namespace Aikido.Zen.Test
         private Mock<IReportingAPIClient> _reportingApiMock;
         private Mock<IRuntimeAPIClient> _runtimeApiMock;
         private Agent _agent;
+        private Context? _activeContext;
 
         [SetUp]
         public void Setup()
@@ -45,11 +47,14 @@ namespace Aikido.Zen.Test
 
             _agent = Agent.NewInstance(ZenApiMock.CreateMock(_reportingApiMock.Object, _runtimeApiMock.Object).Object);
             _agent.ClearContext();
+            Patcher.Unpatch();
+            Patcher.PatchSinks(() => _activeContext!);
         }
 
         [TearDown]
         public void TearDown()
         {
+            Patcher.Unpatch();
             _agent?.Dispose();
         }
 
@@ -291,14 +296,48 @@ namespace Aikido.Zen.Test
         public void OnRequest_WithBaseAddressAndNoRequest_CapturesBaseAddress()
         {
             // Act
-            var result = OnRequest(
-                new Uri("https://base-only.example"),
+            using var httpClient = new HttpClient { BaseAddress = new Uri("https://base-only.example") };
+            var result = OnHttpClientRequest(
+                null,
+                httpClient,
                 GetHttpClientSendAsyncMethod(),
                 CreateContext());
 
             // Assert
             Assert.That(result, Is.True);
             Assert.That(_agent.Context.Hostnames.Any(h => h.Hostname == "base-only.example" && h.Port == 443), Is.True);
+        }
+
+        [Test]
+        public void OnRequest_WithBaseAddressAndRelativeRequest_CapturesResolvedHost()
+        {
+            using var httpClient = new HttpClient { BaseAddress = new Uri("https://base.example") };
+            using var request = new HttpRequestMessage(HttpMethod.Get, "/relative");
+
+            var result = OnHttpClientRequest(
+                request,
+                httpClient,
+                GetHttpClientSendAsyncMethod(),
+                CreateContext());
+
+            Assert.That(result, Is.True);
+            Assert.That(_agent.Context.Hostnames.Any(h => h.Hostname == "base.example" && h.Port == 443), Is.True);
+        }
+
+        [Test]
+        public void OnRequest_WithWebRequest_CapturesRequestUri()
+        {
+#pragma warning disable SYSLIB0014
+            var webRequest = WebRequest.Create("https://webrequest.example/path");
+#pragma warning restore SYSLIB0014
+
+            var result = OnWebRequest(
+                webRequest,
+                GetMethod(typeof(WebRequest), nameof(WebRequest.GetResponse)),
+                CreateContext());
+
+            Assert.That(result, Is.True);
+            Assert.That(_agent.Context.Hostnames.Any(h => h.Hostname == "webrequest.example" && h.Port == 443), Is.True);
         }
 
         [Test]
@@ -332,13 +371,38 @@ namespace Aikido.Zen.Test
             };
         }
 
-        private static bool OnRequest(Uri targetUri, MethodInfo methodInfo, Context context)
+        private bool OnRequest(Uri? targetUri, MethodInfo methodInfo, Context? context)
         {
-            return SinkAnalyzer.Analyze(
-                methodInfo,
-                OutboundRequestSink.OperationKind,
-                context,
-                currentContext => OutboundRequestSink.OnRequest(targetUri, currentContext));
+            using var httpClient = new HttpClient();
+            using var request = targetUri == null
+                ? null
+                : new HttpRequestMessage(HttpMethod.Get, targetUri);
+
+            return OnHttpClientRequest(request, httpClient, methodInfo, context);
+        }
+
+        private bool OnHttpClientRequest(HttpRequestMessage? request, HttpClient? httpClient, MethodInfo methodInfo, Context? context)
+        {
+            _activeContext = context;
+            return OutboundRequestSink.OnRequestHttpClient(request!, httpClient!, methodInfo);
+        }
+
+        private bool OnWebRequest(WebRequest? request, MethodInfo methodInfo, Context? context)
+        {
+            _activeContext = context;
+            return OutboundRequestSink.OnRequestWebRequest(request!, methodInfo);
+        }
+
+        private static MethodInfo GetMethod(Type type, string methodName, params Type[] parameterTypes)
+        {
+            var method = type.GetMethod(
+                methodName,
+                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static,
+                null,
+                parameterTypes,
+                null);
+            Assert.That(method, Is.Not.Null, $"{type.FullName}.{methodName} should exist.");
+            return method;
         }
 
     }
