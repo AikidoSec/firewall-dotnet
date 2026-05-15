@@ -15,6 +15,7 @@ namespace Aikido.Zen.Test.Helpers
         private const string InvalidSqlQuery = "SELECT * FROM users WHERE name = 'abc' OR 1=1 /*";
         private const string InvalidSqlUserInput = "abc' OR 1=1 /*";
         private Context _context;
+        private Context? _activeContext;
 
         [SetUp]
         public void Setup()
@@ -45,11 +46,15 @@ namespace Aikido.Zen.Test.Helpers
                     { "headers.auth", "token123" }
                 }
             };
+
+            Patcher.Unpatch();
+            Patcher.PatchSinks(() => _activeContext!);
         }
 
         [TearDown]
         public void TearDown()
         {
+            Patcher.Unpatch();
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK_INVALID_SQL", null);
         }
 
@@ -387,14 +392,14 @@ namespace Aikido.Zen.Test.Helpers
             Assert.That(_context.AttackDetected, Is.False);
         }
 
-        private static bool DetectSQLInjection(string commandText, SQLDialect dialect, Context context, string moduleName, string operation)
+        private bool DetectSQLInjection(string commandText, SQLDialect dialect, Context context, string moduleName, string operation)
         {
-            var method = typeof(SqlCommandHelperTests).GetMethod(nameof(DetectSQLInjection), BindingFlags.Static | BindingFlags.NonPublic);
+            _activeContext = context;
+            var method = typeof(SqlCommandHelperTests).GetMethod(nameof(DetectSQLInjection), BindingFlags.Instance | BindingFlags.NonPublic);
             var result = SqlCommandHelper.DetectSQLInjection(commandText, dialect, context);
-            SinkAnalyzer.Analyze(
+            Inspector.Inspect(
                 method,
                 "sql_op",
-                context,
                 _ => result);
             return result.AttackDetected;
         }

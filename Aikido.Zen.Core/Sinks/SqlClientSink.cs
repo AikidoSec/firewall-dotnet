@@ -42,7 +42,7 @@ namespace Aikido.Zen.Core.Sinks
         [SinkPrefix("Npgsql", "Npgsql.NpgsqlCommand", "ExecuteScalarAsync", "System.Threading.CancellationToken")]
         internal static bool OnCommandExecutingDbCommand(DbCommand __instance, MethodBase __originalMethod)
         {
-            return SinkAnalyzer.Analyze(
+            return Inspector.Inspect(
                 __originalMethod,
                 OperationKind,
                 context => OnCommandExecuting(
@@ -56,7 +56,7 @@ namespace Aikido.Zen.Core.Sinks
         [SinkPrefix("NPoco", "NPoco.Database", "ExecuteScalarHelper", "System.Data.Common.DbCommand")]
         internal static bool OnCommandExecutingNPocoCommand(DbCommand cmd, MethodBase __originalMethod)
         {
-            return SinkAnalyzer.Analyze(
+            return Inspector.Inspect(
                 __originalMethod,
                 OperationKind,
                 context => OnCommandExecuting(
@@ -69,7 +69,7 @@ namespace Aikido.Zen.Core.Sinks
         [SinkPrefix("Microsoft.EntityFrameworkCore.Relational", "Microsoft.EntityFrameworkCore.RelationalDatabaseFacadeExtensions", "ExecuteSqlRawAsync", "Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacade", "System.String", "System.Collections.Generic.IEnumerable`1[System.Object]", "System.Threading.CancellationToken")]
         internal static bool OnCommandExecutingSqlRaw(string sql, MethodBase __originalMethod)
         {
-            return SinkAnalyzer.Analyze(
+            return Inspector.Inspect(
                 __originalMethod,
                 OperationKind,
                 context => OnCommandExecuting(
@@ -81,7 +81,7 @@ namespace Aikido.Zen.Core.Sinks
         [SinkPrefix("MySql.Data", "MySqlX.XDevAPI.Relational.SqlStatement", "Execute")]
         internal static bool OnCommandExecutingMySqlXSqlStatement(object __instance, MethodBase __originalMethod)
         {
-            return SinkAnalyzer.Analyze(
+            return Inspector.Inspect(
                 __originalMethod,
                 OperationKind,
                 context => OnCommandExecuting(

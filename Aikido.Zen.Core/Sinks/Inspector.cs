@@ -6,22 +6,15 @@ using Aikido.Zen.Core.Models;
 
 namespace Aikido.Zen.Core.Sinks
 {
-    internal static class SinkAnalyzer
+    internal static class Inspector
     {
-        internal static bool Analyze(
+        internal static bool Inspect(
             MethodBase originalMethod,
             string operationKind,
             Func<Context, InspectionResult> inspect)
         {
-            return Analyze(originalMethod, operationKind, Patcher.GetContext(), inspect);
-        }
+            var context = Patcher.GetContext();
 
-        internal static bool Analyze(
-            MethodBase originalMethod,
-            string operationKind,
-            Context context,
-            Func<Context, InspectionResult> inspect)
-        {
             try
             {
                 if (ReflectionHelper.ShouldSkipAssembly() ||

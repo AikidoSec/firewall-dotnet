@@ -13,6 +13,7 @@ namespace Aikido.Zen.Test.Helpers
     public class PathTraversalHelperTests
     {
         private Context _context;
+        private Context? _activeContext;
         private const string ModuleName = "TestModule";
         private const string Operation = "TestOperation";
 
@@ -27,6 +28,14 @@ namespace Aikido.Zen.Test.Helpers
             };
             Environment.SetEnvironmentVariable("AIKIDO_TOKEN", "test-token");
             Agent.NewInstance(ZenApiMock.CreateMock().Object);
+            Patcher.Unpatch();
+            Patcher.PatchSinks(() => _activeContext!);
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            Patcher.Unpatch();
         }
 
         [Test]
@@ -97,14 +106,14 @@ namespace Aikido.Zen.Test.Helpers
                 Times.Once);
         }
 
-        private static bool DetectPathTraversal(string path, Context context, string moduleName, string operation)
+        private bool DetectPathTraversal(string path, Context context, string moduleName, string operation)
         {
-            var method = typeof(PathTraversalHelperTests).GetMethod(nameof(DetectPathTraversal), BindingFlags.Static | BindingFlags.NonPublic);
+            _activeContext = context;
+            var method = typeof(PathTraversalHelperTests).GetMethod(nameof(DetectPathTraversal), BindingFlags.Instance | BindingFlags.NonPublic);
             var result = PathTraversalHelper.DetectPathTraversal(path, context);
-            SinkAnalyzer.Analyze(
+            Inspector.Inspect(
                 method,
                 "fs_op",
-                context,
                 _ => result);
             return result.AttackDetected;
         }

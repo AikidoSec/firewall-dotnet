@@ -18,7 +18,7 @@ namespace Aikido.Zen.Core.Sinks
         [SinkPrefix(typeof(Process), "Start")]
         internal static bool OnProcessStartInstance(Process __instance, MethodBase __originalMethod)
         {
-            return SinkAnalyzer.Analyze(
+            return Inspector.Inspect(
                 __originalMethod,
                 OperationKind,
                 context => OnProcessStart(__instance, context));

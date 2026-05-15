@@ -22,7 +22,7 @@ namespace Aikido.Zen.Core.Sinks
         [SinkPostfix("Rystem.OpenAi", "Rystem.OpenAi.Chat.OpenAiChat", "ExecuteAsStreamAsync")]
         internal static void OnLLMCallCompletedGeneric(object __instance, object __result, MethodBase __originalMethod)
         {
-            SinkAnalyzer.Analyze(
+            Inspector.Inspect(
                 __originalMethod,
                 OperationKind,
                 context => OnLLMCallCompleted(__instance, __result, context));

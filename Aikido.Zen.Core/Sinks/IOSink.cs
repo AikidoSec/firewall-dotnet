@@ -37,7 +37,7 @@ namespace Aikido.Zen.Core.Sinks
         [SinkPrefix(typeof(Directory), "GetDirectories", "System.String", "System.String", "System.IO.SearchOption")]
         internal static bool OnFileOperationOnePath(string path, MethodBase __originalMethod)
         {
-            return SinkAnalyzer.Analyze(
+            return Inspector.Inspect(
                 __originalMethod,
                 OperationKind,
                 context => InspectPaths(context, path));
@@ -48,7 +48,7 @@ namespace Aikido.Zen.Core.Sinks
         [SinkPrefix(typeof(File), "Move", "System.String", "System.String", "System.Boolean")]
         internal static bool OnFileOperationTwoPaths(string sourceFileName, string destFileName, MethodBase __originalMethod)
         {
-            return SinkAnalyzer.Analyze(
+            return Inspector.Inspect(
                 __originalMethod,
                 OperationKind,
                 context => InspectPaths(context, sourceFileName, destFileName));
@@ -57,7 +57,7 @@ namespace Aikido.Zen.Core.Sinks
         [SinkPrefix(typeof(Path), "GetFullPath", "System.String", "System.String")]
         internal static bool OnFileOperationPathWithBasePath(string path, string basePath, MethodBase __originalMethod)
         {
-            return SinkAnalyzer.Analyze(
+            return Inspector.Inspect(
                 __originalMethod,
                 OperationKind,
                 context => InspectPaths(context, path, basePath));

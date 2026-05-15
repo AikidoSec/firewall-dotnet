@@ -17,7 +17,7 @@ namespace Aikido.Zen.Core.Sinks
         [SinkPrefix(typeof(HttpClient), "Send", "System.Net.Http.HttpRequestMessage", "System.Threading.CancellationToken")]
         internal static bool OnRequestHttpClient(HttpRequestMessage request, HttpClient __instance, MethodBase __originalMethod)
         {
-            return SinkAnalyzer.Analyze(
+            return Inspector.Inspect(
                 __originalMethod,
                 OperationKind,
                 context => OnRequest(ResolveUri(request, __instance), context));
@@ -28,7 +28,7 @@ namespace Aikido.Zen.Core.Sinks
         [SinkPrefix(typeof(WebRequest), "GetResponseAsync")]
         internal static bool OnRequestWebRequest(WebRequest __instance, MethodBase __originalMethod)
         {
-            return SinkAnalyzer.Analyze(
+            return Inspector.Inspect(
                 __originalMethod,
                 OperationKind,
                 context => OnRequest(__instance?.RequestUri, context));
