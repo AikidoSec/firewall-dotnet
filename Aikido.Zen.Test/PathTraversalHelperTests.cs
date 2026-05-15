@@ -115,7 +115,7 @@ namespace Aikido.Zen.Test.Helpers
                 method,
                 "fs_op",
                 _ => result);
-            return result.AttackDetected;
+            return result.AttackKind.HasValue;
         }
     }
 }

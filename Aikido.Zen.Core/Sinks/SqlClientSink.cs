@@ -98,7 +98,7 @@ namespace Aikido.Zen.Core.Sinks
         /// <param name="context">The current Aikido context.</param>
         private static InspectionResult OnCommandExecuting(string sql, SQLDialect dialect, Context context)
         {
-            var result = InspectionResult.Continue();
+            var result = InspectionResult.Allow();
 
             try
             {
@@ -113,7 +113,7 @@ namespace Aikido.Zen.Core.Sinks
                 // Use Agent.Logger (assuming static logger)
                 LogHelper.ErrorLog(Agent.Logger, "Error during SQL injection detection.");
                 // Allow original method execution despite detection error
-                return InspectionResult.Continue();
+                return InspectionResult.Allow();
             }
 
             return result;

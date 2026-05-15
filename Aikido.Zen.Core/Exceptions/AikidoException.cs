@@ -1,4 +1,5 @@
 using System;
+using Aikido.Zen.Core.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -24,34 +25,30 @@ namespace Aikido.Zen.Core.Exceptions
             _logger.LogError("Aikido security exception: {Message}", Message);
         }
 
-        public static AikidoException SQLInjectionDetected(string dialect)
+        public static AikidoException Blocked(AttackKind kind, string operation, string metadata = null)
         {
-            return new AikidoException($"{dialect}: SQL injection detected");
-        }
+            var metadataSuffix = string.IsNullOrEmpty(metadata) ? string.Empty : $": {metadata}";
 
-        public static AikidoException ShellInjectionDetected()
-        {
-            return new AikidoException($"Shell injection detected");
-        }
+            switch (kind)
+            {
+                case AttackKind.SqlInjection:
+                    return new AikidoException($"SQL injection detected during {operation}{metadataSuffix}");
 
-        public static AikidoException RequestBlocked(string route)
-        {
-            return new AikidoException($"Request blocked: {route}");
-        }
+                case AttackKind.ShellInjection:
+                    return new AikidoException($"Shell injection detected during {operation}{metadataSuffix}");
 
-        public static AikidoException RateLimited(string route)
-        {
-            return new AikidoException($"Ratelimited: {route}");
-        }
+                case AttackKind.PathTraversal:
+                    return new AikidoException($"Path traversal detected during {operation}{metadataSuffix}");
 
-        public static AikidoException PathTraversalDetected(string operation)
-        {
-            return new AikidoException($"Path traversal detected during {operation}");
-        }
+                case AttackKind.Ssrf:
+                    return new AikidoException($"Server-side request forgery detected during {operation}{metadataSuffix}");
 
-        public static AikidoException OutboundConnectionBlocked(string hostname)
-        {
-            return new AikidoException($"Zen has blocked an outbound connection to {hostname}");
+                case AttackKind.OutboundConnectionBlocked:
+                    return new AikidoException($"Zen has blocked an outbound connection during {operation}{metadataSuffix}");
+
+                default:
+                    return new AikidoException();
+            }
         }
     }
 }

@@ -1,8 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Reflection;
-using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 
@@ -38,24 +38,25 @@ namespace Aikido.Zen.Core.Sinks
         {
             if (targetUri == null)
             {
-                return InspectionResult.Skip();
+                return InspectionResult.Allow(skipStats: true);
             }
 
             var hostname = targetUri.Host;
             var port = UriHelper.GetPort(targetUri);
             Agent.Instance.CaptureOutboundRequest(hostname, port);
 
-            if (EnvironmentHelper.DryMode)
-            {
-                return InspectionResult.Continue();
-            }
-
             if (Agent.Instance.Context.Config.ShouldBlockOutgoingRequest(hostname))
             {
-                return InspectionResult.Block(AikidoException.OutboundConnectionBlocked(hostname));
+                return InspectionResult.Block(
+                    AttackKind.OutboundConnectionBlocked,
+                    payload: hostname,
+                    metadata: new Dictionary<string, string>
+                    {
+                        { "hostname", hostname }
+                    });
             }
 
-            return InspectionResult.Continue();
+            return InspectionResult.Allow();
         }
 
         private static Uri ResolveUri(HttpRequestMessage request, HttpClient client)

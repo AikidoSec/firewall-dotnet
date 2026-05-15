@@ -1,4 +1,3 @@
-using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Vulnerabilities;
 using System.Collections.Generic;
@@ -23,7 +22,7 @@ namespace Aikido.Zen.Core.Helpers
                     continue;
                 }
 
-                var metadata = new Dictionary<string, object> {
+                var metadata = new Dictionary<string, string> {
                     { "sql", commandText },
                     { "dialect", dialect.ToHumanName() }
                 };
@@ -33,17 +32,15 @@ namespace Aikido.Zen.Core.Helpers
                     metadata["failedToTokenize"] = "true";
                 }
 
-                return InspectionResult.Attack(
+                return InspectionResult.Block(
                     AttackKind.SqlInjection,
                     UserInputHelper.GetAttackSourceFromUserInputKey(userInput.Key),
                     userInput.Value,
                     metadata,
-                    new[] { UserInputHelper.GetAttackPathFromUserInputKey(userInput.Key) },
-                    !EnvironmentHelper.DryMode,
-                    AikidoException.SQLInjectionDetected(dialect.ToHumanName())
+                    new[] { UserInputHelper.GetAttackPathFromUserInputKey(userInput.Key) }
                 );
             }
-            return InspectionResult.Continue();
+            return InspectionResult.Allow();
         }
     }
 }

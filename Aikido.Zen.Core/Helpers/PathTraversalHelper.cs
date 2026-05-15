@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Vulnerabilities;
 
@@ -14,7 +13,7 @@ namespace Aikido.Zen.Core.Helpers
         {
             if (context == null || context.ParsedUserInput == null)
             {
-                return InspectionResult.Continue();
+                return InspectionResult.Allow();
             }
 
             // Check for path traversal against the user inputs
@@ -22,23 +21,20 @@ namespace Aikido.Zen.Core.Helpers
             {
                 if (PathTraversalDetector.DetectPathTraversal(userInput.Value, path))
                 {
-                    var metadata = new Dictionary<string, object> {
+                    var metadata = new Dictionary<string, string> {
                         { "filename", path }
                     };
 
-                    return InspectionResult.Attack(
+                    return InspectionResult.Block(
                         AttackKind.PathTraversal,
                         UserInputHelper.GetAttackSourceFromUserInputKey(userInput.Key), // "query.url" -> "query"
                         userInput.Value,
                         metadata,
-                        // The `path` argument (filename) is not related to paths here (user input fields eg. query)
-                        new[] { UserInputHelper.GetAttackPathFromUserInputKey(userInput.Key) }, // "query.url" -> ".url"
-                        !EnvironmentHelper.DryMode,
-                        AikidoException.PathTraversalDetected
+                        new[] { UserInputHelper.GetAttackPathFromUserInputKey(userInput.Key) } // "query.url" -> ".url"
                     );
                 }
             }
-            return InspectionResult.Continue();
+            return InspectionResult.Allow();
         }
     }
 }

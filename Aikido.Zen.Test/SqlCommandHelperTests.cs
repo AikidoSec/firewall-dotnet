@@ -401,7 +401,7 @@ namespace Aikido.Zen.Test.Helpers
                 method,
                 "sql_op",
                 _ => result);
-            return result.AttackDetected;
+            return result.AttackKind.HasValue;
         }
     }
 }

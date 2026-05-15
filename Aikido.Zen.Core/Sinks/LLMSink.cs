@@ -39,7 +39,7 @@ namespace Aikido.Zen.Core.Sinks
             result = LLMResultHelper.ResolveResult(result);
             if (context == null || result == null)
             {
-                return InspectionResult.Skip();
+                return InspectionResult.Allow(skipStats: true);
             }
 
             var clientType = instance?.GetType();
@@ -62,7 +62,7 @@ namespace Aikido.Zen.Core.Sinks
             // Record AI statistics
             Agent.Instance.Context.OnAiCall(provider, model, tokens.inputTokens, tokens.outputTokens, context.Route);
 
-            return InspectionResult.Continue();
+            return InspectionResult.Allow();
         }
 
         /// <summary>

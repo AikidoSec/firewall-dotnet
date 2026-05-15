@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.Reflection;
+using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 
@@ -32,63 +33,69 @@ namespace Aikido.Zen.Core.Sinks
 
             var operation = ReflectionHelper.GetMethodOperation(originalMethod);
             var module = ReflectionHelper.GetMethodModule(originalMethod);
+            InspectionResult result = InspectionResult.Allow();
+
             var stopwatch = Stopwatch.StartNew();
-            var result = InspectionResult.Continue();
+            try
+            {
+                result = inspect(context) ?? InspectionResult.Allow(skipStats: true);
+            }
+            catch
+            {
+                LogHelper.ErrorLog(Agent.Logger, $"Error during {operationKind} inspection.");
+            }
+            stopwatch.Stop();
+
+            var isBlocked = result?.AttackKind.HasValue == true && !EnvironmentHelper.DryMode;
+
+            // Blocked outbound connections don't get reported as attacks
+            var isAttack = context != null &&
+                                    result?.AttackKind.HasValue == true &&
+                                    result.AttackKind.Value != AttackKind.OutboundConnectionBlocked;
 
             try
             {
-                result = inspect(context) ?? InspectionResult.Continue();
-
-                if (result.AttackDetected && context != null)
+                if (isAttack)
                 {
                     Agent.Instance.SendAttackEvent(
-                        kind: result.AttackKind,
-                        source: result.Source,
+                        kind: result.AttackKind.Value,
+                        source: result.Source.Value,
                         payload: result.Payload,
                         operation: operation,
                         context: context,
                         module: module,
                         metadata: result.Metadata,
-                        blocked: result.Blocked,
+                        blocked: isBlocked,
                         paths: result.Paths);
 
                     context.AttackDetected = true;
                 }
+
+                if (!result.SkipStats)
+                {
+                    Agent.Instance?.Context?.OnInspectedCall(
+                        operation,
+                        operationKind,
+                        stopwatch.Elapsed.TotalMilliseconds,
+                        isAttack,
+                        isBlocked,
+                        context == null);
+                }
             }
             catch
             {
-                LogHelper.ErrorLog(Agent.Logger, $"Error during {operationKind} inspection.");
-                result = InspectionResult.Continue();
-            }
-            finally
-            {
-                stopwatch.Stop();
-                if (result.RecordStats)
-                {
-                    try
-                    {
-                        Agent.Instance?.Context?.OnInspectedCall(
-                            operation,
-                            operationKind,
-                            stopwatch.Elapsed.TotalMilliseconds,
-                            result.AttackDetected,
-                            result.Blocked,
-                            context == null);
-                    }
-                    catch
-                    {
-                        LogHelper.ErrorLog(Agent.Logger, "Error recording OnInspectedCall stats.");
-                    }
-                }
+                LogHelper.ErrorLog(Agent.Logger, "Error recording stats.");
             }
 
-            var exceptionToThrow = result.ExceptionFactory?.Invoke(operation);
-            if (exceptionToThrow != null)
+            if (isBlocked)
             {
-                throw exceptionToThrow;
+                throw AikidoException.Blocked(
+                    result.AttackKind.Value,
+                    operation,
+                    result.Metadata == null ? null : string.Join(", ", result.Metadata.Values));
             }
 
-            return result.ContinueOriginal;
+            return true;
         }
     }
 }

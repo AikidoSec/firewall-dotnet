@@ -6,77 +6,42 @@ namespace Aikido.Zen.Core.Models
     internal sealed class InspectionResult
     {
         private InspectionResult(
-            bool attackDetected,
-            bool blocked,
-            bool continueOriginal,
-            Func<string, Exception> exceptionFactory,
-            bool recordStats,
-            AttackKind attackKind,
-            Source source,
+            AttackKind? attackKind,
+            Source? source,
             string payload,
-            IDictionary<string, object> metadata,
-            string[] paths)
+            IDictionary<string, string> metadata,
+            string[] paths,
+            bool skipStats)
         {
-            AttackDetected = attackDetected;
-            Blocked = blocked;
-            ContinueOriginal = continueOriginal;
-            ExceptionFactory = exceptionFactory;
-            RecordStats = recordStats;
             AttackKind = attackKind;
             Source = source;
             Payload = payload;
             Metadata = metadata;
-            Paths = paths;
+            Paths = paths ?? Array.Empty<string>();
+            SkipStats = skipStats;
         }
 
-        internal bool AttackDetected { get; }
-        internal bool Blocked { get; }
-        internal bool ContinueOriginal { get; }
-        internal bool RecordStats { get; }
-        internal AttackKind AttackKind { get; }
-        internal Source Source { get; }
+        internal AttackKind? AttackKind { get; }
+        internal Source? Source { get; }
         internal string Payload { get; }
-        internal IDictionary<string, object> Metadata { get; }
+        internal IDictionary<string, string> Metadata { get; }
         internal string[] Paths { get; }
-        internal Func<string, Exception> ExceptionFactory { get; }
+        internal bool SkipStats { get; }
 
-        internal static InspectionResult Continue()
+        internal static InspectionResult Allow(bool skipStats = false)
         {
-            return new InspectionResult(false, false, true, null, true, default(AttackKind), default(Source), null, null, null);
+            return new InspectionResult(null, null, null, null, null, skipStats);
         }
 
-        internal static InspectionResult Skip()
-        {
-            return new InspectionResult(false, false, true, null, false, default(AttackKind), default(Source), null, null, null);
-        }
-
-        internal static InspectionResult Attack(
+        internal static InspectionResult Block(
             AttackKind kind,
-            Source source,
-            string payload,
-            IDictionary<string, object> metadata,
-            string[] paths,
-            bool blocked,
-            Exception exceptionToThrow)
+            Source? source = null,
+            string payload = null,
+            IDictionary<string, string> metadata = null,
+            string[] paths = null,
+            bool skipStats = false)
         {
-            return new InspectionResult(true, blocked, true, blocked ? _ => exceptionToThrow : (Func<string, Exception>)null, true, kind, source, payload, metadata, paths);
-        }
-
-        internal static InspectionResult Attack(
-            AttackKind kind,
-            Source source,
-            string payload,
-            IDictionary<string, object> metadata,
-            string[] paths,
-            bool blocked,
-            Func<string, Exception> exceptionFactory)
-        {
-            return new InspectionResult(true, blocked, true, blocked ? exceptionFactory : null, true, kind, source, payload, metadata, paths);
-        }
-
-        internal static InspectionResult Block(Exception exceptionToThrow)
-        {
-            return new InspectionResult(false, true, true, _ => exceptionToThrow, true, default(AttackKind), default(Source), null, null, null);
+            return new InspectionResult(kind, source, payload, metadata, paths, skipStats);
         }
     }
 }

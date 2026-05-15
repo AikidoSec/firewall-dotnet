@@ -57,7 +57,7 @@ namespace Aikido.Zen.Test
                 Operation = "read",
                 Module = "authentication",
                 Blocked = true,
-                Metadata = new Dictionary<string, object>
+                Metadata = new Dictionary<string, string>
                 {
                     { "severity", "high" }
                 }
@@ -119,7 +119,7 @@ namespace Aikido.Zen.Test
                 "HttpClient.SendAsync",
                 context,
                 "System.Net.Http",
-                new Dictionary<string, object> { { "hostname", "127.0.0.1" } },
+                new Dictionary<string, string> { { "hostname", "127.0.0.1" } },
                 true,
                 new[] { ".url", ".backup" });
 

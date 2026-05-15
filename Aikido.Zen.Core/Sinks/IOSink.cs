@@ -67,7 +67,7 @@ namespace Aikido.Zen.Core.Sinks
         {
             if (IsProcessing.Value)
             {
-                return InspectionResult.Skip();
+                return InspectionResult.Allow(skipStats: true);
             }
 
             try
@@ -82,7 +82,7 @@ namespace Aikido.Zen.Core.Sinks
                     }
 
                     var result = PathTraversalHelper.DetectPathTraversal(path, context);
-                    if (result.AttackDetected)
+                    if (result.AttackKind.HasValue)
                     {
                         return result;
                     }
@@ -91,14 +91,14 @@ namespace Aikido.Zen.Core.Sinks
             catch
             {
                 LogHelper.ErrorLog(Agent.Logger, "Error during Path Traversal detection.");
-                return InspectionResult.Continue();
+                return InspectionResult.Allow();
             }
             finally
             {
                 IsProcessing.Value = false;
             }
 
-            return InspectionResult.Continue();
+            return InspectionResult.Allow();
         }
     }
 }

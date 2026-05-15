@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
-using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Vulnerabilities;
@@ -32,7 +31,7 @@ namespace Aikido.Zen.Core.Sinks
         /// <returns>The inspection result. Contains a blocking exception if a blocked attack is detected.</returns>
         private static InspectionResult OnProcessStart(Process process, Context context)
         {
-            var result = InspectionResult.Continue();
+            var result = InspectionResult.Allow();
             string command; // Store command for logging/stats if needed
 
             try
@@ -49,18 +48,16 @@ namespace Aikido.Zen.Core.Sinks
                         if (ShellInjectionDetector.IsShellInjection(command, userInput.Value))
                         {
                             // Log or throw an exception to report the issue
-                            var metadata = new Dictionary<string, object> {
+                            var metadata = new Dictionary<string, string> {
                                 { "command", command }
                             };
 
-                            result = InspectionResult.Attack(
+                            result = InspectionResult.Block(
                                 AttackKind.ShellInjection,
                                 UserInputHelper.GetAttackSourceFromUserInputKey(userInput.Key),
                                 userInput.Value,
                                 metadata,
-                                new[] { UserInputHelper.GetAttackPathFromUserInputKey(userInput.Key) },
-                                !EnvironmentHelper.DryMode,
-                                AikidoException.ShellInjectionDetected()
+                                new[] { UserInputHelper.GetAttackPathFromUserInputKey(userInput.Key) }
                             );
 
                             // Break after first detection for this process start
@@ -73,7 +70,7 @@ namespace Aikido.Zen.Core.Sinks
             {
                 // Error during detection logic
                 LogHelper.ErrorLog(Agent.Logger, "Error during Shell injection detection.");
-                return InspectionResult.Continue();
+                return InspectionResult.Allow();
             }
 
             return result;
