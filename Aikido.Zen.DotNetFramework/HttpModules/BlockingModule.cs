@@ -83,7 +83,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                         429,
                         $"You are rate limited by Aikido firewall. (Your IP: {HttpUtility.HtmlEncode(aikidoContext.RemoteAddress)})",
                         completeRequest,
-                        effectiveConfig?.WindowSizeInMS.ToString());
+                        effectiveConfig != null ? GetRetryAfterHeaderValue(effectiveConfig) : null);
                     return;
                 }
             }
@@ -111,6 +111,11 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             // CompleteRequest short-circuits pipeline nicer than Response.End (no ThreadAbortException)
             // Stored as Action for easy unit testing
             completeRequest?.Invoke();
+        }
+
+        internal static string GetRetryAfterHeaderValue(RateLimitingConfig config)
+        {
+            return Math.Ceiling(config.WindowSizeInMS / 1000.0).ToString();
         }
     }
 }
