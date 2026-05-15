@@ -2,6 +2,7 @@ using Aikido.Zen.Core;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Sinks;
 using Aikido.Zen.Tests.Mocks;
+using System.Reflection;
 
 namespace Aikido.Zen.Test
 {
@@ -40,7 +41,7 @@ namespace Aikido.Zen.Test
             var result = new MockLLMResult { Model = "gpt-4" };
 
             // Act & Assert
-            Assert.DoesNotThrow(() => LLMSink.OnLLMCallCompleted(new OpenAIClientInstance(), result, method, null));
+            Assert.DoesNotThrow(() => OnLLMCallCompleted(new OpenAIClientInstance(), result, method, null));
         }
 
         [Test]
@@ -51,7 +52,7 @@ namespace Aikido.Zen.Test
             var context = new Context();
 
             // Act & Assert
-            Assert.DoesNotThrow(() => LLMSink.OnLLMCallCompleted(new OpenAIClientInstance(), null, method, context));
+            Assert.DoesNotThrow(() => OnLLMCallCompleted(new OpenAIClientInstance(), null, method, context));
         }
 
         [Test]
@@ -67,7 +68,7 @@ namespace Aikido.Zen.Test
             var context = new Context { Route = "/api/test" };
 
             // Act & Assert
-            Assert.DoesNotThrow(() => LLMSink.OnLLMCallCompleted(new OpenAIClientInstance(), result, method, context));
+            Assert.DoesNotThrow(() => OnLLMCallCompleted(new OpenAIClientInstance(), result, method, context));
         }
 
         [Test]
@@ -84,7 +85,7 @@ namespace Aikido.Zen.Test
             var context = new Context { Route = "/llm-usage/request/provider/openai/model/gpt-4o" };
 
             // Act & Assert
-            Assert.DoesNotThrow(() => LLMSink.OnLLMCallCompleted(client, result, method, context));
+            Assert.DoesNotThrow(() => OnLLMCallCompleted(client, result, method, context));
         }
 
         [Test]
@@ -101,7 +102,7 @@ namespace Aikido.Zen.Test
             var context = new Context { Route = "/llm-usage/request/provider/azure/model/gpt-3.5-turbo" };
 
             // Act & Assert
-            Assert.DoesNotThrow(() => LLMSink.OnLLMCallCompleted(client, result, method, context));
+            Assert.DoesNotThrow(() => OnLLMCallCompleted(client, result, method, context));
         }
 
         [Test]
@@ -118,7 +119,7 @@ namespace Aikido.Zen.Test
             var context = new Context { Route = "/llm-usage/request/provider/rystem/model/gpt-4-turbo" };
 
             // Act & Assert
-            Assert.DoesNotThrow(() => LLMSink.OnLLMCallCompleted(client, result, method, context));
+            Assert.DoesNotThrow(() => OnLLMCallCompleted(client, result, method, context));
         }
 
         [Test]
@@ -135,7 +136,7 @@ namespace Aikido.Zen.Test
             var context = new Context { Route = "/llm-usage/request/provider/anthropic/model/claude-3-5-haiku-latest" };
 
             // Act & Assert
-            Assert.DoesNotThrow(() => LLMSink.OnLLMCallCompleted(client, result, method, context));
+            Assert.DoesNotThrow(() => OnLLMCallCompleted(client, result, method, context));
         }
 
         [Test]
@@ -156,7 +157,7 @@ namespace Aikido.Zen.Test
             var context = new Context { Route = "/llm-usage/request/provider/openai/model/gpt-4o-mini" };
 
             // Act & Assert
-            Assert.DoesNotThrow(() => LLMSink.OnLLMCallCompleted(client, result, method, context));
+            Assert.DoesNotThrow(() => OnLLMCallCompleted(client, result, method, context));
         }
 
         [Test]
@@ -175,7 +176,7 @@ namespace Aikido.Zen.Test
             var context = new Context { Route = "/llm-usage/request/provider/azure/model/gpt-35-turbo" };
 
             // Act & Assert
-            Assert.DoesNotThrow(() => LLMSink.OnLLMCallCompleted(client, result, method, context));
+            Assert.DoesNotThrow(() => OnLLMCallCompleted(client, result, method, context));
         }
 
         [Test]
@@ -194,7 +195,7 @@ namespace Aikido.Zen.Test
             var context = new Context { Route = "/llm-usage/request/provider/rystem/model/gpt-4" };
 
             // Act & Assert
-            Assert.DoesNotThrow(() => LLMSink.OnLLMCallCompleted(client, result, method, context));
+            Assert.DoesNotThrow(() => OnLLMCallCompleted(client, result, method, context));
         }
 
         [Test]
@@ -211,7 +212,7 @@ namespace Aikido.Zen.Test
             };
 
             // Act
-            LLMSink.OnLLMCallCompleted(null, result, method, context);
+            OnLLMCallCompleted(null, result, method, context);
 
             // Assert
             var aiInfo = _agent.Context.AiStats.Providers.Values.Single();
@@ -235,7 +236,7 @@ namespace Aikido.Zen.Test
             var context = new Context { Route = "/llm/local" };
 
             // Act
-            LLMSink.OnLLMCallCompleted(new CustomLLMClientInstance(), result, method, context);
+            OnLLMCallCompleted(new CustomLLMClientInstance(), result, method, context);
 
             // Assert
             var aiInfo = _agent.Context.AiStats.Providers.Values.Single();
@@ -259,7 +260,7 @@ namespace Aikido.Zen.Test
             var context = new Context { Route = "/llm/openai" };
 
             // Act
-            LLMSink.OnLLMCallCompleted(new OpenAIClientInstance(), result, method, context);
+            OnLLMCallCompleted(new OpenAIClientInstance(), result, method, context);
 
             // Assert
             var aiInfo = _agent.Context.AiStats.Providers.Values.Single();
@@ -713,6 +714,15 @@ namespace Aikido.Zen.Test
             {
                 get => throw new InvalidOperationException("Property access failed");
             }
+        }
+
+        private static bool OnLLMCallCompleted(object instance, object result, MethodInfo method, Context context)
+        {
+            return SinkAnalyzer.Analyze(
+                method,
+                LLMSink.OperationKind,
+                context,
+                currentContext => LLMSink.OnLLMCallCompleted(instance, result, currentContext));
         }
 
         #endregion

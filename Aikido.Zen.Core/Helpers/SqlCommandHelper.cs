@@ -1,6 +1,6 @@
+using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Vulnerabilities;
-using System;
 using System.Collections.Generic;
 
 namespace Aikido.Zen.Core.Helpers
@@ -10,7 +10,7 @@ namespace Aikido.Zen.Core.Helpers
     /// </summary>
     public class SqlCommandHelper
     {
-        public static bool DetectSQLInjection(string commandText, SQLDialect dialect, Context context, string moduleName, string operation)
+        internal static InspectionResult DetectSQLInjection(string commandText, SQLDialect dialect, Context context)
         {
             // check for sql injection against the these inputs
             foreach (var userInput in context.ParsedUserInput)
@@ -33,21 +33,17 @@ namespace Aikido.Zen.Core.Helpers
                     metadata["failedToTokenize"] = "true";
                 }
 
-                Agent.Instance.SendAttackEvent(
-                    kind: AttackKind.SqlInjection,
-                    source: UserInputHelper.GetAttackSourceFromUserInputKey(userInput.Key),
-                    payload: userInput.Value,
-                    operation: operation,
-                    context: context,
-                    module: moduleName,
-                    metadata: metadata,
-                    blocked: !EnvironmentHelper.DryMode,
-                    paths: new[] { UserInputHelper.GetAttackPathFromUserInputKey(userInput.Key) }
+                return InspectionResult.Attack(
+                    AttackKind.SqlInjection,
+                    UserInputHelper.GetAttackSourceFromUserInputKey(userInput.Key),
+                    userInput.Value,
+                    metadata,
+                    new[] { UserInputHelper.GetAttackPathFromUserInputKey(userInput.Key) },
+                    !EnvironmentHelper.DryMode,
+                    AikidoException.SQLInjectionDetected(dialect.ToHumanName())
                 );
-                context.AttackDetected = true;
-                return true;
             }
-            return false;
+            return InspectionResult.Continue();
         }
     }
 }

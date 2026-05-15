@@ -236,11 +236,14 @@ namespace Aikido.Zen.Test
 
         private static bool OnCommandExecuting(MethodInfo methodInfo, string? sql, Context? context)
         {
-            return SqlClientSink.OnCommandExecuting(
-                sql,
-                SQLDialect.Generic,
+            return SinkAnalyzer.Analyze(
                 methodInfo,
-                context);
+                SqlClientSink.OperationKind,
+                context,
+                currentContext => SqlClientSink.OnCommandExecuting(
+                    sql,
+                    SQLDialect.Generic,
+                    currentContext));
         }
     }
 }

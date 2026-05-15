@@ -1,9 +1,9 @@
-using System.Diagnostics;
+using System.IO;
 using System.Reflection;
 using System.Threading;
 
-using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.Core.Helpers;
+using Aikido.Zen.Core.Models;
 
 namespace Aikido.Zen.Core.Sinks
 {
@@ -12,93 +12,93 @@ namespace Aikido.Zen.Core.Sinks
     /// </summary>
     internal static class IOSink
     {
-        private const string OperationKind = "fs_op";
+        internal const string OperationKind = "fs_op";
         private static readonly ThreadLocal<bool> IsProcessing = new ThreadLocal<bool>(() => false);
 
-        /// <summary>
-        /// A generic handler for file operations that checks for path traversal attacks.
-        /// </summary>
-        /// <param name="paths">The file or directory paths involved in the operation.</param>
-        /// <param name="originalMethod">The original method being patched.</param>
-        /// <param name="context">The context for the current operation.</param>
-        /// <returns>Always returns true. Throws an exception if a blocked attack is detected.</returns>
-        internal static bool OnFileOperation(string[] paths, MethodBase originalMethod, Context context)
+        [SinkPrefix(typeof(File), "Open", "System.String", "System.IO.FileMode")]
+        [SinkPrefix(typeof(File), "OpenRead", "System.String")]
+        [SinkPrefix(typeof(File), "OpenWrite", "System.String")]
+        [SinkPrefix(typeof(File), "Create", "System.String", "System.Int32", "System.IO.FileOptions")]
+        [SinkPrefix(typeof(File), "Delete", "System.String")]
+        [SinkPrefix(typeof(File), "ReadAllText", "System.String")]
+        [SinkPrefix(typeof(File), "ReadAllBytes", "System.String")]
+        [SinkPrefix(typeof(File), "WriteAllText", "System.String", "System.String")]
+        [SinkPrefix(typeof(File), "WriteAllBytes", "System.String", "System.Byte[]")]
+        [SinkPrefix(typeof(File), "AppendAllText", "System.String", "System.String")]
+        [SinkPrefix(typeof(Path), "GetFullPath", "System.String")]
+        [SinkPrefix(typeof(Directory), "CreateDirectory", "System.String")]
+        [SinkPrefix(typeof(Directory), "CreateDirectory", "System.String", "System.Security.AccessControl.DirectorySecurity")]
+        [SinkPrefix(typeof(Directory), "Delete", "System.String", "System.Boolean")]
+        [SinkPrefix(typeof(Directory), "GetFiles", "System.String")]
+        [SinkPrefix(typeof(Directory), "GetFiles", "System.String", "System.String")]
+        [SinkPrefix(typeof(Directory), "GetFiles", "System.String", "System.String", "System.IO.SearchOption")]
+        [SinkPrefix(typeof(Directory), "GetDirectories", "System.String")]
+        [SinkPrefix(typeof(Directory), "GetDirectories", "System.String", "System.String")]
+        [SinkPrefix(typeof(Directory), "GetDirectories", "System.String", "System.String", "System.IO.SearchOption")]
+        internal static bool OnFileOperationOnePath(string path, MethodBase __originalMethod)
+        {
+            return SinkAnalyzer.Analyze(
+                __originalMethod,
+                OperationKind,
+                context => InspectPaths(context, path));
+        }
+
+        [SinkPrefix(typeof(File), "Copy", "System.String", "System.String", "System.Boolean")]
+        [SinkPrefix(typeof(File), "Move", "System.String", "System.String")]
+        [SinkPrefix(typeof(File), "Move", "System.String", "System.String", "System.Boolean")]
+        internal static bool OnFileOperationTwoPaths(string sourceFileName, string destFileName, MethodBase __originalMethod)
+        {
+            return SinkAnalyzer.Analyze(
+                __originalMethod,
+                OperationKind,
+                context => InspectPaths(context, sourceFileName, destFileName));
+        }
+
+        [SinkPrefix(typeof(Path), "GetFullPath", "System.String", "System.String")]
+        internal static bool OnFileOperationPathWithBasePath(string path, string basePath, MethodBase __originalMethod)
+        {
+            return SinkAnalyzer.Analyze(
+                __originalMethod,
+                OperationKind,
+                context => InspectPaths(context, path, basePath));
+        }
+
+        private static InspectionResult InspectPaths(Context context, params string[] paths)
         {
             if (IsProcessing.Value)
             {
-                return true;
+                return InspectionResult.Skip();
             }
 
             try
             {
                 IsProcessing.Value = true;
-                // Exclude certain assemblies to avoid stack overflow issues
-                if (ReflectionHelper.ShouldSkipAssembly())
-                {
-                    return true;
-                }
 
-                if (Context.IsBypassed(context))
+                foreach (var path in paths)
                 {
-                    return true;
-                }
-
-                var operation = ReflectionHelper.GetMethodOperation(originalMethod);
-                var module = ReflectionHelper.GetMethodModule(originalMethod);
-                var stopwatch = Stopwatch.StartNew();
-                var withoutContext = context == null;
-                var attackDetected = false;
-                var blocked = false;
-
-                try
-                {
-                    if (paths != null && !Agent.Instance.Context.IsProtectionDisabledForEndpoint(context))
+                    if (string.IsNullOrEmpty(path))
                     {
-                        foreach (var path in paths)
-                        {
-                            if (!string.IsNullOrEmpty(path))
-                            {
-                                attackDetected |= PathTraversalHelper.DetectPathTraversal(path, context, module, operation);
-
-                                if (attackDetected)
-                                {
-                                    break;
-                                }
-                            }
-                        }
+                        continue;
                     }
 
-                    blocked = attackDetected && !EnvironmentHelper.DryMode;
-                }
-                catch
-                {
-                    LogHelper.ErrorLog(Agent.Logger, "Error during Path Traversal detection.");
-                }
-                finally
-                {
-                    stopwatch.Stop();
-                    try
+                    var result = PathTraversalHelper.DetectPathTraversal(path, context);
+                    if (result.AttackDetected)
                     {
-                        Agent.Instance?.Context?.OnInspectedCall(operation, OperationKind, stopwatch.Elapsed.TotalMilliseconds, attackDetected, blocked, withoutContext);
-                    }
-                    catch
-                    {
-                        LogHelper.ErrorLog(Agent.Logger, "Error recording OnInspectedCall stats.");
+                        return result;
                     }
                 }
-
-                if (blocked)
-                {
-                    throw AikidoException.PathTraversalDetected(operation);
-                }
-
-                return true;
+            }
+            catch
+            {
+                LogHelper.ErrorLog(Agent.Logger, "Error during Path Traversal detection.");
+                return InspectionResult.Continue();
             }
             finally
             {
                 IsProcessing.Value = false;
             }
-        }
 
+            return InspectionResult.Continue();
+        }
     }
 }

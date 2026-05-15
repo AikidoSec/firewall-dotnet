@@ -172,10 +172,11 @@ namespace Aikido.Zen.Test
 
         private bool OnProcessStart(Process process, Context context)
         {
-            return ProcessExecutionSink.OnProcessStart(
-                process,
+            return SinkAnalyzer.Analyze(
                 _methodInfo,
-                context);
+                ProcessExecutionSink.OperationKind,
+                context,
+                currentContext => ProcessExecutionSink.OnProcessStart(process, currentContext));
         }
     }
 }

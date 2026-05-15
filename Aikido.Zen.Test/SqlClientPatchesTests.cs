@@ -12,7 +12,7 @@ using Moq;
 namespace Aikido.Zen.Test
 {
     [TestFixture]
-    public class SqlClientPatchesTests
+    public class SqlClientSinkPatchMethodsTests
     {
         private Context _context = null!;
         private Agent _agent = null!;
@@ -56,14 +56,14 @@ namespace Aikido.Zen.Test
             dbCommand.SetupGet(command => command.CommandText).Returns("SELECT 1");
             var dbMethod = GetMethod(typeof(DbCommand), nameof(DbCommand.ExecuteScalar));
 
-            Assert.That(SqlClientPatches.OnCommandExecutingDbCommand(dbCommand.Object, dbMethod), Is.True);
-            Assert.That(SqlClientPatches.OnCommandExecutingNPocoCommand(dbCommand.Object, dbMethod), Is.True);
-            Assert.That(SqlClientPatches.OnCommandExecutingDbCommand(null!, dbMethod), Is.True);
-            Assert.That(SqlClientPatches.OnCommandExecutingNPocoCommand(null!, dbMethod), Is.True);
-            Assert.That(SqlClientPatches.OnCommandExecutingSqlRaw(
+            Assert.That(SqlClientSink.OnCommandExecutingDbCommand(dbCommand.Object, dbMethod), Is.True);
+            Assert.That(SqlClientSink.OnCommandExecutingNPocoCommand(dbCommand.Object, dbMethod), Is.True);
+            Assert.That(SqlClientSink.OnCommandExecutingDbCommand(null!, dbMethod), Is.True);
+            Assert.That(SqlClientSink.OnCommandExecutingNPocoCommand(null!, dbMethod), Is.True);
+            Assert.That(SqlClientSink.OnCommandExecutingSqlRaw(
                 "SELECT 1",
                 GetMethod(typeof(TestSqlMethods), nameof(TestSqlMethods.ExecuteSqlRaw), typeof(object), typeof(string), typeof(IEnumerable<object>))), Is.True);
-            Assert.That(SqlClientPatches.OnCommandExecutingMySqlXSqlStatement(
+            Assert.That(SqlClientSink.OnCommandExecutingMySqlXSqlStatement(
                 new TestSqlStatement { SQL = "SELECT 1" },
                 GetMethod(typeof(TestSqlStatement), nameof(TestSqlStatement.Execute))), Is.True);
         }
@@ -84,7 +84,7 @@ namespace Aikido.Zen.Test
                 ? null
                 : CreateInstanceFromAssembly(assembly);
 
-            var result = SqlClientPatches.GetDialect(instance!, null!);
+            var result = SqlClientSink.GetDialect(instance!, null!);
 
             Assert.That(result, Is.EqualTo(expectedDialect));
         }
@@ -95,7 +95,7 @@ namespace Aikido.Zen.Test
             var instance = CreateInstanceFromAssembly("Npgsql");
             var baseMethod = GetMethod(typeof(DbCommand), nameof(DbCommand.ExecuteNonQueryAsync));
 
-            var result = SqlClientPatches.GetDialect(instance, baseMethod);
+            var result = SqlClientSink.GetDialect(instance, baseMethod);
 
             Assert.That(result, Is.EqualTo(SQLDialect.PostgreSQL));
         }
@@ -104,8 +104,8 @@ namespace Aikido.Zen.Test
         public void MySqlXPatchTargets_RawSqlExecuteOnly()
         {
             var sqlStatementMethod = GetMethod(
-                typeof(SqlClientPatches),
-                nameof(SqlClientPatches.OnCommandExecutingMySqlXSqlStatement),
+                typeof(SqlClientSink),
+                nameof(SqlClientSink.OnCommandExecutingMySqlXSqlStatement),
                 typeof(object),
                 typeof(MethodBase));
 
@@ -131,7 +131,7 @@ namespace Aikido.Zen.Test
             };
 
             var ex = Assert.Throws<AikidoException>(() =>
-                SqlClientPatches.OnCommandExecutingMySqlXSqlStatement(
+                SqlClientSink.OnCommandExecutingMySqlXSqlStatement(
                     statement,
                     GetMethod(typeof(TestSqlStatement), nameof(TestSqlStatement.Execute))));
 

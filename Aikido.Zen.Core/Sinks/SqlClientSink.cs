@@ -1,7 +1,5 @@
-using System.Diagnostics;
+using System.Data.Common;
 using System.Reflection;
-
-using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 
@@ -12,77 +10,139 @@ namespace Aikido.Zen.Core.Sinks
     /// </summary>
     internal static class SqlClientSink
     {
-        private const string operationKind = "sql_op";
+        internal const string OperationKind = "sql_op";
+
+        [SinkPrefix(typeof(DbCommand), "ExecuteNonQueryAsync")]
+        [SinkPrefix(typeof(DbCommand), "ExecuteReaderAsync", "System.Data.CommandBehavior")]
+        [SinkPrefix(typeof(DbCommand), "ExecuteScalarAsync")]
+        [SinkPrefix("Microsoft.Data.SqlClient", "Microsoft.Data.SqlClient.SqlCommand", "ExecuteNonQuery")]
+        [SinkPrefix("Microsoft.Data.SqlClient", "Microsoft.Data.SqlClient.SqlCommand", "ExecuteScalar")]
+        [SinkPrefix("Microsoft.Data.SqlClient", "Microsoft.Data.SqlClient.SqlCommand", "ExecuteReader", "System.Data.CommandBehavior")]
+        [SinkPrefix("System.Data.SqlClient", "System.Data.SqlClient.SqlCommand", "ExecuteNonQuery")]
+        [SinkPrefix("System.Data.SqlClient", "System.Data.SqlClient.SqlCommand", "ExecuteScalar")]
+        [SinkPrefix("System.Data.SqlClient", "System.Data.SqlClient.SqlCommand", "ExecuteReader", "System.Data.CommandBehavior")]
+        [SinkPrefix("System.Data.SqlServerCe", "System.Data.SqlServerCe.SqlCeCommand", "ExecuteNonQuery")]
+        [SinkPrefix("System.Data.SqlServerCe", "System.Data.SqlServerCe.SqlCeCommand", "ExecuteScalar")]
+        [SinkPrefix("System.Data.SqlServerCe", "System.Data.SqlServerCe.SqlCeCommand", "ExecuteReader", "System.Data.CommandBehavior")]
+        [SinkPrefix("Microsoft.Data.Sqlite", "Microsoft.Data.Sqlite.SqliteCommand", "ExecuteNonQuery")]
+        [SinkPrefix("Microsoft.Data.Sqlite", "Microsoft.Data.Sqlite.SqliteCommand", "ExecuteScalar")]
+        [SinkPrefix("Microsoft.Data.Sqlite", "Microsoft.Data.Sqlite.SqliteCommand", "ExecuteReader", "System.Data.CommandBehavior")]
+        [SinkPrefix("MySql.Data", "MySql.Data.MySqlClient.MySqlCommand", "ExecuteNonQuery")]
+        [SinkPrefix("MySql.Data", "MySql.Data.MySqlClient.MySqlCommand", "ExecuteScalar")]
+        [SinkPrefix("MySql.Data", "MySql.Data.MySqlClient.MySqlCommand", "ExecuteReader", "System.Data.CommandBehavior")]
+        [SinkPrefix("MySqlConnector", "MySqlConnector.MySqlCommand", "ExecuteNonQuery")]
+        [SinkPrefix("MySqlConnector", "MySqlConnector.MySqlCommand", "ExecuteScalar")]
+        [SinkPrefix("MySqlConnector", "MySqlConnector.MySqlCommand", "ExecuteReader", "System.Data.CommandBehavior")]
+        [SinkPrefix("Npgsql", "Npgsql.NpgsqlCommand", "ExecuteNonQuery")]
+        [SinkPrefix("Npgsql", "Npgsql.NpgsqlCommand", "ExecuteScalar")]
+        [SinkPrefix("Npgsql", "Npgsql.NpgsqlCommand", "ExecuteReader", "System.Data.CommandBehavior")]
+        [SinkPrefix("Npgsql", "Npgsql.NpgsqlCommand", "ExecuteNonQueryAsync", "System.Threading.CancellationToken")]
+        [SinkPrefix("Npgsql", "Npgsql.NpgsqlCommand", "ExecuteReaderAsync", "System.Threading.CancellationToken")]
+        [SinkPrefix("Npgsql", "Npgsql.NpgsqlCommand", "ExecuteReaderAsync", "System.Data.CommandBehavior", "System.Threading.CancellationToken")]
+        [SinkPrefix("Npgsql", "Npgsql.NpgsqlCommand", "ExecuteScalarAsync", "System.Threading.CancellationToken")]
+        internal static bool OnCommandExecutingDbCommand(DbCommand __instance, MethodBase __originalMethod)
+        {
+            return SinkAnalyzer.Analyze(
+                __originalMethod,
+                OperationKind,
+                context => OnCommandExecuting(
+                    __instance?.CommandText,
+                    GetDialect(__instance, __originalMethod),
+                    context));
+        }
+
+        [SinkPrefix("NPoco", "NPoco.Database", "ExecuteReaderHelper", "System.Data.Common.DbCommand")]
+        [SinkPrefix("NPoco", "NPoco.Database", "ExecuteNonQueryHelper", "System.Data.Common.DbCommand")]
+        [SinkPrefix("NPoco", "NPoco.Database", "ExecuteScalarHelper", "System.Data.Common.DbCommand")]
+        internal static bool OnCommandExecutingNPocoCommand(DbCommand cmd, MethodBase __originalMethod)
+        {
+            return SinkAnalyzer.Analyze(
+                __originalMethod,
+                OperationKind,
+                context => OnCommandExecuting(
+                    cmd?.CommandText,
+                    GetDialect(cmd, __originalMethod),
+                    context));
+        }
+
+        [SinkPrefix("Microsoft.EntityFrameworkCore.Relational", "Microsoft.EntityFrameworkCore.RelationalDatabaseFacadeExtensions", "ExecuteSqlRaw", "Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacade", "System.String", "System.Collections.Generic.IEnumerable`1[System.Object]")]
+        [SinkPrefix("Microsoft.EntityFrameworkCore.Relational", "Microsoft.EntityFrameworkCore.RelationalDatabaseFacadeExtensions", "ExecuteSqlRawAsync", "Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacade", "System.String", "System.Collections.Generic.IEnumerable`1[System.Object]", "System.Threading.CancellationToken")]
+        internal static bool OnCommandExecutingSqlRaw(string sql, MethodBase __originalMethod)
+        {
+            return SinkAnalyzer.Analyze(
+                __originalMethod,
+                OperationKind,
+                context => OnCommandExecuting(
+                    sql,
+                    GetDialect(null, __originalMethod),
+                    context));
+        }
+
+        [SinkPrefix("MySql.Data", "MySqlX.XDevAPI.Relational.SqlStatement", "Execute")]
+        internal static bool OnCommandExecutingMySqlXSqlStatement(object __instance, MethodBase __originalMethod)
+        {
+            return SinkAnalyzer.Analyze(
+                __originalMethod,
+                OperationKind,
+                context => OnCommandExecuting(
+                    ReflectionHelper.GetStringMember(__instance, "SQL"),
+                    GetDialect(__instance, __originalMethod),
+                    context));
+        }
 
         /// <summary>
         /// Patches the OnCommandExecuting method to detect and prevent SQL injection attacks
         /// </summary>
         /// <param name="sql">The SQL command to execute.</param>
         /// <param name="dialect">The SQL dialect to use for detection.</param>
-        /// <param name="originalMethod">The original SQL method being inspected.</param>
         /// <param name="context">The current Aikido context.</param>
-        internal static bool OnCommandExecuting(string sql, SQLDialect dialect, MethodBase originalMethod, Context context)
+        internal static InspectionResult OnCommandExecuting(string sql, SQLDialect dialect, Context context)
         {
-            // Exclude certain assemblies to avoid stack overflow issues
-            if (ReflectionHelper.ShouldSkipAssembly())
-            {
-                return true;
-            }
-
-            if (Context.IsBypassed(context))
-            {
-                return true;
-            }
-
-
-            var operation = ReflectionHelper.GetMethodOperation(originalMethod);
-            var module = ReflectionHelper.GetMethodModule(originalMethod);
-
-            // Determine sink and context status regardless of detection outcome
-            var stopwatch = Stopwatch.StartNew();
-            bool withoutContext = context == null;
-            bool attackDetected = false;
-            bool blocked = false;
+            var result = InspectionResult.Continue();
 
             try
             {
                 // Perform detection only if context and sql are available
-                if (context != null && sql != null &&
-                    !Agent.Instance.Context.IsProtectionDisabledForEndpoint(context))
+                if (context != null && sql != null)
                 {
-                    attackDetected = SqlCommandHelper.DetectSQLInjection(sql, dialect, context, module, operation);
-                    blocked = attackDetected && !EnvironmentHelper.DryMode;
+                    result = SqlCommandHelper.DetectSQLInjection(sql, dialect, context);
                 }
             }
             catch
             {
                 // Use Agent.Logger (assuming static logger)
-                try { LogHelper.ErrorLog(Agent.Logger, "Error during SQL injection detection."); } catch {/*ignore*/}
-                // Reset flags as detection failed
-                attackDetected = false;
-                blocked = false;
+                LogHelper.ErrorLog(Agent.Logger, "Error during SQL injection detection.");
                 // Allow original method execution despite detection error
+                return InspectionResult.Continue();
             }
 
-            // Record the call attempt statistics
-            try
-            {
-                Agent.Instance.Context.OnInspectedCall(operation, operationKind, stopwatch.Elapsed.TotalMilliseconds, attackDetected, blocked, withoutContext);
-            }
-            catch
-            {
-                LogHelper.ErrorLog(Agent.Logger, "Error recording OnInspectedCall stats.");
-            }
+            return result;
+        }
 
-            // Handle blocking if an attack was detected and not in dry mode
-            if (blocked)
-            {
-                // Throwing the exception prevents the original method from running
-                throw AikidoException.SQLInjectionDetected(dialect.ToHumanName());
-            }
+        internal static SQLDialect GetDialect(object instance, MethodBase originalMethod)
+        {
+            // Prefer the runtime command/provider assembly for base DbCommand patches.
+            // Static raw-SQL patches and null instances do not have a useful provider instance,
+            // so fall back to the patched method's declaring assembly before defaulting to Generic.
+            var assembly = instance?.GetType().Assembly.GetName().Name
+                ?? ReflectionHelper.GetMethodModule(originalMethod)
+                ?? string.Empty;
 
-            // Allow the original method to execute
-            return true;
+            switch (assembly)
+            {
+                case "System.Data.SqlClient":
+                case "Microsoft.Data.SqlClient":
+                case "System.Data.SqlServerCe":
+                    return SQLDialect.MicrosoftSQL;
+                case "MySql.Data":
+                case "MySqlConnector":
+                case "MySqlX":
+                    return SQLDialect.MySQL;
+                case "Npgsql":
+                    return SQLDialect.PostgreSQL;
+                default:
+                    return SQLDialect.Generic;
+            }
         }
     }
 }

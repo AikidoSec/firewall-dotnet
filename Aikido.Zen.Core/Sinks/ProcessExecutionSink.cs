@@ -13,43 +13,33 @@ namespace Aikido.Zen.Core.Sinks
     /// </summary>
     internal static class ProcessExecutionSink
     {
-        private const string kind = "exec_op";
+        internal const string OperationKind = "exec_op";
+
+        [SinkPrefix(typeof(Process), "Start")]
+        internal static bool OnProcessStartInstance(Process __instance, MethodBase __originalMethod)
+        {
+            return SinkAnalyzer.Analyze(
+                __originalMethod,
+                OperationKind,
+                context => OnProcessStart(__instance, context));
+        }
 
         /// <summary>
         /// Inspects the process start arguments for potential shell injection vulnerabilities.
         /// </summary>
         /// <param name="process">The process being executed.</param>
-        /// <param name="originalMethod">The original process method being inspected.</param>
         /// <param name="context">The context of the process execution.</param>
-        /// <returns>True if the original method should continue execution; otherwise, false.</returns>
-        internal static bool OnProcessStart(Process process, MethodBase originalMethod, Context context)
+        /// <returns>The inspection result. Contains a blocking exception if a blocked attack is detected.</returns>
+        internal static InspectionResult OnProcessStart(Process process, Context context)
         {
-
-            // Exclude certain assemblies to avoid stack overflow issues
-            if (ReflectionHelper.ShouldSkipAssembly())
-            {
-                return true;
-            }
-
-            if (Context.IsBypassed(context))
-            {
-                return true;
-            }
-
-            var operation = ReflectionHelper.GetMethodOperation(originalMethod);
-            var module = ReflectionHelper.GetMethodModule(originalMethod);
-            var stopwatch = Stopwatch.StartNew();
-            bool withoutContext = context == null;
-            bool attackDetected = false;
-            bool blocked = false;
+            var result = InspectionResult.Continue();
             string command; // Store command for logging/stats if needed
 
             try
             {
                 var processStartInfo = process?.StartInfo;
                 // Only inspect if context and process info are available
-                if (processStartInfo != null && context != null &&
-                    !Agent.Instance.Context.IsProtectionDisabledForEndpoint(context))
+                if (processStartInfo != null && context != null)
                 {
                     command = processStartInfo.FileName + " " + processStartInfo.Arguments;
 
@@ -58,25 +48,21 @@ namespace Aikido.Zen.Core.Sinks
                     {
                         if (ShellInjectionDetector.IsShellInjection(command, userInput.Value))
                         {
-                            attackDetected = true;
-                            blocked = !EnvironmentHelper.DryMode;
-
                             // Log or throw an exception to report the issue
                             var metadata = new Dictionary<string, object> {
                                 { "command", command }
                             };
-                            Agent.Instance.SendAttackEvent(
-                                kind: AttackKind.ShellInjection,
-                                source: UserInputHelper.GetAttackSourceFromUserInputKey(userInput.Key),
-                                payload: userInput.Value,
-                                operation: operation,
-                                context: context,
-                                module: module,
-                                metadata: metadata,
-                                blocked: blocked,
-                                paths: new[] { UserInputHelper.GetAttackPathFromUserInputKey(userInput.Key) }
+
+                            result = InspectionResult.Attack(
+                                AttackKind.ShellInjection,
+                                UserInputHelper.GetAttackSourceFromUserInputKey(userInput.Key),
+                                userInput.Value,
+                                metadata,
+                                new[] { UserInputHelper.GetAttackPathFromUserInputKey(userInput.Key) },
+                                !EnvironmentHelper.DryMode,
+                                AikidoException.ShellInjectionDetected()
                             );
-                            context.AttackDetected = true; // Mark context
+
                             // Break after first detection for this process start
                             break;
                         }
@@ -87,28 +73,10 @@ namespace Aikido.Zen.Core.Sinks
             {
                 // Error during detection logic
                 LogHelper.ErrorLog(Agent.Logger, "Error during Shell injection detection.");
-                attackDetected = false; // Reset flags as detection failed
-                blocked = false;
+                return InspectionResult.Continue();
             }
 
-            stopwatch.Stop();
-            // Record the call attempt statistics
-            try
-            {
-                Agent.Instance?.Context?.OnInspectedCall(operation, kind, stopwatch.Elapsed.TotalMilliseconds, attackDetected, blocked, withoutContext);
-            }
-            catch
-            {
-                LogHelper.ErrorLog(Agent.Logger, "Error recording Process.Start OnInspectedCall stats.");
-            }
-
-            // Handle blocking
-            if (blocked)
-            {
-                throw AikidoException.ShellInjectionDetected();
-            }
-
-            return true; // Allow original method execution
+            return result;
         }
 
     }

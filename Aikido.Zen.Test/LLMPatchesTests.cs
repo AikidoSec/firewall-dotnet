@@ -5,7 +5,7 @@ using Aikido.Zen.Core.Sinks;
 namespace Aikido.Zen.Test
 {
     [TestFixture]
-    public class LLMPatchesTests
+    public class LLMSinkPatchMethodsTests
     {
         private Context _context = null!;
 
@@ -26,7 +26,7 @@ namespace Aikido.Zen.Test
         [Test]
         public void PatchMethod_ForwardsCompletedCallToSink()
         {
-            Assert.DoesNotThrow(() => LLMPatches.OnLLMCallCompletedGeneric(
+            Assert.DoesNotThrow(() => LLMSink.OnLLMCallCompletedGeneric(
                 null!,
                 null!,
                 GetMethod(typeof(object), nameof(ToString))));

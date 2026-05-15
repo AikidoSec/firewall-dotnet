@@ -1,5 +1,5 @@
-
 using System.Collections.Generic;
+using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Vulnerabilities;
 
@@ -10,11 +10,11 @@ namespace Aikido.Zen.Core.Helpers
     /// </summary>
     public class PathTraversalHelper
     {
-        public static bool DetectPathTraversal(string path, Context context, string moduleName, string operation)
+        internal static InspectionResult DetectPathTraversal(string path, Context context)
         {
             if (context == null || context.ParsedUserInput == null)
             {
-                return false;
+                return InspectionResult.Continue();
             }
 
             // Check for path traversal against the user inputs
@@ -26,26 +26,19 @@ namespace Aikido.Zen.Core.Helpers
                         { "filename", path }
                     };
 
-                    // Send an attack event
-                    Agent.Instance.SendAttackEvent(
-                        kind: AttackKind.PathTraversal,
-                        source: UserInputHelper.GetAttackSourceFromUserInputKey(userInput.Key), // "query.url" -> "query"
-                        payload: userInput.Value,
-                        operation: operation,
-                        context: context,
-                        module: moduleName,
-                        metadata: metadata,
-                        blocked: !EnvironmentHelper.DryMode,
+                    return InspectionResult.Attack(
+                        AttackKind.PathTraversal,
+                        UserInputHelper.GetAttackSourceFromUserInputKey(userInput.Key), // "query.url" -> "query"
+                        userInput.Value,
+                        metadata,
                         // The `path` argument (filename) is not related to paths here (user input fields eg. query)
-                        paths: new[] { UserInputHelper.GetAttackPathFromUserInputKey(userInput.Key) } // "query.url" -> ".url"
+                        new[] { UserInputHelper.GetAttackPathFromUserInputKey(userInput.Key) }, // "query.url" -> ".url"
+                        !EnvironmentHelper.DryMode,
+                        AikidoException.PathTraversalDetected
                     );
-
-                    // Set attack detected to true
-                    context.AttackDetected = true;
-                    return true;
                 }
             }
-            return false;
+            return InspectionResult.Continue();
         }
     }
 }

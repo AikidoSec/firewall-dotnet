@@ -9,7 +9,7 @@ using Moq;
 namespace Aikido.Zen.Test
 {
     [TestFixture]
-    public class IOPatchesTests
+    public class IOSinkPatchMethodsTests
     {
         private Context _context = null!;
         private Agent _agent = null!;
@@ -49,14 +49,14 @@ namespace Aikido.Zen.Test
         [Test]
         public void PatchMethods_ForwardPathArgumentsToSink()
         {
-            Assert.That(IOPatches.OnFileOperationOnePath(
+            Assert.That(IOSink.OnFileOperationOnePath(
                 "safe.txt",
                 GetMethod(typeof(File), nameof(File.ReadAllText), typeof(string))), Is.True);
-            Assert.That(IOPatches.OnFileOperationTwoPaths(
+            Assert.That(IOSink.OnFileOperationTwoPaths(
                 "source.txt",
                 "destination.txt",
                 GetMethod(typeof(File), nameof(File.Copy), typeof(string), typeof(string), typeof(bool))), Is.True);
-            Assert.That(IOPatches.OnFileOperationPathWithBasePath(
+            Assert.That(IOSink.OnFileOperationPathWithBasePath(
                 "child.txt",
                 Path.GetTempPath(),
                 GetMethod(typeof(Path), nameof(Path.GetFullPath), typeof(string), typeof(string))), Is.True);

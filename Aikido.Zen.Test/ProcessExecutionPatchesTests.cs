@@ -9,7 +9,7 @@ using Moq;
 namespace Aikido.Zen.Test
 {
     [TestFixture]
-    public class ProcessExecutionPatchesTests
+    public class ProcessExecutionSinkPatchMethodsTests
     {
         private Context _context = null!;
         private Agent _agent = null!;
@@ -51,12 +51,12 @@ namespace Aikido.Zen.Test
         {
             using (var process = new Process { StartInfo = new ProcessStartInfo("echo", "safe") })
             {
-                Assert.That(ProcessExecutionPatches.OnProcessStartInstance(
+                Assert.That(ProcessExecutionSink.OnProcessStartInstance(
                     process,
                     GetMethod(typeof(Process), nameof(Process.Start))), Is.True);
             }
 
-            Assert.That(ProcessExecutionPatches.OnProcessStartInstance(
+            Assert.That(ProcessExecutionSink.OnProcessStartInstance(
                 null!,
                 GetMethod(typeof(Process), nameof(Process.Start))), Is.True);
         }

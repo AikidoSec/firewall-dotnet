@@ -1,5 +1,6 @@
 using System;
-using System.Diagnostics;
+using System.Net;
+using System.Net.Http;
 using System.Reflection;
 using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.Core.Helpers;
@@ -9,88 +10,67 @@ namespace Aikido.Zen.Core.Sinks
 {
     internal static class OutboundRequestSink
     {
-        private const string OperationKind = "outgoing_http_op";
-        private static readonly Uri ParsedAikidoUrl = new Uri(EnvironmentHelper.AikidoUrl);
-        private static readonly Uri ParsedAikidoRealtimeUrl = new Uri(EnvironmentHelper.AikidoRealtimeUrl);
+        internal const string OperationKind = "outgoing_http_op";
 
-        internal static bool OnRequest(Uri targetUri, MethodBase originalMethod, Context context)
+        [SinkPrefix(typeof(HttpClient), "SendAsync", "System.Net.Http.HttpRequestMessage", "System.Net.Http.HttpCompletionOption", "System.Threading.CancellationToken")]
+        [SinkPrefix(typeof(HttpClient), "SendAsync", "System.Net.Http.HttpRequestMessage", "System.Threading.CancellationToken")]
+        [SinkPrefix(typeof(HttpClient), "Send", "System.Net.Http.HttpRequestMessage", "System.Threading.CancellationToken")]
+        internal static bool OnRequestHttpClient(HttpRequestMessage request, HttpClient __instance, MethodBase __originalMethod)
+        {
+            return SinkAnalyzer.Analyze(
+                __originalMethod,
+                OperationKind,
+                context => OnRequest(ResolveUri(request, __instance), context));
+        }
+
+        [SinkPrefix(typeof(WebRequest), "GetResponse")]
+        [SinkPrefix(typeof(HttpWebRequest), "GetResponse")]
+        [SinkPrefix(typeof(WebRequest), "GetResponseAsync")]
+        internal static bool OnRequestWebRequest(WebRequest __instance, MethodBase __originalMethod)
+        {
+            return SinkAnalyzer.Analyze(
+                __originalMethod,
+                OperationKind,
+                context => OnRequest(__instance?.RequestUri, context));
+        }
+
+        internal static InspectionResult OnRequest(Uri targetUri, Context context)
         {
             if (targetUri == null)
             {
-                return true;
+                return InspectionResult.Skip();
             }
 
-            var operation = ReflectionHelper.GetMethodOperation(originalMethod);
-            var withoutContext = context == null;
-            var blocked = false;
-            var stopwatch = Stopwatch.StartNew();
+            var hostname = targetUri.Host;
+            var port = UriHelper.GetPort(targetUri);
+            Agent.Instance.CaptureOutboundRequest(hostname, port);
 
-            try
+            if (EnvironmentHelper.DryMode)
             {
-                var hostname = targetUri.Host;
-                var port = UriHelper.GetPort(targetUri);
-                Agent.Instance.CaptureOutboundRequest(hostname, port);
-
-                if (Context.IsBypassed(context))
-                {
-                    return true;
-                }
-
-                if (EnvironmentHelper.DryMode || IsAikidoInternalTarget(targetUri))
-                {
-                    return true;
-                }
-
-                if (Agent.Instance.Context.Config.ShouldBlockOutgoingRequest(hostname))
-                {
-                    blocked = true;
-                    throw AikidoException.OutboundConnectionBlocked(hostname);
-                }
-
-                if (Agent.Instance.Context.IsProtectionDisabledForEndpoint(context))
-                {
-                    return true;
-                }
-
-                return true;
+                return InspectionResult.Continue();
             }
-            finally
+
+            if (Agent.Instance.Context.Config.ShouldBlockOutgoingRequest(hostname))
             {
-                stopwatch.Stop();
-                Agent.Instance?.Context?.OnInspectedCall(
-                    operation,
-                    OperationKind,
-                    stopwatch.Elapsed.TotalMilliseconds,
-                    false,
-                    blocked,
-                    withoutContext);
+                return InspectionResult.Block(AikidoException.OutboundConnectionBlocked(hostname));
             }
+
+            return InspectionResult.Continue();
         }
 
-        private static bool IsAikidoInternalTarget(Uri targetUri)
+        private static Uri ResolveUri(HttpRequestMessage request, HttpClient client)
         {
-            if (targetUri == null)
+            if (client?.BaseAddress == null)
             {
-                return false;
+                return request?.RequestUri;
             }
 
-            var targetPort = UriHelper.GetPort(targetUri);
-            var targetHost = targetUri.Host;
-
-            if (string.Equals(targetHost, ParsedAikidoUrl.Host, StringComparison.OrdinalIgnoreCase) &&
-                targetPort == UriHelper.GetPort(ParsedAikidoUrl))
+            if (request?.RequestUri == null)
             {
-                return true;
+                return client.BaseAddress;
             }
 
-            if (string.Equals(targetHost, ParsedAikidoRealtimeUrl.Host, StringComparison.OrdinalIgnoreCase) &&
-                targetPort == UriHelper.GetPort(ParsedAikidoRealtimeUrl))
-            {
-                return true;
-            }
-
-            return false;
+            return new Uri(client.BaseAddress, request.RequestUri);
         }
-
     }
 }

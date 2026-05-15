@@ -1,9 +1,9 @@
 using System;
-using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
 using Aikido.Zen.Core.Helpers;
+using Aikido.Zen.Core.Models;
 
 [assembly: InternalsVisibleTo("Aikido.Zen.Test")]
 
@@ -14,68 +14,55 @@ namespace Aikido.Zen.Core.Sinks
     /// </summary>
     internal static class LLMSink
     {
-        private const string operationKind = "ai_op";
+        internal const string OperationKind = "ai_op";
+
+        [SinkPostfix("OpenAI", "OpenAI.Chat.ChatClient", "CompleteChat")]
+        [SinkPostfix("OpenAI", "OpenAI.Chat.ChatClient", "CompleteChatAsync")]
+        [SinkPostfix("Rystem.OpenAi", "Rystem.OpenAi.Chat.OpenAiChat", "ExecuteAsync")]
+        [SinkPostfix("Rystem.OpenAi", "Rystem.OpenAi.Chat.OpenAiChat", "ExecuteAsStreamAsync")]
+        internal static void OnLLMCallCompletedGeneric(object __instance, object __result, MethodBase __originalMethod)
+        {
+            SinkAnalyzer.Analyze(
+                __originalMethod,
+                OperationKind,
+                context => OnLLMCallCompleted(__instance, __result, context));
+        }
 
         /// <summary>
         /// Handles completed LLM API calls to extract token usage and track statistics
         /// </summary>
         /// <param name="instance">The LLM client instance.</param>
         /// <param name="result">The result returned by the LLM API call.</param>
-        /// <param name="originalMethod">The original LLM method being inspected.</param>
         /// <param name="context">The current Aikido context.</param>
-        internal static void OnLLMCallCompleted(object instance, object result, MethodBase originalMethod, Context context)
+        internal static InspectionResult OnLLMCallCompleted(object instance, object result, Context context)
         {
-            // Exclude certain assemblies to avoid stack overflow issues
-            if (ReflectionHelper.ShouldSkipAssembly())
+            result = LLMResultHelper.ResolveResult(result);
+            if (context == null || result == null)
             {
-                return;
+                return InspectionResult.Skip();
             }
 
-            try
+            var clientType = instance?.GetType();
+
+            if (!TryExtractModelFromResult(result, out var model))
             {
-                var stopWatch = Stopwatch.StartNew();
-                result = LLMResultHelper.ResolveResult(result);
-                if (context == null || result == null) return;
-
-                var clientType = instance?.GetType();
-
-                var operation = ReflectionHelper.GetMethodOperation(originalMethod);
-                var module = ReflectionHelper.GetMethodModule(originalMethod);
-
-                if (!TryExtractModelFromResult(result, out var model))
-                {
-                    LogHelper.ErrorLog(Agent.Logger, $"Failed to extract model from LLM result for model: {model}");
-                }
-
-                if (!TryGetCloudProvider($"{model} {module} {clientType}", out var provider))
-                {
-                    LogHelper.ErrorLog(Agent.Logger, $"Failed to extract provider from LLM for model: {model}, provider: {provider}");
-                }
-
-                if (!TryExtractTokensFromResult(result, out var tokens))
-                {
-                    LogHelper.ErrorLog(Agent.Logger, $"Failed to extract token usage from LLM result for provider: {provider}, model: {model}");
-                }
-
-                // Record AI statistics
-                Agent.Instance.Context.OnAiCall(provider, model, tokens.inputTokens, tokens.outputTokens, context.Route);
-
-
-                // record sink statistics
-                Agent.Instance.Context.OnInspectedCall(
-                    operation: operation,
-                    kind: operationKind,
-                    durationInMs: stopWatch.ElapsedMilliseconds,
-                    attackDetected: false,
-                    blocked: false,
-                    withoutContext: context != null
-                );
+                LogHelper.ErrorLog(Agent.Logger, $"Failed to extract model from LLM result for model: {model}");
             }
-            catch
+
+            if (!TryGetCloudProvider($"{model} {clientType}", out var provider))
             {
-                // Silently handle any errors to avoid affecting the original LLM call
-                LogHelper.ErrorLog(Agent.Logger, "Error tracking LLM call statistics.");
+                LogHelper.ErrorLog(Agent.Logger, $"Failed to extract provider from LLM for model: {model}, provider: {provider}");
             }
+
+            if (!TryExtractTokensFromResult(result, out var tokens))
+            {
+                LogHelper.ErrorLog(Agent.Logger, $"Failed to extract token usage from LLM result for provider: {provider}, model: {model}");
+            }
+
+            // Record AI statistics
+            Agent.Instance.Context.OnAiCall(provider, model, tokens.inputTokens, tokens.outputTokens, context.Route);
+
+            return InspectionResult.Continue();
         }
 
         /// <summary>

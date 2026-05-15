@@ -261,7 +261,11 @@ namespace Aikido.Zen.Test
 
         private static bool OnFileOperation(string path, MethodInfo methodInfo, Context context)
         {
-            return IOSink.OnFileOperation(new[] { path }, methodInfo, context);
+            return SinkAnalyzer.Analyze(
+                methodInfo,
+                IOSink.OperationKind,
+                context,
+                currentContext => PathTraversalHelper.DetectPathTraversal(path, currentContext));
         }
     }
 }

@@ -14,11 +14,11 @@ namespace Aikido.Zen.Core.Sinks
 
         private static readonly Type[] PatchCatalogs =
         {
-            typeof(IOPatches),
-            typeof(LLMPatches),
-            typeof(OutboundRequestPatches),
-            typeof(ProcessExecutionPatches),
-            typeof(SqlClientPatches)
+            typeof(IOSink),
+            typeof(LLMSink),
+            typeof(OutboundRequestSink),
+            typeof(ProcessExecutionSink),
+            typeof(SqlClientSink)
         };
 
         internal static void PatchSinks(Func<Context> getContext)
