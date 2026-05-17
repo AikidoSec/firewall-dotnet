@@ -1,6 +1,5 @@
 using System.IO;
 using System.Reflection;
-using System.Threading;
 
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
@@ -13,7 +12,6 @@ namespace Aikido.Zen.Core.Sinks
     internal static class IOSink
     {
         private const string OperationKind = "fs_op";
-        private static readonly ThreadLocal<bool> IsProcessing = new ThreadLocal<bool>(() => false);
 
         [SinkPrefix(typeof(File), "Open", "System.String", "System.IO.FileMode")]
         [SinkPrefix(typeof(File), "OpenRead", "System.String")]
@@ -65,15 +63,8 @@ namespace Aikido.Zen.Core.Sinks
 
         private static InspectionResult InspectPaths(Context context, params string[] paths)
         {
-            if (IsProcessing.Value)
-            {
-                return InspectionResult.Allow(skipStats: true);
-            }
-
             try
             {
-                IsProcessing.Value = true;
-
                 foreach (var path in paths)
                 {
                     if (string.IsNullOrEmpty(path))
@@ -91,11 +82,6 @@ namespace Aikido.Zen.Core.Sinks
             catch
             {
                 LogHelper.ErrorLog(Agent.Logger, "Error during Path Traversal detection.");
-                return InspectionResult.Allow();
-            }
-            finally
-            {
-                IsProcessing.Value = false;
             }
 
             return InspectionResult.Allow();

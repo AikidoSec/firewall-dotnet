@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -187,98 +186,6 @@ namespace Aikido.Zen.Core.Helpers
                 {
                     return null;
                 }
-            }
-
-            return null;
-        }
-
-        /// <summary>
-        /// Checks if we should skip patching of the current assembly. Crucial for preventing re-entrancy issues with certain IL weavers and patchers.
-        /// </summary>
-        /// <returns>True if the assembly should be excluded from patching, false otherwise.</returns>
-        public static bool ShouldSkipAssembly()
-        {
-            var assembly = GetCallingAssembly();
-            if (assembly == null)
-                return false;
-
-            // Exclude DispatchProxy-based dynamic types
-            var assemblyFullName = assembly.FullName ?? string.Empty;
-            if (assemblyFullName.IndexOf("Anonymously Hosted DynamicMethods", StringComparison.OrdinalIgnoreCase) >= 0 || //.NET runtime to hold dynamically generated method, it usually appears when the runtime uses Reflection.Emit
-                assemblyFullName.IndexOf("DynamicProxyGenAssembly2", StringComparison.OrdinalIgnoreCase) >= 0) // default assembly name used by Castle DynamicProxy, the proxy generator behind many interceptors
-            {
-                return true;
-            }
-
-            // Exclude assemblies that are known to cause issues
-            var excludedAssemblies = new[]
-            {
-                // IL weaving / patching
-                "Costura",
-                "Harmony",
-                "Fody",
-                "Mono.Cecil",
-                "PostSharp",
-                "dnlib",
-                "ILRepack",
-                "BepInEx",
-
-                // Dynamic proxy / AOP
-                "Castle.DynamicProxy",
-                "Autofac.Extras.DynamicProxy",
-                "DispatchProxy",
-
-                // Instrumentation / APM
-                "Datadog.Trace",
-                "NewRelic",
-                "AppDynamics",
-                "OpenTelemetry",
-
-                // Scripting / dynamic compilation
-                "Microsoft.CodeAnalysis",
-                "Roslyn",
-                "ScriptCs",
-                "Jint",
-                "ClearScript",
-
-                // System.Reflection.Emit (dynamic runtime code generation)
-                "System.Reflection.Emit"
-            };
-
-            if (excludedAssemblies.Any(excluded =>
-                assemblyFullName.IndexOf(excluded, StringComparison.OrdinalIgnoreCase) >= 0))
-            {
-                return true;
-            }
-
-            return false;
-        }
-
-        /// <summary>
-        /// Retrieves the calling assembly by examining the stack trace.
-        /// </summary>
-        /// <returns>The calling assembly</returns>
-        private static Assembly GetCallingAssembly()
-        {
-            try
-            {
-                var stackTrace = new StackTrace();
-                var frames = stackTrace.GetFrames();
-
-                // Skip the first few frames which are our patch methods
-                for (int i = 2; i < frames.Length; i++)
-                {
-                    var method = frames[i].GetMethod();
-                    var assembly = method?.DeclaringType?.Assembly;
-                    if (assembly != null)
-                    {
-                        return assembly;
-                    }
-                }
-            }
-            catch
-            {
-                // If we can't get the calling assembly, don't exclude
             }
 
             return null;
