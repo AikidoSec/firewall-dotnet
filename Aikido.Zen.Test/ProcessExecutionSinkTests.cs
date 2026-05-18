@@ -110,7 +110,7 @@ namespace Aikido.Zen.Test
             var ex = Assert.Throws<AikidoException>(() =>
                 OnProcessStart(new Process { StartInfo = _startInfo }, _context)
             );
-            Assert.That(ex.Message, Does.Contain("Shell injection detected"));
+            Assert.That(ex.Message, Does.Contain("Zen has blocked a shell injection"));
         }
 
         [Test]

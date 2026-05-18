@@ -116,7 +116,7 @@ namespace Aikido.Zen.Test
             var ex = Assert.Throws<AikidoException>(() =>
                 OnCommandExecuting(_methodInfo, sql, _context)
             );
-            Assert.That(ex.Message, Does.Contain("SQL injection detected"));
+            Assert.That(ex.Message, Does.Contain("Zen has blocked an SQL injection"));
         }
 
         [Test]
@@ -218,7 +218,7 @@ namespace Aikido.Zen.Test
             var ex = Assert.Throws<AikidoException>(() =>
                 OnCommandExecutingSqlRaw(methodInfo!, sql, _context));
 
-            Assert.That(ex.Message, Does.Contain("SQL injection detected"));
+            Assert.That(ex.Message, Does.Contain("Zen has blocked an SQL injection"));
         }
 
         [Test]
@@ -272,7 +272,7 @@ namespace Aikido.Zen.Test
                     statement,
                     _context));
 
-            Assert.That(ex!.Message, Does.Contain("SQL injection detected"));
+            Assert.That(ex!.Message, Does.Contain("Zen has blocked an SQL injection"));
         }
 
         [TearDown]

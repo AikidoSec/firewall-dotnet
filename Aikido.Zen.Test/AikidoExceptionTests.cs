@@ -55,13 +55,12 @@ namespace Aikido.Zen.Test
         public void Blocked_WithSqlInjection_ShouldReturnCorrectMessage()
         {
             // Arrange
-            string expectedMessage = $"SQL injection detected during operation: {SQLDialect.MicrosoftSQL.ToHumanName()}";
+            string expectedMessage = "Zen has blocked an SQL injection during operation";
 
             // Act
             var exception = AikidoException.Blocked(
                 AttackKind.SqlInjection,
-                "operation",
-                SQLDialect.MicrosoftSQL.ToHumanName());
+                "operation");
 
             // Assert
             Assert.That(exception.Message, Is.EqualTo(expectedMessage));
@@ -71,7 +70,7 @@ namespace Aikido.Zen.Test
         public void Blocked_WithShellInjection_ShouldReturnCorrectMessage()
         {
             // Arrange
-            string expectedMessage = "Shell injection detected during operation";
+            string expectedMessage = "Zen has blocked a shell injection during operation";
 
             // Act
             var exception = AikidoException.Blocked(AttackKind.ShellInjection, "operation");
@@ -85,10 +84,9 @@ namespace Aikido.Zen.Test
         {
             var exception = AikidoException.Blocked(
                 AttackKind.PathTraversal,
-                "File.ReadAllBytes",
-                "../etc/passwd");
+                "File.ReadAllBytes");
 
-            Assert.That(exception.Message, Is.EqualTo("Path traversal detected during File.ReadAllBytes: ../etc/passwd"));
+            Assert.That(exception.Message, Is.EqualTo("Zen has blocked a path traversal attack during File.ReadAllBytes"));
         }
 
         [Test]
@@ -96,13 +94,12 @@ namespace Aikido.Zen.Test
         {
             // Arrange
             string hostname = "blocked.example";
-            string expectedMessage = $"Zen has blocked an outbound connection during operation: {hostname}";
+            string expectedMessage = $"Zen has blocked an outbound connection during operation to {hostname}";
 
             // Act
             var exception = AikidoException.Blocked(
                 AttackKind.OutboundConnectionBlocked,
-                "operation",
-                hostname);
+                $"operation to {hostname}");
 
             // Assert
             Assert.That(exception.Message, Is.EqualTo(expectedMessage));

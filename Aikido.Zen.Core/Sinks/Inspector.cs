@@ -100,10 +100,18 @@ namespace Aikido.Zen.Core.Sinks
 
                 if (isBlocked)
                 {
+                    var blockedOperation = operation;
+                    if (result.AttackKind.Value == AttackKind.OutboundConnectionBlocked &&
+                        result.Metadata != null &&
+                        result.Metadata.TryGetValue("hostname", out var hostname) &&
+                        !string.IsNullOrEmpty(hostname))
+                    {
+                        blockedOperation = $"{operation} to {hostname}";
+                    }
+
                     throw AikidoException.Blocked(
                         result.AttackKind.Value,
-                        operation,
-                        result.Metadata == null ? null : string.Join(", ", result.Metadata.Values));
+                        blockedOperation);
                 }
 
                 return true;

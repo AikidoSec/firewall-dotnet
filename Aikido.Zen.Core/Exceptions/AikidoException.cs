@@ -25,26 +25,24 @@ namespace Aikido.Zen.Core.Exceptions
             _logger.LogError("Aikido security exception: {Message}", Message);
         }
 
-        public static AikidoException Blocked(AttackKind kind, string operation, string metadata = null)
+        public static AikidoException Blocked(AttackKind kind, string operation)
         {
-            var metadataSuffix = string.IsNullOrEmpty(metadata) ? string.Empty : $": {metadata}";
-
             switch (kind)
             {
                 case AttackKind.SqlInjection:
-                    return new AikidoException($"SQL injection detected during {operation}{metadataSuffix}");
+                    return new AikidoException($"Zen has blocked an SQL injection during {operation}");
 
                 case AttackKind.ShellInjection:
-                    return new AikidoException($"Shell injection detected during {operation}{metadataSuffix}");
+                    return new AikidoException($"Zen has blocked a shell injection during {operation}");
 
                 case AttackKind.PathTraversal:
-                    return new AikidoException($"Path traversal detected during {operation}{metadataSuffix}");
+                    return new AikidoException($"Zen has blocked a path traversal attack during {operation}");
 
                 case AttackKind.Ssrf:
-                    return new AikidoException($"Server-side request forgery detected during {operation}{metadataSuffix}");
+                    return new AikidoException($"Zen has blocked a server-side request forgery during {operation}");
 
                 case AttackKind.OutboundConnectionBlocked:
-                    return new AikidoException($"Zen has blocked an outbound connection during {operation}{metadataSuffix}");
+                    return new AikidoException($"Zen has blocked an outbound connection during {operation}");
 
                 default:
                     return new AikidoException();

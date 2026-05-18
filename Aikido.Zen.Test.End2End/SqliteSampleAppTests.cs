@@ -88,7 +88,7 @@ public class SqliteSampleAppTests : WebApplicationTestBase
         }
         catch (AikidoException ex)
         {
-            Assert.That(ex.Message, Does.Contain("SQL injection detected"));
+            Assert.That(ex.Message, Does.Contain("Zen has blocked an SQL injection"));
         }
     }
 
