@@ -29,12 +29,12 @@ namespace Aikido.Zen.Core.Api
             }
             catch (TaskCanceledException ex)
             {
-                LogHelper.ErrorLog(Agent.Logger, $"Error reporting event (possible timeout): {ex.Message}");
+                LogHelper.WarningLog(Agent.Logger, $"Failed to report event (possible timeout): {ex.Message}");
                 return new ReportingAPIResponse { Success = false, Error = "timeout" };
             }
             catch (Exception ex)
             {
-                LogHelper.ErrorLog(Agent.Logger, $"Error reporting event: {ex.Message}");
+                LogHelper.WarningLog(Agent.Logger, $"Failed to report event: {ex.Message}");
                 return new ReportingAPIResponse { Success = false, Error = "unknown_error" };
             }
         }
@@ -54,7 +54,7 @@ namespace Aikido.Zen.Core.Api
             }
             catch (Exception ex)
             {
-                LogHelper.ErrorLog(Agent.Logger, $"Error retrieving Firewall Lists: {ex.Message}");
+                LogHelper.WarningLog(Agent.Logger, $"Failed to retrieve Firewall Lists: {ex.Message}");
                 return new FirewallListsAPIResponse { Success = false, Error = "unknown_error" };
             }
         }

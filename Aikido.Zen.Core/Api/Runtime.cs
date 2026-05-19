@@ -25,12 +25,12 @@ namespace Aikido.Zen.Core.Api
             }
             catch (TaskCanceledException ex)
             {
-                LogHelper.ErrorLog(Agent.Logger, $"Error retrieving config last updated (possible timeout): {ex.Message}");
+                LogHelper.WarningLog(Agent.Logger, $"Failed to retrieve config last updated (possible timeout): {ex.Message}");
                 return new ConfigLastUpdatedAPIResponse { Success = false, Error = "timeout" };
             }
             catch (Exception ex)
             {
-                LogHelper.ErrorLog(Agent.Logger, $"Error retrieving config last updated: {ex.Message}");
+                LogHelper.WarningLog(Agent.Logger, $"Failed to retrieve config last updated: {ex.Message}");
                 return new ConfigLastUpdatedAPIResponse { Success = false, Error = "unknown_error" };
             }
         }
@@ -45,12 +45,12 @@ namespace Aikido.Zen.Core.Api
             }
             catch (TaskCanceledException ex)
             {
-                LogHelper.ErrorLog(Agent.Logger, $"Error retrieving config (possible timeout): {ex.Message}");
+                LogHelper.WarningLog(Agent.Logger, $"Failed to retrieve config (possible timeout): {ex.Message}");
                 return new ReportingAPIResponse { Success = false, Error = "timeout" };
             }
             catch (Exception ex)
             {
-                LogHelper.ErrorLog(Agent.Logger, $"Error retrieving config: {ex.Message}");
+                LogHelper.WarningLog(Agent.Logger, $"Failed to retrieve config: {ex.Message}");
                 return new ReportingAPIResponse { Success = false, Error = "unknown_error" };
             }
         }

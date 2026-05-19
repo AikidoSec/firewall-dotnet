@@ -140,7 +140,7 @@ namespace Aikido.Zen.Core
                     }
                     else
                     {
-                        LogHelper.ErrorLog(Logger, $"Heartbeat was not sent successfully: {response.Error}");
+                        LogHelper.WarningLog(Logger, $"Heartbeat was not sent successfully: {response.Error}");
                     }
                 }
             };

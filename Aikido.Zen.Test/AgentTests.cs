@@ -3,7 +3,9 @@ using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Models.Events;
 using Aikido.Zen.Tests.Mocks;
+using Microsoft.Extensions.Logging;
 using Moq;
+using System.Collections.Concurrent;
 using System.Reflection;
 
 namespace Aikido.Zen.Test
@@ -260,6 +262,40 @@ namespace Aikido.Zen.Test
                 ),
                 Times.Once
             );
+        }
+
+        [Test]
+        public void Start_HeartbeatFailureCallback_LogsWarning()
+        {
+            var loggerMock = new Mock<ILogger>();
+            Agent.ConfigureLogger(loggerMock.Object);
+
+            try
+            {
+                _agent.Start();
+
+                var scheduledEventsField = typeof(Agent).GetField("_scheduledEvents", BindingFlags.NonPublic | BindingFlags.Instance);
+                Assert.That(scheduledEventsField, Is.Not.Null);
+
+                var scheduledEvents = scheduledEventsField!.GetValue(_agent) as ConcurrentDictionary<string, Agent.ScheduledItem>;
+                Assert.That(scheduledEvents, Is.Not.Null);
+                Assert.That(scheduledEvents!.TryGetValue(Heartbeat.ScheduleId, out var scheduledItem), Is.True);
+                var callback = scheduledItem!.Callback;
+                Assert.That(callback, Is.Not.Null);
+
+                callback!(new Heartbeat(), new ReportingAPIResponse { Success = false, Error = "timeout" });
+
+                loggerMock.Verify(logger => logger.Log(
+                    It.Is<LogLevel>(level => level == LogLevel.Warning),
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Heartbeat was not sent successfully: timeout")),
+                    It.IsAny<Exception?>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Once);
+            }
+            finally
+            {
+                Agent.ConfigureLogger(null);
+            }
         }
 
         [Test]
