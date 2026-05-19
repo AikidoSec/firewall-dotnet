@@ -43,7 +43,9 @@ namespace Aikido.Zen.Core.Sinks
         [SinkPostfix(typeof(HttpClient), "SendAsync", "System.Net.Http.HttpRequestMessage", "System.Threading.CancellationToken")]
         internal static void OnHttpClientAsyncCompleted(ref Task<HttpResponseMessage> __result)
         {
-            __result = ExitRequestScopeWhenCompletedAsync(__result);
+            var request = CurrentRequest.Value;
+            __result = ExitRequestScopeWhenCompletedAsync(__result, request);
+            ExitRequestScope();
         }
 
         [SinkPostfix(typeof(HttpClient), "Send", "System.Net.Http.HttpRequestMessage", "System.Threading.CancellationToken")]
@@ -58,7 +60,9 @@ namespace Aikido.Zen.Core.Sinks
         [SinkPostfix(typeof(HttpWebRequest), "GetResponseAsync")]
         internal static void OnWebRequestAsyncCompleted(ref Task<WebResponse> __result)
         {
-            __result = ExitRequestScopeWhenCompletedAsync(__result);
+            var request = CurrentRequest.Value;
+            __result = ExitRequestScopeWhenCompletedAsync(__result, request);
+            ExitRequestScope();
         }
 
         [SinkFinalizer(typeof(HttpClient), "SendAsync", "System.Net.Http.HttpRequestMessage", "System.Net.Http.HttpCompletionOption", "System.Threading.CancellationToken")]
@@ -227,12 +231,11 @@ namespace Aikido.Zen.Core.Sinks
             CurrentRequest.Value = null;
         }
 
-        private static async Task<T> ExitRequestScopeWhenCompletedAsync<T>(Task<T> responseTask)
+        private static async Task<T> ExitRequestScopeWhenCompletedAsync<T>(Task<T> responseTask, RequestScope request)
             where T : class
         {
             if (responseTask == null)
             {
-                ExitRequestScope();
                 return null;
             }
 
@@ -242,7 +245,7 @@ namespace Aikido.Zen.Core.Sinks
             }
             catch
             {
-                var exception = TryCreateDetectedAttackException();
+                var exception = TryCreateDetectedAttackException(request);
                 if (exception != null)
                 {
                     throw exception;
@@ -332,7 +335,11 @@ namespace Aikido.Zen.Core.Sinks
 
         private static AikidoException TryCreateDetectedAttackException()
         {
-            var request = CurrentRequest.Value;
+            return TryCreateDetectedAttackException(CurrentRequest.Value);
+        }
+
+        private static AikidoException TryCreateDetectedAttackException(RequestScope request)
+        {
             if (request?.DetectedAttackKind == null)
             {
                 return null;

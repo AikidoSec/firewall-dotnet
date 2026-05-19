@@ -538,6 +538,29 @@ namespace Aikido.Zen.Test
             }
         }
 
+        [Test]
+        public void OnHttpClientAsyncCompleted_ClearsCallerRequestScope()
+        {
+            var context = CreateContext();
+            context.ParsedUserInput = new Dictionary<string, string>
+            {
+                { "query.url", "http://private.example/admin" }
+            };
+
+            var result = OnRequest(
+                new Uri("http://private.example/admin"),
+                GetHttpClientSendAsyncMethod(),
+                context);
+
+            Assert.That(result, Is.True);
+
+            var responseTask = Task.FromException<HttpResponseMessage>(new InvalidOperationException("network failed"));
+            OutboundRequestSink.OnHttpClientAsyncCompleted(ref responseTask);
+
+            Assert.DoesNotThrow(() =>
+                OutboundRequestSink.InspectResolvedAddresses(new[] { IPAddress.Parse("127.0.0.1") }));
+        }
+
         private static MethodInfo GetHttpClientSendAsyncMethod()
         {
             return typeof(HttpClient).GetMethod(
