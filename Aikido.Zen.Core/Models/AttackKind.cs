@@ -12,12 +12,14 @@ namespace Aikido.Zen.Core.Models
         SqlInjection,
         ShellInjection,
         PathTraversal,
-        Ssrf
+        Ssrf,
+        OutboundConnectionBlocked,
     }
 
-    public static class AttackKindExtensions 
+    public static class AttackKindExtensions
     {
-        public static string ToJsonName(this AttackKind kind) {
+        public static string ToJsonName(this AttackKind kind)
+        {
             switch (kind)
             {
                 // leave this out for now, until we cover nosql attacks
@@ -31,6 +33,8 @@ namespace Aikido.Zen.Core.Models
                     return "path_traversal";
                 case AttackKind.Ssrf:
                     return "ssrf";
+                case AttackKind.OutboundConnectionBlocked:
+                    return "outbound_connection_blocked";
                 default:
                     throw new ArgumentOutOfRangeException(nameof(kind));
             }
@@ -51,6 +55,8 @@ namespace Aikido.Zen.Core.Models
                     return "a path traversal attack";
                 case AttackKind.Ssrf:
                     return "a server-side request forgery";
+                case AttackKind.OutboundConnectionBlocked:
+                    return "an outbound connection block";
                 default:
                     throw new ArgumentOutOfRangeException(nameof(kind));
             }

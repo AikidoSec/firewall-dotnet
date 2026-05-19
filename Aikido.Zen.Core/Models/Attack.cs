@@ -11,7 +11,7 @@ namespace Aikido.Zen.Core.Models {
         public string Path { get; set; }
         public string Stack { get; set; }
         public string Payload { get; set; }
-        public IDictionary<string, object> Metadata { get; set; }
+        public IDictionary<string, string> Metadata { get; set; }
         public User User { get; set; }
     }
 }

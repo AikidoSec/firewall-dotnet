@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -66,7 +65,7 @@ namespace Aikido.Zen.Core.Helpers
                     {
                         // The app is not self-contained or the dll was not included with the app
                         // Try loading from the default shared framework path
-                        // Useful for late loaded assemblies (eg. `System.Diagnostics.Process` in ProcessPatches)
+                        // Useful for late loaded assemblies (eg. `System.Diagnostics.Process` in ProcessExecutionSink)
                         try
                         {
                             assembly = Assembly.Load(new AssemblyName(assemblyName));
@@ -97,17 +96,26 @@ namespace Aikido.Zen.Core.Helpers
                 _types[typeKey] = type;
             }
 
-            // Use reflection to get the method, make sure to check for public, internal and private methods
-            var method = type
-                .GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static)
-                .FirstOrDefault(m => m.Name == methodName &&
-                                     m.GetParameters().Select(p => p.ParameterType.FullName).SequenceEqual(parameterTypeNames));
+            return GetMethodFromType(type, methodName, parameterTypeNames);
+        }
+
+        internal static MethodInfo GetMethodFromType(Type type, string methodName, params string[] parameterTypeNames)
+        {
+            if (type == null || string.IsNullOrEmpty(methodName))
+            {
+                return null;
+            }
+
+            parameterTypeNames = parameterTypeNames ?? Array.Empty<string>();
+
+            // Use reflection to get the method, make sure to check for public, internal and private methods.
+            var methods = type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+            var method = methods.FirstOrDefault(m => m.Name == methodName && ParametersMatch(m, parameterTypeNames));
 
             // fallback to the method with the most parameters
             // this is done because in case of multiple methods with the same name, they usually wrap the one with the most parameters
             // by doing this, we reduce the risk of not being able to patch the correct method in case of library updates
-            method = method ?? type
-                .GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static)
+            method = method ?? methods
                 .Where(m => m.Name == methodName)
                 .OrderByDescending(m => m.GetParameters().Length)
                 .FirstOrDefault();
@@ -115,93 +123,69 @@ namespace Aikido.Zen.Core.Helpers
             return method;
         }
 
-        /// <summary>
-        /// Checks if we should skip patching of the current assembly. Crucial for preventing re-entrancy issues with certain IL weavers and patchers.
-        /// </summary>
-        /// <returns>True if the assembly should be excluded from patching, false otherwise.</returns>
-        public static bool ShouldSkipAssembly()
+        private static bool ParametersMatch(MethodInfo method, string[] parameterTypeNames)
         {
-            var assembly = GetCallingAssembly();
-            if (assembly == null)
+            var parameters = method.GetParameters();
+            if (parameters.Length != parameterTypeNames.Length)
+            {
                 return false;
-
-            // Exclude DispatchProxy-based dynamic types
-            var assemblyFullName = assembly.FullName ?? string.Empty;
-            if (assemblyFullName.IndexOf("Anonymously Hosted DynamicMethods", StringComparison.OrdinalIgnoreCase) >= 0 || //.NET runtime to hold dynamically generated method, it usually appears when the runtime uses Reflection.Emit
-                assemblyFullName.IndexOf("DynamicProxyGenAssembly2", StringComparison.OrdinalIgnoreCase) >= 0) // default assembly name used by Castle DynamicProxy, the proxy generator behind many interceptors
-            {
-                return true;
             }
 
-            // Exclude assemblies that are known to cause issues
-            var excludedAssemblies = new[]
-            {
-                // IL weaving / patching
-                "Costura",
-                "Harmony",
-                "Fody",
-                "Mono.Cecil",
-                "PostSharp",
-                "dnlib",
-                "ILRepack",
-                "BepInEx",
-
-                // Dynamic proxy / AOP
-                "Castle.DynamicProxy",
-                "Autofac.Extras.DynamicProxy",
-                "DispatchProxy",
-
-                // Instrumentation / APM
-                "Datadog.Trace",
-                "NewRelic",
-                "AppDynamics",
-                "OpenTelemetry",
-
-                // Scripting / dynamic compilation
-                "Microsoft.CodeAnalysis",
-                "Roslyn",
-                "ScriptCs",
-                "Jint",
-                "ClearScript",
-
-                // System.Reflection.Emit (dynamic runtime code generation)
-                "System.Reflection.Emit"
-            };
-
-            if (excludedAssemblies.Any(excluded =>
-                assemblyFullName.IndexOf(excluded, StringComparison.OrdinalIgnoreCase) >= 0))
-            {
-                return true;
-            }
-
-            return false;
+            return parameters
+                .Select((parameter, index) => ParameterTypeMatches(parameter.ParameterType, parameterTypeNames[index]))
+                .All(matches => matches);
         }
 
-        /// <summary>
-        /// Retrieves the calling assembly by examining the stack trace.
-        /// </summary>
-        /// <returns>The calling assembly</returns>
-        private static Assembly GetCallingAssembly()
+        private static bool ParameterTypeMatches(Type parameterType, string targetParameterTypeName)
         {
-            try
-            {
-                var stackTrace = new StackTrace();
-                var frames = stackTrace.GetFrames();
+            return parameterType.FullName == targetParameterTypeName ||
+                parameterType.Name == targetParameterTypeName ||
+                parameterType.ToString() == targetParameterTypeName;
+        }
 
-                // Skip the first few frames which are our patch methods
-                for (int i = 2; i < frames.Length; i++)
+        internal static string GetMethodOperation(MethodBase method)
+        {
+            return $"{method?.DeclaringType?.Name}.{method?.Name}";
+        }
+
+        internal static string GetMethodModule(MethodBase method)
+        {
+            return method?.DeclaringType?.Assembly.GetName().Name ?? string.Empty;
+        }
+
+        internal static string GetStringMember(object instance, string memberName)
+        {
+            return GetMemberValue(instance, memberName) as string;
+        }
+
+        internal static object GetMemberValue(object instance, string memberName)
+        {
+            if (instance == null || string.IsNullOrEmpty(memberName))
+            {
+                return null;
+            }
+
+            const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+            for (var type = instance.GetType(); type != null; type = type.BaseType)
+            {
+                try
                 {
-                    var method = frames[i].GetMethod();
-                    var assembly = method?.DeclaringType?.Assembly;
-                    if (assembly != null)
+                    var property = type.GetProperty(memberName, flags);
+                    if (property != null && property.GetIndexParameters().Length == 0)
                     {
-                        return assembly;
+                        return property.GetValue(instance, null);
+                    }
+
+                    var field = type.GetField(memberName, flags);
+                    if (field != null)
+                    {
+                        return field.GetValue(instance);
                     }
                 }
-            }
-            catch
-            {
-                // If we can't get the calling assembly, don't exclude
+                catch
+                {
+                    return null;
+                }
             }
 
             return null;

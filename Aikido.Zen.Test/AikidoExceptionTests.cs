@@ -52,55 +52,54 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void SQLInjectionDetected_ShouldReturnCorrectMessage()
+        public void Blocked_WithSqlInjection_ShouldReturnCorrectMessage()
         {
             // Arrange
-            string dialect = SQLDialect.MicrosoftSQL.ToHumanName();
-            string expectedMessage = $"{SQLDialect.MicrosoftSQL.ToHumanName()}: SQL injection detected";
+            string expectedMessage = "Zen has blocked an SQL injection during operation";
 
             // Act
-            var exception = AikidoException.SQLInjectionDetected(dialect);
+            var exception = AikidoException.Blocked(
+                AttackKind.SqlInjection,
+                "operation");
 
             // Assert
             Assert.That(exception.Message, Is.EqualTo(expectedMessage));
         }
 
         [Test]
-        public void ShellInjectionDetected_ShouldReturnCorrectMessage()
+        public void Blocked_WithShellInjection_ShouldReturnCorrectMessage()
         {
             // Arrange
-            string expectedMessage = $"Shell injection detected";
+            string expectedMessage = "Zen has blocked a shell injection during operation";
 
             // Act
-            var exception = AikidoException.ShellInjectionDetected();
+            var exception = AikidoException.Blocked(AttackKind.ShellInjection, "operation");
 
             // Assert
             Assert.That(exception.Message, Is.EqualTo(expectedMessage));
         }
 
         [Test]
-        public void RequestBlocked_ShouldReturnCorrectMessage()
+        public void Blocked_WithPathTraversal_ShouldReturnCorrectMessage()
         {
-            // Arrange
-            string route = "/api/data";
-            string expectedMessage = $"Request blocked: {route}";
+            var exception = AikidoException.Blocked(
+                AttackKind.PathTraversal,
+                "File.ReadAllBytes");
 
-            // Act
-            var exception = AikidoException.RequestBlocked(route);
-
-            // Assert
-            Assert.That(exception.Message, Is.EqualTo(expectedMessage));
+            Assert.That(exception.Message, Is.EqualTo("Zen has blocked a path traversal attack during File.ReadAllBytes"));
         }
 
         [Test]
-        public void Ratelimited_ShouldReturnCorrectMessage()
+        public void Blocked_WithOutboundConnectionBlocked_ShouldReturnCorrectMessage()
         {
             // Arrange
-            string route = "/api/data";
-            string expectedMessage = $"Ratelimited: {route}";
+            string hostname = "blocked.example";
+            string expectedMessage = $"Zen has blocked an outbound connection during operation to {hostname}";
 
             // Act
-            var exception = AikidoException.RateLimited(route);
+            var exception = AikidoException.Blocked(
+                AttackKind.OutboundConnectionBlocked,
+                $"operation to {hostname}");
 
             // Assert
             Assert.That(exception.Message, Is.EqualTo(expectedMessage));

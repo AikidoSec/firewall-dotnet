@@ -8,7 +8,7 @@ using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.DotNetFramework.Configuration;
 using Aikido.Zen.DotNetFramework.HttpModules;
-using Aikido.Zen.DotNetFramework.Patches;
+using CorePatcher = Aikido.Zen.Core.Sinks.Patcher;
 
 namespace Aikido.Zen.DotNetFramework
 {
@@ -35,7 +35,7 @@ namespace Aikido.Zen.DotNetFramework
             // set zen version
             AgentInfoHelper.SetVersion(typeof(Zen).Assembly.GetName().Version.ToString());
             // patch the sinks
-            Patcher.Patch();
+            CorePatcher.PatchSinks(GetContext);
             // setup the agent
             if (Agent.Instance == null)
             {

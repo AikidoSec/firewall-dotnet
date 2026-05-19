@@ -6,14 +6,14 @@ using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Models.Events;
-using Aikido.Zen.Core.Patches;
+using Aikido.Zen.Core.Sinks;
 using Moq;
 using NUnit.Framework;
 
 namespace Aikido.Zen.Test
 {
     [TestFixture]
-    public class IOPatcherTests
+    public class IOSinkTests
     {
         private Context _realContext;
         private Mock<Context> _mockContext; // Mock to allow verification if needed, CallBase ensures real logic runs
@@ -21,6 +21,7 @@ namespace Aikido.Zen.Test
         private Mock<IReportingAPIClient> _reportingMock;
         private Mock<IRuntimeAPIClient> _runtimeMock;
         private Mock<ZenApi> _zenApiMock;
+        private Context? _activeContext;
 
         [SetUp]
         public void Setup()
@@ -37,16 +38,20 @@ namespace Aikido.Zen.Test
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", null);
 
             Agent.NewInstance(_zenApiMock.Object);
+            _activeContext = _mockContext.Object;
+            Patcher.Unpatch();
+            Patcher.PatchSinks(() => _activeContext!);
         }
 
         [TearDown]
         public void TearDown()
         {
+            Patcher.Unpatch();
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", null);
             Environment.SetEnvironmentVariable("AIKIDO_TOKEN", null);
         }
 
-        private void RunAndVerifyAttackFlag(string[] paths, MethodInfo methodInfo, bool expectAttack, bool expectBlocked)
+        private void RunAndVerifyAttackFlag(string path, MethodInfo methodInfo, bool expectAttack, bool expectBlocked)
         {
             var contextToPass = _mockContext.Object;
             contextToPass.ParsedUserInput = _realContext.ParsedUserInput;
@@ -55,13 +60,13 @@ namespace Aikido.Zen.Test
             if (expectBlocked)
             {
                 Assert.Throws<AikidoException>(
-                    () => IOPatcher.OnFileOperation(paths, methodInfo, contextToPass),
+                    () => OnFileOperation(path, methodInfo, contextToPass),
                     "Expected AikidoException for blocked path traversal."
                 );
             }
             else
             {
-                var result = IOPatcher.OnFileOperation(paths, methodInfo, contextToPass);
+                var result = OnFileOperation(path, methodInfo, contextToPass);
                 Assert.That(result, Is.True, "OnFileOperation should return true when not blocking.");
             }
 
@@ -71,8 +76,7 @@ namespace Aikido.Zen.Test
         [Test]
         public void OnFileOperation_WithNullContext_ReturnsTrue()
         {
-            var paths = new[] { "safe/path/file.txt" };
-            var result = IOPatcher.OnFileOperation(paths, _methodInfo, null);
+            var result = OnFileOperation("safe/path/file.txt", _methodInfo, null);
             Assert.That(result, Is.True);
         }
 
@@ -80,14 +84,13 @@ namespace Aikido.Zen.Test
         public void OnFileOperation_WithBypassedContext_ReturnsTrue()
         {
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
-            var paths = new[] { "/var/www/data/../secret.txt" };
             var context = new Context
             {
                 Bypassed = true,
                 ParsedUserInput = new Dictionary<string, string> { { "query.path", "../secret.txt" } }
             };
 
-            var result = IOPatcher.OnFileOperation(paths, _methodInfo, context);
+            var result = OnFileOperation("/var/www/data/../secret.txt", _methodInfo, context);
 
             Assert.That(result, Is.True);
             Assert.That(context.AttackDetected, Is.False);
@@ -97,9 +100,8 @@ namespace Aikido.Zen.Test
         public void OnFileOperation_WithSafePathAndNoMatchingUserInput_ReturnsTrue()
         {
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
-            var paths = new[] { "data/repository/somefile.txt" };
             _realContext.ParsedUserInput = new Dictionary<string, string> { { "query.id", "123" } };
-            RunAndVerifyAttackFlag(paths, _methodInfo, expectAttack: false, expectBlocked: false);
+            RunAndVerifyAttackFlag("data/repository/somefile.txt", _methodInfo, expectAttack: false, expectBlocked: false);
         }
 
         [Test]
@@ -108,9 +110,8 @@ namespace Aikido.Zen.Test
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
             var unsafeInput = "../etc/passwd";
             var pathArgument = $"/var/www/data/{unsafeInput}";
-            var paths = new[] { pathArgument };
             _realContext.ParsedUserInput = new Dictionary<string, string> { { "url.filename", unsafeInput } };
-            RunAndVerifyAttackFlag(paths, _methodInfo, expectAttack: true, expectBlocked: true);
+            RunAndVerifyAttackFlag(pathArgument, _methodInfo, expectAttack: true, expectBlocked: true);
         }
 
         [Test]
@@ -119,9 +120,8 @@ namespace Aikido.Zen.Test
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "false");
             var unsafeInput = "../etc/passwd";
             var pathArgument = $"/var/www/data/{unsafeInput}";
-            var paths = new[] { pathArgument };
             _realContext.ParsedUserInput = new Dictionary<string, string> { { "url.filename", unsafeInput } };
-            RunAndVerifyAttackFlag(paths, _methodInfo, expectAttack: true, expectBlocked: false);
+            RunAndVerifyAttackFlag(pathArgument, _methodInfo, expectAttack: true, expectBlocked: false);
         }
 
         [Test]
@@ -130,9 +130,8 @@ namespace Aikido.Zen.Test
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
             var safeInput = "safe_file.txt";
             var pathArgument = $"/var/data/files/{safeInput}";
-            var paths = new[] { pathArgument };
             _realContext.ParsedUserInput = new Dictionary<string, string> { { "query.filename", safeInput } };
-            RunAndVerifyAttackFlag(paths, _methodInfo, expectAttack: false, expectBlocked: false);
+            RunAndVerifyAttackFlag(pathArgument, _methodInfo, expectAttack: false, expectBlocked: false);
         }
 
         [Test]
@@ -143,9 +142,15 @@ namespace Aikido.Zen.Test
             var unsafeInput = "../../secrets.txt";
             var safeSource = "/app/uploads/image.jpg";
             var unsafeDest = $"/app/static/{unsafeInput}";
-            var paths = new[] { safeSource, unsafeDest };
             _realContext.ParsedUserInput = new Dictionary<string, string> { { "form.dest_path", unsafeInput } };
-            RunAndVerifyAttackFlag(paths, copyMethodInfo, expectAttack: true, expectBlocked: true);
+            var contextToPass = _mockContext.Object;
+            contextToPass.ParsedUserInput = _realContext.ParsedUserInput;
+            contextToPass.AttackDetected = false;
+
+            Assert.Throws<AikidoException>(
+                () => OnFileOperationTwoPaths(safeSource, unsafeDest, copyMethodInfo, contextToPass),
+                "Expected AikidoException for blocked path traversal.");
+            Assert.That(contextToPass.AttackDetected, Is.True);
         }
 
         [Test]
@@ -156,9 +161,13 @@ namespace Aikido.Zen.Test
             var unsafeInput = "../../secrets.txt";
             var safeSource = "/app/uploads/image.jpg";
             var unsafeDest = $"/app/static/{unsafeInput}";
-            var paths = new[] { safeSource, unsafeDest };
             _realContext.ParsedUserInput = new Dictionary<string, string> { { "form.dest_path", unsafeInput } };
-            RunAndVerifyAttackFlag(paths, copyMethodInfo, expectAttack: true, expectBlocked: false);
+            var contextToPass = _mockContext.Object;
+            contextToPass.ParsedUserInput = _realContext.ParsedUserInput;
+            contextToPass.AttackDetected = false;
+
+            Assert.That(OnFileOperationTwoPaths(safeSource, unsafeDest, copyMethodInfo, contextToPass), Is.True);
+            Assert.That(contextToPass.AttackDetected, Is.True);
         }
 
         [Test]
@@ -168,10 +177,9 @@ namespace Aikido.Zen.Test
             var getFullPathMethodInfo = typeof(Path).GetMethod("GetFullPath", new[] { typeof(string) })!;
             var unsafeInput = "../secrets/key.txt";
             var pathArgument = Path.Combine("wwwroot/blogs", unsafeInput);
-            var paths = new[] { pathArgument };
             _realContext.ParsedUserInput = new Dictionary<string, string> { { "query.path", unsafeInput } };
 
-            RunAndVerifyAttackFlag(paths, getFullPathMethodInfo, expectAttack: true, expectBlocked: true);
+            RunAndVerifyAttackFlag(pathArgument, getFullPathMethodInfo, expectAttack: true, expectBlocked: true);
         }
 
         [Test]
@@ -181,10 +189,23 @@ namespace Aikido.Zen.Test
             var getFullPathMethodInfo = typeof(Path).GetMethod("GetFullPath", new[] { typeof(string) })!;
             var unsafeInput = "/././etc/passwd";
             var pathArgument = Path.Combine("wwwroot/blogs", unsafeInput);
-            var paths = new[] { pathArgument };
             _realContext.ParsedUserInput = new Dictionary<string, string> { { "query.path", unsafeInput } };
 
-            RunAndVerifyAttackFlag(paths, getFullPathMethodInfo, expectAttack: true, expectBlocked: true);
+            RunAndVerifyAttackFlag(pathArgument, getFullPathMethodInfo, expectAttack: true, expectBlocked: true);
+        }
+
+        [Test]
+        public void OnFileOperation_GetFullPathWithBasePath_ReturnsTrueForSafePath()
+        {
+            var getFullPathMethodInfo = typeof(Path).GetMethod("GetFullPath", new[] { typeof(string), typeof(string) })!;
+
+            var result = OnFileOperationPathWithBasePath(
+                "child.txt",
+                Path.GetTempPath(),
+                getFullPathMethodInfo,
+                _mockContext.Object);
+
+            Assert.That(result, Is.True);
         }
 
         [Test]
@@ -192,9 +213,8 @@ namespace Aikido.Zen.Test
         {
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
             var absoluteInput = "/etc/shadow";
-            var paths = new[] { absoluteInput };
             _realContext.ParsedUserInput = new Dictionary<string, string> { { "path", absoluteInput } };
-            RunAndVerifyAttackFlag(paths, _methodInfo, expectAttack: true, expectBlocked: true);
+            RunAndVerifyAttackFlag(absoluteInput, _methodInfo, expectAttack: true, expectBlocked: true);
         }
 
         [Test]
@@ -202,9 +222,8 @@ namespace Aikido.Zen.Test
         {
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "false");
             var absoluteInput = "/etc/shadow";
-            var paths = new[] { absoluteInput };
             _realContext.ParsedUserInput = new Dictionary<string, string> { { "path", absoluteInput } };
-            RunAndVerifyAttackFlag(paths, _methodInfo, expectAttack: true, expectBlocked: false);
+            RunAndVerifyAttackFlag(absoluteInput, _methodInfo, expectAttack: true, expectBlocked: false);
         }
 
         [Test]
@@ -212,7 +231,6 @@ namespace Aikido.Zen.Test
         {
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
             var unsafeInput = "../secrets/key.txt";
-            var paths = new[] { $"/var/www/data/{unsafeInput}" };
             var contextToPass = _mockContext.Object;
 
             contextToPass.Method = "GET";
@@ -231,10 +249,59 @@ namespace Aikido.Zen.Test
                 }
             });
 
-            var result = IOPatcher.OnFileOperation(paths, _methodInfo, contextToPass);
+            var result = OnFileOperation($"/var/www/data/{unsafeInput}", _methodInfo, contextToPass);
 
             Assert.That(result, Is.True);
             Assert.That(contextToPass.AttackDetected, Is.False);
+        }
+
+        [Test]
+        public void OnFileOperation_WithMalformedEndpointConfig_ReturnsTrueWithoutMarkingAttack()
+        {
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
+            var unsafeInput = "../secrets/key.txt";
+            var contextToPass = _mockContext.Object;
+
+            contextToPass.Method = "GET";
+            contextToPass.Route = "/api/read";
+            contextToPass.Path = "/api/read";
+            contextToPass.ParsedUserInput = new Dictionary<string, string> { { "query.path", unsafeInput } };
+            contextToPass.AttackDetected = false;
+
+#pragma warning disable CS8625
+            Agent.Instance.Context.Config.UpdateRatelimitedRoutes(new[]
+            {
+                new EndpointConfig
+                {
+                    Method = null,
+                    Route = "/api/read",
+                    ForceProtectionOff = true
+                }
+            });
+#pragma warning restore CS8625
+
+            var result = OnFileOperation($"/var/www/data/{unsafeInput}", _methodInfo, contextToPass);
+
+            Assert.That(result, Is.True);
+            Assert.That(contextToPass.AttackDetected, Is.False);
+        }
+
+        private bool OnFileOperation(string path, MethodInfo methodInfo, Context? context)
+        {
+            _activeContext = context;
+            return IOSink.OnFileOperationOnePath(path, methodInfo);
+        }
+
+        private bool OnFileOperationTwoPaths(string sourceFileName, string destFileName, MethodInfo methodInfo, Context? context)
+        {
+            _activeContext = context;
+            return IOSink.OnFileOperationTwoPaths(sourceFileName, destFileName, methodInfo);
+        }
+
+        private bool OnFileOperationPathWithBasePath(string path, string basePath, MethodInfo methodInfo, Context? context)
+        {
+            _activeContext = context;
+            return IOSink.OnFileOperationPathWithBasePath(path, basePath, methodInfo);
         }
     }
 }

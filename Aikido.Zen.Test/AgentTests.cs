@@ -485,7 +485,7 @@ namespace Aikido.Zen.Test
                 }
             };
             var module = "authentication";
-            var metadata = new Dictionary<string, object>
+            var metadata = new Dictionary<string, string>
             {
                 { "sql", payload }
             };
@@ -538,7 +538,7 @@ namespace Aikido.Zen.Test
                 }
             };
             var module = "authentication";
-            var metadata = new Dictionary<string, object>
+            var metadata = new Dictionary<string, string>
             {
                 { "sql", payload }
             };
@@ -572,7 +572,7 @@ namespace Aikido.Zen.Test
                 }
             };
             var module = "authentication";
-            var metadata = new Dictionary<string, object>
+            var metadata = new Dictionary<string, string>
             {
                 { "sql", payload }
             };

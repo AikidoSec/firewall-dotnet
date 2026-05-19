@@ -49,7 +49,7 @@ namespace Aikido.Zen.Benchmarks
             }
 
             // Update blocked subnets
-            _blockList.UpdateBlockedIps(_ipRanges);
+            _blockList.UpdateBlockedIps(new[] { ("benchmark", _ipRanges.AsEnumerable()) });
         }
 
         [Benchmark]

@@ -2,8 +2,10 @@ using Aikido.Zen.Core;
 using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models.Events;
+using Aikido.Zen.Core.Sinks;
 using Aikido.Zen.Tests.Mocks;
 using Moq;
+using System.Reflection;
 
 namespace Aikido.Zen.Test.Helpers
 {
@@ -11,6 +13,7 @@ namespace Aikido.Zen.Test.Helpers
     public class PathTraversalHelperTests
     {
         private Context _context;
+        private Context? _activeContext;
         private const string ModuleName = "TestModule";
         private const string Operation = "TestOperation";
 
@@ -25,13 +28,21 @@ namespace Aikido.Zen.Test.Helpers
             };
             Environment.SetEnvironmentVariable("AIKIDO_TOKEN", "test-token");
             Agent.NewInstance(ZenApiMock.CreateMock().Object);
+            Patcher.Unpatch();
+            Patcher.PatchSinks(() => _activeContext!);
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            Patcher.Unpatch();
         }
 
         [Test]
         public void DetectPathTraversal_WithNullContext_ReturnsFalse()
         {
             // Act
-            bool result = PathTraversalHelper.DetectPathTraversal("test.txt", null, ModuleName, Operation);
+            bool result = DetectPathTraversal("test.txt", null, ModuleName, Operation);
 
             // Assert
             Assert.That(result, Is.False);
@@ -46,7 +57,7 @@ namespace Aikido.Zen.Test.Helpers
             _context.ParsedUserInput.Add("test", filename);
 
             // Act
-            bool result = PathTraversalHelper.DetectPathTraversal(filename, _context, ModuleName, Operation);
+            bool result = DetectPathTraversal(filename, _context, ModuleName, Operation);
 
             // Assert
             Assert.That(result, Is.EqualTo(expectedAttack));
@@ -80,7 +91,7 @@ namespace Aikido.Zen.Test.Helpers
 
             var filename = "/var/www/data/../test.txt";
 
-            PathTraversalHelper.DetectPathTraversal(filename, _context, ModuleName, Operation);
+            DetectPathTraversal(filename, _context, ModuleName, Operation);
             await Task.Delay(150);
 
             reportingApiMock.Verify(
@@ -93,6 +104,18 @@ namespace Aikido.Zen.Test.Helpers
                         (string)a.Attack.Metadata["filename"] == filename &&
                         !a.Attack.Metadata.ContainsKey("path"))),
                 Times.Once);
+        }
+
+        private bool DetectPathTraversal(string path, Context context, string moduleName, string operation)
+        {
+            _activeContext = context;
+            var method = typeof(PathTraversalHelperTests).GetMethod(nameof(DetectPathTraversal), BindingFlags.Instance | BindingFlags.NonPublic);
+            var result = PathTraversalHelper.DetectPathTraversal(path, context);
+            Inspector.Inspect(
+                method,
+                "fs_op",
+                _ => result);
+            return result.AttackKind.HasValue;
         }
     }
 }

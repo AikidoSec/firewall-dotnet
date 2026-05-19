@@ -1,7 +1,7 @@
 using System.Net;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Jobs;
-using Aikido.Zen.Core.Patches;
+using Aikido.Zen.Core.Sinks;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Api;
 using System.Threading.Tasks;
@@ -39,7 +39,7 @@ namespace Aikido.Zen.Benchmarks
             var runtimeAPIClient = new RuntimeAPIClient(apiHttpClient);
             Agent.NewInstance(new ZenApi(reportingAPIClient, runtimeAPIClient));
 
-            Patcher.Patch();
+            Patcher.PatchSinks(() => null);
         }
 
         [Benchmark()]

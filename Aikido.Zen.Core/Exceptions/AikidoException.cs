@@ -1,4 +1,5 @@
 using System;
+using Aikido.Zen.Core.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -24,34 +25,28 @@ namespace Aikido.Zen.Core.Exceptions
             _logger.LogError("Aikido security exception: {Message}", Message);
         }
 
-        public static AikidoException SQLInjectionDetected(string dialect)
+        public static AikidoException Blocked(AttackKind kind, string operation)
         {
-            return new AikidoException($"{dialect}: SQL injection detected");
-        }
+            switch (kind)
+            {
+                case AttackKind.SqlInjection:
+                    return new AikidoException($"Zen has blocked an SQL injection during {operation}");
 
-        public static AikidoException ShellInjectionDetected()
-        {
-            return new AikidoException($"Shell injection detected");
-        }
+                case AttackKind.ShellInjection:
+                    return new AikidoException($"Zen has blocked a shell injection during {operation}");
 
-        public static AikidoException RequestBlocked(string route)
-        {
-            return new AikidoException($"Request blocked: {route}");
-        }
+                case AttackKind.PathTraversal:
+                    return new AikidoException($"Zen has blocked a path traversal attack during {operation}");
 
-        public static AikidoException RateLimited(string route)
-        {
-            return new AikidoException($"Ratelimited: {route}");
-        }
+                case AttackKind.Ssrf:
+                    return new AikidoException($"Zen has blocked a server-side request forgery during {operation}");
 
-        public static AikidoException PathTraversalDetected(string operation)
-        {
-            return new AikidoException($"Path traversal detected during {operation}");
-        }
+                case AttackKind.OutboundConnectionBlocked:
+                    return new AikidoException($"Zen has blocked an outbound connection during {operation}");
 
-        public static AikidoException OutboundConnectionBlocked(string hostname)
-        {
-            return new AikidoException($"Zen has blocked an outbound connection to {hostname}");
+                default:
+                    return new AikidoException();
+            }
         }
     }
 }

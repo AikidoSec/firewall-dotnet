@@ -1,5 +1,4 @@
 using System.Reflection;
-using System.Reflection.Emit;
 
 using Aikido.Zen.Core.Helpers;
 
@@ -83,6 +82,18 @@ namespace Aikido.Zen.Test.Helpers
         }
 
         [Test]
+        public void GetMethodFromType_ValidMethod_ReturnsMethodInfo()
+        {
+            var methodInfo = ReflectionHelper.GetMethodFromType(
+                typeof(string),
+                nameof(string.Contains),
+                "System.String");
+
+            Assert.That(methodInfo, Is.Not.Null);
+            Assert.That(methodInfo.Name, Is.EqualTo(nameof(string.Contains)));
+        }
+
+        [Test]
         public void ClearCache_ClearsAllCachedData()
         {
             // Arrange
@@ -103,6 +114,29 @@ namespace Aikido.Zen.Test.Helpers
         }
 
         [Test]
+        public void GetMethodModule_ReturnsSimpleAssemblyName()
+        {
+            var method = typeof(string).GetMethod("Contains", new[] { typeof(string) });
+
+            var module = ReflectionHelper.GetMethodModule(method);
+
+            Assert.That(module, Is.EqualTo(typeof(string).Assembly.GetName().Name));
+            Assert.That(module, Does.Not.Contain(","));
+        }
+
+        [Test]
+        public void GetMemberValue_ReturnsPropertyOrFieldFromTypeHierarchy()
+        {
+            var instance = new DerivedReflectionTarget();
+
+            Assert.That(ReflectionHelper.GetStringMember(instance, "PublicText"), Is.EqualTo("public"));
+            Assert.That(ReflectionHelper.GetStringMember(instance, "PrivateText"), Is.EqualTo("private"));
+            Assert.That(ReflectionHelper.GetMemberValue(instance, "InheritedField"), Is.EqualTo(42));
+            Assert.That(ReflectionHelper.GetMemberValue(instance, "Missing"), Is.Null);
+            Assert.That(ReflectionHelper.GetMemberValue(null, "PublicText"), Is.Null);
+        }
+
+        [Test]
         public void GetMethodFromAssembly_PatchTraversal_ReturnsNull()
         {
             // Arrange
@@ -118,64 +152,16 @@ namespace Aikido.Zen.Test.Helpers
             Assert.That(methodInfo, Is.Null);
         }
 
-
-        /// <summary>
-        /// Verifies that the ShouldExcludeAssembly method correctly identifies assemblies that should be excluded.
-        /// </summary>
-        /// <param name="assemblyName">The full name of the assembly to check.</param>
-        /// <param name="expected">The expected result.</param>
-        [TestCase("Costura, Version=4.1.0.0, Culture=neutral, PublicKeyToken=9919ef960d84173d", true)]
-        [TestCase("Harmony, Version=2.2.2.0, Culture=neutral, PublicKeyToken=null", true)]
-        [TestCase("Fody, Version=6.5.1.0, Culture=neutral, PublicKeyToken=a750436ab3144e16", true)]
-        [TestCase("Mono.Cecil, Version=0.11.4.0, Culture=neutral, PublicKeyToken=50cebf1cceb9d05e", true)]
-        [TestCase("PostSharp, Version=6.10.16.0, Culture=neutral, PublicKeyToken=b13fd38b8f9c99d7", true)]
-        [TestCase("dnlib, Version=4.5.0.0, Culture=neutral, PublicKeyToken=50e96378b6e77999", true)]
-        [TestCase("ILRepack, Version=2.0.44, Culture=neutral, PublicKeyToken=null", true)]
-        [TestCase("BepInEx.AssemblyPublicizer.MSBuild, Version=0.4.3.0, Culture=neutral, PublicKeyToken=null", true)]
-        [TestCase("Castle.DynamicProxy2, Version=2.2.0.0, Culture=neutral, PublicKeyToken=407dd0808d44fbdc", true)]
-        [TestCase("Autofac.Extras.DynamicProxy, Version=7.1.0.0, Culture=neutral, PublicKeyToken=17863af14b0044da", true)]
-        [TestCase("System.Reflection.DispatchProxy, Version=4.0.6.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", true)]
-        [TestCase("Datadog.Trace.Manual, Version=3.27.0.0, Culture=neutral, PublicKeyToken=def86d061d0d2eeb", true)]
-        [TestCase("NewRelic.Agent.Core, Version=10.0.0.0, Culture=neutral, PublicKeyToken=06552fced0b33d87", true)]
-        [TestCase("OpenTelemetry, Version=1.0.0.0, Culture=neutral, PublicKeyToken=7bd6737fe5b67e3c", true)]
-        [TestCase("Microsoft.CodeAnalysis, Version=4.14.0, Culture=neutral, PublicKeyToken=null", true)]
-        [TestCase("ScriptCs.Core, Version=0.17.0.0, Culture=neutral, PublicKeyToken=null", true)]
-        [TestCase("Jint, Version=4.4.1.0, Culture=neutral, PublicKeyToken=2e92ba9c8d81157f", true)]
-        [TestCase("ClearScript.Core, Version=7.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35", true)]
-        [TestCase("System.Reflection.Emit, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", true)]
-        [TestCase("System.Runtime, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", false)]
-        [TestCase("MyWebApp, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null", false)]
-        [TestCase("Another.Dependency, Version=2.3.4.5, Culture=neutral, PublicKeyToken=abcdef1234567890", false)]
-        [TestCase("Aikido.Zen.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null", false)]
-        [TestCase("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089", false)]
-        public void ShouldExcludeAssembly_ShouldReturnCorrectResult(string assemblyName, bool expected)
+        private class BaseReflectionTarget
         {
-            // Arrange
-            // Simulate calling assembly by creating a dynamic method in a dynamic assembly
-            var typeBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(assemblyName), AssemblyBuilderAccess.Run)
-                .DefineDynamicModule("MainModule")
-                .DefineType("DynamicCallerType", TypeAttributes.Public);
-
-            var il = typeBuilder.DefineMethod(
-                "CallShouldSkipAssembly",
-                MethodAttributes.Public | MethodAttributes.Static,
-                typeof(bool),
-                Type.EmptyTypes)
-                .GetILGenerator();
-
-            il.Emit(OpCodes.Call, typeof(ReflectionHelper).GetMethod("ShouldSkipAssembly")!);
-            il.Emit(OpCodes.Ret);
-
-            var dynamicType = typeBuilder.CreateType();
-            var methodInfo = dynamicType.GetMethod("CallShouldSkipAssembly")!;
-
-
-            // Act
-            var result = (bool)methodInfo.Invoke(null, null)!;
-
-
-            // Assert
-            Assert.That(result, Is.EqualTo(expected), "ShouldSkipAssembly should return true for excluded assemblies");
+            public int InheritedField = 42;
         }
+
+        private class DerivedReflectionTarget : BaseReflectionTarget
+        {
+            public string PublicText { get; set; } = "public";
+            private string PrivateText { get; set; } = "private";
+        }
+
     }
 }

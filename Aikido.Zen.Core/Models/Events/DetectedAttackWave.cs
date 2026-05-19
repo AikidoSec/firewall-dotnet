@@ -33,7 +33,7 @@ namespace Aikido.Zen.Core.Models.Events
 
             var attack = new Attack
             {
-                Metadata = new Dictionary<string, object> {
+                Metadata = new Dictionary<string, string> {
                     { "samples", serializedSamples },
                 },
                 User = context.User,

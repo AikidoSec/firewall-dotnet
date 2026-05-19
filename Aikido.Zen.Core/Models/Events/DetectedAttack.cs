@@ -15,7 +15,7 @@ namespace Aikido.Zen.Core.Models.Events
         public AgentInfo Agent { get; set; }
         public long Time => DateTimeHelper.UTCNowUnixMilliseconds();
 
-        public static DetectedAttack Create(AttackKind kind, Source source, string payload, string operation, Context context, string module, IDictionary<string, object> metadata, bool blocked, string[] paths)
+        public static DetectedAttack Create(AttackKind kind, Source source, string payload, string operation, Context context, string module, IDictionary<string, string> metadata, bool blocked, string[] paths)
         {
             // if the context is null, throw an argument null exception
             if (context == null)

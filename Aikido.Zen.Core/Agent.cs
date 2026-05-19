@@ -395,7 +395,7 @@ namespace Aikido.Zen.Core
         /// <param name="blocked">Whether the attack was blocked</param>
         /// <param name="paths">Relative paths to the user-controlled fields inside the attack source</param>
         /// <returns></returns>
-        public virtual void SendAttackEvent(AttackKind kind, Source source, string payload, string operation, Context context, string module, IDictionary<string, object> metadata, bool blocked, string[] paths)
+        public virtual void SendAttackEvent(AttackKind kind, Source source, string payload, string operation, Context context, string module, IDictionary<string, string> metadata, bool blocked, string[] paths)
         {
             LogHelper.AttackLog(Logger, $"Attack detected: {kind} in {source} {operation}, blocked: {blocked}");
 

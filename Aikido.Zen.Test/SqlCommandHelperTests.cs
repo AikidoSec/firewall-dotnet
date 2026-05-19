@@ -3,8 +3,10 @@ using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Models.Events;
+using Aikido.Zen.Core.Sinks;
 using Aikido.Zen.Tests.Mocks;
 using Moq;
+using System.Reflection;
 
 namespace Aikido.Zen.Test.Helpers
 {
@@ -13,6 +15,7 @@ namespace Aikido.Zen.Test.Helpers
         private const string InvalidSqlQuery = "SELECT * FROM users WHERE name = 'abc' OR 1=1 /*";
         private const string InvalidSqlUserInput = "abc' OR 1=1 /*";
         private Context _context;
+        private Context? _activeContext;
 
         [SetUp]
         public void Setup()
@@ -43,11 +46,15 @@ namespace Aikido.Zen.Test.Helpers
                     { "headers.auth", "token123" }
                 }
             };
+
+            Patcher.Unpatch();
+            Patcher.PatchSinks(() => _activeContext!);
         }
 
         [TearDown]
         public void TearDown()
         {
+            Patcher.Unpatch();
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK_INVALID_SQL", null);
         }
 
@@ -65,7 +72,7 @@ namespace Aikido.Zen.Test.Helpers
             };
 
             // Act
-            bool result = SqlCommandHelper.DetectSQLInjection(
+            bool result = DetectSQLInjection(
                 sqlCommand,
                 SQLDialect.MicrosoftSQL,
                 _context,
@@ -103,7 +110,7 @@ namespace Aikido.Zen.Test.Helpers
                 { "query.injection", "1' OR '1'='1" }
             };
 
-            SqlCommandHelper.DetectSQLInjection(
+            DetectSQLInjection(
                 "SELECT * FROM Users WHERE Id = '1' OR '1'='1'",
                 SQLDialect.MicrosoftSQL,
                 _context,
@@ -151,7 +158,7 @@ namespace Aikido.Zen.Test.Helpers
                 { "query.injection", InvalidSqlUserInput }
             };
 
-            var result = SqlCommandHelper.DetectSQLInjection(
+            var result = DetectSQLInjection(
                 InvalidSqlQuery,
                 SQLDialect.Generic,
                 _context,
@@ -189,7 +196,7 @@ namespace Aikido.Zen.Test.Helpers
             };
 
             // Act
-            bool result = SqlCommandHelper.DetectSQLInjection(
+            bool result = DetectSQLInjection(
                 sqlCommand,
                 SQLDialect.MicrosoftSQL,
                 _context,
@@ -212,7 +219,7 @@ namespace Aikido.Zen.Test.Helpers
                 { "query.injection", InvalidSqlUserInput }
             };
 
-            var result = SqlCommandHelper.DetectSQLInjection(
+            var result = DetectSQLInjection(
                 InvalidSqlQuery,
                 SQLDialect.Generic,
                 _context,
@@ -235,7 +242,7 @@ namespace Aikido.Zen.Test.Helpers
             };
 
             // Act
-            bool result = SqlCommandHelper.DetectSQLInjection(
+            bool result = DetectSQLInjection(
                 sqlCommand,
                 SQLDialect.MicrosoftSQL,
                 emptyContext,
@@ -257,7 +264,7 @@ namespace Aikido.Zen.Test.Helpers
             string? operation = null;
 
             // Act & Assert
-            Assert.DoesNotThrow(() => SqlCommandHelper.DetectSQLInjection(
+            Assert.DoesNotThrow(() => DetectSQLInjection(
                 sqlCommand,
                 SQLDialect.MicrosoftSQL,
                 _context,
@@ -281,7 +288,7 @@ namespace Aikido.Zen.Test.Helpers
             foreach (var sqlCommand in sqlCommands)
             {
                 // Act
-                bool result = SqlCommandHelper.DetectSQLInjection(
+                bool result = DetectSQLInjection(
                     sqlCommand,
                     SQLDialect.MicrosoftSQL,
                     _context,
@@ -310,7 +317,7 @@ namespace Aikido.Zen.Test.Helpers
             };
 
             // Act
-            bool result = SqlCommandHelper.DetectSQLInjection(
+            bool result = DetectSQLInjection(
                 sqlCommand,
                 SQLDialect.MicrosoftSQL,
                 _context,
@@ -332,7 +339,7 @@ namespace Aikido.Zen.Test.Helpers
             string operation = "SELECT";
 
             // Act & Assert
-            Assert.DoesNotThrow(() => SqlCommandHelper.DetectSQLInjection(
+            Assert.DoesNotThrow(() => DetectSQLInjection(
                 sqlCommand,
                 SQLDialect.MicrosoftSQL,
                 _context,
@@ -350,7 +357,7 @@ namespace Aikido.Zen.Test.Helpers
             string operation = "TRANSACTION";
 
             // Act
-            bool result = SqlCommandHelper.DetectSQLInjection(
+            bool result = DetectSQLInjection(
                 sqlCommand,
                 SQLDialect.MicrosoftSQL,
                 _context,
@@ -372,7 +379,7 @@ namespace Aikido.Zen.Test.Helpers
             string operation = "SELECT";
 
             // Act
-            bool result = SqlCommandHelper.DetectSQLInjection(
+            bool result = DetectSQLInjection(
                 sqlCommand,
                 SQLDialect.MicrosoftSQL,
                 _context,
@@ -383,6 +390,18 @@ namespace Aikido.Zen.Test.Helpers
             // Assert
             Assert.That(result, Is.False);
             Assert.That(_context.AttackDetected, Is.False);
+        }
+
+        private bool DetectSQLInjection(string commandText, SQLDialect dialect, Context context, string moduleName, string operation)
+        {
+            _activeContext = context;
+            var method = typeof(SqlCommandHelperTests).GetMethod(nameof(DetectSQLInjection), BindingFlags.Instance | BindingFlags.NonPublic);
+            var result = SqlCommandHelper.DetectSQLInjection(commandText, dialect, context);
+            Inspector.Inspect(
+                method,
+                "sql_op",
+                _ => result);
+            return result.AttackKind.HasValue;
         }
     }
 }

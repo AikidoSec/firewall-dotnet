@@ -3,19 +3,18 @@ using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
-using Aikido.Zen.DotNetCore.Patches;
 using Aikido.Zen.DotNetCore.RuntimeSca;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Runtime.InteropServices;
+using CorePatcher = Aikido.Zen.Core.Sinks.Patcher;
 
 namespace Aikido.Zen.DotNetCore
 {
     public class Zen
     {
-
         private static IServiceProvider _serviceProvider;
         private static IHttpContextAccessor _httpContextAccessor;
 
@@ -63,7 +62,7 @@ namespace Aikido.Zen.DotNetCore
                 RuntimeAssemblyTracker.Instance.SubscribeToAppDomain(AppDomain.CurrentDomain);
             }
 
-            Patcher.Patch();
+            CorePatcher.PatchSinks(GetContext);
         }
 
         public static void SetUser(string id, string name, HttpContext context)

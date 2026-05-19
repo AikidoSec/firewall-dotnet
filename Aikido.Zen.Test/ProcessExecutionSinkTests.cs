@@ -5,20 +5,21 @@ using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Models.Events;
-using Aikido.Zen.Core.Patches;
+using Aikido.Zen.Core.Sinks;
 using Moq;
 using NUnit.Framework;
 
 namespace Aikido.Zen.Test
 {
     /// <summary>
-    /// Tests for the ProcessExecutionPatcher class.
+    /// Tests for the ProcessExecutionSink class.
     /// </summary>
-    public class ProcessExecutionPatcherTests
+    public class ProcessExecutionSinkTests
     {
         private ProcessStartInfo _startInfo = null!;
         private Context _context = null!;
         private MethodInfo _methodInfo = null!;
+        private Context? _activeContext;
 
         [SetUp]
         public void Setup()
@@ -27,7 +28,7 @@ namespace Aikido.Zen.Test
             _context = new Context();
             _methodInfo = typeof(Process).GetMethod("Start", BindingFlags.Public | BindingFlags.Instance);
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
-            // setup the agent, because when not running in drymode, SqlClientPatcher will trigger an attack event
+            // setup the agent, because when not running in drymode, SqlClientSink will trigger an attack event
             Environment.SetEnvironmentVariable("AIKIDO_TOKEN", "test-token");
             var reportingMock = new Mock<IReportingAPIClient>();
             reportingMock
@@ -40,18 +41,27 @@ namespace Aikido.Zen.Test
             var zenApiMock = new ZenApi(reportingMock.Object, runtimeMock.Object);
 
             Agent.NewInstance(zenApiMock);
+            Patcher.Unpatch();
+            Patcher.PatchSinks(() => _activeContext!);
         }
 
         [Test]
         public void OnProcessStart_WithNullContext_ReturnsTrue()
         {
             // Arrange
-            var args = new object[] { };
 
             // Act
-            var result = ProcessExecutionPatcher.OnProcessStart(args, _methodInfo, new Process { StartInfo = _startInfo }, null);
+            var result = OnProcessStart(new Process { StartInfo = _startInfo }, null);
 
             // Assert
+            Assert.That(result, Is.True);
+        }
+
+        [Test]
+        public void OnProcessStart_WithNullProcess_ReturnsTrue()
+        {
+            var result = OnProcessStart(null, _context);
+
             Assert.That(result, Is.True);
         }
 
@@ -66,11 +76,7 @@ namespace Aikido.Zen.Test
             _startInfo.FileName = "sh";
             _startInfo.Arguments = "-c \"$(echo)\"";
 
-            var result = ProcessExecutionPatcher.OnProcessStart(
-                new object[] { },
-                _methodInfo,
-                new Process { StartInfo = _startInfo },
-                _context);
+            var result = OnProcessStart(new Process { StartInfo = _startInfo }, _context);
 
             Assert.That(result, Is.True);
             Assert.That(_context.AttackDetected, Is.False);
@@ -82,10 +88,9 @@ namespace Aikido.Zen.Test
             // Arrange
             _startInfo.FileName = "safeCommand";
             _startInfo.Arguments = "--safe";
-            var args = new object[] { };
 
             // Act
-            var result = ProcessExecutionPatcher.OnProcessStart(args, _methodInfo, new Process { StartInfo = _startInfo }, _context);
+            var result = OnProcessStart(new Process { StartInfo = _startInfo }, _context);
 
             // Assert
             Assert.That(result, Is.True);
@@ -100,13 +105,12 @@ namespace Aikido.Zen.Test
             };
             _startInfo.FileName = "sh";
             _startInfo.Arguments = "-c \"$(echo)\"";
-            var args = new object[] { };
 
             // Act & Assert
             var ex = Assert.Throws<AikidoException>(() =>
-                ProcessExecutionPatcher.OnProcessStart(args, _methodInfo, new Process { StartInfo = _startInfo }, _context)
+                OnProcessStart(new Process { StartInfo = _startInfo }, _context)
             );
-            Assert.That(ex.Message, Does.Contain("Shell injection detected"));
+            Assert.That(ex.Message, Does.Contain("Zen has blocked a shell injection"));
         }
 
         [Test]
@@ -119,10 +123,9 @@ namespace Aikido.Zen.Test
             };
             _startInfo.FileName = "maliciousCommand";
             _startInfo.Arguments = "--inject";
-            var args = new object[] { };
 
             // Act
-            var result = ProcessExecutionPatcher.OnProcessStart(args, _methodInfo, new Process { StartInfo = _startInfo }, _context);
+            var result = OnProcessStart(new Process { StartInfo = _startInfo }, _context);
 
             // Assert
             Assert.That(result, Is.True);
@@ -151,11 +154,22 @@ namespace Aikido.Zen.Test
                 }
             });
 
-            var result = ProcessExecutionPatcher.OnProcessStart(
-                new object[] { },
-                _methodInfo,
-                new Process { StartInfo = _startInfo },
-                _context);
+            var result = OnProcessStart(new Process { StartInfo = _startInfo }, _context);
+
+            Assert.That(result, Is.True);
+            Assert.That(_context.AttackDetected, Is.False);
+        }
+
+        [Test]
+        public void OnProcessStart_WithMissingUserInputCollection_ReturnsTrue()
+        {
+#pragma warning disable CS8625
+            _context.ParsedUserInput = null;
+#pragma warning restore CS8625
+            _startInfo.FileName = "sh";
+            _startInfo.Arguments = "-c \"$(echo)\"";
+
+            var result = OnProcessStart(new Process { StartInfo = _startInfo }, _context);
 
             Assert.That(result, Is.True);
             Assert.That(_context.AttackDetected, Is.False);
@@ -164,7 +178,14 @@ namespace Aikido.Zen.Test
         [TearDown]
         public void TearDown()
         {
+            Patcher.Unpatch();
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", null);
+        }
+
+        private bool OnProcessStart(Process? process, Context? context)
+        {
+            _activeContext = context;
+            return ProcessExecutionSink.OnProcessStartInstance(process!, _methodInfo);
         }
     }
 }
