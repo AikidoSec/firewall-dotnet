@@ -13,6 +13,7 @@ namespace Aikido.Zen.Core.Models
         ShellInjection,
         PathTraversal,
         Ssrf,
+        StoredSsrf,
         OutboundConnectionBlocked,
     }
 
@@ -33,6 +34,8 @@ namespace Aikido.Zen.Core.Models
                     return "path_traversal";
                 case AttackKind.Ssrf:
                     return "ssrf";
+                case AttackKind.StoredSsrf:
+                    return "stored_ssrf";
                 case AttackKind.OutboundConnectionBlocked:
                     return "outbound_connection_blocked";
                 default:
@@ -55,6 +58,8 @@ namespace Aikido.Zen.Core.Models
                     return "a path traversal attack";
                 case AttackKind.Ssrf:
                     return "a server-side request forgery";
+                case AttackKind.StoredSsrf:
+                    return "a stored server-side request forgery";
                 case AttackKind.OutboundConnectionBlocked:
                     return "an outbound connection block";
                 default:

@@ -60,8 +60,7 @@ namespace Aikido.Zen.Core.Sinks
                 var isBlocked = result?.AttackKind.HasValue == true && !EnvironmentHelper.DryMode;
 
                 // Blocked outbound connections don't get reported as attacks
-                var isAttack = context != null &&
-                                        result?.AttackKind.HasValue == true &&
+                var isAttack = result?.AttackKind.HasValue == true &&
                                         result.AttackKind.Value != AttackKind.OutboundConnectionBlocked;
 
                 try
@@ -70,7 +69,7 @@ namespace Aikido.Zen.Core.Sinks
                     {
                         Agent.Instance.SendAttackEvent(
                             kind: result.AttackKind.Value,
-                            source: result.Source.Value,
+                            source: result.Source,
                             payload: result.Payload,
                             operation: operation,
                             context: context,
@@ -100,7 +99,7 @@ namespace Aikido.Zen.Core.Sinks
 
                 if (isBlocked)
                 {
-                    var blockedOperation = operation;
+                    var blockedOperation = GetBlockedOperation(operation, result);
                     if (result.AttackKind.Value == AttackKind.OutboundConnectionBlocked &&
                         result.Metadata != null &&
                         result.Metadata.TryGetValue("hostname", out var hostname) &&
@@ -120,6 +119,22 @@ namespace Aikido.Zen.Core.Sinks
             {
                 IsInspecting.Value = false;
             }
+        }
+
+        internal static string GetBlockedOperation(string operation, InspectionResult result)
+        {
+            if (result?.AttackKind == AttackKind.Ssrf && result.Source.HasValue)
+            {
+                var path = result.Paths.Length > 0 ? result.Paths[0] : string.Empty;
+                return $"{operation} originating from {result.Source.Value.ToJsonName()}{path}";
+            }
+
+            if (result?.AttackKind == AttackKind.StoredSsrf)
+            {
+                return $"{operation} originating from unknown source";
+            }
+
+            return operation;
         }
     }
 }

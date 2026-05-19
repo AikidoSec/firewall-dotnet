@@ -94,4 +94,24 @@ namespace Aikido.Zen.Core.Sinks
         {
         }
     }
+
+    internal sealed class SinkFinalizerAttribute : SinkTargetAttribute
+    {
+        public SinkFinalizerAttribute(
+            string assemblyName,
+            string targetTypeName,
+            string targetMethodName,
+            params string[] targetParameterTypeNames)
+            : base(HarmonyPatchType.Finalizer, assemblyName, targetTypeName, targetMethodName, targetParameterTypeNames)
+        {
+        }
+
+        public SinkFinalizerAttribute(
+            Type targetType,
+            string targetMethodName,
+            params string[] targetParameterTypeNames)
+            : base(HarmonyPatchType.Finalizer, targetType, targetMethodName, targetParameterTypeNames)
+        {
+        }
+    }
 }

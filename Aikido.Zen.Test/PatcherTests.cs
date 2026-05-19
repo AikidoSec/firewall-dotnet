@@ -1,5 +1,6 @@
 using System.Data.Common;
 using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Reflection;
 using System.Threading;
@@ -52,6 +53,7 @@ namespace Aikido.Zen.Test
                 nameof(HttpClient.SendAsync),
                 typeof(HttpRequestMessage),
                 typeof(CancellationToken)));
+            AssertPostfixPatch(GetMethod(typeof(Dns), nameof(Dns.GetHostAddresses), typeof(string)));
             AssertPrefixPatch(GetMethod(typeof(DbCommand), nameof(DbCommand.ExecuteScalarAsync)));
         }
 
@@ -72,8 +74,10 @@ namespace Aikido.Zen.Test
 
             Assert.That(ScannerTarget.PrefixTarget(), Is.EqualTo("prefix"));
             Assert.That(ScannerTarget.PostfixTarget(), Is.EqualTo("postfix"));
+            Assert.That(ScannerTarget.FinalizerTarget(), Is.EqualTo("finalizer"));
             AssertPrefixPatch(GetMethod(typeof(ScannerTarget), nameof(ScannerTarget.PrefixTarget)));
             AssertPostfixPatch(GetMethod(typeof(ScannerTarget), nameof(ScannerTarget.PostfixTarget)));
+            AssertFinalizerPatch(GetMethod(typeof(ScannerTarget), nameof(ScannerTarget.FinalizerTarget)));
         }
 
         [Test]
@@ -139,6 +143,15 @@ namespace Aikido.Zen.Test
             Assert.That(patches.Postfixes.Any(postfix => postfix.owner == HarmonyId), Is.True);
         }
 
+        private static void AssertFinalizerPatch(MethodInfo method)
+        {
+            Assert.That(method, Is.Not.Null);
+            var patches = Harmony.GetPatchInfo(method);
+
+            Assert.That(patches, Is.Not.Null);
+            Assert.That(patches.Finalizers.Any(finalizer => finalizer.owner == HarmonyId), Is.True);
+        }
+
         private static class ScannerTarget
         {
             public static string PrefixTarget()
@@ -147,6 +160,11 @@ namespace Aikido.Zen.Test
             }
 
             public static string PostfixTarget()
+            {
+                return "original";
+            }
+
+            public static string FinalizerTarget()
             {
                 return "original";
             }
@@ -166,6 +184,13 @@ namespace Aikido.Zen.Test
             private static void Postfix(ref string __result)
             {
                 __result = "postfix";
+            }
+
+            [SinkFinalizer("Aikido.Zen.Tests", "Aikido.Zen.Test.PatcherTests+ScannerTarget", nameof(ScannerTarget.FinalizerTarget))]
+            private static Exception Finalizer(ref string __result)
+            {
+                __result = "finalizer";
+                return null;
             }
         }
 

@@ -62,7 +62,7 @@ namespace Aikido.Zen.Core.Sinks
             {
                 var targetMethod = ResolveTargetMethod(sinkPatch);
 
-                if (targetMethod == null || targetMethod.IsAbstract)
+                if (targetMethod == null || targetMethod.IsAbstract || !IsDeclaredOnTargetType(targetMethod, sinkPatch.TargetTypeName))
                 {
                     return;
                 }
@@ -75,6 +75,9 @@ namespace Aikido.Zen.Core.Sinks
                         break;
                     case HarmonyPatchType.Postfix:
                         _harmony.Patch(targetMethod, postfix: harmonyMethod);
+                        break;
+                    case HarmonyPatchType.Finalizer:
+                        _harmony.Patch(targetMethod, finalizer: harmonyMethod);
                         break;
                     default:
                         LogHelper.ErrorLog(Agent.Logger, $"Unsupported patch type {sinkPatch.PatchType} for {sinkPatch.TargetTypeName}.{sinkPatch.TargetMethodName}");
@@ -94,6 +97,17 @@ namespace Aikido.Zen.Core.Sinks
                 sinkPatch.TargetTypeName,
                 sinkPatch.TargetMethodName,
                 sinkPatch.TargetParameterTypeNames);
+        }
+
+        private static bool IsDeclaredOnTargetType(MethodInfo method, string targetTypeName)
+        {
+            var declaringType = method?.DeclaringType;
+            if (declaringType == null)
+            {
+                return false;
+            }
+
+            return declaringType.FullName == targetTypeName || declaringType.Name == targetTypeName;
         }
     }
 }

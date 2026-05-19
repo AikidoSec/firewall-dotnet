@@ -6,6 +6,7 @@ using Aikido.Zen.Core;
 using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.Core.Models;
+using Aikido.Zen.Core.Models.Events;
 using Aikido.Zen.Core.Sinks;
 using Aikido.Zen.Tests.Mocks;
 using Moq;
@@ -353,6 +354,190 @@ namespace Aikido.Zen.Test
             Assert.That(result, Is.True);
         }
 
+        [Test]
+        public async Task OnRequest_WhenDirectPrivateIpMatchesUserInput_ReportsAndBlocksSsrf()
+        {
+            var context = CreateContext();
+            context.ParsedUserInput = new Dictionary<string, string>
+            {
+                { "query.url", "http://127.0.0.1/admin" }
+            };
+
+            var exception = Assert.Throws<AikidoException>(() => OnRequest(
+                new Uri("http://127.0.0.1/admin"),
+                GetHttpClientSendAsyncMethod(),
+                context));
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(exception?.Message, Does.Contain("server-side request forgery"));
+                Assert.That(exception?.Message, Does.Contain("query.url"));
+                Assert.That(context.AttackDetected, Is.True);
+            });
+
+            await WaitForEventProcessing();
+
+            _reportingApiMock.Verify(
+                r => r.ReportAsync(
+                    It.IsAny<string>(),
+                    It.Is<object>(evt =>
+                        evt is DetectedAttack &&
+                        ((DetectedAttack)evt).Attack.Kind == "ssrf" &&
+                        ((DetectedAttack)evt).Attack.Source == "query" &&
+                        ((DetectedAttack)evt).Attack.Path == ".url" &&
+                        ((DetectedAttack)evt).Attack.Payload == "http://127.0.0.1/admin" &&
+                        ((DetectedAttack)evt).Attack.Metadata["hostname"] == "127.0.0.1" &&
+                        ((DetectedAttack)evt).Attack.Metadata["port"] == "80" &&
+                        ((DetectedAttack)evt).Attack.Metadata["privateIP"] == "127.0.0.1")),
+                Times.Once);
+        }
+
+        [Test]
+        public async Task OnRequest_WhenDryModeSsrf_DoesNotBlockButReports()
+        {
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "false");
+            var context = CreateContext();
+            context.ParsedUserInput = new Dictionary<string, string>
+            {
+                { "body.url", "http://127.0.0.1/admin" }
+            };
+
+            var result = OnRequest(
+                new Uri("http://127.0.0.1/admin"),
+                GetHttpClientSendAsyncMethod(),
+                context);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result, Is.True);
+                Assert.That(context.AttackDetected, Is.True);
+            });
+
+            await WaitForEventProcessing();
+
+            _reportingApiMock.Verify(
+                r => r.ReportAsync(
+                    It.IsAny<string>(),
+                    It.Is<object>(evt =>
+                        evt is DetectedAttack &&
+                        ((DetectedAttack)evt).Attack.Kind == "ssrf" &&
+                        ((DetectedAttack)evt).Attack.Blocked == false)),
+                Times.Once);
+        }
+
+        [Test]
+        public async Task InspectResolvedAddresses_WhenHostnameMatchesUserInputAndResolvesPrivate_ReportsAndBlocksSsrf()
+        {
+            var context = CreateContext();
+            context.ParsedUserInput = new Dictionary<string, string>
+            {
+                { "body.url", "http://private.example/admin" }
+            };
+
+            try
+            {
+                var result = OnRequest(
+                    new Uri("http://private.example/admin"),
+                    GetHttpClientSendAsyncMethod(),
+                    context);
+
+                Assert.That(result, Is.True);
+
+                var exception = Assert.Throws<AikidoException>(() =>
+                    OutboundRequestSink.InspectResolvedAddresses(new[] { IPAddress.Parse("127.0.0.1") }));
+
+                Assert.That(exception?.Message, Does.Contain("body.url"));
+            }
+            finally
+            {
+                OutboundRequestSink.ExitRequestScope();
+            }
+
+            await WaitForEventProcessing();
+
+            _reportingApiMock.Verify(
+                r => r.ReportAsync(
+                    It.IsAny<string>(),
+                    It.Is<object>(evt =>
+                        evt is DetectedAttack &&
+                        ((DetectedAttack)evt).Attack.Kind == "ssrf" &&
+                        ((DetectedAttack)evt).Attack.Source == "body" &&
+                        ((DetectedAttack)evt).Attack.Path == ".url" &&
+                        ((DetectedAttack)evt).Attack.Metadata["hostname"] == "private.example" &&
+                        ((DetectedAttack)evt).Attack.Metadata["privateIP"] == "127.0.0.1")),
+                Times.Once);
+        }
+
+        [Test]
+        public async Task InspectResolvedAddresses_WhenHostnameResolvesToImds_ReportsStoredSsrf()
+        {
+            try
+            {
+                var result = OnRequest(
+                    new Uri("http://imds.example/latest/meta-data"),
+                    GetHttpClientSendAsyncMethod(),
+                    null);
+
+                Assert.That(result, Is.True);
+
+                var exception = Assert.Throws<AikidoException>(() =>
+                    OutboundRequestSink.InspectResolvedAddresses(new[] { IPAddress.Parse("169.254.169.254") }));
+
+                Assert.That(exception?.Message, Does.Contain("stored server-side request forgery"));
+            }
+            finally
+            {
+                OutboundRequestSink.ExitRequestScope();
+            }
+
+            await WaitForEventProcessing();
+
+            _reportingApiMock.Verify(
+                r => r.ReportAsync(
+                    It.IsAny<string>(),
+                    It.Is<object>(evt =>
+                        evt is DetectedAttack &&
+                        ((DetectedAttack)evt).Attack.Kind == "stored_ssrf" &&
+                        ((DetectedAttack)evt).Attack.Source == null &&
+                        ((DetectedAttack)evt).Attack.Path == string.Empty &&
+                        ((DetectedAttack)evt).Request == null &&
+                        ((DetectedAttack)evt).Attack.Metadata["hostname"] == "imds.example" &&
+                        ((DetectedAttack)evt).Attack.Metadata["privateIP"] == "169.254.169.254")),
+                Times.Once);
+        }
+
+        [Test]
+        public void InspectResolvedAddresses_WhenDryMode_DoesNotConvertLaterNetworkFailure()
+        {
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "false");
+            var context = CreateContext();
+            context.ParsedUserInput = new Dictionary<string, string>
+            {
+                { "query.url", "http://private.example/admin" }
+            };
+
+            try
+            {
+                var result = OnRequest(
+                    new Uri("http://private.example/admin"),
+                    GetHttpClientSendAsyncMethod(),
+                    context);
+
+                Assert.That(result, Is.True);
+                Assert.DoesNotThrow(() =>
+                    OutboundRequestSink.InspectResolvedAddresses(new[] { IPAddress.Parse("127.0.0.1") }));
+
+                var networkException = new InvalidOperationException("network failed");
+                var finalException = OutboundRequestSink.OnRequestFinalized(networkException);
+
+                Assert.That(finalException, Is.SameAs(networkException));
+            }
+            finally
+            {
+                OutboundRequestSink.ExitRequestScope();
+            }
+        }
+
         private static MethodInfo GetHttpClientSendAsyncMethod()
         {
             return typeof(HttpClient).GetMethod(
@@ -403,6 +588,11 @@ namespace Aikido.Zen.Test
                 null);
             Assert.That(method, Is.Not.Null, $"{type.FullName}.{methodName} should exist.");
             return method;
+        }
+
+        private static Task WaitForEventProcessing()
+        {
+            return Task.Delay(300);
         }
 
     }
