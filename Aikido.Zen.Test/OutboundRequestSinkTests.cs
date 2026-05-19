@@ -443,10 +443,13 @@ namespace Aikido.Zen.Test
 
                 Assert.That(result, Is.True);
 
-                var exception = Assert.Throws<AikidoException>(() =>
-                    OutboundRequestSink.InspectResolvedAddresses(new[] { IPAddress.Parse("127.0.0.1") }));
+                var exception = DnsSink.InspectResolvedAddresses(
+                    "private.example",
+                    new[] { IPAddress.Parse("127.0.0.1") },
+                    GetDnsGetHostAddressesMethod());
 
-                Assert.That(exception?.Message, Does.Contain("body.url"));
+                Assert.That(exception, Is.TypeOf<AikidoException>());
+                Assert.That(exception.Message, Does.Contain("body.url"));
             }
             finally
             {
@@ -480,10 +483,13 @@ namespace Aikido.Zen.Test
 
                 Assert.That(result, Is.True);
 
-                var exception = Assert.Throws<AikidoException>(() =>
-                    OutboundRequestSink.InspectResolvedAddresses(new[] { IPAddress.Parse("169.254.169.254") }));
+                var exception = DnsSink.InspectResolvedAddresses(
+                    "imds.example",
+                    new[] { IPAddress.Parse("169.254.169.254") },
+                    GetDnsGetHostAddressesMethod());
 
-                Assert.That(exception?.Message, Does.Contain("stored server-side request forgery"));
+                Assert.That(exception, Is.TypeOf<AikidoException>());
+                Assert.That(exception.Message, Does.Contain("stored server-side request forgery"));
             }
             finally
             {
@@ -524,12 +530,15 @@ namespace Aikido.Zen.Test
                     context);
 
                 Assert.That(result, Is.True);
-                Assert.DoesNotThrow(() =>
-                    OutboundRequestSink.InspectResolvedAddresses(new[] { IPAddress.Parse("127.0.0.1") }));
+                var blockedException = DnsSink.InspectResolvedAddresses(
+                    "private.example",
+                    new[] { IPAddress.Parse("127.0.0.1") },
+                    GetDnsGetHostAddressesMethod());
 
                 var networkException = new InvalidOperationException("network failed");
                 var finalException = OutboundRequestSink.OnRequestFinalized(networkException);
 
+                Assert.That(blockedException, Is.Null);
                 Assert.That(finalException, Is.SameAs(networkException));
             }
             finally
@@ -539,7 +548,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void OnHttpClientAsyncCompleted_ClearsCallerRequestScope()
+        public void OnRequestFinalized_ClearsCallerRequestScope()
         {
             var context = CreateContext();
             context.ParsedUserInput = new Dictionary<string, string>
@@ -554,11 +563,21 @@ namespace Aikido.Zen.Test
 
             Assert.That(result, Is.True);
 
-            var responseTask = Task.FromException<HttpResponseMessage>(new InvalidOperationException("network failed"));
-            OutboundRequestSink.OnHttpClientAsyncCompleted(ref responseTask);
+            OutboundRequestSink.OnRequestFinalized(null!);
 
-            Assert.DoesNotThrow(() =>
-                OutboundRequestSink.InspectResolvedAddresses(new[] { IPAddress.Parse("127.0.0.1") }));
+            var exception = DnsSink.InspectResolvedAddresses(
+                "private.example",
+                new[] { IPAddress.Parse("127.0.0.1") },
+                GetDnsGetHostAddressesMethod());
+
+            Assert.That(exception, Is.Null);
+        }
+
+        private static MethodInfo GetDnsGetHostAddressesMethod()
+        {
+            return typeof(Dns).GetMethod(
+                nameof(Dns.GetHostAddresses),
+                new[] { typeof(string) })!;
         }
 
         private static MethodInfo GetHttpClientSendAsyncMethod()

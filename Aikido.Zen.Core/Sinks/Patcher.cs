@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
@@ -14,6 +15,7 @@ namespace Aikido.Zen.Core.Sinks
 
         private static readonly Type[] PatchCatalogs =
         {
+            typeof(DnsSink),
             typeof(IOSink),
             typeof(LLMSink),
             typeof(OutboundRequestSink),
@@ -47,16 +49,46 @@ namespace Aikido.Zen.Core.Sinks
         internal static void PatchCatalog(Type catalogType)
         {
             var patchMethods = catalogType.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+            var prefixTargets = GetPrefixTargets(patchMethods);
+
             foreach (var patchMethod in patchMethods)
             {
                 foreach (var sinkPatch in patchMethod.GetCustomAttributes<SinkTargetAttribute>())
                 {
-                    Patch(patchMethod, sinkPatch);
+                    if (sinkPatch is SinkFinalizerAttribute && !sinkPatch.HasTarget)
+                    {
+                        foreach (var prefixTarget in prefixTargets)
+                        {
+                            Patch(patchMethod, HarmonyPatchType.Finalizer, prefixTarget);
+                        }
+
+                        continue;
+                    }
+
+                    Patch(patchMethod, sinkPatch.PatchType, sinkPatch);
                 }
             }
         }
 
-        private static void Patch(MethodInfo patchMethod, SinkTargetAttribute sinkPatch)
+        private static SinkPrefixAttribute[] GetPrefixTargets(MethodInfo[] patchMethods)
+        {
+            var targets = new List<SinkPrefixAttribute>();
+
+            foreach (var patchMethod in patchMethods)
+            {
+                foreach (var prefix in patchMethod.GetCustomAttributes<SinkPrefixAttribute>())
+                {
+                    if (prefix.HasTarget)
+                    {
+                        targets.Add(prefix);
+                    }
+                }
+            }
+
+            return targets.ToArray();
+        }
+
+        private static void Patch(MethodInfo patchMethod, HarmonyPatchType patchType, SinkTargetAttribute sinkPatch)
         {
             try
             {
@@ -68,7 +100,7 @@ namespace Aikido.Zen.Core.Sinks
                 }
 
                 var harmonyMethod = new HarmonyMethod(patchMethod);
-                switch (sinkPatch.PatchType)
+                switch (patchType)
                 {
                     case HarmonyPatchType.Prefix:
                         _harmony.Patch(targetMethod, prefix: harmonyMethod);
@@ -80,7 +112,7 @@ namespace Aikido.Zen.Core.Sinks
                         _harmony.Patch(targetMethod, finalizer: harmonyMethod);
                         break;
                     default:
-                        LogHelper.ErrorLog(Agent.Logger, $"Unsupported patch type {sinkPatch.PatchType} for {sinkPatch.TargetTypeName}.{sinkPatch.TargetMethodName}");
+                        LogHelper.ErrorLog(Agent.Logger, $"Unsupported patch type {patchType} for {sinkPatch.TargetTypeName}.{sinkPatch.TargetMethodName}");
                         break;
                 }
             }

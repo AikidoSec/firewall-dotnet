@@ -53,7 +53,7 @@ namespace Aikido.Zen.Test
                 nameof(HttpClient.SendAsync),
                 typeof(HttpRequestMessage),
                 typeof(CancellationToken)));
-            AssertPostfixPatch(GetMethod(typeof(Dns), nameof(Dns.GetHostAddresses), typeof(string)));
+            AssertFinalizerPatch(GetMethod(typeof(Dns), nameof(Dns.GetHostAddresses), typeof(string)));
             AssertPrefixPatch(GetMethod(typeof(DbCommand), nameof(DbCommand.ExecuteScalarAsync)));
         }
 
@@ -78,6 +78,20 @@ namespace Aikido.Zen.Test
             AssertPrefixPatch(GetMethod(typeof(ScannerTarget), nameof(ScannerTarget.PrefixTarget)));
             AssertPostfixPatch(GetMethod(typeof(ScannerTarget), nameof(ScannerTarget.PostfixTarget)));
             AssertFinalizerPatch(GetMethod(typeof(ScannerTarget), nameof(ScannerTarget.FinalizerTarget)));
+        }
+
+        [Test]
+        public void PatchCatalog_WithSinkFinalizer_PatchesEveryPrefixTarget()
+        {
+            Patcher.PatchCatalog(typeof(SinkFinalizerCatalog));
+
+            Assert.That(SinkFinalizerTarget.First(), Is.EqualTo("sink-finalizer"));
+            Assert.That(SinkFinalizerTarget.Second(), Is.EqualTo("sink-finalizer"));
+            Assert.That(SinkFinalizerTarget.PostfixOnly(), Is.EqualTo("postfix-only"));
+
+            AssertFinalizerPatch(GetMethod(typeof(SinkFinalizerTarget), nameof(SinkFinalizerTarget.First)));
+            AssertFinalizerPatch(GetMethod(typeof(SinkFinalizerTarget), nameof(SinkFinalizerTarget.Second)));
+            AssertNoFinalizerPatch(GetMethod(typeof(SinkFinalizerTarget), nameof(SinkFinalizerTarget.PostfixOnly)));
         }
 
         [Test]
@@ -152,6 +166,14 @@ namespace Aikido.Zen.Test
             Assert.That(patches.Finalizers.Any(finalizer => finalizer.owner == HarmonyId), Is.True);
         }
 
+        private static void AssertNoFinalizerPatch(MethodInfo method)
+        {
+            Assert.That(method, Is.Not.Null);
+            var patches = Harmony.GetPatchInfo(method);
+
+            Assert.That(patches == null || !patches.Finalizers.Any(finalizer => finalizer.owner == HarmonyId), Is.True);
+        }
+
         private static class ScannerTarget
         {
             public static string PrefixTarget()
@@ -191,6 +213,46 @@ namespace Aikido.Zen.Test
             {
                 __result = "finalizer";
                 return null;
+            }
+        }
+
+        private static class SinkFinalizerTarget
+        {
+            public static string First()
+            {
+                return "first";
+            }
+
+            public static string Second()
+            {
+                return "second";
+            }
+
+            public static string PostfixOnly()
+            {
+                return "postfix-original";
+            }
+        }
+
+        private static class SinkFinalizerCatalog
+        {
+            [SinkPrefix("Aikido.Zen.Tests", "Aikido.Zen.Test.PatcherTests+SinkFinalizerTarget", nameof(SinkFinalizerTarget.First))]
+            [SinkPrefix("Aikido.Zen.Tests", "Aikido.Zen.Test.PatcherTests+SinkFinalizerTarget", nameof(SinkFinalizerTarget.Second))]
+            private static void Prefix()
+            {
+            }
+
+            [SinkPostfix("Aikido.Zen.Tests", "Aikido.Zen.Test.PatcherTests+SinkFinalizerTarget", nameof(SinkFinalizerTarget.PostfixOnly))]
+            private static void Postfix(ref string __result)
+            {
+                __result = "postfix-only";
+            }
+
+            [SinkFinalizer]
+            private static Exception Finalizer(ref string __result)
+            {
+                __result = "sink-finalizer";
+                return null!;
             }
         }
 
