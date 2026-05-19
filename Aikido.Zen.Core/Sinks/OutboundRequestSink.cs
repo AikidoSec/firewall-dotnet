@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Reflection;
-using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 
@@ -45,11 +44,6 @@ namespace Aikido.Zen.Core.Sinks
             var hostname = targetUri.Host;
             var port = UriHelper.GetPort(targetUri);
             Agent.Instance.CaptureOutboundRequest(hostname, port);
-
-            if (AgentHttpRequestScope.IsActive)
-            {
-                return InspectionResult.Allow(skipStats: true);
-            }
 
             if (Agent.Instance.Context.Config.ShouldBlockOutgoingRequest(hostname))
             {

@@ -20,11 +20,7 @@ namespace Aikido.Zen.Core.Api
             try
             {
                 var request = APIHelper.CreateRequest(token, new Uri(EnvironmentHelper.AikidoRealtimeUrl), "config", HttpMethod.Get);
-                HttpResponseMessage response;
-                using (AgentHttpRequestScope.Enter())
-                {
-                    response = await _httpClient.SendAsync(request).ConfigureAwait(false);
-                }
+                var response = await _httpClient.SendAsync(request);
                 return APIHelper.ToAPIResponse<ConfigLastUpdatedAPIResponse>(response);
             }
             catch (TaskCanceledException ex)
@@ -44,11 +40,7 @@ namespace Aikido.Zen.Core.Api
             try
             {
                 var request = APIHelper.CreateRequest(token, new Uri(EnvironmentHelper.AikidoUrl), "/api/runtime/config", HttpMethod.Get);
-                HttpResponseMessage response;
-                using (AgentHttpRequestScope.Enter())
-                {
-                    response = await _httpClient.SendAsync(request).ConfigureAwait(false);
-                }
+                var response = await _httpClient.SendAsync(request);
                 return APIHelper.ToAPIResponse<ReportingAPIResponse>(response);
             }
             catch (TaskCanceledException ex)

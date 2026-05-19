@@ -104,7 +104,6 @@ namespace Aikido.Zen.Test
         public async Task GetConfig_ShouldReturnSuccess()
         {
             // Arrange
-            var requestWasSentInAgentScope = false;
             var response = new HttpResponseMessage
             {
                 StatusCode = HttpStatusCode.OK,
@@ -118,10 +117,6 @@ namespace Aikido.Zen.Test
                     ItExpr.IsAny<HttpRequestMessage>(),
                     ItExpr.IsAny<CancellationToken>()
                 )
-                .Callback<HttpRequestMessage, CancellationToken>((_, __) =>
-                {
-                    requestWasSentInAgentScope = AgentHttpRequestScope.IsActive;
-                })
                 .ReturnsAsync(response);
 
             // Act
@@ -130,8 +125,6 @@ namespace Aikido.Zen.Test
 
             // Assert
             Assert.That(result.Success);
-            Assert.That(requestWasSentInAgentScope, Is.True);
-            Assert.That(AgentHttpRequestScope.IsActive, Is.False);
             _handlerMock.Protected().Verify(
                 "SendAsync",
                 Times.Once(),
