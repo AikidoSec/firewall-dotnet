@@ -103,6 +103,37 @@ namespace Aikido.Zen.Test.Helpers
         }
 
         [Test]
+        public void WarningLog_ShouldLogMessageAsWarning()
+        {
+            var message = "Test warning message";
+
+            LogHelper.WarningLog(_loggerMock.Object, message);
+
+            _loggerMock.Verify(logger => logger.Log(
+                It.Is<LogLevel>(level => level == LogLevel.Warning),
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString().EndsWith(message)),
+                It.IsAny<Exception?>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Once);
+        }
+
+        [Test]
+        public void WarningLog_ShouldSanitizeMessage_WhenMessageContainsDangerousCharacters()
+        {
+            var message = "Warning\nmessage\rwith\tdetails";
+            var expectedSanitizedContent = "Warningmessagewithdetails";
+
+            LogHelper.WarningLog(_loggerMock.Object, message);
+
+            _loggerMock.Verify(logger => logger.Log(
+                It.Is<LogLevel>(level => level == LogLevel.Warning),
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains(expectedSanitizedContent)),
+                It.IsAny<Exception?>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Once);
+        }
+
+        [Test]
         public void AttackLog_ShouldSanitizeMessage_WhenMessageContainsDangerousCharacters()
         {
             var message = "Attack\nattempt\rwith\tdetails";
