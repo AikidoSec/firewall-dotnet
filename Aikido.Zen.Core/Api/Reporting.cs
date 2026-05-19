@@ -24,7 +24,11 @@ namespace Aikido.Zen.Core.Api
                 var eventAsJson = JsonSerializer.Serialize(@event, ZenApi.JsonSerializerOptions);
                 var requestContent = new StringContent(eventAsJson, Encoding.UTF8, "application/json");
                 var request = APIHelper.CreateRequest(token, new Uri(EnvironmentHelper.AikidoUrl), "api/runtime/events", HttpMethod.Post, requestContent);
-                var response = await _httpClient.SendAsync(request);
+                HttpResponseMessage response;
+                using (AgentHttpRequestScope.Enter())
+                {
+                    response = await _httpClient.SendAsync(request).ConfigureAwait(false);
+                }
                 return APIHelper.ToAPIResponse<ReportingAPIResponse>(response);
             }
             catch (TaskCanceledException ex)
@@ -44,7 +48,11 @@ namespace Aikido.Zen.Core.Api
             try
             {
                 var request = APIHelper.CreateRequest(token, new Uri(EnvironmentHelper.AikidoUrl), "api/runtime/firewall/lists", HttpMethod.Get);
-                var response = await _httpClient.SendAsync(request);
+                HttpResponseMessage response;
+                using (AgentHttpRequestScope.Enter())
+                {
+                    response = await _httpClient.SendAsync(request).ConfigureAwait(false);
+                }
                 return APIHelper.ToAPIResponse<FirewallListsAPIResponse>(response);
             }
             catch (TaskCanceledException ex)

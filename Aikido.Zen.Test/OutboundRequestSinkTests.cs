@@ -223,6 +223,30 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void OnRequest_WhenAgentHttpRequestScopeIsActive_CapturesHostnameWithoutBlocking()
+        {
+            // Arrange
+            _agent.Context.Config.UpdateOutboundDomains(true, new[]
+            {
+                new OutboundDomainConfig { Hostname = "safe.example", Mode = "allow" }
+            });
+
+            // Act
+            bool result;
+            using (AgentHttpRequestScope.Enter())
+            {
+                result = OnRequest(
+                    new Uri("http://10.0.0.1:3000/api/runtime/events"),
+                    GetHttpClientSendAsyncMethod(),
+                    null);
+            }
+
+            // Assert
+            Assert.That(result, Is.True);
+            Assert.That(_agent.Context.Hostnames.Any(h => h.Hostname == "10.0.0.1" && h.Port == 3000), Is.True);
+        }
+
+        [Test]
         public void OnRequest_WhenContextIsBypassed_SkipsSink()
         {
             // Arrange
