@@ -134,6 +134,22 @@ namespace Aikido.Zen.Test.Helpers
         }
 
         [Test]
+        public void WarningLog_WithException_ShouldLogExceptionAsWarning()
+        {
+            var message = "Test warning with exception";
+            var exception = new InvalidOperationException("test exception");
+
+            LogHelper.WarningLog(_loggerMock.Object, exception, message);
+
+            _loggerMock.Verify(logger => logger.Log(
+                It.Is<LogLevel>(level => level == LogLevel.Warning),
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.EndsWith(message)),
+                exception,
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Once);
+        }
+
+        [Test]
         public void AttackLog_ShouldSanitizeMessage_WhenMessageContainsDangerousCharacters()
         {
             var message = "Attack\nattempt\rwith\tdetails";
