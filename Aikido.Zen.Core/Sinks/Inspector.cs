@@ -78,7 +78,10 @@ namespace Aikido.Zen.Core.Sinks
                             blocked: isBlocked,
                             paths: result.Paths);
 
-                        context.AttackDetected = true;
+                        if (context != null)
+                        {
+                            context.AttackDetected = true;
+                        }
                     }
 
                     if (!result.SkipStats)
