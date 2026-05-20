@@ -103,14 +103,6 @@ namespace Aikido.Zen.Core.Sinks
                 if (isBlocked)
                 {
                     var blockedOperation = GetBlockedOperation(operation, result);
-                    if (result.AttackKind.Value == AttackKind.OutboundConnectionBlocked &&
-                        result.Metadata != null &&
-                        result.Metadata.TryGetValue("hostname", out var hostname) &&
-                        !string.IsNullOrEmpty(hostname))
-                    {
-                        blockedOperation = $"{operation} to {hostname}";
-                    }
-
                     throw AikidoException.Blocked(
                         result.AttackKind.Value,
                         blockedOperation);
@@ -135,6 +127,14 @@ namespace Aikido.Zen.Core.Sinks
             if (result?.AttackKind == AttackKind.StoredSsrf)
             {
                 return $"{operation} originating from unknown source";
+            }
+
+            if (result?.AttackKind == AttackKind.OutboundConnectionBlocked &&
+                result.Metadata != null &&
+                result.Metadata.TryGetValue("hostname", out var hostname) &&
+                !string.IsNullOrEmpty(hostname))
+            {
+                return $"{operation} to {hostname}";
             }
 
             return operation;
