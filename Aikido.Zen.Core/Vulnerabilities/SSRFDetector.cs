@@ -109,7 +109,9 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 return false;
             }
 
-            return HaveEquivalentSelfRequestPorts(serverUri.Port, port.Value);
+            return serverUri.Port == port.Value ||
+                (serverUri.Port == 80 && port.Value == 443) ||
+                (serverUri.Port == 443 && port.Value == 80);
         }
 
         internal static bool IsRequestToServiceHostname(string hostname)
@@ -222,11 +224,5 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 (!port.HasValue || port.Value == uri.Port);
         }
 
-        private static bool HaveEquivalentSelfRequestPorts(int serverPort, int outboundPort)
-        {
-            return serverPort == outboundPort ||
-                (serverPort == 80 && outboundPort == 443) ||
-                (serverPort == 443 && outboundPort == 80);
-        }
     }
 }
