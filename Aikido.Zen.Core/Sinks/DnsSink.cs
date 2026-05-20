@@ -56,6 +56,7 @@ namespace Aikido.Zen.Core.Sinks
             }
             catch (AikidoException ex)
             {
+                OutboundRequestSink.SetDetectedException(ex);
                 return ex;
             }
         }

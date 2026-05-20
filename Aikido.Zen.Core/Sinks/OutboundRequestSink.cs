@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
+using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Vulnerabilities;
@@ -12,7 +15,7 @@ namespace Aikido.Zen.Core.Sinks
     internal static class OutboundRequestSink
     {
         private const string OperationKind = "outgoing_http_op";
-        private static readonly System.Threading.AsyncLocal<Uri> CurrentRequestUri = new System.Threading.AsyncLocal<Uri>();
+        private static readonly AsyncLocal<OutboundRequest> CurrentRequest = new AsyncLocal<OutboundRequest>();
 
         [SinkPrefix(typeof(HttpClient), "SendAsync", "System.Net.Http.HttpRequestMessage", "System.Net.Http.HttpCompletionOption", "System.Threading.CancellationToken")]
         [SinkPrefix(typeof(HttpClient), "SendAsync", "System.Net.Http.HttpRequestMessage", "System.Threading.CancellationToken")]
@@ -38,8 +41,13 @@ namespace Aikido.Zen.Core.Sinks
         }
 
         [SinkFinalizer]
-        internal static Exception OnRequestFinalized(Exception __exception)
+        internal static Exception OnRequestFinalized(ref object __result, Exception __exception)
         {
+            if (__result is Task<HttpResponseMessage> responseTask && CurrentRequest.Value != null)
+            {
+                __result = ThrowDetectedException(responseTask, CurrentRequest.Value);
+            }
+
             ExitRequestScope();
             return __exception;
         }
@@ -95,18 +103,50 @@ namespace Aikido.Zen.Core.Sinks
 
         private static void EnterRequestScope(Uri targetUri)
         {
-            CurrentRequestUri.Value = targetUri;
+            CurrentRequest.Value = new OutboundRequest(targetUri);
         }
 
         internal static void ExitRequestScope()
         {
-            CurrentRequestUri.Value = null;
+            CurrentRequest.Value = null;
         }
 
         internal static bool TryGetCurrentRequestUri(out Uri targetUri)
         {
-            targetUri = CurrentRequestUri.Value;
+            targetUri = CurrentRequest.Value?.TargetUri;
             return targetUri != null;
+        }
+
+        internal static void SetDetectedException(AikidoException exception)
+        {
+            var currentRequest = CurrentRequest.Value;
+            if (currentRequest != null)
+            {
+                currentRequest.DetectedException = exception;
+            }
+        }
+
+        private static async Task<HttpResponseMessage> ThrowDetectedException(Task<HttpResponseMessage> responseTask, OutboundRequest request)
+        {
+            try
+            {
+                return await responseTask.ConfigureAwait(false);
+            }
+            catch (Exception) when (request.DetectedException != null)
+            {
+                throw request.DetectedException;
+            }
+        }
+
+        private sealed class OutboundRequest
+        {
+            internal OutboundRequest(Uri targetUri)
+            {
+                TargetUri = targetUri;
+            }
+
+            internal Uri TargetUri { get; }
+            internal AikidoException DetectedException { get; set; }
         }
     }
 }

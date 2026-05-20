@@ -533,7 +533,8 @@ namespace Aikido.Zen.Test
                     GetDnsGetHostAddressesMethod());
 
                 var networkException = new InvalidOperationException("network failed");
-                var finalException = OutboundRequestSink.OnRequestFinalized(networkException);
+                object finalizerResult = null!;
+                var finalException = OutboundRequestSink.OnRequestFinalized(ref finalizerResult, networkException);
 
                 Assert.That(blockedException, Is.Null);
                 Assert.That(finalException, Is.SameAs(networkException));
@@ -560,7 +561,8 @@ namespace Aikido.Zen.Test
 
             Assert.That(result, Is.True);
 
-            OutboundRequestSink.OnRequestFinalized(null!);
+            object finalizerResult = null!;
+            OutboundRequestSink.OnRequestFinalized(ref finalizerResult, null!);
 
             var exception = DnsSink.InspectResolvedAddresses(
                 new[] { IPAddress.Parse("127.0.0.1") },
@@ -637,6 +639,24 @@ namespace Aikido.Zen.Test
             {
                 OutboundRequestSink.ExitRequestScope();
             }
+        }
+
+        [Test]
+        public void HttpClientRequest_WhenDnsBlocksAsyncRequest_ThrowsAikidoException()
+        {
+            var url = "http://localhost:4000/";
+            var context = CreateContext();
+            context.Url = "http://localhost:8080/api/request";
+            context.ParsedUserInput = new Dictionary<string, string>
+            {
+                { "query.url", url }
+            };
+            _activeContext = context;
+
+            using var httpClient = new HttpClient();
+            var exception = Assert.ThrowsAsync<AikidoException>(() => httpClient.GetAsync(url));
+
+            Assert.That(exception?.Message, Does.Contain("blocked"));
         }
 
         private static MethodInfo GetDnsGetHostAddressesMethod()
