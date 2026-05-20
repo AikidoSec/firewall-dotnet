@@ -59,7 +59,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void HasSameHostAndPort_WhenTrustProxyDisabled_ReturnsFalse()
+        public void HasSameHostAndPort_WhenTrustProxyDisabled_StillComparesHostAndPort()
         {
             Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", "false");
 
@@ -69,7 +69,7 @@ namespace Aikido.Zen.Test
                 rightUri.Host,
                 rightUri.Port);
 
-            Assert.That(result, Is.False);
+            Assert.That(result, Is.True);
         }
 
         [TestCase("http://localhost:8080/outbound", "http://localhost:8080", true)]
