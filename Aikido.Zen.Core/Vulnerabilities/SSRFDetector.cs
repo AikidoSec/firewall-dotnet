@@ -31,13 +31,17 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 return InspectionResult.Allow();
             }
 
-            if (TryGetPrivateOrLocalIPAddress(addresses, out var privateIPAddress) && privateIPAddress == null)
+            string privateIPAddress;
+            if (addresses != null)
             {
-                // Resolved public addresses are not SSRF.
-                return InspectionResult.Allow();
+                // DNS sink already has resolved addresses, so inspect the real destination IPs.
+                if (!TryGetPrivateOrLocalIPAddress(addresses, out privateIPAddress))
+                {
+                    // Resolved public addresses are not SSRF.
+                    return InspectionResult.Allow();
+                }
             }
-
-            if (privateIPAddress == null && !TryGetPrivateOrLocalIPAddress(hostname, out privateIPAddress))
+            else if (!TryGetPrivateOrLocalIPAddress(hostname, out privateIPAddress))
             {
                 // Outbound sink only has a hostname; inspect DNS later unless it is already a private IP.
                 inspectDns = true;
@@ -136,18 +140,11 @@ namespace Aikido.Zen.Core.Vulnerabilities
 
         internal static bool TryGetPrivateOrLocalIPAddress(IPAddress[] addresses, out string privateIPAddress)
         {
-            privateIPAddress = null;
-
-            if (addresses == null)
-            {
-                return false;
-            }
-
-            privateIPAddress = addresses
+            privateIPAddress = addresses?
                 .Select(address => address?.ToString())
                 .FirstOrDefault(address => TryGetPrivateOrLocalIPAddress(address, out _));
 
-            return true;
+            return privateIPAddress != null;
         }
 
         internal static string NormalizeHostname(string hostname)
