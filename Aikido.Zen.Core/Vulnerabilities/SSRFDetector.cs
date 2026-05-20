@@ -29,7 +29,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
             return HasSameHostAndPort(left.Host, left.Port, right);
         }
 
-        internal static InspectionResult Detect(string hostname, int? port, string privateIPAddress, Context context, out bool inspectDns)
+        internal static InspectionResult Detect(string hostname, int? port, IPAddress[] addresses, Context context, out bool inspectDns)
         {
             inspectDns = false;
 
@@ -39,10 +39,10 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 return InspectionResult.Allow();
             }
 
-            if (string.IsNullOrWhiteSpace(privateIPAddress) &&
+            if (!TryGetPrivateOrLocalIPAddress(addresses, out var privateIPAddress) &&
                 !TryGetPrivateOrLocalIPAddress(hostname, out privateIPAddress))
             {
-                inspectDns = true;
+                inspectDns = addresses == null;
                 return InspectionResult.Allow();
             }
 
@@ -157,7 +157,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
             return true;
         }
 
-        internal static bool TryGetPrivateOrLocalIPAddress(IPAddress[] addresses, out string privateIPAddress)
+        private static bool TryGetPrivateOrLocalIPAddress(IPAddress[] addresses, out string privateIPAddress)
         {
             privateIPAddress = null;
 

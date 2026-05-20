@@ -39,8 +39,7 @@ namespace Aikido.Zen.Core.Sinks
 
         internal static Exception InspectResolvedAddresses(string hostname, IPAddress[] addresses, MethodBase originalMethod)
         {
-            if (!OutboundRequestSink.IsRequestingOutbound() ||
-                !SSRFDetector.TryGetPrivateOrLocalIPAddress(addresses, out var privateIPAddress))
+            if (!OutboundRequestSink.IsRequestingOutbound())
             {
                 return null;
             }
@@ -50,7 +49,7 @@ namespace Aikido.Zen.Core.Sinks
                 Inspector.Inspect(
                     originalMethod,
                     OperationKind,
-                    context => SSRFDetector.Detect(hostname, null, privateIPAddress, context, out _));
+                    context => SSRFDetector.Detect(hostname, null, addresses, context, out _));
 
                 return null;
             }
