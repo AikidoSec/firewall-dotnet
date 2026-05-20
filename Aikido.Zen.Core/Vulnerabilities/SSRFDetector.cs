@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
 using Aikido.Zen.Core.Helpers;
@@ -39,8 +40,20 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 return InspectionResult.Allow();
             }
 
-            if (!TryGetPrivateOrLocalIPAddress(addresses, out var privateIPAddress) &&
-                !TryGetPrivateOrLocalIPAddress(hostname, out privateIPAddress))
+            string privateIPAddress;
+            if (addresses != null)
+            {
+                privateIPAddress = addresses
+                    .Select(address => address?.ToString())
+                    .Select(address => TryGetPrivateOrLocalIPAddress(address, out var ip) ? ip : null)
+                    .FirstOrDefault(ip => ip != null);
+
+                if (privateIPAddress == null)
+                {
+                    return InspectionResult.Allow();
+                }
+            }
+            else if (!TryGetPrivateOrLocalIPAddress(hostname, out privateIPAddress))
             {
                 inspectDns = true;
                 return InspectionResult.Allow();
@@ -127,17 +140,17 @@ namespace Aikido.Zen.Core.Vulnerabilities
             return ImdsHelper.IsImdsIPAddress(privateIPAddress);
         }
 
-        internal static bool TryGetPrivateOrLocalIPAddress(string hostname, out string privateIPAddress)
+        internal static bool TryGetPrivateOrLocalIPAddress(string candidate, out string privateIPAddress)
         {
             privateIPAddress = null;
 
-            if (string.IsNullOrWhiteSpace(hostname))
+            if (string.IsNullOrWhiteSpace(candidate))
             {
                 return false;
             }
 
-            var candidate = hostname.Trim().TrimStart('[').TrimEnd(']');
-            if (!IPAddress.TryParse(candidate, out var address))
+            var normalizedCandidate = candidate.Trim().TrimStart('[').TrimEnd(']');
+            if (!IPAddress.TryParse(normalizedCandidate, out var address))
             {
                 return false;
             }
@@ -150,28 +163,6 @@ namespace Aikido.Zen.Core.Vulnerabilities
 
             privateIPAddress = normalizedIPAddress;
             return true;
-        }
-
-        private static bool TryGetPrivateOrLocalIPAddress(IPAddress[] addresses, out string privateIPAddress)
-        {
-            privateIPAddress = null;
-
-            if (addresses == null)
-            {
-                return false;
-            }
-
-            foreach (var address in addresses)
-            {
-                var candidate = address?.ToString();
-                if (!string.IsNullOrWhiteSpace(candidate) && IPHelper.IsPrivateOrLocalIp(candidate))
-                {
-                    privateIPAddress = candidate;
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         internal static string NormalizeHostname(string hostname)
