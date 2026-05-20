@@ -75,7 +75,6 @@ jobs:
           dockerfile_path: ./zen-demo-dotnet-core/Dockerfile
           app_port: 8080
           sleep_before_test: 10
-          skip_tests: test_stored_ssrf_no_context,test_stored_ssrf,test_ssrf
 
   qa-tests-netfx:
     needs: build-package
@@ -125,4 +124,5 @@ jobs:
           sleep_before_test: 15
           max_parallel_tests: 5
           test_timeout: 900
+          # SSRF QA tests need a Windows container before they can run for .NET Framework.
           skip_tests: test_stored_ssrf_no_context,test_stored_ssrf,test_ssrf,test_ssrf_diffrent_port
