@@ -35,7 +35,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
             inspectDns = false;
 
             Uri.TryCreate(context?.Url, UriKind.Absolute, out var serverUri);
-            // Calls back to the current app are not SSRF when proxy headers are trusted.
+            // Allow the app to call itself when the current request URL is trusted.
             if (IsRequestToItself(serverUri, hostname, port))
             {
                 return InspectionResult.Allow();
