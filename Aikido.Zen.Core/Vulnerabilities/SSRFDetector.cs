@@ -35,6 +35,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
             inspectDns = false;
 
             Uri.TryCreate(context?.Url, UriKind.Absolute, out var serverUri);
+            // Calls back to the current app are not SSRF when proxy headers are trusted.
             if (IsRequestToItself(serverUri, hostname, port))
             {
                 return InspectionResult.Allow();
@@ -43,10 +44,12 @@ namespace Aikido.Zen.Core.Vulnerabilities
             string privateIPAddress;
             if (addresses != null)
             {
+                // DNS sink already has resolved addresses, so inspect the real destination IPs.
                 privateIPAddress = addresses
                     .Select(address => address?.ToString())
                     .FirstOrDefault(address => TryGetPrivateOrLocalIPAddress(address, out _));
 
+                // Resolved public addresses are not SSRF.
                 if (privateIPAddress == null)
                 {
                     return InspectionResult.Allow();
@@ -54,10 +57,12 @@ namespace Aikido.Zen.Core.Vulnerabilities
             }
             else if (!TryGetPrivateOrLocalIPAddress(hostname, out privateIPAddress))
             {
+                // Outbound sink only has a hostname; inspect DNS later unless it is already a private IP.
                 inspectDns = true;
                 return InspectionResult.Allow();
             }
 
+            // User-controlled full URLs that resolve to private/local IPs are request SSRF.
             if (!IsRequestToServiceHostname(hostname) && context?.ParsedUserInput != null)
             {
                 foreach (var userInput in context.ParsedUserInput)
@@ -78,6 +83,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 }
             }
 
+            // Unknown-source hostnames resolving to IMDS are stored SSRF.
             if (IsStoredSSRF(hostname, privateIPAddress))
             {
                 return InspectionResult.Block(
