@@ -55,7 +55,12 @@ namespace Aikido.Zen.Core.Sinks
             {
                 foreach (var sinkPatch in patchMethod.GetCustomAttributes<SinkTargetAttribute>())
                 {
-                    Patch(patchMethod, sinkPatch, sinkFinalizer);
+                    Patch(patchMethod, sinkPatch);
+
+                    if (sinkFinalizer != null)
+                    {
+                        AddFinalizerPatch(sinkFinalizer, sinkPatch);
+                    }
                 }
             }
         }
@@ -66,7 +71,18 @@ namespace Aikido.Zen.Core.Sinks
                 patchMethod.GetCustomAttributes<SinkFinalizerAttribute>().Any(finalizer => !finalizer.HasTarget));
         }
 
-        private static void Patch(MethodInfo patchMethod, SinkTargetAttribute sinkPatch, MethodInfo sinkFinalizer)
+        private static void AddFinalizerPatch(MethodInfo sinkFinalizer, SinkTargetAttribute sinkPatch)
+        {
+            var finalizerPatch = new SinkFinalizerAttribute(
+                sinkPatch.AssemblyName,
+                sinkPatch.TargetTypeName,
+                sinkPatch.TargetMethodName,
+                sinkPatch.TargetParameterTypeNames);
+
+            Patch(sinkFinalizer, finalizerPatch);
+        }
+
+        private static void Patch(MethodInfo patchMethod, SinkTargetAttribute sinkPatch)
         {
             try
             {
@@ -78,14 +94,13 @@ namespace Aikido.Zen.Core.Sinks
                 }
 
                 var harmonyMethod = new HarmonyMethod(patchMethod);
-                var finalizerMethod = sinkFinalizer == null ? null : new HarmonyMethod(sinkFinalizer);
                 switch (sinkPatch.PatchType)
                 {
                     case HarmonyPatchType.Prefix:
-                        _harmony.Patch(targetMethod, prefix: harmonyMethod, finalizer: finalizerMethod);
+                        _harmony.Patch(targetMethod, prefix: harmonyMethod);
                         break;
                     case HarmonyPatchType.Postfix:
-                        _harmony.Patch(targetMethod, postfix: harmonyMethod, finalizer: finalizerMethod);
+                        _harmony.Patch(targetMethod, postfix: harmonyMethod);
                         break;
                     case HarmonyPatchType.Finalizer:
                         _harmony.Patch(targetMethod, finalizer: harmonyMethod);
