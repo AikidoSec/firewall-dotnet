@@ -39,22 +39,10 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 return InspectionResult.Allow();
             }
 
-            string privateIPAddress;
-            if (addresses != null)
-            {
-                if (!TryGetPrivateOrLocalIPAddress(addresses, out privateIPAddress))
-                {
-                    return InspectionResult.Allow();
-                }
-            }
-            else if (!TryGetPrivateOrLocalIPAddress(hostname, out privateIPAddress))
+            if (!TryGetPrivateOrLocalIPAddress(addresses, out var privateIPAddress) &&
+                !TryGetPrivateOrLocalIPAddress(hostname, out privateIPAddress))
             {
                 inspectDns = true;
-                return InspectionResult.Allow();
-            }
-
-            if (string.IsNullOrWhiteSpace(privateIPAddress))
-            {
                 return InspectionResult.Allow();
             }
 
