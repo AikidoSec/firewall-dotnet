@@ -52,7 +52,8 @@ namespace Aikido.Zen.Test
         [TestCase("https://aikido.dev", "https://google.com", false)]
         public void HasSameHostAndPort_WhenComparingHostAndPort_ReturnsExpectedResult(string left, string right, bool expected)
         {
-            var result = SSRFDetector.HasSameHostAndPort(new Uri(left), new Uri(right));
+            var rightUri = new Uri(right);
+            var result = SSRFDetector.HasSameHostAndPort(new Uri(left), rightUri.Host, rightUri.Port);
 
             Assert.That(result, Is.EqualTo(expected));
         }
@@ -62,22 +63,24 @@ namespace Aikido.Zen.Test
         {
             Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", "false");
 
+            var rightUri = new Uri("https://aikido.dev/admin");
             var result = SSRFDetector.HasSameHostAndPort(
                 new Uri("https://aikido.dev"),
-                new Uri("https://aikido.dev/admin"));
+                rightUri.Host,
+                rightUri.Port);
 
             Assert.That(result, Is.False);
         }
 
         [TestCase("http://localhost:8080/outbound", "http://localhost:8080", true)]
-        [TestCase("http://localhost:80/outbound", "https://localhost/test/3", true)]
-        [TestCase("http://localhost:443/outbound", "http://localhost/test/4", true)]
+        [TestCase("http://localhost:80/outbound", "https://localhost/test/3", false)]
+        [TestCase("http://localhost:443/outbound", "http://localhost/test/4", false)]
         [TestCase("http://localhost:4999/outbound", "http://localhost:5000/test/2", false)]
         [TestCase("http://app.local/outbound", "http://localhost:80", false)]
-        public void IsRequestToItself_MatchesExpectedBehavior(string serverUrl, string outboundUrl, bool expected)
+        public void HasSameHostAndPort_WhenComparingCurrentRequestToOutboundTarget_ReturnsExpectedResult(string serverUrl, string outboundUrl, bool expected)
         {
             var outboundUri = new Uri(outboundUrl);
-            var result = SSRFDetector.IsRequestToItself(new Uri(serverUrl), outboundUri.Host, outboundUri.Port);
+            var result = SSRFDetector.HasSameHostAndPort(new Uri(serverUrl), outboundUri.Host, outboundUri.Port);
 
             Assert.That(result, Is.EqualTo(expected));
         }

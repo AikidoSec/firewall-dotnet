@@ -20,23 +20,13 @@ namespace Aikido.Zen.Core.Vulnerabilities
             "metadata"
         };
 
-        internal static bool HasSameHostAndPort(Uri left, Uri right)
-        {
-            if (left == null)
-            {
-                return false;
-            }
-
-            return HasSameHostAndPort(left.Host, left.Port, right);
-        }
-
         internal static InspectionResult Detect(string hostname, int? port, IPAddress[] addresses, Context context, out bool inspectDns)
         {
             inspectDns = false;
 
             Uri.TryCreate(context?.Url, UriKind.Absolute, out var serverUri);
             // Allow the app to call itself when the current request URL is trusted.
-            if (IsRequestToItself(serverUri, hostname, port))
+            if (HasSameHostAndPort(serverUri, hostname, port))
             {
                 return InspectionResult.Allow();
             }
@@ -68,7 +58,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 foreach (var userInput in context.ParsedUserInput)
                 {
                     if (!Uri.TryCreate(userInput.Value, UriKind.Absolute, out var userUri) ||
-                        !HasSameHostAndPort(hostname, port, userUri))
+                        !HasSameHostAndPort(userUri, hostname, port))
                     {
                         continue;
                     }
@@ -92,26 +82,6 @@ namespace Aikido.Zen.Core.Vulnerabilities
             }
 
             return InspectionResult.Allow();
-        }
-
-        internal static bool IsRequestToItself(Uri serverUri, string hostname, int? port)
-        {
-            if (!EnvironmentHelper.TrustProxy || serverUri == null || string.IsNullOrWhiteSpace(hostname) || !port.HasValue)
-            {
-                return false;
-            }
-
-            if (!string.Equals(
-                    NormalizeHostname(serverUri.Host),
-                    NormalizeHostname(hostname),
-                    StringComparison.Ordinal))
-            {
-                return false;
-            }
-
-            return serverUri.Port == port.Value ||
-                (serverUri.Port == 80 && port.Value == 443) ||
-                (serverUri.Port == 443 && port.Value == 80);
         }
 
         internal static bool IsRequestToServiceHostname(string hostname)
@@ -210,7 +180,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
             return metadata;
         }
 
-        private static bool HasSameHostAndPort(string hostname, int? port, Uri uri)
+        internal static bool HasSameHostAndPort(Uri uri, string hostname, int? port)
         {
             if (!EnvironmentHelper.TrustProxy || string.IsNullOrWhiteSpace(hostname) || uri == null)
             {
@@ -218,11 +188,10 @@ namespace Aikido.Zen.Core.Vulnerabilities
             }
 
             return string.Equals(
-                NormalizeHostname(hostname),
                 NormalizeHostname(uri.Host),
+                NormalizeHostname(hostname),
                 StringComparison.Ordinal) &&
                 (!port.HasValue || port.Value == uri.Port);
         }
-
     }
 }
