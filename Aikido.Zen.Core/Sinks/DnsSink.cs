@@ -20,7 +20,7 @@ namespace Aikido.Zen.Core.Sinks
                 return __exception;
             }
 
-            return InspectResolvedAddresses(__0, __result, __originalMethod);
+            return InspectResolvedAddresses(__result, __originalMethod);
         }
 
         [SinkFinalizer(typeof(Dns), "GetHostAddressesAsync", "System.String")]
@@ -33,13 +33,13 @@ namespace Aikido.Zen.Core.Sinks
                 return __exception;
             }
 
-            __result = InspectResolvedAddressesAsync(__0, __result, __originalMethod);
+            __result = InspectResolvedAddressesAsync(__result, __originalMethod);
             return null;
         }
 
-        internal static Exception InspectResolvedAddresses(string hostname, IPAddress[] addresses, MethodBase originalMethod)
+        internal static Exception InspectResolvedAddresses(IPAddress[] addresses, MethodBase originalMethod)
         {
-            if (!OutboundRequestSink.IsRequestingOutbound())
+            if (!OutboundRequestSink.TryGetCurrentRequestUri(out var targetUri))
             {
                 return null;
             }
@@ -49,7 +49,8 @@ namespace Aikido.Zen.Core.Sinks
                 Inspector.Inspect(
                     originalMethod,
                     OperationKind,
-                    context => SSRFDetector.Detect(hostname, null, addresses, context, out _));
+                    // DNS can happen after a redirect, so match SSRF against the original outbound URL.
+                    context => SSRFDetector.Detect(targetUri, addresses, context, out _));
 
                 return null;
             }
@@ -59,7 +60,7 @@ namespace Aikido.Zen.Core.Sinks
             }
         }
 
-        private static async Task<IPAddress[]> InspectResolvedAddressesAsync(string hostname, Task<IPAddress[]> addressesTask, MethodBase originalMethod)
+        private static async Task<IPAddress[]> InspectResolvedAddressesAsync(Task<IPAddress[]> addressesTask, MethodBase originalMethod)
         {
             if (addressesTask == null)
             {
@@ -67,7 +68,7 @@ namespace Aikido.Zen.Core.Sinks
             }
 
             var addresses = await addressesTask.ConfigureAwait(false);
-            var exception = InspectResolvedAddresses(hostname, addresses, originalMethod);
+            var exception = InspectResolvedAddresses(addresses, originalMethod);
             if (exception != null)
             {
                 throw exception;

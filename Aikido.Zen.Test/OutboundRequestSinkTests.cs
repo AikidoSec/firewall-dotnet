@@ -444,7 +444,6 @@ namespace Aikido.Zen.Test
                 Assert.That(result, Is.True);
 
                 var exception = DnsSink.InspectResolvedAddresses(
-                    "private.example",
                     new[] { IPAddress.Parse("127.0.0.1") },
                     GetDnsGetHostAddressesMethod());
 
@@ -484,7 +483,6 @@ namespace Aikido.Zen.Test
                 Assert.That(result, Is.True);
 
                 var exception = DnsSink.InspectResolvedAddresses(
-                    "imds.example",
                     new[] { IPAddress.Parse("169.254.169.254") },
                     GetDnsGetHostAddressesMethod());
 
@@ -531,7 +529,6 @@ namespace Aikido.Zen.Test
 
                 Assert.That(result, Is.True);
                 var blockedException = DnsSink.InspectResolvedAddresses(
-                    "private.example",
                     new[] { IPAddress.Parse("127.0.0.1") },
                     GetDnsGetHostAddressesMethod());
 
@@ -566,11 +563,80 @@ namespace Aikido.Zen.Test
             OutboundRequestSink.OnRequestFinalized(null!);
 
             var exception = DnsSink.InspectResolvedAddresses(
-                "private.example",
                 new[] { IPAddress.Parse("127.0.0.1") },
                 GetDnsGetHostAddressesMethod());
 
             Assert.That(exception, Is.Null);
+        }
+
+        [Test]
+        public void InspectResolvedAddresses_WhenLocalhostTargetPortDiffersFromCurrentRequest_BlocksSsrf()
+        {
+            var context = CreateContext();
+            context.Url = "http://localhost:8080/api/request";
+            context.ParsedUserInput = new Dictionary<string, string>
+            {
+                { "query.url", "http://localhost:4000/" }
+            };
+
+            try
+            {
+                var result = OnRequest(
+                    new Uri("http://localhost:4000/"),
+                    GetHttpClientSendAsyncMethod(),
+                    context);
+
+                Assert.That(result, Is.True);
+
+                var exception = DnsSink.InspectResolvedAddresses(
+                    new[] { IPAddress.Parse("127.0.0.1") },
+                    GetDnsGetHostAddressesMethod());
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(exception, Is.TypeOf<AikidoException>());
+                    Assert.That(context.AttackDetected, Is.True);
+                });
+            }
+            finally
+            {
+                OutboundRequestSink.ExitRequestScope();
+            }
+        }
+
+        [Test]
+        public void InspectResolvedAddresses_WhenRedirectHostResolvesPrivate_BlocksOriginalRequest()
+        {
+            var url = "http://ssrf-redirects.testssandbox.com/ssrf-test-4";
+            var context = CreateContext();
+            context.ParsedUserInput = new Dictionary<string, string>
+            {
+                { "query.url", url }
+            };
+
+            try
+            {
+                var result = OnRequest(
+                    new Uri(url),
+                    GetHttpClientSendAsyncMethod(),
+                    context);
+
+                Assert.That(result, Is.True);
+
+                var exception = DnsSink.InspectResolvedAddresses(
+                    new[] { IPAddress.Parse("127.0.0.1") },
+                    GetDnsGetHostAddressesMethod());
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(exception, Is.TypeOf<AikidoException>());
+                    Assert.That(context.AttackDetected, Is.True);
+                });
+            }
+            finally
+            {
+                OutboundRequestSink.ExitRequestScope();
+            }
         }
 
         private static MethodInfo GetDnsGetHostAddressesMethod()

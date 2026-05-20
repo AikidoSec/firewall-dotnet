@@ -20,9 +20,17 @@ namespace Aikido.Zen.Core.Vulnerabilities
             "metadata"
         };
 
-        internal static InspectionResult Detect(string hostname, int? port, IPAddress[] addresses, Context context, out bool inspectDns)
+        internal static InspectionResult Detect(Uri targetUri, IPAddress[] addresses, Context context, out bool inspectDns)
         {
             inspectDns = false;
+
+            if (targetUri == null)
+            {
+                return InspectionResult.Allow(skipStats: true);
+            }
+
+            var hostname = targetUri.Host;
+            var port = UriHelper.GetPort(targetUri);
 
             Uri.TryCreate(context?.Url, UriKind.Absolute, out var serverUri);
             // Allow the app to call itself when the current request URL is trusted.

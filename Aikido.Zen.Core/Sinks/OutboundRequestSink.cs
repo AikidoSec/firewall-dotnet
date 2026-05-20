@@ -12,7 +12,7 @@ namespace Aikido.Zen.Core.Sinks
     internal static class OutboundRequestSink
     {
         private const string OperationKind = "outgoing_http_op";
-        private static readonly System.Threading.AsyncLocal<bool> IsRequesting = new System.Threading.AsyncLocal<bool>();
+        private static readonly System.Threading.AsyncLocal<Uri> CurrentRequestUri = new System.Threading.AsyncLocal<Uri>();
 
         [SinkPrefix(typeof(HttpClient), "SendAsync", "System.Net.Http.HttpRequestMessage", "System.Net.Http.HttpCompletionOption", "System.Threading.CancellationToken")]
         [SinkPrefix(typeof(HttpClient), "SendAsync", "System.Net.Http.HttpRequestMessage", "System.Threading.CancellationToken")]
@@ -68,11 +68,11 @@ namespace Aikido.Zen.Core.Sinks
                     });
             }
 
-            var result = SSRFDetector.Detect(hostname, port, null, context, out var inspectDns);
+            var result = SSRFDetector.Detect(targetUri, null, context, out var inspectDns);
 
             if (inspectDns)
             {
-                EnterRequestScope();
+                EnterRequestScope(targetUri);
             }
 
             return result;
@@ -93,19 +93,20 @@ namespace Aikido.Zen.Core.Sinks
             return new Uri(client.BaseAddress, request.RequestUri);
         }
 
-        private static void EnterRequestScope()
+        private static void EnterRequestScope(Uri targetUri)
         {
-            IsRequesting.Value = true;
+            CurrentRequestUri.Value = targetUri;
         }
 
         internal static void ExitRequestScope()
         {
-            IsRequesting.Value = false;
+            CurrentRequestUri.Value = null;
         }
 
-        internal static bool IsRequestingOutbound()
+        internal static bool TryGetCurrentRequestUri(out Uri targetUri)
         {
-            return IsRequesting.Value;
+            targetUri = CurrentRequestUri.Value;
+            return targetUri != null;
         }
     }
 }
