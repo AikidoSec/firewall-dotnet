@@ -68,7 +68,7 @@ namespace Aikido.Zen.Core.Sinks
                     });
             }
 
-            var result = SSRFDetector.DetectOutboundRequest(targetUri, context, out var inspectDns);
+            var result = SSRFDetector.Detect(targetUri, context, out var inspectDns);
 
             if (inspectDns)
             {

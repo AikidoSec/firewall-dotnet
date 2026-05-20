@@ -21,20 +21,15 @@ namespace Aikido.Zen.Core.Vulnerabilities
 
         internal static bool HasSameHostAndPort(Uri left, Uri right)
         {
-            if (!EnvironmentHelper.TrustProxy || left == null || right == null)
+            if (left == null)
             {
                 return false;
             }
 
-            return Uri.Compare(
-                left,
-                right,
-                UriComponents.HostAndPort,
-                UriFormat.SafeUnescaped,
-                StringComparison.OrdinalIgnoreCase) == 0;
+            return HasSameHostAndPort(left.Host, left.Port, right);
         }
 
-        internal static InspectionResult DetectOutboundRequest(Uri targetUri, Context context, out bool inspectDns)
+        internal static InspectionResult Detect(Uri targetUri, Context context, out bool inspectDns)
         {
             inspectDns = false;
 
@@ -46,14 +41,14 @@ namespace Aikido.Zen.Core.Vulnerabilities
 
             if (TryGetPrivateOrLocalIPAddress(targetUri.Host, out var privateIPAddress))
             {
-                return DetectSSRF(targetUri, privateIPAddress, context);
+                return Detect(targetUri.Host, UriHelper.GetPort(targetUri), privateIPAddress, context);
             }
 
             inspectDns = true;
             return InspectionResult.Allow();
         }
 
-        internal static InspectionResult DetectResolvedRequest(string hostname, string privateIPAddress, Context context)
+        internal static InspectionResult Detect(string hostname, int? port, string privateIPAddress, Context context)
         {
             if (string.IsNullOrWhiteSpace(privateIPAddress))
             {
@@ -65,7 +60,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 foreach (var userInput in context.ParsedUserInput)
                 {
                     if (!Uri.TryCreate(userInput.Value, UriKind.Absolute, out var userUri) ||
-                        !HasSameHost(hostname, userUri))
+                        !HasSameHostAndPort(hostname, port, userUri))
                     {
                         continue;
                     }
@@ -75,7 +70,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
                         AttackKind.Ssrf,
                         source: source,
                         payload: userInput.Value,
-                        metadata: CreateMetadata(hostname, null, privateIPAddress),
+                        metadata: CreateMetadata(hostname, port, privateIPAddress),
                         paths: new[] { UserInputHelper.GetAttackPathFromUserInputKey(userInput.Key) });
                 }
             }
@@ -84,7 +79,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
             {
                 return InspectionResult.Block(
                     AttackKind.StoredSsrf,
-                    metadata: CreateMetadata(hostname, null, privateIPAddress));
+                    metadata: CreateMetadata(hostname, port, privateIPAddress));
             }
 
             return InspectionResult.Allow();
@@ -206,45 +201,6 @@ namespace Aikido.Zen.Core.Vulnerabilities
             }
         }
 
-        private static InspectionResult DetectSSRF(Uri targetUri, string privateIPAddress, Context context)
-        {
-            if (string.IsNullOrWhiteSpace(privateIPAddress))
-            {
-                return InspectionResult.Allow();
-            }
-
-            var hostname = targetUri.Host;
-
-            if (!IsRequestToServiceHostname(hostname) && context?.ParsedUserInput != null)
-            {
-                foreach (var userInput in context.ParsedUserInput)
-                {
-                    if (!Uri.TryCreate(userInput.Value, UriKind.Absolute, out var userUri) ||
-                        !HasSameHostAndPort(targetUri, userUri))
-                    {
-                        continue;
-                    }
-
-                    var source = UserInputHelper.GetAttackSourceFromUserInputKey(userInput.Key);
-                    return InspectionResult.Block(
-                        AttackKind.Ssrf,
-                        source: source,
-                        payload: userInput.Value,
-                        metadata: CreateMetadata(hostname, UriHelper.GetPort(targetUri), privateIPAddress),
-                        paths: new[] { UserInputHelper.GetAttackPathFromUserInputKey(userInput.Key) });
-                }
-            }
-
-            if (IsStoredSSRF(hostname, privateIPAddress))
-            {
-                return InspectionResult.Block(
-                    AttackKind.StoredSsrf,
-                    metadata: CreateMetadata(hostname, null, privateIPAddress));
-            }
-
-            return InspectionResult.Allow();
-        }
-
         private static IDictionary<string, string> CreateMetadata(string hostname, int? port, string privateIPAddress)
         {
             var metadata = new Dictionary<string, string>
@@ -265,7 +221,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
             return metadata;
         }
 
-        private static bool HasSameHost(string hostname, Uri uri)
+        private static bool HasSameHostAndPort(string hostname, int? port, Uri uri)
         {
             if (!EnvironmentHelper.TrustProxy || string.IsNullOrWhiteSpace(hostname) || uri == null)
             {
@@ -275,7 +231,8 @@ namespace Aikido.Zen.Core.Vulnerabilities
             return string.Equals(
                 NormalizeHostname(hostname),
                 NormalizeHostname(uri.Host),
-                StringComparison.Ordinal);
+                StringComparison.Ordinal) &&
+                (!port.HasValue || port.Value == uri.Port);
         }
 
         private static bool HaveEquivalentSelfRequestPorts(int serverPort, int outboundPort)

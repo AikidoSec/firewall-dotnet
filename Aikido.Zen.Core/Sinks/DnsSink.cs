@@ -50,7 +50,7 @@ namespace Aikido.Zen.Core.Sinks
                 Inspector.Inspect(
                     originalMethod,
                     OperationKind,
-                    context => SSRFDetector.DetectResolvedRequest(hostname, privateIPAddress, context));
+                    context => SSRFDetector.Detect(hostname, null, privateIPAddress, context));
 
                 return null;
             }
