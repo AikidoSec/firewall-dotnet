@@ -19,6 +19,17 @@ namespace Aikido.Zen.Core.Vulnerabilities
             "localdomain",
             "metadata"
         };
+        private static readonly HashSet<string> ImdsIPAddresses = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "169.254.169.254",
+            "100.100.100.200",
+            "fd00:ec2::254"
+        };
+        private static readonly HashSet<string> TrustedImdsHostnames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "metadata.google.internal",
+            "metadata.goog"
+        };
 
         internal static InspectionResult Detect(Uri targetUri, IPAddress[] addresses, Context context, out bool inspectDns)
         {
@@ -108,7 +119,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
             }
 
             var normalizedHostname = NormalizeHostname(hostname);
-            if (ImdsHelper.IsTrustedHostname(normalizedHostname))
+            if (IsTrustedImdsHostname(normalizedHostname))
             {
                 return false;
             }
@@ -118,7 +129,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 return false;
             }
 
-            return ImdsHelper.IsImdsIPAddress(privateIPAddress);
+            return IsImdsIPAddress(privateIPAddress);
         }
 
         internal static bool TryGetPrivateOrLocalIPAddress(string candidate, out string privateIPAddress)
@@ -205,6 +216,39 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 NormalizeHostname(hostname),
                 StringComparison.Ordinal) &&
                 (!port.HasValue || port.Value == uri.Port);
+        }
+
+        private static bool IsTrustedImdsHostname(string hostname)
+        {
+            return !string.IsNullOrWhiteSpace(hostname) &&
+                TrustedImdsHostnames.Contains(hostname.Trim());
+        }
+
+        private static bool IsImdsIPAddress(string ipAddress)
+        {
+            var normalizedIPAddress = NormalizeIPAddress(ipAddress);
+            return normalizedIPAddress != null && ImdsIPAddresses.Contains(normalizedIPAddress);
+        }
+
+        private static string NormalizeIPAddress(string ipAddress)
+        {
+            if (string.IsNullOrWhiteSpace(ipAddress))
+            {
+                return null;
+            }
+
+            var normalizedCandidate = ipAddress.Trim().TrimStart('[').TrimEnd(']');
+            if (!IPAddress.TryParse(normalizedCandidate, out var parsedAddress))
+            {
+                return null;
+            }
+
+            if (parsedAddress.IsIPv4MappedToIPv6)
+            {
+                return parsedAddress.MapToIPv4().ToString();
+            }
+
+            return parsedAddress.ToString();
         }
     }
 }

@@ -110,10 +110,21 @@ namespace Aikido.Zen.Test
         }
 
         [TestCase("imds.test.com", "169.254.169.254", true)]
+        [TestCase("imds.test.com", "fd00:ec2::254", true)]
+        [TestCase("imds.test.com", "100.100.100.200", true)]
         [TestCase("imds.test.com", "::ffff:169.254.169.254", true)]
+        [TestCase("imds.test.com", "::ffff:100.100.100.200", true)]
+        [TestCase("imds.test.com", "0::ffff:6464:64c8", true)]
+        [TestCase("imds.test.com", "0000:0000:0:0000:0000:ffff:a9fe:a9fe", true)]
+        [TestCase("imds.test.com", "fd00:ec2:0:0000:0:0:0000:0254", true)]
         [TestCase("metadata.google.internal", "169.254.169.254", false)]
+        [TestCase("metadata.goog", "169.254.169.254", false)]
+        [TestCase("METADATA.GOOGLE.INTERNAL", "169.254.169.254", false)]
         [TestCase("169.254.169.254", "169.254.169.254", false)]
         [TestCase("example.com", "127.0.0.1", false)]
+        [TestCase("example.com", "1.2.3.4", false)]
+        [TestCase("example.com", "169.254.169.253", false)]
+        [TestCase("example.com", "example.com", false)]
         [TestCase("example.com", null, false)]
         public void IsStoredSSRF_ReturnsExpectedResult(string hostname, string? privateIPAddress, bool expected)
         {
