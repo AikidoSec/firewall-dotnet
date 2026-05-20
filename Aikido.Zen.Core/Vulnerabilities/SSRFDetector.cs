@@ -31,7 +31,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 return InspectionResult.Allow();
             }
 
-            if (InspectResolvedAddresses(addresses, out var privateIPAddress) && privateIPAddress == null)
+            if (TryGetPrivateOrLocalIPAddress(addresses, out var privateIPAddress) && privateIPAddress == null)
             {
                 // Resolved public addresses are not SSRF.
                 return InspectionResult.Allow();
@@ -134,7 +134,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
             return true;
         }
 
-        internal static bool InspectResolvedAddresses(IPAddress[] addresses, out string privateIPAddress)
+        internal static bool TryGetPrivateOrLocalIPAddress(IPAddress[] addresses, out string privateIPAddress)
         {
             privateIPAddress = null;
 
