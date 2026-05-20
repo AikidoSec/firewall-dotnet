@@ -49,7 +49,7 @@ namespace Aikido.Zen.Core.Sinks
         internal static void PatchCatalog(Type catalogType)
         {
             var patchMethods = catalogType.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
-            var sinkFinalizer = GetSinkFinalizer(patchMethods);
+            var commonFinalizer = GetCommonFinalizer(patchMethods);
 
             foreach (var patchMethod in patchMethods)
             {
@@ -57,21 +57,21 @@ namespace Aikido.Zen.Core.Sinks
                 {
                     Patch(patchMethod, sinkPatch);
 
-                    if (sinkFinalizer != null)
+                    if (commonFinalizer != null)
                     {
-                        AddFinalizerPatch(sinkFinalizer, sinkPatch);
+                        AddFinalizerPatch(commonFinalizer, sinkPatch);
                     }
                 }
             }
         }
 
-        private static MethodInfo GetSinkFinalizer(MethodInfo[] patchMethods)
+        private static MethodInfo GetCommonFinalizer(MethodInfo[] patchMethods)
         {
             return patchMethods.FirstOrDefault(patchMethod =>
                 patchMethod.GetCustomAttributes<SinkFinalizerAttribute>().Any(finalizer => !finalizer.HasTarget));
         }
 
-        private static void AddFinalizerPatch(MethodInfo sinkFinalizer, SinkTargetAttribute sinkPatch)
+        private static void AddFinalizerPatch(MethodInfo commonFinalizer, SinkTargetAttribute sinkPatch)
         {
             var finalizerPatch = new SinkFinalizerAttribute(
                 sinkPatch.AssemblyName,
@@ -79,7 +79,7 @@ namespace Aikido.Zen.Core.Sinks
                 sinkPatch.TargetMethodName,
                 sinkPatch.TargetParameterTypeNames);
 
-            Patch(sinkFinalizer, finalizerPatch);
+            Patch(commonFinalizer, finalizerPatch);
         }
 
         private static void Patch(MethodInfo patchMethod, SinkTargetAttribute sinkPatch)
