@@ -45,8 +45,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
             {
                 privateIPAddress = addresses
                     .Select(address => address?.ToString())
-                    .Select(address => TryGetPrivateOrLocalIPAddress(address, out var ip) ? ip : null)
-                    .FirstOrDefault(ip => ip != null);
+                    .FirstOrDefault(address => TryGetPrivateOrLocalIPAddress(address, out _));
 
                 if (privateIPAddress == null)
                 {
