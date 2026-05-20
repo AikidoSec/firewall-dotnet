@@ -94,7 +94,7 @@ namespace Aikido.Zen.Core.Sinks
             {
                 var targetMethod = ResolveTargetMethod(sinkPatch);
 
-                if (targetMethod == null || targetMethod.IsAbstract || !IsDeclaredOnTargetType(targetMethod, sinkPatch.TargetTypeName))
+                if (targetMethod == null)
                 {
                     return;
                 }
@@ -131,10 +131,5 @@ namespace Aikido.Zen.Core.Sinks
                 sinkPatch.TargetParameterTypeNames);
         }
 
-        private static bool IsDeclaredOnTargetType(MethodInfo method, string targetTypeName)
-        {
-            var declaringType = method.DeclaringType;
-            return declaringType.FullName == targetTypeName || declaringType.Name == targetTypeName;
-        }
     }
 }

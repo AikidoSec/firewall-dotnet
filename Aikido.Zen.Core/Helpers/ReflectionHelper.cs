@@ -108,8 +108,10 @@ namespace Aikido.Zen.Core.Helpers
 
             parameterTypeNames = parameterTypeNames ?? Array.Empty<string>();
 
-            // Use reflection to get the method, make sure to check for public, internal and private methods.
-            var methods = type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+            // Use reflection to get patchable methods declared on the target type.
+            var methods = type
+                .GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly)
+                .Where(m => !m.IsAbstract);
             var method = methods.FirstOrDefault(m => m.Name == methodName && ParametersMatch(m, parameterTypeNames));
 
             // fallback to the method with the most parameters
