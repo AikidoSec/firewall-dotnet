@@ -326,6 +326,21 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void OnRequest_WithRequestAndNoHttpClient_CapturesRequestUri()
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, "https://request-only.example/path");
+
+            var result = OnHttpClientRequest(
+                request,
+                null,
+                GetHttpClientSendAsyncMethod(),
+                CreateContext());
+
+            Assert.That(result, Is.True);
+            Assert.That(_agent.Context.Hostnames.Any(h => h.Hostname == "request-only.example" && h.Port == 443), Is.True);
+        }
+
+        [Test]
         public void OnRequest_WithWebRequest_CapturesRequestUri()
         {
 #pragma warning disable SYSLIB0014
@@ -339,6 +354,17 @@ namespace Aikido.Zen.Test
 
             Assert.That(result, Is.True);
             Assert.That(_agent.Context.Hostnames.Any(h => h.Hostname == "webrequest.example" && h.Port == 443), Is.True);
+        }
+
+        [Test]
+        public void OnRequest_WithNoWebRequest_ReturnsTrue()
+        {
+            var result = OnWebRequest(
+                null,
+                GetMethod(typeof(WebRequest), nameof(WebRequest.GetResponse)),
+                CreateContext());
+
+            Assert.That(result, Is.True);
         }
 
         [Test]
@@ -569,6 +595,113 @@ namespace Aikido.Zen.Test
                 GetDnsGetHostAddressesMethod());
 
             Assert.That(exception, Is.Null);
+        }
+
+        [Test]
+        public async Task OnRequestFinalized_WhenResponseTaskSucceeds_ReturnsResponse()
+        {
+            var result = OnRequest(
+                new Uri("http://public.example/"),
+                GetHttpClientSendAsyncMethod(),
+                CreateContext());
+
+            Assert.That(result, Is.True);
+
+            var response = new HttpResponseMessage(HttpStatusCode.NoContent);
+            object finalizerResult = Task.FromResult(response);
+            var finalException = OutboundRequestSink.OnRequestFinalized(ref finalizerResult, null!);
+            var finalResponse = await (Task<HttpResponseMessage>)finalizerResult;
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(finalException, Is.Null);
+                Assert.That(finalResponse, Is.SameAs(response));
+            });
+        }
+
+        [Test]
+        public void OnHostAddressesResolved_WhenDnsFailed_ReturnsOriginalException()
+        {
+            var exception = new InvalidOperationException("dns failed");
+
+            var result = DnsSink.OnHostAddressesResolved(
+                "example.com",
+                null!,
+                exception,
+                GetDnsGetHostAddressesMethod());
+
+            Assert.That(result, Is.SameAs(exception));
+        }
+
+        [Test]
+        public void OnHostAddressesResolved_WhenNoCurrentOutboundRequest_ReturnsNull()
+        {
+            OutboundRequestSink.ExitRequestScope();
+
+            var result = DnsSink.OnHostAddressesResolved(
+                "example.com",
+                new[] { IPAddress.Parse("8.8.8.8") },
+                null!,
+                GetDnsGetHostAddressesMethod());
+
+            Assert.That(result, Is.Null);
+        }
+
+        [Test]
+        public void OnHostAddressesResolvedAsync_WhenDnsFailed_ReturnsOriginalException()
+        {
+            var exception = new InvalidOperationException("dns failed");
+            var addressesTask = Task.FromResult(new[] { IPAddress.Parse("8.8.8.8") });
+
+            var result = DnsSink.OnHostAddressesResolvedAsync(
+                "example.com",
+                ref addressesTask,
+                exception,
+                GetDnsGetHostAddressesMethod());
+
+            Assert.That(result, Is.SameAs(exception));
+        }
+
+        [Test]
+        public async Task OnHostAddressesResolvedAsync_WhenResultTaskIsNull_ReturnsNullResult()
+        {
+            Task<IPAddress[]> addressesTask = null!;
+
+            var exception = DnsSink.OnHostAddressesResolvedAsync(
+                "example.com",
+                ref addressesTask,
+                null!,
+                GetDnsGetHostAddressesMethod());
+
+            var addresses = await addressesTask;
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(exception, Is.Null);
+                Assert.That(addresses, Is.Null);
+            });
+        }
+
+        [Test]
+        public async Task OnHostAddressesResolvedAsync_WhenNoCurrentOutboundRequest_ReturnsResolvedAddresses()
+        {
+            OutboundRequestSink.ExitRequestScope();
+            var expectedAddresses = new[] { IPAddress.Parse("8.8.8.8") };
+            var addressesTask = Task.FromResult(expectedAddresses);
+
+            var exception = DnsSink.OnHostAddressesResolvedAsync(
+                "example.com",
+                ref addressesTask,
+                null!,
+                GetDnsGetHostAddressesMethod());
+
+            var addresses = await addressesTask;
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(exception, Is.Null);
+                Assert.That(addresses, Is.SameAs(expectedAddresses));
+            });
         }
 
         [Test]

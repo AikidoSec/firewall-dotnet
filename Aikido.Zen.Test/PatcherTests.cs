@@ -127,6 +127,22 @@ namespace Aikido.Zen.Test
             Assert.That(TypeTarget.PrefixTarget(), Is.EqualTo("type-target"));
         }
 
+        [Test]
+        public void PatchCatalog_WhenPatchTypeIsUnsupported_LeavesTargetUnchanged()
+        {
+            Assert.DoesNotThrow(() => Patcher.PatchCatalog(typeof(UnsupportedPatchCatalog)));
+
+            Assert.That(UnsupportedPatchTarget.Execute(), Is.EqualTo("original"));
+        }
+
+        [Test]
+        public void PatchCatalog_WhenResolvedMethodIsInherited_LeavesTargetUnchanged()
+        {
+            Assert.DoesNotThrow(() => Patcher.PatchCatalog(typeof(InheritedPatchCatalog)));
+
+            Assert.That(new InheritedPatchTarget().Execute(), Is.EqualTo("base"));
+        }
+
         private static MethodInfo GetMethod(Type type, string methodName, params Type[] parameterTypes)
         {
             var method = type.GetMethod(
@@ -342,6 +358,58 @@ namespace Aikido.Zen.Test
             private static bool Prefix(ref string __result)
             {
                 __result = "type-target";
+                return false;
+            }
+        }
+
+        private static class UnsupportedPatchTarget
+        {
+            public static string Execute()
+            {
+                return "original";
+            }
+        }
+
+        private sealed class UnsupportedSinkTargetAttribute : SinkTargetAttribute
+        {
+            public UnsupportedSinkTargetAttribute()
+                : base(
+                    (HarmonyPatchType)999,
+                    "Aikido.Zen.Tests",
+                    "Aikido.Zen.Test.PatcherTests+UnsupportedPatchTarget",
+                    nameof(UnsupportedPatchTarget.Execute))
+            {
+            }
+        }
+
+        private static class UnsupportedPatchCatalog
+        {
+            [UnsupportedSinkTarget]
+            private static bool UnsupportedPrefix(ref string __result)
+            {
+                __result = "unsupported";
+                return false;
+            }
+        }
+
+        private class InheritedPatchBase
+        {
+            public string Execute()
+            {
+                return "base";
+            }
+        }
+
+        private sealed class InheritedPatchTarget : InheritedPatchBase
+        {
+        }
+
+        private static class InheritedPatchCatalog
+        {
+            [SinkPrefix("Aikido.Zen.Tests", "Aikido.Zen.Test.PatcherTests+InheritedPatchTarget", nameof(InheritedPatchTarget.Execute))]
+            private static bool Prefix(ref string __result)
+            {
+                __result = "inherited";
                 return false;
             }
         }

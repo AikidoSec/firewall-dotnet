@@ -220,8 +220,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
 
         private static bool IsTrustedImdsHostname(string hostname)
         {
-            return !string.IsNullOrWhiteSpace(hostname) &&
-                TrustedImdsHostnames.Contains(hostname.Trim());
+            return TrustedImdsHostnames.Contains(hostname.Trim());
         }
 
         private static bool IsImdsIPAddress(string ipAddress)
@@ -232,11 +231,6 @@ namespace Aikido.Zen.Core.Vulnerabilities
 
         private static string NormalizeIPAddress(string ipAddress)
         {
-            if (string.IsNullOrWhiteSpace(ipAddress))
-            {
-                return null;
-            }
-
             var normalizedCandidate = ipAddress.Trim().TrimStart('[').TrimEnd(']');
             if (!IPAddress.TryParse(normalizedCandidate, out var parsedAddress))
             {

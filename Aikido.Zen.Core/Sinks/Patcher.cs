@@ -133,12 +133,7 @@ namespace Aikido.Zen.Core.Sinks
 
         private static bool IsDeclaredOnTargetType(MethodInfo method, string targetTypeName)
         {
-            var declaringType = method?.DeclaringType;
-            if (declaringType == null)
-            {
-                return false;
-            }
-
+            var declaringType = method.DeclaringType;
             return declaringType.FullName == targetTypeName || declaringType.Name == targetTypeName;
         }
     }

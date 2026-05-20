@@ -1,3 +1,6 @@
+using System.Net;
+using Aikido.Zen.Core;
+using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Vulnerabilities;
 
 namespace Aikido.Zen.Test
@@ -44,6 +47,158 @@ namespace Aikido.Zen.Test
             });
         }
 
+        [TestCase(null)]
+        [TestCase("")]
+        [TestCase(" ")]
+        public void TryGetPrivateOrLocalIPAddress_WhenTargetIsBlank_ReturnsFalse(string? target)
+        {
+            var result = SSRFDetector.TryGetPrivateOrLocalIPAddress(target!, out var privateIPAddress);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result, Is.False);
+                Assert.That(privateIPAddress, Is.Null);
+            });
+        }
+
+        [Test]
+        public void TryGetPrivateOrLocalIPAddress_WhenAddressListIsNull_ReturnsFalse()
+        {
+            var result = SSRFDetector.TryGetPrivateOrLocalIPAddress((IPAddress[])null!, out var privateIPAddress);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result, Is.False);
+                Assert.That(privateIPAddress, Is.Null);
+            });
+        }
+
+        [Test]
+        public void TryGetPrivateOrLocalIPAddress_WhenAddressListContainsNull_ReturnsFalse()
+        {
+            var result = SSRFDetector.TryGetPrivateOrLocalIPAddress(new IPAddress[] { null! }, out var privateIPAddress);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result, Is.False);
+                Assert.That(privateIPAddress, Is.Null);
+            });
+        }
+
+        [Test]
+        public void Detect_WhenTargetUriIsNull_AllowsAndSkipsStats()
+        {
+            var result = SSRFDetector.Detect(null!, null!, null!, out var inspectDns);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.AttackKind, Is.Null);
+                Assert.That(result.SkipStats, Is.True);
+                Assert.That(inspectDns, Is.False);
+            });
+        }
+
+        [Test]
+        public void Detect_WhenCurrentRequestMatchesTarget_Allows()
+        {
+            var context = new Context { Url = "http://localhost:8080/api/request" };
+
+            var result = SSRFDetector.Detect(
+                new Uri("http://localhost:8080/admin"),
+                new[] { IPAddress.Parse("127.0.0.1") },
+                context,
+                out var inspectDns);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.AttackKind, Is.Null);
+                Assert.That(inspectDns, Is.False);
+            });
+        }
+
+        [Test]
+        public void Detect_WhenResolvedAddressesArePublic_Allows()
+        {
+            var result = SSRFDetector.Detect(
+                new Uri("http://public.example/path"),
+                new[] { IPAddress.Parse("8.8.8.8") },
+                new Context { Url = "https://app.local/outbound" },
+                out var inspectDns);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.AttackKind, Is.Null);
+                Assert.That(inspectDns, Is.False);
+            });
+        }
+
+        [Test]
+        public void Detect_WhenHostnameNeedsDnsInspection_AllowsAndRequestsDnsInspection()
+        {
+            var result = SSRFDetector.Detect(
+                new Uri("http://private.example/path"),
+                null!,
+                new Context { Url = "https://app.local/outbound" },
+                out var inspectDns);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.AttackKind, Is.Null);
+                Assert.That(inspectDns, Is.True);
+            });
+        }
+
+        [Test]
+        public void Detect_WhenResolvedPrivateAddressDoesNotMatchUserInput_Allows()
+        {
+            var context = new Context
+            {
+                Url = "https://app.local/outbound",
+                ParsedUserInput = new Dictionary<string, string>
+                {
+                    { "query.url", "not a url" },
+                    { "body.url", "http://other.example/admin" }
+                }
+            };
+
+            var result = SSRFDetector.Detect(
+                new Uri("http://private.example/admin"),
+                new[] { IPAddress.Parse("127.0.0.1") },
+                context,
+                out var inspectDns);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.AttackKind, Is.Null);
+                Assert.That(inspectDns, Is.False);
+            });
+        }
+
+        [Test]
+        public void Detect_WhenPrivateServiceHostnameMatchesUserInput_Allows()
+        {
+            var context = new Context
+            {
+                Url = "https://app.local/outbound",
+                ParsedUserInput = new Dictionary<string, string>
+                {
+                    { "query.url", "http://backend/admin" }
+                }
+            };
+
+            var result = SSRFDetector.Detect(
+                new Uri("http://backend/admin"),
+                new[] { IPAddress.Parse("127.0.0.1") },
+                context,
+                out var inspectDns);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.AttackKind, Is.Null);
+                Assert.That(inspectDns, Is.False);
+            });
+        }
+
         [TestCase("http://localhost", "http://localhost", true)]
         [TestCase("http://localhost", "http://localhost/path", true)]
         [TestCase("http://localhost", "http://localhost:8080", false)]
@@ -56,6 +211,14 @@ namespace Aikido.Zen.Test
             var result = SSRFDetector.HasSameHostAndPort(new Uri(left), rightUri.Host, rightUri.Port);
 
             Assert.That(result, Is.EqualTo(expected));
+        }
+
+        [Test]
+        public void HasSameHostAndPort_WhenPortIsNotProvided_MatchesHostOnly()
+        {
+            var result = SSRFDetector.HasSameHostAndPort(new Uri("https://aikido.dev"), "aikido.dev", null);
+
+            Assert.That(result, Is.True);
         }
 
         [Test]
@@ -91,9 +254,11 @@ namespace Aikido.Zen.Test
         [TestCase("metadata", false)]
         [TestCase("google.com", false)]
         [TestCase("127.0.0.1", false)]
-        public void IsRequestToServiceHostname_ReturnsExpectedResult(string hostname, bool expected)
+        [TestCase(null, false)]
+        [TestCase(" ", false)]
+        public void IsRequestToServiceHostname_ReturnsExpectedResult(string? hostname, bool expected)
         {
-            var result = SSRFDetector.IsRequestToServiceHostname(hostname);
+            var result = SSRFDetector.IsRequestToServiceHostname(hostname!);
 
             Assert.That(result, Is.EqualTo(expected));
         }
@@ -102,9 +267,12 @@ namespace Aikido.Zen.Test
         [TestCase("LOCALHOST", "localhost")]
         [TestCase("\u24DBocalhost", "localhost")]
         [TestCase("[::1]", "::1")]
-        public void NormalizeHostname_ReturnsExpectedValue(string hostname, string expected)
+        [TestCase(null, null)]
+        [TestCase(" ", " ")]
+        [TestCase("\uD800", "\uD800")]
+        public void NormalizeHostname_ReturnsExpectedValue(string? hostname, string? expected)
         {
-            var result = SSRFDetector.NormalizeHostname(hostname);
+            var result = SSRFDetector.NormalizeHostname(hostname!);
 
             Assert.That(result, Is.EqualTo(expected));
         }
@@ -120,15 +288,17 @@ namespace Aikido.Zen.Test
         [TestCase("metadata.google.internal", "169.254.169.254", false)]
         [TestCase("metadata.goog", "169.254.169.254", false)]
         [TestCase("METADATA.GOOGLE.INTERNAL", "169.254.169.254", false)]
+        [TestCase(null, "169.254.169.254", false)]
+        [TestCase(" ", "169.254.169.254", false)]
         [TestCase("169.254.169.254", "169.254.169.254", false)]
         [TestCase("example.com", "127.0.0.1", false)]
         [TestCase("example.com", "1.2.3.4", false)]
         [TestCase("example.com", "169.254.169.253", false)]
         [TestCase("example.com", "example.com", false)]
         [TestCase("example.com", null, false)]
-        public void IsStoredSSRF_ReturnsExpectedResult(string hostname, string? privateIPAddress, bool expected)
+        public void IsStoredSSRF_ReturnsExpectedResult(string? hostname, string? privateIPAddress, bool expected)
         {
-            var result = SSRFDetector.IsStoredSSRF(hostname, privateIPAddress);
+            var result = SSRFDetector.IsStoredSSRF(hostname!, privateIPAddress);
 
             Assert.That(result, Is.EqualTo(expected));
         }
