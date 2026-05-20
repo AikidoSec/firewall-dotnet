@@ -26,7 +26,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
 
             Uri.TryCreate(context?.Url, UriKind.Absolute, out var serverUri);
             // Allow the app to call itself when the current request URL is trusted.
-            if (EnvironmentHelper.TrustProxy && HasSameHostAndPort(serverUri, hostname, port))
+            if (HasSameHostAndPort(serverUri, hostname, port))
             {
                 return InspectionResult.Allow();
             }
@@ -187,7 +187,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
 
         internal static bool HasSameHostAndPort(Uri uri, string hostname, int? port)
         {
-            if (string.IsNullOrWhiteSpace(hostname) || uri == null)
+            if (!EnvironmentHelper.TrustProxy || string.IsNullOrWhiteSpace(hostname) || uri == null)
             {
                 return false;
             }
