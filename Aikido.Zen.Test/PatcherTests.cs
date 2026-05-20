@@ -81,17 +81,17 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void PatchCatalog_WithSinkFinalizer_PatchesEveryPrefixTarget()
+        public void PatchCatalog_WithSinkFinalizer_PatchesEveryTarget()
         {
             Patcher.PatchCatalog(typeof(SinkFinalizerCatalog));
 
             Assert.That(SinkFinalizerTarget.First(), Is.EqualTo("sink-finalizer"));
             Assert.That(SinkFinalizerTarget.Second(), Is.EqualTo("sink-finalizer"));
-            Assert.That(SinkFinalizerTarget.PostfixOnly(), Is.EqualTo("postfix-only"));
+            Assert.That(SinkFinalizerTarget.PostfixOnly(), Is.EqualTo("sink-finalizer"));
 
             AssertFinalizerPatch(GetMethod(typeof(SinkFinalizerTarget), nameof(SinkFinalizerTarget.First)));
             AssertFinalizerPatch(GetMethod(typeof(SinkFinalizerTarget), nameof(SinkFinalizerTarget.Second)));
-            AssertNoFinalizerPatch(GetMethod(typeof(SinkFinalizerTarget), nameof(SinkFinalizerTarget.PostfixOnly)));
+            AssertFinalizerPatch(GetMethod(typeof(SinkFinalizerTarget), nameof(SinkFinalizerTarget.PostfixOnly)));
         }
 
         [Test]

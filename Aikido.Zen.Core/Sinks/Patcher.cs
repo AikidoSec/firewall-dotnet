@@ -1,5 +1,5 @@
 using System;
-using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
@@ -49,46 +49,24 @@ namespace Aikido.Zen.Core.Sinks
         internal static void PatchCatalog(Type catalogType)
         {
             var patchMethods = catalogType.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
-            var prefixTargets = GetPrefixTargets(patchMethods);
+            var sinkFinalizer = GetSinkFinalizer(patchMethods);
 
             foreach (var patchMethod in patchMethods)
             {
                 foreach (var sinkPatch in patchMethod.GetCustomAttributes<SinkTargetAttribute>())
                 {
-                    if (sinkPatch is SinkFinalizerAttribute && !sinkPatch.HasTarget)
-                    {
-                        foreach (var prefixTarget in prefixTargets)
-                        {
-                            Patch(patchMethod, HarmonyPatchType.Finalizer, prefixTarget);
-                        }
-
-                        continue;
-                    }
-
-                    Patch(patchMethod, sinkPatch.PatchType, sinkPatch);
+                    Patch(patchMethod, sinkPatch, sinkFinalizer);
                 }
             }
         }
 
-        private static SinkPrefixAttribute[] GetPrefixTargets(MethodInfo[] patchMethods)
+        private static MethodInfo GetSinkFinalizer(MethodInfo[] patchMethods)
         {
-            var targets = new List<SinkPrefixAttribute>();
-
-            foreach (var patchMethod in patchMethods)
-            {
-                foreach (var prefix in patchMethod.GetCustomAttributes<SinkPrefixAttribute>())
-                {
-                    if (prefix.HasTarget)
-                    {
-                        targets.Add(prefix);
-                    }
-                }
-            }
-
-            return targets.ToArray();
+            return patchMethods.FirstOrDefault(patchMethod =>
+                patchMethod.GetCustomAttributes<SinkFinalizerAttribute>().Any(finalizer => !finalizer.HasTarget));
         }
 
-        private static void Patch(MethodInfo patchMethod, HarmonyPatchType patchType, SinkTargetAttribute sinkPatch)
+        private static void Patch(MethodInfo patchMethod, SinkTargetAttribute sinkPatch, MethodInfo sinkFinalizer)
         {
             try
             {
@@ -100,19 +78,20 @@ namespace Aikido.Zen.Core.Sinks
                 }
 
                 var harmonyMethod = new HarmonyMethod(patchMethod);
-                switch (patchType)
+                var finalizerMethod = sinkFinalizer == null ? null : new HarmonyMethod(sinkFinalizer);
+                switch (sinkPatch.PatchType)
                 {
                     case HarmonyPatchType.Prefix:
-                        _harmony.Patch(targetMethod, prefix: harmonyMethod);
+                        _harmony.Patch(targetMethod, prefix: harmonyMethod, finalizer: finalizerMethod);
                         break;
                     case HarmonyPatchType.Postfix:
-                        _harmony.Patch(targetMethod, postfix: harmonyMethod);
+                        _harmony.Patch(targetMethod, postfix: harmonyMethod, finalizer: finalizerMethod);
                         break;
                     case HarmonyPatchType.Finalizer:
                         _harmony.Patch(targetMethod, finalizer: harmonyMethod);
                         break;
                     default:
-                        LogHelper.ErrorLog(Agent.Logger, $"Unsupported patch type {patchType} for {sinkPatch.TargetTypeName}.{sinkPatch.TargetMethodName}");
+                        LogHelper.ErrorLog(Agent.Logger, $"Unsupported patch type {sinkPatch.PatchType} for {sinkPatch.TargetTypeName}.{sinkPatch.TargetMethodName}");
                         break;
                 }
             }
