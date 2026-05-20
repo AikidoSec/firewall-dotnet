@@ -29,27 +29,23 @@ namespace Aikido.Zen.Core.Vulnerabilities
             return HasSameHostAndPort(left.Host, left.Port, right);
         }
 
-        internal static InspectionResult Detect(Uri targetUri, Context context, out bool inspectDns)
+        internal static InspectionResult Detect(string hostname, int? port, string privateIPAddress, Context context, out bool inspectDns)
         {
             inspectDns = false;
 
             Uri.TryCreate(context?.Url, UriKind.Absolute, out var serverUri);
-            if (IsRequestToItself(serverUri, targetUri))
+            if (IsRequestToItself(serverUri, hostname, port))
             {
                 return InspectionResult.Allow();
             }
 
-            if (TryGetPrivateOrLocalIPAddress(targetUri.Host, out var privateIPAddress))
+            if (string.IsNullOrWhiteSpace(privateIPAddress) &&
+                !TryGetPrivateOrLocalIPAddress(hostname, out privateIPAddress))
             {
-                return Detect(targetUri.Host, UriHelper.GetPort(targetUri), privateIPAddress, context);
+                inspectDns = true;
+                return InspectionResult.Allow();
             }
 
-            inspectDns = true;
-            return InspectionResult.Allow();
-        }
-
-        internal static InspectionResult Detect(string hostname, int? port, string privateIPAddress, Context context)
-        {
             if (string.IsNullOrWhiteSpace(privateIPAddress))
             {
                 return InspectionResult.Allow();
@@ -85,22 +81,22 @@ namespace Aikido.Zen.Core.Vulnerabilities
             return InspectionResult.Allow();
         }
 
-        internal static bool IsRequestToItself(Uri serverUri, Uri outboundUri)
+        internal static bool IsRequestToItself(Uri serverUri, string hostname, int? port)
         {
-            if (!EnvironmentHelper.TrustProxy || serverUri == null || outboundUri == null)
+            if (!EnvironmentHelper.TrustProxy || serverUri == null || string.IsNullOrWhiteSpace(hostname) || !port.HasValue)
             {
                 return false;
             }
 
             if (!string.Equals(
                     NormalizeHostname(serverUri.Host),
-                    NormalizeHostname(outboundUri.Host),
+                    NormalizeHostname(hostname),
                     StringComparison.Ordinal))
             {
                 return false;
             }
 
-            return HaveEquivalentSelfRequestPorts(serverUri.Port, outboundUri.Port);
+            return HaveEquivalentSelfRequestPorts(serverUri.Port, port.Value);
         }
 
         internal static bool IsRequestToServiceHostname(string hostname)

@@ -76,7 +76,8 @@ namespace Aikido.Zen.Test
         [TestCase("http://app.local/outbound", "http://localhost:80", false)]
         public void IsRequestToItself_MatchesExpectedBehavior(string serverUrl, string outboundUrl, bool expected)
         {
-            var result = SSRFDetector.IsRequestToItself(new Uri(serverUrl), new Uri(outboundUrl));
+            var outboundUri = new Uri(outboundUrl);
+            var result = SSRFDetector.IsRequestToItself(new Uri(serverUrl), outboundUri.Host, outboundUri.Port);
 
             Assert.That(result, Is.EqualTo(expected));
         }
