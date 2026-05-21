@@ -203,31 +203,34 @@ namespace Aikido.Zen.Core.Vulnerabilities
             return metadata;
         }
 
-        internal static bool HasSameHostAndPort(Uri uri, string hostname, int? port)
-        {
-            if (string.IsNullOrWhiteSpace(hostname) || uri == null)
-            {
-                return false;
-            }
-
-            return string.Equals(
-                NormalizeHostname(uri.Host),
-                NormalizeHostname(hostname),
-                StringComparison.Ordinal) &&
-                (!port.HasValue || port.Value == uri.Port);
-        }
-
         internal static bool FindHostnameInUserInput(string userInput, string hostname, int? port)
         {
-            if (string.IsNullOrWhiteSpace(userInput))
+            if (string.IsNullOrWhiteSpace(userInput) || string.IsNullOrWhiteSpace(hostname))
             {
                 return false;
             }
 
             foreach (var candidate in new[] { userInput, $"http://{userInput}", $"https://{userInput}" })
             {
-                if (Uri.TryCreate(candidate, UriKind.Absolute, out var userUri) &&
-                    HasSameHostAndPort(userUri, hostname, port))
+                if (!Uri.TryCreate(candidate, UriKind.Absolute, out var userUri))
+                {
+                    continue;
+                }
+
+                if (!string.Equals(
+                    NormalizeHostname(userUri.Host),
+                    NormalizeHostname(hostname),
+                    StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                if (!port.HasValue)
+                {
+                    return true;
+                }
+
+                if (userUri.Port == port.Value)
                 {
                     return true;
                 }
@@ -243,7 +246,35 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 return false;
             }
 
-            return HasSameHostAndPort(serverUri, outboundHostname, outboundPort);
+            if (string.IsNullOrWhiteSpace(outboundHostname) || serverUri == null)
+            {
+                return false;
+            }
+
+            if (!string.Equals(
+                NormalizeHostname(serverUri.Host),
+                NormalizeHostname(outboundHostname),
+                StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            if (serverUri.Port == outboundPort)
+            {
+                return true;
+            }
+
+            if (serverUri.Port == 80 && outboundPort == 443)
+            {
+                return true;
+            }
+
+            if (serverUri.Port == 443 && outboundPort == 80)
+            {
+                return true;
+            }
+
+            return false;
         }
 
         private static bool IsTrustedImdsHostname(string hostname)

@@ -256,33 +256,13 @@ namespace Aikido.Zen.Test
             });
         }
 
-        [TestCase("http://localhost", "http://localhost", true)]
-        [TestCase("http://localhost", "http://localhost/path", true)]
-        [TestCase("http://localhost", "http://localhost:8080", false)]
-        [TestCase("http://aikido.dev:4000/private", "https://aikido.dev/admin", false)]
-        [TestCase("ftp://localhost", "http://localhost", false)]
-        [TestCase("https://aikido.dev", "https://google.com", false)]
-        public void HasSameHostAndPort_WhenComparingHostAndPort_ReturnsExpectedResult(string left, string right, bool expected)
-        {
-            var rightUri = new Uri(right);
-            var result = SSRFDetector.HasSameHostAndPort(new Uri(left), rightUri.Host, rightUri.Port);
-
-            Assert.That(result, Is.EqualTo(expected));
-        }
-
-        [Test]
-        public void HasSameHostAndPort_WhenPortIsNotProvided_MatchesHostOnly()
-        {
-            var result = SSRFDetector.HasSameHostAndPort(new Uri("https://aikido.dev"), "aikido.dev", null);
-
-            Assert.That(result, Is.True);
-        }
-
         [TestCase("http://localhost", "localhost", 80, true)]
         [TestCase("localhost", "localhost", 80, true)]
         [TestCase("localhost/path/path", "localhost", 80, true)]
         [TestCase("localhost:8080/admin", "localhost", 8080, true)]
         [TestCase("localhost:8080/admin", "localhost", 4321, false)]
+        [TestCase("ftp://localhost", "localhost", 80, false)]
+        [TestCase("https://aikido.dev/admin", "google.com", 443, false)]
         [TestCase("http://", "localhost", 80, false)]
         [TestCase("", "localhost", 80, false)]
         public void FindHostnameInUserInput_ReturnsExpectedResult(string userInput, string hostname, int port, bool expected)
@@ -293,15 +273,9 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void HasSameHostAndPort_WhenTrustProxyDisabled_StillComparesHostAndPort()
+        public void FindHostnameInUserInput_WhenPortIsNotProvided_MatchesHostOnly()
         {
-            Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", "false");
-
-            var rightUri = new Uri("https://aikido.dev/admin");
-            var result = SSRFDetector.HasSameHostAndPort(
-                new Uri("https://aikido.dev"),
-                rightUri.Host,
-                rightUri.Port);
+            var result = SSRFDetector.FindHostnameInUserInput("https://aikido.dev/admin", "aikido.dev", null);
 
             Assert.That(result, Is.True);
         }
@@ -321,8 +295,8 @@ namespace Aikido.Zen.Test
         }
 
         [TestCase("http://localhost:8080/outbound", "http://localhost:8080", true)]
-        [TestCase("http://localhost:80/outbound", "https://localhost/test/3", false)]
-        [TestCase("http://localhost:443/outbound", "http://localhost/test/4", false)]
+        [TestCase("http://localhost:80/outbound", "https://localhost/test/3", true)]
+        [TestCase("http://localhost:443/outbound", "http://localhost/test/4", true)]
         [TestCase("http://localhost:4999/outbound", "http://localhost:5000/test/2", false)]
         [TestCase("http://app.local/outbound", "http://localhost:80", false)]
         public void IsRequestToItself_WhenComparingCurrentRequestToOutboundTarget_ReturnsExpectedResult(string serverUrl, string outboundUrl, bool expected)
