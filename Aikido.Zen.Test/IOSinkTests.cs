@@ -1,4 +1,6 @@
+using System.Globalization;
 using System.Reflection;
+using System.Runtime.Loader;
 using System.Web;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Api;
@@ -283,6 +285,57 @@ namespace Aikido.Zen.Test
             var result = OnFileOperation($"/var/www/data/{unsafeInput}", _methodInfo, contextToPass);
 
             Assert.That(result, Is.True);
+            Assert.That(contextToPass.AttackDetected, Is.False);
+        }
+
+        [Test]
+        public void OnFileOperation_WhenUriExceptionResolutionTouchesFileExists_DoesNotReenterIndefinitely()
+        {
+            var contextToPass = _mockContext.Object;
+            contextToPass.Method = "GET";
+            contextToPass.Route = "/api/read";
+            contextToPass.Path = "http://[::1";
+            contextToPass.ParsedUserInput = new Dictionary<string, string>();
+            contextToPass.AttackDetected = false;
+
+            Agent.Instance.Context.Config.UpdateRatelimitedRoutes(new[]
+            {
+                new EndpointConfig
+                {
+                    Method = "GET",
+                    Route = "/api/*",
+                    ForceProtectionOff = false
+                }
+            });
+
+            var resolvingCalls = 0;
+            var originalCulture = CultureInfo.CurrentCulture;
+            var originalUICulture = CultureInfo.CurrentUICulture;
+
+            Assembly? ResolveByCheckingFileExists(AssemblyLoadContext context, AssemblyName assemblyName)
+            {
+                resolvingCalls++;
+                File.Exists("missing-resource-satellite.dll");
+                return null;
+            }
+
+            CultureInfo.CurrentCulture = new CultureInfo("fr-FR");
+            CultureInfo.CurrentUICulture = new CultureInfo("fr-FR");
+            AssemblyLoadContext.Default.Resolving += ResolveByCheckingFileExists;
+
+            try
+            {
+                _activeContext = contextToPass;
+                Assert.That(Path.GetFullPath("safe.txt"), Is.Not.Empty);
+            }
+            finally
+            {
+                AssemblyLoadContext.Default.Resolving -= ResolveByCheckingFileExists;
+                CultureInfo.CurrentCulture = originalCulture;
+                CultureInfo.CurrentUICulture = originalUICulture;
+            }
+
+            Assert.That(resolvingCalls, Is.GreaterThan(0));
             Assert.That(contextToPass.AttackDetected, Is.False);
         }
 
