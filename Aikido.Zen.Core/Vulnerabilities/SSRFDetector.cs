@@ -67,13 +67,12 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 return InspectionResult.Allow();
             }
 
-            // User-controlled full URLs that resolve to private/local IPs are request SSRF.
+            // User-controlled URLs or host-like values that resolve to private/local IPs are request SSRF.
             if (!IsRequestToServiceHostname(hostname) && context?.ParsedUserInput != null)
             {
                 foreach (var userInput in context.ParsedUserInput)
                 {
-                    if (!Uri.TryCreate(userInput.Value, UriKind.Absolute, out var userUri) ||
-                        !HasSameHostAndPort(userUri, hostname, port))
+                    if (!FindHostnameInUserInput(userInput.Value, hostname, port))
                     {
                         continue;
                     }
@@ -216,6 +215,25 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 NormalizeHostname(hostname),
                 StringComparison.Ordinal) &&
                 (!port.HasValue || port.Value == uri.Port);
+        }
+
+        internal static bool FindHostnameInUserInput(string userInput, string hostname, int? port)
+        {
+            if (string.IsNullOrWhiteSpace(userInput))
+            {
+                return false;
+            }
+
+            foreach (var candidate in new[] { userInput, $"http://{userInput}", $"https://{userInput}" })
+            {
+                if (Uri.TryCreate(candidate, UriKind.Absolute, out var userUri) &&
+                    HasSameHostAndPort(userUri, hostname, port))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         internal static bool IsRequestToItself(Uri serverUri, string outboundHostname, int? outboundPort)

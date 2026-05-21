@@ -146,6 +146,34 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void Detect_WhenPrivateTargetMatchesSchemalessUserInput_BlocksSsrf()
+        {
+            var context = new Context
+            {
+                Url = "http://app.local/api/request",
+                ParsedUserInput = new Dictionary<string, string>
+                {
+                    { "query.url", "localhost:8080/admin" }
+                }
+            };
+
+            var result = SSRFDetector.Detect(
+                new Uri("http://localhost:8080/admin"),
+                new[] { IPAddress.Parse("127.0.0.1") },
+                context,
+                out var inspectDns);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.AttackKind, Is.EqualTo(AttackKind.Ssrf));
+                Assert.That(result.Source, Is.EqualTo(Source.Query));
+                Assert.That(result.Payload, Is.EqualTo("localhost:8080/admin"));
+                Assert.That(result.Paths, Is.EqualTo(new[] { ".url" }));
+                Assert.That(inspectDns, Is.False);
+            });
+        }
+
+        [Test]
         public void Detect_WhenResolvedAddressesArePublic_Allows()
         {
             var result = SSRFDetector.Detect(
@@ -248,6 +276,20 @@ namespace Aikido.Zen.Test
             var result = SSRFDetector.HasSameHostAndPort(new Uri("https://aikido.dev"), "aikido.dev", null);
 
             Assert.That(result, Is.True);
+        }
+
+        [TestCase("http://localhost", "localhost", 80, true)]
+        [TestCase("localhost", "localhost", 80, true)]
+        [TestCase("localhost/path/path", "localhost", 80, true)]
+        [TestCase("localhost:8080/admin", "localhost", 8080, true)]
+        [TestCase("localhost:8080/admin", "localhost", 4321, false)]
+        [TestCase("http://", "localhost", 80, false)]
+        [TestCase("", "localhost", 80, false)]
+        public void FindHostnameInUserInput_ReturnsExpectedResult(string userInput, string hostname, int port, bool expected)
+        {
+            var result = SSRFDetector.FindHostnameInUserInput(userInput, hostname, port);
+
+            Assert.That(result, Is.EqualTo(expected));
         }
 
         [Test]
