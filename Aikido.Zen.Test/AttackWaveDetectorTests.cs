@@ -120,6 +120,16 @@ namespace Aikido.Zen.Test
                 Is.True);
         }
 
+        [TestCase("/random.jsp")]
+        [TestCase("/random.jspx?foo=bar")]
+        [TestCase("/nested/random.JSP")]
+        public void IsProbeRequest_DetectsJspFileExtensions(string url)
+        {
+            Assert.That(
+                AttackWaveProbe.IsProbeRequest(BuildContext("::1", url, "GET")),
+                Is.True);
+        }
+
         [TestCase("/api/php/whatever")]
         [TestCase("/api/php/whatever?foo=bar")]
         [TestCase("/api/php")]
@@ -134,6 +144,16 @@ namespace Aikido.Zen.Test
         [TestCase("/api/java/whatever?foo=bar")]
         [TestCase("/api/java")]
         public void IsProbeRequest_IgnoresJavaPathSegmentWithoutJavaFileExtension(string url)
+        {
+            Assert.That(
+                AttackWaveProbe.IsProbeRequest(BuildContext("::1", url, "GET")),
+                Is.False);
+        }
+
+        [TestCase("/api/jsp/whatever")]
+        [TestCase("/api/jsp/whatever?foo=bar")]
+        [TestCase("/api/jspx")]
+        public void IsProbeRequest_IgnoresJspPathSegmentWithoutJspFileExtension(string url)
         {
             Assert.That(
                 AttackWaveProbe.IsProbeRequest(BuildContext("::1", url, "GET")),
