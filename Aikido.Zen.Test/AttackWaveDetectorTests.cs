@@ -106,6 +106,16 @@ namespace Aikido.Zen.Test
                 Is.True);
         }
 
+        [TestCase("/api/php/whatever")]
+        [TestCase("/api/php/whatever?foo=bar")]
+        [TestCase("/api/php")]
+        public void IsProbeRequest_IgnoresPhpPathSegmentWithoutPhpFileExtension(string url)
+        {
+            Assert.That(
+                AttackWaveProbe.IsProbeRequest(BuildContext("::1", url, "GET")),
+                Is.False);
+        }
+
         [Test]
         public void IsProbeRequest_IgnoresBenignTraffic()
         {
