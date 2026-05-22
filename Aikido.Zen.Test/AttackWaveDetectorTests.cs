@@ -98,8 +98,12 @@ namespace Aikido.Zen.Test
 
         [TestCase("/random.php")]
         [TestCase("/random.php?foo=bar")]
+        [TestCase("/random.php3")]
+        [TestCase("/random.php4?foo=bar")]
+        [TestCase("/random.php5")]
+        [TestCase("/random.phtml")]
         [TestCase("/nested/random.PHP")]
-        public void IsProbeRequest_DetectsPhpFileExtension(string url)
+        public void IsProbeRequest_DetectsPhpFileExtensions(string url)
         {
             Assert.That(
                 AttackWaveProbe.IsProbeRequest(BuildContext("::1", url, "GET")),
