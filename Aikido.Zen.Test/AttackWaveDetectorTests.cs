@@ -110,10 +110,30 @@ namespace Aikido.Zen.Test
                 Is.True);
         }
 
+        [TestCase("/random.java")]
+        [TestCase("/random.java?foo=bar")]
+        [TestCase("/nested/random.JAVA")]
+        public void IsProbeRequest_DetectsJavaFileExtension(string url)
+        {
+            Assert.That(
+                AttackWaveProbe.IsProbeRequest(BuildContext("::1", url, "GET")),
+                Is.True);
+        }
+
         [TestCase("/api/php/whatever")]
         [TestCase("/api/php/whatever?foo=bar")]
         [TestCase("/api/php")]
         public void IsProbeRequest_IgnoresPhpPathSegmentWithoutPhpFileExtension(string url)
+        {
+            Assert.That(
+                AttackWaveProbe.IsProbeRequest(BuildContext("::1", url, "GET")),
+                Is.False);
+        }
+
+        [TestCase("/api/java/whatever")]
+        [TestCase("/api/java/whatever?foo=bar")]
+        [TestCase("/api/java")]
+        public void IsProbeRequest_IgnoresJavaPathSegmentWithoutJavaFileExtension(string url)
         {
             Assert.That(
                 AttackWaveProbe.IsProbeRequest(BuildContext("::1", url, "GET")),

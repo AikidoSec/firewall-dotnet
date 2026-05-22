@@ -15,7 +15,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
         private static readonly char[] QueryOrFragmentSeparators = { '?', '#' };
 
         private static readonly HashSet<string> FileExtensions = new HashSet<string>(
-            new[] { "env", "bak", "sql", "sqlite", "sqlite3", "db", "old", "save", "orig", "sqlitedb", "sqlite3db", "php", "php3", "php4", "php5", "phtml" },
+            new[] { "env", "bak", "sql", "sqlite", "sqlite3", "db", "old", "save", "orig", "sqlitedb", "sqlite3db", "php", "php3", "php4", "php5", "phtml", "java" },
             StringComparer.OrdinalIgnoreCase);
 
         private static readonly HashSet<string> FileNames = new HashSet<string>(
