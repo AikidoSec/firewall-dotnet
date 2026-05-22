@@ -11,8 +11,11 @@ namespace Aikido.Zen.Core.Vulnerabilities
             new[] { "BADMETHOD", "BADHTTPMETHOD", "BADDATA", "BADMTHD", "BDMTHD" },
             StringComparer.OrdinalIgnoreCase);
 
+        private static readonly char[] PathSeparators = { '/' };
+        private static readonly char[] QueryOrFragmentSeparators = { '?', '#' };
+
         private static readonly HashSet<string> FileExtensions = new HashSet<string>(
-            new[] { "env", "bak", "sql", "sqlite", "sqlite3", "db", "old", "save", "orig", "sqlitedb", "sqlite3db" },
+            new[] { "env", "bak", "sql", "sqlite", "sqlite3", "db", "old", "save", "orig", "sqlitedb", "sqlite3db", "php" },
             StringComparer.OrdinalIgnoreCase);
 
         private static readonly HashSet<string> FileNames = new HashSet<string>(
@@ -121,10 +124,8 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 return false;
             }
 
-            var normalized = path.ToLowerInvariant();
-
             // Split path into filename and directories, last segment is filename
-            var segments = normalized.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries).ToList();
+            var segments = ExtractPathSegments(path);
             var filename = segments.LastOrDefault();
 
             if (!string.IsNullOrEmpty(filename))
@@ -136,7 +137,8 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 }
 
                 // Match suspicious extensions
-                var ext = filename.Split('.').LastOrDefault();
+                var lastDotIndex = filename.LastIndexOf('.');
+                var ext = lastDotIndex >= 0 ? filename.Substring(lastDotIndex + 1) : null;
                 if (!string.IsNullOrEmpty(ext) && ext != filename && FileExtensions.Contains(ext))
                 {
                     return true;
@@ -156,6 +158,18 @@ namespace Aikido.Zen.Core.Vulnerabilities
             }
 
             return false;
+        }
+
+        private static List<string> ExtractPathSegments(string path)
+        {
+            var queryOrFragmentIndex = path.IndexOfAny(QueryOrFragmentSeparators);
+            var normalizedPath = queryOrFragmentIndex >= 0
+                ? path.Substring(0, queryOrFragmentIndex)
+                : path;
+
+            return normalizedPath
+                .Split(PathSeparators, StringSplitOptions.RemoveEmptyEntries)
+                .ToList();
         }
 
         internal static bool QueryParamsContainDangerousPayload(IDictionary<string, string> query)

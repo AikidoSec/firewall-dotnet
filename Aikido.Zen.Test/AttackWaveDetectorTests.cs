@@ -85,6 +85,27 @@ namespace Aikido.Zen.Test
             Assert.That(AttackWaveProbe.IsProbeRequest(contextWithQuery), Is.True);
         }
 
+        [TestCase("/wp-config.php?foo=bar")]
+        [TestCase("https://example.com/wp-config.php?foo=bar")]
+        [TestCase("/backup.sql?foo=bar")]
+        [TestCase("https://example.com/backup.sql?foo=bar")]
+        public void IsProbeRequest_DetectsSuspiciousPath_WhenUrlContainsQueryString(string url)
+        {
+            Assert.That(
+                AttackWaveProbe.IsProbeRequest(BuildContext("::1", url, "GET")),
+                Is.True);
+        }
+
+        [TestCase("/random.php")]
+        [TestCase("/random.php?foo=bar")]
+        [TestCase("/nested/random.PHP")]
+        public void IsProbeRequest_DetectsPhpFileExtension(string url)
+        {
+            Assert.That(
+                AttackWaveProbe.IsProbeRequest(BuildContext("::1", url, "GET")),
+                Is.True);
+        }
+
         [Test]
         public void IsProbeRequest_IgnoresBenignTraffic()
         {
