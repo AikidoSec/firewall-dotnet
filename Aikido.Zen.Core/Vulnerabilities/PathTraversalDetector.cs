@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using System.Web;
 
 namespace Aikido.Zen.Core.Vulnerabilities
 {
@@ -105,21 +104,6 @@ namespace Aikido.Zen.Core.Vulnerabilities
             if (input.Length <= 1)
                 return false;
 
-            // URL decode the input first to catch encoded attacks
-            try
-            {
-                // could be a double encoded path traversal
-                input = HttpUtility.UrlDecode(input);
-                input = HttpUtility.UrlDecode(input);
-                // same for the path
-                path = HttpUtility.UrlDecode(path);
-                path = HttpUtility.UrlDecode(path);
-            }
-            catch
-            {
-                // If URL decode fails, check the raw input
-            }
-
             ReadOnlySpan<char> inputSpan = input.AsSpan();
             ReadOnlySpan<char> pathSpan = path.AsSpan();
 
@@ -139,7 +123,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
                     ReadOnlySpan<char> startSpan = start.AsSpan();
 
                     if (normalizedInputSpan.StartsWith(startSpan, StringComparison.OrdinalIgnoreCase) &&
-                        normalizedPathSpan.StartsWith(startSpan, StringComparison.OrdinalIgnoreCase))
+                        normalizedPathSpan.StartsWith(normalizedInputSpan, StringComparison.OrdinalIgnoreCase))
                         return true;
                 }
             }

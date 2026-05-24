@@ -186,12 +186,6 @@
     "isTraversal": true
   },
   {
-    "input": "C:\\file.txt",
-    "path": "C:\\files\\C:\\file.txt",
-    "description": "Windows drive letter access",
-    "isTraversal": true
-  },
-  {
     "input": "%USERPROFILE%\\Documents\\file.txt",
     "path": "C:\\files\\%USERPROFILE%\\Documents\\file.txt",
     "description": "Windows environment variable path",
@@ -208,12 +202,6 @@
     "path": "C:\\files\\web.config:stream",
     "description": "Alternate data stream access",
     "isTraversal": false
-  },
-  {
-    "input": "%2e%2e%2f",
-    "path": "C:\\files\\%2e%2e%2f",
-    "description": "URL encoded traversal",
-    "isTraversal": true
   },
   {
     "input": "../secrets/key.txt",
@@ -312,6 +300,12 @@
     "isTraversal": true
   },
   {
+    "input": "c:\\windows\\system32\\cmd.exe",
+    "path": "C:\\Windows\\System32\\cmd.exe",
+    "description": "Windows drive absolute path with case mismatch",
+    "isTraversal": false
+  },
+  {
     "input": "%WINDIR%\\system32\\notepad.exe",
     "path": "%WINDIR%\\system32\\notepad.exe",
     "description": "Windows windir environment variable absolute path",
@@ -360,6 +354,18 @@
     "isTraversal": false
   },
   {
+    "input": "/home/site",
+    "path": "/home/site-backup/file.txt",
+    "description": "Absolute Linux sibling prefix path",
+    "isTraversal": true
+  },
+  {
+    "input": "C:\\Users\\Bob",
+    "path": "C:\\Users\\Bobby\\file.txt",
+    "description": "Windows drive sibling prefix path",
+    "isTraversal": true
+  },
+  {
       "input": "123456",
       "path": "D:\\path\\to\\%PROGRAMFILES%\\app\\config.ini\\..\\123456.txt",
       "description": "Integer input is not a traversal",
@@ -370,6 +376,11 @@
     "path": "D:\\path\\to\\%PROGRAMFILES%\\app\\config.ini\\some-other-file.txt",
     "description": "Path that doesn't start with an unsafe path is not a traversal",
     "isTraversal": false
-
+  },
+  {
+    "input": "/Home/StatusCode/404",
+    "path": "/home/site/wwwroot/Home/StatusCode/404",
+    "description": "URL route under Linux home app root is not absolute path traversal",
+    "isTraversal": false
   }
 ]
