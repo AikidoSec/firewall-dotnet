@@ -67,6 +67,16 @@ namespace Aikido.Zen.Test
             Assert.That(result, Is.False);
         }
 
+        [Test]
+        public void DetectPathTraversal_WithPathStartCheckDisabled_IgnoresAbsolutePath()
+        {
+            // Act
+            var result = PathTraversalDetector.DetectPathTraversal("/etc/passwd", "/etc/passwd", checkPathStart: false);
+
+            // Assert
+            Assert.That(result, Is.False);
+        }
+
 
         public static IEnumerable<TestCaseData> GetTestData()
         {
