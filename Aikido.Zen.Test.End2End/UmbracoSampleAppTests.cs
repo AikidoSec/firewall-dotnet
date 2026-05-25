@@ -209,4 +209,38 @@ public class UmbracoSampleAppTests : WebApplicationTestBase
         var responseContent = await response.Content.ReadAsStringAsync();
         Assert.That(responseContent, Does.Contain("command executed"), "The command injection was unexpectedly blocked.");
     }
+
+    [TestCase("../../../../etc/passwd")]
+    [TestCase("../secret.txt")]
+    [TestCase("..\\secret.txt")]
+    [TestCase("..%2F..%2F..%2F..%2Fetc%2Fpasswd")]
+    [TestCase("..%2Fsecret.txt")]
+    [TestCase("..%5Csecret.txt")]
+    [CancelAfter(30000)]
+    public async Task TestPathTraversal_WithUnsafePath_ShouldBeBlocked(string path)
+    {
+        await SetMode(false, true);
+        SampleAppClient = CreateSampleAppFactory().CreateClient();
+
+        var response = await SampleAppClient.GetAsync($"/api/path-traversal?path={Uri.EscapeDataString(path)}");
+
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
+    }
+
+    [TestCase("safe.txt")]
+    [TestCase("safe%2Etxt")]
+    [TestCase("another-safe.txt")]
+    [TestCase("third-safe.txt")]
+    [CancelAfter(30000)]
+    public async Task TestPathTraversal_WithSafePath_ShouldNotBeBlocked(string path)
+    {
+        await SetMode(false, true);
+        SampleAppClient = CreateSampleAppFactory().CreateClient();
+
+        var response = await SampleAppClient.GetAsync($"/api/path-traversal?path={Uri.EscapeDataString(path)}");
+        var responseContent = await response.Content.ReadAsStringAsync();
+
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        Assert.That(responseContent, Does.Contain("safe file"));
+    }
 }
