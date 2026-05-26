@@ -106,6 +106,13 @@ namespace Aikido.Zen.DotNetCore.Middleware
             int statusCode = httpContext.Response.StatusCode;
             try
             {
+                var attackWaveDetector = Agent.Instance.AttackWaveDetector;
+                if (attackWaveDetector.Check(context, statusCode))
+                {
+                    var samples = attackWaveDetector.GetSamplesForIp(context.RemoteAddress);
+                    Agent.Instance.SendAttackWaveEvent(context, samples);
+                }
+
                 if (RouteHelper.ShouldAddRoute(context, statusCode))
                 {
                     LogHelper.DebugLog(Agent.Logger, "Adding route");

@@ -48,6 +48,61 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void Check_DetectsHighConfidenceProbe()
+        {
+            var detector = NewDetector();
+            var context = BuildContext("::1", "/wp-config.php", "GET");
+
+            Assert.That(detector.Check(context), Is.False);
+            Assert.That(detector.Check(context), Is.True);
+        }
+
+        [Test]
+        public void Check_IgnoresStatusSensitiveFileExtensionProbe_WithoutStatusCode()
+        {
+            var detector = NewDetector();
+            var context = BuildContext("::1", "/random.php", "GET");
+
+            Assert.That(detector.Check(context), Is.False);
+            Assert.That(detector.Check(context), Is.False);
+            Assert.That(detector.GetSamplesForIp("::1"), Is.Empty);
+        }
+
+        [Test]
+        public void Check_IgnoresStatusSensitiveFileExtensionProbe_WhenStatusIsSuccessful()
+        {
+            var detector = NewDetector();
+            var context = BuildContext("::1", "/random.php", "GET");
+
+            Assert.That(detector.Check(context, 200), Is.False);
+            Assert.That(detector.Check(context, 302), Is.False);
+            Assert.That(detector.GetSamplesForIp("::1"), Is.Empty);
+        }
+
+        [TestCase(400)]
+        [TestCase(404)]
+        [TestCase(500)]
+        public void Check_DetectsStatusSensitiveFileExtensionProbe_WhenStatusIsNotSuccessful(int statusCode)
+        {
+            var detector = NewDetector();
+            var context = BuildContext("::1", "/random.php", "GET");
+
+            Assert.That(detector.Check(context, statusCode), Is.False);
+            Assert.That(detector.Check(context, statusCode), Is.True);
+        }
+
+        [Test]
+        public void Check_WithStatusCode_DoesNotCountHighConfidenceProbeAgain()
+        {
+            var detector = NewDetector();
+            var context = BuildContext("::1", "/wp-config.php", "GET");
+
+            Assert.That(detector.Check(context), Is.False);
+            Assert.That(detector.Check(context, 404), Is.False);
+            Assert.That(detector.Check(context), Is.True);
+        }
+
+        [Test]
         public void TrackSample_StoresUniqueSamplesWithinLimit()
         {
             var detector = NewDetector(threshold: 10, timeframe: 1000, minBetweenEvents: 1000, maxSamples: 3);
@@ -103,60 +158,60 @@ namespace Aikido.Zen.Test
         [TestCase("/random.php5")]
         [TestCase("/random.phtml")]
         [TestCase("/nested/random.PHP")]
-        public void IsProbeRequest_DetectsPhpFileExtensions(string url)
+        public void IsStatusSensitiveProbePath_DetectsPhpFileExtensions_WhenStatusIsNotSuccessful(string url)
         {
             Assert.That(
-                AttackWaveProbe.IsProbeRequest(BuildContext("::1", url, "GET")),
+                AttackWaveProbe.IsStatusSensitiveProbePath(url, 404),
                 Is.True);
         }
 
         [TestCase("/random.java")]
         [TestCase("/random.java?foo=bar")]
         [TestCase("/nested/random.JAVA")]
-        public void IsProbeRequest_DetectsJavaFileExtension(string url)
+        public void IsStatusSensitiveProbePath_DetectsJavaFileExtension_WhenStatusIsNotSuccessful(string url)
         {
             Assert.That(
-                AttackWaveProbe.IsProbeRequest(BuildContext("::1", url, "GET")),
+                AttackWaveProbe.IsStatusSensitiveProbePath(url, 404),
                 Is.True);
         }
 
         [TestCase("/random.jsp")]
         [TestCase("/random.jspx?foo=bar")]
         [TestCase("/nested/random.JSP")]
-        public void IsProbeRequest_DetectsJspFileExtensions(string url)
+        public void IsStatusSensitiveProbePath_DetectsJspFileExtensions_WhenStatusIsNotSuccessful(string url)
         {
             Assert.That(
-                AttackWaveProbe.IsProbeRequest(BuildContext("::1", url, "GET")),
+                AttackWaveProbe.IsStatusSensitiveProbePath(url, 404),
                 Is.True);
         }
 
         [TestCase("/api/php/whatever")]
         [TestCase("/api/php/whatever?foo=bar")]
         [TestCase("/api/php")]
-        public void IsProbeRequest_IgnoresPhpPathSegmentWithoutPhpFileExtension(string url)
+        public void IsStatusSensitiveProbePath_IgnoresPhpPathSegmentWithoutPhpFileExtension(string url)
         {
             Assert.That(
-                AttackWaveProbe.IsProbeRequest(BuildContext("::1", url, "GET")),
+                AttackWaveProbe.IsStatusSensitiveProbePath(url, 404),
                 Is.False);
         }
 
         [TestCase("/api/java/whatever")]
         [TestCase("/api/java/whatever?foo=bar")]
         [TestCase("/api/java")]
-        public void IsProbeRequest_IgnoresJavaPathSegmentWithoutJavaFileExtension(string url)
+        public void IsStatusSensitiveProbePath_IgnoresJavaPathSegmentWithoutJavaFileExtension(string url)
         {
             Assert.That(
-                AttackWaveProbe.IsProbeRequest(BuildContext("::1", url, "GET")),
+                AttackWaveProbe.IsStatusSensitiveProbePath(url, 404),
                 Is.False);
         }
 
         [TestCase("/api/jsp/whatever")]
         [TestCase("/api/jsp/whatever?foo=bar")]
         [TestCase("/api/jspx")]
-        public void IsProbeRequest_IgnoresJspPathSegmentWithoutJspFileExtension(string url)
+        public void IsStatusSensitiveProbePath_IgnoresJspPathSegmentWithoutJspFileExtension(string url)
         {
             Assert.That(
-                AttackWaveProbe.IsProbeRequest(BuildContext("::1", url, "GET")),
+                AttackWaveProbe.IsStatusSensitiveProbePath(url, 404),
                 Is.False);
         }
 

@@ -15,7 +15,12 @@ namespace Aikido.Zen.Core.Vulnerabilities
         private static readonly char[] QueryOrFragmentSeparators = { '?', '#' };
 
         private static readonly HashSet<string> FileExtensions = new HashSet<string>(
-            new[] { "env", "bak", "sql", "sqlite", "sqlite3", "db", "old", "save", "orig", "sqlitedb", "sqlite3db", "php", "php3", "php4", "php5", "phtml", "java", "jsp", "jspx" },
+            new[] { "env", "bak", "sql", "sqlite", "sqlite3", "db", "old", "save", "orig", "sqlitedb", "sqlite3db" },
+            StringComparer.OrdinalIgnoreCase);
+
+        // Generic app-framework extensions are noisy unless the app failed to handle them.
+        private static readonly HashSet<string> StatusSensitiveFileExtensions = new HashSet<string>(
+            new[] { "php", "php3", "php4", "php5", "phtml", "java", "jsp", "jspx" },
             StringComparer.OrdinalIgnoreCase);
 
         private static readonly HashSet<string> FileNames = new HashSet<string>(
@@ -92,7 +97,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
             "../",
         };
 
-        public static bool IsProbeRequest(Context context)
+        internal static bool IsProbeRequest(Context context)
         {
             if (IsProbeMethod(context.Method))
             {
@@ -158,6 +163,34 @@ namespace Aikido.Zen.Core.Vulnerabilities
             }
 
             return false;
+        }
+
+        internal static bool IsStatusSensitiveProbePath(string path, int statusCode)
+        {
+            if (string.IsNullOrEmpty(path) || !IsFailedStatus(statusCode))
+            {
+                return false;
+            }
+
+            var segments = ExtractPathSegments(path);
+            var filename = segments.LastOrDefault();
+
+            // Known sensitive filenames are already counted by the pre-request probe check.
+            return !string.IsNullOrEmpty(filename)
+                && !FileNames.Contains(filename)
+                && HasStatusSensitiveExtension(filename);
+        }
+
+        private static bool HasStatusSensitiveExtension(string filename)
+        {
+            var lastDotIndex = filename.LastIndexOf('.');
+            var ext = lastDotIndex >= 0 ? filename.Substring(lastDotIndex + 1) : null;
+            return !string.IsNullOrEmpty(ext) && ext != filename && StatusSensitiveFileExtensions.Contains(ext);
+        }
+
+        private static bool IsFailedStatus(int statusCode)
+        {
+            return statusCode < 200 || statusCode > 399;
         }
 
         private static List<string> ExtractPathSegments(string path)
