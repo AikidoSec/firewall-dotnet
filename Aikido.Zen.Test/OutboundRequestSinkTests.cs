@@ -16,6 +16,7 @@ using Moq;
 namespace Aikido.Zen.Test
 {
     [TestFixture]
+    [NonParallelizable]
     public class OutboundRequestSinkTests
     {
         private Mock<IReportingAPIClient> _reportingApiMock;
@@ -508,9 +509,9 @@ namespace Aikido.Zen.Test
             Assert.That(result, Is.True);
 
             object finalizerResult = null!;
-            OutboundRequestSink.OnRequestFinalized(ref finalizerResult, null!);
+            OutboundRequestOuterSink.OnRequestFinalized(ref finalizerResult, null!);
 
-            var hasCurrentRequest = OutboundRequestSink.TryGetCurrentRequestUri(out _);
+            var hasCurrentRequest = OutboundRequestOuterSink.TryGetCurrentRequestUri(out _);
 
             Assert.That(hasCurrentRequest, Is.False);
         }
@@ -527,7 +528,7 @@ namespace Aikido.Zen.Test
 
             var response = new HttpResponseMessage(HttpStatusCode.NoContent);
             object finalizerResult = Task.FromResult(response);
-            var finalException = OutboundRequestSink.OnRequestFinalized(ref finalizerResult, null!);
+            var finalException = OutboundRequestOuterSink.OnRequestFinalized(ref finalizerResult, null!);
             var finalResponse = await (Task<HttpResponseMessage>)finalizerResult;
 
             Assert.Multiple(() =>
@@ -548,12 +549,14 @@ namespace Aikido.Zen.Test
             };
             using var httpClient = new HttpClient(handler);
 
-            var url = $"http://localhost:{server.Port}/admin";
+            var url = $"http://127.0.0.1:{server.Port}/admin";
 
             _activeContext = CreateContext();
             _activeContext.ParsedUserInput = new Dictionary<string, string>();
-            using var warmupResponse = await httpClient.GetAsync(url);
-            warmupResponse.EnsureSuccessStatusCode();
+            using (var warmupResponse = await httpClient.GetAsync(url))
+            {
+                warmupResponse.EnsureSuccessStatusCode();
+            }
 
             var context = CreateContext();
             context.ParsedUserInput = new Dictionary<string, string>
@@ -561,6 +564,7 @@ namespace Aikido.Zen.Test
                 { "query.url", url }
             };
             _activeContext = context;
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
 
             var exception = Assert.ThrowsAsync<AikidoException>(() => httpClient.GetAsync(url));
 
@@ -604,13 +608,13 @@ namespace Aikido.Zen.Test
         private bool OnHttpClientRequest(HttpRequestMessage? request, HttpClient? httpClient, MethodInfo methodInfo, Context? context)
         {
             _activeContext = context;
-            return OutboundRequestSink.OnRequestHttpClient(request!, httpClient!, methodInfo);
+            return OutboundRequestOuterSink.OnRequestHttpClient(request!, httpClient!, methodInfo);
         }
 
         private bool OnWebRequest(WebRequest? request, MethodInfo methodInfo, Context? context)
         {
             _activeContext = context;
-            return OutboundRequestSink.OnRequestWebRequest(request!, methodInfo);
+            return OutboundRequestOuterSink.OnRequestWebRequest(request!, methodInfo);
         }
 
         private static MethodInfo GetMethod(Type type, string methodName, params Type[] parameterTypes)
