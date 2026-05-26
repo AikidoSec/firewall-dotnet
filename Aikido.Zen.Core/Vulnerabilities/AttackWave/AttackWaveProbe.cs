@@ -146,7 +146,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 if (!string.IsNullOrEmpty(ext) && ext != filename)
                 {
                     if (FileExtensions.Contains(ext)
-                        || (IsFailedStatus(statusCode) && StatusSensitiveFileExtensions.Contains(ext)))
+                        || (IsNotFoundStatus(statusCode) && StatusSensitiveFileExtensions.Contains(ext)))
                     {
                         return true;
                     }
@@ -168,9 +168,9 @@ namespace Aikido.Zen.Core.Vulnerabilities
             return false;
         }
 
-        private static bool IsFailedStatus(int statusCode)
+        private static bool IsNotFoundStatus(int statusCode)
         {
-            return statusCode < 200 || statusCode > 399;
+            return statusCode == 404;
         }
 
         private static List<string> ExtractPathSegments(string path)

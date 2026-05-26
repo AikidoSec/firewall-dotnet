@@ -60,27 +60,27 @@ namespace Aikido.Zen.Test
         [TestCase("/random.php")]
         [TestCase("/random.java")]
         [TestCase("/random.jsp")]
-        public void Check_IgnoresStatusSensitiveFileExtensionProbe_WhenStatusIsSuccessful(string url)
+        public void Check_IgnoresStatusSensitiveFileExtensionProbe_WhenStatusIsNot404(string url)
         {
             var detector = NewDetector();
             var context = BuildContext("::1", url, "GET");
 
             Assert.That(detector.Check(context, 200), Is.False);
             Assert.That(detector.Check(context, 302), Is.False);
+            Assert.That(detector.Check(context, 100), Is.False);
+            Assert.That(detector.Check(context, 400), Is.False);
+            Assert.That(detector.Check(context, 500), Is.False);
             Assert.That(detector.GetSamplesForIp("::1"), Is.Empty);
         }
 
-        [TestCase(100)]
-        [TestCase(400)]
-        [TestCase(404)]
-        [TestCase(500)]
-        public void Check_DetectsStatusSensitiveFileExtensionProbe_WhenStatusIsNotSuccessful(int statusCode)
+        [Test]
+        public void Check_DetectsStatusSensitiveFileExtensionProbe_WhenStatusIsNotFound()
         {
             var detector = NewDetector();
             var context = BuildContext("::1", "/random.php", "GET");
 
-            Assert.That(detector.Check(context, statusCode), Is.False);
-            Assert.That(detector.Check(context, statusCode), Is.True);
+            Assert.That(detector.Check(context, 404), Is.False);
+            Assert.That(detector.Check(context, 404), Is.True);
         }
 
         [Test]
@@ -139,7 +139,7 @@ namespace Aikido.Zen.Test
         [TestCase("/random.php5")]
         [TestCase("/random.phtml")]
         [TestCase("/nested/random.PHP")]
-        public void IsProbeRequest_DetectsPhpFileExtensions_WhenStatusIsNotSuccessful(string url)
+        public void IsProbeRequest_DetectsPhpFileExtensions_WhenStatusIsNotFound(string url)
         {
             Assert.That(
                 AttackWaveProbe.IsProbeRequest(BuildContext("::1", url, "GET"), 404),
@@ -149,7 +149,7 @@ namespace Aikido.Zen.Test
         [TestCase("/random.java")]
         [TestCase("/random.java?foo=bar")]
         [TestCase("/nested/random.JAVA")]
-        public void IsProbeRequest_DetectsJavaFileExtension_WhenStatusIsNotSuccessful(string url)
+        public void IsProbeRequest_DetectsJavaFileExtension_WhenStatusIsNotFound(string url)
         {
             Assert.That(
                 AttackWaveProbe.IsProbeRequest(BuildContext("::1", url, "GET"), 404),
@@ -159,7 +159,7 @@ namespace Aikido.Zen.Test
         [TestCase("/random.jsp")]
         [TestCase("/random.jspx?foo=bar")]
         [TestCase("/nested/random.JSP")]
-        public void IsProbeRequest_DetectsJspFileExtensions_WhenStatusIsNotSuccessful(string url)
+        public void IsProbeRequest_DetectsJspFileExtensions_WhenStatusIsNotFound(string url)
         {
             Assert.That(
                 AttackWaveProbe.IsProbeRequest(BuildContext("::1", url, "GET"), 404),
