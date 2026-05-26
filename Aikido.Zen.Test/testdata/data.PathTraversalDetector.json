@@ -300,6 +300,48 @@
     "isTraversal": true
   },
   {
+    "input": "C:\\file.txt",
+    "path": "C:\\file.txt",
+    "description": "Windows drive root file path",
+    "isTraversal": true
+  },
+  {
+    "input": "C:\\",
+    "path": "C:\\file.txt",
+    "description": "Bare Windows drive root directory input with file path is not traversal",
+    "isTraversal": false
+  },
+  {
+    "input": "C:/",
+    "path": "C:/file.txt",
+    "description": "Bare Windows drive root directory input with forward slash file path is not traversal",
+    "isTraversal": false
+  },
+  {
+    "input": "D:/logs/app.log",
+    "path": "D:/logs/app.log",
+    "description": "Windows secondary drive absolute path with forward slashes",
+    "isTraversal": true
+  },
+  {
+    "input": "C:\\files\\..\\secrets\\key.txt",
+    "path": "C:\\files\\..\\secrets\\key.txt",
+    "description": "Windows drive absolute path with parent directory traversal",
+    "isTraversal": true
+  },
+  {
+    "input": "..\\..//secrets/config.json",
+    "path": "C:\\files\\..\\..//secrets/config.json",
+    "description": "Mixed separator parent directory traversal",
+    "isTraversal": true
+  },
+  {
+    "input": "C:\\file.txt",
+    "path": "C:\\files\\C:\\file.txt",
+    "description": "Embedded Windows drive path is not root access",
+    "isTraversal": false
+  },
+  {
     "input": "c:\\windows\\system32\\cmd.exe",
     "path": "C:\\Windows\\System32\\cmd.exe",
     "description": "Windows drive absolute path with case mismatch",
@@ -330,6 +372,84 @@
     "isTraversal": true
   },
   {
+    "input": "/etc/hack/config",
+    "path": "/etc/app/config",
+    "description": "Absolute Linux path in different folder",
+    "isTraversal": false
+  },
+  {
+    "input": "/etc/config",
+    "path": "/etc/app/data/etc/config",
+    "description": "Absolute Linux path inside another folder",
+    "isTraversal": false
+  },
+  {
+    "input": "/etc",
+    "path": "/etc/app",
+    "description": "Bare Linux etc directory without trailing separator is not traversal",
+    "isTraversal": false
+  },
+  {
+    "input": "/etc/",
+    "path": "/etc/app/test.txt",
+    "description": "Bare Linux etc directory with trailing separator is not traversal",
+    "isTraversal": false
+  },
+  {
+    "input": "/etc/",
+    "path": "/etc/app/",
+    "description": "Bare Linux etc directory with trailing separator and app directory path is not traversal",
+    "isTraversal": false
+  },
+  {
+    "input": "/etc",
+    "path": "/etc",
+    "description": "Bare Linux etc directory is not traversal",
+    "isTraversal": false
+  },
+  {
+    "input": "/etc/",
+    "path": "/etc/",
+    "description": "Bare Linux etc directory with trailing separator is not traversal by itself",
+    "isTraversal": false
+  },
+  {
+    "input": "/etc",
+    "path": "/etc/./passwd",
+    "description": "Normalized Linux etc directory alone is not traversal",
+    "isTraversal": false
+  },
+  {
+    "input": "/etc/",
+    "path": "/etc/./passwd",
+    "description": "Normalized Linux etc directory with trailing separator alone is not traversal",
+    "isTraversal": false
+  },
+  {
+    "input": "/etc",
+    "path": "//etc//passwd",
+    "description": "Repeated slash Linux etc directory alone is not traversal",
+    "isTraversal": false
+  },
+  {
+    "input": "/etc/",
+    "path": "//etc//passwd",
+    "description": "Repeated slash Linux etc directory with trailing separator alone is not traversal",
+    "isTraversal": false
+  },
+  {
+    "input": "/etc/app",
+    "path": "/etc/app/file.txt",
+    "description": "Absolute Linux directory input with file path",
+    "isTraversal": true
+  },
+  {
+    "input": "/etc/app/file.txt",
+    "path": "/etc/app/file.txt",
+    "description": "Absolute Linux file path under etc app",
+    "isTraversal": true
+  },
+  {
     "input": "/home/user/file1.txt",
     "path": "/home/user/file2.txt",
     "description": "Absolute path different files",
@@ -339,6 +459,12 @@
     "input": "/home/user/file.txt",
     "path": "/home/user/file.txt",
     "description": "Absolute path same files",
+    "isTraversal": true
+  },
+  {
+    "input": "/home/user/.aws/credentials",
+    "path": "/home/user/.aws/credentials",
+    "description": "AWS credentials absolute path",
     "isTraversal": true
   },
   {
@@ -357,6 +483,186 @@
     "input": "/home/site",
     "path": "/home/site-backup/file.txt",
     "description": "Absolute Linux sibling prefix path",
+    "isTraversal": true
+  },
+  {
+    "input": "/var/backups",
+    "path": "/var/backups/file.txt",
+    "description": "Linux var backups directory input with file path",
+    "isTraversal": true
+  },
+  {
+    "input": "/var/backups/file.txt",
+    "path": "/var/backups/file.txt",
+    "description": "Linux var backups file path",
+    "isTraversal": true
+  },
+  {
+    "input": "/var/a",
+    "path": "/var/a",
+    "description": "Linux var single subdirectory path",
+    "isTraversal": true
+  },
+  {
+    "input": "/var/a",
+    "path": "/var/a/b",
+    "description": "Linux var directory input with child directory path",
+    "isTraversal": true
+  },
+  {
+    "input": "/var/a",
+    "path": "/var/a/b/test.txt",
+    "description": "Linux var directory input with nested file path",
+    "isTraversal": true
+  },
+  {
+    "input": "/var/",
+    "path": "/var/a",
+    "description": "Bare Linux var directory with trailing separator is not traversal",
+    "isTraversal": false
+  },
+  {
+    "input": "/var/",
+    "path": "/var/b",
+    "description": "Bare Linux var directory with trailing separator and sibling path is not traversal",
+    "isTraversal": false
+  },
+  {
+    "input": "/var/",
+    "path": "/var/b/test.txt",
+    "description": "Bare Linux var directory with trailing separator and nested sibling path is not traversal",
+    "isTraversal": false
+  },
+  {
+    "input": "/var/b",
+    "path": "/var/a",
+    "description": "Linux var sibling directory is not traversal",
+    "isTraversal": false
+  },
+  {
+    "input": "/var/b/test.txt",
+    "path": "/var/a",
+    "description": "Linux var sibling nested file is not traversal",
+    "isTraversal": false
+  },
+  {
+    "input": "/app/config",
+    "path": "/app/config/secret.yml",
+    "description": "Container app config directory input with secret path",
+    "isTraversal": true
+  },
+  {
+    "input": "/app/config/secret.yml",
+    "path": "/app/config/secret.yml",
+    "description": "Container app config secret path",
+    "isTraversal": true
+  },
+  {
+    "input": "/app",
+    "path": "/app/test.txt",
+    "description": "Bare container app directory without trailing separator is not traversal",
+    "isTraversal": false
+  },
+  {
+    "input": "/app/",
+    "path": "/app/test.txt",
+    "description": "Bare container app directory with trailing separator is not traversal",
+    "isTraversal": false
+  },
+  {
+    "input": "/app/",
+    "path": "/app/",
+    "description": "Bare container app directory with trailing separator is not traversal by itself",
+    "isTraversal": false
+  },
+  {
+    "input": "/code/src",
+    "path": "/code/src/index.js",
+    "description": "Container code source directory input with file path",
+    "isTraversal": true
+  },
+  {
+    "input": "/code/src/index.js",
+    "path": "/code/src/index.js",
+    "description": "Container code source file path",
+    "isTraversal": true
+  },
+  {
+    "input": "/code",
+    "path": "/code/test.txt",
+    "description": "Bare container code directory without trailing separator is not traversal",
+    "isTraversal": false
+  },
+  {
+    "input": "/code/",
+    "path": "/code/test.txt",
+    "description": "Bare container code directory with trailing separator is not traversal",
+    "isTraversal": false
+  },
+  {
+    "input": "/code/",
+    "path": "/code/",
+    "description": "Bare container code directory with trailing separator is not traversal by itself",
+    "isTraversal": false
+  },
+  {
+    "input": "/Applications/Zen.app",
+    "path": "/Applications/Zen.app",
+    "description": "MacOS Applications absolute path with uppercase root",
+    "isTraversal": true
+  },
+  {
+    "input": "/Users/user/",
+    "path": "/Users/user/test.txt",
+    "description": "MacOS Users directory input with file path",
+    "isTraversal": true
+  },
+  {
+    "input": "/Volumes/ExternalDrive/",
+    "path": "/Volumes/ExternalDrive/test.txt",
+    "description": "MacOS Volumes directory input with file path",
+    "isTraversal": true
+  },
+  {
+    "input": "/etc/./",
+    "path": "/etc/./passwd",
+    "description": "Current directory marker in Linux etc directory input",
+    "isTraversal": true
+  },
+  {
+    "input": "/etc/./passwd",
+    "path": "/etc/./passwd",
+    "description": "Current directory marker in Linux etc file path",
+    "isTraversal": true
+  },
+  {
+    "input": "/./etc/./passwd",
+    "path": "/./etc/./passwd",
+    "description": "Leading and nested current directory markers in Linux etc file path",
+    "isTraversal": true
+  },
+  {
+    "input": "/etc/././passwd",
+    "path": "/etc/././passwd",
+    "description": "Repeated current directory markers in Linux etc file path",
+    "isTraversal": true
+  },
+  {
+    "input": "///.///etc/passwd",
+    "path": "///.///etc/passwd",
+    "description": "Repeated slash and current directory prefix in Linux etc file path",
+    "isTraversal": true
+  },
+  {
+    "input": "//etc/passwd",
+    "path": "//etc/passwd",
+    "description": "Repeated slash Linux etc file path",
+    "isTraversal": true
+  },
+  {
+    "input": "//etc/some_directory",
+    "path": "//etc/some_directory",
+    "description": "Repeated slash Linux etc directory path",
     "isTraversal": true
   },
   {
@@ -381,6 +687,30 @@
     "input": "/Home/StatusCode/404",
     "path": "/home/site/wwwroot/Home/StatusCode/404",
     "description": "URL route under Linux home app root is not absolute path traversal",
+    "isTraversal": false
+  },
+  {
+    "input": "/home/statuscode/404",
+    "path": "/home/site/wwwroot/home/statuscode/404",
+    "description": "Lowercase URL route under Linux home app root is not absolute path traversal",
+    "isTraversal": false
+  },
+  {
+    "input": "/tmp/status.txt",
+    "path": "/home/site/wwwroot/tmp/status.txt",
+    "description": "URL route named like Linux tmp root under app root is not absolute path traversal",
+    "isTraversal": false
+  },
+  {
+    "input": "/var/log/health",
+    "path": "/home/site/wwwroot/var/log/health",
+    "description": "URL route named like Linux var log path under app root is not absolute path traversal",
+    "isTraversal": false
+  },
+  {
+    "input": "/Users/Profile/42",
+    "path": "/home/site/wwwroot/Users/Profile/42",
+    "description": "URL route named like users root under app root is not absolute path traversal",
     "isTraversal": false
   }
 ]

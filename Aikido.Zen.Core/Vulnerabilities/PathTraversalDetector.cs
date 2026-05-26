@@ -78,6 +78,8 @@ namespace Aikido.Zen.Core.Vulnerabilities
         };
 
         private static readonly char[] PathStartNoise = { '/', '\\', '.', '?' };
+        private const char DirectorySeparator = '/';
+        private const char AltDirectorySeparator = '\\';
 
         private static readonly string[] NormalizedDangerousPathStarts = Array.ConvertAll(DangerousPathStarts, pathStart => pathStart.TrimStart(PathStartNoise));
 
@@ -112,19 +114,33 @@ namespace Aikido.Zen.Core.Vulnerabilities
             if (inputHasUnsafeParts && pathHasUnsafeParts)
                 return true;
 
-            if (checkPathStart)
+            if (checkPathStart && StartsWithUnsafePath(pathSpan, inputSpan))
+                return true;
+
+            return false;
+        }
+
+        private static bool StartsWithUnsafePath(ReadOnlySpan<char> path, ReadOnlySpan<char> input)
+        {
+            ReadOnlySpan<char> normalizedInput = input.TrimStart(PathStartNoise.AsSpan());
+            ReadOnlySpan<char> normalizedPath = path.TrimStart(PathStartNoise.AsSpan());
+
+            // Check for absolute path traversal
+            foreach (var start in NormalizedDangerousPathStarts)
             {
-                ReadOnlySpan<char> normalizedInputSpan = inputSpan.TrimStart(PathStartNoise.AsSpan());
-                ReadOnlySpan<char> normalizedPathSpan = pathSpan.TrimStart(PathStartNoise.AsSpan());
+                ReadOnlySpan<char> startSpan = start.AsSpan();
 
-                // Check for absolute path traversal
-                foreach (var start in NormalizedDangerousPathStarts)
+                if (normalizedInput.StartsWith(startSpan, StringComparison.OrdinalIgnoreCase) &&
+                    normalizedPath.StartsWith(normalizedInput, StringComparison.OrdinalIgnoreCase))
                 {
-                    ReadOnlySpan<char> startSpan = start.AsSpan();
+                    // Bare root directories, such as /etc/, /app/, or C:\, are not enough to flag traversal.
+                    if (startSpan.Length > 0 &&
+                        (startSpan[startSpan.Length - 1] == DirectorySeparator ||
+                         startSpan[startSpan.Length - 1] == AltDirectorySeparator) &&
+                        normalizedInput.Equals(startSpan, StringComparison.OrdinalIgnoreCase))
+                        return false;
 
-                    if (normalizedInputSpan.StartsWith(startSpan, StringComparison.OrdinalIgnoreCase) &&
-                        normalizedPathSpan.StartsWith(normalizedInputSpan, StringComparison.OrdinalIgnoreCase))
-                        return true;
+                    return true;
                 }
             }
 

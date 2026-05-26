@@ -172,6 +172,30 @@ namespace Aikido.Zen.Test
             Assert.That(contextToPass.AttackDetected, Is.True);
         }
 
+        [TestCase(true, Description = "Unsafe source")]
+        [TestCase(false, Description = "Unsafe destination")]
+        public void OnFileOperation_FileMoveWithUnsafePath_ThrowsExceptionWhenBlocking(bool unsafeSource)
+        {
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
+            var moveMethodInfo = typeof(File).GetMethod("Move", new[] { typeof(string), typeof(string) })!;
+            var unsafeInput = "../../secrets.txt";
+            var safePath = "/app/uploads/image.jpg";
+            var unsafePath = $"/app/static/{unsafeInput}";
+            _realContext.ParsedUserInput = new Dictionary<string, string> { { "body.file.matches", unsafeInput } };
+            var contextToPass = _mockContext.Object;
+            contextToPass.ParsedUserInput = _realContext.ParsedUserInput;
+            contextToPass.AttackDetected = false;
+
+            Assert.Throws<AikidoException>(
+                () => OnFileOperationTwoPaths(
+                    unsafeSource ? unsafePath : safePath,
+                    unsafeSource ? safePath : unsafePath,
+                    moveMethodInfo,
+                    contextToPass),
+                "Expected AikidoException for blocked path traversal.");
+            Assert.That(contextToPass.AttackDetected, Is.True);
+        }
+
         [Test]
         public void OnFileOperation_GetFullPathWithTraversal_ThrowsExceptionWhenBlocking()
         {
@@ -226,6 +250,29 @@ namespace Aikido.Zen.Test
             var absoluteInput = "/etc/shadow";
             _realContext.ParsedUserInput = new Dictionary<string, string> { { "path", absoluteInput } };
             RunAndVerifyAttackFlag(absoluteInput, _methodInfo, expectAttack: true, expectBlocked: false);
+        }
+
+        [Test]
+        public void OnFileOperation_DirectoryGetFilesWithUserInputPathTraversal_ThrowsExceptionWhenBlocking()
+        {
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
+            var getFilesMethodInfo = typeof(Directory).GetMethod("GetFiles", new[] { typeof(string) })!;
+            var unsafeInput = "../secrets";
+            var pathArgument = $"/var/www/{unsafeInput}";
+            _realContext.ParsedUserInput = new Dictionary<string, string> { { "query.dir", unsafeInput } };
+
+            RunAndVerifyAttackFlag(pathArgument, getFilesMethodInfo, expectAttack: true, expectBlocked: true);
+        }
+
+        [Test]
+        public void OnFileOperation_DirectoryGetFilesWithAbsoluteUserInput_ThrowsExceptionWhenBlocking()
+        {
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
+            var getFilesMethodInfo = typeof(Directory).GetMethod("GetFiles", new[] { typeof(string) })!;
+            var absoluteInput = "/etc/some_directory";
+            _realContext.ParsedUserInput = new Dictionary<string, string> { { "body.file.matches", absoluteInput } };
+
+            RunAndVerifyAttackFlag(absoluteInput, getFilesMethodInfo, expectAttack: true, expectBlocked: true);
         }
 
         [Test]
