@@ -176,6 +176,13 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 responseHandled = true;
 
                 int statusCode = httpContext.Response.StatusCode;
+                var attackWaveDetector = Agent.Instance.AttackWaveDetector;
+                if (attackWaveDetector.Check(aikidoContext, statusCode))
+                {
+                    var samples = attackWaveDetector.GetSamplesForIp(aikidoContext.RemoteAddress);
+                    Agent.Instance.SendAttackWaveEvent(aikidoContext, samples);
+                }
+
                 if (RouteHelper.ShouldAddRoute(aikidoContext, statusCode))
                 {
                     Agent.Instance.AddRoute(aikidoContext);

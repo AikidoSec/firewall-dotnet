@@ -11,8 +11,15 @@ namespace Aikido.Zen.Core.Vulnerabilities
             new[] { "BADMETHOD", "BADHTTPMETHOD", "BADDATA", "BADMTHD", "BDMTHD" },
             StringComparer.OrdinalIgnoreCase);
 
+        private static readonly char[] PathSeparators = { '/' };
+        private static readonly char[] QueryOrFragmentSeparators = { '?', '#' };
+
         private static readonly HashSet<string> FileExtensions = new HashSet<string>(
             new[] { "env", "bak", "sql", "sqlite", "sqlite3", "db", "old", "save", "orig", "sqlitedb", "sqlite3db" },
+            StringComparer.OrdinalIgnoreCase);
+
+        private static readonly HashSet<string> StatusSensitiveFileExtensions = new HashSet<string>(
+            new[] { "php", "php3", "php4", "php5", "phtml", "java", "jsp", "jspx" },
             StringComparer.OrdinalIgnoreCase);
 
         private static readonly HashSet<string> FileNames = new HashSet<string>(
@@ -89,14 +96,14 @@ namespace Aikido.Zen.Core.Vulnerabilities
             "../",
         };
 
-        public static bool IsProbeRequest(Context context)
+        internal static bool IsProbeRequest(Context context, int statusCode)
         {
             if (IsProbeMethod(context.Method))
             {
                 return true;
             }
 
-            if (IsProbePath(context.Url))
+            if (IsProbePath(context.Url, statusCode))
             {
                 return true;
             }
@@ -114,17 +121,15 @@ namespace Aikido.Zen.Core.Vulnerabilities
             return Methods.Contains(method ?? string.Empty);
         }
 
-        internal static bool IsProbePath(string path)
+        internal static bool IsProbePath(string path, int statusCode)
         {
             if (string.IsNullOrEmpty(path))
             {
                 return false;
             }
 
-            var normalized = path.ToLowerInvariant();
-
             // Split path into filename and directories, last segment is filename
-            var segments = normalized.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries).ToList();
+            var segments = ExtractPathSegments(path);
             var filename = segments.LastOrDefault();
 
             if (!string.IsNullOrEmpty(filename))
@@ -136,10 +141,15 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 }
 
                 // Match suspicious extensions
-                var ext = filename.Split('.').LastOrDefault();
-                if (!string.IsNullOrEmpty(ext) && ext != filename && FileExtensions.Contains(ext))
+                var lastDotIndex = filename.LastIndexOf('.');
+                var ext = lastDotIndex >= 0 ? filename.Substring(lastDotIndex + 1) : null;
+                if (!string.IsNullOrEmpty(ext) && ext != filename)
                 {
-                    return true;
+                    if (FileExtensions.Contains(ext)
+                        || (IsNotFoundStatus(statusCode) && StatusSensitiveFileExtensions.Contains(ext)))
+                    {
+                        return true;
+                    }
                 }
 
                 // Drop filename before checking directories
@@ -156,6 +166,23 @@ namespace Aikido.Zen.Core.Vulnerabilities
             }
 
             return false;
+        }
+
+        private static bool IsNotFoundStatus(int statusCode)
+        {
+            return statusCode == 404;
+        }
+
+        private static List<string> ExtractPathSegments(string path)
+        {
+            var queryOrFragmentIndex = path.IndexOfAny(QueryOrFragmentSeparators);
+            var normalizedPath = queryOrFragmentIndex >= 0
+                ? path.Substring(0, queryOrFragmentIndex)
+                : path;
+
+            return normalizedPath
+                .Split(PathSeparators, StringSplitOptions.RemoveEmptyEntries)
+                .ToList();
         }
 
         internal static bool QueryParamsContainDangerousPayload(IDictionary<string, string> query)

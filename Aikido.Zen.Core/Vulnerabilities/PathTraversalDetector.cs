@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using System.Web;
 
 namespace Aikido.Zen.Core.Vulnerabilities
 {
@@ -79,6 +78,8 @@ namespace Aikido.Zen.Core.Vulnerabilities
         };
 
         private static readonly char[] PathStartNoise = { '/', '\\', '.', '?' };
+        private const char DirectorySeparator = '/';
+        private const char AltDirectorySeparator = '\\';
 
         private static readonly string[] NormalizedDangerousPathStarts = Array.ConvertAll(DangerousPathStarts, pathStart => pathStart.TrimStart(PathStartNoise));
 
@@ -105,21 +106,6 @@ namespace Aikido.Zen.Core.Vulnerabilities
             if (input.Length <= 1)
                 return false;
 
-            // URL decode the input first to catch encoded attacks
-            try
-            {
-                // could be a double encoded path traversal
-                input = HttpUtility.UrlDecode(input);
-                input = HttpUtility.UrlDecode(input);
-                // same for the path
-                path = HttpUtility.UrlDecode(path);
-                path = HttpUtility.UrlDecode(path);
-            }
-            catch
-            {
-                // If URL decode fails, check the raw input
-            }
-
             ReadOnlySpan<char> inputSpan = input.AsSpan();
             ReadOnlySpan<char> pathSpan = path.AsSpan();
 
@@ -128,19 +114,33 @@ namespace Aikido.Zen.Core.Vulnerabilities
             if (inputHasUnsafeParts && pathHasUnsafeParts)
                 return true;
 
-            if (checkPathStart)
+            if (checkPathStart && StartsWithUnsafePath(pathSpan, inputSpan))
+                return true;
+
+            return false;
+        }
+
+        private static bool StartsWithUnsafePath(ReadOnlySpan<char> path, ReadOnlySpan<char> input)
+        {
+            ReadOnlySpan<char> normalizedInput = input.TrimStart(PathStartNoise.AsSpan());
+            ReadOnlySpan<char> normalizedPath = path.TrimStart(PathStartNoise.AsSpan());
+
+            // Check for absolute path traversal
+            foreach (var start in NormalizedDangerousPathStarts)
             {
-                ReadOnlySpan<char> normalizedInputSpan = inputSpan.TrimStart(PathStartNoise.AsSpan());
-                ReadOnlySpan<char> normalizedPathSpan = pathSpan.TrimStart(PathStartNoise.AsSpan());
+                ReadOnlySpan<char> startSpan = start.AsSpan();
 
-                // Check for absolute path traversal
-                foreach (var start in NormalizedDangerousPathStarts)
+                if (normalizedInput.StartsWith(startSpan, StringComparison.OrdinalIgnoreCase) &&
+                    normalizedPath.StartsWith(normalizedInput, StringComparison.OrdinalIgnoreCase))
                 {
-                    ReadOnlySpan<char> startSpan = start.AsSpan();
+                    // Bare root directories, such as /etc/, /app/, or C:\, are not enough to flag traversal.
+                    if (startSpan.Length > 0 &&
+                        (startSpan[startSpan.Length - 1] == DirectorySeparator ||
+                         startSpan[startSpan.Length - 1] == AltDirectorySeparator) &&
+                        normalizedInput.Equals(startSpan, StringComparison.OrdinalIgnoreCase))
+                        return false;
 
-                    if (normalizedInputSpan.StartsWith(startSpan, StringComparison.OrdinalIgnoreCase) &&
-                        normalizedPathSpan.StartsWith(startSpan, StringComparison.OrdinalIgnoreCase))
-                        return true;
+                    return true;
                 }
             }
 

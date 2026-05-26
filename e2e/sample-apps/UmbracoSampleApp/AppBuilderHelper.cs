@@ -73,6 +73,8 @@ namespace UmbracoSampleApp
                     u.UseWebsiteEndpoints();
                     var petsController = new PetsController(app.Services);
                     petsController.ConfigureEndpoints(u.EndpointRouteBuilder);
+                    var pathTraversalController = new PathTraversalController();
+                    pathTraversalController.ConfigureEndpoints(u.EndpointRouteBuilder);
                 });
 
             return app;

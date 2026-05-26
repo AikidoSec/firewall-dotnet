@@ -6,6 +6,7 @@ using Aikido.Zen.Core.Sinks;
 using Aikido.Zen.Tests.Mocks;
 using Moq;
 using System.Reflection;
+using System.Text.Json;
 
 namespace Aikido.Zen.Test.Helpers
 {
@@ -64,6 +65,62 @@ namespace Aikido.Zen.Test.Helpers
             Assert.That(_context.AttackDetected, Is.EqualTo(expectedAttack));
         }
 
+        [TestCase("..%2Fsecrets%2Fkey.txt", Description = "Single-encoded traversal")]
+        [TestCase("%252e%252e%252fsecrets%252fkey.txt", Description = "Double-encoded traversal")]
+        public async Task DetectPathTraversal_WithUriDecodedParsedInput_DetectsAttack(string encodedInput)
+        {
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "false");
+
+            using var bodyStream = new MemoryStream();
+            var parsed = await HttpHelper.ReadAndFlattenHttpDataAsync(
+                new Dictionary<string, string>(),
+                new Dictionary<string, string> { { "path", encodedInput } },
+                new Dictionary<string, string>(),
+                new Dictionary<string, string>(),
+                bodyStream,
+                "text/plain");
+            _context.ParsedUserInput = parsed.FlattenedData;
+
+            var filename = "wwwroot/blogs/../secrets/key.txt";
+
+            bool result = DetectPathTraversal(filename, _context, ModuleName, Operation);
+
+            Assert.That(parsed.FlattenedData["query.path"], Is.EqualTo(encodedInput));
+            Assert.That(parsed.FlattenedData["query.path|decoded"], Is.EqualTo("../secrets/key.txt"));
+            Assert.That(result, Is.True);
+            Assert.That(_context.AttackDetected, Is.True);
+        }
+
+        [TestCaseSource(nameof(GetUriEncodedPathTraversalTestData))]
+        public async Task DetectPathTraversal_WithUriEncodedParsedInput_MatchesDetectorFixture(string encodedInput, string decodedInput, string path, string description, bool expectedAttack)
+        {
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "false");
+
+            using var bodyStream = new MemoryStream();
+            var parsed = await HttpHelper.ReadAndFlattenHttpDataAsync(
+                new Dictionary<string, string>(),
+                new Dictionary<string, string> { { "path", encodedInput } },
+                new Dictionary<string, string>(),
+                new Dictionary<string, string>(),
+                bodyStream,
+                "text/plain");
+            _context.ParsedUserInput = parsed.FlattenedData;
+
+            bool result = DetectPathTraversal(path, _context, ModuleName, Operation);
+
+            Assert.That(parsed.FlattenedData["query.path"], Is.EqualTo(encodedInput));
+            if (encodedInput == decodedInput)
+            {
+                Assert.That(parsed.FlattenedData.ContainsKey("query.path|decoded"), Is.False);
+            }
+            else
+            {
+                Assert.That(parsed.FlattenedData["query.path|decoded"], Is.EqualTo(decodedInput));
+            }
+            Assert.That(result, Is.EqualTo(expectedAttack), description);
+            Assert.That(_context.AttackDetected, Is.EqualTo(expectedAttack), description);
+        }
+
         [Test]
         public async Task DetectPathTraversal_WhenAttackDetected_ReportsFilenameMetadata()
         {
@@ -116,6 +173,48 @@ namespace Aikido.Zen.Test.Helpers
                 "fs_op",
                 _ => result);
             return result.AttackKind.HasValue;
+        }
+
+        public static IEnumerable<TestCaseData> GetUriEncodedPathTraversalTestData()
+        {
+            var jsonData = File.ReadAllText("testdata/data.PathTraversalDetector.json");
+            var testCases = JsonSerializer.Deserialize<List<PathTraversalTestCase>>(jsonData, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            }) ?? new List<PathTraversalTestCase>();
+
+            for (var i = 0; i < testCases.Count; i++)
+            {
+                var testCase = testCases[i];
+                var input = testCase.Input ?? string.Empty;
+                var path = testCase.Path ?? string.Empty;
+                var onceEncoded = Uri.EscapeDataString(input);
+                var twiceEncoded = Uri.EscapeDataString(onceEncoded);
+
+                yield return new TestCaseData(
+                    onceEncoded,
+                    input,
+                    path,
+                    testCase.Description,
+                    testCase.IsTraversal
+                ).SetName($"DecodedFlow_Once_{i}_{testCase.Description}");
+
+                yield return new TestCaseData(
+                    twiceEncoded,
+                    input,
+                    path,
+                    testCase.Description,
+                    testCase.IsTraversal
+                ).SetName($"DecodedFlow_Twice_{i}_{testCase.Description}");
+            }
+        }
+
+        private class PathTraversalTestCase
+        {
+            public string? Input { get; set; }
+            public string? Path { get; set; }
+            public string? Description { get; set; }
+            public bool IsTraversal { get; set; }
         }
     }
 }
