@@ -104,10 +104,6 @@ namespace Aikido.Zen.DotNetCore.Middleware
             {
                 await next(httpContext);
             }
-            catch
-            {
-                throw;
-            }
             finally
             {
                 HandleCompletedRequest(context, httpContext.Response.StatusCode);
