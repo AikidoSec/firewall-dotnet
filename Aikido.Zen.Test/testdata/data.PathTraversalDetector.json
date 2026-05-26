@@ -308,8 +308,14 @@
   {
     "input": "C:\\",
     "path": "C:\\file.txt",
-    "description": "Windows drive root directory input with file path",
-    "isTraversal": true
+    "description": "Bare Windows drive root directory input with file path is not traversal",
+    "isTraversal": false
+  },
+  {
+    "input": "C:/",
+    "path": "C:/file.txt",
+    "description": "Bare Windows drive root directory input with forward slash file path is not traversal",
+    "isTraversal": false
   },
   {
     "input": "D:/logs/app.log",

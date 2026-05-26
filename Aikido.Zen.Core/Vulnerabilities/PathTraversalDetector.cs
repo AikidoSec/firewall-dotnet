@@ -78,6 +78,8 @@ namespace Aikido.Zen.Core.Vulnerabilities
         };
 
         private static readonly char[] PathStartNoise = { '/', '\\', '.', '?' };
+        private const char DirectorySeparator = '/';
+        private const char AltDirectorySeparator = '\\';
 
         private static readonly string[] NormalizedDangerousPathStarts = Array.ConvertAll(DangerousPathStarts, pathStart => pathStart.TrimStart(PathStartNoise));
 
@@ -133,7 +135,8 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 {
                     // Bare root directories, such as /etc/ or /app/, are not enough to flag traversal.
                     if (startSpan.Length > 0 &&
-                        startSpan[startSpan.Length - 1] == '/' &&
+                        (startSpan[startSpan.Length - 1] == DirectorySeparator ||
+                         startSpan[startSpan.Length - 1] == AltDirectorySeparator) &&
                         normalizedInput.Equals(startSpan, StringComparison.OrdinalIgnoreCase))
                         return false;
 
