@@ -133,7 +133,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 if (normalizedInput.StartsWith(startSpan, StringComparison.OrdinalIgnoreCase) &&
                     normalizedPath.StartsWith(normalizedInput, StringComparison.OrdinalIgnoreCase))
                 {
-                    // Bare root directories, such as /etc/ or /app/, are not enough to flag traversal.
+                    // Bare root directories, such as /etc/, /app/, or C:\, are not enough to flag traversal.
                     if (startSpan.Length > 0 &&
                         (startSpan[startSpan.Length - 1] == DirectorySeparator ||
                          startSpan[startSpan.Length - 1] == AltDirectorySeparator) &&
