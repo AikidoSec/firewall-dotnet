@@ -28,7 +28,7 @@ namespace Aikido.Zen.Test
             var detector = NewDetector();
             var context = BuildContext(string.Empty, "/wp-config.php", "GET");
 
-            Assert.That(detector.Check(context), Is.False);
+            Assert.That(detector.Check(context, 404), Is.False);
         }
 
         [Test]
@@ -37,14 +37,50 @@ namespace Aikido.Zen.Test
             var detector = NewDetector();
             var context = BuildContext("::1", "/wp-config.php", "GET");
 
-            Assert.That(detector.Check(context), Is.False);
-            Assert.That(detector.Check(context), Is.True);
-            Assert.That(detector.Check(context), Is.False); // event already sent
+            Assert.That(detector.Check(context, 404), Is.False);
+            Assert.That(detector.Check(context, 404), Is.True);
+            Assert.That(detector.Check(context, 404), Is.False); // event already sent
 
             await Task.Delay(400); // allow both the timeframe and minTimeBetweenEvents to expire
 
-            Assert.That(detector.Check(context), Is.False);
-            Assert.That(detector.Check(context), Is.True);
+            Assert.That(detector.Check(context, 404), Is.False);
+            Assert.That(detector.Check(context, 404), Is.True);
+        }
+
+        [Test]
+        public void Check_DetectsHighConfidenceProbe()
+        {
+            var detector = NewDetector();
+            var context = BuildContext("::1", "/wp-config.php", "GET");
+
+            Assert.That(detector.Check(context, 200), Is.False);
+            Assert.That(detector.Check(context, 200), Is.True);
+        }
+
+        [TestCase("/random.php")]
+        [TestCase("/random.java")]
+        [TestCase("/random.jsp")]
+        public void Check_IgnoresStatusSensitiveFileExtensionProbe_WhenStatusIsNot404(string url)
+        {
+            var detector = NewDetector();
+            var context = BuildContext("::1", url, "GET");
+
+            Assert.That(detector.Check(context, 200), Is.False);
+            Assert.That(detector.Check(context, 302), Is.False);
+            Assert.That(detector.Check(context, 100), Is.False);
+            Assert.That(detector.Check(context, 400), Is.False);
+            Assert.That(detector.Check(context, 500), Is.False);
+            Assert.That(detector.GetSamplesForIp("::1"), Is.Empty);
+        }
+
+        [Test]
+        public void Check_DetectsStatusSensitiveFileExtensionProbe_WhenStatusIsNotFound()
+        {
+            var detector = NewDetector();
+            var context = BuildContext("::1", "/random.php", "GET");
+
+            Assert.That(detector.Check(context, 404), Is.False);
+            Assert.That(detector.Check(context, 404), Is.True);
         }
 
         [Test]
@@ -53,11 +89,11 @@ namespace Aikido.Zen.Test
             var detector = NewDetector(threshold: 10, timeframe: 1000, minBetweenEvents: 1000, maxSamples: 3);
             var ip = "::1";
 
-            detector.Check(BuildContext(ip, "/0/.env", "GET"));
-            detector.Check(BuildContext(ip, "/1/.env", "GET"));
-            detector.Check(BuildContext(ip, "/2/.env", "GET"));
-            detector.Check(BuildContext(ip, "/2/.env", "GET")); // duplicate
-            detector.Check(BuildContext(ip, "/3/.env", "GET")); // should be ignored due to max samples
+            detector.Check(BuildContext(ip, "/0/.env", "GET"), 404);
+            detector.Check(BuildContext(ip, "/1/.env", "GET"), 404);
+            detector.Check(BuildContext(ip, "/2/.env", "GET"), 404);
+            detector.Check(BuildContext(ip, "/2/.env", "GET"), 404); // duplicate
+            detector.Check(BuildContext(ip, "/3/.env", "GET"), 404); // should be ignored due to max samples
 
             var samples = detector.GetSamplesForIp(ip);
 
@@ -71,29 +107,104 @@ namespace Aikido.Zen.Test
         public void IsProbeRequest_DetectsDangerousSignals()
         {
             Assert.That(
-                AttackWaveProbe.IsProbeRequest(BuildContext("::1", "/.git/config", "GET")),
+                AttackWaveProbe.IsProbeRequest(BuildContext("::1", "/.git/config", "GET"), 200),
                 Is.True);
 
             Assert.That(
-                AttackWaveProbe.IsProbeRequest(BuildContext("::1", "/api", "BADMETHOD")),
+                AttackWaveProbe.IsProbeRequest(BuildContext("::1", "/api", "BADMETHOD"), 200),
                 Is.True);
 
             var contextWithQuery = BuildContext("::1", "/api", "GET", new Dictionary<string, string>
             {
                 { "test", "SELECT * FROM admin" }
             });
-            Assert.That(AttackWaveProbe.IsProbeRequest(contextWithQuery), Is.True);
+            Assert.That(AttackWaveProbe.IsProbeRequest(contextWithQuery, 200), Is.True);
+        }
+
+        [TestCase("/wp-config.php?foo=bar")]
+        [TestCase("https://example.com/wp-config.php?foo=bar")]
+        [TestCase("/backup.sql?foo=bar")]
+        [TestCase("https://example.com/backup.sql?foo=bar")]
+        public void IsProbeRequest_DetectsSuspiciousPath_WhenUrlContainsQueryString(string url)
+        {
+            Assert.That(
+                AttackWaveProbe.IsProbeRequest(BuildContext("::1", url, "GET"), 200),
+                Is.True);
+        }
+
+        [TestCase("/random.php")]
+        [TestCase("/random.php?foo=bar")]
+        [TestCase("/random.php3")]
+        [TestCase("/random.php4?foo=bar")]
+        [TestCase("/random.php5")]
+        [TestCase("/random.phtml")]
+        [TestCase("/nested/random.PHP")]
+        public void IsProbeRequest_DetectsPhpFileExtensions_WhenStatusIsNotFound(string url)
+        {
+            Assert.That(
+                AttackWaveProbe.IsProbeRequest(BuildContext("::1", url, "GET"), 404),
+                Is.True);
+        }
+
+        [TestCase("/random.java")]
+        [TestCase("/random.java?foo=bar")]
+        [TestCase("/nested/random.JAVA")]
+        public void IsProbeRequest_DetectsJavaFileExtension_WhenStatusIsNotFound(string url)
+        {
+            Assert.That(
+                AttackWaveProbe.IsProbeRequest(BuildContext("::1", url, "GET"), 404),
+                Is.True);
+        }
+
+        [TestCase("/random.jsp")]
+        [TestCase("/random.jspx?foo=bar")]
+        [TestCase("/nested/random.JSP")]
+        public void IsProbeRequest_DetectsJspFileExtensions_WhenStatusIsNotFound(string url)
+        {
+            Assert.That(
+                AttackWaveProbe.IsProbeRequest(BuildContext("::1", url, "GET"), 404),
+                Is.True);
+        }
+
+        [TestCase("/api/php/whatever")]
+        [TestCase("/api/php/whatever?foo=bar")]
+        [TestCase("/api/php")]
+        public void IsProbeRequest_IgnoresPhpPathSegmentWithoutPhpFileExtension(string url)
+        {
+            Assert.That(
+                AttackWaveProbe.IsProbeRequest(BuildContext("::1", url, "GET"), 404),
+                Is.False);
+        }
+
+        [TestCase("/api/java/whatever")]
+        [TestCase("/api/java/whatever?foo=bar")]
+        [TestCase("/api/java")]
+        public void IsProbeRequest_IgnoresJavaPathSegmentWithoutJavaFileExtension(string url)
+        {
+            Assert.That(
+                AttackWaveProbe.IsProbeRequest(BuildContext("::1", url, "GET"), 404),
+                Is.False);
+        }
+
+        [TestCase("/api/jsp/whatever")]
+        [TestCase("/api/jsp/whatever?foo=bar")]
+        [TestCase("/api/jspx")]
+        public void IsProbeRequest_IgnoresJspPathSegmentWithoutJspFileExtension(string url)
+        {
+            Assert.That(
+                AttackWaveProbe.IsProbeRequest(BuildContext("::1", url, "GET"), 404),
+                Is.False);
         }
 
         [Test]
         public void IsProbeRequest_IgnoresBenignTraffic()
         {
             Assert.That(
-                AttackWaveProbe.IsProbeRequest(BuildContext("::1", "/api/users", "GET")),
+                AttackWaveProbe.IsProbeRequest(BuildContext("::1", "/api/users", "GET"), 404),
                 Is.False);
 
             Assert.That(
-                AttackWaveProbe.IsProbeRequest(BuildContext("::1", "/static/js/app.js", "GET")),
+                AttackWaveProbe.IsProbeRequest(BuildContext("::1", "/static/js/app.js", "GET"), 404),
                 Is.False);
         }
 

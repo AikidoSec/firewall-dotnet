@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -110,6 +111,49 @@ namespace Aikido.Zen.Tests.DotNetCore
                     Assert.That(Agent.Instance.Context.Requests, Is.EqualTo(0));
                     Assert.That(Agent.Instance.Context.Routes, Is.Empty);
                 });
+            }
+            finally
+            {
+                Agent.Instance.ClearContext();
+                Agent.Instance.Context.Config.Clear();
+                Environment.SetEnvironmentVariable("AIKIDO_DISABLE", originalDisable);
+            }
+        }
+
+        [Test]
+        public async Task InvokeAsync_WhenNextThrows_StillRunsAttackWaveDetection()
+        {
+            var originalDisable = Environment.GetEnvironmentVariable("AIKIDO_DISABLE");
+            const string ip = "203.0.113.211";
+
+            try
+            {
+                Environment.SetEnvironmentVariable("AIKIDO_DISABLE", "false");
+                Agent.Instance.Context.Config.Clear();
+                Agent.Instance.ClearContext();
+
+                RequestDelegate next = httpContext =>
+                {
+                    httpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                    throw new InvalidOperationException("boom");
+                };
+
+                for (var i = 0; i < 15; i++)
+                {
+                    var context = new DefaultHttpContext();
+                    context.Request.Scheme = "http";
+                    context.Request.Host = new HostString("test.local");
+                    context.Request.Path = $"/api/pets/file{i}.env";
+                    context.Request.Method = "GET";
+                    context.Request.Body = new MemoryStream();
+                    context.Connection.RemoteIpAddress = IPAddress.Parse(ip);
+
+                    var ex = Assert.ThrowsAsync<InvalidOperationException>(
+                        () => _contextMiddleware.InvokeAsync(context, next));
+                    Assert.That(ex?.Message, Is.EqualTo("boom"));
+                }
+
+                Assert.That(Agent.Instance.Context.AttackWavesDetected, Is.EqualTo(1));
             }
             finally
             {
