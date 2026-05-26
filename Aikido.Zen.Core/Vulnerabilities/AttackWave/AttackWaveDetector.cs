@@ -36,7 +36,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
         /// Checks if the request is part of an attack wave.
         /// Returns true when an attack wave should be reported.
         /// </summary>
-        internal bool Check(Context context, int? statusCode = null)
+        internal bool Check(Context context, int statusCode)
         {
             // Must have remote address to proceed
             if (string.IsNullOrWhiteSpace(context.RemoteAddress))
@@ -62,15 +62,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 }
 
                 // Run probe detector logic
-                if (statusCode.HasValue)
-                {
-                    // Post-response checks only count status-sensitive probes to avoid double-counting pre-request matches.
-                    if (!AttackWaveProbe.IsStatusSensitiveProbePath(context.Url, statusCode.Value))
-                    {
-                        return false;
-                    }
-                }
-                else if (!AttackWaveProbe.IsProbeRequest(context))
+                if (!AttackWaveProbe.IsProbeRequest(context, statusCode))
                 {
                     return false;
                 }

@@ -18,7 +18,6 @@ namespace Aikido.Zen.Core.Vulnerabilities
             new[] { "env", "bak", "sql", "sqlite", "sqlite3", "db", "old", "save", "orig", "sqlitedb", "sqlite3db" },
             StringComparer.OrdinalIgnoreCase);
 
-        // Generic app-framework extensions are noisy unless the app failed to handle them.
         private static readonly HashSet<string> StatusSensitiveFileExtensions = new HashSet<string>(
             new[] { "php", "php3", "php4", "php5", "phtml", "java", "jsp", "jspx" },
             StringComparer.OrdinalIgnoreCase);
@@ -97,14 +96,14 @@ namespace Aikido.Zen.Core.Vulnerabilities
             "../",
         };
 
-        internal static bool IsProbeRequest(Context context)
+        internal static bool IsProbeRequest(Context context, int statusCode)
         {
             if (IsProbeMethod(context.Method))
             {
                 return true;
             }
 
-            if (IsProbePath(context.Url))
+            if (IsProbePath(context.Url, statusCode))
             {
                 return true;
             }
@@ -122,7 +121,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
             return Methods.Contains(method ?? string.Empty);
         }
 
-        internal static bool IsProbePath(string path)
+        internal static bool IsProbePath(string path, int statusCode)
         {
             if (string.IsNullOrEmpty(path))
             {
@@ -144,9 +143,13 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 // Match suspicious extensions
                 var lastDotIndex = filename.LastIndexOf('.');
                 var ext = lastDotIndex >= 0 ? filename.Substring(lastDotIndex + 1) : null;
-                if (!string.IsNullOrEmpty(ext) && ext != filename && FileExtensions.Contains(ext))
+                if (!string.IsNullOrEmpty(ext) && ext != filename)
                 {
-                    return true;
+                    if (FileExtensions.Contains(ext) ||
+                        (IsFailedStatus(statusCode) && StatusSensitiveFileExtensions.Contains(ext)))
+                    {
+                        return true;
+                    }
                 }
 
                 // Drop filename before checking directories
@@ -163,29 +166,6 @@ namespace Aikido.Zen.Core.Vulnerabilities
             }
 
             return false;
-        }
-
-        internal static bool IsStatusSensitiveProbePath(string path, int statusCode)
-        {
-            if (string.IsNullOrEmpty(path) || !IsFailedStatus(statusCode))
-            {
-                return false;
-            }
-
-            var segments = ExtractPathSegments(path);
-            var filename = segments.LastOrDefault();
-
-            // Known sensitive filenames are already counted by the pre-request probe check.
-            return !string.IsNullOrEmpty(filename)
-                && !FileNames.Contains(filename)
-                && HasStatusSensitiveExtension(filename);
-        }
-
-        private static bool HasStatusSensitiveExtension(string filename)
-        {
-            var lastDotIndex = filename.LastIndexOf('.');
-            var ext = lastDotIndex >= 0 ? filename.Substring(lastDotIndex + 1) : null;
-            return !string.IsNullOrEmpty(ext) && ext != filename && StatusSensitiveFileExtensions.Contains(ext);
         }
 
         private static bool IsFailedStatus(int statusCode)
