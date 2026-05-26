@@ -23,7 +23,7 @@ namespace Aikido.Zen.Core.Sinks
         [SinkPrefix("System.Net.Http", "System.Net.Http.Http3Connection", "SendAsync", "System.Net.Http.HttpRequestMessage", "System.Net.Http.Http3Connection+WaitForHttp3ConnectionActivity", "System.Boolean", "System.Threading.CancellationToken")]
         internal static bool OnRequest(object __instance, MethodBase __originalMethod, ref Task<HttpResponseMessage> __result)
         {
-            if (!OutboundRequestOuterSink.TryGetCurrentRequestUri(out var targetUri))
+            if (!OutboundRequestSink.TryGetCurrentRequestUri(out var targetUri))
             {
                 return true;
             }
@@ -43,7 +43,7 @@ namespace Aikido.Zen.Core.Sinks
             }
             catch (AikidoException ex)
             {
-                OutboundRequestOuterSink.SetDetectedException(ex);
+                OutboundRequestSink.SetDetectedException(ex);
                 __result = Task.FromException<HttpResponseMessage>(ex);
                 return false;
             }
@@ -52,7 +52,7 @@ namespace Aikido.Zen.Core.Sinks
         [SinkPrefix("System", "System.Net.ConnectStream", "WriteHeaders", "System.Boolean")]
         internal static bool OnFrameworkRequest(object ___m_Connection, MethodBase __originalMethod)
         {
-            if (!OutboundRequestOuterSink.TryGetCurrentRequestUri(out var targetUri))
+            if (!OutboundRequestSink.TryGetCurrentRequestUri(out var targetUri))
             {
                 return true;
             }
@@ -72,7 +72,7 @@ namespace Aikido.Zen.Core.Sinks
             }
             catch (AikidoException ex)
             {
-                OutboundRequestOuterSink.SetDetectedException(ex);
+                OutboundRequestSink.SetDetectedException(ex);
                 throw;
             }
         }

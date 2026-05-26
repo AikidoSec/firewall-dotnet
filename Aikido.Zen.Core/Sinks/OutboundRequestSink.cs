@@ -11,7 +11,7 @@ using Aikido.Zen.Core.Models;
 
 namespace Aikido.Zen.Core.Sinks
 {
-    internal static class OutboundRequestOuterSink
+    internal static class OutboundRequestSink
     {
         private const string OperationKind = "outgoing_http_op";
         private static readonly AsyncLocal<OutboundRequest> CurrentRequest = new AsyncLocal<OutboundRequest>();

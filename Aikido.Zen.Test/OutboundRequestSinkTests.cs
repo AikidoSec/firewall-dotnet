@@ -509,9 +509,9 @@ namespace Aikido.Zen.Test
             Assert.That(result, Is.True);
 
             object finalizerResult = null!;
-            OutboundRequestOuterSink.OnRequestFinalized(ref finalizerResult, null!);
+            OutboundRequestSink.OnRequestFinalized(ref finalizerResult, null!);
 
-            var hasCurrentRequest = OutboundRequestOuterSink.TryGetCurrentRequestUri(out _);
+            var hasCurrentRequest = OutboundRequestSink.TryGetCurrentRequestUri(out _);
 
             Assert.That(hasCurrentRequest, Is.False);
         }
@@ -528,7 +528,7 @@ namespace Aikido.Zen.Test
 
             var response = new HttpResponseMessage(HttpStatusCode.NoContent);
             object finalizerResult = Task.FromResult(response);
-            var finalException = OutboundRequestOuterSink.OnRequestFinalized(ref finalizerResult, null!);
+            var finalException = OutboundRequestSink.OnRequestFinalized(ref finalizerResult, null!);
             var finalResponse = await (Task<HttpResponseMessage>)finalizerResult;
 
             Assert.Multiple(() =>
@@ -608,13 +608,13 @@ namespace Aikido.Zen.Test
         private bool OnHttpClientRequest(HttpRequestMessage? request, HttpClient? httpClient, MethodInfo methodInfo, Context? context)
         {
             _activeContext = context;
-            return OutboundRequestOuterSink.OnRequestHttpClient(request!, httpClient!, methodInfo);
+            return OutboundRequestSink.OnRequestHttpClient(request!, httpClient!, methodInfo);
         }
 
         private bool OnWebRequest(WebRequest? request, MethodInfo methodInfo, Context? context)
         {
             _activeContext = context;
-            return OutboundRequestOuterSink.OnRequestWebRequest(request!, methodInfo);
+            return OutboundRequestSink.OnRequestWebRequest(request!, methodInfo);
         }
 
         private static MethodInfo GetMethod(Type type, string methodName, params Type[] parameterTypes)
