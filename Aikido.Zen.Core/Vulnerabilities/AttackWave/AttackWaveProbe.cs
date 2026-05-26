@@ -145,8 +145,8 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 var ext = lastDotIndex >= 0 ? filename.Substring(lastDotIndex + 1) : null;
                 if (!string.IsNullOrEmpty(ext) && ext != filename)
                 {
-                    if (FileExtensions.Contains(ext) ||
-                        (IsFailedStatus(statusCode) && StatusSensitiveFileExtensions.Contains(ext)))
+                    if (FileExtensions.Contains(ext)
+                        || (IsFailedStatus(statusCode) && StatusSensitiveFileExtensions.Contains(ext)))
                     {
                         return true;
                     }

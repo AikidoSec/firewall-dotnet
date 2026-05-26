@@ -100,10 +100,22 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 LogHelper.ErrorLog(Agent.Logger, $"Error capturing request: {e.Message}");
             }
 
-            await next(httpContext);
+            try
+            {
+                await next(httpContext);
+            }
+            catch
+            {
+                throw;
+            }
+            finally
+            {
+                HandleCompletedRequest(context, httpContext.Response.StatusCode);
+            }
+        }
 
-            // Capture the response status code and check if the route should be added
-            int statusCode = httpContext.Response.StatusCode;
+        private static void HandleCompletedRequest(Context context, int statusCode)
+        {
             try
             {
                 var attackWaveDetector = Agent.Instance.AttackWaveDetector;

@@ -70,6 +70,7 @@ namespace Aikido.Zen.Test
             Assert.That(detector.GetSamplesForIp("::1"), Is.Empty);
         }
 
+        [TestCase(100)]
         [TestCase(400)]
         [TestCase(404)]
         [TestCase(500)]
