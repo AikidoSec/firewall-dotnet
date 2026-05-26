@@ -15,7 +15,7 @@ namespace Aikido.Zen.Core.Sinks
 
         private static readonly Type[] PatchCatalogs =
         {
-            typeof(DnsSink),
+            typeof(HttpConnectionSink),
             typeof(IOSink),
             typeof(LLMSink),
             typeof(OutboundRequestSink),

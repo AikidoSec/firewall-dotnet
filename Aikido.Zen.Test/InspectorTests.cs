@@ -36,9 +36,9 @@ namespace Aikido.Zen.Test
         {
             var result = InspectionResult.Block(AttackKind.StoredSsrf);
 
-            var operation = Inspector.GetBlockedOperation("Dns.GetHostAddresses", result);
+            var operation = Inspector.GetBlockedOperation("HttpClient.SendAsync", result);
 
-            Assert.That(operation, Is.EqualTo("Dns.GetHostAddresses originating from unknown source"));
+            Assert.That(operation, Is.EqualTo("HttpClient.SendAsync originating from unknown source"));
         }
 
         [Test]

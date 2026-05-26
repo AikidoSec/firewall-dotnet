@@ -53,7 +53,6 @@ namespace Aikido.Zen.Test
                 nameof(HttpClient.SendAsync),
                 typeof(HttpRequestMessage),
                 typeof(CancellationToken)));
-            AssertFinalizerPatch(GetMethod(typeof(Dns), nameof(Dns.GetHostAddresses), typeof(string)));
             AssertPrefixPatch(GetMethod(typeof(DbCommand), nameof(DbCommand.ExecuteScalarAsync)));
         }
 
@@ -117,6 +116,14 @@ namespace Aikido.Zen.Test
 
             Assert.That(OverloadFallbackTarget.Execute("value"), Is.EqualTo("one-argument"));
             Assert.That(OverloadFallbackTarget.Execute("value", 1), Is.EqualTo("patched-overload"));
+        }
+
+        [Test]
+        public void PatchCatalog_WhenDeclaredParameterTypesDoNotMatch_SkipsTarget()
+        {
+            Patcher.PatchCatalog(typeof(ExplicitMismatchCatalog));
+
+            Assert.That(ExplicitMismatchTarget.Execute("value", 1), Is.EqualTo("two-argument"));
         }
 
         [Test]
@@ -340,6 +347,24 @@ namespace Aikido.Zen.Test
             private static bool Prefix(ref string __result)
             {
                 __result = "patched-overload";
+                return false;
+            }
+        }
+
+        private static class ExplicitMismatchTarget
+        {
+            public static string Execute(string value, int count)
+            {
+                return "two-argument";
+            }
+        }
+
+        private static class ExplicitMismatchCatalog
+        {
+            [SinkPrefix("Aikido.Zen.Tests", "Aikido.Zen.Test.PatcherTests+ExplicitMismatchTarget", nameof(ExplicitMismatchTarget.Execute), "System.String")]
+            private static bool Prefix(ref string __result)
+            {
+                __result = "patched-mismatch";
                 return false;
             }
         }

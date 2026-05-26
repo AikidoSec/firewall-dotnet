@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
 using Aikido.Zen.Core.Helpers;
@@ -31,10 +30,8 @@ namespace Aikido.Zen.Core.Vulnerabilities
             "metadata.goog"
         };
 
-        internal static InspectionResult Detect(Uri targetUri, IPAddress[] addresses, Context context, out bool inspectDns)
+        internal static InspectionResult Detect(Uri targetUri, IPAddress remoteAddress, Context context)
         {
-            inspectDns = false;
-
             if (targetUri == null)
             {
                 return InspectionResult.Allow(skipStats: true);
@@ -50,20 +47,10 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 return InspectionResult.Allow();
             }
 
-            string privateIPAddress;
-            if (addresses != null)
+            // Connection-level sinks pass the concrete remote address.
+            if (!TryGetPrivateOrLocalIPAddress(remoteAddress, out var privateIPAddress))
             {
-                // DNS sink already has resolved addresses, so inspect the real destination IPs.
-                if (!TryGetPrivateOrLocalIPAddress(addresses, out privateIPAddress))
-                {
-                    // Resolved public addresses are not SSRF.
-                    return InspectionResult.Allow();
-                }
-            }
-            else if (!TryGetPrivateOrLocalIPAddress(hostname, out privateIPAddress))
-            {
-                // Outbound sink only has a hostname; inspect DNS later unless it is already a private IP.
-                inspectDns = true;
+                // Public remote addresses are not SSRF.
                 return InspectionResult.Allow();
             }
 
@@ -131,38 +118,25 @@ namespace Aikido.Zen.Core.Vulnerabilities
             return IsImdsIPAddress(privateIPAddress);
         }
 
-        internal static bool TryGetPrivateOrLocalIPAddress(string candidate, out string privateIPAddress)
+        internal static bool TryGetPrivateOrLocalIPAddress(IPAddress address, out string privateIPAddress)
         {
             privateIPAddress = null;
 
-            if (string.IsNullOrWhiteSpace(candidate))
+            if (address == null)
             {
                 return false;
             }
 
-            var normalizedCandidate = candidate.Trim().TrimStart('[').TrimEnd(']');
-            if (!IPAddress.TryParse(normalizedCandidate, out var address))
+            var ipAddress = address.IsIPv4MappedToIPv6
+                ? address.MapToIPv4().ToString()
+                : address.ToString();
+            if (!IPHelper.IsPrivateOrLocalIp(ipAddress))
             {
                 return false;
             }
 
-            var normalizedIPAddress = address.ToString();
-            if (!IPHelper.IsPrivateOrLocalIp(normalizedIPAddress))
-            {
-                return false;
-            }
-
-            privateIPAddress = normalizedIPAddress;
+            privateIPAddress = ipAddress;
             return true;
-        }
-
-        internal static bool TryGetPrivateOrLocalIPAddress(IPAddress[] addresses, out string privateIPAddress)
-        {
-            privateIPAddress = addresses?
-                .Select(address => address?.ToString())
-                .FirstOrDefault(address => TryGetPrivateOrLocalIPAddress(address, out _));
-
-            return privateIPAddress != null;
         }
 
         internal static string NormalizeHostname(string hostname)
@@ -284,14 +258,24 @@ namespace Aikido.Zen.Core.Vulnerabilities
 
         private static bool IsImdsIPAddress(string ipAddress)
         {
-            var normalizedIPAddress = NormalizeIPAddress(ipAddress);
+            if (string.IsNullOrWhiteSpace(ipAddress))
+            {
+                return false;
+            }
+
+            var normalizedCandidate = ipAddress.Trim().TrimStart('[').TrimEnd(']');
+            if (!IPAddress.TryParse(normalizedCandidate, out var parsedAddress))
+            {
+                return false;
+            }
+
+            var normalizedIPAddress = NormalizeIPAddress(parsedAddress);
             return normalizedIPAddress != null && ImdsIPAddresses.Contains(normalizedIPAddress);
         }
 
-        private static string NormalizeIPAddress(string ipAddress)
+        private static string NormalizeIPAddress(IPAddress parsedAddress)
         {
-            var normalizedCandidate = ipAddress.Trim().TrimStart('[').TrimEnd(']');
-            if (!IPAddress.TryParse(normalizedCandidate, out var parsedAddress))
+            if (parsedAddress == null)
             {
                 return null;
             }

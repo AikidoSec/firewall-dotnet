@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
-using Aikido.Zen.Core.Vulnerabilities;
 
 namespace Aikido.Zen.Core.Sinks
 {
@@ -17,8 +16,13 @@ namespace Aikido.Zen.Core.Sinks
         private const string OperationKind = "outgoing_http_op";
         private static readonly AsyncLocal<OutboundRequest> CurrentRequest = new AsyncLocal<OutboundRequest>();
 
+        [SinkPrefix(typeof(HttpClient), "SendAsync", "System.Net.Http.HttpRequestMessage")]
+        [SinkPrefix(typeof(HttpClient), "SendAsync", "System.Net.Http.HttpRequestMessage", "System.Net.Http.HttpCompletionOption")]
         [SinkPrefix(typeof(HttpClient), "SendAsync", "System.Net.Http.HttpRequestMessage", "System.Net.Http.HttpCompletionOption", "System.Threading.CancellationToken")]
         [SinkPrefix(typeof(HttpClient), "SendAsync", "System.Net.Http.HttpRequestMessage", "System.Threading.CancellationToken")]
+        [SinkPrefix(typeof(HttpClient), "Send", "System.Net.Http.HttpRequestMessage")]
+        [SinkPrefix(typeof(HttpClient), "Send", "System.Net.Http.HttpRequestMessage", "System.Net.Http.HttpCompletionOption")]
+        [SinkPrefix(typeof(HttpClient), "Send", "System.Net.Http.HttpRequestMessage", "System.Net.Http.HttpCompletionOption", "System.Threading.CancellationToken")]
         [SinkPrefix(typeof(HttpClient), "Send", "System.Net.Http.HttpRequestMessage", "System.Threading.CancellationToken")]
         internal static bool OnRequestHttpClient(HttpRequestMessage request, HttpClient __instance, MethodBase __originalMethod)
         {
@@ -59,10 +63,11 @@ namespace Aikido.Zen.Core.Sinks
                 return InspectionResult.Allow(skipStats: true);
             }
 
-            ExitRequestScope();
+            EnterRequestScope(targetUri);
 
             var hostname = targetUri.Host;
             var port = UriHelper.GetPort(targetUri);
+
             Agent.Instance.CaptureOutboundRequest(hostname, port);
 
             if (Agent.Instance.Context.Config.ShouldBlockOutgoingRequest(hostname))
@@ -76,14 +81,7 @@ namespace Aikido.Zen.Core.Sinks
                     });
             }
 
-            var result = SSRFDetector.Detect(targetUri, null, context, out var inspectDns);
-
-            if (inspectDns)
-            {
-                EnterRequestScope(targetUri);
-            }
-
-            return result;
+            return InspectionResult.Allow();
         }
 
         private static Uri ResolveUri(HttpRequestMessage request, HttpClient client)
@@ -103,7 +101,12 @@ namespace Aikido.Zen.Core.Sinks
 
         private static void EnterRequestScope(Uri targetUri)
         {
-            CurrentRequest.Value = new OutboundRequest(targetUri);
+            ExitRequestScope();
+
+            if (targetUri != null)
+            {
+                CurrentRequest.Value = new OutboundRequest(targetUri);
+            }
         }
 
         internal static void ExitRequestScope()

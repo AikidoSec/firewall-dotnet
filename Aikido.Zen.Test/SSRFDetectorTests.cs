@@ -24,9 +24,11 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void TryGetPrivateOrLocalIPAddress_WhenTargetIsDirectPrivateIp_ReturnsTrue()
+        public void TryGetPrivateOrLocalIPAddress_WhenAddressIsDirectPrivateIp_ReturnsTrue()
         {
-            var result = SSRFDetector.TryGetPrivateOrLocalIPAddress("127.0.0.1", out var privateIPAddress);
+            var result = SSRFDetector.TryGetPrivateOrLocalIPAddress(
+                IPAddress.Parse("127.0.0.1"),
+                out var privateIPAddress);
 
             Assert.Multiple(() =>
             {
@@ -36,23 +38,25 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void TryGetPrivateOrLocalIPAddress_WhenTargetIsPublicIp_ReturnsFalse()
+        public void TryGetPrivateOrLocalIPAddress_WhenAddressIsIPv4MappedIPv6_ReturnsMappedIPv4()
         {
-            var result = SSRFDetector.TryGetPrivateOrLocalIPAddress("8.8.8.8", out var privateIPAddress);
+            var result = SSRFDetector.TryGetPrivateOrLocalIPAddress(
+                IPAddress.Parse("::ffff:127.0.0.1"),
+                out var privateIPAddress);
 
             Assert.Multiple(() =>
             {
-                Assert.That(result, Is.False);
-                Assert.That(privateIPAddress, Is.Null);
+                Assert.That(result, Is.True);
+                Assert.That(privateIPAddress, Is.EqualTo("127.0.0.1"));
             });
         }
 
-        [TestCase(null)]
-        [TestCase("")]
-        [TestCase(" ")]
-        public void TryGetPrivateOrLocalIPAddress_WhenTargetIsBlank_ReturnsFalse(string? target)
+        [Test]
+        public void TryGetPrivateOrLocalIPAddress_WhenAddressIsPublicIp_ReturnsFalse()
         {
-            var result = SSRFDetector.TryGetPrivateOrLocalIPAddress(target!, out var privateIPAddress);
+            var result = SSRFDetector.TryGetPrivateOrLocalIPAddress(
+                IPAddress.Parse("8.8.8.8"),
+                out var privateIPAddress);
 
             Assert.Multiple(() =>
             {
@@ -62,21 +66,9 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void TryGetPrivateOrLocalIPAddress_WhenAddressListIsNull_ReturnsFalse()
+        public void TryGetPrivateOrLocalIPAddress_WhenAddressIsNull_ReturnsFalse()
         {
-            var result = SSRFDetector.TryGetPrivateOrLocalIPAddress((IPAddress[])null!, out var privateIPAddress);
-
-            Assert.Multiple(() =>
-            {
-                Assert.That(result, Is.False);
-                Assert.That(privateIPAddress, Is.Null);
-            });
-        }
-
-        [Test]
-        public void TryGetPrivateOrLocalIPAddress_WhenAddressListContainsNull_ReturnsFalse()
-        {
-            var result = SSRFDetector.TryGetPrivateOrLocalIPAddress(new IPAddress[] { null! }, out var privateIPAddress);
+            var result = SSRFDetector.TryGetPrivateOrLocalIPAddress((IPAddress)null!, out var privateIPAddress);
 
             Assert.Multiple(() =>
             {
@@ -88,13 +80,12 @@ namespace Aikido.Zen.Test
         [Test]
         public void Detect_WhenTargetUriIsNull_AllowsAndSkipsStats()
         {
-            var result = SSRFDetector.Detect(null!, null!, null!, out var inspectDns);
+            var result = SSRFDetector.Detect(null!, null!, null!);
 
             Assert.Multiple(() =>
             {
                 Assert.That(result.AttackKind, Is.Null);
                 Assert.That(result.SkipStats, Is.True);
-                Assert.That(inspectDns, Is.False);
             });
         }
 
@@ -105,15 +96,10 @@ namespace Aikido.Zen.Test
 
             var result = SSRFDetector.Detect(
                 new Uri("http://localhost:8080/admin"),
-                new[] { IPAddress.Parse("127.0.0.1") },
-                context,
-                out var inspectDns);
+                IPAddress.Parse("127.0.0.1"),
+                context);
 
-            Assert.Multiple(() =>
-            {
-                Assert.That(result.AttackKind, Is.Null);
-                Assert.That(inspectDns, Is.False);
-            });
+            Assert.That(result.AttackKind, Is.Null);
         }
 
         [Test]
@@ -131,9 +117,8 @@ namespace Aikido.Zen.Test
 
             var result = SSRFDetector.Detect(
                 new Uri("http://localhost:8080/admin"),
-                new[] { IPAddress.Parse("127.0.0.1") },
-                context,
-                out var inspectDns);
+                IPAddress.Parse("127.0.0.1"),
+                context);
 
             Assert.Multiple(() =>
             {
@@ -141,7 +126,6 @@ namespace Aikido.Zen.Test
                 Assert.That(result.Source, Is.EqualTo(Source.Query));
                 Assert.That(result.Payload, Is.EqualTo("http://localhost:8080/admin"));
                 Assert.That(result.Paths, Is.EqualTo(new[] { ".url" }));
-                Assert.That(inspectDns, Is.False);
             });
         }
 
@@ -159,9 +143,8 @@ namespace Aikido.Zen.Test
 
             var result = SSRFDetector.Detect(
                 new Uri("http://localhost:8080/admin"),
-                new[] { IPAddress.Parse("127.0.0.1") },
-                context,
-                out var inspectDns);
+                IPAddress.Parse("127.0.0.1"),
+                context);
 
             Assert.Multiple(() =>
             {
@@ -169,44 +152,33 @@ namespace Aikido.Zen.Test
                 Assert.That(result.Source, Is.EqualTo(Source.Query));
                 Assert.That(result.Payload, Is.EqualTo("localhost:8080/admin"));
                 Assert.That(result.Paths, Is.EqualTo(new[] { ".url" }));
-                Assert.That(inspectDns, Is.False);
             });
         }
 
         [Test]
-        public void Detect_WhenResolvedAddressesArePublic_Allows()
+        public void Detect_WhenRemoteAddressIsPublic_Allows()
         {
             var result = SSRFDetector.Detect(
                 new Uri("http://public.example/path"),
-                new[] { IPAddress.Parse("8.8.8.8") },
-                new Context { Url = "https://app.local/outbound" },
-                out var inspectDns);
+                IPAddress.Parse("8.8.8.8"),
+                new Context { Url = "https://app.local/outbound" });
 
-            Assert.Multiple(() =>
-            {
-                Assert.That(result.AttackKind, Is.Null);
-                Assert.That(inspectDns, Is.False);
-            });
+            Assert.That(result.AttackKind, Is.Null);
         }
 
         [Test]
-        public void Detect_WhenHostnameNeedsDnsInspection_AllowsAndRequestsDnsInspection()
+        public void Detect_WhenRemoteAddressIsMissing_Allows()
         {
             var result = SSRFDetector.Detect(
                 new Uri("http://private.example/path"),
                 null!,
-                new Context { Url = "https://app.local/outbound" },
-                out var inspectDns);
+                new Context { Url = "https://app.local/outbound" });
 
-            Assert.Multiple(() =>
-            {
-                Assert.That(result.AttackKind, Is.Null);
-                Assert.That(inspectDns, Is.True);
-            });
+            Assert.That(result.AttackKind, Is.Null);
         }
 
         [Test]
-        public void Detect_WhenResolvedPrivateAddressDoesNotMatchUserInput_Allows()
+        public void Detect_WhenPrivateRemoteAddressDoesNotMatchUserInput_Allows()
         {
             var context = new Context
             {
@@ -220,15 +192,10 @@ namespace Aikido.Zen.Test
 
             var result = SSRFDetector.Detect(
                 new Uri("http://private.example/admin"),
-                new[] { IPAddress.Parse("127.0.0.1") },
-                context,
-                out var inspectDns);
+                IPAddress.Parse("127.0.0.1"),
+                context);
 
-            Assert.Multiple(() =>
-            {
-                Assert.That(result.AttackKind, Is.Null);
-                Assert.That(inspectDns, Is.False);
-            });
+            Assert.That(result.AttackKind, Is.Null);
         }
 
         [Test]
@@ -245,15 +212,10 @@ namespace Aikido.Zen.Test
 
             var result = SSRFDetector.Detect(
                 new Uri("http://backend/admin"),
-                new[] { IPAddress.Parse("127.0.0.1") },
-                context,
-                out var inspectDns);
+                IPAddress.Parse("127.0.0.1"),
+                context);
 
-            Assert.Multiple(() =>
-            {
-                Assert.That(result.AttackKind, Is.Null);
-                Assert.That(inspectDns, Is.False);
-            });
+            Assert.That(result.AttackKind, Is.Null);
         }
 
         [TestCase("http://localhost", "localhost", 80, true)]
