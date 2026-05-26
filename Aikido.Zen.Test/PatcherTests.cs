@@ -135,6 +135,18 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void PatchCatalog_WithTypeTarget_PostfixAndFinalizerPatchRuntimeTypeDirectly()
+        {
+            Patcher.PatchCatalog(typeof(TypeTargetPostfixFinalizerCatalog));
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(TypeTargetPostfixFinalizer.PostfixTarget(), Is.EqualTo("type-postfix"));
+                Assert.That(TypeTargetPostfixFinalizer.FinalizerTarget(), Is.EqualTo("type-finalizer"));
+            });
+        }
+
+        [Test]
         public void PatchCatalog_WhenPatchTypeIsUnsupported_LeavesTargetUnchanged()
         {
             Assert.DoesNotThrow(() => Patcher.PatchCatalog(typeof(UnsupportedPatchCatalog)));
@@ -384,6 +396,35 @@ namespace Aikido.Zen.Test
             {
                 __result = "type-target";
                 return false;
+            }
+        }
+
+        private static class TypeTargetPostfixFinalizer
+        {
+            public static string PostfixTarget()
+            {
+                return "original";
+            }
+
+            public static string FinalizerTarget()
+            {
+                return "original";
+            }
+        }
+
+        private static class TypeTargetPostfixFinalizerCatalog
+        {
+            [SinkPostfix(typeof(TypeTargetPostfixFinalizer), nameof(TypeTargetPostfixFinalizer.PostfixTarget))]
+            private static void Postfix(ref string __result)
+            {
+                __result = "type-postfix";
+            }
+
+            [SinkFinalizer(typeof(TypeTargetPostfixFinalizer), nameof(TypeTargetPostfixFinalizer.FinalizerTarget))]
+            private static Exception Finalizer(ref string __result)
+            {
+                __result = "type-finalizer";
+                return null!;
             }
         }
 

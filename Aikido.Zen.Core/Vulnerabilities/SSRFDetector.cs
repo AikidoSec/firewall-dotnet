@@ -258,11 +258,6 @@ namespace Aikido.Zen.Core.Vulnerabilities
 
         private static bool IsImdsIPAddress(string ipAddress)
         {
-            if (string.IsNullOrWhiteSpace(ipAddress))
-            {
-                return false;
-            }
-
             var normalizedCandidate = ipAddress.Trim().TrimStart('[').TrimEnd(']');
             if (!IPAddress.TryParse(normalizedCandidate, out var parsedAddress))
             {
@@ -275,11 +270,6 @@ namespace Aikido.Zen.Core.Vulnerabilities
 
         private static string NormalizeIPAddress(IPAddress parsedAddress)
         {
-            if (parsedAddress == null)
-            {
-                return null;
-            }
-
             if (parsedAddress.IsIPv4MappedToIPv6)
             {
                 return parsedAddress.MapToIPv4().ToString();

@@ -167,6 +167,22 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void Detect_WhenPrivateImdsAddressHasNoUserInput_BlocksStoredSsrf()
+        {
+            var result = SSRFDetector.Detect(
+                new Uri("http://imds.test.com/latest/meta-data"),
+                IPAddress.Parse("169.254.169.254"),
+                new Context { Url = "https://app.local/outbound" });
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.AttackKind, Is.EqualTo(AttackKind.StoredSsrf));
+                Assert.That(result.Metadata["hostname"], Is.EqualTo("imds.test.com"));
+                Assert.That(result.Metadata["privateIP"], Is.EqualTo("169.254.169.254"));
+            });
+        }
+
+        [Test]
         public void Detect_WhenRemoteAddressIsMissing_Allows()
         {
             var result = SSRFDetector.Detect(
@@ -269,6 +285,15 @@ namespace Aikido.Zen.Test
             Assert.That(result, Is.EqualTo(expected));
         }
 
+        [TestCase("")]
+        [TestCase(" ")]
+        public void IsRequestToItself_WhenOutboundHostnameIsBlank_ReturnsFalse(string outboundHostname)
+        {
+            var result = SSRFDetector.IsRequestToItself(new Uri("http://localhost/outbound"), outboundHostname, 80);
+
+            Assert.That(result, Is.False);
+        }
+
         [TestCase("backend", true)]
         [TestCase("valid_hostname", true)]
         [TestCase("localhost", false)]
@@ -306,6 +331,7 @@ namespace Aikido.Zen.Test
         [TestCase("imds.test.com", "0::ffff:6464:64c8", true)]
         [TestCase("imds.test.com", "0000:0000:0:0000:0000:ffff:a9fe:a9fe", true)]
         [TestCase("imds.test.com", "fd00:ec2:0:0000:0:0:0000:0254", true)]
+        [TestCase("imds.test.com", " ", false)]
         [TestCase("metadata.google.internal", "169.254.169.254", false)]
         [TestCase("metadata.goog", "169.254.169.254", false)]
         [TestCase("METADATA.GOOGLE.INTERNAL", "169.254.169.254", false)]
