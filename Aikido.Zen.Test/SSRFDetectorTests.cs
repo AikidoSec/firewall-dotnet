@@ -90,6 +90,17 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void Detect_WhenContextIsNull_Allows()
+        {
+            var result = SSRFDetector.Detect(
+                new Uri("http://private.example/path"),
+                IPAddress.Parse("127.0.0.1"),
+                null!);
+
+            Assert.That(result.AttackKind, Is.Null);
+        }
+
+        [Test]
         public void Detect_WhenCurrentRequestMatchesTarget_Allows()
         {
             var context = new Context { Url = "http://localhost:8080/api/request" };

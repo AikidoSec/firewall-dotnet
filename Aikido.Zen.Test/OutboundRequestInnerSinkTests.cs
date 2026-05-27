@@ -93,6 +93,21 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void OnRequest_WhenConnectionIsNull_Allows()
+        {
+            EnterRequestScope(new Uri("http://127.0.0.1/admin"), CreateContextWithInput("http://127.0.0.1/admin"));
+            Task<HttpResponseMessage> result = null!;
+
+            var allowed = OutboundRequestInnerSink.OnRequest(null!, GetHttpClientSendAsyncMethod(), ref result);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(allowed, Is.True);
+                Assert.That(result, Is.Null);
+            });
+        }
+
+        [Test]
         public void OnRequest_WhenHttp3ConnectionRemoteEndpointBlocks_SetsFaultedResponse()
         {
             var url = "http://127.0.0.1/admin";
@@ -109,6 +124,24 @@ namespace Aikido.Zen.Test
                 Assert.That(allowed, Is.False);
                 Assert.That(result, Is.Not.Null);
                 Assert.That(async () => await result, Throws.TypeOf<AikidoException>());
+            });
+        }
+
+        [Test]
+        public void OnRequest_WhenHttp3RemoteEndpointIsNotIPEndPoint_Allows()
+        {
+            EnterRequestScope(new Uri("http://127.0.0.1/admin"), CreateContextWithInput("http://127.0.0.1/admin"));
+            Task<HttpResponseMessage> result = null!;
+
+            var allowed = OutboundRequestInnerSink.OnRequest(
+                new Http3Connection(new RemoteEndpointConnection(new DnsEndPoint("localhost", 443))),
+                GetHttpClientSendAsyncMethod(),
+                ref result);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(allowed, Is.True);
+                Assert.That(result, Is.Null);
             });
         }
 
@@ -268,8 +301,13 @@ namespace Aikido.Zen.Test
         private sealed class RemoteEndpointConnection
         {
             internal RemoteEndpointConnection(IPAddress address)
+                : this(new IPEndPoint(address, 443))
             {
-                RemoteEndPoint = new IPEndPoint(address, 443);
+            }
+
+            internal RemoteEndpointConnection(EndPoint remoteEndPoint)
+            {
+                RemoteEndPoint = remoteEndPoint;
             }
 
             private EndPoint RemoteEndPoint { get; }

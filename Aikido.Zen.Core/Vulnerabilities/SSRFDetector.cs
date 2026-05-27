@@ -265,7 +265,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
             }
 
             var normalizedIPAddress = NormalizeIPAddress(parsedAddress);
-            return normalizedIPAddress != null && ImdsIPAddresses.Contains(normalizedIPAddress);
+            return ImdsIPAddresses.Contains(normalizedIPAddress);
         }
 
         private static string NormalizeIPAddress(IPAddress parsedAddress)
