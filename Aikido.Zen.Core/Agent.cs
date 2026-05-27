@@ -118,7 +118,8 @@ namespace Aikido.Zen.Core
                 if (response.Success)
                 {
                     var reportingResponse = response as ReportingAPIResponse;
-                    Task.Run(() => UpdateConfig(reportingResponse));
+                    // Dispose drains queued callbacks, so keep config updates inside the callback.
+                    UpdateConfig(reportingResponse).GetAwaiter().GetResult();
                 }
             });
 
