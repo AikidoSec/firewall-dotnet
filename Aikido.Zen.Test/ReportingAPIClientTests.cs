@@ -46,7 +46,7 @@ namespace Aikido.Zen.Test
                 .ReturnsAsync(response);
 
             // Act
-            var result = await _reportingApiClient.ReportAsync("token", new { });
+            var result = await _reportingApiClient.ReportAsync("token", new { }, CancellationToken.None);
 
             // Assert
             Assert.That(result.Success);
@@ -74,7 +74,7 @@ namespace Aikido.Zen.Test
                 .ThrowsAsync(new Exception("An error occurred while reporting"));
 
             // Act & Assert
-            Assert.DoesNotThrowAsync(async () => await _reportingApiClient.ReportAsync("token", new { }));
+            Assert.DoesNotThrowAsync(async () => await _reportingApiClient.ReportAsync("token", new { }, CancellationToken.None));
         }
         [Test]
         public async Task ReportAsync_ShouldContinueOnTimeoutTaskCanceledException()
@@ -93,7 +93,7 @@ namespace Aikido.Zen.Test
 
             // Act
 
-            Assert.DoesNotThrowAsync(async () => result = await _reportingApiClient.ReportAsync("token", new { }), "Failed: Task timed out, but the exception propagated.");
+            Assert.DoesNotThrowAsync(async () => result = await _reportingApiClient.ReportAsync("token", new { }, CancellationToken.None), "Failed: Task timed out, but the exception propagated.");
 
             // Assert
             Assert.That(result!.Success, Is.False);
@@ -120,7 +120,7 @@ namespace Aikido.Zen.Test
                 .ReturnsAsync(response);
 
             // Act
-            var result = await _reportingApiClient.GetFirewallLists("token");
+            var result = await _reportingApiClient.GetFirewallLists("token", CancellationToken.None);
             await Task.Delay(100);
 
             // Assert
@@ -149,7 +149,7 @@ namespace Aikido.Zen.Test
                 .ThrowsAsync(new Exception("An error occurred while getting blocked IPs"));
 
             // Act & Assert
-            Assert.DoesNotThrowAsync(async () => await _reportingApiClient.GetFirewallLists("token"));
+            Assert.DoesNotThrowAsync(async () => await _reportingApiClient.GetFirewallLists("token", CancellationToken.None));
         }
         [Test]
         public async Task GetFirewallLists_ShouldContinueOnTimeoutTaskCanceledException()
@@ -168,7 +168,7 @@ namespace Aikido.Zen.Test
 
             // Act
 
-            Assert.DoesNotThrowAsync(async () => result = await _reportingApiClient.GetFirewallLists("token"), "Failed: Task timed out, but the exception propagated.");
+            Assert.DoesNotThrowAsync(async () => result = await _reportingApiClient.GetFirewallLists("token", CancellationToken.None), "Failed: Task timed out, but the exception propagated.");
 
             // Assert
             Assert.That(result!.Success, Is.False);

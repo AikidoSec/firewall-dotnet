@@ -118,12 +118,9 @@ namespace Aikido.Zen.Core
                 if (response.Success)
                 {
                     var reportingResponse = response as ReportingAPIResponse;
-                    Task.Run(() => UpdateConfig(reportingResponse));
+                    UpdateConfig(reportingResponse).GetAwaiter().GetResult();
                 }
             });
-
-            // get blocked ip list and add to context
-            Task.Run(async () => await UpdateFirewallLists()).GetAwaiter().GetResult();
 
             // Schedule heartbeat event every x minutes
             var scheduledHeartBeat = new ScheduledItem
@@ -250,7 +247,7 @@ namespace Aikido.Zen.Core
                     {
                         try
                         {
-                            var response = _api.Reporting.ReportAsync(eventItem.Token, eventItem.Event)
+                            var response = _api.Reporting.ReportAsync(eventItem.Token, eventItem.Event, CancellationToken.None)
                                 .ConfigureAwait(false)
                                 .GetAwaiter()
                                 .GetResult();
@@ -562,7 +559,7 @@ namespace Aikido.Zen.Core
             {
                 requestsThisSecond++;
                 LogHelper.DebugLog(Logger, $"Sending event: {queuedItem.Event.Type}");
-                var response = await _api.Reporting.ReportAsync(queuedItem.Token, queuedItem.Event)
+                var response = await _api.Reporting.ReportAsync(queuedItem.Token, queuedItem.Event, _cancellationSource.Token)
                     .ConfigureAwait(false);
 
                 _reportingStatus.OnEventReported(queuedItem.Event.Type, response.Success);
@@ -601,7 +598,7 @@ namespace Aikido.Zen.Core
         internal bool ConfigChanged(out ReportingAPIResponse latestConfig)
         {
             // Check if new configuration available
-            var latestConfigVersion = _api.Runtime.GetConfigLastUpdated(EnvironmentHelper.Token).Result;
+            var latestConfigVersion = _api.Runtime.GetConfigLastUpdated(EnvironmentHelper.Token, _cancellationSource.Token).Result;
 
             if (!latestConfigVersion.Success)
             {
@@ -618,7 +615,7 @@ namespace Aikido.Zen.Core
             }
 
             // Retrieve new configuration
-            latestConfig = _api.Runtime.GetConfig(EnvironmentHelper.Token).Result;
+            latestConfig = _api.Runtime.GetConfig(EnvironmentHelper.Token, _cancellationSource.Token).Result;
 
             // Trigger config change if new configuration retrieved successfully
             return latestConfig.Success;
@@ -634,7 +631,7 @@ namespace Aikido.Zen.Core
         {
             if (string.IsNullOrEmpty(EnvironmentHelper.Token))
                 return;
-            var firewallListsResponse = await _api.Reporting.GetFirewallLists(EnvironmentHelper.Token);
+            var firewallListsResponse = await _api.Reporting.GetFirewallLists(EnvironmentHelper.Token, _cancellationSource.Token);
             if (firewallListsResponse.Success)
             {
                 _context.UpdateFirewallLists(firewallListsResponse);

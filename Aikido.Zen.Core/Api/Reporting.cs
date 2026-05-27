@@ -2,6 +2,7 @@ using System;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using Aikido.Zen.Core.Helpers;
 
@@ -16,7 +17,7 @@ namespace Aikido.Zen.Core.Api
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
         }
 
-        public async Task<ReportingAPIResponse> ReportAsync(string token, object @event)
+        public async Task<ReportingAPIResponse> ReportAsync(string token, object @event, CancellationToken cancellationToken)
         {
             try
             {
@@ -24,7 +25,7 @@ namespace Aikido.Zen.Core.Api
                 var eventAsJson = JsonSerializer.Serialize(@event, ZenApi.JsonSerializerOptions);
                 var requestContent = new StringContent(eventAsJson, Encoding.UTF8, "application/json");
                 var request = APIHelper.CreateRequest(token, new Uri(EnvironmentHelper.AikidoUrl), "api/runtime/events", HttpMethod.Post, requestContent);
-                var response = await _httpClient.SendAsync(request);
+                var response = await _httpClient.SendAsync(request, cancellationToken);
                 return APIHelper.ToAPIResponse<ReportingAPIResponse>(response);
             }
             catch (TaskCanceledException ex)
@@ -39,12 +40,12 @@ namespace Aikido.Zen.Core.Api
             }
         }
 
-        public async Task<FirewallListsAPIResponse> GetFirewallLists(string token)
+        public async Task<FirewallListsAPIResponse> GetFirewallLists(string token, CancellationToken cancellationToken)
         {
             try
             {
                 var request = APIHelper.CreateRequest(token, new Uri(EnvironmentHelper.AikidoUrl), "api/runtime/firewall/lists", HttpMethod.Get);
-                var response = await _httpClient.SendAsync(request);
+                var response = await _httpClient.SendAsync(request, cancellationToken);
                 return APIHelper.ToAPIResponse<FirewallListsAPIResponse>(response);
             }
             catch (TaskCanceledException ex)
