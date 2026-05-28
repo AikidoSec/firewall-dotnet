@@ -31,18 +31,18 @@ namespace Aikido.Zen.Test
 
             _reportingApiMock = new Mock<IReportingAPIClient>();
             _reportingApiMock
-                .Setup(r => r.ReportAsync(It.IsAny<string>(), It.IsAny<object>()))
+                .Setup(r => r.ReportAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ReportingAPIResponse { Success = true });
             _reportingApiMock
-                .Setup(r => r.GetFirewallLists(It.IsAny<string>()))
+                .Setup(r => r.GetFirewallLists(It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new FirewallListsAPIResponse { Success = true });
 
             _runtimeApiMock = new Mock<IRuntimeAPIClient>();
             _runtimeApiMock
-                .Setup(r => r.GetConfig(It.IsAny<string>()))
+                .Setup(r => r.GetConfig(It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ReportingAPIResponse { Success = true });
             _runtimeApiMock
-                .Setup(r => r.GetConfigLastUpdated(It.IsAny<string>()))
+                .Setup(r => r.GetConfigLastUpdated(It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ConfigLastUpdatedAPIResponse { Success = true });
 
             _agent = Agent.NewInstance(ZenApiMock.CreateMock(_reportingApiMock.Object, _runtimeApiMock.Object).Object);

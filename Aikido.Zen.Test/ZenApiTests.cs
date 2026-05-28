@@ -15,7 +15,7 @@ namespace Aikido.Zen.Test
             _zenApi = ZenApiMock.CreateMock().Object;
 
             // Act
-            var result = await _zenApi.Reporting.ReportAsync("token", new { });
+            var result = await _zenApi.Reporting.ReportAsync("token", new { }, CancellationToken.None);
 
             // Assert
             Assert.That(result.Success);
@@ -28,7 +28,7 @@ namespace Aikido.Zen.Test
             _zenApi = ZenApiMock.CreateMockWithExceptions().Object;
 
             // Act & Assert
-            Assert.ThrowsAsync<Exception>(async () => await _zenApi.Reporting.ReportAsync("token", new { }));
+            Assert.ThrowsAsync<Exception>(async () => await _zenApi.Reporting.ReportAsync("token", new { }, CancellationToken.None));
         }
 
         [Test]
@@ -38,10 +38,10 @@ namespace Aikido.Zen.Test
             _zenApi = ZenApiMock.CreateMockWithFailedResponses().Object;
 
             // Act
-            var reportResponse = await _zenApi.Reporting.ReportAsync("token", new { });
-            var firewallListsResponse = await _zenApi.Reporting.GetFirewallLists("token");
-            var configVersionResponse = await _zenApi.Runtime.GetConfigLastUpdated("token");
-            var configResponse = await _zenApi.Runtime.GetConfig("token");
+            var reportResponse = await _zenApi.Reporting.ReportAsync("token", new { }, CancellationToken.None);
+            var firewallListsResponse = await _zenApi.Reporting.GetFirewallLists("token", CancellationToken.None);
+            var configVersionResponse = await _zenApi.Runtime.GetConfigLastUpdated("token", CancellationToken.None);
+            var configResponse = await _zenApi.Runtime.GetConfig("token", CancellationToken.None);
 
             // Assert
             Assert.Multiple(() =>
@@ -60,7 +60,7 @@ namespace Aikido.Zen.Test
             _zenApi = ZenApiMock.CreateMock().Object;
 
             // Act
-            var result = await _zenApi.Runtime.GetConfigLastUpdated("token");
+            var result = await _zenApi.Runtime.GetConfigLastUpdated("token", CancellationToken.None);
 
             // Assert
             Assert.That(result.Success);
@@ -73,7 +73,7 @@ namespace Aikido.Zen.Test
             _zenApi = ZenApiMock.CreateMockWithExceptions().Object;
 
             // Act & Assert
-            Assert.ThrowsAsync<Exception>(async () => await _zenApi.Runtime.GetConfigLastUpdated("token"));
+            Assert.ThrowsAsync<Exception>(async () => await _zenApi.Runtime.GetConfigLastUpdated("token", CancellationToken.None));
         }
 
         [Test]
@@ -83,7 +83,7 @@ namespace Aikido.Zen.Test
             _zenApi = ZenApiMock.CreateMock().Object;
 
             // Act
-            var result = await _zenApi.Runtime.GetConfig("token");
+            var result = await _zenApi.Runtime.GetConfig("token", CancellationToken.None);
 
             // Assert
             Assert.That(result.Success);
@@ -96,7 +96,7 @@ namespace Aikido.Zen.Test
             _zenApi = ZenApiMock.CreateMockWithExceptions().Object;
 
             // Act & Assert
-            Assert.ThrowsAsync<Exception>(async () => await _zenApi.Runtime.GetConfig("token"));
+            Assert.ThrowsAsync<Exception>(async () => await _zenApi.Runtime.GetConfig("token", CancellationToken.None));
         }
 
         [Test]
@@ -106,7 +106,7 @@ namespace Aikido.Zen.Test
             _zenApi = ZenApiMock.CreateMock().Object;
 
             // Act
-            var result = await _zenApi.Reporting.GetFirewallLists("token");
+            var result = await _zenApi.Reporting.GetFirewallLists("token", CancellationToken.None);
 
             // Assert
             Assert.That(result.Success);
@@ -119,7 +119,7 @@ namespace Aikido.Zen.Test
             _zenApi = ZenApiMock.CreateMockWithExceptions().Object;
 
             // Act & Assert
-            Assert.ThrowsAsync<Exception>(async () => await _zenApi.Reporting.GetFirewallLists("token"));
+            Assert.ThrowsAsync<Exception>(async () => await _zenApi.Reporting.GetFirewallLists("token", CancellationToken.None));
         }
     }
 }

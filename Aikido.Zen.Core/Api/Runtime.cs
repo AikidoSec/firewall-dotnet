@@ -1,5 +1,6 @@
 using System;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using Aikido.Zen.Core.Helpers;
 
@@ -14,13 +15,12 @@ namespace Aikido.Zen.Core.Api
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
         }
 
-
-        public async Task<ConfigLastUpdatedAPIResponse> GetConfigLastUpdated(string token)
+        public async Task<ConfigLastUpdatedAPIResponse> GetConfigLastUpdated(string token, CancellationToken cancellationToken)
         {
             try
             {
                 var request = APIHelper.CreateRequest(token, new Uri(EnvironmentHelper.AikidoRealtimeUrl), "config", HttpMethod.Get);
-                var response = await _httpClient.SendAsync(request);
+                var response = await _httpClient.SendAsync(request, cancellationToken);
                 return APIHelper.ToAPIResponse<ConfigLastUpdatedAPIResponse>(response);
             }
             catch (TaskCanceledException ex)
@@ -35,12 +35,12 @@ namespace Aikido.Zen.Core.Api
             }
         }
 
-        public async Task<ReportingAPIResponse> GetConfig(string token)
+        public async Task<ReportingAPIResponse> GetConfig(string token, CancellationToken cancellationToken)
         {
             try
             {
                 var request = APIHelper.CreateRequest(token, new Uri(EnvironmentHelper.AikidoUrl), "/api/runtime/config", HttpMethod.Get);
-                var response = await _httpClient.SendAsync(request);
+                var response = await _httpClient.SendAsync(request, cancellationToken);
                 return APIHelper.ToAPIResponse<ReportingAPIResponse>(response);
             }
             catch (TaskCanceledException ex)
