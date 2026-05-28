@@ -51,6 +51,7 @@ namespace Aikido.Zen.Test
 
             _agent = Agent.NewInstance(ZenApiMock.CreateMock(_reportingApiMock.Object, _runtimeApiMock.Object).Object);
             _agent.ClearContext();
+            OutboundRequestSink.ExitRequestScope();
             Patcher.Unpatch();
             Patcher.PatchSinks(() => _activeContext!);
         }
@@ -58,6 +59,7 @@ namespace Aikido.Zen.Test
         [TearDown]
         public void TearDown()
         {
+            OutboundRequestSink.ExitRequestScope();
             Patcher.Unpatch();
             _agent?.Dispose();
         }
@@ -357,6 +359,39 @@ namespace Aikido.Zen.Test
 
             Assert.That(result, Is.True);
             Assert.That(_agent.Context.Hostnames.Any(h => h.Hostname == "webrequest.example" && h.Port == 443), Is.True);
+        }
+
+        [Test]
+        public void OnRequest_WhenAlreadyInsideOutboundRequest_DoesNotReplaceCurrentRequest()
+        {
+#pragma warning disable SYSLIB0014
+            var webRequest = WebRequest.Create("https://webrequest.example/path");
+#pragma warning restore SYSLIB0014
+
+            var outerResult = OnWebRequest(
+                webRequest,
+                GetMethod(typeof(WebRequest), nameof(WebRequest.GetResponse)),
+                CreateContext());
+
+            using var httpClient = new HttpClient();
+            using var innerRequest = new HttpRequestMessage(HttpMethod.Get, "https://inner.example/path");
+            var innerResult = OnHttpClientRequest(
+                innerRequest,
+                httpClient,
+                GetHttpClientSendAsyncMethod(),
+                CreateContext());
+
+            var hasCurrentRequest = OutboundRequestSink.TryGetCurrentRequestUri(out var currentUri);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(outerResult, Is.True);
+                Assert.That(innerResult, Is.True);
+                Assert.That(hasCurrentRequest, Is.True);
+                Assert.That(currentUri.Host, Is.EqualTo("webrequest.example"));
+                Assert.That(_agent.Context.Hostnames.Count(h => h.Hostname == "webrequest.example"), Is.EqualTo(1));
+                Assert.That(_agent.Context.Hostnames.Any(h => h.Hostname == "inner.example"), Is.False);
+            });
         }
 
         [Test]

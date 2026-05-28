@@ -58,6 +58,13 @@ namespace Aikido.Zen.Core.Sinks
 
         private static InspectionResult OnRequest(Uri targetUri, Context context)
         {
+            // Modern WebRequest wraps HttpClient, so the inner HttpClient hook
+            // should not replace the original request URI or report stats twice.
+            if (TryGetCurrentRequestUri(out _))
+            {
+                return InspectionResult.Allow(skipStats: true);
+            }
+
             if (targetUri == null)
             {
                 return InspectionResult.Allow(skipStats: true);
