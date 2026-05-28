@@ -35,18 +35,18 @@ namespace Aikido.Zen.Test
 
             _reportingApiMock = new Mock<IReportingAPIClient>();
             _reportingApiMock
-                .Setup(r => r.ReportAsync(It.IsAny<string>(), It.IsAny<object>()))
+                .Setup(r => r.ReportAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ReportingAPIResponse { Success = true });
             _reportingApiMock
-                .Setup(r => r.GetFirewallLists(It.IsAny<string>()))
+                .Setup(r => r.GetFirewallLists(It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new FirewallListsAPIResponse { Success = true });
 
             _runtimeApiMock = new Mock<IRuntimeAPIClient>();
             _runtimeApiMock
-                .Setup(r => r.GetConfig(It.IsAny<string>()))
+                .Setup(r => r.GetConfig(It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ReportingAPIResponse { Success = true });
             _runtimeApiMock
-                .Setup(r => r.GetConfigLastUpdated(It.IsAny<string>()))
+                .Setup(r => r.GetConfigLastUpdated(It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ConfigLastUpdatedAPIResponse { Success = true });
 
             _agent = Agent.NewInstance(ZenApiMock.CreateMock(_reportingApiMock.Object, _runtimeApiMock.Object).Object);
@@ -399,8 +399,8 @@ namespace Aikido.Zen.Test
             _activeContext = context;
             DetectedAttack? reportedAttack = null;
             _reportingApiMock
-                .Setup(r => r.ReportAsync(It.IsAny<string>(), It.IsAny<object>()))
-                .Callback<string, object>((_, evt) => reportedAttack = evt as DetectedAttack)
+                .Setup(r => r.ReportAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<CancellationToken>()))
+                .Callback<string, object, CancellationToken>((_, evt, _) => reportedAttack = evt as DetectedAttack)
                 .ReturnsAsync(new ReportingAPIResponse { Success = true });
 
             var exception = Assert.ThrowsAsync<AikidoException>(() => httpClient.GetAsync(url));
@@ -488,7 +488,8 @@ namespace Aikido.Zen.Test
                     It.Is<object>(evt =>
                         evt is DetectedAttack &&
                         ((DetectedAttack)evt).Attack.Kind == "ssrf" &&
-                        ((DetectedAttack)evt).Attack.Blocked == false)),
+                        ((DetectedAttack)evt).Attack.Blocked == false),
+                    It.IsAny<CancellationToken>()),
                 Times.Once);
         }
 

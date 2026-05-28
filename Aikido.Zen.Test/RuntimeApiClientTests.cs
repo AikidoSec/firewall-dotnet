@@ -44,7 +44,7 @@ namespace Aikido.Zen.Test
                 .ReturnsAsync(response);
 
             // Act
-            var result = await _runtimeApiClient.GetConfigLastUpdated("token");
+            var result = await _runtimeApiClient.GetConfigLastUpdated("token", CancellationToken.None);
             await Task.Delay(100);
 
             // Assert
@@ -73,7 +73,7 @@ namespace Aikido.Zen.Test
                 .ThrowsAsync(new Exception("An error occurred while getting config version"));
 
             // Act & Assert
-            Assert.DoesNotThrowAsync(async () => await _runtimeApiClient.GetConfigLastUpdated("token"));
+            Assert.DoesNotThrowAsync(async () => await _runtimeApiClient.GetConfigLastUpdated("token", CancellationToken.None));
         }
 
         [Test]
@@ -93,7 +93,7 @@ namespace Aikido.Zen.Test
 
             // Act
 
-            Assert.DoesNotThrowAsync(async () => result = await _runtimeApiClient.GetConfigLastUpdated("token"), "Failed: Task timed out, but the exception propagated.");
+            Assert.DoesNotThrowAsync(async () => result = await _runtimeApiClient.GetConfigLastUpdated("token", CancellationToken.None), "Failed: Task timed out, but the exception propagated.");
 
             // Assert
             Assert.That(result!.Success, Is.False);
@@ -120,7 +120,7 @@ namespace Aikido.Zen.Test
                 .ReturnsAsync(response);
 
             // Act
-            var result = await _runtimeApiClient.GetConfig("token");
+            var result = await _runtimeApiClient.GetConfig("token", CancellationToken.None);
             await Task.Delay(100);
 
             // Assert
@@ -151,7 +151,7 @@ namespace Aikido.Zen.Test
             ReportingAPIResponse result = new();
 
             // Act
-            Assert.DoesNotThrowAsync(async () => result = await _runtimeApiClient.GetConfig("token"));
+            Assert.DoesNotThrowAsync(async () => result = await _runtimeApiClient.GetConfig("token", CancellationToken.None));
 
             // Assert
             Assert.That(result.Success, Is.False);
@@ -174,7 +174,7 @@ namespace Aikido.Zen.Test
             ReportingAPIResponse result = new();
 
             // Act
-            Assert.DoesNotThrowAsync(async () => result = await _runtimeApiClient.GetConfig("token"));
+            Assert.DoesNotThrowAsync(async () => result = await _runtimeApiClient.GetConfig("token", CancellationToken.None));
 
             // Assert
             Assert.That(result.Success, Is.False);

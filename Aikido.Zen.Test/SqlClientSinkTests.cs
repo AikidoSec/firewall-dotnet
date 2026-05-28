@@ -31,11 +31,11 @@ namespace Aikido.Zen.Test
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
             var reportingMock = new Mock<IReportingAPIClient>();
             reportingMock
-                .Setup(r => r.ReportAsync(It.IsAny<string>(), It.IsAny<IEvent>()))
+                .Setup(r => r.ReportAsync(It.IsAny<string>(), It.IsAny<IEvent>(), It.IsAny<CancellationToken>()))
                     .ReturnsAsync(new ReportingAPIResponse { Success = true });
             var runtimeMock = new Mock<IRuntimeAPIClient>();
             runtimeMock
-                .Setup(r => r.GetConfig(It.IsAny<string>()))
+                .Setup(r => r.GetConfig(It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ReportingAPIResponse { Success = true });
             var zenApiMock = new ZenApi(reportingMock.Object, runtimeMock.Object);
 
