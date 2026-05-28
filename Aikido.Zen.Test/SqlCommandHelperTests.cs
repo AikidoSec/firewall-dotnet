@@ -90,18 +90,18 @@ namespace Aikido.Zen.Test.Helpers
         {
             var reportingApiMock = new Mock<IReportingAPIClient>();
             reportingApiMock
-                .Setup(r => r.ReportAsync(It.IsAny<string>(), It.IsAny<object>()))
+                .Setup(r => r.ReportAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ReportingAPIResponse { Success = true });
             reportingApiMock
-                .Setup(r => r.GetFirewallLists(It.IsAny<string>()))
+                .Setup(r => r.GetFirewallLists(It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new FirewallListsAPIResponse { Success = true });
 
             var runtimeApiMock = new Mock<IRuntimeAPIClient>();
             runtimeApiMock
-                .Setup(r => r.GetConfig(It.IsAny<string>()))
+                .Setup(r => r.GetConfig(It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ReportingAPIResponse { Success = true });
             runtimeApiMock
-                .Setup(r => r.GetConfigLastUpdated(It.IsAny<string>()))
+                .Setup(r => r.GetConfigLastUpdated(It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ConfigLastUpdatedAPIResponse { Success = true });
 
             Agent.NewInstance(ZenApiMock.CreateMock(reportingApiMock.Object, runtimeApiMock.Object).Object);
@@ -127,7 +127,8 @@ namespace Aikido.Zen.Test.Helpers
                         a.Attack.Path == ".injection" &&
                         a.Attack.Metadata.ContainsKey("sql") &&
                         a.Attack.Metadata.ContainsKey("dialect") &&
-                        (string)a.Attack.Metadata["dialect"] == "Microsoft SQL")),
+                        (string)a.Attack.Metadata["dialect"] == "Microsoft SQL"),
+                    It.IsAny<CancellationToken>()),
                 Times.Once);
         }
 
@@ -138,18 +139,18 @@ namespace Aikido.Zen.Test.Helpers
 
             var reportingApiMock = new Mock<IReportingAPIClient>();
             reportingApiMock
-                .Setup(r => r.ReportAsync(It.IsAny<string>(), It.IsAny<object>()))
+                .Setup(r => r.ReportAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ReportingAPIResponse { Success = true });
             reportingApiMock
-                .Setup(r => r.GetFirewallLists(It.IsAny<string>()))
+                .Setup(r => r.GetFirewallLists(It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new FirewallListsAPIResponse { Success = true });
 
             var runtimeApiMock = new Mock<IRuntimeAPIClient>();
             runtimeApiMock
-                .Setup(r => r.GetConfig(It.IsAny<string>()))
+                .Setup(r => r.GetConfig(It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ReportingAPIResponse { Success = true });
             runtimeApiMock
-                .Setup(r => r.GetConfigLastUpdated(It.IsAny<string>()))
+                .Setup(r => r.GetConfigLastUpdated(It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ConfigLastUpdatedAPIResponse { Success = true });
 
             Agent.NewInstance(ZenApiMock.CreateMock(reportingApiMock.Object, runtimeApiMock.Object).Object);
@@ -178,7 +179,8 @@ namespace Aikido.Zen.Test.Helpers
                         a.Attack.Metadata.ContainsKey("sql") &&
                         a.Attack.Metadata.ContainsKey("dialect") &&
                         a.Attack.Metadata.ContainsKey("failedToTokenize") &&
-                        (string)a.Attack.Metadata["failedToTokenize"] == "true")),
+                        (string)a.Attack.Metadata["failedToTokenize"] == "true"),
+                    It.IsAny<CancellationToken>()),
                 Times.Once);
         }
 

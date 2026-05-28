@@ -1,5 +1,6 @@
 using Aikido.Zen.Core.Api;
 using Moq;
+using System.Threading;
 
 namespace Aikido.Zen.Tests.Mocks
 {
@@ -11,11 +12,11 @@ namespace Aikido.Zen.Tests.Mocks
             {
                 var reportingMock = new Mock<IReportingAPIClient>();
                 reportingMock
-                    .Setup(r => r.ReportAsync(It.IsAny<string>(), It.IsAny<object>()))
+                    .Setup(r => r.ReportAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<CancellationToken>()))
                     .ReturnsAsync(new ReportingAPIResponse { Success = true });
 
                 reportingMock
-                    .Setup(r => r.GetFirewallLists(It.IsAny<string>()))
+                    .Setup(r => r.GetFirewallLists(It.IsAny<string>(), It.IsAny<CancellationToken>()))
                     .ReturnsAsync(new FirewallListsAPIResponse { Success = true });
                 reporting = reportingMock.Object;
             }
@@ -25,11 +26,11 @@ namespace Aikido.Zen.Tests.Mocks
             {
                 var runtimeMock = new Mock<IRuntimeAPIClient>();
                 runtimeMock
-                    .Setup(r => r.GetConfigLastUpdated(It.IsAny<string>()))
+                    .Setup(r => r.GetConfigLastUpdated(It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ConfigLastUpdatedAPIResponse { Success = true });
 
                 runtimeMock
-                    .Setup(r => r.GetConfig(It.IsAny<string>()))
+                    .Setup(r => r.GetConfig(It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ReportingAPIResponse { Success = true });
                 runtime = runtimeMock.Object;
             }
@@ -44,20 +45,20 @@ namespace Aikido.Zen.Tests.Mocks
         {
             var reportingApiClient = new Mock<IReportingAPIClient>();
             reportingApiClient
-                .Setup(r => r.ReportAsync(It.IsAny<string>(), It.IsAny<object>()))
+                .Setup(r => r.ReportAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ReportingAPIResponse { Success = false, Error = "Test error" });
 
             reportingApiClient
-                .Setup(r => r.GetFirewallLists(It.IsAny<string>()))
+                .Setup(r => r.GetFirewallLists(It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new FirewallListsAPIResponse { Success = false, Error = "Test error" });
 
             var runtimeApiClient = new Mock<IRuntimeAPIClient>();
             runtimeApiClient
-                .Setup(r => r.GetConfigLastUpdated(It.IsAny<string>()))
+                .Setup(r => r.GetConfigLastUpdated(It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ConfigLastUpdatedAPIResponse { Success = false, Error = "Test error" });
 
             runtimeApiClient
-                .Setup(r => r.GetConfig(It.IsAny<string>()))
+                .Setup(r => r.GetConfig(It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ReportingAPIResponse { Success = false, Error = "Test error" });
 
             var zenApi = new Mock<IZenApi>();
@@ -71,20 +72,20 @@ namespace Aikido.Zen.Tests.Mocks
         {
             var reportingApiClient = new Mock<IReportingAPIClient>();
             reportingApiClient
-                .Setup(r => r.ReportAsync(It.IsAny<string>(), It.IsAny<object>()))
+                .Setup(r => r.ReportAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<CancellationToken>()))
                     .ThrowsAsync(new System.Exception("Test exception"));
 
             reportingApiClient
-                .Setup(r => r.GetFirewallLists(It.IsAny<string>()))
+                .Setup(r => r.GetFirewallLists(It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new System.Exception("Test exception"));
 
             var runtimeApiClient = new Mock<IRuntimeAPIClient>();
             runtimeApiClient
-                .Setup(r => r.GetConfigLastUpdated(It.IsAny<string>()))
+                .Setup(r => r.GetConfigLastUpdated(It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new System.Exception("Test exception"));
 
             runtimeApiClient
-                .Setup(r => r.GetConfig(It.IsAny<string>()))
+                .Setup(r => r.GetConfig(It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new System.Exception("Test exception"));
 
             var zenApi = new Mock<IZenApi>();
