@@ -40,13 +40,6 @@ namespace Aikido.Zen.Core.Vulnerabilities
             var hostname = targetUri.Host;
             var port = UriHelper.GetPort(targetUri);
 
-            Uri.TryCreate(context?.Url, UriKind.Absolute, out var serverUri);
-            // Allow the app to call itself when the current request URL is trusted.
-            if (IsRequestToItself(serverUri, hostname, port))
-            {
-                return InspectionResult.Allow();
-            }
-
             // Connection-level sinks pass the concrete remote address.
             if (!TryGetPrivateOrLocalIPAddress(remoteAddress, out var privateIPAddress))
             {
@@ -54,8 +47,11 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 return InspectionResult.Allow();
             }
 
+            Uri.TryCreate(context?.Url, UriKind.Absolute, out var serverUri);
+            var isRequestToItself = IsRequestToItself(serverUri, hostname, port);
+
             // User-controlled URLs or host-like values that resolve to private/local IPs are request SSRF.
-            if (!IsRequestToServiceHostname(hostname) && context?.ParsedUserInput != null)
+            if (!isRequestToItself && !IsRequestToServiceHostname(hostname) && context?.ParsedUserInput != null)
             {
                 foreach (var userInput in context.ParsedUserInput)
                 {

@@ -194,6 +194,22 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void Detect_WhenPrivateImdsAddressMatchesCurrentRequest_BlocksStoredSsrf()
+        {
+            var result = SSRFDetector.Detect(
+                new Uri("http://imds.test.com/latest/meta-data"),
+                IPAddress.Parse("169.254.169.254"),
+                new Context { Url = "http://imds.test.com/outbound" });
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.AttackKind, Is.EqualTo(AttackKind.StoredSsrf));
+                Assert.That(result.Metadata["hostname"], Is.EqualTo("imds.test.com"));
+                Assert.That(result.Metadata["privateIP"], Is.EqualTo("169.254.169.254"));
+            });
+        }
+
+        [Test]
         public void Detect_WhenRemoteAddressIsMissing_Allows()
         {
             var result = SSRFDetector.Detect(
