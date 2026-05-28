@@ -267,6 +267,47 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public async Task Start_AppliesFirewallListsFromStartupConfig()
+        {
+            var blockedIpList = new FirewallListsAPIResponse.IPList
+            {
+                Key = "known_threat_actors/public_scanners",
+                Ips = new[] { "203.0.113.10" }
+            };
+            var reportingApiMock = new Mock<IReportingAPIClient>();
+            reportingApiMock
+                .Setup(r => r.ReportAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new ReportingAPIResponse { Success = true });
+            reportingApiMock
+                .Setup(r => r.GetFirewallLists(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new FirewallListsAPIResponse
+                {
+                    Success = true,
+                    BlockedIPAddresses = new[] { blockedIpList }
+                });
+
+            _zenApiMock = ZenApiMock.CreateMock(reporting: reportingApiMock.Object);
+            _agent = new Agent(_zenApiMock.Object);
+
+            _agent.Start();
+
+            var deadline = DateTime.UtcNow.AddSeconds(5);
+            while (!_agent.Context.Config.GetMatchingBlockedIPListKeys("203.0.113.10").Any() && DateTime.UtcNow < deadline)
+            {
+                await Task.Delay(25);
+            }
+
+            Assert.That(
+                _agent.Context.Config.GetMatchingBlockedIPListKeys("203.0.113.10"),
+                Is.EquivalentTo(new[] { "known_threat_actors/public_scanners" })
+            );
+            reportingApiMock.Verify(
+                r => r.GetFirewallLists(It.IsAny<string>(), It.IsAny<CancellationToken>()),
+                Times.Once
+            );
+        }
+
+        [Test]
         public async Task Dispose_CancelsStartupConfigUpdate()
         {
             var startupConfigEntered = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
