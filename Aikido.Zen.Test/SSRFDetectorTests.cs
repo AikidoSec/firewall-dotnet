@@ -52,6 +52,20 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void TryGetPrivateOrLocalIPAddress_WhenAddressIsPrivateIPv6_ReturnsIPv6()
+        {
+            var result = SSRFDetector.TryGetPrivateOrLocalIPAddress(
+                IPAddress.Parse("fd00:ec2::254"),
+                out var privateIPAddress);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result, Is.True);
+                Assert.That(privateIPAddress, Is.EqualTo("fd00:ec2::254"));
+            });
+        }
+
+        [Test]
         public void TryGetPrivateOrLocalIPAddress_WhenAddressIsPublicIp_ReturnsFalse()
         {
             var result = SSRFDetector.TryGetPrivateOrLocalIPAddress(
