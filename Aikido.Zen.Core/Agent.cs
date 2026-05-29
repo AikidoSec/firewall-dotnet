@@ -67,7 +67,7 @@ namespace Aikido.Zen.Core
                     {
                         var reportingHttpClient = ApiClientHttpClientFactory.Create();
                         var runtimeHttpClient = ApiClientHttpClientFactory.Create();
-                        _instance = new Agent(new ZenApi(new ReportingAPIClient(reportingHttpClient), new RuntimeAPIClient(runtimeHttpClient)));
+                        NewInstance(new ZenApi(new ReportingAPIClient(reportingHttpClient), new RuntimeAPIClient(runtimeHttpClient)));
                     }
 
                     return _instance;
