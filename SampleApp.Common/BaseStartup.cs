@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using SampleApp.Common.Controllers;
 
@@ -70,7 +69,6 @@ namespace SampleApp.Common
 
             app.UseDeveloperExceptionPage();
             app.UseZenFirewall();
-            app.UseHttpsRedirection();
 
             // Global exception handler for AikidoExceptions
             app.Use(async (context, next) =>
@@ -84,12 +82,6 @@ namespace SampleApp.Common
                     context.Response.StatusCode = (int)HttpStatusCode.Forbidden;
                     await context.Response.WriteAsync("Request blocked due to security policy.");
                 }
-            });
-
-            app.ApplicationServices.GetRequiredService<IHostApplicationLifetime>().ApplicationStarted.Register(async () =>
-            {
-                Console.WriteLine("Ensuring database setup");
-                await EnsureDatabaseSetupAsync();
             });
 
             ConfigureEndpoints(app);

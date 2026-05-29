@@ -27,6 +27,7 @@ namespace PostgresSampleApp
             var config = app.ApplicationServices.GetRequiredService<IConfiguration>();
             var connectionString = config.GetConnectionString("PostgresConnection");
             DatabaseService.ConnectionString = connectionString;
+            EnsureDatabaseSetupAsync().GetAwaiter().GetResult();
         }
 
         protected override Task EnsureDatabaseSetupAsync()

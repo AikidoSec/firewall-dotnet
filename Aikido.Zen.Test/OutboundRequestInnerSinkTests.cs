@@ -28,9 +28,9 @@ namespace Aikido.Zen.Test
         {
             Environment.SetEnvironmentVariable("AIKIDO_TOKEN", "test-token");
             Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", "true");
-            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
             Environment.SetEnvironmentVariable("AIKIDO_URL", "http://localhost:3000");
             Environment.SetEnvironmentVariable("AIKIDO_REALTIME_URL", "http://localhost:3001");
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", null);
 
             _reportingApiMock = new Mock<IReportingAPIClient>();
             _reportingApiMock
@@ -59,6 +59,7 @@ namespace Aikido.Zen.Test
         {
             OutboundRequestSink.ExitRequestScope();
             Patcher.Unpatch();
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", null);
             _agent?.Dispose();
         }
 
@@ -110,6 +111,7 @@ namespace Aikido.Zen.Test
         [Test]
         public void OnRequest_WhenHttp3ConnectionRemoteEndpointBlocks_SetsFaultedResponse()
         {
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
             var url = "http://127.0.0.1/admin";
             EnterRequestScope(new Uri(url), CreateContextWithInput(url));
             Task<HttpResponseMessage> result = null!;
@@ -148,6 +150,7 @@ namespace Aikido.Zen.Test
         [Test]
         public void OnRequest_WhenSslStreamWrapsSocketStream_Blocks()
         {
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
             using var pair = new ConnectedSocketPair();
             using var sslStream = new SslStream(new SocketBackedStream(pair.Client));
             var url = $"http://127.0.0.1:{pair.Port}/admin";
@@ -224,6 +227,7 @@ namespace Aikido.Zen.Test
         [Test]
         public void OnFrameworkRequest_WhenDetectionBlocks_Rethrows()
         {
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
             using var pair = new ConnectedSocketPair();
             var url = $"http://127.0.0.1:{pair.Port}/admin";
             EnterRequestScope(new Uri(url), CreateContextWithInput(url));
