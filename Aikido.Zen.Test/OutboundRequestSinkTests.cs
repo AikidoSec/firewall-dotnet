@@ -29,7 +29,6 @@ namespace Aikido.Zen.Test
         {
             Environment.SetEnvironmentVariable("AIKIDO_TOKEN", "test-token");
             Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", "true");
-            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
             Environment.SetEnvironmentVariable("AIKIDO_URL", "http://localhost:3000");
             Environment.SetEnvironmentVariable("AIKIDO_REALTIME_URL", "http://localhost:3001");
 
@@ -68,6 +67,7 @@ namespace Aikido.Zen.Test
         public void OnRequest_WhenDomainRuleBlocks_CapturesHostnameWithoutAttack()
         {
             // Arrange
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
             _agent.Context.Config.UpdateOutboundDomains(false, new[]
             {
                 new OutboundDomainConfig { Hostname = "blocked.example", Mode = "block" }
@@ -214,6 +214,7 @@ namespace Aikido.Zen.Test
         public void OnRequest_WhenAikidoHostIsNotAllowedByRules_Blocks()
         {
             // Arrange
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
             _agent.Context.Config.UpdateOutboundDomains(true, new[]
             {
                 new OutboundDomainConfig { Hostname = "safe.example", Mode = "allow" }
@@ -269,6 +270,7 @@ namespace Aikido.Zen.Test
         public void OnRequest_WhenDomainRuleBlocks_ThrowsOutboundBlockedException()
         {
             // Arrange
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
             _agent.Context.Config.UpdateOutboundDomains(false, new[]
             {
                 new OutboundDomainConfig { Hostname = "blocked.example", Mode = "block" }
@@ -421,6 +423,7 @@ namespace Aikido.Zen.Test
         [Test]
         public async Task HttpClientRequest_WhenDirectPrivateIpMatchesUserInput_ReportsAndBlocksSsrf()
         {
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
             using var server = new KeepAliveServer();
             using var handler = new SocketsHttpHandler { UseProxy = false };
             using var httpClient = new HttpClient(handler);
@@ -466,6 +469,7 @@ namespace Aikido.Zen.Test
         [Test]
         public void HttpClientSend_WhenDirectPrivateIpMatchesUserInput_BlocksSsrf()
         {
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
             using var server = new KeepAliveServer();
             using var handler = new SocketsHttpHandler { UseProxy = false };
             using var httpClient = new HttpClient(handler);
@@ -577,6 +581,7 @@ namespace Aikido.Zen.Test
         [Test]
         public async Task HttpClientRequest_WhenPrivateConnectionIsReused_BlocksSecondRequest()
         {
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
             using var server = new KeepAliveServer();
             using var handler = new SocketsHttpHandler
             {
@@ -600,7 +605,6 @@ namespace Aikido.Zen.Test
                 { "query.url", url }
             };
             _activeContext = context;
-            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
 
             var exception = Assert.ThrowsAsync<AikidoException>(() => httpClient.GetAsync(url));
 
