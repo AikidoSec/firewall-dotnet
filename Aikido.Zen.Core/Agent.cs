@@ -45,6 +45,7 @@ namespace Aikido.Zen.Core
 
         // instance
         private static Agent _instance;
+        private static readonly object InstanceLock = new object();
 
         /// <summary>
         /// Configures a static logger for Agent.
@@ -60,23 +61,30 @@ namespace Aikido.Zen.Core
         {
             get
             {
-                if (_instance == null)
+                lock (InstanceLock)
                 {
-                    var reportingHttpClient = ApiClientHttpClientFactory.Create();
-                    var runtimeHttpClient = ApiClientHttpClientFactory.Create();
-                    _instance = NewInstance(new ZenApi(new ReportingAPIClient(reportingHttpClient), new RuntimeAPIClient(runtimeHttpClient)));
+                    if (_instance == null)
+                    {
+                        var reportingHttpClient = ApiClientHttpClientFactory.Create();
+                        var runtimeHttpClient = ApiClientHttpClientFactory.Create();
+                        _instance = new Agent(new ZenApi(new ReportingAPIClient(reportingHttpClient), new RuntimeAPIClient(runtimeHttpClient)));
+                    }
+
+                    return _instance;
                 }
-                return _instance;
             }
         }
 
         internal static Agent NewInstance(IZenApi api)
         {
-            var newInstance = new Agent(api);
-            var oldInstance = Interlocked.Exchange(ref _instance, newInstance);
-            // Stop previous background work like config polls
-            oldInstance?.Dispose();
-            return newInstance;
+            lock (InstanceLock)
+            {
+                // Stop previous background work like config polls before publishing
+                // the replacement instance.
+                _instance?.Dispose();
+                _instance = new Agent(api);
+                return _instance;
+            }
         }
 
         /// <summary>
