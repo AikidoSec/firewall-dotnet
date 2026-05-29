@@ -79,8 +79,7 @@ namespace Aikido.Zen.Core
         {
             lock (InstanceLock)
             {
-                // Stop previous background work like config polls before publishing
-                // the replacement instance.
+                // Stop previous background work like config polls before publishing the replacement instance
                 _instance?.Dispose();
                 _instance = new Agent(api);
                 return _instance;
