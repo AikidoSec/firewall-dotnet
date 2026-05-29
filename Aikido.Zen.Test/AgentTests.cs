@@ -245,6 +245,46 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void NewInstance_DisposesPreviousInstanceBeforePublishingReplacement()
+        {
+            var instanceField = typeof(Agent).GetField("_instance", BindingFlags.NonPublic | BindingFlags.Static);
+            var cancellationSourceField = typeof(Agent).GetField("_cancellationSource", BindingFlags.NonPublic | BindingFlags.Instance);
+            var backgroundTaskField = typeof(Agent).GetField("_backgroundTask", BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.That(instanceField, Is.Not.Null);
+            Assert.That(cancellationSourceField, Is.Not.Null);
+            Assert.That(backgroundTaskField, Is.Not.Null);
+
+            var first = Agent.NewInstance(_zenApiMock.Object);
+            var firstCancellationSource = cancellationSourceField!.GetValue(first) as CancellationTokenSource;
+            var firstBackgroundTask = backgroundTaskField!.GetValue(first) as Task;
+            Assert.That(firstCancellationSource, Is.Not.Null);
+            Assert.That(firstBackgroundTask, Is.Not.Null);
+
+            firstCancellationSource!.Cancel();
+            Assert.That(firstBackgroundTask!.Wait(TimeSpan.FromSeconds(5)), Is.True);
+
+            Agent? instanceSeenByOldCallback = null;
+            first.QueueEvent("test-token", Started.Create(), (_, _) =>
+            {
+                instanceSeenByOldCallback = Agent.Instance;
+            });
+
+            var second = Agent.NewInstance(ZenApiMock.CreateMock().Object);
+
+            try
+            {
+                Assert.That(instanceSeenByOldCallback, Is.SameAs(first));
+                Assert.That(Agent.Instance, Is.SameAs(second));
+            }
+            finally
+            {
+                second.Dispose();
+                instanceField!.SetValue(null, null);
+                _agent = new Agent(_zenApiMock.Object);
+            }
+        }
+
+        [Test]
         public async Task Start_QueuesStartedEventAndSchedulesHeartbeat()
         {
             // Arrange
