@@ -67,6 +67,27 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void PatchSinks_WhenCalledTwice_DoesNotDuplicatePatchesAndUpdatesContextProvider()
+        {
+            var firstContext = new Context();
+            var secondContext = new Context();
+            var method = GetMethod(
+                typeof(HttpClient),
+                nameof(HttpClient.SendAsync),
+                typeof(HttpRequestMessage),
+                typeof(CancellationToken));
+
+            Patcher.PatchSinks(() => firstContext);
+            Patcher.PatchSinks(() => secondContext);
+
+            var patches = Harmony.GetPatchInfo(method);
+
+            Assert.That(Patcher.GetContext(), Is.SameAs(secondContext));
+            Assert.That(patches.Prefixes.Count(prefix => prefix.owner == HarmonyId), Is.EqualTo(1));
+            Assert.That(patches.Finalizers.Count(finalizer => finalizer.owner == HarmonyId), Is.EqualTo(1));
+        }
+
+        [Test]
         public void PatchCatalog_SkipsMissingTargetsAndAppliesPrefixAndPostfix()
         {
             Assert.DoesNotThrow(() => Patcher.PatchCatalog(typeof(ScannerCatalog)));

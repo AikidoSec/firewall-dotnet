@@ -11,7 +11,9 @@ namespace Aikido.Zen.Core.Sinks
     {
         private const string HarmonyId = "aikido.zen";
         private static readonly Harmony _harmony = new Harmony(HarmonyId);
+        private static readonly object PatchLock = new object();
         private static Func<Context> _getContext = () => null;
+        private static bool _sinksPatched;
 
         private static readonly Type[] PatchCatalogs =
         {
@@ -25,19 +27,38 @@ namespace Aikido.Zen.Core.Sinks
 
         internal static void PatchSinks(Func<Context> getContext)
         {
-            _getContext = getContext ?? (() => null);
-
-            foreach (var catalog in PatchCatalogs)
+            lock (PatchLock)
             {
-                PatchCatalog(catalog);
+                _getContext = getContext ?? (() => null);
+
+                // Harmony patches are process-wide. Even though Zen.Start replaces the
+                // Agent singleton, repatching would register another prefix/finalizer
+                // and cause the same sink to run multiple times for one runtime call.
+                if (_sinksPatched)
+                {
+                    return;
+                }
+
+                foreach (var catalog in PatchCatalogs)
+                {
+                    PatchCatalog(catalog);
+                }
+
+                _sinksPatched = true;
             }
         }
 
         internal static void Unpatch()
         {
-            if (Harmony.HasAnyPatches(HarmonyId))
+            lock (PatchLock)
             {
-                _harmony.UnpatchAll(HarmonyId);
+                if (Harmony.HasAnyPatches(HarmonyId))
+                {
+                    _harmony.UnpatchAll(HarmonyId);
+                }
+
+                _sinksPatched = false;
+                _getContext = () => null;
             }
         }
 
