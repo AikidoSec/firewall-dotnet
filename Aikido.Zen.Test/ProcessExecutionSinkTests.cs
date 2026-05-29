@@ -27,9 +27,9 @@ namespace Aikido.Zen.Test
             _startInfo = new ProcessStartInfo();
             _context = new Context();
             _methodInfo = typeof(Process).GetMethod("Start", BindingFlags.Public | BindingFlags.Instance);
-            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
             // setup the agent, because when not running in drymode, SqlClientSink will trigger an attack event
             Environment.SetEnvironmentVariable("AIKIDO_TOKEN", "test-token");
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", null);
             var reportingMock = new Mock<IReportingAPIClient>();
             reportingMock
                 .Setup(r => r.ReportAsync(It.IsAny<string>(), It.IsAny<IEvent>(), It.IsAny<CancellationToken>()))
@@ -100,6 +100,7 @@ namespace Aikido.Zen.Test
         public void OnProcessStart_WithShellInjection_ThrowsException()
         {
             // Arrange
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
             _context.ParsedUserInput = new Dictionary<string, string> {
                 { "body.command", "$(echo)" }
             };
@@ -134,6 +135,7 @@ namespace Aikido.Zen.Test
         [Test]
         public void OnProcessStart_WithForceProtectionOffRoute_ReturnsTrueWithoutMarkingAttack()
         {
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
             _context.Method = "POST";
             _context.Route = "/api/execute";
             _context.Path = "/api/execute";

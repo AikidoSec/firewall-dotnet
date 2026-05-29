@@ -28,7 +28,7 @@ namespace Aikido.Zen.Test
 
             // setup the agent, because when not running in drymode, SqlClientSink will trigger an attack event
             Environment.SetEnvironmentVariable("AIKIDO_TOKEN", "test-token");
-            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", null);
             var reportingMock = new Mock<IReportingAPIClient>();
             reportingMock
                 .Setup(r => r.ReportAsync(It.IsAny<string>(), It.IsAny<IEvent>(), It.IsAny<CancellationToken>()))
@@ -256,6 +256,7 @@ namespace Aikido.Zen.Test
         [Test]
         public void OnCommandExecuting_MySqlXSqlStatementWithInterpolatedInput_Throws()
         {
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
             _context.ParsedUserInput = new Dictionary<string, string>
             {
                 { "body.query", "1' OR '1'='1" }
