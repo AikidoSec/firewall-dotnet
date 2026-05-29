@@ -56,6 +56,7 @@ namespace EFCoreSqliteSampleApp
         {
             // For testing purposes, use a file-based SQLite database instead of in-memory
             DatabaseService.ConnectionString = "Data Source=pets.db";
+            EnsureDatabaseSetupAsync().GetAwaiter().GetResult();
         }
 
         /// <summary>

@@ -27,6 +27,7 @@ namespace MySqlSampleApp
             var config = app.ApplicationServices.GetRequiredService<IConfiguration>();
             var connectionString = config.GetConnectionString("MySqlConnection");
             DatabaseService.ConnectionString = connectionString;
+            EnsureDatabaseSetupAsync().GetAwaiter().GetResult();
         }
 
         protected override Task EnsureDatabaseSetupAsync()

@@ -27,14 +27,12 @@ namespace SqlServerSampleApp
             var connectionString = config.GetConnectionString("DefaultConnection");
             DatabaseService.ConnectionString = connectionString;
 
-            // Ensure database is set up immediately during startup
-            DatabaseService.EnsureDatabaseSetupAsync().GetAwaiter().GetResult();
+            EnsureDatabaseSetupAsync().GetAwaiter().GetResult();
         }
 
         protected override Task EnsureDatabaseSetupAsync()
         {
-            // Already handled in ConfigureDatabase
-            return Task.CompletedTask;
+            return DatabaseService.EnsureDatabaseSetupAsync();
         }
     }
 }
