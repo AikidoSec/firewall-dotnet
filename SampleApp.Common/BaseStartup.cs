@@ -154,8 +154,7 @@ namespace SampleApp.Common
 
                     var client = clientFactory.CreateClient("AikidoAgentTestClient"); // Use a named client for potential future config
 
-                    // Use a CancellationToken with a short timeout
-                    using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(100));
+                    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
 
                     try
                     {
