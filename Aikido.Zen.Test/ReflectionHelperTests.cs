@@ -94,6 +94,26 @@ namespace Aikido.Zen.Test.Helpers
         }
 
         [Test]
+        public void GetMethodFromType_WhenMethodIsOnlyInherited_ReturnsNull()
+        {
+            var methodInfo = ReflectionHelper.GetMethodFromType(
+                typeof(DerivedReflectionTarget),
+                nameof(BaseReflectionTarget.InheritedMethod));
+
+            Assert.That(methodInfo, Is.Null);
+        }
+
+        [Test]
+        public void GetMethodFromType_WhenMethodIsAbstract_ReturnsNull()
+        {
+            var methodInfo = ReflectionHelper.GetMethodFromType(
+                typeof(BaseReflectionTarget),
+                nameof(BaseReflectionTarget.AbstractMethod));
+
+            Assert.That(methodInfo, Is.Null);
+        }
+
+        [Test]
         public void ClearCache_ClearsAllCachedData()
         {
             // Arrange
@@ -152,15 +172,27 @@ namespace Aikido.Zen.Test.Helpers
             Assert.That(methodInfo, Is.Null);
         }
 
-        private class BaseReflectionTarget
+        private abstract class BaseReflectionTarget
         {
             public int InheritedField = 42;
+
+            public string InheritedMethod()
+            {
+                return "base";
+            }
+
+            public abstract string AbstractMethod();
         }
 
         private class DerivedReflectionTarget : BaseReflectionTarget
         {
             public string PublicText { get; set; } = "public";
             private string PrivateText { get; set; } = "private";
+
+            public override string AbstractMethod()
+            {
+                return "derived";
+            }
         }
 
     }

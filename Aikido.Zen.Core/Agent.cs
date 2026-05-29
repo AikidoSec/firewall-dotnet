@@ -79,8 +79,7 @@ namespace Aikido.Zen.Core
         {
             lock (InstanceLock)
             {
-                // Stop previous background work like config polls before publishing
-                // the replacement instance.
+                // Stop previous background work like config polls before publishing the replacement instance
                 _instance?.Dispose();
                 _instance = new Agent(api);
                 return _instance;
@@ -400,7 +399,7 @@ namespace Aikido.Zen.Core
         /// <param name="blocked">Whether the attack was blocked</param>
         /// <param name="paths">Relative paths to the user-controlled fields inside the attack source</param>
         /// <returns></returns>
-        public virtual void SendAttackEvent(AttackKind kind, Source source, string payload, string operation, Context context, string module, IDictionary<string, string> metadata, bool blocked, string[] paths)
+        public virtual void SendAttackEvent(AttackKind kind, Source? source, string payload, string operation, Context context, string module, IDictionary<string, string> metadata, bool blocked, string[] paths)
         {
             LogHelper.AttackLog(Logger, $"Attack detected: {kind} in {source} {operation}, blocked: {blocked}");
 

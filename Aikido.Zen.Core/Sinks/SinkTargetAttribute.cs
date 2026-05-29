@@ -20,6 +20,12 @@ namespace Aikido.Zen.Core.Sinks
             TargetParameterTypeNames = targetParameterTypeNames ?? Array.Empty<string>();
         }
 
+        protected SinkTargetAttribute(HarmonyPatchType patchType)
+        {
+            PatchType = patchType;
+            TargetParameterTypeNames = Array.Empty<string>();
+        }
+
         /// <summary>
         /// Use this constructor for framework/runtime types that Core already references.
         /// The Type is immediately converted to assembly/type names, so the patcher can use the same reflection path
@@ -45,6 +51,9 @@ namespace Aikido.Zen.Core.Sinks
         public string TargetTypeName { get; }
         public string TargetMethodName { get; }
         public string[] TargetParameterTypeNames { get; }
+        public bool HasTarget => !string.IsNullOrWhiteSpace(AssemblyName) &&
+                                 !string.IsNullOrWhiteSpace(TargetTypeName) &&
+                                 !string.IsNullOrWhiteSpace(TargetMethodName);
     }
 
     internal sealed class SinkPrefixAttribute : SinkTargetAttribute
@@ -91,6 +100,31 @@ namespace Aikido.Zen.Core.Sinks
             string targetMethodName,
             params string[] targetParameterTypeNames)
             : base(HarmonyPatchType.Postfix, targetType, targetMethodName, targetParameterTypeNames)
+        {
+        }
+    }
+
+    internal sealed class SinkFinalizerAttribute : SinkTargetAttribute
+    {
+        public SinkFinalizerAttribute()
+            : base(HarmonyPatchType.Finalizer)
+        {
+        }
+
+        public SinkFinalizerAttribute(
+            string assemblyName,
+            string targetTypeName,
+            string targetMethodName,
+            params string[] targetParameterTypeNames)
+            : base(HarmonyPatchType.Finalizer, assemblyName, targetTypeName, targetMethodName, targetParameterTypeNames)
+        {
+        }
+
+        public SinkFinalizerAttribute(
+            Type targetType,
+            string targetMethodName,
+            params string[] targetParameterTypeNames)
+            : base(HarmonyPatchType.Finalizer, targetType, targetMethodName, targetParameterTypeNames)
         {
         }
     }

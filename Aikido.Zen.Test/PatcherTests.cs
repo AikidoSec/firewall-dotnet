@@ -1,5 +1,6 @@
 using System.Data.Common;
 using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Reflection;
 using System.Threading;
@@ -66,14 +67,51 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void PatchSinks_WhenCalledTwice_DoesNotDuplicatePatchesAndUpdatesContextProvider()
+        {
+            var firstContext = new Context();
+            var secondContext = new Context();
+            var method = GetMethod(
+                typeof(HttpClient),
+                nameof(HttpClient.SendAsync),
+                typeof(HttpRequestMessage),
+                typeof(CancellationToken));
+
+            Patcher.PatchSinks(() => firstContext);
+            Patcher.PatchSinks(() => secondContext);
+
+            var patches = Harmony.GetPatchInfo(method);
+
+            Assert.That(Patcher.GetContext(), Is.SameAs(secondContext));
+            Assert.That(patches.Prefixes.Count(prefix => prefix.owner == HarmonyId), Is.EqualTo(1));
+            Assert.That(patches.Finalizers.Count(finalizer => finalizer.owner == HarmonyId), Is.EqualTo(1));
+        }
+
+        [Test]
         public void PatchCatalog_SkipsMissingTargetsAndAppliesPrefixAndPostfix()
         {
             Assert.DoesNotThrow(() => Patcher.PatchCatalog(typeof(ScannerCatalog)));
 
             Assert.That(ScannerTarget.PrefixTarget(), Is.EqualTo("prefix"));
             Assert.That(ScannerTarget.PostfixTarget(), Is.EqualTo("postfix"));
+            Assert.That(ScannerTarget.FinalizerTarget(), Is.EqualTo("finalizer"));
             AssertPrefixPatch(GetMethod(typeof(ScannerTarget), nameof(ScannerTarget.PrefixTarget)));
             AssertPostfixPatch(GetMethod(typeof(ScannerTarget), nameof(ScannerTarget.PostfixTarget)));
+            AssertFinalizerPatch(GetMethod(typeof(ScannerTarget), nameof(ScannerTarget.FinalizerTarget)));
+        }
+
+        [Test]
+        public void PatchCatalog_WithSinkFinalizer_PatchesEveryTarget()
+        {
+            Patcher.PatchCatalog(typeof(SinkFinalizerCatalog));
+
+            Assert.That(SinkFinalizerTarget.First(), Is.EqualTo("sink-finalizer"));
+            Assert.That(SinkFinalizerTarget.Second(), Is.EqualTo("sink-finalizer"));
+            Assert.That(SinkFinalizerTarget.PostfixOnly(), Is.EqualTo("sink-finalizer"));
+
+            AssertFinalizerPatch(GetMethod(typeof(SinkFinalizerTarget), nameof(SinkFinalizerTarget.First)));
+            AssertFinalizerPatch(GetMethod(typeof(SinkFinalizerTarget), nameof(SinkFinalizerTarget.Second)));
+            AssertFinalizerPatch(GetMethod(typeof(SinkFinalizerTarget), nameof(SinkFinalizerTarget.PostfixOnly)));
         }
 
         [Test]
@@ -102,11 +140,47 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void PatchCatalog_WhenDeclaredParameterTypesDoNotMatch_SkipsTarget()
+        {
+            Patcher.PatchCatalog(typeof(ExplicitMismatchCatalog));
+
+            Assert.That(ExplicitMismatchTarget.Execute("value", 1), Is.EqualTo("two-argument"));
+        }
+
+        [Test]
         public void PatchCatalog_WithTypeTarget_PatchesRuntimeTypeDirectly()
         {
             Patcher.PatchCatalog(typeof(TypeTargetCatalog));
 
             Assert.That(TypeTarget.PrefixTarget(), Is.EqualTo("type-target"));
+        }
+
+        [Test]
+        public void PatchCatalog_WithTypeTarget_PostfixAndFinalizerPatchRuntimeTypeDirectly()
+        {
+            Patcher.PatchCatalog(typeof(TypeTargetPostfixFinalizerCatalog));
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(TypeTargetPostfixFinalizer.PostfixTarget(), Is.EqualTo("type-postfix"));
+                Assert.That(TypeTargetPostfixFinalizer.FinalizerTarget(), Is.EqualTo("type-finalizer"));
+            });
+        }
+
+        [Test]
+        public void PatchCatalog_WhenPatchTypeIsUnsupported_LeavesTargetUnchanged()
+        {
+            Assert.DoesNotThrow(() => Patcher.PatchCatalog(typeof(UnsupportedPatchCatalog)));
+
+            Assert.That(UnsupportedPatchTarget.Execute(), Is.EqualTo("original"));
+        }
+
+        [Test]
+        public void PatchCatalog_WhenResolvedMethodIsInherited_LeavesTargetUnchanged()
+        {
+            Assert.DoesNotThrow(() => Patcher.PatchCatalog(typeof(InheritedPatchCatalog)));
+
+            Assert.That(new InheritedPatchTarget().Execute(), Is.EqualTo("base"));
         }
 
         private static MethodInfo GetMethod(Type type, string methodName, params Type[] parameterTypes)
@@ -139,6 +213,23 @@ namespace Aikido.Zen.Test
             Assert.That(patches.Postfixes.Any(postfix => postfix.owner == HarmonyId), Is.True);
         }
 
+        private static void AssertFinalizerPatch(MethodInfo method)
+        {
+            Assert.That(method, Is.Not.Null);
+            var patches = Harmony.GetPatchInfo(method);
+
+            Assert.That(patches, Is.Not.Null);
+            Assert.That(patches.Finalizers.Any(finalizer => finalizer.owner == HarmonyId), Is.True);
+        }
+
+        private static void AssertNoFinalizerPatch(MethodInfo method)
+        {
+            Assert.That(method, Is.Not.Null);
+            var patches = Harmony.GetPatchInfo(method);
+
+            Assert.That(patches == null || !patches.Finalizers.Any(finalizer => finalizer.owner == HarmonyId), Is.True);
+        }
+
         private static class ScannerTarget
         {
             public static string PrefixTarget()
@@ -147,6 +238,11 @@ namespace Aikido.Zen.Test
             }
 
             public static string PostfixTarget()
+            {
+                return "original";
+            }
+
+            public static string FinalizerTarget()
             {
                 return "original";
             }
@@ -166,6 +262,53 @@ namespace Aikido.Zen.Test
             private static void Postfix(ref string __result)
             {
                 __result = "postfix";
+            }
+
+            [SinkFinalizer("Aikido.Zen.Tests", "Aikido.Zen.Test.PatcherTests+ScannerTarget", nameof(ScannerTarget.FinalizerTarget))]
+            private static Exception Finalizer(ref string __result)
+            {
+                __result = "finalizer";
+                return null;
+            }
+        }
+
+        private static class SinkFinalizerTarget
+        {
+            public static string First()
+            {
+                return "first";
+            }
+
+            public static string Second()
+            {
+                return "second";
+            }
+
+            public static string PostfixOnly()
+            {
+                return "postfix-original";
+            }
+        }
+
+        private static class SinkFinalizerCatalog
+        {
+            [SinkPrefix("Aikido.Zen.Tests", "Aikido.Zen.Test.PatcherTests+SinkFinalizerTarget", nameof(SinkFinalizerTarget.First))]
+            [SinkPrefix("Aikido.Zen.Tests", "Aikido.Zen.Test.PatcherTests+SinkFinalizerTarget", nameof(SinkFinalizerTarget.Second))]
+            private static void Prefix()
+            {
+            }
+
+            [SinkPostfix("Aikido.Zen.Tests", "Aikido.Zen.Test.PatcherTests+SinkFinalizerTarget", nameof(SinkFinalizerTarget.PostfixOnly))]
+            private static void Postfix(ref string __result)
+            {
+                __result = "postfix-only";
+            }
+
+            [SinkFinalizer]
+            private static Exception Finalizer(ref string __result)
+            {
+                __result = "sink-finalizer";
+                return null!;
             }
         }
 
@@ -241,6 +384,24 @@ namespace Aikido.Zen.Test
             }
         }
 
+        private static class ExplicitMismatchTarget
+        {
+            public static string Execute(string value, int count)
+            {
+                return "two-argument";
+            }
+        }
+
+        private static class ExplicitMismatchCatalog
+        {
+            [SinkPrefix("Aikido.Zen.Tests", "Aikido.Zen.Test.PatcherTests+ExplicitMismatchTarget", nameof(ExplicitMismatchTarget.Execute), "System.String")]
+            private static bool Prefix(ref string __result)
+            {
+                __result = "patched-mismatch";
+                return false;
+            }
+        }
+
         private static class TypeTarget
         {
             public static string PrefixTarget()
@@ -255,6 +416,87 @@ namespace Aikido.Zen.Test
             private static bool Prefix(ref string __result)
             {
                 __result = "type-target";
+                return false;
+            }
+        }
+
+        private static class TypeTargetPostfixFinalizer
+        {
+            public static string PostfixTarget()
+            {
+                return "original";
+            }
+
+            public static string FinalizerTarget()
+            {
+                return "original";
+            }
+        }
+
+        private static class TypeTargetPostfixFinalizerCatalog
+        {
+            [SinkPostfix(typeof(TypeTargetPostfixFinalizer), nameof(TypeTargetPostfixFinalizer.PostfixTarget))]
+            private static void Postfix(ref string __result)
+            {
+                __result = "type-postfix";
+            }
+
+            [SinkFinalizer(typeof(TypeTargetPostfixFinalizer), nameof(TypeTargetPostfixFinalizer.FinalizerTarget))]
+            private static Exception Finalizer(ref string __result)
+            {
+                __result = "type-finalizer";
+                return null!;
+            }
+        }
+
+        private static class UnsupportedPatchTarget
+        {
+            public static string Execute()
+            {
+                return "original";
+            }
+        }
+
+        private sealed class UnsupportedSinkTargetAttribute : SinkTargetAttribute
+        {
+            public UnsupportedSinkTargetAttribute()
+                : base(
+                    (HarmonyPatchType)999,
+                    "Aikido.Zen.Tests",
+                    "Aikido.Zen.Test.PatcherTests+UnsupportedPatchTarget",
+                    nameof(UnsupportedPatchTarget.Execute))
+            {
+            }
+        }
+
+        private static class UnsupportedPatchCatalog
+        {
+            [UnsupportedSinkTarget]
+            private static bool UnsupportedPrefix(ref string __result)
+            {
+                __result = "unsupported";
+                return false;
+            }
+        }
+
+        private class InheritedPatchBase
+        {
+            public string Execute()
+            {
+                return "base";
+            }
+        }
+
+        private sealed class InheritedPatchTarget : InheritedPatchBase
+        {
+        }
+
+        private static class InheritedPatchCatalog
+        {
+            [SinkPrefix("Aikido.Zen.Tests", "Aikido.Zen.Test.PatcherTests+InheritedPatchTarget", nameof(InheritedPatchTarget.Execute))]
+            private static bool Prefix(ref string __result)
+            {
+                __result = "inherited";
                 return false;
             }
         }

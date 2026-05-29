@@ -108,14 +108,27 @@ namespace Aikido.Zen.Core.Helpers
 
             parameterTypeNames = parameterTypeNames ?? Array.Empty<string>();
 
-            // Use reflection to get the method, make sure to check for public, internal and private methods.
-            var methods = type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+            // Use reflection to get patchable methods declared on the target type.
+            var methods = type
+                .GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly)
+                .Where(m => !m.IsAbstract);
             var method = methods.FirstOrDefault(m => m.Name == methodName && ParametersMatch(m, parameterTypeNames));
 
-            // fallback to the method with the most parameters
-            // this is done because in case of multiple methods with the same name, they usually wrap the one with the most parameters
-            // by doing this, we reduce the risk of not being able to patch the correct method in case of library updates
-            method = method ?? methods
+            if (method != null)
+            {
+                return method;
+            }
+
+            if (parameterTypeNames.Length > 0)
+            {
+                // A declared signature must match exactly; if that overload is
+                // missing on this runtime, skip the patch instead of falling back.
+                return null;
+            }
+
+            // No signature was declared, so keep the broad fallback used by
+            // optional-library sinks and patch the overload with most parameters.
+            method = methods
                 .Where(m => m.Name == methodName)
                 .OrderByDescending(m => m.GetParameters().Length)
                 .FirstOrDefault();

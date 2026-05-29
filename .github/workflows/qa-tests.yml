@@ -75,7 +75,6 @@ jobs:
           dockerfile_path: ./zen-demo-dotnet-core/Dockerfile
           app_port: 8080
           sleep_before_test: 10
-          skip_tests: test_stored_ssrf_no_context,test_stored_ssrf,test_ssrf
 
   qa-tests-netfx:
     needs: build-package
@@ -116,7 +115,7 @@ jobs:
           Get-NetFirewallRule -DisplayName $ruleName -ErrorAction SilentlyContinue | Remove-NetFirewallRule
           New-NetFirewallRule -DisplayName $ruleName -Direction Inbound -Action Allow -Profile Any -Protocol TCP -LocalPort 3000 | Out-Null
           Write-Host "Ensured inbound firewall rule for TCP 3000 on all profiles."
-        
+
       - name: Run Firewall QA Tests
         uses: AikidoSec/firewall-tester-action@v1.0.16
         with:

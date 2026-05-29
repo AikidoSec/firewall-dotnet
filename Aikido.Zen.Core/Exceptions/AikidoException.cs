@@ -41,6 +41,9 @@ namespace Aikido.Zen.Core.Exceptions
                 case AttackKind.Ssrf:
                     return new AikidoException($"Zen has blocked a server-side request forgery during {operation}");
 
+                case AttackKind.StoredSsrf:
+                    return new AikidoException($"Zen has blocked a stored server-side request forgery during {operation}");
+
                 case AttackKind.OutboundConnectionBlocked:
                     return new AikidoException($"Zen has blocked an outbound connection during {operation}");
 

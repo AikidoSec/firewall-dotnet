@@ -106,6 +106,18 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void Blocked_WithStoredSsrf_ShouldReturnCorrectMessage()
+        {
+            var exception = AikidoException.Blocked(
+                AttackKind.StoredSsrf,
+                "HttpClient.SendAsync originating from unknown source");
+
+            Assert.That(
+                exception.Message,
+                Is.EqualTo("Zen has blocked a stored server-side request forgery during HttpClient.SendAsync originating from unknown source"));
+        }
+
+        [Test]
         public void Exception_ShouldPreserveStackTrace()
         {
             // Arrange & Act
