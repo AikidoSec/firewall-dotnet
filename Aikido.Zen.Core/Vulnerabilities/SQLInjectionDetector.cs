@@ -30,7 +30,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
         public static SQLInjectionDetectionResult DetectSQLInjection(string query, string userInput, SQLDialect dialect)
         {
             query = query?.ToLower();
-            userInput = userInput?.ToLower();
+            userInput = userInput?.ToLower()?.Trim();
             return ZenInternals.DetectSQLInjection(query, userInput, dialect.ToRustDialectInt());
         }
     }
