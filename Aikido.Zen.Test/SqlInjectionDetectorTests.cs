@@ -86,6 +86,19 @@ namespace Aikido.Zen.Test
             Assert.That(result, Is.EqualTo(SQLInjectionDetectionResult.FailedToTokenize));
         }
 
+        [Test]
+        public void IsSQLInjection_WithTrailingSpacesInUserInput_DetectsInjection()
+        {
+            // Attacker pads payload with trailing spaces; the trimmed payload must still be detected.
+            var result = SQLInjectionDetector.IsSQLInjection(
+                "INSERT INTO pets (name, owner) VALUES ('x', 'dummy'), ('injected', 'hacker'); --', 'owner')",
+                "x', 'dummy'), ('injected', 'hacker'); --    ",
+                SQLDialect.Generic
+            );
+
+            Assert.That(result, Is.True);
+        }
+
         public static IEnumerable<TestCaseData> GetTestData()
         {
             var jsonData = File.ReadAllText("testdata/data.SQLInjectionDetector.json");
