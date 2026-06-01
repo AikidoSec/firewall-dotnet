@@ -96,7 +96,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
             // return if path or input is null or empty
             if (string.IsNullOrEmpty(input) || string.IsNullOrEmpty(path))
                 return false;
-            // ignore if path does not contain user input (case-insensitive for case-insensitive filesystems)
+            // ignore if path does not contain user input (case-insensitive)
             if (path.IndexOf(input, StringComparison.OrdinalIgnoreCase) < 0)
                 return false;
             // ignore if input is larger than the path
