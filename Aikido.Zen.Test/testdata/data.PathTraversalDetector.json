@@ -345,7 +345,7 @@
     "input": "c:\\windows\\system32\\cmd.exe",
     "path": "C:\\Windows\\System32\\cmd.exe",
     "description": "Windows drive absolute path with case mismatch",
-    "isTraversal": false
+    "isTraversal": true
   },
   {
     "input": "%WINDIR%\\system32\\notepad.exe",
