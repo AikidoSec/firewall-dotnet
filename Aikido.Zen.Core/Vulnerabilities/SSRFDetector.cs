@@ -249,7 +249,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
 
         private static bool IsTrustedImdsHostname(string hostname)
         {
-            return TrustedImdsHostnames.Contains(hostname.Trim());
+            return TrustedImdsHostnames.Contains(hostname.Trim().TrimEnd('.'));
         }
 
         private static bool IsImdsIPAddress(string ipAddress)
