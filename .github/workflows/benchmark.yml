@@ -57,7 +57,7 @@ jobs:
               uses: actions/cache/restore@v4
               with:
                   path: baseline-results
-                  key: benchmark-baseline-${{ runner.os }}-net10-${{ github.event.pull_request.base.sha }}-${{ matrix.benchmark }}-${{ hashFiles('Aikido.Zen.Benchmarks/*Benchmarks.cs', 'Aikido.Zen.Benchmarks/Aikido.Zen.Benchmarks.csproj') }}
+                  key: benchmark-baseline-${{ runner.os }}-net10-${{ github.event.pull_request.base.sha }}-${{ matrix.benchmark }}-${{ hashFiles(format('Aikido.Zen.Benchmarks/{0}.cs', matrix.benchmark), 'Aikido.Zen.Benchmarks/Aikido.Zen.Benchmarks.csproj') }}
 
             - name: Checkout main branch for baseline
               if: steps.baseline-cache.outputs.cache-hit != 'true'
@@ -92,7 +92,7 @@ jobs:
               continue-on-error: true
               with:
                   path: baseline-results
-                  key: benchmark-baseline-${{ runner.os }}-net10-${{ github.event.pull_request.base.sha }}-${{ matrix.benchmark }}-${{ hashFiles('Aikido.Zen.Benchmarks/*Benchmarks.cs', 'Aikido.Zen.Benchmarks/Aikido.Zen.Benchmarks.csproj') }}
+                  key: benchmark-baseline-${{ runner.os }}-net10-${{ github.event.pull_request.base.sha }}-${{ matrix.benchmark }}-${{ hashFiles(format('Aikido.Zen.Benchmarks/{0}.cs', matrix.benchmark), 'Aikido.Zen.Benchmarks/Aikido.Zen.Benchmarks.csproj') }}
 
             - name: Run benchmark regression
               run: |

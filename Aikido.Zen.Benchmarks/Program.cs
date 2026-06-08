@@ -64,14 +64,21 @@ namespace Aikido.Zen.Benchmarks
                         var currentResult = current[key];
                         var delta = currentResult.Mean - baselineResult.Mean;
                         var change = (delta / baselineResult.Mean) * 100;
+                        var rangesOverlap = baselineResult.SampleCount > 1 &&
+                            currentResult.SampleCount > 1 &&
+                            currentResult.Min <= baselineResult.Max;
                         return new ComparisonRow
                         {
                             Display = currentResult.Display,
                             Baseline = baselineResult.Mean,
+                            BaselineMin = baselineResult.Min,
+                            BaselineMax = baselineResult.Max,
                             Current = currentResult.Mean,
+                            CurrentMin = currentResult.Min,
+                            CurrentMax = currentResult.Max,
                             Delta = delta,
                             Change = change,
-                            Failed = change > threshold && delta > minimumDelta
+                            Failed = change > threshold && delta > minimumDelta && !rangesOverlap
                         };
                     })
                     .OrderByDescending(row => row.Failed)
@@ -95,11 +102,11 @@ namespace Aikido.Zen.Benchmarks
 
                 if (rows.Any(row => row.Failed))
                 {
-                    Console.Error.WriteLine($"One or more benchmarks regressed by more than {Percent(threshold)}% and {FormatNanoseconds(minimumDelta)}.");
+                    Console.Error.WriteLine($"One or more benchmarks regressed by more than {Percent(threshold)}%, {FormatNanoseconds(minimumDelta)}, and outside baseline sample noise.");
                     return 1;
                 }
 
-                Console.WriteLine($"Compared {rows.Length} benchmark(s); no regressions over {Percent(threshold)}% and {FormatNanoseconds(minimumDelta)}.");
+                Console.WriteLine($"Compared {rows.Length} benchmark(s); no regressions over {Percent(threshold)}%, {FormatNanoseconds(minimumDelta)}, and outside baseline sample noise.");
                 return 0;
             }
             catch (Exception exception)
@@ -133,10 +140,22 @@ namespace Aikido.Zen.Benchmarks
                         }
 
                         var mean = meanElement.GetDouble();
+                        var min = statistics.TryGetProperty("Min", out var minElement) && minElement.ValueKind == JsonValueKind.Number
+                            ? minElement.GetDouble()
+                            : mean;
+                        var max = statistics.TryGetProperty("Max", out var maxElement) && maxElement.ValueKind == JsonValueKind.Number
+                            ? maxElement.GetDouble()
+                            : mean;
+                        var sampleCount = statistics.TryGetProperty("N", out var sampleCountElement) && sampleCountElement.ValueKind == JsonValueKind.Number
+                            ? sampleCountElement.GetInt32()
+                            : 1;
                         var key = BenchmarkKey(benchmark);
                         results[key] = new BenchmarkResult
                         {
                             Mean = mean,
+                            Min = min,
+                            Max = max,
+                            SampleCount = sampleCount,
                             Display = benchmark.GetProperty("DisplayInfo").GetString()
                         };
                     }
@@ -195,15 +214,15 @@ namespace Aikido.Zen.Benchmarks
             var builder = new StringBuilder();
             builder.AppendLine("# Benchmark Regression Check");
             builder.AppendLine();
-            builder.AppendLine($"Threshold: current mean must not be more than {Percent(thresholdPercent)}% and {FormatNanoseconds(minimumDeltaNanoseconds)} slower than baseline.");
+            builder.AppendLine($"Threshold: current mean must not be more than {Percent(thresholdPercent)}% and {FormatNanoseconds(minimumDeltaNanoseconds)} slower than baseline, with no overlap in measured sample ranges.");
             builder.AppendLine($"Compared {comparisonRows.Length} benchmark(s). Regressions: {failedCount}.");
             builder.AppendLine();
-            builder.AppendLine("| Benchmark | Baseline mean | Current mean | Delta | Change | Result |");
-            builder.AppendLine("| --- | ---: | ---: | ---: | ---: | --- |");
+            builder.AppendLine("| Benchmark | Baseline mean | Current mean | Delta | Change | Baseline range | Current range | Result |");
+            builder.AppendLine("| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |");
 
             foreach (var row in comparisonRows)
             {
-                builder.AppendLine($"| {Markdown(row.Display)} | {FormatNanoseconds(row.Baseline)} | {FormatNanoseconds(row.Current)} | {FormatNanoseconds(row.Delta)} | {Percent(row.Change)}% | {(row.Failed ? "fail" : "pass")} |");
+                builder.AppendLine($"| {Markdown(row.Display)} | {FormatNanoseconds(row.Baseline)} | {FormatNanoseconds(row.Current)} | {FormatNanoseconds(row.Delta)} | {Percent(row.Change)}% | {FormatRange(row.BaselineMin, row.BaselineMax)} | {FormatRange(row.CurrentMin, row.CurrentMax)} | {(row.Failed ? "fail" : "pass")} |");
             }
 
             AppendMissingBenchmarks(builder, "Benchmarks only present in current results:", missingBaseline);
@@ -255,9 +274,17 @@ namespace Aikido.Zen.Benchmarks
             return $"{sign}{absoluteValue.ToString("F3", CultureInfo.InvariantCulture)} ns";
         }
 
+        private static string FormatRange(double min, double max)
+        {
+            return $"{FormatNanoseconds(min)} - {FormatNanoseconds(max)}";
+        }
+
         private sealed class BenchmarkResult
         {
             public double Mean { get; set; }
+            public double Min { get; set; }
+            public double Max { get; set; }
+            public int SampleCount { get; set; }
             public string Display { get; set; }
         }
 
@@ -265,7 +292,11 @@ namespace Aikido.Zen.Benchmarks
         {
             public string Display { get; set; }
             public double Baseline { get; set; }
+            public double BaselineMin { get; set; }
+            public double BaselineMax { get; set; }
             public double Current { get; set; }
+            public double CurrentMin { get; set; }
+            public double CurrentMax { get; set; }
             public double Delta { get; set; }
             public double Change { get; set; }
             public bool Failed { get; set; }

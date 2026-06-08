@@ -5,7 +5,7 @@ using BenchmarkDotNet.Columns;
 
 namespace Aikido.Zen.Benchmarks
 {
-    [SimpleJob(RuntimeMoniker.Net10_0, baseline: true, warmupCount: 1, iterationCount: 1, invocationCount: 2)]
+    [SimpleJob(RuntimeMoniker.Net10_0, baseline: true, warmupCount: 1, iterationCount: 2, invocationCount: 2)]
     [HideColumns(Column.StdErr, Column.StdDev, Column.Error, Column.Min, Column.Max, Column.RatioSD)]
     public class RateLimitingHelperBenchmarks
     {
@@ -23,13 +23,27 @@ namespace Aikido.Zen.Benchmarks
         [GlobalSetup]
         public void Setup()
         {
-            // Reset the cache with test parameters
-            RateLimitingHelper.ResetCache(KeyCount * 2, WindowSizeInMS * 2);
-            
             _keys = new string[KeyCount];
             for (int i = 0; i < KeyCount; i++)
             {
                 _keys[i] = $"test-key-{i}";
+            }
+        }
+
+        [IterationSetup(Targets = new[] { nameof(FirstRequests), nameof(HighLoad) })]
+        public void ResetRequests()
+        {
+            ResetCache();
+        }
+
+        [IterationSetup(Targets = new[] { nameof(SubsequentRequests), nameof(MixedRequests) })]
+        public void ResetAndSeedRequests()
+        {
+            ResetCache();
+
+            for (int i = 0; i < KeyCount; i++)
+            {
+                RateLimitingHelper.IsAllowed(_keys[i], WindowSizeInMS, MaxRequests);
             }
         }
 
@@ -89,6 +103,11 @@ namespace Aikido.Zen.Benchmarks
         {
             // Reset to default state
             RateLimitingHelper.ResetCache(10000, 120 * 60 * 1000);
+        }
+
+        private void ResetCache()
+        {
+            RateLimitingHelper.ResetCache(KeyCount * 2, WindowSizeInMS * 2);
         }
     }
 } 
