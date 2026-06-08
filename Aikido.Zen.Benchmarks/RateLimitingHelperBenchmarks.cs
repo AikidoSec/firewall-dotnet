@@ -18,7 +18,7 @@ namespace Aikido.Zen.Benchmarks
         [Params(1000, 100_000)] // Different numbers of unique keys
         public int KeyCount { get; set; }
 
-        [Params(1000, 5000)] // Different window sizes in milliseconds
+        [Params(60_000)] // Keep the window above benchmark duration so expiry timing does not dominate results.
         public int WindowSizeInMS { get; set; }
 
         [Params(10, 100)] // Different request limits
