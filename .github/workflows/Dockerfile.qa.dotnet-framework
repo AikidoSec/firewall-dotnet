@@ -11,9 +11,7 @@ COPY . ./
 
 RUN $projectFilePath = 'C:\\src\\zen-demo-dotnet-framework.csproj'; `
     [xml]$projectFile = Get-Content -LiteralPath $projectFilePath; `
-    $namespaceManager = [System.Xml.XmlNamespaceManager]::new($projectFile.NameTable); `
-    $namespaceManager.AddNamespace('msb', 'http://schemas.microsoft.com/developer/msbuild/2003'); `
-    $aikidoPackage = $projectFile.SelectSingleNode('//msb:PackageReference[@Include="Aikido.Zen.DotNetFramework"]', $namespaceManager); `
+    $aikidoPackage = $projectFile.SelectSingleNode('//*[local-name()="PackageReference" and @Include="Aikido.Zen.DotNetFramework"]'); `
     if ($null -eq $aikidoPackage) { throw 'Aikido.Zen.DotNetFramework PackageReference not found in project file.' }; `
     $aikidoPackage.SetAttribute('Version', '0.0.0-qa'); `
     $projectFile.Save($projectFilePath)
