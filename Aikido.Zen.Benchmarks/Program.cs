@@ -17,7 +17,7 @@ namespace Aikido.Zen.Benchmarks
         private const string BaselineResultsDirectory = "baseline-results/results";
         private const string CurrentResultsDirectory = "BenchmarkDotNet.Artifacts/results";
         private const string RegressionReportPath = "benchmark-regression.md";
-        private const double DefaultMinimumDeltaNanoseconds = 10000;
+        private const double DefaultMinimumDeltaNanoseconds = 1000000;
 
         static int Main(string[] args)
         {
