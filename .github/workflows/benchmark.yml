@@ -23,18 +23,27 @@ jobs:
                   repository: ${{ github.event.pull_request.head.repo.full_name }}
                   ref: ${{ github.event.pull_request.head.sha }}
 
-            - name: Checkout main branch for baseline
-              uses: actions/checkout@v4
-              with:
-                  ref: ${{ github.event.pull_request.base.sha }}
-                  path: baseline
-
             - name: Set up .NET
               uses: actions/setup-dotnet@v5.1.0
               with:
                   dotnet-version: "10.0.x"
 
-            - name: Run benchmark regression
+            - name: Restore cached baseline results
+              id: baseline-cache
+              uses: actions/cache/restore@v4
+              with:
+                  path: baseline-results
+                  key: benchmark-baseline-${{ runner.os }}-net10-${{ github.event.pull_request.base.sha }}-${{ hashFiles('Aikido.Zen.Benchmarks/**/*.cs', 'Aikido.Zen.Benchmarks/Aikido.Zen.Benchmarks.csproj') }}
+
+            - name: Checkout main branch for baseline
+              if: steps.baseline-cache.outputs.cache-hit != 'true'
+              uses: actions/checkout@v4
+              with:
+                  ref: ${{ github.event.pull_request.base.sha }}
+                  path: baseline
+
+            - name: Run baseline benchmarks
+              if: steps.baseline-cache.outputs.cache-hit != 'true'
               run: |
                   rm -rf baseline/Aikido.Zen.Benchmarks
                   cp -R Aikido.Zen.Benchmarks baseline/Aikido.Zen.Benchmarks
@@ -49,6 +58,23 @@ jobs:
                       --filter "$BENCHMARK_FILTER"
                   )
 
+                  rm -rf baseline-results
+                  mkdir -p baseline-results
+                  cp -R baseline/BenchmarkDotNet.Artifacts/results baseline-results/results
+
+            - name: Save baseline benchmark results
+              if: steps.baseline-cache.outputs.cache-hit != 'true'
+              uses: actions/cache/save@v4
+              continue-on-error: true
+              with:
+                  path: baseline-results
+                  key: benchmark-baseline-${{ runner.os }}-net10-${{ github.event.pull_request.base.sha }}-${{ hashFiles('Aikido.Zen.Benchmarks/**/*.cs', 'Aikido.Zen.Benchmarks/Aikido.Zen.Benchmarks.csproj') }}
+
+            - name: Run benchmark regression
+              run: |
+                  rm -rf baseline
+                  test -d baseline-results/results
+
                   dotnet run \
                     --project Aikido.Zen.Benchmarks/Aikido.Zen.Benchmarks.csproj \
                     --configuration Release \
@@ -62,7 +88,7 @@ jobs:
                     --framework net10.0 \
                     -- \
                     --compare-results \
-                    --baseline baseline/BenchmarkDotNet.Artifacts/results \
+                    --baseline baseline-results/results \
                     --current BenchmarkDotNet.Artifacts/results \
                     --threshold-percent "$REGRESSION_THRESHOLD_PERCENT" \
                     --output-md benchmark-regression.md
@@ -82,5 +108,5 @@ jobs:
                   if-no-files-found: ignore
                   path: |
                       benchmark-regression.md
-                      baseline/BenchmarkDotNet.Artifacts/results/*
+                      baseline-results/results/*
                       BenchmarkDotNet.Artifacts/results/*

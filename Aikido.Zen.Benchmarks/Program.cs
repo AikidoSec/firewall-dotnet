@@ -65,6 +65,9 @@ namespace Aikido.Zen.Benchmarks
                             Failed = change > threshold
                         };
                     })
+                    .OrderByDescending(row => row.Failed)
+                    .ThenByDescending(row => row.Change)
+                    .ThenBy(row => row.Display)
                     .ToArray();
 
                 WriteMarkdown(
@@ -87,6 +90,7 @@ namespace Aikido.Zen.Benchmarks
                     return 1;
                 }
 
+                Console.WriteLine($"Compared {rows.Length} benchmark(s); no regressions over {Percent(threshold)}%.");
                 return 0;
             }
             catch (Exception exception)
@@ -111,7 +115,15 @@ namespace Aikido.Zen.Benchmarks
 
                     foreach (var benchmark in benchmarks.EnumerateArray())
                     {
-                        var mean = benchmark.GetProperty("Statistics").GetProperty("Mean").GetDouble();
+                        if (!benchmark.TryGetProperty("Statistics", out var statistics) ||
+                            statistics.ValueKind != JsonValueKind.Object ||
+                            !statistics.TryGetProperty("Mean", out var meanElement) ||
+                            meanElement.ValueKind != JsonValueKind.Number)
+                        {
+                            continue;
+                        }
+
+                        var mean = meanElement.GetDouble();
                         var key = BenchmarkKey(benchmark);
                         results[key] = new BenchmarkResult
                         {
@@ -180,15 +192,18 @@ namespace Aikido.Zen.Benchmarks
             IEnumerable<string> missingBaseline,
             IEnumerable<string> missingCurrent)
         {
+            var comparisonRows = rows.ToArray();
+            var failedCount = comparisonRows.Count(row => row.Failed);
             var builder = new StringBuilder();
             builder.AppendLine("# Benchmark Regression Check");
             builder.AppendLine();
             builder.AppendLine($"Threshold: current mean must not be more than {Percent(thresholdPercent)}% slower than baseline.");
+            builder.AppendLine($"Compared {comparisonRows.Length} benchmark(s). Regressions: {failedCount}.");
             builder.AppendLine();
             builder.AppendLine("| Benchmark | Baseline mean | Current mean | Change | Result |");
             builder.AppendLine("| --- | ---: | ---: | ---: | --- |");
 
-            foreach (var row in rows)
+            foreach (var row in comparisonRows)
             {
                 builder.AppendLine($"| {Markdown(row.Display)} | {FormatNanoseconds(row.Baseline)} | {FormatNanoseconds(row.Current)} | {Percent(row.Change)}% | {(row.Failed ? "fail" : "pass")} |");
             }
