@@ -19,7 +19,7 @@ namespace Aikido.Zen.Benchmarks
         [Params(100, 1000, 10000)] // Test different cache sizes
         public int CacheSize { get; set; }
 
-        [Params(1000, 5000)] // Test different TTLs (0 = no TTL, 1000ms, 5000ms)
+        [Params(60_000)] // Keep expiry outside the benchmark duration so TTL timing does not dominate results.
         public int TTLInMs { get; set; }
 
         [GlobalSetup]

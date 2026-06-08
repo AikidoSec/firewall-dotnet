@@ -130,5 +130,5 @@ jobs:
                   path: |
                       benchmark-regression.md
                       mock-server.log
-                      baseline-results/results/*
-                      BenchmarkDotNet.Artifacts/results/*
+                      baseline-results/results/**
+                      BenchmarkDotNet.Artifacts/results/**

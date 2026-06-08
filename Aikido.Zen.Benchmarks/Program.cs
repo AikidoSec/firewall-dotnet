@@ -257,26 +257,64 @@ namespace Aikido.Zen.Benchmarks
             var comparisonRows = rows.ToArray();
             var failedCount = comparisonRows.Count(row => row.Outcome == ComparisonOutcome.Fail);
             var watchCount = comparisonRows.Count(row => row.Outcome == ComparisonOutcome.Watch);
+            var improvedCount = comparisonRows.Count(row => row.Outcome == ComparisonOutcome.Improved);
             var noiseCount = comparisonRows.Count(row =>
                 row.Outcome == ComparisonOutcome.NoiseSmallDelta ||
                 row.Outcome == ComparisonOutcome.NoiseOverlappingRange);
+            var actionableRows = comparisonRows
+                .Where(row =>
+                    row.Outcome == ComparisonOutcome.Fail ||
+                    row.Outcome == ComparisonOutcome.Watch ||
+                    row.Outcome == ComparisonOutcome.Improved)
+                .ToArray();
+            var noiseRows = comparisonRows
+                .Where(row =>
+                    row.Outcome == ComparisonOutcome.NoiseSmallDelta ||
+                    row.Outcome == ComparisonOutcome.NoiseOverlappingRange)
+                .OrderByDescending(row => Math.Abs(row.Delta))
+                .ThenBy(row => row.Display)
+                .ToArray();
             var builder = new StringBuilder();
             builder.AppendLine("# Benchmark Regression Check");
             builder.AppendLine();
             builder.AppendLine($"Threshold: current median must not be more than {Percent(thresholdPercent)}% and {FormatNanoseconds(minimumDeltaNanoseconds)} slower than baseline, with no overlap in measured sample ranges.");
-            builder.AppendLine($"Compared {comparisonRows.Length} benchmark(s). Regressions: {failedCount}. Watch: {watchCount}. Ignored as noise: {noiseCount}.");
+            builder.AppendLine($"Compared {comparisonRows.Length} benchmark(s). Regressions: {failedCount}. Watch: {watchCount}. Improved: {improvedCount}. Ignored as noise: {noiseCount}.");
             builder.AppendLine();
-            builder.AppendLine("| Benchmark | Baseline median | Current median | Delta | Change | Baseline range | Current range | Result |");
-            builder.AppendLine("| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |");
 
-            foreach (var row in comparisonRows)
+            if (actionableRows.Length == 0)
             {
-                builder.AppendLine($"| {Markdown(row.Display)} | {FormatNanoseconds(row.Baseline)} | {FormatNanoseconds(row.Current)} | {FormatNanoseconds(row.Delta)} | {Percent(row.Change)}% | {FormatRange(row.BaselineMin, row.BaselineMax)} | {FormatRange(row.CurrentMin, row.CurrentMax)} | {OutcomeText(row.Outcome)} |");
+                builder.AppendLine("No actionable benchmark changes were found.");
+            }
+            else
+            {
+                AppendComparisonTable(builder, actionableRows);
+            }
+
+            if (noiseRows.Length > 0)
+            {
+                builder.AppendLine();
+                builder.AppendLine("<details>");
+                builder.AppendLine($"<summary>{noiseRows.Length} benchmark(s) ignored as noise</summary>");
+                builder.AppendLine();
+                AppendComparisonTable(builder, noiseRows);
+                builder.AppendLine();
+                builder.AppendLine("</details>");
             }
 
             AppendMissingBenchmarks(builder, "Benchmarks only present in current results:", missingBaseline);
             AppendMissingBenchmarks(builder, "Benchmarks only present in baseline results:", missingCurrent);
             File.WriteAllText(RegressionReportPath, builder.ToString(), Encoding.UTF8);
+        }
+
+        private static void AppendComparisonTable(StringBuilder builder, IEnumerable<ComparisonRow> rows)
+        {
+            builder.AppendLine("| Benchmark | Baseline median | Current median | Delta | Change | Baseline range | Current range | Result |");
+            builder.AppendLine("| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |");
+
+            foreach (var row in rows)
+            {
+                builder.AppendLine($"| {Markdown(row.Display)} | {FormatNanoseconds(row.Baseline)} | {FormatNanoseconds(row.Current)} | {FormatNanoseconds(row.Delta)} | {Percent(row.Change)}% | {FormatRange(row.BaselineMin, row.BaselineMax)} | {FormatRange(row.CurrentMin, row.CurrentMax)} | {OutcomeText(row.Outcome)} |");
+            }
         }
 
         private static string OutcomeText(ComparisonOutcome outcome)
