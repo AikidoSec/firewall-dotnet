@@ -11,9 +11,9 @@ COPY . ./
 
 RUN $projectFilePath = 'C:\\src\\zen-demo-dotnet-framework.csproj'; `
     [xml]$projectFile = Get-Content -LiteralPath $projectFilePath; `
-    $aikidoPackage = $projectFile.SelectSingleNode('//*[local-name()="PackageReference" and @Include="Aikido.Zen.DotNetFramework"]'); `
+    $aikidoPackage = $projectFile.Project.ItemGroup.PackageReference | Where-Object { $_.Include -eq 'Aikido.Zen.DotNetFramework' } | Select-Object -First 1; `
     if ($null -eq $aikidoPackage) { throw 'Aikido.Zen.DotNetFramework PackageReference not found in project file.' }; `
-    $aikidoPackage.SetAttribute('Version', '0.0.0-qa'); `
+    $aikidoPackage.Version = '0.0.0-qa'; `
     $projectFile.Save($projectFilePath)
 
 RUN nuget restore .\\zen-demo-dotnet-framework.csproj -ConfigFile .\\NuGet.Config
