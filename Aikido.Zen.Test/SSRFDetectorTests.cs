@@ -376,6 +376,8 @@ namespace Aikido.Zen.Test
         [TestCase("metadata.google.internal", "169.254.169.254", false)]
         [TestCase("metadata.goog", "169.254.169.254", false)]
         [TestCase("METADATA.GOOGLE.INTERNAL", "169.254.169.254", false)]
+        [TestCase("metadata.google.internal.", "169.254.169.254", false)]
+        [TestCase("metadata.goog.", "169.254.169.254", false)]
         [TestCase(null, "169.254.169.254", false)]
         [TestCase(" ", "169.254.169.254", false)]
         [TestCase("169.254.169.254", "169.254.169.254", false)]

@@ -142,7 +142,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 return hostname;
             }
 
-            var normalizedHostname = hostname.Trim().TrimStart('[').TrimEnd(']').ToLowerInvariant();
+            var normalizedHostname = hostname.Trim().TrimEnd('.').TrimStart('[').TrimEnd(']').ToLowerInvariant();
             try
             {
                 return HostnameIdnMapping.GetAscii(normalizedHostname).ToLowerInvariant();
@@ -249,7 +249,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
 
         private static bool IsTrustedImdsHostname(string hostname)
         {
-            return TrustedImdsHostnames.Contains(hostname.Trim());
+            return TrustedImdsHostnames.Contains(NormalizeHostname(hostname));
         }
 
         private static bool IsImdsIPAddress(string ipAddress)
