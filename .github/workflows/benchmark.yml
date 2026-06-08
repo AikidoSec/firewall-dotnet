@@ -39,7 +39,6 @@ jobs:
             BENCHMARK_FILTER: "*${{ matrix.benchmark }}*"
             PATCH_BENCHMARK_URL: http://localhost:5080/health
             REGRESSION_THRESHOLD_PERCENT: 20
-            REGRESSION_MINIMUM_DELTA_NS: 1000000
 
         steps:
             - name: Checkout current commit
@@ -111,8 +110,7 @@ jobs:
                     --framework net10.0 \
                     -- \
                     --compare-results \
-                    --threshold-percent "$REGRESSION_THRESHOLD_PERCENT" \
-                    --minimum-delta-ns "$REGRESSION_MINIMUM_DELTA_NS"
+                    --threshold-percent "$REGRESSION_THRESHOLD_PERCENT"
 
             - name: Publish benchmark summary
               if: always()
