@@ -14,8 +14,7 @@ namespace Aikido.Zen.Benchmarks
     /// Benchmarks for testing the performance of AgentContext operations, particularly focusing on thread-safety
     /// and concurrent access patterns.
     /// </summary>
-    [SimpleJob(RuntimeMoniker.Net48, baseline: false, warmupCount: 1, iterationCount: 2)]
-    [SimpleJob(RuntimeMoniker.Net80, baseline: true, warmupCount: 1, iterationCount: 2)]
+    [SimpleJob(RuntimeMoniker.Net10_0, baseline: true, warmupCount: 1, iterationCount: 2)]
     [HideColumns(Column.StdErr, Column.StdDev, Column.Error, Column.Min, Column.Max, Column.RatioSD)]
     public class AgentContextBenchmarks
     {
