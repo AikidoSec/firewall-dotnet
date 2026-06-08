@@ -5,9 +5,6 @@ using Aikido.Zen.Core.Sinks;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Api;
 using System;
-using System.Net.Sockets;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Net.Http;
 using BenchmarkDotNet.Columns;
@@ -18,12 +15,9 @@ namespace Aikido.Zen.Benchmarks
     [HideColumns(Column.StdErr, Column.StdDev, Column.Error, Column.Min, Column.Max, Column.RatioSD)]
     public class PatchBenchmarks
     {
-        private static readonly byte[] ResponseBytes = Encoding.ASCII.GetBytes("HTTP/1.1 200 OK\r\nContent-Length: 2\r\nConnection: close\r\n\r\nOK");
+        private const string DefaultRequestUri = "http://localhost:5080/health";
 
         private HttpClient _httpClient;
-        private TcpListener _server;
-        private CancellationTokenSource _serverCancellation;
-        private Task _serverTask;
         private string _requestUri;
 
         [GlobalSetup(Targets = new[] { nameof(HttpClientUnpatched), nameof(HttpWebRequestUnpatched) })]
@@ -44,7 +38,12 @@ namespace Aikido.Zen.Benchmarks
         {
             Cleanup();
 
-            StartServer();
+            _requestUri = Environment.GetEnvironmentVariable("PATCH_BENCHMARK_URL");
+            if (string.IsNullOrWhiteSpace(_requestUri))
+            {
+                _requestUri = DefaultRequestUri;
+            }
+
             _httpClient = new HttpClient();
             var apiHttpClient = ApiClientHttpClientFactory.Create();
             var reportingAPIClient = new ReportingAPIClient(apiHttpClient);
@@ -52,52 +51,10 @@ namespace Aikido.Zen.Benchmarks
             Agent.NewInstance(new ZenApi(reportingAPIClient, runtimeAPIClient));
         }
 
-        private void StartServer()
-        {
-            _serverCancellation = new CancellationTokenSource();
-            _server = new TcpListener(IPAddress.Loopback, 0);
-            _server.Start();
-
-            var port = ((IPEndPoint)_server.LocalEndpoint).Port;
-            _requestUri = $"http://127.0.0.1:{port}/";
-            _serverTask = Task.Run(() => RunServerAsync(_serverCancellation.Token));
-        }
-
-        private async Task RunServerAsync(CancellationToken cancellationToken)
-        {
-            while (!cancellationToken.IsCancellationRequested)
-            {
-                TcpClient client;
-                try
-                {
-                    client = await _server.AcceptTcpClientAsync();
-                }
-                catch (ObjectDisposedException)
-                {
-                    break;
-                }
-                catch (SocketException)
-                {
-                    break;
-                }
-
-                _ = Task.Run(() => RespondAsync(client), cancellationToken);
-            }
-        }
-
-        private static async Task RespondAsync(TcpClient client)
-        {
-            using (client)
-            using (var stream = client.GetStream())
-            {
-                await stream.WriteAsync(ResponseBytes, 0, ResponseBytes.Length);
-            }
-        }
-
         [Benchmark()]
         public async Task HttpClientUnpatched()
         {
-            var request = new HttpRequestMessage(HttpMethod.Get, _requestUri);
+            using (var request = new HttpRequestMessage(HttpMethod.Get, _requestUri))
             using (await _httpClient.SendAsync(request))
             {
             }
@@ -106,7 +63,7 @@ namespace Aikido.Zen.Benchmarks
         [Benchmark]
         public async Task HttpClientPatched()
         {
-            var request = new HttpRequestMessage(HttpMethod.Get, _requestUri);
+            using (var request = new HttpRequestMessage(HttpMethod.Get, _requestUri))
             using (await _httpClient.SendAsync(request))
             {
             }
@@ -135,22 +92,6 @@ namespace Aikido.Zen.Benchmarks
         {
             _httpClient?.Dispose();
             _httpClient = null;
-
-            _serverCancellation?.Cancel();
-            _server?.Stop();
-
-            try
-            {
-                _serverTask?.Wait(TimeSpan.FromSeconds(1));
-            }
-            catch (AggregateException)
-            {
-            }
-
-            _serverCancellation?.Dispose();
-            _serverCancellation = null;
-            _server = null;
-            _serverTask = null;
             _requestUri = null;
         }
     }

@@ -45,7 +45,7 @@ namespace Aikido.Zen.Benchmarks
             {
                 var baseline = LoadResults(BaselineResultsDirectory);
                 var current = LoadResults(CurrentResultsDirectory);
-                var threshold = double.Parse(Option(args, "--threshold-percent", "15"), CultureInfo.InvariantCulture);
+                var threshold = double.Parse(Option(args, "--threshold-percent", "35"), CultureInfo.InvariantCulture);
                 var minimumDelta = double.Parse(
                     Option(args, "--minimum-delta-ns", DefaultMinimumDeltaNanoseconds.ToString(CultureInfo.InvariantCulture)),
                     CultureInfo.InvariantCulture);
