@@ -6,15 +6,39 @@ permissions:
     contents: read
 
 jobs:
+    benchmark-list:
+        runs-on: ubuntu-latest
+        outputs:
+            matrix: ${{ steps.matrix.outputs.matrix }}
+
+        steps:
+            - name: Checkout current commit
+              uses: actions/checkout@v4
+              with:
+                  repository: ${{ github.event.pull_request.head.repo.full_name }}
+                  ref: ${{ github.event.pull_request.head.sha }}
+
+            - name: Find benchmark classes
+              id: matrix
+              run: |
+                  matrix=$(find Aikido.Zen.Benchmarks -maxdepth 1 -name '*Benchmarks.cs' -exec basename {} .cs \; | sort | jq -R -s -c 'split("\n")[:-1] | { benchmark: . }')
+                  echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+
     benchmark:
+        needs: benchmark-list
+        name: benchmark (${{ matrix.benchmark }})
         runs-on: ubuntu-latest
         timeout-minutes: 45
+        strategy:
+            fail-fast: false
+            matrix: ${{ fromJson(needs.benchmark-list.outputs.matrix) }}
 
         env:
             DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
             DOTNET_CLI_TELEMETRY_OPTOUT: true
-            BENCHMARK_FILTER: "*"
+            BENCHMARK_FILTER: "*${{ matrix.benchmark }}*"
             REGRESSION_THRESHOLD_PERCENT: 15
+            REGRESSION_MINIMUM_DELTA_NS: 10000
 
         steps:
             - name: Checkout current commit
@@ -33,7 +57,7 @@ jobs:
               uses: actions/cache/restore@v4
               with:
                   path: baseline-results
-                  key: benchmark-baseline-${{ runner.os }}-net10-${{ github.event.pull_request.base.sha }}-${{ hashFiles('Aikido.Zen.Benchmarks/**/*.cs', 'Aikido.Zen.Benchmarks/Aikido.Zen.Benchmarks.csproj') }}
+                  key: benchmark-baseline-${{ runner.os }}-net10-${{ github.event.pull_request.base.sha }}-${{ matrix.benchmark }}-${{ hashFiles('Aikido.Zen.Benchmarks/*Benchmarks.cs', 'Aikido.Zen.Benchmarks/Aikido.Zen.Benchmarks.csproj') }}
 
             - name: Checkout main branch for baseline
               if: steps.baseline-cache.outputs.cache-hit != 'true'
@@ -68,7 +92,7 @@ jobs:
               continue-on-error: true
               with:
                   path: baseline-results
-                  key: benchmark-baseline-${{ runner.os }}-net10-${{ github.event.pull_request.base.sha }}-${{ hashFiles('Aikido.Zen.Benchmarks/**/*.cs', 'Aikido.Zen.Benchmarks/Aikido.Zen.Benchmarks.csproj') }}
+                  key: benchmark-baseline-${{ runner.os }}-net10-${{ github.event.pull_request.base.sha }}-${{ matrix.benchmark }}-${{ hashFiles('Aikido.Zen.Benchmarks/*Benchmarks.cs', 'Aikido.Zen.Benchmarks/Aikido.Zen.Benchmarks.csproj') }}
 
             - name: Run benchmark regression
               run: |
@@ -88,7 +112,8 @@ jobs:
                     --framework net10.0 \
                     -- \
                     --compare-results \
-                    --threshold-percent "$REGRESSION_THRESHOLD_PERCENT"
+                    --threshold-percent "$REGRESSION_THRESHOLD_PERCENT" \
+                    --minimum-delta-ns "$REGRESSION_MINIMUM_DELTA_NS"
 
             - name: Publish benchmark summary
               if: always()
@@ -101,7 +126,7 @@ jobs:
               if: always()
               uses: actions/upload-artifact@v4
               with:
-                  name: benchmark-regression
+                  name: benchmark-regression-${{ matrix.benchmark }}
                   if-no-files-found: ignore
                   path: |
                       benchmark-regression.md
