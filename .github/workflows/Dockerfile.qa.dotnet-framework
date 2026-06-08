@@ -9,18 +9,14 @@ WORKDIR C:\\src
 
 COPY . ./
 
-RUN $packagesConfigPath = 'C:\\src\\packages.config'; `
-    [xml]$packagesConfig = Get-Content -LiteralPath $packagesConfigPath; `
-    $aikidoPackage = $packagesConfig.packages.package | Where-Object { $_.id -eq 'Aikido.Zen.DotNetFramework' }; `
-    if ($null -eq $aikidoPackage) { throw 'Aikido.Zen.DotNetFramework package entry not found in packages.config.' }; `
-    $aikidoPackage.version = '0.0.0-qa'; `
-    $packagesConfig.Save($packagesConfigPath); `
-    $projectFilePath = 'C:\\src\\zen-demo-dotnet-framework.csproj'; `
-    $projectFile = Get-Content -LiteralPath $projectFilePath -Raw; `
-    $projectFile = [System.Text.RegularExpressions.Regex]::Replace($projectFile, 'packages\\Aikido\.Zen\.DotNetFramework\.[^\\]+\\', 'packages\Aikido.Zen.DotNetFramework.0.0.0-qa\', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase); `
-    [System.IO.File]::WriteAllText($projectFilePath, $projectFile, [System.Text.UTF8Encoding]::new($false))
+RUN $projectFilePath = 'C:\\src\\zen-demo-dotnet-framework.csproj'; `
+    [xml]$projectFile = Get-Content -LiteralPath $projectFilePath; `
+    $aikidoPackage = $projectFile.Project.ItemGroup.PackageReference | Where-Object { $_.Include -eq 'Aikido.Zen.DotNetFramework' } | Select-Object -First 1; `
+    if ($null -eq $aikidoPackage) { throw 'Aikido.Zen.DotNetFramework PackageReference not found in project file.' }; `
+    $aikidoPackage.Version = '0.0.0-qa'; `
+    $projectFile.Save($projectFilePath)
 
-RUN nuget restore .\\zen-demo-dotnet-framework.csproj -ConfigFile .\\NuGet.Config -PackagesDirectory .\\packages
+RUN nuget restore .\\zen-demo-dotnet-framework.csproj -ConfigFile .\\NuGet.Config
 
 RUN msbuild .\\zen-demo-dotnet-framework.csproj /t:Build /p:Configuration=Release
 
