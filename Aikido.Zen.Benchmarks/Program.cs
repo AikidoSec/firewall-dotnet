@@ -303,7 +303,7 @@ namespace Aikido.Zen.Benchmarks
 
             AppendMissingBenchmarks(builder, "Benchmarks only present in current results:", missingBaseline);
             AppendMissingBenchmarks(builder, "Benchmarks only present in baseline results:", missingCurrent);
-            File.WriteAllText(RegressionReportPath, builder.ToString(), Encoding.UTF8);
+            File.WriteAllText(RegressionReportPath, builder.ToString(), new UTF8Encoding(false));
         }
 
         private static void AppendComparisonTable(StringBuilder builder, IEnumerable<ComparisonRow> rows)
