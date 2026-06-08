@@ -6,10 +6,14 @@ using BenchmarkDotNet.Columns;
 namespace Aikido.Zen.Benchmarks
 {
     [SimpleJob(RuntimeMoniker.Net10_0, baseline: true, warmupCount: 2, iterationCount: 10, invocationCount: 1)]
+    [MinIterationTime(100)]
     [HideColumns(Column.StdErr, Column.StdDev, Column.Error, Column.Min, Column.Max, Column.RatioSD)]
     public class RateLimitingHelperBenchmarks
     {
+        private const int TargetChecksPerIteration = 600_000;
+
         private string[] _keys;
+        private string[] _newKeys;
 
         [Params(1000, 100_000)] // Different numbers of unique keys
         public int KeyCount { get; set; }
@@ -24,46 +28,22 @@ namespace Aikido.Zen.Benchmarks
         public void Setup()
         {
             _keys = new string[KeyCount];
+            _newKeys = new string[KeyCount];
             for (int i = 0; i < KeyCount; i++)
             {
                 _keys[i] = $"test-key-{i}";
-            }
-        }
-
-        [IterationSetup(Targets = new[] { nameof(FirstRequests), nameof(HighLoad) })]
-        public void ResetRequests()
-        {
-            ResetCache();
-        }
-
-        [IterationSetup(Targets = new[] { nameof(SubsequentRequests), nameof(MixedRequests) })]
-        public void ResetAndSeedRequests()
-        {
-            ResetCache();
-
-            for (int i = 0; i < KeyCount; i++)
-            {
-                RateLimitingHelper.IsAllowed(_keys[i], WindowSizeInMS, MaxRequests);
+                _newKeys[i] = $"new-key-{i}";
             }
         }
 
         [Benchmark]
         public void FirstRequests()
         {
-            // Simulate first requests for all keys (should all be allowed)
-            for (int i = 0; i < KeyCount; i++)
+            var repetitions = RepetitionsFor(KeyCount);
+            for (int repetition = 0; repetition < repetitions; repetition++)
             {
-                RateLimitingHelper.IsAllowed(_keys[i], WindowSizeInMS, MaxRequests);
-            }
-        }
-
-        [Benchmark]
-        public void SubsequentRequests()
-        {
-            // Simulate subsequent requests for existing keys
-            for (int i = 0; i < KeyCount; i++)
-            {
-                for (int j = 0; j < 3; j++) // Make multiple requests per key
+                ResetCache();
+                for (int i = 0; i < KeyCount; i++)
                 {
                     RateLimitingHelper.IsAllowed(_keys[i], WindowSizeInMS, MaxRequests);
                 }
@@ -71,29 +51,52 @@ namespace Aikido.Zen.Benchmarks
         }
 
         [Benchmark]
+        public void SubsequentRequests()
+        {
+            var repetitions = RepetitionsFor(KeyCount * 3);
+            for (int repetition = 0; repetition < repetitions; repetition++)
+            {
+                ResetAndSeedRequests();
+                for (int i = 0; i < KeyCount; i++)
+                {
+                    for (int j = 0; j < 3; j++)
+                    {
+                        RateLimitingHelper.IsAllowed(_keys[i], WindowSizeInMS, MaxRequests);
+                    }
+                }
+            }
+        }
+
+        [Benchmark]
         public void MixedRequests()
         {
-            // Mix of new and existing keys
-            for (int i = 0; i < KeyCount; i++)
+            var repetitions = RepetitionsFor(KeyCount * 2);
+            for (int repetition = 0; repetition < repetitions; repetition++)
             {
-                // Existing key
-                RateLimitingHelper.IsAllowed(_keys[i], WindowSizeInMS, MaxRequests);
-                
-                // New key
-                RateLimitingHelper.IsAllowed($"new-key-{i}", WindowSizeInMS, MaxRequests);
+                ResetAndSeedRequests();
+                for (int i = 0; i < KeyCount; i++)
+                {
+                    RateLimitingHelper.IsAllowed(_keys[i], WindowSizeInMS, MaxRequests);
+                    RateLimitingHelper.IsAllowed(_newKeys[i], WindowSizeInMS, MaxRequests);
+                }
             }
         }
 
         [Benchmark]
         public void HighLoad()
         {
-            // Simulate high load with repeated requests to same keys
-            for (int i = 0; i < KeyCount; i++)
+            var checksPerScenario = KeyCount * (MaxRequests + 2);
+            var repetitions = RepetitionsFor(checksPerScenario);
+            for (int repetition = 0; repetition < repetitions; repetition++)
             {
-                string key = _keys[i % (_keys.Length / 10)]; // Reuse keys more frequently
-                for (int j = 0; j < MaxRequests + 2; j++) // Intentionally exceed limit
+                ResetCache();
+                for (int i = 0; i < KeyCount; i++)
                 {
-                    RateLimitingHelper.IsAllowed(key, WindowSizeInMS, MaxRequests);
+                    var key = _keys[i % (_keys.Length / 10)];
+                    for (int j = 0; j < MaxRequests + 2; j++)
+                    {
+                        RateLimitingHelper.IsAllowed(key, WindowSizeInMS, MaxRequests);
+                    }
                 }
             }
         }
@@ -108,6 +111,21 @@ namespace Aikido.Zen.Benchmarks
         private void ResetCache()
         {
             RateLimitingHelper.ResetCache(KeyCount * 2, WindowSizeInMS * 2);
+        }
+
+        private void ResetAndSeedRequests()
+        {
+            ResetCache();
+
+            for (int i = 0; i < KeyCount; i++)
+            {
+                RateLimitingHelper.IsAllowed(_keys[i], WindowSizeInMS, MaxRequests);
+            }
+        }
+
+        private static int RepetitionsFor(int checksPerScenario)
+        {
+            return (TargetChecksPerIteration + checksPerScenario - 1) / checksPerScenario;
         }
     }
 } 

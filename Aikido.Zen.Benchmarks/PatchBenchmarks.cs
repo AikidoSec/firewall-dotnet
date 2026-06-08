@@ -12,6 +12,7 @@ using BenchmarkDotNet.Columns;
 namespace Aikido.Zen.Benchmarks
 {
     [SimpleJob(RuntimeMoniker.Net10_0, baseline: true, warmupCount: 2, iterationCount: 10)]
+    [MinIterationTime(100)]
     [HideColumns(Column.StdErr, Column.StdDev, Column.Error, Column.Min, Column.Max, Column.RatioSD)]
     public class PatchBenchmarks
     {

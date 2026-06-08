@@ -28,7 +28,7 @@ jobs:
         needs: benchmark-list
         name: benchmark (${{ matrix.benchmark }})
         runs-on: ubuntu-latest
-        timeout-minutes: 45
+        timeout-minutes: 60
         strategy:
             fail-fast: false
             matrix: ${{ fromJson(needs.benchmark-list.outputs.matrix) }}
@@ -38,7 +38,7 @@ jobs:
             DOTNET_CLI_TELEMETRY_OPTOUT: true
             BENCHMARK_FILTER: "*${{ matrix.benchmark }}*"
             PATCH_BENCHMARK_URL: http://localhost:5080/health
-            REGRESSION_THRESHOLD_PERCENT: 35
+            REGRESSION_THRESHOLD_PERCENT: 20
             REGRESSION_MINIMUM_DELTA_NS: 1000000
 
         steps:
@@ -52,13 +52,6 @@ jobs:
               uses: actions/setup-dotnet@v5.1.0
               with:
                   dotnet-version: "10.0.x"
-
-            - name: Restore cached baseline results
-              id: baseline-cache
-              uses: actions/cache/restore@v4
-              with:
-                  path: baseline-results
-                  key: benchmark-baseline-${{ runner.os }}-net10-${{ github.event.pull_request.base.sha }}-${{ matrix.benchmark }}-${{ hashFiles(format('Aikido.Zen.Benchmarks/{0}.cs', matrix.benchmark), 'Aikido.Zen.Benchmarks/Aikido.Zen.Benchmarks.csproj') }}-${{ matrix.benchmark == 'PatchBenchmarks' && hashFiles('e2e/Aikido.Zen.Server.Mock/**/*.cs', 'e2e/Aikido.Zen.Server.Mock/Aikido.Zen.Server.Mock.csproj') || 'no-mock' }}
 
             - name: Run mock server
               if: matrix.benchmark == 'PatchBenchmarks'
@@ -76,14 +69,12 @@ jobs:
                   exit 1
 
             - name: Checkout main branch for baseline
-              if: steps.baseline-cache.outputs.cache-hit != 'true'
               uses: actions/checkout@v4
               with:
                   ref: ${{ github.event.pull_request.base.sha }}
                   path: baseline
 
             - name: Run baseline benchmarks
-              if: steps.baseline-cache.outputs.cache-hit != 'true'
               run: |
                   rm -rf baseline/Aikido.Zen.Benchmarks
                   cp -R Aikido.Zen.Benchmarks baseline/Aikido.Zen.Benchmarks
@@ -101,14 +92,6 @@ jobs:
                   rm -rf baseline-results
                   mkdir -p baseline-results
                   cp -R baseline/BenchmarkDotNet.Artifacts/results baseline-results/results
-
-            - name: Save baseline benchmark results
-              if: steps.baseline-cache.outputs.cache-hit != 'true'
-              uses: actions/cache/save@v4
-              continue-on-error: true
-              with:
-                  path: baseline-results
-                  key: benchmark-baseline-${{ runner.os }}-net10-${{ github.event.pull_request.base.sha }}-${{ matrix.benchmark }}-${{ hashFiles(format('Aikido.Zen.Benchmarks/{0}.cs', matrix.benchmark), 'Aikido.Zen.Benchmarks/Aikido.Zen.Benchmarks.csproj') }}-${{ matrix.benchmark == 'PatchBenchmarks' && hashFiles('e2e/Aikido.Zen.Server.Mock/**/*.cs', 'e2e/Aikido.Zen.Server.Mock/Aikido.Zen.Server.Mock.csproj') || 'no-mock' }}
 
             - name: Run benchmark regression
               run: |
