@@ -14,6 +14,10 @@ namespace Aikido.Zen.Benchmarks
 {
     internal class Program
     {
+        private const string BaselineResultsDirectory = "baseline-results/results";
+        private const string CurrentResultsDirectory = "BenchmarkDotNet.Artifacts/results";
+        private const string RegressionReportPath = "benchmark-regression.md";
+
         static int Main(string[] args)
         {
             if (args.Length > 0 && string.Equals(args[0], "--compare-results", StringComparison.OrdinalIgnoreCase))
@@ -38,10 +42,9 @@ namespace Aikido.Zen.Benchmarks
         {
             try
             {
-                var baseline = LoadResults(RequiredOption(args, "--baseline"));
-                var current = LoadResults(RequiredOption(args, "--current"));
+                var baseline = LoadResults(BaselineResultsDirectory);
+                var current = LoadResults(CurrentResultsDirectory);
                 var threshold = double.Parse(Option(args, "--threshold-percent", "15"), CultureInfo.InvariantCulture);
-                var outputMarkdown = Option(args, "--output-md", "benchmark-regression.md");
                 var matchingKeys = baseline.Keys.Intersect(current.Keys).OrderBy(key => key).ToArray();
 
                 if (matchingKeys.Length == 0)
@@ -71,7 +74,6 @@ namespace Aikido.Zen.Benchmarks
                     .ToArray();
 
                 WriteMarkdown(
-                    outputMarkdown,
                     rows,
                     threshold,
                     current.Keys.Except(baseline.Keys).OrderBy(key => key),
@@ -154,17 +156,6 @@ namespace Aikido.Zen.Benchmarks
             return element.ValueKind == JsonValueKind.String ? element.GetString() : element.GetRawText();
         }
 
-        private static string RequiredOption(string[] args, string name)
-        {
-            var value = Option(args, name, null);
-            if (string.IsNullOrEmpty(value))
-            {
-                throw new ArgumentException($"Missing required option: {name}");
-            }
-
-            return value;
-        }
-
         private static string Option(string[] args, string name, string defaultValue)
         {
             for (var i = 0; i < args.Length; i++)
@@ -186,7 +177,6 @@ namespace Aikido.Zen.Benchmarks
         }
 
         private static void WriteMarkdown(
-            string path,
             IEnumerable<ComparisonRow> rows,
             double thresholdPercent,
             IEnumerable<string> missingBaseline,
@@ -210,7 +200,7 @@ namespace Aikido.Zen.Benchmarks
 
             AppendMissingBenchmarks(builder, "Benchmarks only present in current results:", missingBaseline);
             AppendMissingBenchmarks(builder, "Benchmarks only present in baseline results:", missingCurrent);
-            File.WriteAllText(path, builder.ToString(), Encoding.UTF8);
+            File.WriteAllText(RegressionReportPath, builder.ToString(), Encoding.UTF8);
         }
 
         private static void AppendMissingBenchmarks(StringBuilder builder, string title, IEnumerable<string> keys)
