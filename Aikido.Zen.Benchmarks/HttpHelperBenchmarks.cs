@@ -1,7 +1,6 @@
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Jobs;
 using Aikido.Zen.Core.Helpers;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
@@ -33,7 +32,7 @@ namespace Aikido.Zen.Benchmarks
         private const string FormContentType = "application/x-www-form-urlencoded";
         private string MultipartFormContentType => $"multipart/form-data; boundary={_boundary}";
 
-        [Params(1, 10, 100, 1000)] // Test different sizes
+        [Params(10, 1000)]
         public int PayloadSize { get; set; }
 
         private string CreateJsonContent(int size)
@@ -57,43 +56,26 @@ namespace Aikido.Zen.Benchmarks
             return string.Join("&", items);
         }
 
-        private string CreateMultipartFormDataContentWithDummyFile(int size)
+        private string CreateMultipartFormDataContent(int size)
         {
             var sb = new StringBuilder();
 
-            // Add form fields
             for (int i = 1; i <= size; i++)
             {
-                sb.AppendLine($"--{_boundary}");
-                sb.AppendLine($"Content-Disposition: form-data; name=\"key{i}\"");
-                sb.AppendLine();
-                sb.AppendLine($"value{i}");
+                sb.Append("--").Append(_boundary).Append("\r\n");
+                sb.Append("Content-Disposition: form-data; name=\"key").Append(i).Append("\"").Append("\r\n\r\n");
+                sb.Append("value").Append(i).Append("\r\n");
             }
 
-            // Add dummy file
-            sb.AppendLine($"--{_boundary}");
-            sb.AppendLine($"Content-Disposition: form-data; name=\"file\"; filename=\"dummy.txt\"");
-            sb.AppendLine("Content-Type: text/plain");
-            sb.AppendLine();
-            sb.AppendLine(CreateLargeDummyFileContent(size));
-
-            // Add final boundary
-            sb.AppendLine($"--{_boundary}--");
+            sb.Append("--").Append(_boundary).Append("--").Append("\r\n");
 
             return sb.ToString();
-        }
-
-        private string CreateLargeDummyFileContent(int size)
-        {
-            // Create a dummy file with size / 10 MB
-            int mb = size * 1024 * 1024 / 10;
-            return new string('a', mb);
         }
 
         [GlobalSetup]
         public void Setup()
         {
-            _boundary = Guid.NewGuid().ToString();
+            _boundary = "benchmark-boundary";
 
             _queryParams = new Dictionary<string, string>
             {
@@ -122,7 +104,7 @@ namespace Aikido.Zen.Benchmarks
             var jsonContent = CreateJsonContent(PayloadSize);
             var xmlContent = CreateXmlContent(PayloadSize);
             var formContent = CreateFormContent(PayloadSize);
-            var multipartContent = CreateMultipartFormDataContentWithDummyFile(PayloadSize);
+            var multipartContent = CreateMultipartFormDataContent(PayloadSize);
 
             _jsonBody = new MemoryStream(Encoding.UTF8.GetBytes(jsonContent));
             _xmlBody = new MemoryStream(Encoding.UTF8.GetBytes(xmlContent));
