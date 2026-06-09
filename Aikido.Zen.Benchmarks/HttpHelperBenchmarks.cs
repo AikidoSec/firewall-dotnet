@@ -243,7 +243,7 @@ namespace Aikido.Zen.Benchmarks
         {
             if (PayloadSize >= 1000) return 100;
             if (PayloadSize >= 100) return 1_000;
-            if (PayloadSize >= 10) return 8_500;
+            if (PayloadSize >= 10) return 15_000;
             return 18_000;
         }
 

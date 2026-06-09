@@ -23,6 +23,7 @@ namespace Aikido.Zen.Benchmarks
     {
         private const int FastOperationsPerInvocation = 20_000_000;
         private const int ContextOperationsPerInvocation = 500_000;
+        private const int AddUserOperationsPerInvocation = 1_500_000;
         private const int ConfigOperationsPerInvocation = 500;
 
         private AgentContext _agentContext;
@@ -124,7 +125,7 @@ namespace Aikido.Zen.Benchmarks
         [Benchmark]
         public void AddUsersConcurrent()
         {
-            RunParallel(ContextOperationsPerInvocation, i =>
+            RunParallel(AddUserOperationsPerInvocation, i =>
             {
                 var user = _testUsers[i % TestItemCount];
                 _agentContext.AddUser(user, _testIpAddresses[i % TestItemCount]);
