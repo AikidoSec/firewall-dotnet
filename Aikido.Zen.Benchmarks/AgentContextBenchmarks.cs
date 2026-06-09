@@ -24,6 +24,7 @@ namespace Aikido.Zen.Benchmarks
         private const int FastOperationsPerInvocation = 20_000_000;
         private const int ContextOperationsPerInvocation = 500_000;
         private const int AddUserOperationsPerInvocation = 1_500_000;
+        private const int AddHostnameOperationsPerInvocation = 750_000;
         private const int ConfigOperationsPerInvocation = 500;
 
         private AgentContext _agentContext;
@@ -145,7 +146,7 @@ namespace Aikido.Zen.Benchmarks
         [Benchmark]
         public void AddHostnamesConcurrent()
         {
-            RunParallel(ContextOperationsPerInvocation, i =>
+            RunParallel(AddHostnameOperationsPerInvocation, i =>
             {
                 var hostname = _testHostnames[i % TestItemCount];
                 _agentContext.AddHostname(hostname);

@@ -135,7 +135,7 @@ namespace Aikido.Zen.Benchmarks
             _jsonRepetitions = RepetitionsForJson();
             _xmlRepetitions = RepetitionsForXml();
             _formRepetitions = RepetitionsForForm();
-            _multipartRepetitions = 5_000;
+            _multipartRepetitions = 10_000;
         }
 
         [Benchmark]
@@ -233,26 +233,26 @@ namespace Aikido.Zen.Benchmarks
 
         private int RepetitionsForJson()
         {
-            if (PayloadSize >= 1000) return 450;
-            if (PayloadSize >= 100) return 5_000;
-            if (PayloadSize >= 10) return 25_000;
-            return 60_000;
+            if (PayloadSize >= 1000) return 900;
+            if (PayloadSize >= 100) return 10_000;
+            if (PayloadSize >= 10) return 50_000;
+            return 120_000;
         }
 
         private int RepetitionsForXml()
         {
-            if (PayloadSize >= 1000) return 100;
-            if (PayloadSize >= 100) return 1_000;
-            if (PayloadSize >= 10) return 15_000;
-            return 18_000;
+            if (PayloadSize >= 1000) return 200;
+            if (PayloadSize >= 100) return 2_000;
+            if (PayloadSize >= 10) return 30_000;
+            return 36_000;
         }
 
         private int RepetitionsForForm()
         {
-            if (PayloadSize >= 1000) return 500;
-            if (PayloadSize >= 100) return 5_000;
-            if (PayloadSize >= 10) return 24_000;
-            return 45_000;
+            if (PayloadSize >= 1000) return 1_000;
+            if (PayloadSize >= 100) return 10_000;
+            if (PayloadSize >= 10) return 48_000;
+            return 90_000;
         }
     }
 }
