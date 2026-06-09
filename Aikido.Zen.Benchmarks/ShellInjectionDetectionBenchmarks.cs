@@ -12,53 +12,53 @@ namespace Aikido.Zen.Benchmarks
     [HideColumns(Column.StdErr, Column.StdDev, Column.Error, Column.Min, Column.Max, Column.RatioSD)]
     public class ShellInjectionDetectionBenchmarks
     {
-        private string _dangerousCharacterCommand;
-        private string _dangerousCharacterUserInput;
-        private string _dangerousCommand;
-        private string _dangerousCommandUserInput;
+        private string _command;
+        private string _userInput;
         private string _longCommand;
+        private string _longUserInput;
+        private string _longUserInputCommand;
         private string _safeCommand;
-        private string _safeUserInput;
 
         [GlobalSetup]
         public void Setup()
         {
-            _dangerousCharacterUserInput = "; rm -rf /; #";
-            _dangerousCharacterCommand = "ls -la /home/user/" + _dangerousCharacterUserInput;
-            _dangerousCommandUserInput = "rm";
-            _dangerousCommand = "ls -la /home/user && rm -rf /";
-            _safeUserInput = "documents";
+            _userInput = "; rm -rf /; #";
+            _command = "ls -la /home/user/" + _userInput;
             _safeCommand = "ls -la /home/user/documents";
-            _longCommand = _dangerousCommand;
+            _longCommand = _command;
+            _longUserInput = _userInput;
 
             for (int i = 0; i < 10; i++)
             {
-                _longCommand = "echo benchmark" + i + " && " + _longCommand;
+                _longCommand += " && " + _command;
+                _longUserInput += " && " + _userInput;
             }
+
+            _longUserInputCommand = "ls -la /home/user/" + _longUserInput;
         }
 
         [Benchmark]
-        public bool DetectShellInjectionWithDangerousCharacters()
+        public bool DetectShellInjection()
         {
-            return ShellInjectionDetector.IsShellInjection(_dangerousCharacterCommand, _dangerousCharacterUserInput);
-        }
-
-        [Benchmark]
-        public bool DetectShellInjectionWithDangerousCommand()
-        {
-            return ShellInjectionDetector.IsShellInjection(_dangerousCommand, _dangerousCommandUserInput);
+            return ShellInjectionDetector.IsShellInjection(_command, _userInput);
         }
 
         [Benchmark]
         public bool DetectShellInjectionWithLongCommand()
         {
-            return ShellInjectionDetector.IsShellInjection(_longCommand, _dangerousCommandUserInput);
+            return ShellInjectionDetector.IsShellInjection(_longCommand, _userInput);
+        }
+
+        [Benchmark]
+        public bool DetectShellInjectionWithLongUserInput()
+        {
+            return ShellInjectionDetector.IsShellInjection(_longUserInputCommand, _longUserInput);
         }
 
         [Benchmark]
         public bool DetectShellInjectionWithSafeInput()
         {
-            return ShellInjectionDetector.IsShellInjection(_safeCommand, _safeUserInput);
+            return ShellInjectionDetector.IsShellInjection(_safeCommand, "documents");
         }
     }
 }
