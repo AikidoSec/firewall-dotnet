@@ -8,32 +8,28 @@ using Aikido.Zen.Core;
 
 namespace Aikido.Zen.Benchmarks
 {
-    [SimpleJob(RuntimeMoniker.Net10_0, baseline: true, warmupCount: 3, iterationCount: 15, invocationCount: 1)]
+    [SimpleJob(RuntimeMoniker.Net10_0, baseline: true)]
     [MinIterationTime(100)]
     [Outliers(Perfolizer.Mathematics.OutlierDetection.OutlierMode.RemoveAll)]
     [HideColumns(Column.StdErr, Column.StdDev, Column.Error, Column.Min, Column.Max, Column.RatioSD)]
     public class BlockListBenchmarks
     {
-        private const int ChecksPerInvocation = 350_000;
-
         private BlockList _blockList;
         private List<string> _ipRanges;
-        private List<string> _checkIps;
-        private List<Context> _checkContexts;
+        private string _blockedIp;
+        private Context _blockedContext;
 
         [Params(10_000)] // Number of IP ranges to block
         public int BlockedIpRangeCount { get; set; }
 
-        [Params(100, 1000)] // Number of IPs to check
-        public int IpsToCheck { get; set; }
+        [Params("IPv4", "IPv6")]
+        public string AddressFamily { get; set; }
 
         [GlobalSetup]
         public void Setup()
         {
             _blockList = new BlockList();
             _ipRanges = new List<string>(BlockedIpRangeCount);
-            _checkIps = new List<string>();
-            _checkContexts = new List<Context>();
 
             // Initialize test data
             for (int i = 0; i < BlockedIpRangeCount; i++)
@@ -44,61 +40,31 @@ namespace Aikido.Zen.Benchmarks
                 _ipRanges.Add($"2001:{i:X4}:{i:X4}:{i:X4}:{i:X4}:{i:X4}:{i:X4}:{i:X4}/128");
             }
 
-            for (int i = 0; i < BlockedIpRangeCount; i++)
-            {
-                if (i < BlockedIpRangeCount / 2)
-                    _checkIps.Add($"10.{i / 256}.{i % 256}.0/24");
-                // ipv6
-                if (i < BlockedIpRangeCount / 2)
-                    _checkIps.Add($"2001:{i:X4}:{i:X4}:{i:X4}:{i:X4}:{i:X4}:{i:X4}:{i:X4}");
-            }
-
-            foreach (var ip in _checkIps)
-            {
-                _checkContexts.Add(new Context
-                {
-                    Method = "GET",
-                    Route = "/path",
-                    RemoteAddress = ip,
-                    Url = "http://localhost:80/path"
-                });
-            }
-
             // Update blocked subnets
             _blockList.UpdateBlockedIps(new[] { ("benchmark", _ipRanges.AsEnumerable()) });
+
+            _blockedIp = AddressFamily == "IPv6"
+                ? "2001:0000:0000:0000:0000:0000:0000:0000"
+                : "10.0.0.1";
+            _blockedContext = new Context
+            {
+                Method = "GET",
+                Route = "/path",
+                RemoteAddress = _blockedIp,
+                Url = "http://localhost:80/path"
+            };
         }
 
         [Benchmark]
-        public void CheckBlockedIPs()
+        public bool CheckBlockedIP()
         {
-            var repetitions = RepetitionsForIpsToCheck();
-            for (int repetition = 0; repetition < repetitions; repetition++)
-            {
-                // Check if IPs are blocked
-                for (int i = 0; i < IpsToCheck; i++)
-                {
-                    _blockList.IsIPBlocked(_checkIps[i]);
-                }
-            }
+            return _blockList.IsIPBlocked(_blockedIp);
         }
 
         [Benchmark]
-        public void CheckIsBlocked()
+        public bool CheckIsBlocked()
         {
-            var repetitions = RepetitionsForIpsToCheck();
-            for (int repetition = 0; repetition < repetitions; repetition++)
-            {
-                // Check if access is blocked based on IP and path
-                for (int i = 0; i < IpsToCheck; i++)
-                {
-                    _blockList.IsBlocked(_checkContexts[i], out var reason);
-                }
-            }
-        }
-
-        private int RepetitionsForIpsToCheck()
-        {
-            return (ChecksPerInvocation + IpsToCheck - 1) / IpsToCheck;
+            return _blockList.IsBlocked(_blockedContext, out var reason);
         }
     }
 }

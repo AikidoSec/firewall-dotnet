@@ -37,7 +37,6 @@ jobs:
             DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
             DOTNET_CLI_TELEMETRY_OPTOUT: true
             BENCHMARK_FILTER: "*${{ matrix.benchmark }}*"
-            PATCH_BENCHMARK_URL: http://localhost:5080/health
             REGRESSION_THRESHOLD_PERCENT: 20
 
         steps:
@@ -51,21 +50,6 @@ jobs:
               uses: actions/setup-dotnet@v5.1.0
               with:
                   dotnet-version: "10.0.x"
-
-            - name: Run mock server
-              if: matrix.benchmark == 'PatchBenchmarks'
-              run: |
-                  dotnet run --project e2e/Aikido.Zen.Server.Mock/Aikido.Zen.Server.Mock.csproj --urls "http://localhost:5080" > mock-server.log 2>&1 &
-
-                  for attempt in {1..30}; do
-                    if curl --silent --fail "$PATCH_BENCHMARK_URL" > /dev/null; then
-                      exit 0
-                    fi
-                    sleep 1
-                  done
-
-                  cat mock-server.log
-                  exit 1
 
             - name: Checkout main branch for baseline
               uses: actions/checkout@v4
@@ -127,6 +111,5 @@ jobs:
                   if-no-files-found: ignore
                   path: |
                       benchmark-regression.md
-                      mock-server.log
                       baseline-results/results/**
                       BenchmarkDotNet.Artifacts/results/**

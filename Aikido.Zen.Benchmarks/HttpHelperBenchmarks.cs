@@ -11,7 +11,7 @@ using BenchmarkDotNet.Columns;
 
 namespace Aikido.Zen.Benchmarks
 {
-    [SimpleJob(RuntimeMoniker.Net10_0, baseline: true, warmupCount: 3, iterationCount: 15, invocationCount: 1)]
+    [SimpleJob(RuntimeMoniker.Net10_0, baseline: true)]
     [MinIterationTime(100)]
     [Outliers(Perfolizer.Mathematics.OutlierDetection.OutlierMode.RemoveAll)]
     [HideColumns(Column.StdErr, Column.StdDev, Column.Error, Column.Min, Column.Max, Column.RatioSD)]
@@ -25,10 +25,6 @@ namespace Aikido.Zen.Benchmarks
         private Stream _xmlBody;
         private Stream _formBody;
         private Stream _multipartFormBody;
-        private int _jsonRepetitions;
-        private int _xmlRepetitions;
-        private int _formRepetitions;
-        private int _multipartRepetitions;
 
         private string _boundary;
 
@@ -132,94 +128,66 @@ namespace Aikido.Zen.Benchmarks
             _xmlBody = new MemoryStream(Encoding.UTF8.GetBytes(xmlContent));
             _formBody = new MemoryStream(Encoding.UTF8.GetBytes(formContent));
             _multipartFormBody = new MemoryStream(Encoding.UTF8.GetBytes(multipartContent));
-            _jsonRepetitions = RepetitionsForJson();
-            _xmlRepetitions = RepetitionsForXml();
-            _formRepetitions = RepetitionsForForm();
-            _multipartRepetitions = 10_000;
         }
 
         [Benchmark]
         public async Task<int> ProcessJsonRequest()
         {
-            var fields = 0;
-            for (int i = 0; i < _jsonRepetitions; i++)
-            {
-                var result = await HttpHelper.ReadAndFlattenHttpDataAsync(
-                    _routeParams,
-                    _queryParams,
-                    _headers,
-                    _cookies,
-                    _jsonBody,
-                    JsonContentType
-                );
-                fields += result.FlattenedData.Count;
-                _jsonBody.Position = 0;
-            }
-
-            return fields;
+            var result = await HttpHelper.ReadAndFlattenHttpDataAsync(
+                _routeParams,
+                _queryParams,
+                _headers,
+                _cookies,
+                _jsonBody,
+                JsonContentType
+            );
+            _jsonBody.Position = 0;
+            return result.FlattenedData.Count;
         }
 
         [Benchmark]
         public async Task<int> ProcessXmlRequest()
         {
-            var fields = 0;
-            for (int i = 0; i < _xmlRepetitions; i++)
-            {
-                var result = await HttpHelper.ReadAndFlattenHttpDataAsync(
-                    _routeParams,
-                    _queryParams,
-                    _headers,
-                    _cookies,
-                    _xmlBody,
-                    XmlContentType
-                );
-                fields += result.FlattenedData.Count;
-                _xmlBody.Position = 0;
-            }
-
-            return fields;
+            var result = await HttpHelper.ReadAndFlattenHttpDataAsync(
+                _routeParams,
+                _queryParams,
+                _headers,
+                _cookies,
+                _xmlBody,
+                XmlContentType
+            );
+            _xmlBody.Position = 0;
+            return result.FlattenedData.Count;
         }
 
         [Benchmark]
         public async Task<int> ProcessFormRequest()
         {
-            var fields = 0;
-            for (int i = 0; i < _formRepetitions; i++)
-            {
-                var result = await HttpHelper.ReadAndFlattenHttpDataAsync(
-                    _routeParams,
-                    _queryParams,
-                    _headers,
-                    _cookies,
-                    _formBody,
-                    FormContentType
-                );
-                fields += result.FlattenedData.Count;
-                _formBody.Position = 0;
-            }
-
-            return fields;
+            var result = await HttpHelper.ReadAndFlattenHttpDataAsync(
+                _routeParams,
+                _queryParams,
+                _headers,
+                _cookies,
+                _formBody,
+                FormContentType
+            );
+            _formBody.Position = 0;
+            return result.FlattenedData.Count;
         }
 
         [Benchmark]
         public async Task<int> ProcessMultipartFormDataRequest()
         {
-            var fields = 0;
-            for (int i = 0; i < _multipartRepetitions; i++)
-            {
-                var result = await HttpHelper.ReadAndFlattenHttpDataAsync(
-                    _routeParams,
-                    _queryParams,
-                    _headers,
-                    _cookies,
-                    _multipartFormBody,
-                    MultipartFormContentType
-                );
-                fields += result.FlattenedData.Count;
-                _multipartFormBody.Position = 0;
-            }
-
-            return fields;
+            var result = await HttpHelper.ReadAndFlattenHttpDataAsync(
+                _routeParams,
+                _queryParams,
+                _headers,
+                _cookies,
+                _multipartFormBody,
+                MultipartFormContentType
+            );
+            _multipartFormBody.Position = 0;
+            return result.FlattenedData.Count;
         }
 
         [GlobalCleanup]
@@ -231,28 +199,5 @@ namespace Aikido.Zen.Benchmarks
             _multipartFormBody?.Dispose();
         }
 
-        private int RepetitionsForJson()
-        {
-            if (PayloadSize >= 1000) return 900;
-            if (PayloadSize >= 100) return 10_000;
-            if (PayloadSize >= 10) return 50_000;
-            return 120_000;
-        }
-
-        private int RepetitionsForXml()
-        {
-            if (PayloadSize >= 1000) return 200;
-            if (PayloadSize >= 100) return 2_000;
-            if (PayloadSize >= 10) return 30_000;
-            return 36_000;
-        }
-
-        private int RepetitionsForForm()
-        {
-            if (PayloadSize >= 1000) return 1_000;
-            if (PayloadSize >= 100) return 10_000;
-            if (PayloadSize >= 10) return 48_000;
-            return 90_000;
-        }
     }
 }

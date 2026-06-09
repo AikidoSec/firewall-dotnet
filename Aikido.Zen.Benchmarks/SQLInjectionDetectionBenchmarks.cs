@@ -6,17 +6,12 @@ using Aikido.Zen.Core.Models;
 
 namespace Aikido.Zen.Benchmarks
 {
-    [SimpleJob(RuntimeMoniker.Net10_0, baseline: true, warmupCount: 3, iterationCount: 15, invocationCount: 1)]
+    [SimpleJob(RuntimeMoniker.Net10_0, baseline: true)]
     [MinIterationTime(100)]
     [Outliers(Perfolizer.Mathematics.OutlierDetection.OutlierMode.RemoveAll)]
     [HideColumns(Column.StdErr, Column.StdDev, Column.Error, Column.Min, Column.Max, Column.RatioSD)]
     public class SQLInjectionDetectionBenchmarks
     {
-        private const int DetectOperationsPerInvocation = 2_000_000;
-        private const int LongQueryOperationsPerInvocation = 500_000;
-        private const int LongUserInputOperationsPerInvocation = 1_000_000;
-        private const int SafeInputOperationsPerInvocation = 2_500_000;
-
         private string _query;
         private string _userInput;
         private string _longQuery;
@@ -41,51 +36,27 @@ namespace Aikido.Zen.Benchmarks
         }
 
         [Benchmark]
-        public int DetectSQLInjection()
+        public bool DetectSQLInjection()
         {
-            var detected = 0;
-            for (int i = 0; i < DetectOperationsPerInvocation; i++)
-            {
-                detected += SQLInjectionDetector.IsSQLInjection(_query, _userInput, Dialect) ? 1 : 0;
-            }
-
-            return detected;
+            return SQLInjectionDetector.IsSQLInjection(_query, _userInput, Dialect);
         }
 
         [Benchmark]
-        public int DetectSQLInjectionWithLongQuery()
+        public bool DetectSQLInjectionWithLongQuery()
         {
-            var detected = 0;
-            for (int i = 0; i < LongQueryOperationsPerInvocation; i++)
-            {
-                detected += SQLInjectionDetector.IsSQLInjection(_longQuery, _userInput, Dialect) ? 1 : 0;
-            }
-
-            return detected;
+            return SQLInjectionDetector.IsSQLInjection(_longQuery, _userInput, Dialect);
         }
 
         [Benchmark]
-        public int DetectSQLInjectionWithLongUserInput()
+        public bool DetectSQLInjectionWithLongUserInput()
         {
-            var detected = 0;
-            for (int i = 0; i < LongUserInputOperationsPerInvocation; i++)
-            {
-                detected += SQLInjectionDetector.IsSQLInjection(_query, _longUserInput, Dialect) ? 1 : 0;
-            }
-
-            return detected;
+            return SQLInjectionDetector.IsSQLInjection(_query, _longUserInput, Dialect);
         }
 
         [Benchmark]
-        public int DetectSQLInjectionWithSafeInput()
+        public bool DetectSQLInjectionWithSafeInput()
         {
-            var detected = 0;
-            for (int i = 0; i < SafeInputOperationsPerInvocation; i++)
-            {
-                detected += SQLInjectionDetector.IsSQLInjection(_query, "123", Dialect) ? 1 : 0;
-            }
-
-            return detected;
+            return SQLInjectionDetector.IsSQLInjection(_query, "123", Dialect);
         }
     }
 }
