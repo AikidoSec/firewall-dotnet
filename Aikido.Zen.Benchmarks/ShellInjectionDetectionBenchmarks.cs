@@ -14,7 +14,7 @@ namespace Aikido.Zen.Benchmarks
     {
         private const int DetectOperationsPerInvocation = 20_000_000;
         private const int LongCommandOperationsPerInvocation = 500_000;
-        private const int LongUserInputOperationsPerInvocation = 50_000_000;
+        private const int LongUserInputOperationsPerInvocation = 60_000_000;
         private const int SafeInputOperationsPerInvocation = 20_000_000;
 
         private string _command;

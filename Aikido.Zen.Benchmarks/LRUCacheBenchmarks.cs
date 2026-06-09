@@ -95,7 +95,7 @@ namespace Aikido.Zen.Benchmarks
         [Benchmark]
         public void Get_NonExistentItems()
         {
-            for (int repetition = 0; repetition < RepetitionsForCacheSize(); repetition++)
+            for (int repetition = 0; repetition < RepetitionsForMissingKeys(); repetition++)
             {
                 // Try to get non-existent items
                 for (int i = 0; i < CacheSize / 2; i++)

@@ -21,9 +21,9 @@ namespace Aikido.Zen.Benchmarks
     [HideColumns(Column.StdErr, Column.StdDev, Column.Error, Column.Min, Column.Max, Column.RatioSD)]
     public class AgentContextBenchmarks
     {
-        private const int FastOperationsPerInvocation = 20_000_000;
+        private const int FastOperationsPerInvocation = 25_000_000;
         private const int ContextOperationsPerInvocation = 500_000;
-        private const int AddUserOperationsPerInvocation = 1_500_000;
+        private const int AddUserOperationsPerInvocation = 2_000_000;
         private const int AddHostnameOperationsPerInvocation = 750_000;
         private const int ConfigOperationsPerInvocation = 500;
 
