@@ -1,6 +1,7 @@
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Jobs;
 using Aikido.Zen.Core.Helpers;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
@@ -30,6 +31,9 @@ namespace Aikido.Zen.Benchmarks
         private const string JsonContentType = "application/json";
         private const string XmlContentType = "application/xml";
         private const string FormContentType = "application/x-www-form-urlencoded";
+        private const int LargeMultipartPayloadSize = 1000;
+        private const int MultipartFileSizeBytes = 10 * 1024 * 1024;
+        private string MultipartFileResultKey => $"body.section.{PayloadSize}.file.dummy.txt";
         private string MultipartFormContentType => $"multipart/form-data; boundary={_boundary}";
 
         [Params(10, 1000)]
@@ -65,6 +69,14 @@ namespace Aikido.Zen.Benchmarks
                 sb.Append("--").Append(_boundary).Append("\r\n");
                 sb.Append("Content-Disposition: form-data; name=\"key").Append(i).Append("\"").Append("\r\n\r\n");
                 sb.Append("value").Append(i).Append("\r\n");
+            }
+
+            if (size >= LargeMultipartPayloadSize)
+            {
+                sb.Append("--").Append(_boundary).Append("\r\n");
+                sb.Append("Content-Disposition: form-data; name=\"file\"; filename=\"dummy.txt\"").Append("\r\n");
+                sb.Append("Content-Type: text/plain").Append("\r\n\r\n");
+                sb.Append('a', MultipartFileSizeBytes).Append("\r\n");
             }
 
             sb.Append("--").Append(_boundary).Append("--").Append("\r\n");
@@ -169,6 +181,13 @@ namespace Aikido.Zen.Benchmarks
                 MultipartFormContentType
             );
             _multipartFormBody.Position = 0;
+
+            if (PayloadSize >= LargeMultipartPayloadSize &&
+                !result.FlattenedData.TryGetValue(MultipartFileResultKey, out _))
+            {
+                throw new InvalidOperationException("The multipart file section was not parsed.");
+            }
+
             return result.FlattenedData.Count;
         }
 
