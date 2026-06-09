@@ -46,7 +46,7 @@ namespace Aikido.Zen.Benchmarks
             {
                 var baseline = LoadResults(BaselineResultsDirectory);
                 var current = LoadResults(CurrentResultsDirectory);
-                var threshold = double.Parse(Option(args, "--threshold-percent", "35"), CultureInfo.InvariantCulture);
+                var threshold = double.Parse(Option(args, "--threshold-percent", "20"), CultureInfo.InvariantCulture);
                 var matchingKeys = baseline.Keys.Intersect(current.Keys).OrderBy(key => key).ToArray();
 
                 if (matchingKeys.Length == 0)
@@ -78,11 +78,11 @@ namespace Aikido.Zen.Benchmarks
                             CurrentMax = currentResult.Max,
                             Delta = delta,
                             Change = change,
-                            Outcome = Outcome(failed, rangesOverlap, delta)
+                            Outcome = Outcome(failed, rangesOverlap)
                         };
                     })
                     .OrderBy(row => row.OutcomeRank)
-                    .ThenByDescending(row => row.Change)
+                    .ThenByDescending(row => Math.Abs(row.Change))
                     .ThenBy(row => row.Display)
                     .ToArray();
 
@@ -100,11 +100,11 @@ namespace Aikido.Zen.Benchmarks
 
                 if (rows.Any(row => row.Outcome == ComparisonOutcome.Fail))
                 {
-                    Console.Error.WriteLine($"One or more benchmarks regressed by more than {Percent(threshold)}% with no overlap in measured sample ranges.");
+                    Console.Error.WriteLine($"One or more benchmarks regressed by more than {Percent(threshold)}% without sample overlap.");
                     return 1;
                 }
 
-                Console.WriteLine($"Compared {rows.Length} benchmark(s); no regressions over {Percent(threshold)}% with no overlap in measured sample ranges.");
+                Console.WriteLine($"Compared {rows.Length} benchmark(s); no regressions over {Percent(threshold)}% without sample overlap.");
                 return 0;
             }
             catch (Exception exception)
@@ -184,7 +184,7 @@ namespace Aikido.Zen.Benchmarks
             return results;
         }
 
-        private static ComparisonOutcome Outcome(bool failed, bool rangesOverlap, double delta)
+        private static ComparisonOutcome Outcome(bool failed, bool rangesOverlap)
         {
             if (failed)
             {
@@ -196,7 +196,7 @@ namespace Aikido.Zen.Benchmarks
                 return ComparisonOutcome.OverlappingRange;
             }
 
-            return delta > 0 ? ComparisonOutcome.Watch : ComparisonOutcome.Improved;
+            return ComparisonOutcome.Pass;
         }
 
         private static string BenchmarkKey(JsonElement benchmark)
@@ -244,14 +244,14 @@ namespace Aikido.Zen.Benchmarks
         {
             var comparisonRows = rows.ToArray();
             var failedCount = comparisonRows.Count(row => row.Outcome == ComparisonOutcome.Fail);
-            var watchCount = comparisonRows.Count(row => row.Outcome == ComparisonOutcome.Watch);
-            var improvedCount = comparisonRows.Count(row => row.Outcome == ComparisonOutcome.Improved);
+            var passCount = comparisonRows.Count(row => row.Outcome == ComparisonOutcome.Pass);
             var overlappingRangeCount = comparisonRows.Count(row => row.Outcome == ComparisonOutcome.OverlappingRange);
             var builder = new StringBuilder();
             builder.AppendLine("# Benchmark Regression Check");
             builder.AppendLine();
-            builder.AppendLine($"Threshold: current median must not be more than {Percent(thresholdPercent)}% slower than baseline when measured sample ranges do not overlap.");
-            builder.AppendLine($"Compared {comparisonRows.Length} benchmark(s). Regressions: {failedCount}. Watch: {watchCount}. Improved: {improvedCount}. Overlapping ranges: {overlappingRangeCount}.");
+            builder.AppendLine($"Threshold: current median must not be more than {Percent(thresholdPercent)}% slower than baseline unless baseline/current samples overlap.");
+            builder.AppendLine("Sample overlap means the baseline min-to-max measurement range intersects the current min-to-max measurement range, so the median change is still within observed measurement variance.");
+            builder.AppendLine($"Compared {comparisonRows.Length} benchmark(s). Regressions: {failedCount}. Pass: {passCount}. Sample overlap: {overlappingRangeCount}.");
             builder.AppendLine();
             AppendComparisonTable(builder, comparisonRows);
 
@@ -277,12 +277,10 @@ namespace Aikido.Zen.Benchmarks
             {
                 case ComparisonOutcome.Fail:
                     return "fail";
-                case ComparisonOutcome.Watch:
-                    return "watch";
-                case ComparisonOutcome.Improved:
-                    return "improved";
                 case ComparisonOutcome.OverlappingRange:
-                    return "overlapping ranges";
+                    return "sample overlap";
+                case ComparisonOutcome.Pass:
+                    return "pass";
                 default:
                     return "pass";
             }
@@ -366,14 +364,12 @@ namespace Aikido.Zen.Benchmarks
                     {
                         case ComparisonOutcome.Fail:
                             return 0;
-                        case ComparisonOutcome.Watch:
+                        case ComparisonOutcome.Pass:
                             return 1;
-                        case ComparisonOutcome.Improved:
-                            return 2;
                         case ComparisonOutcome.OverlappingRange:
-                            return 3;
+                            return 2;
                         default:
-                            return 4;
+                            return 3;
                     }
                 }
             }
@@ -382,8 +378,7 @@ namespace Aikido.Zen.Benchmarks
         private enum ComparisonOutcome
         {
             Fail,
-            Watch,
-            Improved,
+            Pass,
             OverlappingRange
         }
     }

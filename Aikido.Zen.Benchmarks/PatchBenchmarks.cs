@@ -11,12 +11,14 @@ using BenchmarkDotNet.Columns;
 
 namespace Aikido.Zen.Benchmarks
 {
-    [SimpleJob(RuntimeMoniker.Net10_0, baseline: true, warmupCount: 2, iterationCount: 10)]
+    [SimpleJob(RuntimeMoniker.Net10_0, baseline: true, warmupCount: 3, iterationCount: 15, invocationCount: 1)]
     [MinIterationTime(100)]
+    [Outliers(Perfolizer.Mathematics.OutlierDetection.OutlierMode.RemoveAll)]
     [HideColumns(Column.StdErr, Column.StdDev, Column.Error, Column.Min, Column.Max, Column.RatioSD)]
     public class PatchBenchmarks
     {
         private const string DefaultRequestUri = "http://localhost:5080/health";
+        private const int RequestsPerInvocation = 700;
 
         private HttpClient _httpClient;
         private string _requestUri;
@@ -53,39 +55,67 @@ namespace Aikido.Zen.Benchmarks
         }
 
         [Benchmark()]
-        public async Task HttpClientUnpatched()
+        public async Task<int> HttpClientUnpatched()
         {
-            using (var request = new HttpRequestMessage(HttpMethod.Get, _requestUri))
-            using (await _httpClient.SendAsync(request))
+            var statusCodes = 0;
+            for (int i = 0; i < RequestsPerInvocation; i++)
             {
+                using (var request = new HttpRequestMessage(HttpMethod.Get, _requestUri))
+                using (var response = await _httpClient.SendAsync(request))
+                {
+                    statusCodes += (int)response.StatusCode;
+                }
             }
+
+            return statusCodes;
         }
 
         [Benchmark]
-        public async Task HttpClientPatched()
+        public async Task<int> HttpClientPatched()
         {
-            using (var request = new HttpRequestMessage(HttpMethod.Get, _requestUri))
-            using (await _httpClient.SendAsync(request))
+            var statusCodes = 0;
+            for (int i = 0; i < RequestsPerInvocation; i++)
             {
+                using (var request = new HttpRequestMessage(HttpMethod.Get, _requestUri))
+                using (var response = await _httpClient.SendAsync(request))
+                {
+                    statusCodes += (int)response.StatusCode;
+                }
             }
+
+            return statusCodes;
         }
 
         [Benchmark()]
-        public void HttpWebRequestUnpatched()
+        public int HttpWebRequestUnpatched()
         {
-            var webRequest = (HttpWebRequest)WebRequest.Create(_requestUri);
-            using (webRequest.GetResponse())
+            var statusCodes = 0;
+            for (int i = 0; i < RequestsPerInvocation; i++)
             {
+                var webRequest = (HttpWebRequest)WebRequest.Create(_requestUri);
+                using (var response = (HttpWebResponse)webRequest.GetResponse())
+                {
+                    statusCodes += (int)response.StatusCode;
+                }
             }
+
+            return statusCodes;
         }
 
         [Benchmark]
-        public void HttpWebRequestPatched()
+        public int HttpWebRequestPatched()
         {
-            var webRequest = (HttpWebRequest)WebRequest.Create(_requestUri);
-            using (webRequest.GetResponse())
+            var statusCodes = 0;
+            for (int i = 0; i < RequestsPerInvocation; i++)
             {
+                var webRequest = (HttpWebRequest)WebRequest.Create(_requestUri);
+                using (var response = (HttpWebResponse)webRequest.GetResponse())
+                {
+                    statusCodes += (int)response.StatusCode;
+                }
             }
+
+            return statusCodes;
         }
 
         [GlobalCleanup]

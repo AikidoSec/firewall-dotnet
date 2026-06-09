@@ -7,6 +7,7 @@ using BenchmarkDotNet.Columns;
 using System.Linq;
 using Aikido.Zen.Core;
 using System.Threading.Tasks;
+using System;
 
 namespace Aikido.Zen.Benchmarks
 {
@@ -14,16 +15,24 @@ namespace Aikido.Zen.Benchmarks
     /// Benchmarks for testing the performance of AgentContext operations, particularly focusing on thread-safety
     /// and concurrent access patterns.
     /// </summary>
-    [SimpleJob(RuntimeMoniker.Net10_0, baseline: true, warmupCount: 2, iterationCount: 10)]
+    [SimpleJob(RuntimeMoniker.Net10_0, baseline: true, warmupCount: 3, iterationCount: 15, invocationCount: 1)]
     [MinIterationTime(100)]
+    [Outliers(Perfolizer.Mathematics.OutlierDetection.OutlierMode.RemoveAll)]
     [HideColumns(Column.StdErr, Column.StdDev, Column.Error, Column.Min, Column.Max, Column.RatioSD)]
     public class AgentContextBenchmarks
     {
+        private const int FastOperationsPerInvocation = 20_000_000;
+        private const int ContextOperationsPerInvocation = 100_000;
+        private const int ConfigOperationsPerInvocation = 500;
+
         private AgentContext _agentContext;
         private List<Context> _testContexts;
         private List<User> _testUsers;
         private List<string> _testHostnames;
         private List<EndpointConfig> _testEndpoints;
+        private List<string> _testIpAddresses;
+        private Core.Api.ReportingAPIResponse _configResponse;
+        private Core.Api.FirewallListsAPIResponse _firewallListsResponse;
 
         [Params(1000)] // Number of test items to generate
         public int TestItemCount { get; set; }
@@ -39,21 +48,24 @@ namespace Aikido.Zen.Benchmarks
             _testUsers = new List<User>(TestItemCount);
             _testHostnames = new List<string>(TestItemCount);
             _testEndpoints = new List<EndpointConfig>(TestItemCount);
+            _testIpAddresses = new List<string>(TestItemCount);
 
             // Initialize test data
             for (int i = 0; i < TestItemCount; i++)
             {
+                var ipAddress = $"192.168.1.{i}";
                 _testContexts.Add(new Context
                 {
                     Method = "GET",
                     Route = $"/api/test/{i}",
-                    RemoteAddress = $"192.168.1.{i}",
+                    RemoteAddress = ipAddress,
                     Url = $"http://localhost:80/api/test/{i}",
                     UserAgent = $"TestUserAgent_{i}"
                 });
 
                 _testUsers.Add(new User($"user_{i}", $"Test User {i}"));
                 _testHostnames.Add($"test{i}.example.com:80");
+                _testIpAddresses.Add(ipAddress);
                 _testEndpoints.Add(new EndpointConfig
                 {
                     Method = "GET",
@@ -79,12 +91,31 @@ namespace Aikido.Zen.Benchmarks
                 }
                 }
             });
+
+            _configResponse = new Core.Api.ReportingAPIResponse
+            {
+                Block = true,
+                BlockedUserIds = _testUsers.Select(u => u.Id).ToList(),
+                Endpoints = _testEndpoints,
+                ConfigUpdatedAt = 1
+            };
+
+            var firewallBlockedIps = _testContexts.Select(c => c.RemoteAddress + "/32").ToList();
+            _firewallListsResponse = new Core.Api.FirewallListsAPIResponse
+            {
+                BlockedIPAddresses = new List<Core.Api.FirewallListsAPIResponse.IPList> {
+                    new Core.Api.FirewallListsAPIResponse.IPList {
+                        Ips = firewallBlockedIps
+                    }
+                },
+                BlockedUserAgents = "bots|bots|bots"
+            };
         }
 
         [Benchmark]
         public void AddRequestsConcurrent()
         {
-            Parallel.For(0, ConcurrentOperations, i =>
+            RunParallel(FastOperationsPerInvocation, i =>
             {
                 _agentContext.AddRequest();
             });
@@ -93,17 +124,17 @@ namespace Aikido.Zen.Benchmarks
         [Benchmark]
         public void AddUsersConcurrent()
         {
-            Parallel.For(0, ConcurrentOperations, i =>
+            RunParallel(ContextOperationsPerInvocation, i =>
             {
                 var user = _testUsers[i % TestItemCount];
-                _agentContext.AddUser(user, $"192.168.1.{i}");
+                _agentContext.AddUser(user, _testIpAddresses[i % TestItemCount]);
             });
         }
 
         [Benchmark]
         public void AddRoutesConcurrent()
         {
-            Parallel.For(0, ConcurrentOperations, i =>
+            RunParallel(ContextOperationsPerInvocation, i =>
             {
                 var context = _testContexts[i % TestItemCount];
                 _agentContext.AddRoute(context);
@@ -113,7 +144,7 @@ namespace Aikido.Zen.Benchmarks
         [Benchmark]
         public void AddHostnamesConcurrent()
         {
-            Parallel.For(0, ConcurrentOperations, i =>
+            RunParallel(ContextOperationsPerInvocation, i =>
             {
                 var hostname = _testHostnames[i % TestItemCount];
                 _agentContext.AddHostname(hostname);
@@ -123,7 +154,7 @@ namespace Aikido.Zen.Benchmarks
         [Benchmark]
         public void IsBlockedCheckConcurrent()
         {
-            Parallel.For(0, ConcurrentOperations, i =>
+            RunParallel(ContextOperationsPerInvocation, i =>
             {
                 var context = _testContexts[i % TestItemCount];
                 _agentContext.IsBlocked(context, out var reason);
@@ -133,38 +164,35 @@ namespace Aikido.Zen.Benchmarks
         [Benchmark]
         public void UpdateConfigConcurrent()
         {
-            var response = new Core.Api.ReportingAPIResponse
+            RunParallel(ConfigOperationsPerInvocation, i =>
             {
-                Block = true,
-                BlockedUserIds = _testUsers.Select(u => u.Id).ToList(),
-                Endpoints = _testEndpoints,
-                ConfigUpdatedAt = System.DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
-            };
-
-            Parallel.For(0, ConcurrentOperations, i =>
-            {
-                _agentContext.UpdateConfig(response);
+                _agentContext.UpdateConfig(_configResponse);
             });
         }
 
         [Benchmark]
         public void UpdateFirewallListsConcurrent()
         {
-            var blockedIps = _testContexts.Select(c => c.RemoteAddress + "/32").ToList();
-            var response = new Core.Api.FirewallListsAPIResponse
+            RunParallel(ConfigOperationsPerInvocation, i =>
             {
-                BlockedIPAddresses = new List<Core.Api.FirewallListsAPIResponse.IPList> {
-                    new Core.Api.FirewallListsAPIResponse.IPList {
-                        Ips = blockedIps
-                    }
-                },
-                BlockedUserAgents = "bots|bots|bots"
-            };
-
-            Parallel.For(0, ConcurrentOperations, i =>
-            {
-                _agentContext.UpdateFirewallLists(response);
+                _agentContext.UpdateFirewallLists(_firewallListsResponse);
             });
+        }
+
+        private void RunParallel(int operationCount, Action<int> action)
+        {
+            var workerCount = Math.Min(ConcurrentOperations, operationCount);
+            Parallel.For(
+                0,
+                workerCount,
+                new ParallelOptions { MaxDegreeOfParallelism = workerCount },
+                worker =>
+                {
+                    for (var i = worker; i < operationCount; i += workerCount)
+                    {
+                        action(i);
+                    }
+                });
         }
     }
 }

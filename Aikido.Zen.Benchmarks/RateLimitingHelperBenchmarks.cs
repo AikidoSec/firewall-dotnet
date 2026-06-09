@@ -5,12 +5,13 @@ using BenchmarkDotNet.Columns;
 
 namespace Aikido.Zen.Benchmarks
 {
-    [SimpleJob(RuntimeMoniker.Net10_0, baseline: true, warmupCount: 2, iterationCount: 10, invocationCount: 1)]
+    [SimpleJob(RuntimeMoniker.Net10_0, baseline: true, warmupCount: 3, iterationCount: 15, invocationCount: 1)]
     [MinIterationTime(100)]
+    [Outliers(Perfolizer.Mathematics.OutlierDetection.OutlierMode.RemoveAll)]
     [HideColumns(Column.StdErr, Column.StdDev, Column.Error, Column.Min, Column.Max, Column.RatioSD)]
     public class RateLimitingHelperBenchmarks
     {
-        private const int TargetChecksPerIteration = 600_000;
+        private const int TargetChecksPerIteration = 1_000_000;
 
         private string[] _keys;
         private string[] _newKeys;

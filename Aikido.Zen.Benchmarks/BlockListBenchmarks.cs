@@ -8,14 +8,18 @@ using Aikido.Zen.Core;
 
 namespace Aikido.Zen.Benchmarks
 {
-    [SimpleJob(RuntimeMoniker.Net10_0, baseline: true, warmupCount: 2, iterationCount: 10)]
+    [SimpleJob(RuntimeMoniker.Net10_0, baseline: true, warmupCount: 3, iterationCount: 15, invocationCount: 1)]
     [MinIterationTime(100)]
+    [Outliers(Perfolizer.Mathematics.OutlierDetection.OutlierMode.RemoveAll)]
     [HideColumns(Column.StdErr, Column.StdDev, Column.Error, Column.Min, Column.Max, Column.RatioSD)]
     public class BlockListBenchmarks
     {
+        private const int ChecksPerInvocation = 100_000;
+
         private BlockList _blockList;
         private List<string> _ipRanges;
         private List<string> _checkIps;
+        private List<Context> _checkContexts;
 
         [Params(100000)] // Number of IP ranges to block
         public int BlockedIpRangeCount { get; set; }
@@ -29,6 +33,7 @@ namespace Aikido.Zen.Benchmarks
             _blockList = new BlockList();
             _ipRanges = new List<string>(BlockedIpRangeCount);
             _checkIps = new List<string>();
+            _checkContexts = new List<Context>();
 
             // Initialize test data
             for (int i = 0; i < BlockedIpRangeCount; i++)
@@ -48,6 +53,17 @@ namespace Aikido.Zen.Benchmarks
                     _checkIps.Add($"2001:{i:X4}:{i:X4}:{i:X4}:{i:X4}:{i:X4}:{i:X4}:{i:X4}");
             }
 
+            foreach (var ip in _checkIps)
+            {
+                _checkContexts.Add(new Context
+                {
+                    Method = "GET",
+                    Route = "/path",
+                    RemoteAddress = ip,
+                    Url = "http://localhost:80/path"
+                });
+            }
+
             // Update blocked subnets
             _blockList.UpdateBlockedIps(new[] { ("benchmark", _ipRanges.AsEnumerable()) });
         }
@@ -55,28 +71,34 @@ namespace Aikido.Zen.Benchmarks
         [Benchmark]
         public void CheckBlockedIPs()
         {
-            // Check if IPs are blocked
-            foreach (var ip in _checkIps.Take(IpsToCheck))
+            var repetitions = RepetitionsForIpsToCheck();
+            for (int repetition = 0; repetition < repetitions; repetition++)
             {
-                _blockList.IsIPBlocked(ip);
+                // Check if IPs are blocked
+                for (int i = 0; i < IpsToCheck; i++)
+                {
+                    _blockList.IsIPBlocked(_checkIps[i]);
+                }
             }
         }
 
         [Benchmark]
         public void CheckIsBlocked()
         {
-            // Check if access is blocked based on IP and path
-            foreach (var ip in _checkIps.Take(IpsToCheck))
+            var repetitions = RepetitionsForIpsToCheck();
+            for (int repetition = 0; repetition < repetitions; repetition++)
             {
-                var context = new Context
+                // Check if access is blocked based on IP and path
+                for (int i = 0; i < IpsToCheck; i++)
                 {
-                    Method = "GET",
-                    Route = "/path",
-                    RemoteAddress = ip,
-                    Url = "http://localhost:80/path"
-                };
-                _blockList.IsBlocked(context, out var reason);
+                    _blockList.IsBlocked(_checkContexts[i], out var reason);
+                }
             }
+        }
+
+        private int RepetitionsForIpsToCheck()
+        {
+            return (ChecksPerInvocation + IpsToCheck - 1) / IpsToCheck;
         }
     }
 }
