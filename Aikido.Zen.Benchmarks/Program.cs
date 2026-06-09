@@ -62,11 +62,7 @@ namespace Aikido.Zen.Benchmarks
                         var currentResult = current[key];
                         var delta = currentResult.Median - baselineResult.Median;
                         var change = (delta / baselineResult.Median) * 100;
-                        var rangesOverlap = baselineResult.SampleCount > 1 &&
-                            currentResult.SampleCount > 1 &&
-                            baselineResult.Min <= currentResult.Max &&
-                            currentResult.Min <= baselineResult.Max;
-                        var failed = change > threshold && !rangesOverlap;
+                        var failed = change > threshold;
                         return new ComparisonRow
                         {
                             Display = currentResult.Display,
@@ -78,7 +74,7 @@ namespace Aikido.Zen.Benchmarks
                             CurrentMax = currentResult.Max,
                             Delta = delta,
                             Change = change,
-                            Outcome = Outcome(failed, rangesOverlap)
+                            Outcome = failed ? ComparisonOutcome.Fail : ComparisonOutcome.Pass
                         };
                     })
                     .OrderBy(row => row.OutcomeRank)
@@ -100,11 +96,11 @@ namespace Aikido.Zen.Benchmarks
 
                 if (rows.Any(row => row.Outcome == ComparisonOutcome.Fail))
                 {
-                    Console.Error.WriteLine($"One or more benchmarks regressed by more than {Percent(threshold)}% without sample overlap.");
+                    Console.Error.WriteLine($"One or more benchmarks regressed by more than {Percent(threshold)}%.");
                     return 1;
                 }
 
-                Console.WriteLine($"Compared {rows.Length} benchmark(s); no regressions over {Percent(threshold)}% without sample overlap.");
+                Console.WriteLine($"Compared {rows.Length} benchmark(s); no regressions over {Percent(threshold)}%.");
                 return 0;
             }
             catch (Exception exception)
@@ -165,16 +161,12 @@ namespace Aikido.Zen.Benchmarks
                         var max = statistics.TryGetProperty("Max", out var maxElement) && maxElement.ValueKind == JsonValueKind.Number
                             ? maxElement.GetDouble()
                             : mean;
-                        var sampleCount = statistics.TryGetProperty("N", out var sampleCountElement) && sampleCountElement.ValueKind == JsonValueKind.Number
-                            ? sampleCountElement.GetInt32()
-                            : 1;
                         var key = BenchmarkKey(benchmark);
                         results[key] = new BenchmarkResult
                         {
                             Median = median,
                             Min = min,
                             Max = max,
-                            SampleCount = sampleCount,
                             Display = benchmark.GetProperty("DisplayInfo").GetString()
                         };
                     }
@@ -182,21 +174,6 @@ namespace Aikido.Zen.Benchmarks
             }
 
             return results;
-        }
-
-        private static ComparisonOutcome Outcome(bool failed, bool rangesOverlap)
-        {
-            if (failed)
-            {
-                return ComparisonOutcome.Fail;
-            }
-
-            if (rangesOverlap)
-            {
-                return ComparisonOutcome.OverlappingRange;
-            }
-
-            return ComparisonOutcome.Pass;
         }
 
         private static string BenchmarkKey(JsonElement benchmark)
@@ -245,13 +222,11 @@ namespace Aikido.Zen.Benchmarks
             var comparisonRows = rows.ToArray();
             var failedCount = comparisonRows.Count(row => row.Outcome == ComparisonOutcome.Fail);
             var passCount = comparisonRows.Count(row => row.Outcome == ComparisonOutcome.Pass);
-            var overlappingRangeCount = comparisonRows.Count(row => row.Outcome == ComparisonOutcome.OverlappingRange);
             var builder = new StringBuilder();
             builder.AppendLine("# Benchmark Regression Check");
             builder.AppendLine();
-            builder.AppendLine($"Threshold: current median must not be more than {Percent(thresholdPercent)}% slower than baseline unless baseline/current samples overlap.");
-            builder.AppendLine("Sample overlap means the baseline min-to-max measurement range intersects the current min-to-max measurement range, so the median change is still within observed measurement variance.");
-            builder.AppendLine($"Compared {comparisonRows.Length} benchmark(s). Regressions: {failedCount}. Pass: {passCount}. Sample overlap: {overlappingRangeCount}.");
+            builder.AppendLine($"Threshold: current median must not be more than {Percent(thresholdPercent)}% slower than baseline.");
+            builder.AppendLine($"Compared {comparisonRows.Length} benchmark(s). Regressions: {failedCount}. Pass: {passCount}.");
             builder.AppendLine();
             AppendComparisonTable(builder, comparisonRows);
 
@@ -277,8 +252,6 @@ namespace Aikido.Zen.Benchmarks
             {
                 case ComparisonOutcome.Fail:
                     return "fail";
-                case ComparisonOutcome.OverlappingRange:
-                    return "sample overlap";
                 case ComparisonOutcome.Pass:
                     return "pass";
                 default:
@@ -340,7 +313,6 @@ namespace Aikido.Zen.Benchmarks
             public double Median { get; set; }
             public double Min { get; set; }
             public double Max { get; set; }
-            public int SampleCount { get; set; }
             public string Display { get; set; }
         }
 
@@ -366,10 +338,8 @@ namespace Aikido.Zen.Benchmarks
                             return 0;
                         case ComparisonOutcome.Pass:
                             return 1;
-                        case ComparisonOutcome.OverlappingRange:
-                            return 2;
                         default:
-                            return 3;
+                            return 2;
                     }
                 }
             }
@@ -378,8 +348,7 @@ namespace Aikido.Zen.Benchmarks
         private enum ComparisonOutcome
         {
             Fail,
-            Pass,
-            OverlappingRange
+            Pass
         }
     }
 }

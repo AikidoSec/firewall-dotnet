@@ -13,7 +13,7 @@ namespace Aikido.Zen.Benchmarks
     public class ShellInjectionDetectionBenchmarks
     {
         private const int DetectOperationsPerInvocation = 20_000_000;
-        private const int LongCommandOperationsPerInvocation = 5_000_000;
+        private const int LongCommandOperationsPerInvocation = 500_000;
         private const int LongUserInputOperationsPerInvocation = 50_000_000;
         private const int SafeInputOperationsPerInvocation = 20_000_000;
 
@@ -27,7 +27,7 @@ namespace Aikido.Zen.Benchmarks
         {
             _command = "ls -la /home/user/";
             _userInput = "; rm -rf /; #";
-            _longCommand = _command;
+            _longCommand = _userInput + " " + _command;
             _longUserInput = _userInput;
 
             for (int i = 0; i < 10; i++)
