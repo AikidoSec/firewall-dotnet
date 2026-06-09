@@ -11,7 +11,7 @@ namespace Aikido.Zen.Benchmarks
     [HideColumns(Column.StdErr, Column.StdDev, Column.Error, Column.Min, Column.Max, Column.RatioSD)]
     public class RateLimitingHelperBenchmarks
     {
-        private const int TargetChecksPerIteration = 1_000_000;
+        private const int TargetChecksPerIteration = 250_000;
 
         private string[] _keys;
         private string[] _newKeys;

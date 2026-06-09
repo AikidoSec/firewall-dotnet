@@ -14,7 +14,7 @@ namespace Aikido.Zen.Benchmarks
     [HideColumns(Column.StdErr, Column.StdDev, Column.Error, Column.Min, Column.Max, Column.RatioSD)]
     public class BlockListBenchmarks
     {
-        private const int ChecksPerInvocation = 100_000;
+        private const int ChecksPerInvocation = 5_000;
 
         private BlockList _blockList;
         private List<string> _ipRanges;
