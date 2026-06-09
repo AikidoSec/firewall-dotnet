@@ -18,7 +18,7 @@ namespace Aikido.Zen.Benchmarks
     public class PatchBenchmarks
     {
         private const string DefaultRequestUri = "http://localhost:5080/health";
-        private const int RequestsPerInvocation = 700;
+        private const int RequestsPerInvocation = 2_000;
 
         private HttpClient _httpClient;
         private string _requestUri;

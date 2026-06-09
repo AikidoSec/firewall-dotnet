@@ -56,7 +56,7 @@ namespace Aikido.Zen.Benchmarks
         [Benchmark]
         public void Set_NewItems()
         {
-            for (int repetition = 0; repetition < RepetitionsForCacheSize(); repetition++)
+            for (int repetition = 0; repetition < RepetitionsForMissingKeys(); repetition++)
             {
                 // Add items to the second half of the cache
                 for (int i = CacheSize / 2; i < CacheSize; i++)
@@ -130,6 +130,11 @@ namespace Aikido.Zen.Benchmarks
         private int RepetitionsForCacheSize()
         {
             return Math.Max(1, 5_000_000 / CacheSize);
+        }
+
+        private int RepetitionsForMissingKeys()
+        {
+            return Math.Max(1, 10_000_000 / CacheSize);
         }
     }
 }

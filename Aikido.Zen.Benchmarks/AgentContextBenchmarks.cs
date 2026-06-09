@@ -22,7 +22,7 @@ namespace Aikido.Zen.Benchmarks
     public class AgentContextBenchmarks
     {
         private const int FastOperationsPerInvocation = 20_000_000;
-        private const int ContextOperationsPerInvocation = 100_000;
+        private const int ContextOperationsPerInvocation = 500_000;
         private const int ConfigOperationsPerInvocation = 500;
 
         private AgentContext _agentContext;
