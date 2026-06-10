@@ -12,7 +12,6 @@ using BenchmarkDotNet.Columns;
 namespace Aikido.Zen.Benchmarks
 {
     [SimpleJob(RuntimeMoniker.Net10_0, baseline: true)]
-    [MinIterationTime(100)]
     [Outliers(Perfolizer.Mathematics.OutlierDetection.OutlierMode.RemoveAll)]
     [HideColumns(Column.StdErr, Column.StdDev, Column.Error, Column.Min, Column.Max, Column.RatioSD)]
     public class HttpHelperBenchmarks
