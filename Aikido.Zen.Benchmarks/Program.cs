@@ -60,6 +60,16 @@ namespace Aikido.Zen.Benchmarks
                     {
                         var baselineResult = baseline[key];
                         var currentResult = current[key];
+                        if (!(baselineResult.Median > 0) || double.IsInfinity(baselineResult.Median))
+                        {
+                            throw new InvalidOperationException($"Cannot compare {currentResult.Display}: baseline median must be positive and finite.");
+                        }
+
+                        if (!(currentResult.Median > 0) || double.IsInfinity(currentResult.Median))
+                        {
+                            throw new InvalidOperationException($"Cannot compare {currentResult.Display}: current median must be positive and finite.");
+                        }
+
                         var delta = currentResult.Median - baselineResult.Median;
                         var change = (delta / baselineResult.Median) * 100;
                         var failed = change > threshold;
