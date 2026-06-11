@@ -8,8 +8,8 @@ using Aikido.Zen.Core;
 
 namespace Aikido.Zen.Benchmarks
 {
-    [SimpleJob(RuntimeMoniker.Net48, baseline: false, warmupCount: 1, iterationCount: 2)]
-    [SimpleJob(RuntimeMoniker.Net80, baseline: true, warmupCount: 1, iterationCount: 2)]
+    [SimpleJob(RuntimeMoniker.Net10_0, baseline: true)]
+    [Outliers(Perfolizer.Mathematics.OutlierDetection.OutlierMode.RemoveAll)]
     [HideColumns(Column.StdErr, Column.StdDev, Column.Error, Column.Min, Column.Max, Column.RatioSD)]
     public class BlockListBenchmarks
     {
@@ -20,7 +20,7 @@ namespace Aikido.Zen.Benchmarks
         [Params(100000)] // Number of IP ranges to block
         public int BlockedIpRangeCount { get; set; }
 
-        [Params(1, 100, 1000)] // Number of IPs to check
+        [Params(1000)] // Number of IPs to check
         public int IpsToCheck { get; set; }
 
         [GlobalSetup]

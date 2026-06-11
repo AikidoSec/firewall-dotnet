@@ -1,170 +1,133 @@
 using BenchmarkDotNet.Attributes;
-using BenchmarkDotNet.Jobs;
-using Aikido.Zen.Core.Models;
-using Aikido.Zen.Core.Models.Ip;
-using System.Collections.Generic;
 using BenchmarkDotNet.Columns;
-using System.Linq;
+using BenchmarkDotNet.Jobs;
 using Aikido.Zen.Core;
-using System.Threading.Tasks;
+using Aikido.Zen.Core.Api;
+using Aikido.Zen.Core.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Aikido.Zen.Benchmarks
 {
-    /// <summary>
-    /// Benchmarks for testing the performance of AgentContext operations, particularly focusing on thread-safety
-    /// and concurrent access patterns.
-    /// </summary>
-    [SimpleJob(RuntimeMoniker.Net48, baseline: false, warmupCount: 1, iterationCount: 2)]
-    [SimpleJob(RuntimeMoniker.Net80, baseline: true, warmupCount: 1, iterationCount: 2)]
+    [SimpleJob(RuntimeMoniker.Net10_0, baseline: true)]
+    [Outliers(Perfolizer.Mathematics.OutlierDetection.OutlierMode.RemoveAll)]
     [HideColumns(Column.StdErr, Column.StdDev, Column.Error, Column.Min, Column.Max, Column.RatioSD)]
     public class AgentContextBenchmarks
     {
-        private AgentContext _agentContext;
-        private List<Context> _testContexts;
-        private List<User> _testUsers;
-        private List<string> _testHostnames;
-        private List<EndpointConfig> _testEndpoints;
+        private Context[] _contexts;
+        private User[] _users;
+        private string[] _hostnames;
+        private EndpointConfig[] _endpoints;
+        private ReportingAPIResponse _configResponse;
+        private FirewallListsAPIResponse _firewallListsResponse;
 
-        [Params(1000)] // Number of test items to generate
-        public int TestItemCount { get; set; }
-
-        [Params(1, 10, 100)] // Number of concurrent operations
-        public int ConcurrentOperations { get; set; }
+        [Params(1000)]
+        public int ItemCount { get; set; }
 
         [GlobalSetup]
         public void Setup()
         {
-            _agentContext = new AgentContext();
-            _testContexts = new List<Context>(TestItemCount);
-            _testUsers = new List<User>(TestItemCount);
-            _testHostnames = new List<string>(TestItemCount);
-            _testEndpoints = new List<EndpointConfig>(TestItemCount);
+            _contexts = new Context[ItemCount];
+            _users = new User[ItemCount];
+            _hostnames = new string[ItemCount];
+            _endpoints = new EndpointConfig[ItemCount];
 
-            // Initialize test data
-            for (int i = 0; i < TestItemCount; i++)
+            for (var i = 0; i < ItemCount; i++)
             {
-                _testContexts.Add(new Context
+                _contexts[i] = new Context
                 {
                     Method = "GET",
                     Route = $"/api/test/{i}",
-                    RemoteAddress = $"192.168.1.{i}",
+                    RemoteAddress = $"192.168.{i / 256}.{i % 256}",
                     Url = $"http://localhost:80/api/test/{i}",
                     UserAgent = $"TestUserAgent_{i}"
-                });
+                };
 
-                _testUsers.Add(new User($"user_{i}", $"Test User {i}"));
-                _testHostnames.Add($"test{i}.example.com:80");
-                _testEndpoints.Add(new EndpointConfig
+                _users[i] = new User($"user_{i}", $"Test User {i}");
+                _hostnames[i] = $"test{i}.example.com:80";
+                _endpoints[i] = new EndpointConfig
                 {
                     Method = "GET",
                     Route = $"/api/test/{i}",
-                    RateLimiting = new RateLimitingConfig { MaxRequests = 100 }
-                });
+                    RateLimiting = new RateLimitingConfig
+                    {
+                        Enabled = true,
+                        MaxRequests = 100,
+                        WindowSizeInMS = 60000
+                    }
+                };
             }
 
-            // Initialize some blocked users and IPs
-            var blockedUsers = Enumerable.Range(0, TestItemCount / 10)
-                .Select(i => $"user_{i}")
-                .ToList();
-            _agentContext.UpdateBlockedUsers(blockedUsers);
-
-            var blockedIps = Enumerable.Range(0, TestItemCount / 10)
-                .Select(i => $"192.168.1.{i}/32")
-                .ToList();
-            _agentContext.UpdateFirewallLists(new Core.Api.FirewallListsAPIResponse
-            {
-                BlockedIPAddresses = new List<Core.Api.FirewallListsAPIResponse.IPList> {
-                new Core.Api.FirewallListsAPIResponse.IPList {
-                    Ips = blockedIps
-                }
-                }
-            });
-        }
-
-        [Benchmark]
-        public void AddRequestsConcurrent()
-        {
-            Parallel.For(0, ConcurrentOperations, i =>
-            {
-                _agentContext.AddRequest();
-            });
-        }
-
-        [Benchmark]
-        public void AddUsersConcurrent()
-        {
-            Parallel.For(0, ConcurrentOperations, i =>
-            {
-                var user = _testUsers[i % TestItemCount];
-                _agentContext.AddUser(user, $"192.168.1.{i}");
-            });
-        }
-
-        [Benchmark]
-        public void AddRoutesConcurrent()
-        {
-            Parallel.For(0, ConcurrentOperations, i =>
-            {
-                var context = _testContexts[i % TestItemCount];
-                _agentContext.AddRoute(context);
-            });
-        }
-
-        [Benchmark]
-        public void AddHostnamesConcurrent()
-        {
-            Parallel.For(0, ConcurrentOperations, i =>
-            {
-                var hostname = _testHostnames[i % TestItemCount];
-                _agentContext.AddHostname(hostname);
-            });
-        }
-
-        [Benchmark]
-        public void IsBlockedCheckConcurrent()
-        {
-            Parallel.For(0, ConcurrentOperations, i =>
-            {
-                var context = _testContexts[i % TestItemCount];
-                _agentContext.IsBlocked(context, out var reason);
-            });
-        }
-
-        [Benchmark]
-        public void UpdateConfigConcurrent()
-        {
-            var response = new Core.Api.ReportingAPIResponse
+            _configResponse = new ReportingAPIResponse
             {
                 Block = true,
-                BlockedUserIds = _testUsers.Select(u => u.Id).ToList(),
-                Endpoints = _testEndpoints,
-                ConfigUpdatedAt = System.DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+                BlockedUserIds = _users.Take(ItemCount / 10).Select(user => user.Id).ToArray(),
+                Endpoints = _endpoints,
+                ConfigUpdatedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
             };
 
-            Parallel.For(0, ConcurrentOperations, i =>
+            _firewallListsResponse = new FirewallListsAPIResponse
             {
-                _agentContext.UpdateConfig(response);
-            });
+                BlockedIPAddresses = new[]
+                {
+                    new FirewallListsAPIResponse.IPList
+                    {
+                        Key = "benchmark-blocked-ips",
+                        Ips = _contexts.Take(ItemCount / 10).Select(context => context.RemoteAddress + "/32").ToArray()
+                    }
+                },
+                BlockedUserAgents = "TestBot|BadBot"
+            };
         }
 
         [Benchmark]
-        public void UpdateFirewallListsConcurrent()
+        public int TrackRequestMetadata()
         {
-            var blockedIps = _testContexts.Select(c => c.RemoteAddress + "/32").ToList();
-            var response = new Core.Api.FirewallListsAPIResponse
-            {
-                BlockedIPAddresses = new List<Core.Api.FirewallListsAPIResponse.IPList> {
-                    new Core.Api.FirewallListsAPIResponse.IPList {
-                        Ips = blockedIps
-                    }
-                },
-                BlockedUserAgents = "bots|bots|bots"
-            };
+            var agentContext = new AgentContext();
 
-            Parallel.For(0, ConcurrentOperations, i =>
+            for (var i = 0; i < ItemCount; i++)
             {
-                _agentContext.UpdateFirewallLists(response);
-            });
+                agentContext.AddRequest();
+                agentContext.AddHostname(_hostnames[i]);
+                agentContext.AddUser(_users[i], _contexts[i].RemoteAddress);
+                agentContext.AddRoute(_contexts[i]);
+            }
+
+            return agentContext.Requests +
+                agentContext.Hostnames.Count() +
+                agentContext.Users.Count() +
+                agentContext.Routes.Count();
+        }
+
+        [Benchmark]
+        public int ApplyConfiguration()
+        {
+            var agentContext = new AgentContext();
+
+            agentContext.UpdateConfig(_configResponse);
+            agentContext.UpdateFirewallLists(_firewallListsResponse);
+
+            return agentContext.Endpoints.Count();
+        }
+
+        [Benchmark]
+        public int CheckBlockedRequests()
+        {
+            var agentContext = new AgentContext();
+            agentContext.UpdateConfig(_configResponse);
+            agentContext.UpdateFirewallLists(_firewallListsResponse);
+
+            var blocked = 0;
+            for (var i = 0; i < ItemCount; i++)
+            {
+                if (agentContext.IsBlocked(_contexts[i], out _))
+                {
+                    blocked++;
+                }
+            }
+
+            return blocked;
         }
     }
 }

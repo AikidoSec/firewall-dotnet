@@ -11,8 +11,8 @@ using BenchmarkDotNet.Columns;
 
 namespace Aikido.Zen.Benchmarks
 {
-    [SimpleJob(RuntimeMoniker.Net48, baseline: false, warmupCount: 1, iterationCount: 2)]
-    [SimpleJob(RuntimeMoniker.Net80, baseline: true, warmupCount: 1, iterationCount: 2)]
+    [SimpleJob(RuntimeMoniker.Net10_0, baseline: true)]
+    [Outliers(Perfolizer.Mathematics.OutlierDetection.OutlierMode.RemoveAll)]
     [HideColumns(Column.StdErr, Column.StdDev, Column.Error, Column.Min, Column.Max, Column.RatioSD)]
     public class HttpHelperBenchmarks
     {
@@ -30,9 +30,12 @@ namespace Aikido.Zen.Benchmarks
         private const string JsonContentType = "application/json";
         private const string XmlContentType = "application/xml";
         private const string FormContentType = "application/x-www-form-urlencoded";
+        private const int LargeMultipartPayloadSize = 1000;
+        private const int MultipartFileSizeBytes = 10 * 1024 * 1024;
+        private string MultipartFileResultKey => $"body.section.{PayloadSize}.file.dummy.txt";
         private string MultipartFormContentType => $"multipart/form-data; boundary={_boundary}";
 
-        [Params(1, 10, 100, 1000)] // Test different sizes
+        [Params(10, 1000)]
         public int PayloadSize { get; set; }
 
         private string CreateJsonContent(int size)
@@ -56,43 +59,34 @@ namespace Aikido.Zen.Benchmarks
             return string.Join("&", items);
         }
 
-        private string CreateMultipartFormDataContentWithDummyFile(int size)
+        private string CreateMultipartFormDataContent(int size)
         {
             var sb = new StringBuilder();
 
-            // Add form fields
             for (int i = 1; i <= size; i++)
             {
-                sb.AppendLine($"--{_boundary}");
-                sb.AppendLine($"Content-Disposition: form-data; name=\"key{i}\"");
-                sb.AppendLine();
-                sb.AppendLine($"value{i}");
+                sb.Append("--").Append(_boundary).Append("\r\n");
+                sb.Append("Content-Disposition: form-data; name=\"key").Append(i).Append("\"").Append("\r\n\r\n");
+                sb.Append("value").Append(i).Append("\r\n");
             }
 
-            // Add dummy file
-            sb.AppendLine($"--{_boundary}");
-            sb.AppendLine($"Content-Disposition: form-data; name=\"file\"; filename=\"dummy.txt\"");
-            sb.AppendLine("Content-Type: text/plain");
-            sb.AppendLine();
-            sb.AppendLine(CreateLargeDummyFileContent(size));
+            if (size >= LargeMultipartPayloadSize)
+            {
+                sb.Append("--").Append(_boundary).Append("\r\n");
+                sb.Append("Content-Disposition: form-data; name=\"file\"; filename=\"dummy.txt\"").Append("\r\n");
+                sb.Append("Content-Type: text/plain").Append("\r\n\r\n");
+                sb.Append('a', MultipartFileSizeBytes).Append("\r\n");
+            }
 
-            // Add final boundary
-            sb.AppendLine($"--{_boundary}--");
+            sb.Append("--").Append(_boundary).Append("--").Append("\r\n");
 
             return sb.ToString();
-        }
-
-        private string CreateLargeDummyFileContent(int size)
-        {
-            // Create a dummy file with size / 10 MB
-            int mb = size * 1024 * 1024 / 10;
-            return new string('a', mb);
         }
 
         [GlobalSetup]
         public void Setup()
         {
-            _boundary = Guid.NewGuid().ToString();
+            _boundary = "benchmark-boundary";
 
             _queryParams = new Dictionary<string, string>
             {
@@ -121,7 +115,7 @@ namespace Aikido.Zen.Benchmarks
             var jsonContent = CreateJsonContent(PayloadSize);
             var xmlContent = CreateXmlContent(PayloadSize);
             var formContent = CreateFormContent(PayloadSize);
-            var multipartContent = CreateMultipartFormDataContentWithDummyFile(PayloadSize);
+            var multipartContent = CreateMultipartFormDataContent(PayloadSize);
 
             _jsonBody = new MemoryStream(Encoding.UTF8.GetBytes(jsonContent));
             _xmlBody = new MemoryStream(Encoding.UTF8.GetBytes(xmlContent));
@@ -130,7 +124,7 @@ namespace Aikido.Zen.Benchmarks
         }
 
         [Benchmark]
-        public async Task ProcessJsonRequest()
+        public async Task<int> ProcessJsonRequest()
         {
             var result = await HttpHelper.ReadAndFlattenHttpDataAsync(
                 _routeParams,
@@ -141,10 +135,11 @@ namespace Aikido.Zen.Benchmarks
                 JsonContentType
             );
             _jsonBody.Position = 0;
+            return result.FlattenedData.Count;
         }
 
         [Benchmark]
-        public async Task ProcessXmlRequest()
+        public async Task<int> ProcessXmlRequest()
         {
             var result = await HttpHelper.ReadAndFlattenHttpDataAsync(
                 _routeParams,
@@ -155,10 +150,11 @@ namespace Aikido.Zen.Benchmarks
                 XmlContentType
             );
             _xmlBody.Position = 0;
+            return result.FlattenedData.Count;
         }
 
         [Benchmark]
-        public async Task ProcessFormRequest()
+        public async Task<int> ProcessFormRequest()
         {
             var result = await HttpHelper.ReadAndFlattenHttpDataAsync(
                 _routeParams,
@@ -169,10 +165,11 @@ namespace Aikido.Zen.Benchmarks
                 FormContentType
             );
             _formBody.Position = 0;
+            return result.FlattenedData.Count;
         }
 
         [Benchmark]
-        public async Task ProcessMultipartFormDataRequest()
+        public async Task<int> ProcessMultipartFormDataRequest()
         {
             var result = await HttpHelper.ReadAndFlattenHttpDataAsync(
                 _routeParams,
@@ -183,6 +180,14 @@ namespace Aikido.Zen.Benchmarks
                 MultipartFormContentType
             );
             _multipartFormBody.Position = 0;
+
+            if (PayloadSize >= LargeMultipartPayloadSize &&
+                !result.FlattenedData.TryGetValue(MultipartFileResultKey, out _))
+            {
+                throw new InvalidOperationException("The multipart file section was not parsed.");
+            }
+
+            return result.FlattenedData.Count;
         }
 
         [GlobalCleanup]
@@ -193,5 +198,6 @@ namespace Aikido.Zen.Benchmarks
             _formBody?.Dispose();
             _multipartFormBody?.Dispose();
         }
+
     }
 }

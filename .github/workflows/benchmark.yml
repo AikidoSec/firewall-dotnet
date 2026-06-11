@@ -1,78 +1,107 @@
 name: Benchmarks
 
 on:
-    push: {}
-    workflow_call: {}
+    pull_request:
+        branches:
+            - main
 permissions:
     contents: read
 
 jobs:
     benchmark:
+        if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+        name: benchmark (${{ matrix.benchmark }})
         runs-on: ubuntu-latest
+        timeout-minutes: 60
+        strategy:
+            fail-fast: false
+            matrix:
+                benchmark:
+                    - AgentContextBenchmarks
+                    - BlockListBenchmarks
+                    - HttpHelperBenchmarks
+                    - LRUCacheBenchmarks
+                    - PatchBenchmarks
+                    - RateLimitingHelperBenchmarks
+                    - SQLInjectionDetectionBenchmarks
+                    - ShellInjectionDetectionBenchmarks
 
-        services:
-            mysql:
-                image: mysql:8.0
-                env:
-                    MYSQL_ROOT_PASSWORD: mypassword
-                    MYSQL_DATABASE: catsdb
-                ports:
-                    - 27015:3306
-            sqlserver:
-                image: mcr.microsoft.com/mssql/server:2022-latest
-                env:
-                    ACCEPT_EULA: Y
-                    SA_PASSWORD: Strong@Password123!
-                    MSSQL_PID: Express
-                ports:
-                    - 27014:1433
-
-            postgres:
-                image: postgres:14-alpine
-                env:
-                    POSTGRES_PASSWORD: password
-                    POSTGRES_USER: root
-                    POSTGRES_DB: main_db
-                ports:
-                    - 27016:5432
+        env:
+            DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+            DOTNET_CLI_TELEMETRY_OPTOUT: true
+            BENCHMARK_FILTER: "*${{ matrix.benchmark }}*"
+            REGRESSION_THRESHOLD_PERCENT: 20
 
         steps:
-            - name: Checkout code
-              uses: actions/checkout@v2
+            - name: Checkout current commit
+              uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+              with:
+                  ref: ${{ github.event.pull_request.head.sha }}
 
             - name: Set up .NET
-              uses: actions/setup-dotnet@v2
+              uses: actions/setup-dotnet@9a946fdbd5fb07b82b2f5a4466058b876ab72bb2 # v5.3.0
               with:
-                  dotnet-version: "10.0.x" # Adjust based on your target framework
+                  dotnet-version: "10.0.x"
 
-            - name: Install k6
+            - name: Checkout main branch for baseline
+              uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+              with:
+                  ref: ${{ github.event.pull_request.base.sha }}
+                  path: baseline
+
+            - name: Run baseline benchmarks
               run: |
-                  sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
-                  echo "deb https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
-                  sudo apt-get update
-                  sudo apt-get install k6
+                  rm -rf baseline/Aikido.Zen.Benchmarks
+                  cp -R Aikido.Zen.Benchmarks baseline/Aikido.Zen.Benchmarks
 
-            - name: Install wrk
+                  (
+                    cd baseline
+                    dotnet run \
+                      --project Aikido.Zen.Benchmarks/Aikido.Zen.Benchmarks.csproj \
+                      --configuration Release \
+                      --framework net10.0 \
+                      -- \
+                      --filter "$BENCHMARK_FILTER"
+                  )
+
+                  rm -rf baseline-results
+                  mkdir -p baseline-results
+                  cp -R baseline/BenchmarkDotNet.Artifacts/results baseline-results/results
+
+            - name: Run benchmark regression
               run: |
-                  sudo apt-get update
-                  sudo apt-get install -y wrk
+                  rm -rf baseline
+                  test -d baseline-results/results
 
-            - name: Build mock server
+                  dotnet run \
+                    --project Aikido.Zen.Benchmarks/Aikido.Zen.Benchmarks.csproj \
+                    --configuration Release \
+                    --framework net10.0 \
+                    -- \
+                    --filter "$BENCHMARK_FILTER"
+
+                  dotnet run \
+                    --project Aikido.Zen.Benchmarks/Aikido.Zen.Benchmarks.csproj \
+                    --configuration Release \
+                    --framework net10.0 \
+                    -- \
+                    --compare-results \
+                    --threshold-percent "$REGRESSION_THRESHOLD_PERCENT"
+
+            - name: Publish benchmark summary
+              if: always()
               run: |
-                  dotnet build e2e/Aikido.Zen.Server.Mock/Aikido.Zen.Server.Mock.csproj
+                  if [ -f benchmark-regression.md ]; then
+                    cat benchmark-regression.md >> "$GITHUB_STEP_SUMMARY"
+                  fi
 
-            - name: Run mock server
-              run: |
-                  dotnet run --project e2e/Aikido.Zen.Server.Mock/Aikido.Zen.Server.Mock.csproj --urls "http://localhost:5080" &
-
-            - name: Set execute permissions
-              run: chmod +x scripts/*.sh
-
-            - name: Run benchmarks
-              env:
-                  APP_URL: http://localhost:5081
-                  AIKIDO_TOKEN: 123
-                  AIKIDO_URL: http://localhost:5080
-                  AIKIDO_REALTIME_URL: http://localhost:5080
-              run: |
-                  ./scripts/run_benchmarks.sh
+            - name: Upload benchmark artifacts
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: benchmark-regression-${{ matrix.benchmark }}
+                  if-no-files-found: ignore
+                  path: |
+                      benchmark-regression.md
+                      baseline-results/results/**
+                      BenchmarkDotNet.Artifacts/results/**

@@ -1,105 +1,130 @@
 using BenchmarkDotNet.Attributes;
+using BenchmarkDotNet.Columns;
 using BenchmarkDotNet.Jobs;
 using Aikido.Zen.Core.Models;
-using System;
-using System.Collections.Generic;
-using BenchmarkDotNet.Columns;
 
 namespace Aikido.Zen.Benchmarks
 {
-    [SimpleJob(RuntimeMoniker.Net48, baseline: false, warmupCount: 1, iterationCount: 2)]
-    [SimpleJob(RuntimeMoniker.Net80, baseline: true, warmupCount: 1, iterationCount: 2)]
+    [SimpleJob(RuntimeMoniker.Net10_0, baseline: true)]
+    [Outliers(Perfolizer.Mathematics.OutlierDetection.OutlierMode.RemoveAll)]
     [HideColumns(Column.StdErr, Column.StdDev, Column.Error, Column.Min, Column.Max, Column.RatioSD)]
     public class LRUCacheBenchmarks
     {
+        private const int TTLInMs = 5000;
         private LRUCache<string, string> _cache;
-        private string[] _keys;
-        private string[] _values;
+        private int _nextInsertionKeyIndex;
+        private string[] _cachedKeys;
+        private string[] _initialValues;
+        private string[] _insertionKeys;
+        private string[] _missingLookupKeys;
+        private string[] _replacementValues;
 
-        [Params(100, 1000, 10000)] // Test different cache sizes
+        [Params(1000, 10000)]
         public int CacheSize { get; set; }
-
-        [Params(1000, 5000)] // Test different TTLs (0 = no TTL, 1000ms, 5000ms)
-        public int TTLInMs { get; set; }
 
         [GlobalSetup]
         public void Setup()
         {
             _cache = new LRUCache<string, string>(CacheSize, TTLInMs);
-            _keys = new string[CacheSize];
-            _values = new string[CacheSize];
+            _cachedKeys = new string[CacheSize];
+            _initialValues = new string[CacheSize];
+            _insertionKeys = new string[CacheSize * 2];
+            _missingLookupKeys = new string[CacheSize];
+            _replacementValues = new string[CacheSize];
 
-            // Initialize test data
-            for (int i = 0; i < CacheSize; i++)
+            for (var i = 0; i < CacheSize; i++)
             {
-                _keys[i] = $"key{i}";
-                _values[i] = $"value{i}";
+                _cachedKeys[i] = $"key{i}";
+                _initialValues[i] = $"value{i}";
+                _missingLookupKeys[i] = $"missing{i}";
+                _replacementValues[i] = $"replacement{i}";
+                _cache.Set(_cachedKeys[i], _initialValues[i]);
             }
 
-            // Pre-fill cache to half capacity
-            for (int i = 0; i < CacheSize / 2; i++)
+            for (var i = 0; i < _insertionKeys.Length; i++)
             {
-                _cache.Set(_keys[i], _values[i]);
-            }
-        }
-
-        [Benchmark]
-        public void Set_NewItems()
-        {
-            // Add items to the second half of the cache
-            for (int i = CacheSize / 2; i < CacheSize; i++)
-            {
-                _cache.Set(_keys[i], _values[i]);
+                _insertionKeys[i] = $"inserted{i}";
             }
         }
 
         [Benchmark]
-        public void Set_ExistingItems()
+        public long Set_NewItemsWithEviction()
         {
-            // Update existing items in the first half
-            for (int i = 0; i < CacheSize / 2; i++)
+            for (var i = 0; i < CacheSize; i++)
             {
-                _cache.Set(_keys[i], _values[i] + "_updated");
+                _cache.Set(_insertionKeys[_nextInsertionKeyIndex], _initialValues[i]);
+                _nextInsertionKeyIndex++;
+
+                if (_nextInsertionKeyIndex == _insertionKeys.Length)
+                {
+                    _nextInsertionKeyIndex = 0;
+                }
             }
+
+            return _cache.Size;
         }
 
         [Benchmark]
-        public void Get_ExistingItems()
+        public long Set_ExistingItems()
         {
-            // Get existing items from the first half
-            for (int i = 0; i < CacheSize / 2; i++)
+            for (var i = 0; i < CacheSize; i++)
             {
-                _cache.TryGetValue(_keys[i], out _);
+                _cache.Set(_cachedKeys[i], _replacementValues[i]);
             }
+
+            return _cache.Size;
         }
 
         [Benchmark]
-        public void Get_NonExistentItems()
+        public int Get_ExistingItems()
         {
-            // Try to get non-existent items
-            for (int i = 0; i < CacheSize / 2; i++)
+            var hits = 0;
+
+            for (var i = 0; i < CacheSize; i++)
             {
-                _cache.TryGetValue($"nonexistent{i}", out _);
+                if (_cache.TryGetValue(_cachedKeys[i], out _))
+                {
+                    hits++;
+                }
             }
+
+            return hits;
         }
 
         [Benchmark]
-        public void MixedOperations()
+        public int Get_MissingItems()
         {
-            // Mix of operations to simulate real-world usage
-            for (int i = 0; i < CacheSize / 4; i++)
+            var misses = 0;
+
+            for (var i = 0; i < CacheSize; i++)
             {
-                _cache.Set(_keys[i], _values[i] + "_new"); // Update
-                _cache.TryGetValue(_keys[i], out _); // Get existing
-                _cache.Set($"new{i}", $"value{i}"); // Add new
-                _cache.TryGetValue($"nonexistent{i}", out _); // Get non-existent
+                if (!_cache.TryGetValue(_missingLookupKeys[i], out _))
+                {
+                    misses++;
+                }
             }
+
+            return misses;
         }
 
-        [GlobalCleanup]
-        public void Cleanup()
+        [Benchmark]
+        public long MixedOperations()
         {
-            _cache.Clear();
+            for (var i = 0; i < CacheSize / 4; i++)
+            {
+                _cache.Set(_cachedKeys[i], _replacementValues[i]);
+                _cache.TryGetValue(_cachedKeys[i], out _);
+                _cache.Set(_insertionKeys[_nextInsertionKeyIndex], _initialValues[i]);
+                _cache.TryGetValue(_missingLookupKeys[i], out _);
+                _nextInsertionKeyIndex++;
+
+                if (_nextInsertionKeyIndex == _insertionKeys.Length)
+                {
+                    _nextInsertionKeyIndex = 0;
+                }
+            }
+
+            return _cache.Size;
         }
     }
-} 
+}

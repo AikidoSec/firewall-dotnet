@@ -6,13 +6,15 @@ using Aikido.Zen.Core.Models;
 
 namespace Aikido.Zen.Benchmarks
 {
-    [SimpleJob(RuntimeMoniker.Net48, baseline: false, warmupCount: 1, iterationCount: 2)]
-    [SimpleJob(RuntimeMoniker.Net80, baseline: true, warmupCount: 1, iterationCount: 2)]
+    [SimpleJob(RuntimeMoniker.Net10_0, baseline: true)]
+    [Outliers(Perfolizer.Mathematics.OutlierDetection.OutlierMode.RemoveAll)]
     [HideColumns(Column.StdErr, Column.StdDev, Column.Error, Column.Min, Column.Max, Column.RatioSD)]
     public class SQLInjectionDetectionBenchmarks
     {
         private string _query;
         private string _userInput;
+        private string _longQuery;
+        private string _longUserInput;
 
         [Params(SQLDialect.MySQL, SQLDialect.PostgreSQL, SQLDialect.Generic)]
         public SQLDialect Dialect { get; set; }
@@ -22,6 +24,14 @@ namespace Aikido.Zen.Benchmarks
         {
             _query = "SELECT * FROM users WHERE id = @id AND name LIKE @name";
             _userInput = "1'; DROP TABLE users; --";
+            _longQuery = _query;
+            _longUserInput = _userInput;
+
+            for (int i = 0; i < 10; i++)
+            {
+                _longQuery += " UNION " + _query;
+                _longUserInput += " OR " + _userInput;
+            }
         }
 
         [Benchmark]
@@ -33,23 +43,13 @@ namespace Aikido.Zen.Benchmarks
         [Benchmark]
         public bool DetectSQLInjectionWithLongQuery()
         {
-            var longQuery = _query;
-            for (int i = 0; i < 10; i++)
-            {
-                longQuery += " UNION " + _query;
-            }
-            return SQLInjectionDetector.IsSQLInjection(longQuery, _userInput, Dialect);
+            return SQLInjectionDetector.IsSQLInjection(_longQuery, _userInput, Dialect);
         }
 
         [Benchmark]
         public bool DetectSQLInjectionWithLongUserInput()
         {
-            var longUserInput = _userInput;
-            for (int i = 0; i < 10; i++)
-            {
-                longUserInput += " OR " + _userInput;
-            }
-            return SQLInjectionDetector.IsSQLInjection(_query, longUserInput, Dialect);
+            return SQLInjectionDetector.IsSQLInjection(_query, _longUserInput, Dialect);
         }
 
         [Benchmark]

@@ -256,12 +256,11 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void PerformanceWithDifferentSizes_ShouldPerformEfficiently()
+        public void LargeBlockListLookups_ShouldReturnExpectedResults()
         {
             // Arrange
             var blockedIps = new List<string>();
 
-            // Act
             for (int i = 0; i < 256; i++)
             {
                 for (int j = 0; j < 256; j++)
@@ -270,16 +269,21 @@ namespace Aikido.Zen.Test
                 }
             }
             _blockList.UpdateBlockedIps(new[] { ("manual", (IEnumerable<string>)blockedIps) });
-            var stopwatch = new System.Diagnostics.Stopwatch();
-            stopwatch.Start();
+
+            // Act
+            var blockedMatches = 0;
             for (int i = 0; i < 256; i++)
             {
-                _blockList.IsIPBlocked($"192.168.1.{i}");
+                if (_blockList.IsIPBlocked($"192.168.1.{i}"))
+                {
+                    blockedMatches++;
+                }
             }
-            stopwatch.Stop();
 
             // Assert
-            Assert.That(stopwatch.ElapsedMilliseconds, Is.AtMost(5)); // Ensure it completes within 5ms
+            Assert.That(blockedMatches, Is.EqualTo(1));
+            Assert.That(_blockList.IsIPBlocked("192.255.255.0"), Is.True);
+            Assert.That(_blockList.IsIPBlocked("193.168.1.0"), Is.False);
         }
 
         [Test]
