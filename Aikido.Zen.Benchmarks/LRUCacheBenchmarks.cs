@@ -11,8 +11,13 @@ namespace Aikido.Zen.Benchmarks
     public class LRUCacheBenchmarks
     {
         private const int TTLInMs = 5000;
-        private string[] _keys;
-        private string[] _values;
+        private LRUCache<string, string> _cache;
+        private int _nextInsertionKeyIndex;
+        private string[] _cachedKeys;
+        private string[] _initialValues;
+        private string[] _insertionKeys;
+        private string[] _missingLookupKeys;
+        private string[] _replacementValues;
 
         [Params(1000, 10000)]
         public int CacheSize { get; set; }
@@ -20,38 +25,64 @@ namespace Aikido.Zen.Benchmarks
         [GlobalSetup]
         public void Setup()
         {
-            _keys = new string[CacheSize];
-            _values = new string[CacheSize];
+            _cache = new LRUCache<string, string>(CacheSize, TTLInMs);
+            _cachedKeys = new string[CacheSize];
+            _initialValues = new string[CacheSize];
+            _insertionKeys = new string[CacheSize * 2];
+            _missingLookupKeys = new string[CacheSize];
+            _replacementValues = new string[CacheSize];
 
             for (var i = 0; i < CacheSize; i++)
             {
-                _keys[i] = $"key{i}";
-                _values[i] = $"value{i}";
+                _cachedKeys[i] = $"key{i}";
+                _initialValues[i] = $"value{i}";
+                _missingLookupKeys[i] = $"missing{i}";
+                _replacementValues[i] = $"replacement{i}";
+                _cache.Set(_cachedKeys[i], _initialValues[i]);
+            }
+
+            for (var i = 0; i < _insertionKeys.Length; i++)
+            {
+                _insertionKeys[i] = $"inserted{i}";
             }
         }
 
         [Benchmark]
-        public long Set_NewItems()
+        public long Set_NewItemsWithEviction()
         {
-            var cache = CreateHalfFullCache();
-
-            for (var i = CacheSize / 2; i < CacheSize; i++)
+            for (var i = 0; i < CacheSize; i++)
             {
-                cache.Set(_keys[i], _values[i]);
+                _cache.Set(_insertionKeys[_nextInsertionKeyIndex], _initialValues[i]);
+                _nextInsertionKeyIndex++;
+
+                if (_nextInsertionKeyIndex == _insertionKeys.Length)
+                {
+                    _nextInsertionKeyIndex = 0;
+                }
             }
 
-            return cache.Size;
+            return _cache.Size;
+        }
+
+        [Benchmark]
+        public long Set_ExistingItems()
+        {
+            for (var i = 0; i < CacheSize; i++)
+            {
+                _cache.Set(_cachedKeys[i], _replacementValues[i]);
+            }
+
+            return _cache.Size;
         }
 
         [Benchmark]
         public int Get_ExistingItems()
         {
-            var cache = CreateHalfFullCache();
             var hits = 0;
 
-            for (var i = 0; i < CacheSize / 2; i++)
+            for (var i = 0; i < CacheSize; i++)
             {
-                if (cache.TryGetValue(_keys[i], out _))
+                if (_cache.TryGetValue(_cachedKeys[i], out _))
                 {
                     hits++;
                 }
@@ -61,31 +92,39 @@ namespace Aikido.Zen.Benchmarks
         }
 
         [Benchmark]
-        public long MixedOperations()
+        public int Get_MissingItems()
         {
-            var cache = CreateHalfFullCache();
+            var misses = 0;
 
-            for (var i = 0; i < CacheSize / 4; i++)
+            for (var i = 0; i < CacheSize; i++)
             {
-                cache.Set(_keys[i], _values[i] + "_updated");
-                cache.TryGetValue(_keys[i], out _);
-                cache.Set($"new{i}", $"value{i}");
-                cache.TryGetValue($"missing{i}", out _);
+                if (!_cache.TryGetValue(_missingLookupKeys[i], out _))
+                {
+                    misses++;
+                }
             }
 
-            return cache.Size;
+            return misses;
         }
 
-        private LRUCache<string, string> CreateHalfFullCache()
+        [Benchmark]
+        public long MixedOperations()
         {
-            var cache = new LRUCache<string, string>(CacheSize, TTLInMs);
-
-            for (var i = 0; i < CacheSize / 2; i++)
+            for (var i = 0; i < CacheSize / 4; i++)
             {
-                cache.Set(_keys[i], _values[i]);
+                _cache.Set(_cachedKeys[i], _replacementValues[i]);
+                _cache.TryGetValue(_cachedKeys[i], out _);
+                _cache.Set(_insertionKeys[_nextInsertionKeyIndex], _initialValues[i]);
+                _cache.TryGetValue(_missingLookupKeys[i], out _);
+                _nextInsertionKeyIndex++;
+
+                if (_nextInsertionKeyIndex == _insertionKeys.Length)
+                {
+                    _nextInsertionKeyIndex = 0;
+                }
             }
 
-            return cache;
+            return _cache.Size;
         }
     }
 }
