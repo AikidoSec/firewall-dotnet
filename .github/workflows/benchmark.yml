@@ -6,32 +6,22 @@ permissions:
     contents: read
 
 jobs:
-    benchmark-list:
-        runs-on: ubuntu-latest
-        outputs:
-            matrix: ${{ steps.matrix.outputs.matrix }}
-
-        steps:
-            - name: Checkout current commit
-              uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
-              with:
-                  repository: ${{ github.event.pull_request.head.repo.full_name }}
-                  ref: ${{ github.event.pull_request.head.sha }}
-
-            - name: Find benchmark classes
-              id: matrix
-              run: |
-                  matrix=$(find Aikido.Zen.Benchmarks -maxdepth 1 -name '*Benchmarks.cs' -exec basename {} .cs \; | sort | jq -R -s -c 'split("\n")[:-1] | { benchmark: . }')
-                  echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
-
     benchmark:
-        needs: benchmark-list
         name: benchmark (${{ matrix.benchmark }})
         runs-on: ubuntu-latest
         timeout-minutes: 60
         strategy:
             fail-fast: false
-            matrix: ${{ fromJson(needs.benchmark-list.outputs.matrix) }}
+            matrix:
+                benchmark:
+                    - AgentContextBenchmarks
+                    - BlockListBenchmarks
+                    - HttpHelperBenchmarks
+                    - LRUCacheBenchmarks
+                    - PatchBenchmarks
+                    - RateLimitingHelperBenchmarks
+                    - SQLInjectionDetectionBenchmarks
+                    - ShellInjectionDetectionBenchmarks
 
         env:
             DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
