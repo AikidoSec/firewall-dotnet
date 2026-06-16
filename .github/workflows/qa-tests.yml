@@ -53,26 +53,17 @@ jobs:
           path: zen-demo-dotnet-core
           submodules: true
 
-      - name: Checkout firewall-dotnet (for NET Core QA Dockerfile and Nuget.Config)
-        uses: actions/checkout@v4
-        with:
-          path: firewall-dotnet
-
       - name: Download NuGet package artifact
         uses: actions/download-artifact@v4
         with:
           name: nuget-package
           path: zen-demo-dotnet-core/local-feed
 
-      - name: Replace Dockerfile and NuGet.Config with NET Core QA versions
-        run: |
-          cp firewall-dotnet/.github/workflows/NuGet.Config.dotnet-core zen-demo-dotnet-core/NuGet.Config
-          cp firewall-dotnet/.github/workflows/Dockerfile.qa.dotnet-core zen-demo-dotnet-core/Dockerfile
-
       - name: Run Firewall QA Tests
         uses: AikidoSec/firewall-tester-action@v1.0.16
         with:
           dockerfile_path: ./zen-demo-dotnet-core/Dockerfile
+          extra_build_args: --build-arg DOTNET_BUILD_ARGS=/p:AikidoZenDotNetCoreVersion=0.0.0-qa
           app_port: 8080
           sleep_before_test: 10
 
@@ -88,22 +79,11 @@ jobs:
           path: zen-demo-dotnet-framework
           submodules: true
 
-      - name: Checkout firewall-dotnet
-        uses: actions/checkout@v4
-        with:
-          path: firewall-dotnet
-
       - name: Download NuGet package artifact
         uses: actions/download-artifact@v4
         with:
           name: nuget-package
           path: zen-demo-dotnet-framework/local-feed
-
-      - name: Replace Dockerfile and NuGet.Config with QA versions
-        shell: pwsh
-        run: |
-          Copy-Item firewall-dotnet\.github\workflows\NuGet.Config.dotnet-framework zen-demo-dotnet-framework\NuGet.Config -Force
-          Copy-Item firewall-dotnet\.github\workflows\Dockerfile.qa.dotnet-framework zen-demo-dotnet-framework\Dockerfile -Force
 
       - name: Install Python test dependencies
         run: python -m pip install requests==2.32.4
@@ -120,6 +100,7 @@ jobs:
         uses: AikidoSec/firewall-tester-action@v1.0.16
         with:
           dockerfile_path: ./zen-demo-dotnet-framework/Dockerfile
+          extra_build_args: --build-arg MSBUILD_ARGS=/p:AikidoZenDotNetFrameworkVersion=0.0.0-qa
           app_port: 80
           sleep_before_test: 15
           max_parallel_tests: 5
