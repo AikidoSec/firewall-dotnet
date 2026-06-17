@@ -26,7 +26,7 @@ namespace Aikido.Zen.Core
         private readonly CancellationTokenSource _cancellationSource;
         private readonly Task _backgroundTask;
         private readonly ConcurrentDictionary<string, ScheduledItem> _scheduledEvents;
-        private long _lastConfigCheck = DateTime.UtcNow.Ticks;
+        internal DateTime LastConfigCheck { get; set; } = DateTime.UtcNow;
         public static ILogger Logger = new DefaultLogger();
 
         private readonly ReportingStatus _reportingStatus = new ReportingStatus();
@@ -457,16 +457,7 @@ namespace Aikido.Zen.Core
             {
                 try
                 {
-                    // check for config updates every minute
-                    if (_lastConfigCheck + TimeSpan.FromMinutes(1).Ticks < DateTime.UtcNow.Ticks)
-                    {
-                        if (ConfigChanged(out var response))
-                        {
-                            UpdateServiceConfig(response);
-                            await UpdateFirewallLists();
-                        }
-                        _lastConfigCheck = DateTime.UtcNow.Ticks;
-                    }
+                    await CheckConfigUpdates();
 
                     await ProcessScheduledEvents();
                     // we rate limit ourselves to 10 requests per second to the Zen API
@@ -628,6 +619,21 @@ namespace Aikido.Zen.Core
 
             // Trigger config change if new configuration retrieved successfully
             return latestConfig.Success;
+        }
+
+        internal async Task CheckConfigUpdates()
+        {
+            // check for config updates every minute
+            if (LastConfigCheck + TimeSpan.FromMinutes(1) >= DateTime.UtcNow)
+                return;
+
+            if (ConfigChanged(out var response))
+            {
+                UpdateServiceConfig(response);
+                await UpdateFirewallLists();
+            }
+
+            LastConfigCheck = DateTime.UtcNow;
         }
 
         private void UpdateServiceConfig(ReportingAPIResponse response)

@@ -983,7 +983,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public async Task RecurringTasks_WhenRemoteConfigIsNewer_UpdatesConfigAndFirewallLists()
+        public async Task CheckConfigUpdates_WhenRemoteConfigIsNewer_UpdatesConfigAndFirewallLists()
         {
             // Arrange
             var runtimeApiClientMock = new Mock<IRuntimeAPIClient>();
@@ -1024,19 +1024,10 @@ namespace Aikido.Zen.Test
                 reporting: reportingApiClientMock.Object,
                 runtime: runtimeApiClientMock.Object);
             _agent = new Agent(_zenApiMock.Object);
-
-            var lastConfigCheckField = typeof(Agent).GetField("_lastConfigCheck", BindingFlags.NonPublic | BindingFlags.Instance);
-            Assert.That(lastConfigCheckField, Is.Not.Null);
-            lastConfigCheckField!.SetValue(_agent, DateTime.UtcNow.AddMinutes(-2).Ticks);
+            _agent.LastConfigCheck = DateTime.UtcNow.AddMinutes(-2);
 
             // Act
-            var deadline = DateTime.UtcNow.AddSeconds(5);
-            while ((_agent.Context.Config.ConfigLastUpdated != 200 ||
-                    !_agent.Context.Config.GetMatchingBlockedIPListKeys("203.0.113.20").Any()) &&
-                   DateTime.UtcNow < deadline)
-            {
-                await Task.Delay(25);
-            }
+            await _agent.CheckConfigUpdates();
 
             // Assert
             Assert.Multiple(() =>
