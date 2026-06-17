@@ -136,18 +136,7 @@ namespace Aikido.Zen.Core
                 Token = EnvironmentHelper.Token,
                 EventFactory = ConstructHeartbeat,
                 Interval = Heartbeat.GetNextInterval(),
-                Callback = (evt, response) =>
-                {
-                    var reportingResponse = response as ReportingAPIResponse;
-                    if (reportingResponse != null && reportingResponse.Success)
-                    {
-                        LogHelper.DebugLog(Logger, "Heartbeat was sent successfully");
-                    }
-                    else
-                    {
-                        LogHelper.WarningLog(Logger, $"Heartbeat was not sent successfully: {response.Error}");
-                    }
-                }
+                Callback = (evt, response) => HandleHeartbeatResponse(response)
             };
             ScheduleEvent(
                 Heartbeat.ScheduleId,
@@ -593,6 +582,20 @@ namespace Aikido.Zen.Core
             ClearContext();
 
             return heartbeat;
+        }
+
+        internal void HandleHeartbeatResponse(APIResponse response)
+        {
+            var reportingResponse = response as ReportingAPIResponse;
+            if (reportingResponse != null && reportingResponse.Success)
+            {
+                UpdateServiceConfig(reportingResponse);
+                LogHelper.DebugLog(Logger, "Heartbeat was sent successfully");
+            }
+            else
+            {
+                LogHelper.WarningLog(Logger, $"Heartbeat was not sent successfully: {response.Error}");
+            }
         }
 
         internal bool ConfigChanged(out ReportingAPIResponse latestConfig)
