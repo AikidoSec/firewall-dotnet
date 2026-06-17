@@ -983,6 +983,72 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public async Task RecurringTasks_WhenRemoteConfigIsNewer_UpdatesConfigAndFirewallLists()
+        {
+            // Arrange
+            var runtimeApiClientMock = new Mock<IRuntimeAPIClient>();
+            runtimeApiClientMock
+                .Setup(x => x.GetConfigLastUpdated(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new ConfigLastUpdatedAPIResponse
+                {
+                    Success = true,
+                    ConfigUpdatedAt = 200
+                });
+            runtimeApiClientMock
+                .Setup(x => x.GetConfig(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new ReportingAPIResponse
+                {
+                    Success = true,
+                    Endpoints = Array.Empty<EndpointConfig>(),
+                    ConfigUpdatedAt = 200
+                });
+
+            var reportingApiClientMock = new Mock<IReportingAPIClient>();
+            reportingApiClientMock
+                .Setup(x => x.GetFirewallLists(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new FirewallListsAPIResponse
+                {
+                    Success = true,
+                    BlockedIPAddresses = new[]
+                    {
+                        new FirewallListsAPIResponse.IPList
+                        {
+                            Key = "recurring-test-list",
+                            Ips = new[] { "203.0.113.20" }
+                        }
+                    }
+                });
+
+            _agent.Dispose();
+            _zenApiMock = ZenApiMock.CreateMock(
+                reporting: reportingApiClientMock.Object,
+                runtime: runtimeApiClientMock.Object);
+            _agent = new Agent(_zenApiMock.Object);
+
+            var lastConfigCheckField = typeof(Agent).GetField("_lastConfigCheck", BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.That(lastConfigCheckField, Is.Not.Null);
+            lastConfigCheckField!.SetValue(_agent, DateTime.UtcNow.AddMinutes(-2).Ticks);
+
+            // Act
+            var deadline = DateTime.UtcNow.AddSeconds(5);
+            while ((_agent.Context.Config.ConfigLastUpdated != 200 ||
+                    !_agent.Context.Config.GetMatchingBlockedIPListKeys("203.0.113.20").Any()) &&
+                   DateTime.UtcNow < deadline)
+            {
+                await Task.Delay(25);
+            }
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(_agent.Context.Config.ConfigLastUpdated, Is.EqualTo(200));
+                Assert.That(
+                    _agent.Context.Config.GetMatchingBlockedIPListKeys("203.0.113.20"),
+                    Is.EquivalentTo(new[] { "recurring-test-list" }));
+            });
+        }
+
+        [Test]
         public async Task UpdateFirewallLists_WithEmptyToken_DoesNotFetchLists()
         {
             // Arrange

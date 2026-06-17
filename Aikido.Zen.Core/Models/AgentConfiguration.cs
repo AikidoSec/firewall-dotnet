@@ -231,9 +231,9 @@ namespace Aikido.Zen.Core.Models
 
             if (response.Endpoints != null)
             {
-                UpdateBlockedUsers(response.BlockedUserIds ?? Enumerable.Empty<string>());
+                UpdateBlockedUsers(response.BlockedUserIds);
                 BlockList.UpdateAllowedIpsPerEndpoint(response.Endpoints);
-                BlockList.UpdateBypassedIps(response.BypassedIPAddresses ?? Enumerable.Empty<string>());
+                BlockList.UpdateBypassedIps(response.BypassedIPAddresses);
                 UpdateRatelimitedRoutes(response.Endpoints);
             }
 

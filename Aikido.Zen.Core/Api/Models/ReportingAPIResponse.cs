@@ -26,7 +26,7 @@ namespace Aikido.Zen.Core.Api
         /// <summary>
         /// Gets or sets the collection of blocked user IDs.
         /// </summary>
-        public IEnumerable<string> BlockedUserIds { get; set; }
+        public IEnumerable<string> BlockedUserIds { get; set; } = new List<string>();
 
         /// <summary>
         /// Gets or sets the collection of user IDs that should bypass rate limiting.
@@ -37,7 +37,7 @@ namespace Aikido.Zen.Core.Api
         /// Gets or sets the collection of bypassed IP addresses.
         /// </summary>
         [System.Text.Json.Serialization.JsonPropertyName("allowedIPAddresses")]
-        public IEnumerable<string> BypassedIPAddresses { get; set; } // we call this bypassed ip addresses, to aovid confusion with allowed ip addresses present on the lists endpoint
+        public IEnumerable<string> BypassedIPAddresses { get; set; } = new List<string>(); // we call this bypassed ip addresses, to aovid confusion with allowed ip addresses present on the lists endpoint
 
         /// <summary>
         /// Gets or sets a value indicating whether any statistics were received.

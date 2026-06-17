@@ -2,6 +2,7 @@
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Models;
+using Aikido.Zen.Core.Models.Events;
 
 namespace Aikido.Zen.Test
 {
@@ -166,6 +167,56 @@ namespace Aikido.Zen.Test
                 Assert.That(_config.ConfigLastUpdated, Is.EqualTo(200));
                 Assert.That(_config.IsUserBlocked("existing-user"), Is.True);
                 Assert.That(_config.Endpoints.Single().Route, Is.EqualTo("/existing"));
+            });
+        }
+
+        [Test]
+        public void UpdateConfig_WithOmittedEndpointLists_UsesEmptyLists()
+        {
+            // Arrange
+            _config.UpdateBlockedUsers(new[] { "existing-user" });
+            _config.BlockList.UpdateBypassedIps(new[] { "203.0.113.10" });
+
+            // Act
+            _config.UpdateConfig(new ReportingAPIResponse
+            {
+                Endpoints = new[]
+                {
+                    new EndpointConfig
+                    {
+                        Method = "GET",
+                        Route = "/without-lists"
+                    }
+                },
+                ConfigUpdatedAt = 300
+            });
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(_config.IsUserBlocked("existing-user"), Is.False);
+                Assert.That(_config.BlockList.IsIPBypassed("203.0.113.10"), Is.False);
+                Assert.That(_config.Endpoints.Single().Route, Is.EqualTo("/without-lists"));
+            });
+        }
+
+        [Test]
+        public void UpdateConfig_WithHeartbeatInterval_UpdatesHeartbeatInterval()
+        {
+            // Arrange
+            const int heartbeatIntervalInMs = 10 * 60 * 1000;
+
+            // Act
+            _config.UpdateConfig(new ReportingAPIResponse
+            {
+                HeartbeatIntervalInMS = heartbeatIntervalInMs
+            });
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(_config.HeartbeatIntervalInMS, Is.EqualTo(heartbeatIntervalInMs));
+                Assert.That(Heartbeat.DefaultInterval, Is.EqualTo(TimeSpan.FromMilliseconds(heartbeatIntervalInMs)));
             });
         }
 
