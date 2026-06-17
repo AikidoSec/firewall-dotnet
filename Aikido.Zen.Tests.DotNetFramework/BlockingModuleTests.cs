@@ -63,7 +63,7 @@ namespace Aikido.Zen.Tests.DotNetFramework
         public void HandleBlocking_BlocksRequest_WhenContextUserIsBlocked()
         {
             Agent.Instance.ClearContext();
-            Agent.Instance.Context.UpdateBlockedUsers(new[] { "blocked-user" });
+            Agent.Instance.Context.Config.UpdateBlockedUsers(new[] { "blocked-user" });
 
             try
             {
@@ -101,7 +101,7 @@ namespace Aikido.Zen.Tests.DotNetFramework
             finally
             {
                 Agent.Instance.ClearContext();
-                Agent.Instance.Context.UpdateBlockedUsers(System.Array.Empty<string>());
+                Agent.Instance.Context.Config.UpdateBlockedUsers(System.Array.Empty<string>());
             }
         }
 

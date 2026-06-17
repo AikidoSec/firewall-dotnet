@@ -50,7 +50,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 var remoteAddress = HttpUtility.HtmlEncode(aikidoContext.RemoteAddress); // HTML escape the remote address
 
                 // Use the helper to check all rate limiting rules
-                var (isAllowed, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(aikidoContext, agentContext.Endpoints, agentContext.Config);
+                var (isAllowed, effectiveConfig) = RateLimitingHelper.IsRequestAllowed(aikidoContext, agentContext.Config.Endpoints, agentContext.Config);
 
                 if (!isAllowed)
                 {
