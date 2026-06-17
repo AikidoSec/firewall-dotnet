@@ -146,6 +146,51 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void UpdateConfig_WithOmittedEndpoints_UpdatesConfigLastUpdated()
+        {
+            // Arrange
+            var originalBlock = Environment.GetEnvironmentVariable("AIKIDO_BLOCK");
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
+            _config.UpdateConfig(new ReportingAPIResponse
+            {
+                BlockedUserIds = new[] { "existing-user" },
+                Endpoints = new[]
+                {
+                    new EndpointConfig
+                    {
+                        Method = "GET",
+                        Route = "/existing"
+                    }
+                },
+                ConfigUpdatedAt = 100
+            });
+
+            try
+            {
+                // Act
+                _config.UpdateConfig(new ReportingAPIResponse
+                {
+                    Success = true,
+                    Block = false,
+                    ConfigUpdatedAt = 200
+                });
+
+                // Assert
+                Assert.Multiple(() =>
+                {
+                    Assert.That(_config.ConfigLastUpdated, Is.EqualTo(200));
+                    Assert.That(Environment.GetEnvironmentVariable("AIKIDO_BLOCK"), Is.EqualTo("false"));
+                    Assert.That(_config.IsUserBlocked("existing-user"), Is.True);
+                    Assert.That(_config.Endpoints.Single().Route, Is.EqualTo("/existing"));
+                });
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("AIKIDO_BLOCK", originalBlock);
+            }
+        }
+
+        [Test]
         public void ShouldBlockOutgoingRequest_WithExplicitRules_MatchesNodeSemantics()
         {
             // Arrange

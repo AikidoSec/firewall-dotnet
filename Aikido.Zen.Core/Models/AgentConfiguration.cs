@@ -222,6 +222,8 @@ namespace Aikido.Zen.Core.Models
         public void UpdateConfig(ReportingAPIResponse response)
         {
             if (response == null) return;
+            ConfigLastUpdated = response.ConfigUpdatedAt;
+
             if (response.Block.HasValue)
             {
                 Environment.SetEnvironmentVariable("AIKIDO_BLOCK", response.Block.Value ? "true" : "false");
@@ -233,7 +235,6 @@ namespace Aikido.Zen.Core.Models
                 BlockList.UpdateAllowedIpsPerEndpoint(response.Endpoints);
                 BlockList.UpdateBypassedIps(response.BypassedIPAddresses ?? Enumerable.Empty<string>());
                 UpdateRatelimitedRoutes(response.Endpoints);
-                ConfigLastUpdated = response.ConfigUpdatedAt;
             }
 
             if (response.ExcludedUserIdsFromRateLimiting != null)
