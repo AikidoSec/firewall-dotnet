@@ -446,7 +446,12 @@ namespace Aikido.Zen.Core
             {
                 try
                 {
-                    await CheckConfigUpdates();
+                    // check for config updates every minute
+                    if (LastConfigCheck + TimeSpan.FromMinutes(1) < DateTime.UtcNow)
+                    {
+                        LastConfigCheck = DateTime.UtcNow;
+                        await UpdateConfigIfChanged();
+                    }
 
                     await ProcessScheduledEvents();
                     // we rate limit ourselves to 10 requests per second to the Zen API
@@ -624,19 +629,13 @@ namespace Aikido.Zen.Core
             return latestConfig.Success;
         }
 
-        internal async Task CheckConfigUpdates()
+        private async Task UpdateConfigIfChanged()
         {
-            // check for config updates every minute
-            if (LastConfigCheck + TimeSpan.FromMinutes(1) >= DateTime.UtcNow)
-                return;
-
             if (ConfigChanged(out var response))
             {
                 UpdateServiceConfig(response);
                 await UpdateFirewallLists();
             }
-
-            LastConfigCheck = DateTime.UtcNow;
         }
 
         private void UpdateServiceConfig(ReportingAPIResponse response)

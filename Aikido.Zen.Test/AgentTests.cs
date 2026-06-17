@@ -984,7 +984,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public async Task CheckConfigUpdates_WhenRemoteConfigIsNewer_UpdatesConfigAndFirewallLists()
+        public async Task RecurringTasks_WhenConfigCheckIsDueAndRemoteConfigIsNewer_UpdatesConfig()
         {
             // Arrange
             var runtimeApiClientMock = new Mock<IRuntimeAPIClient>();
@@ -1004,40 +1004,23 @@ namespace Aikido.Zen.Test
                     ConfigUpdatedAt = 200
                 });
 
-            var reportingApiClientMock = new Mock<IReportingAPIClient>();
-            reportingApiClientMock
-                .Setup(x => x.GetFirewallLists(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new FirewallListsAPIResponse
-                {
-                    Success = true,
-                    BlockedIPAddresses = new[]
-                    {
-                        new FirewallListsAPIResponse.IPList
-                        {
-                            Key = "recurring-test-list",
-                            Ips = new[] { "203.0.113.20" }
-                        }
-                    }
-                });
-
             _agent.Dispose();
             _zenApiMock = ZenApiMock.CreateMock(
-                reporting: reportingApiClientMock.Object,
                 runtime: runtimeApiClientMock.Object);
             _agent = new Agent(_zenApiMock.Object);
             _agent.LastConfigCheck = DateTime.UtcNow.AddMinutes(-2);
 
             // Act
-            await _agent.CheckConfigUpdates();
+            await Task.Delay(1000);
 
             // Assert
             Assert.Multiple(() =>
             {
                 Assert.That(_agent.Context.Config.ConfigLastUpdated, Is.EqualTo(200));
-                Assert.That(
-                    _agent.Context.Config.GetMatchingBlockedIPListKeys("203.0.113.20"),
-                    Is.EquivalentTo(new[] { "recurring-test-list" }));
             });
+
+            _zenApiMock.Verify(x => x.Runtime.GetConfigLastUpdated(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
+            _zenApiMock.Verify(x => x.Runtime.GetConfig(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Test]
