@@ -31,7 +31,7 @@ namespace Aikido.Zen.Core.Sinks
                 try
                 {
                     if (Context.IsBypassed(context) ||
-                        Agent.Instance.Context.IsProtectionDisabledForEndpoint(context))
+                        Agent.Instance.Context.Config.IsProtectionDisabledForEndpoint(context))
                     {
                         return true;
                     }

@@ -1,10 +1,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
-using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Helpers.OpenAPI;
-using Aikido.Zen.Core.Models.Ip;
 
 namespace Aikido.Zen.Core.Models
 {
@@ -219,7 +216,7 @@ namespace Aikido.Zen.Core.Models
         {
             reason = null;
             // Check if user exists and is blocked
-            if (context.User != null && IsUserBlocked(context.User.Id))
+            if (context.User != null && _config.IsUserBlocked(context.User.Id))
             {
                 reason = "User is blocked";
                 return true;
@@ -248,7 +245,7 @@ namespace Aikido.Zen.Core.Models
                 return true;
             }
 
-            var isUserAgentBlocked = IsUserAgentBlocked(context.UserAgent);
+            var isUserAgentBlocked = _config.IsUserAgentBlocked(context.UserAgent);
             var isMonitoredUserAgent = _config.IsMonitoredUserAgent(context.UserAgent);
             if (isUserAgentBlocked || isMonitoredUserAgent)
             {
@@ -264,65 +261,11 @@ namespace Aikido.Zen.Core.Models
             return false;
         }
 
-        public bool IsUserBlocked(string userId)
-        {
-            return _config.IsUserBlocked(userId);
-        }
-
-        public bool IsUserExcludedFromRateLimiting(string userId)
-        {
-            return _config.IsUserExcludedFromRateLimiting(userId);
-        }
-
-        public bool IsUserAgentBlocked(string userAgent)
-        {
-            if (string.IsNullOrWhiteSpace(userAgent))
-                return false;
-
-            return Config.IsUserAgentBlocked(userAgent);
-        }
-
-        public void UpdateBlockedUsers(IEnumerable<string> users)
-        {
-            _config.UpdateBlockedUsers(users);
-        }
-
-        public void UpdateUsersExcludedFromRateLimiting(IEnumerable<string> users)
-        {
-            _config.UpdateUsersExcludedFromRateLimiting(users);
-        }
-
-        public void UpdateRatelimitedRoutes(IEnumerable<EndpointConfig> endpoints)
-        {
-            _config.UpdateRatelimitedRoutes(endpoints);
-        }
-
-        public bool IsProtectionDisabledForEndpoint(Context context)
-        {
-            return _config.IsProtectionDisabledForEndpoint(context);
-        }
-
-        public void UpdateConfig(ReportingAPIResponse response)
-        {
-            _config.UpdateConfig(response);
-        }
-
-        public void UpdateFirewallLists(FirewallListsAPIResponse response)
-        {
-            _config.UpdateFirewallLists(response);
-        }
-
-        public void UpdateBlockedUserAgents(string blockedUserAgents)
-        {
-            _config.UpdateBlockedUserAgents(blockedUserAgents);
-        }
-
         public IEnumerable<Host> Hostnames => _hostnames.GetValues();
         public IEnumerable<UserExtended> Users => _users.GetValues();
         public IEnumerable<Route> Routes => _routes.GetValues();
         public IEnumerable<Package> Packages => _packages.Values;
 
-        public IEnumerable<EndpointConfig> Endpoints => _config.Endpoints;
         public int Requests => _stats.Requests.Total;
         public int RequestsAborted => _stats.Requests.Aborted;
         public int RequestsRateLimited => _stats.Requests.RateLimited;
@@ -331,8 +274,6 @@ namespace Aikido.Zen.Core.Models
         public int AttackWavesDetected => _stats.Requests.AttackWaves.Total;
         public int AttackWavesBlocked => _stats.Requests.AttackWaves.Blocked;
         public long Started => _stats.StartedAt;
-        internal BlockList BlockList => _config.BlockList;
-        public Regex BlockedUserAgents => _config.BlockedUserAgents;
         public AgentStats Stats => _stats;
         public AiStats AiStats => _aiStats;
         public AgentConfiguration Config => _config;

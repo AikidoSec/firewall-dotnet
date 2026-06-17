@@ -125,7 +125,8 @@ namespace Aikido.Zen.Core
                 if (response.Success)
                 {
                     var reportingResponse = response as ReportingAPIResponse;
-                    UpdateConfig(reportingResponse).GetAwaiter().GetResult();
+                    UpdateServiceConfig(reportingResponse);
+                    UpdateFirewallLists().GetAwaiter().GetResult();
                 }
             });
 
@@ -461,7 +462,8 @@ namespace Aikido.Zen.Core
                     {
                         if (ConfigChanged(out var response))
                         {
-                            await UpdateConfig(response);
+                            UpdateServiceConfig(response);
+                            await UpdateFirewallLists();
                         }
                         _lastConfigCheck = DateTime.UtcNow.Ticks;
                     }
@@ -614,7 +616,7 @@ namespace Aikido.Zen.Core
                 return false;
             }
 
-            if (latestConfigVersion.ConfigUpdatedAt == _context.Config.ConfigLastUpdated)
+            if (latestConfigVersion.ConfigUpdatedAt <= _context.Config.ConfigLastUpdated)
             {
                 // Check worked but config is the same
                 latestConfig = new ReportingAPIResponse { Success = true, ConfigUpdatedAt = latestConfigVersion.ConfigUpdatedAt };
@@ -628,10 +630,9 @@ namespace Aikido.Zen.Core
             return latestConfig.Success;
         }
 
-        private async Task UpdateConfig(ReportingAPIResponse response)
+        private void UpdateServiceConfig(ReportingAPIResponse response)
         {
-            _context.UpdateConfig(response);
-            await UpdateFirewallLists();
+            _context.Config.UpdateConfig(response);
         }
 
         internal async Task UpdateFirewallLists()
@@ -641,7 +642,7 @@ namespace Aikido.Zen.Core
             var firewallListsResponse = await _api.Reporting.GetFirewallLists(EnvironmentHelper.Token, _cancellationSource.Token);
             if (firewallListsResponse.Success)
             {
-                _context.UpdateFirewallLists(firewallListsResponse);
+                _context.Config.UpdateFirewallLists(firewallListsResponse);
             }
         }
 
