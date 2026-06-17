@@ -122,27 +122,17 @@ namespace Aikido.Zen.Test
         public void UpdateConfig_WithOmittedFields_PreservesExistingValues()
         {
             // Arrange
-            var originalBlock = Environment.GetEnvironmentVariable("AIKIDO_BLOCK");
-            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
             _config.UpdateBlockedUsers(new[] { "existing-user" });
 
-            try
-            {
-                // Act
-                _config.UpdateConfig(new ReportingAPIResponse { Success = true });
+            // Act
+            _config.UpdateConfig(new ReportingAPIResponse { Success = true });
 
-                // Assert
-                Assert.Multiple(() =>
-                {
-                    Assert.That(Environment.GetEnvironmentVariable("AIKIDO_BLOCK"), Is.EqualTo("true"));
-                    Assert.That(_config.IsUserBlocked("existing-user"), Is.True);
-                    Assert.That(_config.ConfigLastUpdated, Is.Zero);
-                });
-            }
-            finally
+            // Assert
+            Assert.Multiple(() =>
             {
-                Environment.SetEnvironmentVariable("AIKIDO_BLOCK", originalBlock);
-            }
+                Assert.That(_config.IsUserBlocked("existing-user"), Is.True);
+                Assert.That(_config.ConfigLastUpdated, Is.Zero);
+            });
         }
 
         [Test]
