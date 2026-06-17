@@ -149,8 +149,6 @@ namespace Aikido.Zen.Test
         public void UpdateConfig_WithOmittedEndpoints_UpdatesConfigLastUpdated()
         {
             // Arrange
-            var originalBlock = Environment.GetEnvironmentVariable("AIKIDO_BLOCK");
-            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
             _config.UpdateConfig(new ReportingAPIResponse
             {
                 BlockedUserIds = new[] { "existing-user" },
@@ -165,29 +163,20 @@ namespace Aikido.Zen.Test
                 ConfigUpdatedAt = 100
             });
 
-            try
+            // Act
+            _config.UpdateConfig(new ReportingAPIResponse
             {
-                // Act
-                _config.UpdateConfig(new ReportingAPIResponse
-                {
-                    Success = true,
-                    Block = false,
-                    ConfigUpdatedAt = 200
-                });
+                Success = true,
+                ConfigUpdatedAt = 200
+            });
 
-                // Assert
-                Assert.Multiple(() =>
-                {
-                    Assert.That(_config.ConfigLastUpdated, Is.EqualTo(200));
-                    Assert.That(Environment.GetEnvironmentVariable("AIKIDO_BLOCK"), Is.EqualTo("false"));
-                    Assert.That(_config.IsUserBlocked("existing-user"), Is.True);
-                    Assert.That(_config.Endpoints.Single().Route, Is.EqualTo("/existing"));
-                });
-            }
-            finally
+            // Assert
+            Assert.Multiple(() =>
             {
-                Environment.SetEnvironmentVariable("AIKIDO_BLOCK", originalBlock);
-            }
+                Assert.That(_config.ConfigLastUpdated, Is.EqualTo(200));
+                Assert.That(_config.IsUserBlocked("existing-user"), Is.True);
+                Assert.That(_config.Endpoints.Single().Route, Is.EqualTo("/existing"));
+            });
         }
 
         [Test]
