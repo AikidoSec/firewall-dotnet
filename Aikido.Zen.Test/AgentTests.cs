@@ -382,16 +382,23 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void HandleHeartbeatResponse_WhenSuccessful_UpdatesConfig()
+        public void HandleHeartbeatResponse_WhenSuccessful_DoesNotUpdateConfig()
         {
-            _agent.HandleHeartbeatResponse(new ReportingAPIResponse
+            _agent.Context.Config.UpdateConfig(new ReportingAPIResponse
             {
                 Success = true,
-                ConfigUpdatedAt = 123,
+                ConfigUpdatedAt = 100,
                 Endpoints = Array.Empty<EndpointConfig>()
             });
 
-            Assert.That(_agent.Context.Config.ConfigLastUpdated, Is.EqualTo(123));
+            _agent.HandleHeartbeatResponse(new ReportingAPIResponse
+            {
+                Success = true,
+                ConfigUpdatedAt = 200,
+                Endpoints = Array.Empty<EndpointConfig>()
+            });
+
+            Assert.That(_agent.Context.Config.ConfigLastUpdated, Is.EqualTo(100));
         }
 
         [Test]

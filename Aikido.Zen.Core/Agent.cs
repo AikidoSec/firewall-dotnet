@@ -125,7 +125,7 @@ namespace Aikido.Zen.Core
                 if (response.Success)
                 {
                     var reportingResponse = response as ReportingAPIResponse;
-                    UpdateServiceConfig(reportingResponse);
+                    UpdateConfig(reportingResponse);
                     UpdateFirewallLists().GetAwaiter().GetResult();
                 }
             });
@@ -450,7 +450,11 @@ namespace Aikido.Zen.Core
                     if (LastConfigCheck + TimeSpan.FromMinutes(1) < DateTime.UtcNow)
                     {
                         LastConfigCheck = DateTime.UtcNow;
-                        await UpdateConfigIfChanged();
+                        if (ConfigChanged(out var response))
+                        {
+                            UpdateConfig(response);
+                            await UpdateFirewallLists();
+                        }
                     }
 
                     await ProcessScheduledEvents();
@@ -591,10 +595,8 @@ namespace Aikido.Zen.Core
 
         internal void HandleHeartbeatResponse(APIResponse response)
         {
-            var reportingResponse = response as ReportingAPIResponse;
-            if (reportingResponse != null && reportingResponse.Success)
+            if (response.Success)
             {
-                UpdateServiceConfig(reportingResponse);
                 LogHelper.DebugLog(Logger, "Heartbeat was sent successfully");
             }
             else
@@ -629,16 +631,7 @@ namespace Aikido.Zen.Core
             return latestConfig.Success;
         }
 
-        private async Task UpdateConfigIfChanged()
-        {
-            if (ConfigChanged(out var response))
-            {
-                UpdateServiceConfig(response);
-                await UpdateFirewallLists();
-            }
-        }
-
-        private void UpdateServiceConfig(ReportingAPIResponse response)
+        private void UpdateConfig(ReportingAPIResponse response)
         {
             _context.Config.UpdateConfig(response);
         }
