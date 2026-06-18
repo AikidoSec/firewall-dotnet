@@ -5,7 +5,6 @@ using Aikido.Zen.Core.Models.Events;
 using Aikido.Zen.Tests.Mocks;
 using Microsoft.Extensions.Logging;
 using Moq;
-using System.Collections.Concurrent;
 using System.Reflection;
 
 namespace Aikido.Zen.Test
@@ -307,7 +306,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public async Task Start_AppliesFirewallListsFromStartupConfig()
+        public async Task Start_FetchesAndAppliesFirewallLists()
         {
             var blockedIpList = new FirewallListsAPIResponse.IPList
             {
@@ -383,25 +382,34 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void Start_HeartbeatFailureCallback_LogsWarning()
+        public void HandleHeartbeatResponse_WhenSuccessful_DoesNotUpdateConfig()
+        {
+            _agent.Context.Config.UpdateConfig(new ReportingAPIResponse
+            {
+                Success = true,
+                ConfigUpdatedAt = 100,
+                Endpoints = Array.Empty<EndpointConfig>()
+            });
+
+            _agent.HandleHeartbeatResponse(new ReportingAPIResponse
+            {
+                Success = true,
+                ConfigUpdatedAt = 200,
+                Endpoints = Array.Empty<EndpointConfig>()
+            });
+
+            Assert.That(_agent.Context.Config.ConfigLastUpdated, Is.EqualTo(100));
+        }
+
+        [Test]
+        public void HandleHeartbeatResponse_WhenUnsuccessful_LogsWarning()
         {
             var loggerMock = new Mock<ILogger>();
             Agent.ConfigureLogger(loggerMock.Object);
 
             try
             {
-                _agent.Start();
-
-                var scheduledEventsField = typeof(Agent).GetField("_scheduledEvents", BindingFlags.NonPublic | BindingFlags.Instance);
-                Assert.That(scheduledEventsField, Is.Not.Null);
-
-                var scheduledEvents = scheduledEventsField!.GetValue(_agent) as ConcurrentDictionary<string, Agent.ScheduledItem>;
-                Assert.That(scheduledEvents, Is.Not.Null);
-                Assert.That(scheduledEvents!.TryGetValue(Heartbeat.ScheduleId, out var scheduledItem), Is.True);
-                var callback = scheduledItem!.Callback;
-                Assert.That(callback, Is.Not.Null);
-
-                callback!(new Heartbeat(), new ReportingAPIResponse { Success = false, Error = "timeout" });
+                _agent.HandleHeartbeatResponse(new ReportingAPIResponse { Success = false, Error = "timeout" });
 
                 loggerMock.Verify(logger => logger.Log(
                     It.Is<LogLevel>(level => level == LogLevel.Warning),
@@ -801,7 +809,7 @@ namespace Aikido.Zen.Test
                 Pattern = "googlebot"
             };
 
-            _agent.Context.UpdateFirewallLists(new FirewallListsAPIResponse
+            _agent.Context.Config.UpdateFirewallLists(new FirewallListsAPIResponse
             {
                 MonitoredIPAddresses = new[] { monitoredIpList },
                 MonitoredUserAgents = "googlebot",
@@ -850,7 +858,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public async Task ConfigChanged_WhenConfigVersionDiffers_UpdatesConfig()
+        public void ConfigChanged_WhenRemoteConfigVersionIsNewer_FetchesConfigAndReturnsTrue()
         {
             // Arrange
             var configLastUpdated = 123L;
@@ -865,8 +873,6 @@ namespace Aikido.Zen.Test
                     AllowedIPAddresses = new[] { "192.168.1.0/24" }
                 }
             };
-
-            _agent.Context.Config.ConfigLastUpdated = configLastUpdated;
 
             var configVersionResponse = new ConfigLastUpdatedAPIResponse
             {
@@ -889,10 +895,10 @@ namespace Aikido.Zen.Test
                 .ReturnsAsync(configResponse);
             _zenApiMock = ZenApiMock.CreateMock(runtime: runtimeApiClientMock.Object);
             _agent = new Agent(_zenApiMock.Object);
+            _agent.Context.Config.ConfigLastUpdated = configLastUpdated;
 
             // Act
             var result = _agent.ConfigChanged(out var response);
-            await Task.Delay(100);
 
             // Assert
             Assert.Multiple(() =>
@@ -902,47 +908,39 @@ namespace Aikido.Zen.Test
                 Assert.That(response.ConfigUpdatedAt, Is.EqualTo(newConfigLastUpdated));
                 Assert.That(response.BlockedUserIds, Is.EquivalentTo(blockedUsers));
                 Assert.That(response.Endpoints, Is.EquivalentTo(endpoints));
+                Assert.That(_agent.Context.Config.ConfigLastUpdated, Is.EqualTo(configLastUpdated));
             });
 
             _zenApiMock.Verify(x => x.Runtime.GetConfigLastUpdated(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
             _zenApiMock.Verify(x => x.Runtime.GetConfig(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
-        [Test]
-        public async Task ConfigChanged_WhenConfigVersionSame_ReturnsFalse()
+        [TestCase(123L, 123L)]
+        [TestCase(124L, 123L)]
+        public void ConfigChanged_WhenRemoteConfigVersionIsNotNewer_ReturnsFalse(long localConfigLastUpdated, long remoteConfigLastUpdated)
         {
             // Arrange
-            var configLastUpdated = 123L;
-
             var configVersionResponse = new ConfigLastUpdatedAPIResponse
             {
                 Success = true,
-                ConfigUpdatedAt = configLastUpdated,
-            };
-            var configResponse = new ReportingAPIResponse
-            {
-                Success = true,
-                ConfigUpdatedAt = configLastUpdated,
+                ConfigUpdatedAt = remoteConfigLastUpdated,
             };
             var runtimeApiClientMock = new Mock<IRuntimeAPIClient>();
             runtimeApiClientMock.Setup(x => x.GetConfigLastUpdated(It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(configVersionResponse);
-            runtimeApiClientMock.Setup(x => x.GetConfig(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(configResponse);
             _zenApiMock = ZenApiMock.CreateMock(runtime: runtimeApiClientMock.Object);
             _agent = new Agent(_zenApiMock.Object);
-            _agent.Context.Config.ConfigLastUpdated = configLastUpdated;
+            _agent.Context.Config.ConfigLastUpdated = localConfigLastUpdated;
 
             // Act
             var result = _agent.ConfigChanged(out var response);
-            await Task.Delay(100);
 
             // Assert
             Assert.Multiple(() =>
             {
                 Assert.That(result, Is.False);
                 Assert.That(response.Success, Is.True);
-                Assert.That(response.ConfigUpdatedAt, Is.EqualTo(configLastUpdated));
+                Assert.That(response.ConfigUpdatedAt, Is.EqualTo(remoteConfigLastUpdated));
             });
 
             _zenApiMock.Verify(x => x.Runtime.GetConfigLastUpdated(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
@@ -950,7 +948,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public async Task ConfigChanged_WhenConfigFetchFails_ReturnsFalse()
+        public void ConfigChanged_WhenConfigFetchFails_ReturnsFalse()
         {
             // Arrange
             var configLastUpdated = 123L;
@@ -979,7 +977,6 @@ namespace Aikido.Zen.Test
 
             // Act
             var result = _agent.ConfigChanged(out var response);
-            await Task.Delay(100);
 
             // Assert
             Assert.Multiple(() =>
@@ -994,7 +991,47 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public async Task UpdateBlockedIps_WithEmptyToken_ReturnsWithoutUpdating()
+        public async Task RecurringTasks_WhenConfigCheckIsDueAndRemoteConfigIsNewer_UpdatesConfig()
+        {
+            // Arrange
+            var runtimeApiClientMock = new Mock<IRuntimeAPIClient>();
+            runtimeApiClientMock
+                .Setup(x => x.GetConfigLastUpdated(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new ConfigLastUpdatedAPIResponse
+                {
+                    Success = true,
+                    ConfigUpdatedAt = 200
+                });
+            runtimeApiClientMock
+                .Setup(x => x.GetConfig(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new ReportingAPIResponse
+                {
+                    Success = true,
+                    Endpoints = Array.Empty<EndpointConfig>(),
+                    ConfigUpdatedAt = 200
+                });
+
+            _agent.Dispose();
+            _zenApiMock = ZenApiMock.CreateMock(
+                runtime: runtimeApiClientMock.Object);
+            _agent = new Agent(_zenApiMock.Object);
+            _agent.LastConfigCheck = DateTime.UtcNow.AddMinutes(-2);
+
+            // Act
+            await Task.Delay(1000);
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(_agent.Context.Config.ConfigLastUpdated, Is.EqualTo(200));
+            });
+
+            _zenApiMock.Verify(x => x.Runtime.GetConfigLastUpdated(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
+            _zenApiMock.Verify(x => x.Runtime.GetConfig(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Test]
+        public async Task UpdateFirewallLists_WithEmptyToken_DoesNotFetchLists()
         {
             // Arrange
             Environment.SetEnvironmentVariable("AIKIDO_TOKEN", "");

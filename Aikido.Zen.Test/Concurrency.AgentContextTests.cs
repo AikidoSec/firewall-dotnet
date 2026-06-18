@@ -155,7 +155,7 @@ namespace Aikido.Zen.Test
                         allEndpoints.TryAdd(key, config);
 
                         var endpoints = new List<EndpointConfig> { config };
-                        _agentContext.UpdateRatelimitedRoutes(endpoints);
+                        _agentContext.Config.UpdateRatelimitedRoutes(endpoints);
                     }
                 });
                 threads.Add(thread);
@@ -171,7 +171,7 @@ namespace Aikido.Zen.Test
             // Assert - we should have at least one endpoint from each thread
             // Due to the nature of parallel updates, we can't guarantee exactly which ones will be there
             // But we can verify that the collection is consistent and doesn't crash
-            var finalEndpoints = _agentContext.Endpoints.ToList();
+            var finalEndpoints = _agentContext.Config.Endpoints.ToList();
             Assert.That(finalEndpoints, Is.Not.Null);
             Assert.That(finalEndpoints.Count, Is.GreaterThan(0));
             Assert.That(finalEndpoints.Count, Is.LessThanOrEqualTo(numThreads * numEndpointsPerThread));
@@ -228,7 +228,7 @@ namespace Aikido.Zen.Test
                                 }
                             }
                         };
-                        _agentContext.UpdateRatelimitedRoutes(endpoints);
+                        _agentContext.Config.UpdateRatelimitedRoutes(endpoints);
                     }
                 });
                 threads.Add(thread);
@@ -250,7 +250,7 @@ namespace Aikido.Zen.Test
 
                 // Since many threads are updating the endpoints list, we can't guarantee exactly how many will be there,
                 // but we can verify it's a consistent state
-                var finalEndpoints = _agentContext.Endpoints.ToList();
+                var finalEndpoints = _agentContext.Config.Endpoints.ToList();
                 Assert.That(finalEndpoints, Is.Not.Null);
                 Assert.That(finalEndpoints.Count, Is.GreaterThan(0));
                 Assert.That(finalEndpoints.Count, Is.LessThanOrEqualTo(numThreads * numOperationsPerThread));

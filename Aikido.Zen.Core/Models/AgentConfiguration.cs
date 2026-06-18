@@ -222,16 +222,31 @@ namespace Aikido.Zen.Core.Models
         public void UpdateConfig(ReportingAPIResponse response)
         {
             if (response == null) return;
-            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", response.Block ? "true" : "false");
-            UpdateBlockedUsers(response.BlockedUserIds);
-            UpdateUsersExcludedFromRateLimiting(response.ExcludedUserIdsFromRateLimiting);
-            BlockList.UpdateAllowedIpsPerEndpoint(response.Endpoints);
-            BlockList.UpdateBypassedIps(response.BypassedIPAddresses);
-            UpdateRatelimitedRoutes(response.Endpoints);
             ConfigLastUpdated = response.ConfigUpdatedAt;
 
-            HeartbeatIntervalInMS = response.HeartbeatIntervalInMS;
-            Heartbeat.UpdateDefaultInterval(response.HeartbeatIntervalInMS);
+            if (response.Block.HasValue)
+            {
+                Environment.SetEnvironmentVariable("AIKIDO_BLOCK", response.Block.Value ? "true" : "false");
+            }
+
+            if (response.Endpoints != null)
+            {
+                UpdateBlockedUsers(response.BlockedUserIds ?? Enumerable.Empty<string>());
+                BlockList.UpdateAllowedIpsPerEndpoint(response.Endpoints);
+                BlockList.UpdateBypassedIps(response.BypassedIPAddresses ?? Enumerable.Empty<string>());
+                UpdateRatelimitedRoutes(response.Endpoints);
+            }
+
+            if (response.ExcludedUserIdsFromRateLimiting != null)
+            {
+                UpdateUsersExcludedFromRateLimiting(response.ExcludedUserIdsFromRateLimiting);
+            }
+
+            if (response.HeartbeatIntervalInMS > 0)
+            {
+                HeartbeatIntervalInMS = response.HeartbeatIntervalInMS;
+                Heartbeat.UpdateDefaultInterval(response.HeartbeatIntervalInMS);
+            }
 
             if (response.BlockNewOutgoingRequests.HasValue && response.Domains != null)
             {

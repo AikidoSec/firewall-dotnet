@@ -78,7 +78,7 @@ namespace Aikido.Zen.Tests.DotNetCore
                 RateLimitingHelper.ResetCache(10000, 120 * 60 * 1000);
                 Agent.Instance.Context.Config.Clear();
                 Agent.Instance.ClearContext();
-                Agent.Instance.Context.UpdateRatelimitedRoutes(new[]
+                Agent.Instance.Context.Config.UpdateRatelimitedRoutes(new[]
                 {
                     new EndpointConfig
                     {

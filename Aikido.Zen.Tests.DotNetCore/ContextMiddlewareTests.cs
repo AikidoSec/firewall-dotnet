@@ -95,7 +95,7 @@ namespace Aikido.Zen.Tests.DotNetCore
                 Environment.SetEnvironmentVariable("AIKIDO_DISABLE", "false");
                 Agent.Instance.Context.Config.Clear();
                 Agent.Instance.ClearContext();
-                Agent.Instance.Context.BlockList.UpdateBypassedIps(new[] { bypassedIp });
+                Agent.Instance.Context.Config.BlockList.UpdateBypassedIps(new[] { bypassedIp });
 
                 await _contextMiddleware.InvokeAsync(context, next);
 

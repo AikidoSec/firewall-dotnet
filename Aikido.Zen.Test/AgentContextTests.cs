@@ -20,26 +20,26 @@ namespace Aikido.Zen.Test
             var users = new[] { "user1", "user2", "user3" };
 
             // Act
-            _agentContext.UpdateBlockedUsers(users);
+            _agentContext.Config.UpdateBlockedUsers(users);
 
             // Assert
-            Assert.That(_agentContext.IsUserBlocked("user1"), Is.True);
-            Assert.That(_agentContext.IsUserBlocked("user2"), Is.True);
-            Assert.That(_agentContext.IsUserBlocked("user3"), Is.True);
-            Assert.That(_agentContext.IsUserBlocked("user4"), Is.False);
+            Assert.That(_agentContext.Config.IsUserBlocked("user1"), Is.True);
+            Assert.That(_agentContext.Config.IsUserBlocked("user2"), Is.True);
+            Assert.That(_agentContext.Config.IsUserBlocked("user3"), Is.True);
+            Assert.That(_agentContext.Config.IsUserBlocked("user4"), Is.False);
         }
 
         [Test]
         public void UpdateBlockedUsers_WithEmptyList_ShouldClearBlockedUsers()
         {
             // Arrange
-            _agentContext.UpdateBlockedUsers(new[] { "user1" });
+            _agentContext.Config.UpdateBlockedUsers(new[] { "user1" });
 
             // Act
-            _agentContext.UpdateBlockedUsers(System.Array.Empty<string>());
+            _agentContext.Config.UpdateBlockedUsers(System.Array.Empty<string>());
 
             // Assert
-            Assert.That(_agentContext.IsUserBlocked("user1"), Is.False);
+            Assert.That(_agentContext.Config.IsUserBlocked("user1"), Is.False);
         }
 
         [Test]
@@ -49,26 +49,26 @@ namespace Aikido.Zen.Test
             var users = new[] { "user1", "user2", "user3" };
 
             // Act
-            _agentContext.UpdateUsersExcludedFromRateLimiting(users);
+            _agentContext.Config.UpdateUsersExcludedFromRateLimiting(users);
 
             // Assert
-            Assert.That(_agentContext.IsUserExcludedFromRateLimiting("user1"), Is.True);
-            Assert.That(_agentContext.IsUserExcludedFromRateLimiting("user2"), Is.True);
-            Assert.That(_agentContext.IsUserExcludedFromRateLimiting("user3"), Is.True);
-            Assert.That(_agentContext.IsUserExcludedFromRateLimiting("user4"), Is.False);
+            Assert.That(_agentContext.Config.IsUserExcludedFromRateLimiting("user1"), Is.True);
+            Assert.That(_agentContext.Config.IsUserExcludedFromRateLimiting("user2"), Is.True);
+            Assert.That(_agentContext.Config.IsUserExcludedFromRateLimiting("user3"), Is.True);
+            Assert.That(_agentContext.Config.IsUserExcludedFromRateLimiting("user4"), Is.False);
         }
 
         [Test]
         public void UpdateUsersExcludedFromRateLimiting_WithEmptyList_ShouldClearExcludedUsers()
         {
             // Arrange
-            _agentContext.UpdateUsersExcludedFromRateLimiting(new[] { "user1" });
+            _agentContext.Config.UpdateUsersExcludedFromRateLimiting(new[] { "user1" });
 
             // Act
-            _agentContext.UpdateUsersExcludedFromRateLimiting(System.Array.Empty<string>());
+            _agentContext.Config.UpdateUsersExcludedFromRateLimiting(System.Array.Empty<string>());
 
             // Assert
-            Assert.That(_agentContext.IsUserExcludedFromRateLimiting("user1"), Is.False);
+            Assert.That(_agentContext.Config.IsUserExcludedFromRateLimiting("user1"), Is.False);
         }
 
         [Test]
@@ -87,10 +87,10 @@ namespace Aikido.Zen.Test
             };
             var blockedUserAgents = "googlebot|bingbot|yandexbot";
 
-            _agentContext.UpdateBlockedUsers(new[] { "user1" });
-            _agentContext.BlockList.UpdateBlockedIps(new[] { ("manual", (IEnumerable<string>)new[] { "8.8.8.101" }) });  // Using public IP
-            _agentContext.BlockList.UpdateAllowedIpsPerEndpoint(endpoints);
-            _agentContext.UpdateBlockedUserAgents(blockedUserAgents);
+            _agentContext.Config.UpdateBlockedUsers(new[] { "user1" });
+            _agentContext.Config.BlockList.UpdateBlockedIps(new[] { ("manual", (IEnumerable<string>)new[] { "8.8.8.101" }) });  // Using public IP
+            _agentContext.Config.BlockList.UpdateAllowedIpsPerEndpoint(endpoints);
+            _agentContext.Config.UpdateBlockedUserAgents(blockedUserAgents);
 
             // Act & Assert
             var context1 = new Context { User = user, RemoteAddress = "8.8.8.102", Method = "GET", Url = url, UserAgent = "useragent", Route = "testUrl" };
@@ -124,7 +124,7 @@ namespace Aikido.Zen.Test
                 Key = "googlebot",
                 Pattern = "googlebot"
             };
-            _agentContext.UpdateFirewallLists(new FirewallListsAPIResponse
+            _agentContext.Config.UpdateFirewallLists(new FirewallListsAPIResponse
             {
                 MonitoredIPAddresses = new[] { monitoredIpList },
                 MonitoredUserAgents = "googlebot",
@@ -162,12 +162,12 @@ namespace Aikido.Zen.Test
                 Key = "tor/exit_nodes",
                 Ips = new[] { "8.8.8.0/24" }
             };
-            _agentContext.UpdateFirewallLists(new FirewallListsAPIResponse
+            _agentContext.Config.UpdateFirewallLists(new FirewallListsAPIResponse
             {
                 MonitoredIPAddresses = new[] { monitoredIpList }
             });
 
-            _agentContext.BlockList.UpdateAllowedIpsPerEndpoint(new[]
+            _agentContext.Config.BlockList.UpdateAllowedIpsPerEndpoint(new[]
             {
                 new EndpointConfig
                 {
@@ -211,7 +211,7 @@ namespace Aikido.Zen.Test
                 Key = "known_threat_actors/public_scanners",
                 Ips = new[] { "8.8.8.0/24" }
             };
-            _agentContext.UpdateFirewallLists(new FirewallListsAPIResponse
+            _agentContext.Config.UpdateFirewallLists(new FirewallListsAPIResponse
             {
                 MonitoredIPAddresses = new[] { monitoredIpList },
                 BlockedIPAddresses = new[] { blockedIpList }
@@ -474,7 +474,7 @@ namespace Aikido.Zen.Test
         public void IsBlocked_ShouldReturnTrue_WhenUserIsBlocked()
         {
             // Arrange
-            _agentContext.UpdateBlockedUsers(new[] { "user1" });
+            _agentContext.Config.UpdateBlockedUsers(new[] { "user1" });
             var context = new Context { User = new User("user1", "Blocked User"), RemoteAddress = string.Empty, Method = string.Empty, Url = string.Empty, UserAgent = string.Empty };
 
             // Act
@@ -489,7 +489,7 @@ namespace Aikido.Zen.Test
         public void IsBlocked_ShouldReturnFalse_WhenUserIsNotBlocked()
         {
             // Arrange
-            _agentContext.UpdateBlockedUsers(new[] { "user1" });
+            _agentContext.Config.UpdateBlockedUsers(new[] { "user1" });
             var context = new Context { User = new User("user2", "Not Blocked User"), RemoteAddress = string.Empty, Method = string.Empty, Url = string.Empty, UserAgent = string.Empty };
 
             // Act
@@ -518,10 +518,10 @@ namespace Aikido.Zen.Test
             };
 
             // Act
-            _agentContext.UpdateRatelimitedRoutes(endpoints);
+            _agentContext.Config.UpdateRatelimitedRoutes(endpoints);
 
             // Assert
-            var endpointsList = _agentContext.Endpoints.ToList();
+            var endpointsList = _agentContext.Config.Endpoints.ToList();
             Assert.That(endpointsList.Count, Is.EqualTo(2));
 
             var endpoint1 = endpointsList.FirstOrDefault(e => e.Method == "GET" && e.Route == "/api/test1");
@@ -546,7 +546,7 @@ namespace Aikido.Zen.Test
                     RateLimiting = new RateLimitingConfig { MaxRequests = 100 }
                 }
             };
-            _agentContext.UpdateRatelimitedRoutes(initialEndpoints);
+            _agentContext.Config.UpdateRatelimitedRoutes(initialEndpoints);
 
             var newEndpoints = new List<EndpointConfig> {
                 new EndpointConfig {
@@ -557,10 +557,10 @@ namespace Aikido.Zen.Test
             };
 
             // Act
-            _agentContext.UpdateRatelimitedRoutes(newEndpoints);
+            _agentContext.Config.UpdateRatelimitedRoutes(newEndpoints);
 
             // Assert
-            var endpointsList = _agentContext.Endpoints.ToList();
+            var endpointsList = _agentContext.Config.Endpoints.ToList();
             Assert.That(endpointsList.Count, Is.EqualTo(1));
             Assert.That(endpointsList.Any(e => e.Method == "GET" && e.Route == "/api/new"), Is.True);
             Assert.That(endpointsList.Any(e => e.Method == "GET" && e.Route == "/api/old"), Is.False);
@@ -569,7 +569,7 @@ namespace Aikido.Zen.Test
         [Test]
         public void IsProtectionDisabledForEndpoint_ShouldReturnTrue_WhenMatchingEndpointDisablesProtection()
         {
-            _agentContext.UpdateRatelimitedRoutes(new[]
+            _agentContext.Config.UpdateRatelimitedRoutes(new[]
             {
                 new EndpointConfig
                 {
@@ -587,7 +587,7 @@ namespace Aikido.Zen.Test
                 Url = "https://app.local/api/stored_ssrf"
             };
 
-            Assert.That(_agentContext.IsProtectionDisabledForEndpoint(context), Is.True);
+            Assert.That(_agentContext.Config.IsProtectionDisabledForEndpoint(context), Is.True);
         }
 
         [Test]
@@ -618,16 +618,16 @@ namespace Aikido.Zen.Test
             };
 
             // Act
-            _agentContext.UpdateConfig(response);
+            _agentContext.Config.UpdateConfig(response);
 
             // Assert
             Assert.Multiple(() =>
             {
                 Assert.That(Environment.GetEnvironmentVariable("AIKIDO_BLOCK"), Is.EqualTo("true"));
-                Assert.That(_agentContext.IsUserBlocked("user1"), Is.True);
-                Assert.That(_agentContext.IsUserBlocked("user2"), Is.True);
+                Assert.That(_agentContext.Config.IsUserBlocked("user1"), Is.True);
+                Assert.That(_agentContext.Config.IsUserBlocked("user2"), Is.True);
 
-                var endpointsList = _agentContext.Endpoints.ToList();
+                var endpointsList = _agentContext.Config.Endpoints.ToList();
                 var endpoint = endpointsList.FirstOrDefault(e => e.Method == "GET" && e.Route == "/test");
                 Assert.That(endpoint, Is.Not.Null);
                 Assert.That(endpoint.RateLimiting.MaxRequests, Is.EqualTo(60));
@@ -649,14 +649,14 @@ namespace Aikido.Zen.Test
             var firewallAPiResponse = new FirewallListsAPIResponse { BlockedIPAddresses = new[] { blockedIPList } };
 
             // Act
-            _agentContext.UpdateFirewallLists(firewallAPiResponse);
+            _agentContext.Config.UpdateFirewallLists(firewallAPiResponse);
 
             // Assert
             Assert.Multiple(() =>
             {
-                Assert.That(_agentContext.BlockList.IsIPBlocked("192.168.1.100"), Is.True);
-                Assert.That(_agentContext.BlockList.IsIPBlocked("10.0.0.1"), Is.True);
-                Assert.That(_agentContext.BlockList.IsIPBlocked("172.16.0.1"), Is.False);
+                Assert.That(_agentContext.Config.BlockList.IsIPBlocked("192.168.1.100"), Is.True);
+                Assert.That(_agentContext.Config.BlockList.IsIPBlocked("10.0.0.1"), Is.True);
+                Assert.That(_agentContext.Config.BlockList.IsIPBlocked("172.16.0.1"), Is.False);
             });
         }
 
@@ -672,13 +672,13 @@ namespace Aikido.Zen.Test
             };
 
             var firewallListsAPIResponse = new FirewallListsAPIResponse { BlockedIPAddresses = new[] { ipList } };
-            _agentContext.UpdateFirewallLists(firewallListsAPIResponse);
+            _agentContext.Config.UpdateFirewallLists(firewallListsAPIResponse);
 
             // Act
-            _agentContext.UpdateFirewallLists((FirewallListsAPIResponse?)null);
+            _agentContext.Config.UpdateFirewallLists((FirewallListsAPIResponse?)null);
 
             // Assert
-            Assert.That(_agentContext.BlockList.IsIPBlocked("192.168.1.1"), Is.False);
+            Assert.That(_agentContext.Config.BlockList.IsIPBlocked("192.168.1.1"), Is.False);
         }
 
         [Test]
@@ -694,14 +694,14 @@ namespace Aikido.Zen.Test
             var firewallAPiResponse = new FirewallListsAPIResponse { BlockedIPAddresses = new[] { blockedIpList } };
 
             // Act
-            _agentContext.UpdateFirewallLists(firewallAPiResponse);
+            _agentContext.Config.UpdateFirewallLists(firewallAPiResponse);
 
             // Assert
             Assert.Multiple(() =>
             {
-                Assert.That(_agentContext.BlockList.IsIPBlocked("192.168.1.1"), Is.True);
-                Assert.That(_agentContext.BlockList.IsIPBlocked("invalid-ip"), Is.False);
-                Assert.That(_agentContext.BlockList.IsIPBlocked("not-an-ip"), Is.False);
+                Assert.That(_agentContext.Config.BlockList.IsIPBlocked("192.168.1.1"), Is.True);
+                Assert.That(_agentContext.Config.BlockList.IsIPBlocked("invalid-ip"), Is.False);
+                Assert.That(_agentContext.Config.BlockList.IsIPBlocked("not-an-ip"), Is.False);
             });
         }
 
@@ -712,26 +712,26 @@ namespace Aikido.Zen.Test
             var userAgents = "googlebot|bingbot|yandexbot";
 
             // Act
-            _agentContext.UpdateBlockedUserAgents(userAgents);
+            _agentContext.Config.UpdateBlockedUserAgents(userAgents);
 
             // Assert
-            Assert.That(_agentContext.IsUserAgentBlocked("googlebot"), Is.True);
-            Assert.That(_agentContext.IsUserAgentBlocked("bingbot"), Is.True);
-            Assert.That(_agentContext.IsUserAgentBlocked("yandexbot"), Is.True);
-            Assert.That(_agentContext.IsUserAgentBlocked("Opera/9.80"), Is.False);
+            Assert.That(_agentContext.Config.IsUserAgentBlocked("googlebot"), Is.True);
+            Assert.That(_agentContext.Config.IsUserAgentBlocked("bingbot"), Is.True);
+            Assert.That(_agentContext.Config.IsUserAgentBlocked("yandexbot"), Is.True);
+            Assert.That(_agentContext.Config.IsUserAgentBlocked("Opera/9.80"), Is.False);
         }
 
         [Test]
         public void UpdateBlockedUserAgents_WithEmptyList_ShouldClearBlockedUserAgents()
         {
             // Arrange
-            _agentContext.UpdateBlockedUserAgents("Mozilla/5.0");
+            _agentContext.Config.UpdateBlockedUserAgents("Mozilla/5.0");
 
             // Act
-            _agentContext.UpdateBlockedUserAgents(null);
+            _agentContext.Config.UpdateBlockedUserAgents(null);
 
             // Assert
-            Assert.That(_agentContext.IsUserAgentBlocked("Mozilla/5.0"), Is.False);
+            Assert.That(_agentContext.Config.IsUserAgentBlocked("Mozilla/5.0"), Is.False);
         }
 
         [Test]
@@ -739,10 +739,10 @@ namespace Aikido.Zen.Test
         {
             // Arrange
             var userAgent = "Mozilla/5.0";
-            _agentContext.UpdateBlockedUserAgents(userAgent);
+            _agentContext.Config.UpdateBlockedUserAgents(userAgent);
 
             // Act
-            var isBlocked = _agentContext.IsUserAgentBlocked(userAgent);
+            var isBlocked = _agentContext.Config.IsUserAgentBlocked(userAgent);
 
             // Assert
             Assert.That(isBlocked, Is.True);
@@ -755,7 +755,7 @@ namespace Aikido.Zen.Test
             var userAgent = "Mozilla/5.0";
 
             // Act
-            var isBlocked = _agentContext.IsUserAgentBlocked(userAgent);
+            var isBlocked = _agentContext.Config.IsUserAgentBlocked(userAgent);
 
             // Assert
             Assert.That(isBlocked, Is.False);

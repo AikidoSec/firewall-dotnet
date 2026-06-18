@@ -16,6 +16,10 @@ namespace Aikido.Zen.Test
             // Assert
             Assert.That(response, Is.Not.Null);
             Assert.That(response.Success, Is.False);
+            Assert.That(response.Endpoints, Is.Null);
+            Assert.That(response.BlockedUserIds, Is.Null);
+            Assert.That(response.ExcludedUserIdsFromRateLimiting, Is.Null);
+            Assert.That(response.BypassedIPAddresses, Is.Null);
         }
 
         [Test]

@@ -105,18 +105,18 @@ namespace Aikido.Zen.Benchmarks
         {
             var agentContext = new AgentContext();
 
-            agentContext.UpdateConfig(_configResponse);
-            agentContext.UpdateFirewallLists(_firewallListsResponse);
+            agentContext.Config.UpdateConfig(_configResponse);
+            agentContext.Config.UpdateFirewallLists(_firewallListsResponse);
 
-            return agentContext.Endpoints.Count();
+            return agentContext.Config.Endpoints.Count();
         }
 
         [Benchmark]
         public int CheckBlockedRequests()
         {
             var agentContext = new AgentContext();
-            agentContext.UpdateConfig(_configResponse);
-            agentContext.UpdateFirewallLists(_firewallListsResponse);
+            agentContext.Config.UpdateConfig(_configResponse);
+            agentContext.Config.UpdateFirewallLists(_firewallListsResponse);
 
             var blocked = 0;
             for (var i = 0; i < ItemCount; i++)
