@@ -15,7 +15,6 @@ jobs:
       fail-fast: false
       matrix:
         runner:
-          - windows-2022
           - windows-latest
 
     steps:
@@ -114,7 +113,7 @@ jobs:
           if (`$tcp -ne 'TCP OK') { exit 19 }
           "@
             $clientEncoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($clientScript))
-            docker run --rm --isolation process --network $network $image powershell -NoProfile -EncodedCommand $clientEncoded
+            docker run --rm --isolation process --network $network $image powershell -NoProfile -EncodedCommand $clientEncoded | Out-Host
             $ok = $LASTEXITCODE -eq 0
 
             docker rm -f $mock 2>$null | Out-Null
@@ -125,7 +124,7 @@ jobs:
             } else {
               Write-Host "RESULT $Name FAIL"
             }
-            return $ok
+            return [bool]$ok
           }
 
           $privateOk = Test-IpInProcessContainer -Name 'private10' -Subnet '10.250.250.0/24' -TargetIp '10.250.250.200'
