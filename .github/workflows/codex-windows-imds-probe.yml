@@ -1,0 +1,142 @@
+name: Codex Windows IMDS Probe
+
+on:
+  push: {}
+
+permissions:
+  contents: read
+
+jobs:
+  process-container-imds:
+    name: ${{ matrix.runner }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        runner:
+          - windows-2022
+          - windows-latest
+
+    steps:
+      - name: Probe process-isolated Windows container access to Alibaba IMDS IP
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Continue'
+
+          Write-Host "Runner: $env:RUNNER_NAME"
+          Write-Host "OS: $([Environment]::OSVersion.VersionString)"
+          docker version
+          docker info
+
+          $build = [Environment]::OSVersion.Version.Build
+          $imageTag = if ($build -ge 26000) { 'ltsc2025' } else { 'ltsc2022' }
+          $image = "mcr.microsoft.com/windows/servercore:$imageTag"
+          Write-Host "Using image $image"
+          docker pull $image
+          if ($LASTEXITCODE -ne 0) { throw "Failed to pull $image" }
+
+          $serverScript = @'
+          $ErrorActionPreference = 'Stop'
+          $listener = [Net.Sockets.TcpListener]::new([Net.IPAddress]::Any, 80)
+          $listener.Start()
+          Write-Host "Listening on 0.0.0.0:80"
+          while ($true) {
+            $client = $listener.AcceptTcpClient()
+            try {
+              $stream = $client.GetStream()
+              $buffer = New-Object byte[] 2048
+              [void]$stream.Read($buffer, 0, $buffer.Length)
+              $body = 'OK'
+              $response = "HTTP/1.1 200 OK`r`nContent-Type: text/plain`r`nContent-Length: $($body.Length)`r`nConnection: close`r`n`r`n$body"
+              $bytes = [Text.Encoding]::ASCII.GetBytes($response)
+              $stream.Write($bytes, 0, $bytes.Length)
+            } finally {
+              $client.Close()
+            }
+          }
+          '@
+          $serverEncoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($serverScript))
+
+          function Test-IpInProcessContainer {
+            param(
+              [string]$Name,
+              [string]$Subnet,
+              [string]$TargetIp
+            )
+
+            $network = "codex_${Name}_net"
+            $mock = "codex_${Name}_mock"
+            docker rm -f $mock 2>$null | Out-Null
+            docker network rm $network 2>$null | Out-Null
+
+            Write-Host ""
+            Write-Host "=== Probe $Name subnet=$Subnet target=$TargetIp ==="
+            docker network create -d nat --subnet $Subnet $network
+            if ($LASTEXITCODE -ne 0) { throw "Failed to create network $network" }
+
+            docker run -d --isolation process --name $mock --network $network --ip $TargetIp $image powershell -NoProfile -EncodedCommand $serverEncoded
+            if ($LASTEXITCODE -ne 0) { throw "Failed to start mock $mock" }
+
+            Start-Sleep -Seconds 5
+            docker ps --filter "name=$mock" --format "mock={{.Names}} status={{.Status}} networks={{.Networks}}"
+            docker logs $mock
+
+            $clientScript = @"
+          `$ErrorActionPreference = 'Continue'
+          function Test-Tcp(`$hostName, `$port) {
+            `$client = [Net.Sockets.TcpClient]::new()
+            `$iar = `$client.BeginConnect(`$hostName, `$port, `$null, `$null)
+            `$ok = `$iar.AsyncWaitHandle.WaitOne(5000, `$false)
+            if (`$ok) {
+              try {
+                `$client.EndConnect(`$iar)
+                'TCP OK'
+              } catch {
+                'TCP ERR ' + `$_.Exception.Message
+              }
+            } else {
+              'TCP TIMEOUT'
+            }
+            `$client.Close()
+          }
+
+          Write-Host 'TARGET $TargetIp'
+          `$tcp = Test-Tcp '$TargetIp' 80
+          Write-Host `$tcp
+          try {
+            `$response = Invoke-WebRequest -UseBasicParsing 'http://$TargetIp/' -TimeoutSec 10
+            Write-Host ('HTTP ' + `$response.StatusCode + ' ' + `$response.Content)
+          } catch {
+            Write-Host ('HTTP ERR ' + `$_.Exception.Message)
+          }
+          Get-NetNeighbor -IPAddress '$TargetIp' -ErrorAction SilentlyContinue | Format-List
+          if (`$tcp -ne 'TCP OK') { exit 19 }
+          "@
+            $clientEncoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($clientScript))
+            docker run --rm --isolation process --network $network $image powershell -NoProfile -EncodedCommand $clientEncoded
+            $ok = $LASTEXITCODE -eq 0
+
+            docker rm -f $mock 2>$null | Out-Null
+            docker network rm $network 2>$null | Out-Null
+
+            if ($ok) {
+              Write-Host "RESULT $Name PASS"
+            } else {
+              Write-Host "RESULT $Name FAIL"
+            }
+            return $ok
+          }
+
+          $privateOk = Test-IpInProcessContainer -Name 'private10' -Subnet '10.250.250.0/24' -TargetIp '10.250.250.200'
+          $alibabaOk = Test-IpInProcessContainer -Name 'alibaba' -Subnet '100.100.100.0/24' -TargetIp '100.100.100.200'
+
+          Write-Host ""
+          Write-Host "SUMMARY private10=$privateOk alibaba=$alibabaOk"
+
+          if (-not $privateOk) {
+            throw "Private RFC1918 control failed; probe is invalid."
+          }
+          if (-not $alibabaOk) {
+            throw "Alibaba 100.100.100.200 is blocked from process-isolated Windows containers on this runner."
+          }

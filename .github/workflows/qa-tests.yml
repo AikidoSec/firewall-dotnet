@@ -2,7 +2,6 @@ name: 🧪 QA Tests
 permissions:
   contents: read
 on:
-  push: {}
   workflow_call: {}
 
 jobs:
