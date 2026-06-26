@@ -2,6 +2,7 @@ using System.Net.Http.Formatting;
 using System.Threading.Tasks;
 using System.Web;
 using System.Web.Http;
+using Aikido.Zen.DotNetFramework;
 
 namespace DotNetFramework.Sample.App.Controllers
 {
@@ -20,7 +21,7 @@ namespace DotNetFramework.Sample.App.Controllers
         public IHttpActionResult PostFormUrlEncoded()
         {
             var form = HttpContext.Current.Request.Form;
-            return Ok(HttpContext.Current.Items["Aikido.Zen.Context"]);
+            return Ok(Zen.GetContext());
         }
 
         /// <summary>
@@ -31,7 +32,7 @@ namespace DotNetFramework.Sample.App.Controllers
         [Route("multipart")]
         public IHttpActionResult PostMultipartFormData()
         {
-            return Ok(HttpContext.Current.Items["Aikido.Zen.Context"]);
+            return Ok(Zen.GetContext());
         }
 
         /// <summary>
@@ -42,7 +43,7 @@ namespace DotNetFramework.Sample.App.Controllers
         [Route("text")]
         public IHttpActionResult PostText()
         {
-            return Ok(HttpContext.Current.Items["Aikido.Zen.Context"]);
+            return Ok(Zen.GetContext());
         }
 
         /// <summary>
@@ -53,7 +54,7 @@ namespace DotNetFramework.Sample.App.Controllers
         [Route("json")]
         public IHttpActionResult PostJson()
         {
-            return Ok(HttpContext.Current.Items["Aikido.Zen.Context"]);
+            return Ok(Zen.GetContext());
         }
 
         /// <summary>
@@ -66,7 +67,7 @@ namespace DotNetFramework.Sample.App.Controllers
         {
             // we consume xml, but want to return json
             HttpContext.Current.Response.ContentType = "application/json";
-            return Json(HttpContext.Current.Items["Aikido.Zen.Context"]);
+            return Json(Zen.GetContext());
         }
     }
 }
