@@ -32,9 +32,11 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
         {
             responseHandled = false;
             LogHelper.DebugLog(Agent.Logger, "ContextModule initialized");
-            context.PostAuthenticateRequest += Context_PostAuthenticateRequest;
-            // Capture request context before application handlers run.
+            // BeginRequest is the earliest reliable hook once a request enters the pipeline
             context.BeginRequest += Context_BeginRequest;
+            // User information is only available after authentication, although this stage can be skipped
+            context.PostAuthenticateRequest += Context_PostAuthenticateRequest;
+            // EndRequest is the reliable final hook, including requests completed early
             context.EndRequest += Context_EndRequest;
         }
 
@@ -234,7 +236,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 // Replace with empty string to avoid exceptions
                 var safeKey = key ?? string.Empty;
                 var values = queryString.GetValues(key);
-                
+
                 // Example: for ?foo=a&foo=b, the dictionary will be:
                 // { "foo": "a", "foo[1]": "b" }
                 // The first value ("a") is used as the default ("foo"), matching ASP.NET Core's default behavior for query and header collections.
