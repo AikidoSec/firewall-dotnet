@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
 using System.Web;
 using System.Web.Routing;
 using Aikido.Zen.Core;
@@ -123,14 +122,14 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
 
                 var request = httpContext.Request;
 
-                var httpData = Task.Run(() => HttpHelper.ReadAndFlattenHttpDataAsync(
+                var httpData = HttpHelper.ReadAndFlattenHttpDataAsync(
                     routeParams: context.RouteParams,
                     queryParams: context.Query,
                     headers: request.Headers.AllKeys.ToDictionary(k => k, k => request.Headers.Get(k)),
                     cookies: request.Cookies.AllKeys.ToDictionary(k => k, k => request.Cookies[k].Value),
                     body: request.InputStream,
                     contentType: request.ContentType
-                )).GetAwaiter().GetResult();
+                ).GetAwaiter().GetResult();
 
                 context.ParsedUserInput = httpData.FlattenedData;
                 context.Body = request.InputStream;
