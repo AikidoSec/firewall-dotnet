@@ -295,7 +295,7 @@ namespace Aikido.Zen.Tests.DotNetFramework
                     Route = "/api/test",
                     RemoteAddress = "127.0.0.1"
                 };
-                httpContext.Items["Aikido.Zen.Context"] = aikidoContext;
+                Aikido.Zen.DotNetFramework.Zen.SetCurrentContext(aikidoContext);
                 Aikido.Zen.DotNetFramework.Zen.SetUserAction = _ => user;
 
                 ContextModule.PopulateAuthenticatedUser(httpContext);
@@ -312,6 +312,7 @@ namespace Aikido.Zen.Tests.DotNetFramework
             finally
             {
                 Aikido.Zen.DotNetFramework.Zen.SetUserAction = originalSetUserAction;
+                Aikido.Zen.DotNetFramework.Zen.ClearCurrentContext();
                 Agent.Instance.ClearContext();
             }
         }
@@ -327,7 +328,7 @@ namespace Aikido.Zen.Tests.DotNetFramework
                     new HttpRequest(string.Empty, "http://test.local/api/test", string.Empty),
                     new HttpResponse(new StringWriter()));
                 var aikidoContext = new Context();
-                httpContext.Items["Aikido.Zen.Context"] = aikidoContext;
+                Aikido.Zen.DotNetFramework.Zen.SetCurrentContext(aikidoContext);
                 Aikido.Zen.DotNetFramework.Zen.SetRateLimitGroupAction = _ => "configured-group";
 
                 ContextModule.PopulateRateLimitGroup(httpContext);
@@ -337,6 +338,7 @@ namespace Aikido.Zen.Tests.DotNetFramework
             finally
             {
                 Aikido.Zen.DotNetFramework.Zen.SetRateLimitGroupAction = originalSetRateLimitGroupAction;
+                Aikido.Zen.DotNetFramework.Zen.ClearCurrentContext();
             }
         }
 
@@ -350,6 +352,7 @@ namespace Aikido.Zen.Tests.DotNetFramework
                 var httpContext = new HttpContext(
                     new HttpRequest(string.Empty, "http://test.local/api/test", string.Empty),
                     new HttpResponse(new StringWriter()));
+                Aikido.Zen.DotNetFramework.Zen.ClearCurrentContext();
                 Aikido.Zen.DotNetFramework.Zen.SetRateLimitGroupAction = _ => "configured-group";
 
                 Assert.DoesNotThrow(() => ContextModule.PopulateRateLimitGroup(httpContext));
@@ -357,6 +360,7 @@ namespace Aikido.Zen.Tests.DotNetFramework
             finally
             {
                 Aikido.Zen.DotNetFramework.Zen.SetRateLimitGroupAction = originalSetRateLimitGroupAction;
+                Aikido.Zen.DotNetFramework.Zen.ClearCurrentContext();
             }
         }
 
@@ -371,7 +375,7 @@ namespace Aikido.Zen.Tests.DotNetFramework
                     new HttpRequest(string.Empty, "http://test.local/api/test", string.Empty),
                     new HttpResponse(new StringWriter()));
                 var aikidoContext = new Context { RateLimitGroup = "existing-group" };
-                httpContext.Items["Aikido.Zen.Context"] = aikidoContext;
+                Aikido.Zen.DotNetFramework.Zen.SetCurrentContext(aikidoContext);
                 Aikido.Zen.DotNetFramework.Zen.SetRateLimitGroupAction = _ => string.Empty;
 
                 ContextModule.PopulateRateLimitGroup(httpContext);
@@ -381,6 +385,7 @@ namespace Aikido.Zen.Tests.DotNetFramework
             finally
             {
                 Aikido.Zen.DotNetFramework.Zen.SetRateLimitGroupAction = originalSetRateLimitGroupAction;
+                Aikido.Zen.DotNetFramework.Zen.ClearCurrentContext();
             }
         }
 

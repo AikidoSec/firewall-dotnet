@@ -7,6 +7,7 @@ using Aikido.Zen.Core.Models;
 using Aikido.Zen.DotNetFramework;
 using Aikido.Zen.DotNetFramework.HttpModules;
 using NUnit.Framework;
+using FrameworkZen = Aikido.Zen.DotNetFramework.Zen;
 
 namespace Aikido.Zen.Tests.DotNetFramework
 {
@@ -81,7 +82,7 @@ namespace Aikido.Zen.Tests.DotNetFramework
                     RemoteAddress = "127.0.0.1",
                     User = user
                 };
-                httpContext.Items["Aikido.Zen.Context"] = aikidoContext;
+                FrameworkZen.SetCurrentContext(aikidoContext);
                 var completed = false;
 
                 BlockingModule.HandleBlocking(httpContext, () => completed = true);
@@ -102,6 +103,7 @@ namespace Aikido.Zen.Tests.DotNetFramework
             {
                 Agent.Instance.ClearContext();
                 Agent.Instance.Context.Config.UpdateBlockedUsers(System.Array.Empty<string>());
+                FrameworkZen.ClearCurrentContext();
             }
         }
 
@@ -127,7 +129,7 @@ namespace Aikido.Zen.Tests.DotNetFramework
                     new HttpRequest(string.Empty, "http://test.local/api/test", string.Empty),
                     new HttpResponse(new StringWriter()));
                 HttpContext.Current = httpContext;
-                httpContext.Items["Aikido.Zen.Context"] = new Context
+                FrameworkZen.SetCurrentContext(new Context
                 {
                     Url = "http://test.local/api/test",
                     Path = "/api/test",
@@ -135,13 +137,14 @@ namespace Aikido.Zen.Tests.DotNetFramework
                     Route = "/api/test",
                     RemoteAddress = "127.0.0.1",
                     User = user
-                };
+                });
 
                 Assert.That(Aikido.Zen.DotNetFramework.Zen.GetUser(), Is.SameAs(user));
             }
             finally
             {
                 HttpContext.Current = originalCurrent;
+                FrameworkZen.ClearCurrentContext();
             }
         }
 

@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Web;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Api;
@@ -16,6 +17,7 @@ namespace Aikido.Zen.DotNetFramework
     {
         // we need to reference Harmony somewhere to ensure it is copied with our package
         private static HarmonyLib.Harmony harmony = new HarmonyLib.Harmony("reference");
+        private static readonly AsyncLocal<Context> CurrentContext = new AsyncLocal<Context>();
         public static void Start()
         {
             // libzen_internals only available on 64
@@ -85,7 +87,7 @@ namespace Aikido.Zen.DotNetFramework
 
         public static Context GetContext()
         {
-            return (Context)HttpContext.Current?.Items["Aikido.Zen.Context"];
+            return CurrentContext.Value;
         }
 
         public static User GetUser()
@@ -127,6 +129,15 @@ namespace Aikido.Zen.DotNetFramework
             }
         }
 
+        internal static void SetCurrentContext(Context context)
+        {
+            CurrentContext.Value = context;
+        }
+
+        internal static void ClearCurrentContext()
+        {
+            CurrentContext.Value = null;
+        }
 
         public static void Init()
         {
