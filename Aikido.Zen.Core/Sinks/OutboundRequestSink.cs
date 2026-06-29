@@ -34,26 +34,6 @@ namespace Aikido.Zen.Core.Sinks
                 context => OnRequest(targetUri, context));
         }
 
-        [SinkFinalizer]
-        internal static Exception OnRequestFinalized(ref object __result, Exception __exception)
-        {
-            var state = CurrentRequest.Value;
-            if (state != null)
-            {
-                if (__result is Task<HttpResponseMessage> httpResponseTask)
-                {
-                    __result = ThrowDetectedException(httpResponseTask, state);
-                }
-                else if (__result is Task<WebResponse> webResponseTask)
-                {
-                    __result = ThrowDetectedException(webResponseTask, state);
-                }
-            }
-
-            ExitRequestScope();
-            return __exception;
-        }
-
         [SinkPrefix(typeof(WebRequest), "GetResponse")]
         [SinkPrefix(typeof(HttpWebRequest), "GetResponse")]
         [SinkPrefix(typeof(WebRequest), "GetResponseAsync")]
@@ -65,6 +45,22 @@ namespace Aikido.Zen.Core.Sinks
                 OperationKind,
                 Patcher.GetContext(),
                 context => OnRequest(__instance?.RequestUri, context));
+        }
+
+        [SinkFinalizer]
+        internal static Exception OnRequestFinalized(ref object __result, Exception __exception)
+        {
+            if (__result is Task<HttpResponseMessage> httpResponseTask && CurrentRequest.Value != null)
+            {
+                __result = ThrowDetectedException(httpResponseTask, CurrentRequest.Value);
+            }
+            else if (__result is Task<WebResponse> webResponseTask && CurrentRequest.Value != null)
+            {
+                __result = ThrowDetectedException(webResponseTask, CurrentRequest.Value);
+            }
+
+            ExitRequestScope();
+            return __exception;
         }
 
         private static InspectionResult OnRequest(Uri targetUri, Context context)

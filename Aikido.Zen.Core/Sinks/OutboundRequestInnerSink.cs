@@ -56,11 +56,6 @@ namespace Aikido.Zen.Core.Sinks
             }
         }
 
-        internal static bool OnRequest(object __instance, MethodBase __originalMethod, ref Task<HttpResponseMessage> __result)
-        {
-            return OnRequest(null, __instance, __originalMethod, ref __result);
-        }
-
         [SinkPrefix("System", "System.Net.ConnectStream", "WriteHeaders", "System.Boolean")]
         internal static bool OnFrameworkRequest(object __instance, object ___m_Connection, MethodBase __originalMethod)
         {
@@ -97,11 +92,6 @@ namespace Aikido.Zen.Core.Sinks
                 request?.Abort();
                 throw;
             }
-        }
-
-        internal static bool OnFrameworkRequest(object __instance, MethodBase __originalMethod)
-        {
-            return OnFrameworkRequest(null, __instance, __originalMethod);
         }
 
         private static IPAddress GetIPAddressFromConnection(object connection)

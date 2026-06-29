@@ -581,6 +581,36 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public async Task OnRequestFinalized_WhenWebResponseTaskFailsWithDetectedException_ThrowsDetectedException()
+        {
+#pragma warning disable SYSLIB0014
+            var webRequest = WebRequest.Create("http://webrequest.example/path");
+#pragma warning restore SYSLIB0014
+
+            var result = OnWebRequest(
+                webRequest,
+                GetMethod(typeof(WebRequest), nameof(WebRequest.GetResponseAsync)),
+                CreateContext());
+
+            Assert.That(result, Is.True);
+            Assert.That(OutboundRequestSink.TryGetCurrentRequest(out var state), Is.True);
+
+            var detectedException = new AikidoException("blocked web response");
+            state.DetectedException = detectedException;
+
+            object finalizerResult = Task.FromException<WebResponse>(new WebException("raw failure"));
+            var finalException = OutboundRequestSink.OnRequestFinalized(ref finalizerResult, null!);
+            var wrappedTask = (Task<WebResponse>)finalizerResult;
+            var exception = Assert.ThrowsAsync<AikidoException>(async () => await wrappedTask);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(finalException, Is.Null);
+                Assert.That(exception, Is.SameAs(detectedException));
+            });
+        }
+
+        [Test]
         public async Task HttpClientRequest_WhenPrivateConnectionIsReused_BlocksSecondRequest()
         {
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");

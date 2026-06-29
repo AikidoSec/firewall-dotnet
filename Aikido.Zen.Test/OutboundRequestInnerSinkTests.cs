@@ -69,7 +69,7 @@ namespace Aikido.Zen.Test
             OutboundRequestSink.ExitRequestScope();
             Task<HttpResponseMessage> result = null!;
 
-            var allowed = OutboundRequestInnerSink.OnRequest(new object(), GetHttpClientSendAsyncMethod(), ref result);
+            var allowed = OutboundRequestInnerSink.OnRequest(null, new object(), GetHttpClientSendAsyncMethod(), ref result);
 
             Assert.Multiple(() =>
             {
@@ -84,7 +84,7 @@ namespace Aikido.Zen.Test
             EnterRequestScope(new Uri("http://127.0.0.1/admin"), CreateContextWithInput("http://127.0.0.1/admin"));
             Task<HttpResponseMessage> result = null!;
 
-            var allowed = OutboundRequestInnerSink.OnRequest(new object(), GetHttpClientSendAsyncMethod(), ref result);
+            var allowed = OutboundRequestInnerSink.OnRequest(null, new object(), GetHttpClientSendAsyncMethod(), ref result);
 
             Assert.Multiple(() =>
             {
@@ -99,7 +99,7 @@ namespace Aikido.Zen.Test
             EnterRequestScope(new Uri("http://127.0.0.1/admin"), CreateContextWithInput("http://127.0.0.1/admin"));
             Task<HttpResponseMessage> result = null!;
 
-            var allowed = OutboundRequestInnerSink.OnRequest(null!, GetHttpClientSendAsyncMethod(), ref result);
+            var allowed = OutboundRequestInnerSink.OnRequest(null, null!, GetHttpClientSendAsyncMethod(), ref result);
 
             Assert.Multiple(() =>
             {
@@ -117,6 +117,7 @@ namespace Aikido.Zen.Test
             Task<HttpResponseMessage> result = null!;
 
             var allowed = OutboundRequestInnerSink.OnRequest(
+                null,
                 new Http3Connection(new RemoteEndpointConnection(IPAddress.Loopback)),
                 GetHttpClientSendAsyncMethod(),
                 ref result);
@@ -136,6 +137,7 @@ namespace Aikido.Zen.Test
             Task<HttpResponseMessage> result = null!;
 
             var allowed = OutboundRequestInnerSink.OnRequest(
+                null,
                 new Http3Connection(new RemoteEndpointConnection(new DnsEndPoint("localhost", 443))),
                 GetHttpClientSendAsyncMethod(),
                 ref result);
@@ -158,6 +160,7 @@ namespace Aikido.Zen.Test
             Task<HttpResponseMessage> result = null!;
 
             var allowed = OutboundRequestInnerSink.OnRequest(
+                null,
                 new HttpConnection(sslStream),
                 GetHttpClientSendAsyncMethod(),
                 ref result);
@@ -179,6 +182,7 @@ namespace Aikido.Zen.Test
             Task<HttpResponseMessage> result = null!;
 
             var allowed = OutboundRequestInnerSink.OnRequest(
+                null,
                 new Http3Connection(socket),
                 GetHttpClientSendAsyncMethod(),
                 ref result);
@@ -195,7 +199,7 @@ namespace Aikido.Zen.Test
         {
             OutboundRequestSink.ExitRequestScope();
 
-            var allowed = OutboundRequestInnerSink.OnFrameworkRequest(new object(), GetHttpClientSendAsyncMethod());
+            var allowed = OutboundRequestInnerSink.OnFrameworkRequest(null, new object(), GetHttpClientSendAsyncMethod());
 
             Assert.That(allowed, Is.True);
         }
@@ -205,7 +209,7 @@ namespace Aikido.Zen.Test
         {
             EnterRequestScope(new Uri("http://127.0.0.1/admin"), CreateContextWithInput("http://127.0.0.1/admin"));
 
-            var allowed = OutboundRequestInnerSink.OnFrameworkRequest(new object(), GetHttpClientSendAsyncMethod());
+            var allowed = OutboundRequestInnerSink.OnFrameworkRequest(null, new object(), GetHttpClientSendAsyncMethod());
 
             Assert.That(allowed, Is.True);
         }
@@ -218,6 +222,7 @@ namespace Aikido.Zen.Test
             EnterRequestScope(targetUri, CreateContextWithInput("http://unrelated.example/admin"));
 
             var allowed = OutboundRequestInnerSink.OnFrameworkRequest(
+                null,
                 new FrameworkConnection(new SocketBackedStream(pair.Client)),
                 GetHttpClientSendAsyncMethod());
 
@@ -234,6 +239,7 @@ namespace Aikido.Zen.Test
 
             Assert.That(
                 () => OutboundRequestInnerSink.OnFrameworkRequest(
+                    null,
                     new FrameworkConnection(new SocketBackedStream(pair.Client)),
                     GetHttpClientSendAsyncMethod()),
                 Throws.TypeOf<AikidoException>());
