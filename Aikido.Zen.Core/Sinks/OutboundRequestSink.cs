@@ -14,7 +14,7 @@ namespace Aikido.Zen.Core.Sinks
     internal static class OutboundRequestSink
     {
         private const string OperationKind = "outgoing_http_op";
-        private static readonly AsyncLocal<OutboundRequest> CurrentRequest = new AsyncLocal<OutboundRequest>();
+        private static readonly AsyncLocal<OutboundRequestState> CurrentRequest = new AsyncLocal<OutboundRequestState>();
 
         [SinkPrefix(typeof(HttpClient), "SendAsync", "System.Net.Http.HttpRequestMessage")]
         [SinkPrefix(typeof(HttpClient), "SendAsync", "System.Net.Http.HttpRequestMessage", "System.Net.Http.HttpCompletionOption")]
@@ -26,10 +26,31 @@ namespace Aikido.Zen.Core.Sinks
         [SinkPrefix(typeof(HttpClient), "Send", "System.Net.Http.HttpRequestMessage", "System.Threading.CancellationToken")]
         internal static bool OnRequestHttpClient(HttpRequestMessage request, HttpClient __instance, MethodBase __originalMethod)
         {
+            var targetUri = ResolveUri(request, __instance);
             return Inspector.Inspect(
                 __originalMethod,
                 OperationKind,
-                context => OnRequest(ResolveUri(request, __instance), context));
+                context => OnRequest(targetUri, context));
+        }
+
+        [SinkFinalizer]
+        internal static Exception OnRequestFinalized(ref object __result, Exception __exception)
+        {
+            var state = CurrentRequest.Value;
+            if (state != null)
+            {
+                if (__result is Task<HttpResponseMessage> httpResponseTask)
+                {
+                    __result = ThrowDetectedException(httpResponseTask, state);
+                }
+                else if (__result is Task<WebResponse> webResponseTask)
+                {
+                    __result = ThrowDetectedException(webResponseTask, state);
+                }
+            }
+
+            ExitRequestScope();
+            return __exception;
         }
 
         [SinkPrefix(typeof(WebRequest), "GetResponse")]
@@ -44,23 +65,11 @@ namespace Aikido.Zen.Core.Sinks
                 context => OnRequest(__instance?.RequestUri, context));
         }
 
-        [SinkFinalizer]
-        internal static Exception OnRequestFinalized(ref object __result, Exception __exception)
-        {
-            if (__result is Task<HttpResponseMessage> responseTask && CurrentRequest.Value != null)
-            {
-                __result = ThrowDetectedException(responseTask, CurrentRequest.Value);
-            }
-
-            ExitRequestScope();
-            return __exception;
-        }
-
         private static InspectionResult OnRequest(Uri targetUri, Context context)
         {
             // Modern WebRequest wraps HttpClient, so the inner HttpClient hook
             // should not replace the original request URI or report stats twice.
-            if (TryGetCurrentRequestUri(out _))
+            if (TryGetCurrentRequest(out _))
             {
                 return InspectionResult.Allow(skipStats: true);
             }
@@ -70,7 +79,7 @@ namespace Aikido.Zen.Core.Sinks
                 return InspectionResult.Allow(skipStats: true);
             }
 
-            EnterRequestScope(targetUri);
+            EnterRequestScope(targetUri, context);
 
             var hostname = targetUri.Host;
             var port = UriHelper.GetPort(targetUri);
@@ -106,19 +115,10 @@ namespace Aikido.Zen.Core.Sinks
             return new Uri(client.BaseAddress, request.RequestUri);
         }
 
-        private static void EnterRequestScope(Uri targetUri)
+        internal static bool TryGetCurrentRequest(out OutboundRequestState state)
         {
-            ExitRequestScope();
-
-            if (targetUri != null)
-            {
-                CurrentRequest.Value = new OutboundRequest(targetUri);
-            }
-        }
-
-        internal static void ExitRequestScope()
-        {
-            CurrentRequest.Value = null;
+            state = CurrentRequest.Value;
+            return state != null;
         }
 
         internal static bool TryGetCurrentRequestUri(out Uri targetUri)
@@ -127,35 +127,46 @@ namespace Aikido.Zen.Core.Sinks
             return targetUri != null;
         }
 
-        internal static void SetDetectedException(AikidoException exception)
+        private static void EnterRequestScope(Uri targetUri, Context context)
         {
-            var currentRequest = CurrentRequest.Value;
-            if (currentRequest != null)
+            ExitRequestScope();
+
+            if (targetUri == null)
             {
-                currentRequest.DetectedException = exception;
+                return;
             }
+
+            var state = new OutboundRequestState(targetUri, context);
+            CurrentRequest.Value = state;
         }
 
-        private static async Task<HttpResponseMessage> ThrowDetectedException(Task<HttpResponseMessage> responseTask, OutboundRequest request)
+        internal static void ExitRequestScope()
+        {
+            CurrentRequest.Value = null;
+        }
+
+        private static async Task<T> ThrowDetectedException<T>(Task<T> responseTask, OutboundRequestState state)
         {
             try
             {
                 return await responseTask.ConfigureAwait(false);
             }
-            catch (Exception) when (request.DetectedException != null)
+            catch (Exception) when (state?.DetectedException != null)
             {
-                throw request.DetectedException;
+                throw state.DetectedException;
             }
         }
 
-        private sealed class OutboundRequest
+        internal sealed class OutboundRequestState
         {
-            internal OutboundRequest(Uri targetUri)
+            internal OutboundRequestState(Uri targetUri, Context context)
             {
                 TargetUri = targetUri;
+                Context = context;
             }
 
             internal Uri TargetUri { get; }
+            internal Context Context { get; }
             internal AikidoException DetectedException { get; set; }
         }
     }

@@ -21,9 +21,11 @@ namespace Aikido.Zen.Core.Sinks
         [SinkPrefix("System.Net.Http", "System.Net.Http.Http3Connection", "SendAsync", "System.Net.Http.HttpRequestMessage", "System.Int64", "System.Threading.CancellationToken")]
         [SinkPrefix("System.Net.Http", "System.Net.Http.Http3Connection", "SendAsync", "System.Net.Http.HttpRequestMessage", "System.Int64", "System.Diagnostics.Activity", "System.Threading.CancellationToken")]
         [SinkPrefix("System.Net.Http", "System.Net.Http.Http3Connection", "SendAsync", "System.Net.Http.HttpRequestMessage", "System.Net.Http.Http3Connection+WaitForHttp3ConnectionActivity", "System.Boolean", "System.Threading.CancellationToken")]
-        internal static bool OnRequest(object __instance, MethodBase __originalMethod, ref Task<HttpResponseMessage> __result)
+        internal static bool OnRequest(HttpRequestMessage request, object __instance, MethodBase __originalMethod, ref Task<HttpResponseMessage> __result)
         {
-            if (!OutboundRequestSink.TryGetCurrentRequestUri(out var targetUri))
+            OutboundRequestSink.TryGetCurrentRequest(out var state);
+            var targetUri = state?.TargetUri ?? request?.RequestUri;
+            if (targetUri == null)
             {
                 return true;
             }
@@ -39,25 +41,39 @@ namespace Aikido.Zen.Core.Sinks
                 return Inspector.Inspect(
                     __originalMethod,
                     OperationKind,
+                    state?.Context,
                     context => SSRFDetector.Detect(targetUri, remoteAddress, context));
             }
             catch (AikidoException ex)
             {
-                OutboundRequestSink.SetDetectedException(ex);
+                if (state != null)
+                {
+                    state.DetectedException = ex;
+                }
+
                 __result = Task.FromException<HttpResponseMessage>(ex);
                 return false;
             }
         }
 
-        [SinkPrefix("System", "System.Net.ConnectStream", "WriteHeaders", "System.Boolean")]
-        internal static bool OnFrameworkRequest(object ___m_Connection, MethodBase __originalMethod)
+        internal static bool OnRequest(object __instance, MethodBase __originalMethod, ref Task<HttpResponseMessage> __result)
         {
-            if (!OutboundRequestSink.TryGetCurrentRequestUri(out var targetUri))
+            return OnRequest(null, __instance, __originalMethod, ref __result);
+        }
+
+        [SinkPrefix("System", "System.Net.ConnectStream", "WriteHeaders", "System.Boolean")]
+        internal static bool OnFrameworkRequest(object __instance, object ___m_Connection, MethodBase __originalMethod)
+        {
+            var request = ReflectionHelper.GetMemberValue(__instance, "m_Request") as HttpWebRequest;
+            OutboundRequestSink.TryGetCurrentRequest(out var state);
+            var targetUri = state?.TargetUri ?? request?.RequestUri;
+            var remoteAddress = GetIPAddressFromStream(ReflectionHelper.GetMemberValue(___m_Connection, "NetworkStream") as Stream);
+
+            if (targetUri == null)
             {
                 return true;
             }
 
-            var remoteAddress = GetIPAddressFromStream(ReflectionHelper.GetMemberValue(___m_Connection, "NetworkStream") as Stream);
             if (remoteAddress == null)
             {
                 return true;
@@ -68,13 +84,24 @@ namespace Aikido.Zen.Core.Sinks
                 return Inspector.Inspect(
                     __originalMethod,
                     OperationKind,
+                    state?.Context,
                     context => SSRFDetector.Detect(targetUri, remoteAddress, context));
             }
             catch (AikidoException ex)
             {
-                OutboundRequestSink.SetDetectedException(ex);
+                if (state != null)
+                {
+                    state.DetectedException = ex;
+                }
+
+                request?.Abort();
                 throw;
             }
+        }
+
+        internal static bool OnFrameworkRequest(object __instance, MethodBase __originalMethod)
+        {
+            return OnFrameworkRequest(null, __instance, __originalMethod);
         }
 
         private static IPAddress GetIPAddressFromConnection(object connection)
