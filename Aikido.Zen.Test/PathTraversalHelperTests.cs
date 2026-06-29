@@ -172,6 +172,7 @@ namespace Aikido.Zen.Test.Helpers
             Inspector.Inspect(
                 method,
                 "fs_op",
+                context,
                 _ => result);
             return result.AttackKind.HasValue;
         }

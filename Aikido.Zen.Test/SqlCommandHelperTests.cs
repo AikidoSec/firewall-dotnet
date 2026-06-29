@@ -402,6 +402,7 @@ namespace Aikido.Zen.Test.Helpers
             Inspector.Inspect(
                 method,
                 "sql_op",
+                context,
                 _ => result);
             return result.AttackKind.HasValue;
         }
