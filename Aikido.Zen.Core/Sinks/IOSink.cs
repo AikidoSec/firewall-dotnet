@@ -38,6 +38,7 @@ namespace Aikido.Zen.Core.Sinks
             return Inspector.Inspect(
                 __originalMethod,
                 OperationKind,
+                Patcher.GetContext(),
                 context => InspectPaths(context, path));
         }
 
@@ -49,6 +50,7 @@ namespace Aikido.Zen.Core.Sinks
             return Inspector.Inspect(
                 __originalMethod,
                 OperationKind,
+                Patcher.GetContext(),
                 context => InspectPaths(context, sourceFileName, destFileName));
         }
 
@@ -58,6 +60,7 @@ namespace Aikido.Zen.Core.Sinks
             return Inspector.Inspect(
                 __originalMethod,
                 OperationKind,
+                Patcher.GetContext(),
                 context => InspectPaths(context, path, basePath));
         }
 

@@ -30,6 +30,7 @@ namespace Aikido.Zen.Core.Sinks
             return Inspector.Inspect(
                 __originalMethod,
                 OperationKind,
+                Patcher.GetContext(),
                 context => OnRequest(targetUri, context));
         }
 
@@ -62,6 +63,7 @@ namespace Aikido.Zen.Core.Sinks
             return Inspector.Inspect(
                 __originalMethod,
                 OperationKind,
+                Patcher.GetContext(),
                 context => OnRequest(__instance?.RequestUri, context));
         }
 

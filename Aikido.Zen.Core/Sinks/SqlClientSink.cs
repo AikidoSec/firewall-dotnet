@@ -45,6 +45,7 @@ namespace Aikido.Zen.Core.Sinks
             return Inspector.Inspect(
                 __originalMethod,
                 OperationKind,
+                Patcher.GetContext(),
                 context => OnCommandExecuting(
                     __instance?.CommandText,
                     GetDialect(__instance, __originalMethod),
@@ -59,6 +60,7 @@ namespace Aikido.Zen.Core.Sinks
             return Inspector.Inspect(
                 __originalMethod,
                 OperationKind,
+                Patcher.GetContext(),
                 context => OnCommandExecuting(
                     cmd?.CommandText,
                     GetDialect(cmd, __originalMethod),
@@ -72,6 +74,7 @@ namespace Aikido.Zen.Core.Sinks
             return Inspector.Inspect(
                 __originalMethod,
                 OperationKind,
+                Patcher.GetContext(),
                 context => OnCommandExecuting(
                     sql,
                     GetDialect(null, __originalMethod),
@@ -84,6 +87,7 @@ namespace Aikido.Zen.Core.Sinks
             return Inspector.Inspect(
                 __originalMethod,
                 OperationKind,
+                Patcher.GetContext(),
                 context => OnCommandExecuting(
                     ReflectionHelper.GetStringMember(__instance, "SQL"),
                     GetDialect(__instance, __originalMethod),
