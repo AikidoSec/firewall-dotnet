@@ -7,6 +7,7 @@ using System.Threading;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Exceptions;
+using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Models.Events;
 using Aikido.Zen.Core.Sinks;
 using Aikido.Zen.Tests.Mocks;
@@ -127,6 +128,39 @@ namespace Aikido.Zen.Test
                 Assert.That(allowed, Is.False);
                 Assert.That(result, Is.Not.Null);
                 Assert.That(async () => await result, Throws.TypeOf<AikidoException>());
+            });
+        }
+
+        [Test]
+        public void OnRequest_WhenOuterRouteHasForceProtectionOff_AllowsStoredSsrf()
+        {
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
+            _agent.Context.Config.UpdateRatelimitedRoutes(new[]
+            {
+                new EndpointConfig
+                {
+                    Method = "GET",
+                    Route = "/outbound",
+                    ForceProtectionOff = true
+                }
+            });
+
+            var url = "http://evil-stored-ssrf-hostname/latest/api/token";
+            EnterRequestScope(new Uri(url), CreateContextWithInput(url));
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            Task<HttpResponseMessage> result = null!;
+
+            var allowed = OutboundRequestInnerSink.OnRequest(
+                request,
+                new Http3Connection(new RemoteEndpointConnection(IPAddress.Parse("169.254.169.254"))),
+                GetHttpClientSendAsyncMethod(),
+                ref result);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(allowed, Is.True);
+                Assert.That(result, Is.Null);
+                Assert.That(_agent.Context.AttacksDetected, Is.EqualTo(0));
             });
         }
 

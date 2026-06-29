@@ -26,12 +26,19 @@ namespace Aikido.Zen.Core.Sinks
         [SinkPrefix(typeof(HttpClient), "Send", "System.Net.Http.HttpRequestMessage", "System.Threading.CancellationToken")]
         internal static bool OnRequestHttpClient(HttpRequestMessage request, HttpClient __instance, MethodBase __originalMethod)
         {
+            var context = Patcher.GetContext();
             var targetUri = ResolveUri(request, __instance);
+            var isNestedRequest = TryGetCurrentRequest(out _);
+            if (!isNestedRequest)
+            {
+                EnterRequestScope(targetUri, context);
+            }
+
             return Inspector.Inspect(
                 __originalMethod,
                 OperationKind,
-                Patcher.GetContext(),
-                context => OnRequest(targetUri, context));
+                context,
+                _ => OnRequest(targetUri, isNestedRequest));
         }
 
         [SinkPrefix(typeof(WebRequest), "GetResponse")]
@@ -40,11 +47,19 @@ namespace Aikido.Zen.Core.Sinks
         [SinkPrefix(typeof(HttpWebRequest), "GetResponseAsync")]
         internal static bool OnRequestWebRequest(WebRequest __instance, MethodBase __originalMethod)
         {
+            var context = Patcher.GetContext();
+            var targetUri = __instance?.RequestUri;
+            var isNestedRequest = TryGetCurrentRequest(out _);
+            if (!isNestedRequest)
+            {
+                EnterRequestScope(targetUri, context);
+            }
+
             return Inspector.Inspect(
                 __originalMethod,
                 OperationKind,
-                Patcher.GetContext(),
-                context => OnRequest(__instance?.RequestUri, context));
+                context,
+                _ => OnRequest(targetUri, isNestedRequest));
         }
 
         [SinkFinalizer]
@@ -63,11 +78,11 @@ namespace Aikido.Zen.Core.Sinks
             return __exception;
         }
 
-        private static InspectionResult OnRequest(Uri targetUri, Context context)
+        private static InspectionResult OnRequest(Uri targetUri, bool isNestedRequest)
         {
             // Modern WebRequest wraps HttpClient, so the inner HttpClient hook
             // should not replace the original request URI or report stats twice.
-            if (TryGetCurrentRequest(out _))
+            if (isNestedRequest)
             {
                 return InspectionResult.Allow(skipStats: true);
             }
@@ -76,8 +91,6 @@ namespace Aikido.Zen.Core.Sinks
             {
                 return InspectionResult.Allow(skipStats: true);
             }
-
-            EnterRequestScope(targetUri, context);
 
             var hostname = targetUri.Host;
             var port = UriHelper.GetPort(targetUri);
