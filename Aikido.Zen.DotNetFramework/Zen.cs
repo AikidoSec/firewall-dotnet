@@ -136,12 +136,6 @@ namespace Aikido.Zen.DotNetFramework
                 return;
             }
 
-            if (context == null)
-            {
-                current.Items.Remove(ContextItemKey);
-                return;
-            }
-
             current.Items[ContextItemKey] = context;
         }
 

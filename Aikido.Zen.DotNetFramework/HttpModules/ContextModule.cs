@@ -89,7 +89,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
 
                 if (EnvironmentHelper.IsDisabled)
                 {
-                    Zen.SetCurrentContext(null);
+                    Zen.ClearCurrentContext();
                     return;
                 }
 
@@ -142,7 +142,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             {
                 // pass through
                 LogHelper.ErrorLog(Agent.Logger, $"Error capturing request {ex.Message}");
-                Zen.SetCurrentContext(null);
+                Zen.ClearCurrentContext();
             }
             finally
             {
