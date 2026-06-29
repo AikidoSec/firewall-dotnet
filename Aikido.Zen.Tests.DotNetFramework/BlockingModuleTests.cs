@@ -65,6 +65,7 @@ namespace Aikido.Zen.Tests.DotNetFramework
         {
             Agent.Instance.ClearContext();
             Agent.Instance.Context.Config.UpdateBlockedUsers(new[] { "blocked-user" });
+            var originalCurrent = HttpContext.Current;
 
             try
             {
@@ -82,6 +83,7 @@ namespace Aikido.Zen.Tests.DotNetFramework
                     RemoteAddress = "127.0.0.1",
                     User = user
                 };
+                HttpContext.Current = httpContext;
                 FrameworkZen.SetCurrentContext(aikidoContext);
                 var completed = false;
 
@@ -104,6 +106,7 @@ namespace Aikido.Zen.Tests.DotNetFramework
                 Agent.Instance.ClearContext();
                 Agent.Instance.Context.Config.UpdateBlockedUsers(System.Array.Empty<string>());
                 FrameworkZen.ClearCurrentContext();
+                HttpContext.Current = originalCurrent;
             }
         }
 
