@@ -51,7 +51,6 @@ namespace Aikido.Zen.Test
 
             _agent = Agent.NewInstance(ZenApiMock.CreateMock(_reportingApiMock.Object, _runtimeApiMock.Object).Object);
             _agent.ClearContext();
-            OutboundRequestSink.ExitRequestScope();
             Patcher.Unpatch();
             Patcher.PatchSinks(() => _activeContext!);
         }
@@ -59,7 +58,6 @@ namespace Aikido.Zen.Test
         [TearDown]
         public void TearDown()
         {
-            OutboundRequestSink.ExitRequestScope();
             Patcher.Unpatch();
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", null);
             _agent?.Dispose();
@@ -366,35 +364,31 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void OnRequest_WhenAlreadyInsideOutboundRequest_DoesNotReplaceCurrentRequest()
+        public void OnHttpClientWebRequestCreated_AssociatesFrameworkRequestWithHttpClientState()
         {
+            using var httpClient = new HttpClient();
+            using var httpRequest = new HttpRequestMessage(HttpMethod.Get, "https://httpclient.example/path");
 #pragma warning disable SYSLIB0014
-            var webRequest = WebRequest.Create("https://webrequest.example/path");
+            var webRequest = (HttpWebRequest)WebRequest.Create("https://framework.example/path");
 #pragma warning restore SYSLIB0014
 
-            var outerResult = OnWebRequest(
-                webRequest,
-                GetMethod(typeof(WebRequest), nameof(WebRequest.GetResponse)),
-                CreateContext());
-
-            using var httpClient = new HttpClient();
-            using var innerRequest = new HttpRequestMessage(HttpMethod.Get, "https://inner.example/path");
-            var innerResult = OnHttpClientRequest(
-                innerRequest,
+            var result = OnHttpClientRequest(
+                httpRequest,
                 httpClient,
                 GetHttpClientSendAsyncMethod(),
                 CreateContext());
 
-            var hasCurrentRequest = OutboundRequestSink.TryGetCurrentRequestUri(out var currentUri);
+            HttpClientSink.OnHttpClientWebRequestCreated(httpRequest, webRequest);
+            var hasHttpState = HttpClientSink.TryGetRequestState(httpRequest, out var httpState);
+            var hasWebState = WebRequestSink.TryGetRequestState(webRequest, out var webState);
 
             Assert.Multiple(() =>
             {
-                Assert.That(outerResult, Is.True);
-                Assert.That(innerResult, Is.True);
-                Assert.That(hasCurrentRequest, Is.True);
-                Assert.That(currentUri.Host, Is.EqualTo("webrequest.example"));
-                Assert.That(_agent.Context.Hostnames.Count(h => h.Hostname == "webrequest.example"), Is.EqualTo(1));
-                Assert.That(_agent.Context.Hostnames.Any(h => h.Hostname == "inner.example"), Is.False);
+                Assert.That(result, Is.True);
+                Assert.That(hasHttpState, Is.True);
+                Assert.That(hasWebState, Is.True);
+                Assert.That(webState, Is.SameAs(httpState));
+                Assert.That(webState.TargetUri.Host, Is.EqualTo("httpclient.example"));
             });
         }
 
@@ -535,43 +529,27 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void OnRequestFinalized_ClearsCallerRequestScope()
+        public async Task OnHttpClientRequestFinalized_WhenResponseTaskSucceeds_ReturnsResponse()
         {
-            var context = CreateContext();
-            context.ParsedUserInput = new Dictionary<string, string>
-            {
-                { "query.url", "http://private.example/admin" }
-            };
+            using var httpClient = new HttpClient();
+            using var request = new HttpRequestMessage(HttpMethod.Get, "http://public.example/");
 
-            var result = OnRequest(
-                new Uri("http://private.example/admin"),
-                GetHttpClientSendAsyncMethod(),
-                context);
-
-            Assert.That(result, Is.True);
-
-            object finalizerResult = null!;
-            OutboundRequestSink.OnRequestFinalized(ref finalizerResult, null!);
-
-            var hasCurrentRequest = OutboundRequestSink.TryGetCurrentRequestUri(out _);
-
-            Assert.That(hasCurrentRequest, Is.False);
-        }
-
-        [Test]
-        public async Task OnRequestFinalized_WhenResponseTaskSucceeds_ReturnsResponse()
-        {
-            var result = OnRequest(
-                new Uri("http://public.example/"),
+            var result = OnHttpClientRequest(
+                request,
+                httpClient,
                 GetHttpClientSendAsyncMethod(),
                 CreateContext());
 
             Assert.That(result, Is.True);
+            Assert.That(HttpClientSink.TryGetRequestState(request, out _), Is.True);
 
             var response = new HttpResponseMessage(HttpStatusCode.NoContent);
-            object finalizerResult = Task.FromResult(response);
-            var finalException = OutboundRequestSink.OnRequestFinalized(ref finalizerResult, null!);
-            var finalResponse = await (Task<HttpResponseMessage>)finalizerResult;
+            var responseTask = new TaskCompletionSource<HttpResponseMessage>();
+            var finalizerResult = responseTask.Task;
+            var finalException = HttpClientSink.OnHttpClientRequestFinalized(request, ref finalizerResult, null!);
+
+            responseTask.SetResult(response);
+            var finalResponse = await finalizerResult;
 
             Assert.Multiple(() =>
             {
@@ -581,10 +559,10 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public async Task OnRequestFinalized_WhenWebResponseTaskFailsWithDetectedException_ThrowsDetectedException()
+        public async Task OnWebRequestFinalized_WhenWebResponseTaskFailsWithDetectedException_ThrowsDetectedException()
         {
 #pragma warning disable SYSLIB0014
-            var webRequest = WebRequest.Create("http://webrequest.example/path");
+            var webRequest = (HttpWebRequest)WebRequest.Create("http://webrequest.example/path");
 #pragma warning restore SYSLIB0014
 
             var result = OnWebRequest(
@@ -593,15 +571,14 @@ namespace Aikido.Zen.Test
                 CreateContext());
 
             Assert.That(result, Is.True);
-            Assert.That(OutboundRequestSink.TryGetCurrentRequest(out var state), Is.True);
+            Assert.That(WebRequestSink.TryGetRequestState(webRequest, out var state), Is.True);
 
             var detectedException = new AikidoException("blocked web response");
             state.DetectedException = detectedException;
 
-            object finalizerResult = Task.FromException<WebResponse>(new WebException("raw failure"));
-            var finalException = OutboundRequestSink.OnRequestFinalized(ref finalizerResult, null!);
-            var wrappedTask = (Task<WebResponse>)finalizerResult;
-            var exception = Assert.ThrowsAsync<AikidoException>(async () => await wrappedTask);
+            var finalizerResult = Task.FromException<WebResponse>(new WebException("raw failure"));
+            var finalException = WebRequestSink.OnWebRequestFinalized(webRequest, ref finalizerResult, null!);
+            var exception = Assert.ThrowsAsync<AikidoException>(async () => await finalizerResult);
 
             Assert.Multiple(() =>
             {
@@ -680,13 +657,13 @@ namespace Aikido.Zen.Test
         private bool OnHttpClientRequest(HttpRequestMessage? request, HttpClient? httpClient, MethodInfo methodInfo, Context? context)
         {
             _activeContext = context;
-            return OutboundRequestSink.OnRequestHttpClient(request!, httpClient!, methodInfo);
+            return HttpClientSink.OnHttpClientRequest(request!, httpClient!, methodInfo);
         }
 
         private bool OnWebRequest(WebRequest? request, MethodInfo methodInfo, Context? context)
         {
             _activeContext = context;
-            return OutboundRequestSink.OnRequestWebRequest(request!, methodInfo);
+            return WebRequestSink.OnWebRequest(request!, methodInfo);
         }
 
         private static MethodInfo GetMethod(Type type, string methodName, params Type[] parameterTypes)
