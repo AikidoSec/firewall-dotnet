@@ -46,6 +46,8 @@ namespace Aikido.Zen.Core.Sinks
                 __originalMethod,
                 OperationKind,
                 context,
+                // Nested requests can re-enter Send/SendAsync with the same HttpRequestMessage.
+                // The first pass stores state and inspects the outbound host; later passes are duplicates.
                 _ => isNestedRequest
                     ? InspectionResult.Allow(skipStats: true)
                     : InspectOutboundRequest(targetUri));

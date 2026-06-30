@@ -17,7 +17,7 @@ namespace Aikido.Zen.Test
 {
     [TestFixture]
     [NonParallelizable]
-    public class OutboundPublicSinkTests
+    public class OutboundSinkPublicTests
     {
         private Mock<IReportingAPIClient> _reportingApiMock;
         private Mock<IRuntimeAPIClient> _runtimeApiMock;

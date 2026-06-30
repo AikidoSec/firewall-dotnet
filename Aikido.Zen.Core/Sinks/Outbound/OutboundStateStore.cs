@@ -7,11 +7,10 @@ using Aikido.Zen.Core.Models;
 
 namespace Aikido.Zen.Core.Sinks
 {
-    internal static class OutboundRequestStateStore
+    internal static class OutboundStateStore
     {
         private static readonly ConditionalWeakTable<HttpRequestMessage, OutboundRequestState> HttpRequestStates = new ConditionalWeakTable<HttpRequestMessage, OutboundRequestState>();
         private static readonly ConditionalWeakTable<HttpWebRequest, OutboundRequestState> WebRequestStates = new ConditionalWeakTable<HttpWebRequest, OutboundRequestState>();
-        private static readonly object WebRequestStateLock = new object();
 
         internal static bool TryGetHttpRequestState(HttpRequestMessage request, out OutboundRequestState state)
         {
@@ -42,11 +41,7 @@ namespace Aikido.Zen.Core.Sinks
 
         internal static void SetWebRequestState(HttpWebRequest request, OutboundRequestState state)
         {
-            lock (WebRequestStateLock)
-            {
-                WebRequestStates.Remove(request);
-                WebRequestStates.Add(request, state);
-            }
+            WebRequestStates.Add(request, state);
         }
 
         internal static void AssociateHttpRequestWithWebRequest(HttpRequestMessage httpRequest, HttpWebRequest webRequest)
