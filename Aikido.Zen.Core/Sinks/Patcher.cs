@@ -19,7 +19,7 @@ namespace Aikido.Zen.Core.Sinks
         {
             typeof(IOSink),
             typeof(LLMSink),
-            typeof(OutboundSink),
+            typeof(OutboundRequestSink),
             typeof(ProcessExecutionSink),
             typeof(SqlClientSink)
         };

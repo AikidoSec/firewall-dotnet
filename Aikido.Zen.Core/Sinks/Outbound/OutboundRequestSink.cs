@@ -13,7 +13,7 @@ using Aikido.Zen.Core.Vulnerabilities;
 
 namespace Aikido.Zen.Core.Sinks
 {
-    internal static class OutboundSink
+    internal static class OutboundRequestSink
     {
         private const string OperationKind = "outgoing_http_op";
         private const int MaxStreamUnwrapDepth = 4;

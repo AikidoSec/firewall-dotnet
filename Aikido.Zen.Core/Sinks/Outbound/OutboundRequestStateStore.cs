@@ -7,7 +7,7 @@ using Aikido.Zen.Core.Models;
 
 namespace Aikido.Zen.Core.Sinks
 {
-    internal static class OutboundStateStore
+    internal static class OutboundRequestStateStore
     {
         private static readonly ConditionalWeakTable<HttpRequestMessage, OutboundRequestState> HttpRequestStates = new ConditionalWeakTable<HttpRequestMessage, OutboundRequestState>();
         private static readonly ConditionalWeakTable<HttpWebRequest, OutboundRequestState> WebRequestStates = new ConditionalWeakTable<HttpWebRequest, OutboundRequestState>();
