@@ -17,7 +17,7 @@ namespace Aikido.Zen.Test
 {
     [TestFixture]
     [NonParallelizable]
-    public class OutboundSinkPublicTests
+    public class OutboundRequestSinkPublicTests
     {
         private Mock<IReportingAPIClient> _reportingApiMock;
         private Mock<IRuntimeAPIClient> _runtimeApiMock;
@@ -378,7 +378,7 @@ namespace Aikido.Zen.Test
                 GetHttpClientSendAsyncMethod(),
                 CreateContext());
 
-            OutboundSink.OnHttpClientWebRequestCreated(httpRequest, webRequest);
+            OutboundRequestSink.OnHttpClientWebRequestCreated(httpRequest, webRequest);
             var hasHttpState = OutboundRequestStateStore.TryGetHttpRequestState(httpRequest, out var httpState);
             var hasWebState = OutboundRequestStateStore.TryGetWebRequestState(webRequest, out var webState);
 
@@ -546,7 +546,7 @@ namespace Aikido.Zen.Test
             var response = new HttpResponseMessage(HttpStatusCode.NoContent);
             var responseTask = new TaskCompletionSource<HttpResponseMessage>();
             var finalizerResult = responseTask.Task;
-            var finalException = OutboundSink.OnHttpClientRequestFinalized(request, ref finalizerResult, null!);
+            var finalException = OutboundRequestSink.OnHttpClientRequestFinalized(request, ref finalizerResult, null!);
 
             responseTask.SetResult(response);
             var finalResponse = await finalizerResult;
@@ -577,7 +577,7 @@ namespace Aikido.Zen.Test
             state.DetectedException = detectedException;
 
             var finalizerResult = Task.FromException<WebResponse>(new WebException("raw failure"));
-            var finalException = OutboundSink.OnWebRequestFinalized(webRequest, ref finalizerResult, null!);
+            var finalException = OutboundRequestSink.OnWebRequestFinalized(webRequest, ref finalizerResult, null!);
             var exception = Assert.ThrowsAsync<AikidoException>(async () => await finalizerResult);
 
             Assert.Multiple(() =>
@@ -657,13 +657,13 @@ namespace Aikido.Zen.Test
         private bool OnHttpClientRequest(HttpRequestMessage? request, HttpClient? httpClient, MethodInfo methodInfo, Context? context)
         {
             _activeContext = context;
-            return OutboundSink.OnHttpClientRequest(request!, httpClient!, methodInfo);
+            return OutboundRequestSink.OnHttpClientRequest(request!, httpClient!, methodInfo);
         }
 
         private bool OnWebRequest(WebRequest? request, MethodInfo methodInfo, Context? context)
         {
             _activeContext = context;
-            return OutboundSink.OnWebRequest(request!, methodInfo);
+            return OutboundRequestSink.OnWebRequest(request!, methodInfo);
         }
 
         private static MethodInfo GetMethod(Type type, string methodName, params Type[] parameterTypes)
