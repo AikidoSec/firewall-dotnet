@@ -17,7 +17,7 @@ namespace Aikido.Zen.Test
 {
     [TestFixture]
     [NonParallelizable]
-    public class OutboundInnerConnectionSinkTests
+    public class OutboundResolvedAddressTests
     {
         private Mock<IReportingAPIClient> _reportingApiMock = null!;
         private Mock<IRuntimeAPIClient> _runtimeApiMock = null!;
@@ -69,7 +69,7 @@ namespace Aikido.Zen.Test
             using var request = new HttpRequestMessage(HttpMethod.Get, "http://127.0.0.1/admin");
             Task<HttpResponseMessage> result = null!;
 
-            var allowed = OutboundInnerConnectionSink.OnHttpClientConnectionRequest(request, new object(), GetHttpClientSendAsyncMethod(), ref result);
+            var allowed = OutboundSink.OnHttpClientConnectionRequest(request, new object(), GetHttpClientSendAsyncMethod(), ref result);
 
             Assert.Multiple(() =>
             {
@@ -84,7 +84,7 @@ namespace Aikido.Zen.Test
             using var request = TrackHttpClientRequest(new Uri("http://127.0.0.1/admin"), CreateContextWithInput("http://127.0.0.1/admin"));
             Task<HttpResponseMessage> result = null!;
 
-            var allowed = OutboundInnerConnectionSink.OnHttpClientConnectionRequest(request, new object(), GetHttpClientSendAsyncMethod(), ref result);
+            var allowed = OutboundSink.OnHttpClientConnectionRequest(request, new object(), GetHttpClientSendAsyncMethod(), ref result);
 
             Assert.Multiple(() =>
             {
@@ -99,7 +99,7 @@ namespace Aikido.Zen.Test
             using var request = TrackHttpClientRequest(new Uri("http://127.0.0.1/admin"), CreateContextWithInput("http://127.0.0.1/admin"));
             Task<HttpResponseMessage> result = null!;
 
-            var allowed = OutboundInnerConnectionSink.OnHttpClientConnectionRequest(request, null!, GetHttpClientSendAsyncMethod(), ref result);
+            var allowed = OutboundSink.OnHttpClientConnectionRequest(request, null!, GetHttpClientSendAsyncMethod(), ref result);
 
             Assert.Multiple(() =>
             {
@@ -116,7 +116,7 @@ namespace Aikido.Zen.Test
             using var request = TrackHttpClientRequest(new Uri(url), CreateContextWithInput(url));
             Task<HttpResponseMessage> result = null!;
 
-            var allowed = OutboundInnerConnectionSink.OnHttpClientConnectionRequest(
+            var allowed = OutboundSink.OnHttpClientConnectionRequest(
                 request,
                 new Http3Connection(new RemoteEndpointConnection(IPAddress.Loopback)),
                 GetHttpClientSendAsyncMethod(),
@@ -148,7 +148,7 @@ namespace Aikido.Zen.Test
             using var request = TrackHttpClientRequest(new Uri(url), CreateContextWithInput(url));
             Task<HttpResponseMessage> result = null!;
 
-            var allowed = OutboundInnerConnectionSink.OnHttpClientConnectionRequest(
+            var allowed = OutboundSink.OnHttpClientConnectionRequest(
                 request,
                 new Http3Connection(new RemoteEndpointConnection(IPAddress.Parse("169.254.169.254"))),
                 GetHttpClientSendAsyncMethod(),
@@ -168,7 +168,7 @@ namespace Aikido.Zen.Test
             using var request = TrackHttpClientRequest(new Uri("http://127.0.0.1/admin"), CreateContextWithInput("http://127.0.0.1/admin"));
             Task<HttpResponseMessage> result = null!;
 
-            var allowed = OutboundInnerConnectionSink.OnHttpClientConnectionRequest(
+            var allowed = OutboundSink.OnHttpClientConnectionRequest(
                 request,
                 new Http3Connection(new RemoteEndpointConnection(new DnsEndPoint("localhost", 443))),
                 GetHttpClientSendAsyncMethod(),
@@ -191,7 +191,7 @@ namespace Aikido.Zen.Test
             using var request = TrackHttpClientRequest(new Uri(url), CreateContextWithInput(url));
             Task<HttpResponseMessage> result = null!;
 
-            var allowed = OutboundInnerConnectionSink.OnHttpClientConnectionRequest(
+            var allowed = OutboundSink.OnHttpClientConnectionRequest(
                 request,
                 new HttpConnection(sslStream),
                 GetHttpClientSendAsyncMethod(),
@@ -213,7 +213,7 @@ namespace Aikido.Zen.Test
             using var request = TrackHttpClientRequest(new Uri("http://127.0.0.1/admin"), CreateContextWithInput("http://127.0.0.1/admin"));
             Task<HttpResponseMessage> result = null!;
 
-            var allowed = OutboundInnerConnectionSink.OnHttpClientConnectionRequest(
+            var allowed = OutboundSink.OnHttpClientConnectionRequest(
                 request,
                 new Http3Connection(socket),
                 GetHttpClientSendAsyncMethod(),
@@ -233,7 +233,7 @@ namespace Aikido.Zen.Test
             var request = (HttpWebRequest)WebRequest.Create("http://127.0.0.1/admin");
 #pragma warning restore SYSLIB0014
 
-            var allowed = OutboundInnerConnectionSink.OnFrameworkRequest(
+            var allowed = OutboundSink.OnFrameworkRequest(
                 new FrameworkRequestStream(request),
                 new object(),
                 GetHttpClientSendAsyncMethod());
@@ -246,7 +246,7 @@ namespace Aikido.Zen.Test
         {
             var request = TrackFrameworkRequest(new Uri("http://127.0.0.1/admin"), CreateContextWithInput("http://127.0.0.1/admin"));
 
-            var allowed = OutboundInnerConnectionSink.OnFrameworkRequest(
+            var allowed = OutboundSink.OnFrameworkRequest(
                 new FrameworkRequestStream(request),
                 new object(),
                 GetHttpClientSendAsyncMethod());
@@ -261,7 +261,7 @@ namespace Aikido.Zen.Test
             var targetUri = new Uri($"http://backend:{pair.Port}/admin");
             var request = TrackFrameworkRequest(targetUri, CreateContextWithInput("http://unrelated.example/admin"));
 
-            var allowed = OutboundInnerConnectionSink.OnFrameworkRequest(
+            var allowed = OutboundSink.OnFrameworkRequest(
                 new FrameworkRequestStream(request),
                 new FrameworkConnection(new SocketBackedStream(pair.Client)),
                 GetHttpClientSendAsyncMethod());
@@ -278,7 +278,7 @@ namespace Aikido.Zen.Test
             var request = TrackFrameworkRequest(new Uri(url), CreateContextWithInput(url));
 
             Assert.That(
-                () => OutboundInnerConnectionSink.OnFrameworkRequest(
+                () => OutboundSink.OnFrameworkRequest(
                     new FrameworkRequestStream(request),
                     new FrameworkConnection(new SocketBackedStream(pair.Client)),
                     GetHttpClientSendAsyncMethod()),
@@ -291,7 +291,7 @@ namespace Aikido.Zen.Test
             var request = new HttpRequestMessage(HttpMethod.Get, targetUri);
 
             Assert.That(
-                HttpClientSink.OnHttpClientRequest(request, null!, GetHttpClientSendAsyncMethod()),
+                OutboundSink.OnHttpClientRequest(request, null!, GetHttpClientSendAsyncMethod()),
                 Is.True);
 
             return request;
@@ -305,7 +305,7 @@ namespace Aikido.Zen.Test
 #pragma warning restore SYSLIB0014
 
             Assert.That(
-                WebRequestSink.OnWebRequest(request, GetMethod(typeof(WebRequest), nameof(WebRequest.GetResponse))),
+                OutboundSink.OnWebRequest(request, GetMethod(typeof(WebRequest), nameof(WebRequest.GetResponse))),
                 Is.True);
 
             return request;

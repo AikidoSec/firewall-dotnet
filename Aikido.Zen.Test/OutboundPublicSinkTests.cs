@@ -17,7 +17,7 @@ namespace Aikido.Zen.Test
 {
     [TestFixture]
     [NonParallelizable]
-    public class OutboundRequestSinkTests
+    public class OutboundPublicSinkTests
     {
         private Mock<IReportingAPIClient> _reportingApiMock;
         private Mock<IRuntimeAPIClient> _runtimeApiMock;
@@ -378,9 +378,9 @@ namespace Aikido.Zen.Test
                 GetHttpClientSendAsyncMethod(),
                 CreateContext());
 
-            HttpClientSink.OnHttpClientWebRequestCreated(httpRequest, webRequest);
-            var hasHttpState = HttpClientSink.TryGetRequestState(httpRequest, out var httpState);
-            var hasWebState = WebRequestSink.TryGetRequestState(webRequest, out var webState);
+            OutboundSink.OnHttpClientWebRequestCreated(httpRequest, webRequest);
+            var hasHttpState = OutboundRequestStateStore.TryGetHttpRequestState(httpRequest, out var httpState);
+            var hasWebState = OutboundRequestStateStore.TryGetWebRequestState(webRequest, out var webState);
 
             Assert.Multiple(() =>
             {
@@ -541,12 +541,12 @@ namespace Aikido.Zen.Test
                 CreateContext());
 
             Assert.That(result, Is.True);
-            Assert.That(HttpClientSink.TryGetRequestState(request, out _), Is.True);
+            Assert.That(OutboundRequestStateStore.TryGetHttpRequestState(request, out _), Is.True);
 
             var response = new HttpResponseMessage(HttpStatusCode.NoContent);
             var responseTask = new TaskCompletionSource<HttpResponseMessage>();
             var finalizerResult = responseTask.Task;
-            var finalException = HttpClientSink.OnHttpClientRequestFinalized(request, ref finalizerResult, null!);
+            var finalException = OutboundSink.OnHttpClientRequestFinalized(request, ref finalizerResult, null!);
 
             responseTask.SetResult(response);
             var finalResponse = await finalizerResult;
@@ -571,13 +571,13 @@ namespace Aikido.Zen.Test
                 CreateContext());
 
             Assert.That(result, Is.True);
-            Assert.That(WebRequestSink.TryGetRequestState(webRequest, out var state), Is.True);
+            Assert.That(OutboundRequestStateStore.TryGetWebRequestState(webRequest, out var state), Is.True);
 
             var detectedException = new AikidoException("blocked web response");
             state.DetectedException = detectedException;
 
             var finalizerResult = Task.FromException<WebResponse>(new WebException("raw failure"));
-            var finalException = WebRequestSink.OnWebRequestFinalized(webRequest, ref finalizerResult, null!);
+            var finalException = OutboundSink.OnWebRequestFinalized(webRequest, ref finalizerResult, null!);
             var exception = Assert.ThrowsAsync<AikidoException>(async () => await finalizerResult);
 
             Assert.Multiple(() =>
@@ -657,13 +657,13 @@ namespace Aikido.Zen.Test
         private bool OnHttpClientRequest(HttpRequestMessage? request, HttpClient? httpClient, MethodInfo methodInfo, Context? context)
         {
             _activeContext = context;
-            return HttpClientSink.OnHttpClientRequest(request!, httpClient!, methodInfo);
+            return OutboundSink.OnHttpClientRequest(request!, httpClient!, methodInfo);
         }
 
         private bool OnWebRequest(WebRequest? request, MethodInfo methodInfo, Context? context)
         {
             _activeContext = context;
-            return WebRequestSink.OnWebRequest(request!, methodInfo);
+            return OutboundSink.OnWebRequest(request!, methodInfo);
         }
 
         private static MethodInfo GetMethod(Type type, string methodName, params Type[] parameterTypes)
