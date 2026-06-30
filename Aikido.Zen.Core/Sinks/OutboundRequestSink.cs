@@ -31,7 +31,7 @@ namespace Aikido.Zen.Core.Sinks
             var isNestedRequest = TryGetCurrentRequest(out _);
             if (!isNestedRequest)
             {
-                // Inner connection hooks still need context when Inspector skips this outer call.
+                // Force-off routes and bypassed IPs still need context in inner SSRF hooks.
                 EnterRequestScope(targetUri, context);
             }
 
@@ -53,7 +53,7 @@ namespace Aikido.Zen.Core.Sinks
             var isNestedRequest = TryGetCurrentRequest(out _);
             if (!isNestedRequest)
             {
-                // Inner connection hooks still need context when Inspector skips this outer call.
+                // Force-off routes and bypassed IPs still need context in inner SSRF hooks.
                 EnterRequestScope(targetUri, context);
             }
 

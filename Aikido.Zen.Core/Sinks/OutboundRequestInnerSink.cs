@@ -23,13 +23,12 @@ namespace Aikido.Zen.Core.Sinks
         [SinkPrefix("System.Net.Http", "System.Net.Http.Http3Connection", "SendAsync", "System.Net.Http.HttpRequestMessage", "System.Net.Http.Http3Connection+WaitForHttp3ConnectionActivity", "System.Boolean", "System.Threading.CancellationToken")]
         internal static bool OnRequest(HttpRequestMessage request, object __instance, MethodBase __originalMethod, ref Task<HttpResponseMessage> __result)
         {
-            OutboundRequestSink.TryGetCurrentRequest(out var state);
-            var targetUri = state?.TargetUri ?? request?.RequestUri;
-            if (targetUri == null)
+            if (!OutboundRequestSink.TryGetCurrentRequest(out var state))
             {
                 return true;
             }
 
+            var targetUri = state.TargetUri;
             var remoteAddress = GetIPAddressFromConnection(__instance);
             if (remoteAddress == null)
             {
@@ -60,15 +59,13 @@ namespace Aikido.Zen.Core.Sinks
         internal static bool OnFrameworkRequest(object __instance, object ___m_Connection, MethodBase __originalMethod)
         {
             var request = ReflectionHelper.GetMemberValue(__instance, "m_Request") as HttpWebRequest;
-            OutboundRequestSink.TryGetCurrentRequest(out var state);
-            var targetUri = state?.TargetUri ?? request?.RequestUri;
-            var remoteAddress = GetIPAddressFromStream(ReflectionHelper.GetMemberValue(___m_Connection, "NetworkStream") as Stream);
-
-            if (targetUri == null)
+            if (!OutboundRequestSink.TryGetCurrentRequest(out var state))
             {
                 return true;
             }
 
+            var targetUri = state.TargetUri;
+            var remoteAddress = GetIPAddressFromStream(ReflectionHelper.GetMemberValue(___m_Connection, "NetworkStream") as Stream);
             if (remoteAddress == null)
             {
                 return true;
