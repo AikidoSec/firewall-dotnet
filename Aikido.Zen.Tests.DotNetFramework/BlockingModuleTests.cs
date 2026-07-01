@@ -7,6 +7,7 @@ using Aikido.Zen.Core.Models;
 using Aikido.Zen.DotNetFramework;
 using Aikido.Zen.DotNetFramework.HttpModules;
 using NUnit.Framework;
+using FrameworkZen = Aikido.Zen.DotNetFramework.Zen;
 
 namespace Aikido.Zen.Tests.DotNetFramework
 {
@@ -81,7 +82,7 @@ namespace Aikido.Zen.Tests.DotNetFramework
                     RemoteAddress = "127.0.0.1",
                     User = user
                 };
-                Zen.SetCurrentContext(aikidoContext);
+                FrameworkZen.SetCurrentContext(aikidoContext);
                 var completed = false;
 
                 BlockingModule.HandleBlocking(httpContext, () => completed = true);
@@ -100,7 +101,7 @@ namespace Aikido.Zen.Tests.DotNetFramework
             }
             finally
             {
-                Zen.ClearCurrentContext();
+                FrameworkZen.ClearCurrentContext();
                 Agent.Instance.ClearContext();
                 Agent.Instance.Context.Config.UpdateBlockedUsers(System.Array.Empty<string>());
             }
@@ -131,13 +132,13 @@ namespace Aikido.Zen.Tests.DotNetFramework
                     RemoteAddress = "127.0.0.1",
                     User = user
                 };
-                Zen.SetCurrentContext(context);
+                FrameworkZen.SetCurrentContext(context);
 
-                Assert.That(Zen.GetUser(), Is.SameAs(user));
+                Assert.That(FrameworkZen.GetUser(), Is.SameAs(user));
             }
             finally
             {
-                Zen.ClearCurrentContext();
+                FrameworkZen.ClearCurrentContext();
             }
         }
 
@@ -158,13 +159,13 @@ namespace Aikido.Zen.Tests.DotNetFramework
                 };
 
                 HttpContext.Current = null;
-                Zen.SetCurrentContext(context);
+                FrameworkZen.SetCurrentContext(context);
 
-                Assert.That(Zen.GetContext(), Is.SameAs(context));
+                Assert.That(FrameworkZen.GetContext(), Is.SameAs(context));
             }
             finally
             {
-                Zen.ClearCurrentContext();
+                FrameworkZen.ClearCurrentContext();
                 HttpContext.Current = originalCurrent;
             }
         }
