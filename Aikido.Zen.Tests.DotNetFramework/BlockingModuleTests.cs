@@ -81,7 +81,7 @@ namespace Aikido.Zen.Tests.DotNetFramework
                     RemoteAddress = "127.0.0.1",
                     User = user
                 };
-                httpContext.Items["Aikido.Zen.Context"] = aikidoContext;
+                Zen.SetCurrentContext(aikidoContext);
                 var completed = false;
 
                 BlockingModule.HandleBlocking(httpContext, () => completed = true);
@@ -100,6 +100,7 @@ namespace Aikido.Zen.Tests.DotNetFramework
             }
             finally
             {
+                Zen.ClearCurrentContext();
                 Agent.Instance.ClearContext();
                 Agent.Instance.Context.Config.UpdateBlockedUsers(System.Array.Empty<string>());
             }
@@ -118,16 +119,10 @@ namespace Aikido.Zen.Tests.DotNetFramework
         [Test]
         public void GetUser_ReturnsContextUser()
         {
-            var originalCurrent = HttpContext.Current;
-
             try
             {
                 var user = new User("context-user", "Context User");
-                var httpContext = new HttpContext(
-                    new HttpRequest(string.Empty, "http://test.local/api/test", string.Empty),
-                    new HttpResponse(new StringWriter()));
-                HttpContext.Current = httpContext;
-                httpContext.Items["Aikido.Zen.Context"] = new Context
+                var context = new Context
                 {
                     Url = "http://test.local/api/test",
                     Path = "/api/test",
@@ -136,11 +131,40 @@ namespace Aikido.Zen.Tests.DotNetFramework
                     RemoteAddress = "127.0.0.1",
                     User = user
                 };
+                Zen.SetCurrentContext(context);
 
-                Assert.That(Aikido.Zen.DotNetFramework.Zen.GetUser(), Is.SameAs(user));
+                Assert.That(Zen.GetUser(), Is.SameAs(user));
             }
             finally
             {
+                Zen.ClearCurrentContext();
+            }
+        }
+
+        [Test]
+        public void GetContext_ReturnsLogicalCurrentContext_WhenHttpContextCurrentIsNull()
+        {
+            var originalCurrent = HttpContext.Current;
+
+            try
+            {
+                var context = new Context
+                {
+                    Url = "http://test.local/api/test",
+                    Path = "/api/test",
+                    Method = "GET",
+                    Route = "/api/test",
+                    RemoteAddress = "127.0.0.1"
+                };
+
+                HttpContext.Current = null;
+                Zen.SetCurrentContext(context);
+
+                Assert.That(Zen.GetContext(), Is.SameAs(context));
+            }
+            finally
+            {
+                Zen.ClearCurrentContext();
                 HttpContext.Current = originalCurrent;
             }
         }

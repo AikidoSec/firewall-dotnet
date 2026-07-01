@@ -34,7 +34,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             try
             {
                 LogHelper.DebugLog(Agent.Logger, "Checking if request needs to be blocked");
-                var aikidoContext = (Context)httpContext.Items["Aikido.Zen.Context"];
+                var aikidoContext = Zen.GetContext();
                 var agentContext = Agent.Instance.Context;
 
                 Agent.Instance.SetBlockingMiddlewareInstalled(true);
