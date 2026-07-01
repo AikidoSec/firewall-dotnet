@@ -9,6 +9,9 @@ namespace Aikido.Zen.Core.Sinks
 {
     internal static class OutboundRequestStateStore
     {
+        // SSRF checks run in ConnectStream.WriteHeaders, where the AsyncLocal request context
+        // may be absent because of a different execution context. Outbound sinks capture this
+        // context in the outer public hooks and reuse it in the internal WriteHeaders hook.
         private static readonly ConditionalWeakTable<HttpRequestMessage, OutboundRequestState> HttpRequestStates = new ConditionalWeakTable<HttpRequestMessage, OutboundRequestState>();
         private static readonly ConditionalWeakTable<HttpWebRequest, OutboundRequestState> WebRequestStates = new ConditionalWeakTable<HttpWebRequest, OutboundRequestState>();
 

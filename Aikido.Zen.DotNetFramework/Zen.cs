@@ -17,6 +17,11 @@ namespace Aikido.Zen.DotNetFramework
     {
         // we need to reference Harmony somewhere to ensure it is copied with our package
         private static HarmonyLib.Harmony harmony = new HarmonyLib.Harmony("reference");
+
+        // AsyncLocal is used instead of HttpContext.Current because HttpContext.Current
+        // can be null after async continuations, for example in HttpClient/WebRequest
+        // actions configured with ConfigureAwait(false). AsyncLocal keeps the request
+        // context available across those continuations.
         private static readonly AsyncLocal<Context> CurrentContext = new AsyncLocal<Context>();
         public static void Start()
         {
