@@ -333,6 +333,25 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void OnRequest_WithRelativeRequestAndNoBaseAddress_ReturnsTrue()
+        {
+            using var httpClient = new HttpClient();
+            using var request = new HttpRequestMessage(HttpMethod.Get, "/relative");
+
+            var result = OnHttpClientRequest(
+                request,
+                httpClient,
+                GetHttpClientSendAsyncMethod(),
+                CreateContext());
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result, Is.True);
+                Assert.That(OutboundRequestStateStore.TryGetHttpRequestState(request, out _), Is.False);
+            });
+        }
+
+        [Test]
         public void OnRequest_WithRequestAndNoHttpClient_CapturesRequestUri()
         {
             using var request = new HttpRequestMessage(HttpMethod.Get, "https://request-only.example/path");
@@ -390,6 +409,35 @@ namespace Aikido.Zen.Test
                 Assert.That(webState, Is.SameAs(httpState));
                 Assert.That(webState.TargetUri.Host, Is.EqualTo("httpclient.example"));
             });
+        }
+
+        [Test]
+        public void OnHttpClientWebRequestCreated_WhenWebRequestIsNull_DoesNotAssociate()
+        {
+            using var httpClient = new HttpClient();
+            using var httpRequest = new HttpRequestMessage(HttpMethod.Get, "https://httpclient.example/path");
+
+            var result = OnHttpClientRequest(
+                httpRequest,
+                httpClient,
+                GetHttpClientSendAsyncMethod(),
+                CreateContext());
+
+            Assert.DoesNotThrow(() => OutboundRequestSink.OnHttpClientWebRequestCreated(httpRequest, null!));
+            Assert.That(result, Is.True);
+        }
+
+        [Test]
+        public void OnHttpClientWebRequestCreated_WhenHttpRequestHasNoState_DoesNotAssociate()
+        {
+            using var httpRequest = new HttpRequestMessage(HttpMethod.Get, "https://httpclient.example/path");
+#pragma warning disable SYSLIB0014
+            var webRequest = (HttpWebRequest)WebRequest.Create("https://framework.example/path");
+#pragma warning restore SYSLIB0014
+
+            OutboundRequestSink.OnHttpClientWebRequestCreated(httpRequest, webRequest);
+
+            Assert.That(OutboundRequestStateStore.TryGetWebRequestState(webRequest, out _), Is.False);
         }
 
         [Test]
@@ -559,6 +607,35 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public async Task OnHttpClientRequestFinalized_WhenResponseTaskAlreadyCompleted_ReturnsSameTask()
+        {
+            using var httpClient = new HttpClient();
+            using var request = new HttpRequestMessage(HttpMethod.Get, "http://public.example/");
+
+            var result = OnHttpClientRequest(
+                request,
+                httpClient,
+                GetHttpClientSendAsyncMethod(),
+                CreateContext());
+
+            Assert.That(result, Is.True);
+            Assert.That(OutboundRequestStateStore.TryGetHttpRequestState(request, out _), Is.True);
+
+            var response = new HttpResponseMessage(HttpStatusCode.NoContent);
+            var originalTask = Task.FromResult(response);
+            var finalizerResult = originalTask;
+            var finalException = OutboundRequestSink.OnHttpClientRequestFinalized(request, ref finalizerResult, null!);
+            var finalResponse = await finalizerResult;
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(finalException, Is.Null);
+                Assert.That(finalizerResult, Is.SameAs(originalTask));
+                Assert.That(finalResponse, Is.SameAs(response));
+            });
+        }
+
+        [Test]
         public async Task OnWebRequestFinalized_WhenWebResponseTaskFailsWithDetectedException_ThrowsDetectedException()
         {
 #pragma warning disable SYSLIB0014
@@ -584,6 +661,21 @@ namespace Aikido.Zen.Test
             {
                 Assert.That(finalException, Is.Null);
                 Assert.That(exception, Is.SameAs(detectedException));
+            });
+        }
+
+        [Test]
+        public void OnWebRequestFinalized_WhenRequestIsNull_LeavesResponseTaskUnchanged()
+        {
+            var originalTask = Task.FromException<WebResponse>(new WebException("raw failure"));
+            var finalizerResult = originalTask;
+
+            var finalException = OutboundRequestSink.OnWebRequestFinalized(null!, ref finalizerResult, null!);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(finalException, Is.Null);
+                Assert.That(finalizerResult, Is.SameAs(originalTask));
             });
         }
 

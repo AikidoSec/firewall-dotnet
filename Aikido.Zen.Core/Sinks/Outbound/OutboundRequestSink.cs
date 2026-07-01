@@ -252,11 +252,6 @@ namespace Aikido.Zen.Core.Sinks
         // The finalizer swaps that task so the recorded block still reaches the original caller.
         private static Task<TResponse> ThrowDetectedException<TResponse>(Task<TResponse> responseTask, OutboundRequestState state)
         {
-            if (state == null || responseTask == null)
-            {
-                return responseTask;
-            }
-
             if (responseTask.IsCompleted)
             {
                 if (state.DetectedException != null)
