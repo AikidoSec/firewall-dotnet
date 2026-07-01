@@ -18,11 +18,21 @@ namespace Aikido.Zen.Core.Sinks
         private const string OperationKind = "outgoing_http_op";
         private const int MaxStreamUnwrapDepth = 4;
 
-        // HttpClient flow:
-        // 1. Send/SendAsync sees the target URI and current request context.
-        // 2a. .NET Core stores that state on HttpRequestMessage for the resolved-address hooks.
-        // 2b. .NET Framework copies that state to the created HttpWebRequest for ConnectStream.WriteHeaders.
-        // 3. SendAsync finalizers make pending returned tasks surface later SSRF blocks.
+        // Outbound domain blocking uses public patches at the beginning of each supported client flow:
+        // - HttpClient: Send/SendAsync prefixes see the target URI and current request context.
+        //   Finalizers make pending returned tasks surface later SSRF blocks.
+        // - WebRequest: GetResponse/GetResponseAsync prefixes see the target URI and current request context.
+        //   Finalizers make pending returned tasks surface later SSRF blocks.
+        //
+        // SSRF detection uses internal patches to retrieve the final remote IP address (including any redirects):
+        // - .NET Core has the resolved address in HttpConnection.SendAsync.
+        // - .NET Framework has the resolved address in ConnectStream.WriteHeaders.
+        // - Detection uses the stored target URI and the resolved remote IP to check for SSRF.
+        //
+        // Request state is carried from the outer public patches to the internal patches using ConditionalWeakTable.
+        // Other storage mechanisms like AsyncLocal and HttpContext were not reliable between those patch points.
+        // Chosen patches cover all combinations: .NET Core/Framework, async/sync, pooled/new requests.
+
         [SinkPrefix(typeof(HttpClient), "SendAsync", "System.Net.Http.HttpRequestMessage")]
         [SinkPrefix(typeof(HttpClient), "SendAsync", "System.Net.Http.HttpRequestMessage", "System.Net.Http.HttpCompletionOption")]
         [SinkPrefix(typeof(HttpClient), "SendAsync", "System.Net.Http.HttpRequestMessage", "System.Net.Http.HttpCompletionOption", "System.Threading.CancellationToken")]
@@ -73,13 +83,6 @@ namespace Aikido.Zen.Core.Sinks
             return __exception;
         }
 
-        // WebRequest flow:
-        // 1. GetResponse/GetResponseAsync sees the target URI and current request context.
-        // 2a. .NET Core: WebRequest is a wrapper over an internal HttpClient request.
-        //     HttpClient hooks store state on HttpRequestMessage; resolved-address hooks check SSRF.
-        // 2b. .NET Framework: WebRequest sends through HttpWebRequest directly.
-        //     WebRequest hooks store state on HttpWebRequest; ConnectStream.WriteHeaders checks SSRF.
-        // 3. GetResponseAsync finalizers make pending returned tasks surface later SSRF blocks.
         [SinkPrefix(typeof(WebRequest), "GetResponse")]
         [SinkPrefix(typeof(HttpWebRequest), "GetResponse")]
         [SinkPrefix(typeof(WebRequest), "GetResponseAsync")]
@@ -113,11 +116,6 @@ namespace Aikido.Zen.Core.Sinks
             return __exception;
         }
 
-        // Resolved-address flow:
-        // 1. Public HttpClient/WebRequest hooks store target URI and request context first.
-        // 2a. .NET Core HttpConnection.SendAsync runs once the runtime has a concrete remote IP address.
-        // 2b. .NET Framework ConnectStream.WriteHeaders runs once the runtime has a concrete remote IP address.
-        // 3. SSRF detection compares the stored target URI with that remote IP before request bytes are sent.
         [SinkPrefix("System.Net.Http", "System.Net.Http.HttpConnection", "SendAsync", "System.Net.Http.HttpRequestMessage", "System.Boolean", "System.Threading.CancellationToken")]
         [SinkPrefix("System.Net.Http", "System.Net.Http.Http2Connection", "SendAsync", "System.Net.Http.HttpRequestMessage", "System.Boolean", "System.Threading.CancellationToken")]
         [SinkPrefix("System.Net.Http", "System.Net.Http.Http3Connection", "SendAsync", "System.Net.Http.HttpRequestMessage", "System.Boolean", "System.Threading.CancellationToken")]
