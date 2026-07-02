@@ -15,7 +15,7 @@ namespace Aikido.Zen.DotNetFramework.Configuration
                     AikidoToken = ConfigurationManager.AppSettings["Aikido:AikidoToken"]
                         ?? Environment.GetEnvironmentVariable("AIKIDO_TOKEN"),
                     AikidoUrl = ConfigurationManager.AppSettings["Aikido:AikidoUrl"]
-                        ?? Environment.GetEnvironmentVariable("AIKIDO_URL")
+                        ?? Environment.GetEnvironmentVariable("AIKIDO_ENDPOINT")
                 };
             }
 		}
@@ -25,9 +25,9 @@ namespace Aikido.Zen.DotNetFramework.Configuration
             {
                 Environment.SetEnvironmentVariable("AIKIDO_TOKEN", ConfigurationManager.AppSettings["Aikido:AikidoToken"]);
             }
-            if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AIKIDO_URL")))
+            if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AIKIDO_ENDPOINT")))
             {
-                Environment.SetEnvironmentVariable("AIKIDO_URL", ConfigurationManager.AppSettings["Aikido:AikidoUrl"]);
+                Environment.SetEnvironmentVariable("AIKIDO_ENDPOINT", ConfigurationManager.AppSettings["Aikido:AikidoUrl"]);
             }
         }
 	}

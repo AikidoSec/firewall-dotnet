@@ -23,14 +23,14 @@ namespace Aikido.Zen.Core.Helpers
         public static int MaxApiDiscoverySamples => int.TryParse(Environment.GetEnvironmentVariable("MAX_API_DISCOVERY_SAMPLES"), out int maxHits) ? maxHits : 10;
 
         /// <summary>
-        /// Gets the Aikido URL from the environment variables or defaults to a predefined URL.
+        /// Gets the Aikido URL from the environment variables or derives it from the token's region.
         /// </summary>
-        public static string AikidoUrl => Environment.GetEnvironmentVariable("AIKIDO_URL") ?? "https://guard.aikido.dev";
+        public static string AikidoUrl => Environment.GetEnvironmentVariable("AIKIDO_ENDPOINT") ?? GetAikidoUrlFromToken(Token);
 
         /// <summary>
         /// Gets the Aikido real-time URL from the environment variables or defaults to a predefined URL.
         /// </summary>
-        public static string AikidoRealtimeUrl => Environment.GetEnvironmentVariable("AIKIDO_REALTIME_URL") ?? "https://runtime.aikido.dev";
+        public static string AikidoRealtimeUrl => Environment.GetEnvironmentVariable("AIKIDO_REALTIME_ENDPOINT") ?? "https://runtime.aikido.dev";
 
         /// <summary>
         /// Determines if the system is in debugging mode by checking the environment variable.
@@ -79,6 +79,49 @@ namespace Aikido.Zen.Core.Helpers
                 return defaultValue;
             }
             return value == "true" || value == "1";
+        }
+
+        /// <summary>
+        /// Gets the Aikido URL derived from the region encoded in the given token.
+        /// </summary>
+        private static string GetAikidoUrlFromToken(string token)
+        {
+            switch (ExtractRegionFromToken(token))
+            {
+                case "US":
+                    return "https://guard.us.aikido.dev";
+                case "ME":
+                    return "https://guard.me.aikido.dev";
+                case "AU":
+                    return "https://guard.au.aikido.dev";
+                default:
+                    return "https://guard.aikido.dev";
+            }
+        }
+
+        /// <summary>
+        /// Extracts the region from an Aikido runtime token.
+        /// </summary>
+        /// <param name="token">The Aikido runtime token, e.g. AIK_RUNTIME_{sys_group_id}_{service_id}_{region}_{random}.</param>
+        /// <returns>The region code (e.g. "EU", "US", "ME", "AU"). Defaults to "EU" if the token does not contain a region.</returns>
+        public static string ExtractRegionFromToken(string token)
+        {
+            if (string.IsNullOrEmpty(token) || !token.StartsWith("AIK_RUNTIME_"))
+            {
+                return "EU";
+            }
+
+            var tokenWithoutPrefix = token.Substring("AIK_RUNTIME_".Length);
+            var parts = tokenWithoutPrefix.Split('_');
+
+            // New format: AIK_RUNTIME_{sys_group_id}_{service_id}_{region}_{random}
+            // Old format: AIK_RUNTIME_{sys_group_id}_{service_id}_{random}
+            if (parts.Length == 4)
+            {
+                return parts[2];
+            }
+
+            return "EU";
         }
 
         public static void ReportValues()
