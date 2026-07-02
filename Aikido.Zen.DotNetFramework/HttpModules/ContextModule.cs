@@ -27,18 +27,12 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             // Nothing to dispose
         }
 
-        private bool responseHandled = false;
-
         public void Init(HttpApplication context)
         {
-            responseHandled = false;
             LogHelper.DebugLog(Agent.Logger, "ContextModule initialized");
             context.PostAuthenticateRequest += Context_PostAuthenticateRequest;
             context.BeginRequest += Context_BeginRequest;
-            // we try to discover the route as early as possible (we just need a statuscode), but we fallback to other listeners in case some are skipped.
-            context.PreSendRequestHeaders += Context_EndRequest;
             context.EndRequest += Context_EndRequest;
-            context.PostRequestHandlerExecute += Context_EndRequest;
         }
 
         private void Context_PostAuthenticateRequest(object sender, EventArgs e)
@@ -88,7 +82,6 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             var httpContext = ((HttpApplication)sender).Context;
             try
             {
-                responseHandled = false;
                 string clientIp = GetClientIp(httpContext);
 
                 if (EnvironmentHelper.IsDisabled)
@@ -119,8 +112,6 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                     RouteParams = FlattenRouteParameters(httpContext.Request.RequestContext.RouteData.Values),
                 };
 
-                // Store the request context before any async hop.
-                // Later async request work can lose HttpContext.Current, but still have access to AsyncLocal.
                 Zen.SetCurrentContext(context);
                 Agent.Instance.SetContextMiddlewareInstalled(true);
 
@@ -160,11 +151,6 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
         {
             try
             {
-                if (responseHandled)
-                {
-                    return;
-                }
-
                 var httpContext = ((HttpApplication)sender).Context;
                 var aikidoContext = Zen.GetContext();
                 if (aikidoContext == null)
@@ -175,10 +161,8 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 if (Context.IsBypassed(aikidoContext))
                 {
                     LogHelper.DebugLog(Agent.Logger, "Aikido context is bypassed, skipping route");
-                    responseHandled = true;
                     return;
                 }
-                responseHandled = true;
 
                 int statusCode = httpContext.Response.StatusCode;
                 var attackWaveDetector = Agent.Instance.AttackWaveDetector;

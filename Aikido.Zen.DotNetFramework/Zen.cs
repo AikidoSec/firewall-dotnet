@@ -1,7 +1,6 @@
 using System;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Threading;
 using System.Web;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Api;
@@ -18,11 +17,12 @@ namespace Aikido.Zen.DotNetFramework
         // we need to reference Harmony somewhere to ensure it is copied with our package
         private static HarmonyLib.Harmony harmony = new HarmonyLib.Harmony("reference");
 
-        // AsyncLocal is used instead of HttpContext.Current because HttpContext.Current
-        // can be null after async continuations, for example in HttpClient/WebRequest
-        // actions configured with ConfigureAwait(false). AsyncLocal keeps the request
-        // context available across those continuations.
-        private static readonly AsyncLocal<Context> CurrentContext = new AsyncLocal<Context>();
+        // Store the request context in HttpContext.Items, matching the ASP.NET request lifetime.
+        // AsyncLocal can flow into some child async work, but it does not consistently line up
+        // with ASP.NET pipeline events such as EndRequest. ConditionalWeakTable avoids those
+        // ambient context issues, but today we only use it for the smaller outbound request state.
+        internal const string ContextItemKey = "Aikido.Zen.Context";
+
         public static void Start()
         {
             // libzen_internals only available on 64
@@ -92,7 +92,7 @@ namespace Aikido.Zen.DotNetFramework
 
         public static Context GetContext()
         {
-            return CurrentContext.Value;
+            return HttpContext.Current?.Items[ContextItemKey] as Context;
         }
 
         public static User GetUser()
@@ -102,12 +102,18 @@ namespace Aikido.Zen.DotNetFramework
 
         internal static void SetCurrentContext(Context context)
         {
-            CurrentContext.Value = context;
+            if (HttpContext.Current != null)
+            {
+                HttpContext.Current.Items[ContextItemKey] = context;
+            }
         }
 
         internal static void ClearCurrentContext()
         {
-            CurrentContext.Value = null;
+            if (HttpContext.Current != null)
+            {
+                HttpContext.Current.Items.Remove(ContextItemKey);
+            }
         }
 
         internal static void CheckModules()
