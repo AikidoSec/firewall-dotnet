@@ -48,7 +48,7 @@ namespace Aikido.Zen.Test.Helpers
         public void AikidoUrl_ShouldReturnExpectedValue_WhenEnvironmentVariableIsSet()
         {
             // Arrange
-            Environment.SetEnvironmentVariable("AIKIDO_URL", "https://custom.aikido.dev");
+            Environment.SetEnvironmentVariable("AIKIDO_ENDPOINT", "https://custom.aikido.dev");
 
             // Act
             var url = EnvironmentHelper.AikidoUrl;
@@ -61,7 +61,7 @@ namespace Aikido.Zen.Test.Helpers
         public void AikidoUrl_ShouldReturnDefaultValue_WhenEnvironmentVariableIsNotSet()
         {
             // Arrange
-            Environment.SetEnvironmentVariable("AIKIDO_URL", null);
+            Environment.SetEnvironmentVariable("AIKIDO_ENDPOINT", null);
 
             // Act
             var url = EnvironmentHelper.AikidoUrl;
@@ -74,7 +74,7 @@ namespace Aikido.Zen.Test.Helpers
         public void AikidoRealtimeUrl_ShouldReturnExpectedValue_WhenEnvironmentVariableIsSet()
         {
             // Arrange
-            Environment.SetEnvironmentVariable("AIKIDO_REALTIME_URL", "https://custom-realtime.aikido.dev");
+            Environment.SetEnvironmentVariable("AIKIDO_REALTIME_ENDPOINT", "https://custom-realtime.aikido.dev");
 
             // Act
             var url = EnvironmentHelper.AikidoRealtimeUrl;
@@ -87,7 +87,7 @@ namespace Aikido.Zen.Test.Helpers
         public void AikidoRealtimeUrl_ShouldReturnDefaultValue_WhenEnvironmentVariableIsNotSet()
         {
             // Arrange
-            Environment.SetEnvironmentVariable("AIKIDO_REALTIME_URL", null);
+            Environment.SetEnvironmentVariable("AIKIDO_REALTIME_ENDPOINT", null);
 
             // Act
             var url = EnvironmentHelper.AikidoRealtimeUrl;
