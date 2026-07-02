@@ -441,6 +441,36 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void SetHttpRequestState_WhenRequestAlreadyHasState_DoesNotThrow()
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, "https://httpclient.example/path");
+            var originalState = new OutboundRequestState(request.RequestUri!, CreateContext());
+            var duplicateState = new OutboundRequestState(new Uri("https://duplicate.example/path"), CreateContext());
+
+            OutboundRequestStateStore.SetHttpRequestState(request, originalState);
+
+            Assert.DoesNotThrow(() => OutboundRequestStateStore.SetHttpRequestState(request, duplicateState));
+            Assert.That(OutboundRequestStateStore.TryGetHttpRequestState(request, out var storedState), Is.True);
+            Assert.That(storedState, Is.SameAs(originalState));
+        }
+
+        [Test]
+        public void SetWebRequestState_WhenRequestAlreadyHasState_DoesNotThrow()
+        {
+#pragma warning disable SYSLIB0014
+            var request = (HttpWebRequest)WebRequest.Create("https://framework.example/path");
+#pragma warning restore SYSLIB0014
+            var originalState = new OutboundRequestState(request.RequestUri, CreateContext());
+            var duplicateState = new OutboundRequestState(new Uri("https://duplicate.example/path"), CreateContext());
+
+            OutboundRequestStateStore.SetWebRequestState(request, originalState);
+
+            Assert.DoesNotThrow(() => OutboundRequestStateStore.SetWebRequestState(request, duplicateState));
+            Assert.That(OutboundRequestStateStore.TryGetWebRequestState(request, out var storedState), Is.True);
+            Assert.That(storedState, Is.SameAs(originalState));
+        }
+
+        [Test]
         public void OnRequest_WithNoWebRequest_ReturnsTrue()
         {
             var result = OnWebRequest(

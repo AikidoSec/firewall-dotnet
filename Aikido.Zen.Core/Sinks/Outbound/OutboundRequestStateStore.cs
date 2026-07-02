@@ -9,9 +9,10 @@ namespace Aikido.Zen.Core.Sinks
 {
     internal static class OutboundRequestStateStore
     {
-        // SSRF checks run in ConnectStream.WriteHeaders, where the AsyncLocal request context
-        // may be absent because of a different execution context. Outbound sinks capture this
-        // context in the outer public hooks and reuse it in the internal WriteHeaders hook.
+        // Public outbound hooks see the supported API request objects and the current Zen context.
+        // Later internal hooks may run after that context is no longer visible, so we keep the
+        // captured state in global weak tables keyed by the request objects themselves.
+        // HttpClient keeps state on HttpRequestMessage; WebRequest keeps state on HttpWebRequest.
         private static readonly ConditionalWeakTable<HttpRequestMessage, OutboundRequestState> HttpRequestStates = new ConditionalWeakTable<HttpRequestMessage, OutboundRequestState>();
         private static readonly ConditionalWeakTable<HttpWebRequest, OutboundRequestState> WebRequestStates = new ConditionalWeakTable<HttpWebRequest, OutboundRequestState>();
 
@@ -28,7 +29,14 @@ namespace Aikido.Zen.Core.Sinks
 
         internal static void SetHttpRequestState(HttpRequestMessage request, OutboundRequestState state)
         {
-            HttpRequestStates.Add(request, state);
+            try
+            {
+                HttpRequestStates.Add(request, state);
+            }
+            catch (ArgumentException)
+            {
+                // The request was already tracked.
+            }
         }
 
         internal static bool TryGetWebRequestState(HttpWebRequest request, out OutboundRequestState state)
@@ -44,11 +52,20 @@ namespace Aikido.Zen.Core.Sinks
 
         internal static void SetWebRequestState(HttpWebRequest request, OutboundRequestState state)
         {
-            WebRequestStates.Add(request, state);
+            try
+            {
+                WebRequestStates.Add(request, state);
+            }
+            catch (ArgumentException)
+            {
+                // The request was already tracked.
+            }
         }
 
         internal static void AssociateHttpRequestWithWebRequest(HttpRequestMessage httpRequest, HttpWebRequest webRequest)
         {
+            // .NET Framework HttpClient is backed by HttpWebRequest, so associate both keys before
+            // the resolved-address check runs in ConnectStream.WriteHeaders.
             if (webRequest == null || !TryGetHttpRequestState(httpRequest, out var state))
             {
                 return;
