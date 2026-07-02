@@ -19,7 +19,6 @@ public class DataRegionEndpointEnd2EndTests
 
     private readonly Dictionary<string, string?> _originalEnvironment = new();
     private WebApplicationFactory<MockServerStartup> _mockServerFactory = null!;
-    private WebApplicationFactory<SQLiteStartup> _sampleAppFactory = null!;
     private HttpClient _mockServerClient = null!;
     private HttpClient _sampleAppClient = null!;
     private RecordingAuthRewriteHandler _recordingHandler = null!;
@@ -44,22 +43,12 @@ public class DataRegionEndpointEnd2EndTests
         tokenResponse.EnsureSuccessStatusCode();
         _mockServerToken = (await tokenResponse.Content.ReadFromJsonAsync<IDictionary<string, string>>())?["token"]!;
         _mockServerClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(_mockServerToken);
-
-        _sampleAppFactory = new WebApplicationFactory<SQLiteStartup>()
-            .WithWebHostBuilder(builder =>
-            {
-                builder.ConfigureServices(services =>
-                {
-                    services.AddZenFirewall(options => options.UseHttpClient(_mockServerClient));
-                });
-            });
     }
 
     [TearDown]
     public void TearDown()
     {
         _sampleAppClient?.Dispose();
-        _sampleAppFactory?.Dispose();
         _mockServerClient?.Dispose();
         _mockServerFactory?.Dispose();
         _recordingHandler?.Dispose();
@@ -73,7 +62,7 @@ public class DataRegionEndpointEnd2EndTests
     [Test, NonParallelizable]
     public async Task StartupReporting_ShouldUseRegionSpecificGuardEndpoint_WhenEndpointIsNotSet()
     {
-        _sampleAppClient = _sampleAppFactory.CreateClient();
+        _sampleAppClient = CreateSampleAppClient();
 
         using var response = await _sampleAppClient.GetAsync("/health");
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
@@ -94,6 +83,19 @@ public class DataRegionEndpointEnd2EndTests
                 uri.Host == "guard.us.aikido.dev" &&
                 uri.AbsolutePath == "/api/runtime/firewall/lists"),
             Is.True);
+    }
+
+    private HttpClient CreateSampleAppClient()
+    {
+        return new WebApplicationFactory<SQLiteStartup>()
+            .WithWebHostBuilder(builder =>
+            {
+                builder.ConfigureServices(services =>
+                {
+                    services.AddZenFirewall(options => options.UseHttpClient(_mockServerClient));
+                });
+            })
+            .CreateClient();
     }
 
     private async Task<List<Dictionary<string, JsonElement>>> WaitForMockServerEvents()
