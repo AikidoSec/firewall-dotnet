@@ -157,10 +157,10 @@ namespace Aikido.Zen.DotNetCore
                 {
                     Environment.SetEnvironmentVariable("AIKIDO_TOKEN", options.AikidoToken);
                 }
-                options.AikidoUrl = configuration["Aikido:AikidoUrl"] ?? Environment.GetEnvironmentVariable("AIKIDO_URL");
-                if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AIKIDO_URL")))
+                options.AikidoUrl = configuration["Aikido:AikidoUrl"] ?? Environment.GetEnvironmentVariable("AIKIDO_ENDPOINT");
+                if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AIKIDO_ENDPOINT")))
                 {
-                    Environment.SetEnvironmentVariable("AIKIDO_URL", options.AikidoUrl);
+                    Environment.SetEnvironmentVariable("AIKIDO_ENDPOINT", options.AikidoUrl);
                 }
             });
             return services;

@@ -23,12 +23,12 @@ export default function () {
         console.error("::error::APP_URL environment variable is not set.");
         throw new Error("APP_URL environment variable is not set.");
     }
-    if (!__ENV.AIKIDO_URL || !__ENV.AIKIDO_REALTIME_URL) {
+    if (!__ENV.AIKIDO_ENDPOINT || !__ENV.AIKIDO_REALTIME_ENDPOINT) {
         console.error(
-            "::error::AIKIDO_URL or AIKIDO_REALTIME_URL environment variable is not set."
+            "::error::AIKIDO_ENDPOINT or AIKIDO_REALTIME_ENDPOINT environment variable is not set."
         );
         throw new Error(
-            "AIKIDO_URL or AIKIDO_REALTIME_URL environment variable is not set."
+            "AIKIDO_ENDPOINT or AIKIDO_REALTIME_ENDPOINT environment variable is not set."
         );
     }
     // log the env variables that start with AIKIDO

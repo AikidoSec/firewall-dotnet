@@ -66,8 +66,8 @@ namespace Aikido.Zen.Test.End2End
             // Set environment variable for the sample app
             SampleAppEnvironmentVariables["AIKIDO_TOKEN"] = MockServerToken;
             // set the base url for the mock server
-            SampleAppEnvironmentVariables["AIKIDO_URL"] = $"http://localhost:{MockServerPort}";
-            SampleAppEnvironmentVariables["AIKIDO_REALTIME_URL"] = $"http://localhost:{MockServerPort}";
+            SampleAppEnvironmentVariables["AIKIDO_ENDPOINT"] = $"http://localhost:{MockServerPort}";
+            SampleAppEnvironmentVariables["AIKIDO_REALTIME_ENDPOINT"] = $"http://localhost:{MockServerPort}";
         }
 
         [OneTimeTearDown]
