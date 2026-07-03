@@ -15,6 +15,7 @@ namespace Aikido.Zen.Core.Sinks
         internal static bool Inspect(
             MethodBase originalMethod,
             string operationKind,
+            Context context,
             Func<Context, InspectionResult> inspect)
         {
             if (IsInspecting.Value)
@@ -26,8 +27,6 @@ namespace Aikido.Zen.Core.Sinks
 
             try
             {
-                var context = Patcher.GetContext();
-
                 try
                 {
                     if (Context.IsBypassed(context) ||

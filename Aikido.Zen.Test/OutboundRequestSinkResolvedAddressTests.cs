@@ -7,6 +7,7 @@ using System.Threading;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Exceptions;
+using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Models.Events;
 using Aikido.Zen.Core.Sinks;
 using Aikido.Zen.Tests.Mocks;
@@ -16,7 +17,7 @@ namespace Aikido.Zen.Test
 {
     [TestFixture]
     [NonParallelizable]
-    public class OutboundRequestInnerSinkTests
+    public class OutboundRequestSinkResolvedAddressTests
     {
         private Mock<IReportingAPIClient> _reportingApiMock = null!;
         private Mock<IRuntimeAPIClient> _runtimeApiMock = null!;
@@ -57,19 +58,18 @@ namespace Aikido.Zen.Test
         [TearDown]
         public void TearDown()
         {
-            OutboundRequestSink.ExitRequestScope();
             Patcher.Unpatch();
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", null);
             _agent?.Dispose();
         }
 
         [Test]
-        public void OnRequest_WhenNoCurrentRequest_Allows()
+        public void OnRequest_WhenNoTrackedRequest_Allows()
         {
-            OutboundRequestSink.ExitRequestScope();
+            using var request = new HttpRequestMessage(HttpMethod.Get, "http://127.0.0.1/admin");
             Task<HttpResponseMessage> result = null!;
 
-            var allowed = OutboundRequestInnerSink.OnRequest(new object(), GetHttpClientSendAsyncMethod(), ref result);
+            var allowed = OutboundRequestSink.OnHttpClientConnectionRequest(request, new object(), GetHttpClientSendAsyncMethod(), ref result);
 
             Assert.Multiple(() =>
             {
@@ -81,10 +81,10 @@ namespace Aikido.Zen.Test
         [Test]
         public void OnRequest_WhenConnectionHasNoRemoteAddress_Allows()
         {
-            EnterRequestScope(new Uri("http://127.0.0.1/admin"), CreateContextWithInput("http://127.0.0.1/admin"));
+            using var request = TrackHttpClientRequest(new Uri("http://127.0.0.1/admin"), CreateContextWithInput("http://127.0.0.1/admin"));
             Task<HttpResponseMessage> result = null!;
 
-            var allowed = OutboundRequestInnerSink.OnRequest(new object(), GetHttpClientSendAsyncMethod(), ref result);
+            var allowed = OutboundRequestSink.OnHttpClientConnectionRequest(request, new object(), GetHttpClientSendAsyncMethod(), ref result);
 
             Assert.Multiple(() =>
             {
@@ -96,10 +96,10 @@ namespace Aikido.Zen.Test
         [Test]
         public void OnRequest_WhenConnectionIsNull_Allows()
         {
-            EnterRequestScope(new Uri("http://127.0.0.1/admin"), CreateContextWithInput("http://127.0.0.1/admin"));
+            using var request = TrackHttpClientRequest(new Uri("http://127.0.0.1/admin"), CreateContextWithInput("http://127.0.0.1/admin"));
             Task<HttpResponseMessage> result = null!;
 
-            var allowed = OutboundRequestInnerSink.OnRequest(null!, GetHttpClientSendAsyncMethod(), ref result);
+            var allowed = OutboundRequestSink.OnHttpClientConnectionRequest(request, null!, GetHttpClientSendAsyncMethod(), ref result);
 
             Assert.Multiple(() =>
             {
@@ -113,10 +113,11 @@ namespace Aikido.Zen.Test
         {
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
             var url = "http://127.0.0.1/admin";
-            EnterRequestScope(new Uri(url), CreateContextWithInput(url));
+            using var request = TrackHttpClientRequest(new Uri(url), CreateContextWithInput(url));
             Task<HttpResponseMessage> result = null!;
 
-            var allowed = OutboundRequestInnerSink.OnRequest(
+            var allowed = OutboundRequestSink.OnHttpClientConnectionRequest(
+                request,
                 new Http3Connection(new RemoteEndpointConnection(IPAddress.Loopback)),
                 GetHttpClientSendAsyncMethod(),
                 ref result);
@@ -130,12 +131,45 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void OnRequest_WhenHttp3RemoteEndpointIsNotIPEndPoint_Allows()
+        public void OnRequest_WhenOuterRouteHasForceProtectionOff_AllowsStoredSsrf()
         {
-            EnterRequestScope(new Uri("http://127.0.0.1/admin"), CreateContextWithInput("http://127.0.0.1/admin"));
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
+            _agent.Context.Config.UpdateRatelimitedRoutes(new[]
+            {
+                new EndpointConfig
+                {
+                    Method = "GET",
+                    Route = "/outbound",
+                    ForceProtectionOff = true
+                }
+            });
+
+            var url = "http://evil-stored-ssrf-hostname/latest/api/token";
+            using var request = TrackHttpClientRequest(new Uri(url), CreateContextWithInput(url));
             Task<HttpResponseMessage> result = null!;
 
-            var allowed = OutboundRequestInnerSink.OnRequest(
+            var allowed = OutboundRequestSink.OnHttpClientConnectionRequest(
+                request,
+                new Http3Connection(new RemoteEndpointConnection(IPAddress.Parse("169.254.169.254"))),
+                GetHttpClientSendAsyncMethod(),
+                ref result);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(allowed, Is.True);
+                Assert.That(result, Is.Null);
+                Assert.That(_agent.Context.AttacksDetected, Is.EqualTo(0));
+            });
+        }
+
+        [Test]
+        public void OnRequest_WhenHttp3RemoteEndpointIsNotIPEndPoint_Allows()
+        {
+            using var request = TrackHttpClientRequest(new Uri("http://127.0.0.1/admin"), CreateContextWithInput("http://127.0.0.1/admin"));
+            Task<HttpResponseMessage> result = null!;
+
+            var allowed = OutboundRequestSink.OnHttpClientConnectionRequest(
+                request,
                 new Http3Connection(new RemoteEndpointConnection(new DnsEndPoint("localhost", 443))),
                 GetHttpClientSendAsyncMethod(),
                 ref result);
@@ -154,10 +188,11 @@ namespace Aikido.Zen.Test
             using var pair = new ConnectedSocketPair();
             using var sslStream = new SslStream(new SocketBackedStream(pair.Client));
             var url = $"http://127.0.0.1:{pair.Port}/admin";
-            EnterRequestScope(new Uri(url), CreateContextWithInput(url));
+            using var request = TrackHttpClientRequest(new Uri(url), CreateContextWithInput(url));
             Task<HttpResponseMessage> result = null!;
 
-            var allowed = OutboundRequestInnerSink.OnRequest(
+            var allowed = OutboundRequestSink.OnHttpClientConnectionRequest(
+                request,
                 new HttpConnection(sslStream),
                 GetHttpClientSendAsyncMethod(),
                 ref result);
@@ -175,10 +210,11 @@ namespace Aikido.Zen.Test
         {
             var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             socket.Dispose();
-            EnterRequestScope(new Uri("http://127.0.0.1/admin"), CreateContextWithInput("http://127.0.0.1/admin"));
+            using var request = TrackHttpClientRequest(new Uri("http://127.0.0.1/admin"), CreateContextWithInput("http://127.0.0.1/admin"));
             Task<HttpResponseMessage> result = null!;
 
-            var allowed = OutboundRequestInnerSink.OnRequest(
+            var allowed = OutboundRequestSink.OnHttpClientConnectionRequest(
+                request,
                 new Http3Connection(socket),
                 GetHttpClientSendAsyncMethod(),
                 ref result);
@@ -191,11 +227,16 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void OnFrameworkRequest_WhenNoCurrentRequest_Allows()
+        public void OnFrameworkRequest_WhenNoTrackedRequest_Allows()
         {
-            OutboundRequestSink.ExitRequestScope();
+#pragma warning disable SYSLIB0014
+            var request = (HttpWebRequest)WebRequest.Create("http://127.0.0.1/admin");
+#pragma warning restore SYSLIB0014
 
-            var allowed = OutboundRequestInnerSink.OnFrameworkRequest(new object(), GetHttpClientSendAsyncMethod());
+            var allowed = OutboundRequestSink.OnFrameworkRequest(
+                new FrameworkRequestStream(request),
+                new object(),
+                GetHttpClientSendAsyncMethod());
 
             Assert.That(allowed, Is.True);
         }
@@ -203,9 +244,12 @@ namespace Aikido.Zen.Test
         [Test]
         public void OnFrameworkRequest_WhenConnectionHasNoNetworkStream_Allows()
         {
-            EnterRequestScope(new Uri("http://127.0.0.1/admin"), CreateContextWithInput("http://127.0.0.1/admin"));
+            var request = TrackFrameworkRequest(new Uri("http://127.0.0.1/admin"), CreateContextWithInput("http://127.0.0.1/admin"));
 
-            var allowed = OutboundRequestInnerSink.OnFrameworkRequest(new object(), GetHttpClientSendAsyncMethod());
+            var allowed = OutboundRequestSink.OnFrameworkRequest(
+                new FrameworkRequestStream(request),
+                new object(),
+                GetHttpClientSendAsyncMethod());
 
             Assert.That(allowed, Is.True);
         }
@@ -215,9 +259,10 @@ namespace Aikido.Zen.Test
         {
             using var pair = new ConnectedSocketPair();
             var targetUri = new Uri($"http://backend:{pair.Port}/admin");
-            EnterRequestScope(targetUri, CreateContextWithInput("http://unrelated.example/admin"));
+            var request = TrackFrameworkRequest(targetUri, CreateContextWithInput("http://unrelated.example/admin"));
 
-            var allowed = OutboundRequestInnerSink.OnFrameworkRequest(
+            var allowed = OutboundRequestSink.OnFrameworkRequest(
+                new FrameworkRequestStream(request),
                 new FrameworkConnection(new SocketBackedStream(pair.Client)),
                 GetHttpClientSendAsyncMethod());
 
@@ -230,24 +275,40 @@ namespace Aikido.Zen.Test
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
             using var pair = new ConnectedSocketPair();
             var url = $"http://127.0.0.1:{pair.Port}/admin";
-            EnterRequestScope(new Uri(url), CreateContextWithInput(url));
+            var request = TrackFrameworkRequest(new Uri(url), CreateContextWithInput(url));
 
             Assert.That(
-                () => OutboundRequestInnerSink.OnFrameworkRequest(
+                () => OutboundRequestSink.OnFrameworkRequest(
+                    new FrameworkRequestStream(request),
                     new FrameworkConnection(new SocketBackedStream(pair.Client)),
                     GetHttpClientSendAsyncMethod()),
                 Throws.TypeOf<AikidoException>());
         }
 
-        private void EnterRequestScope(Uri targetUri, Context context)
+        private HttpRequestMessage TrackHttpClientRequest(Uri targetUri, Context context)
         {
             _activeContext = context;
-            using var httpClient = new HttpClient();
-            using var request = new HttpRequestMessage(HttpMethod.Get, targetUri);
+            var request = new HttpRequestMessage(HttpMethod.Get, targetUri);
 
             Assert.That(
-                OutboundRequestSink.OnRequestHttpClient(request, httpClient, GetHttpClientSendAsyncMethod()),
+                OutboundRequestSink.OnHttpClientRequest(request, null!, GetHttpClientSendAsyncMethod()),
                 Is.True);
+
+            return request;
+        }
+
+        private HttpWebRequest TrackFrameworkRequest(Uri targetUri, Context context)
+        {
+            _activeContext = context;
+#pragma warning disable SYSLIB0014
+            var request = (HttpWebRequest)WebRequest.Create(targetUri);
+#pragma warning restore SYSLIB0014
+
+            Assert.That(
+                OutboundRequestSink.OnWebRequest(request, GetMethod(typeof(WebRequest), nameof(WebRequest.GetResponse))),
+                Is.True);
+
+            return request;
         }
 
         private static Context CreateContextWithInput(string userInput)
@@ -270,6 +331,18 @@ namespace Aikido.Zen.Test
             return typeof(HttpClient).GetMethod(
                 nameof(HttpClient.SendAsync),
                 new[] { typeof(HttpRequestMessage), typeof(CancellationToken) })!;
+        }
+
+        private static MethodInfo GetMethod(Type type, string methodName, params Type[] parameterTypes)
+        {
+            var method = type.GetMethod(
+                methodName,
+                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static,
+                null,
+                parameterTypes,
+                null);
+            Assert.That(method, Is.Not.Null, $"{type.FullName}.{methodName} should exist.");
+            return method;
         }
 
         private sealed class HttpConnection
@@ -300,6 +373,16 @@ namespace Aikido.Zen.Test
             }
 
             private Stream NetworkStream { get; }
+        }
+
+        private sealed class FrameworkRequestStream
+        {
+            internal FrameworkRequestStream(HttpWebRequest request)
+            {
+                m_Request = request;
+            }
+
+            private readonly HttpWebRequest m_Request;
         }
 
         private sealed class RemoteEndpointConnection

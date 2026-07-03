@@ -27,19 +27,12 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             // Nothing to dispose
         }
 
-        private bool responseHandled = false;
-
         public void Init(HttpApplication context)
         {
-            responseHandled = false;
             LogHelper.DebugLog(Agent.Logger, "ContextModule initialized");
             context.PostAuthenticateRequest += Context_PostAuthenticateRequest;
-            // we add the .Wait(), because we want our module to handle exceptions properly
-            context.BeginRequest += (sender, e) => Task.Run(() => Context_BeginRequest(sender, e)).Wait();
-            // we try to discover the route as early as possible (we just need a statuscode), but we fallback to other listeners in case some are skipped.
-            context.PreSendRequestHeaders += Context_EndRequest;
+            context.BeginRequest += Context_BeginRequest;
             context.EndRequest += Context_EndRequest;
-            context.PostRequestHandlerExecute += Context_EndRequest;
         }
 
         private void Context_PostAuthenticateRequest(object sender, EventArgs e)
@@ -51,7 +44,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
 
         internal static void PopulateAuthenticatedUser(HttpContext httpContext)
         {
-            var aikidoContext = (Context)httpContext.Items["Aikido.Zen.Context"];
+            var aikidoContext = Zen.GetContext();
 
             if (Context.IsNullOrBypassed(aikidoContext))
             {
@@ -69,7 +62,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
 
         internal static void PopulateRateLimitGroup(HttpContext httpContext)
         {
-            var aikidoContext = (Context)httpContext.Items["Aikido.Zen.Context"];
+            var aikidoContext = Zen.GetContext();
 
             if (Context.IsNullOrBypassed(aikidoContext))
             {
@@ -83,13 +76,12 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             }
         }
 
-        private async Task Context_BeginRequest(object sender, EventArgs e)
+        private void Context_BeginRequest(object sender, EventArgs e)
         {
             LogHelper.DebugLog(Agent.Logger, "Capturing request context");
             var httpContext = ((HttpApplication)sender).Context;
             try
             {
-                responseHandled = false;
                 string clientIp = GetClientIp(httpContext);
 
                 if (EnvironmentHelper.IsDisabled)
@@ -100,7 +92,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 // Store bypass marker context so patches can still honor bypass
                 if (Agent.Instance.Context.Config.BlockList.IsIPBypassed(clientIp))
                 {
-                    httpContext.Items["Aikido.Zen.Context"] = new Context { Bypassed = true };
+                    Zen.SetCurrentContext(new Context { Bypassed = true });
                     return;
                 }
 
@@ -120,24 +112,10 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                     RouteParams = FlattenRouteParameters(httpContext.Request.RequestContext.RouteData.Values),
                 };
 
+                Zen.SetCurrentContext(context);
                 Agent.Instance.SetContextMiddlewareInstalled(true);
 
-                var request = httpContext.Request;
-
-                var httpData = await HttpHelper.ReadAndFlattenHttpDataAsync(
-                    routeParams: context.RouteParams,
-                    queryParams: context.Query,
-                    headers: request.Headers.AllKeys.ToDictionary(k => k, k => request.Headers.Get(k)),
-                    cookies: request.Cookies.AllKeys.ToDictionary(k => k, k => request.Cookies[k].Value),
-                    body: request.InputStream,
-                    contentType: request.ContentType
-                );
-
-                context.ParsedUserInput = httpData.FlattenedData;
-                context.Body = request.InputStream;
-                context.ParsedBody = httpData.ParsedBody;
-                Agent.Instance.CaptureRequestUser(context);
-                httpContext.Items["Aikido.Zen.Context"] = context;
+                Task.Run(() => ReadAndCaptureHttpDataAsync(httpContext, context)).Wait();
             }
             catch (Exception ex)
             {
@@ -148,20 +126,33 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             {
                 httpContext.Request.InputStream.Position = 0;
             }
+        }
 
+        private static async Task ReadAndCaptureHttpDataAsync(HttpContext httpContext, Context context)
+        {
+            var request = httpContext.Request;
+
+            var httpData = await HttpHelper.ReadAndFlattenHttpDataAsync(
+                routeParams: context.RouteParams,
+                queryParams: context.Query,
+                headers: request.Headers.AllKeys.ToDictionary(k => k, k => request.Headers.Get(k)),
+                cookies: request.Cookies.AllKeys.ToDictionary(k => k, k => request.Cookies[k].Value),
+                body: request.InputStream,
+                contentType: request.ContentType
+            );
+
+            context.ParsedUserInput = httpData.FlattenedData;
+            context.Body = request.InputStream;
+            context.ParsedBody = httpData.ParsedBody;
+            Agent.Instance.CaptureRequestUser(context);
         }
 
         private void Context_EndRequest(object sender, EventArgs e)
         {
             try
             {
-                if (responseHandled)
-                {
-                    return;
-                }
-
                 var httpContext = ((HttpApplication)sender).Context;
-                var aikidoContext = (Context)httpContext.Items["Aikido.Zen.Context"];
+                var aikidoContext = Zen.GetContext();
                 if (aikidoContext == null)
                 {
                     LogHelper.DebugLog(Agent.Logger, "Aikido context is null, skipping route");
@@ -170,10 +161,8 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 if (Context.IsBypassed(aikidoContext))
                 {
                     LogHelper.DebugLog(Agent.Logger, "Aikido context is bypassed, skipping route");
-                    responseHandled = true;
                     return;
                 }
-                responseHandled = true;
 
                 int statusCode = httpContext.Response.StatusCode;
                 var attackWaveDetector = Agent.Instance.AttackWaveDetector;
@@ -192,6 +181,10 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             catch (Exception ex)
             {
                 LogHelper.ErrorLog(Agent.Logger, $"Error adding route: {ex.Message}");
+            }
+            finally
+            {
+                Zen.ClearCurrentContext();
             }
         }
 
@@ -231,7 +224,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 // Replace with empty string to avoid exceptions
                 var safeKey = key ?? string.Empty;
                 var values = queryString.GetValues(key);
-                
+
                 // Example: for ?foo=a&foo=b, the dictionary will be:
                 // { "foo": "a", "foo[1]": "b" }
                 // The first value ("a") is used as the default ("foo"), matching ASP.NET Core's default behavior for query and header collections.

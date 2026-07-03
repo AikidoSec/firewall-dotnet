@@ -25,6 +25,7 @@ namespace Aikido.Zen.Core.Sinks
             Inspector.Inspect(
                 __originalMethod,
                 OperationKind,
+                Patcher.GetContext(),
                 context => OnLLMCallCompleted(__instance, __result, context));
         }
 

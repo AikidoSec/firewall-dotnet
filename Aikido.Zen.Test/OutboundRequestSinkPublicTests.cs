@@ -17,7 +17,7 @@ namespace Aikido.Zen.Test
 {
     [TestFixture]
     [NonParallelizable]
-    public class OutboundRequestSinkTests
+    public class OutboundRequestSinkPublicTests
     {
         private Mock<IReportingAPIClient> _reportingApiMock;
         private Mock<IRuntimeAPIClient> _runtimeApiMock;
@@ -51,7 +51,6 @@ namespace Aikido.Zen.Test
 
             _agent = Agent.NewInstance(ZenApiMock.CreateMock(_reportingApiMock.Object, _runtimeApiMock.Object).Object);
             _agent.ClearContext();
-            OutboundRequestSink.ExitRequestScope();
             Patcher.Unpatch();
             Patcher.PatchSinks(() => _activeContext!);
         }
@@ -59,7 +58,6 @@ namespace Aikido.Zen.Test
         [TearDown]
         public void TearDown()
         {
-            OutboundRequestSink.ExitRequestScope();
             Patcher.Unpatch();
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", null);
             _agent?.Dispose();
@@ -335,6 +333,25 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void OnRequest_WithRelativeRequestAndNoBaseAddress_ReturnsTrue()
+        {
+            using var httpClient = new HttpClient();
+            using var request = new HttpRequestMessage(HttpMethod.Get, "/relative");
+
+            var result = OnHttpClientRequest(
+                request,
+                httpClient,
+                GetHttpClientSendAsyncMethod(),
+                CreateContext());
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result, Is.True);
+                Assert.That(OutboundRequestStateStore.TryGetHttpRequestState(request, out _), Is.False);
+            });
+        }
+
+        [Test]
         public void OnRequest_WithRequestAndNoHttpClient_CapturesRequestUri()
         {
             using var request = new HttpRequestMessage(HttpMethod.Get, "https://request-only.example/path");
@@ -366,36 +383,91 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void OnRequest_WhenAlreadyInsideOutboundRequest_DoesNotReplaceCurrentRequest()
+        public void OnHttpClientWebRequestCreated_AssociatesFrameworkRequestWithHttpClientState()
         {
+            using var httpClient = new HttpClient();
+            using var httpRequest = new HttpRequestMessage(HttpMethod.Get, "https://httpclient.example/path");
 #pragma warning disable SYSLIB0014
-            var webRequest = WebRequest.Create("https://webrequest.example/path");
+            var webRequest = (HttpWebRequest)WebRequest.Create("https://framework.example/path");
 #pragma warning restore SYSLIB0014
 
-            var outerResult = OnWebRequest(
-                webRequest,
-                GetMethod(typeof(WebRequest), nameof(WebRequest.GetResponse)),
-                CreateContext());
-
-            using var httpClient = new HttpClient();
-            using var innerRequest = new HttpRequestMessage(HttpMethod.Get, "https://inner.example/path");
-            var innerResult = OnHttpClientRequest(
-                innerRequest,
+            var result = OnHttpClientRequest(
+                httpRequest,
                 httpClient,
                 GetHttpClientSendAsyncMethod(),
                 CreateContext());
 
-            var hasCurrentRequest = OutboundRequestSink.TryGetCurrentRequestUri(out var currentUri);
+            OutboundRequestSink.OnHttpClientWebRequestCreated(httpRequest, webRequest);
+            var hasHttpState = OutboundRequestStateStore.TryGetHttpRequestState(httpRequest, out var httpState);
+            var hasWebState = OutboundRequestStateStore.TryGetWebRequestState(webRequest, out var webState);
 
             Assert.Multiple(() =>
             {
-                Assert.That(outerResult, Is.True);
-                Assert.That(innerResult, Is.True);
-                Assert.That(hasCurrentRequest, Is.True);
-                Assert.That(currentUri.Host, Is.EqualTo("webrequest.example"));
-                Assert.That(_agent.Context.Hostnames.Count(h => h.Hostname == "webrequest.example"), Is.EqualTo(1));
-                Assert.That(_agent.Context.Hostnames.Any(h => h.Hostname == "inner.example"), Is.False);
+                Assert.That(result, Is.True);
+                Assert.That(hasHttpState, Is.True);
+                Assert.That(hasWebState, Is.True);
+                Assert.That(webState, Is.SameAs(httpState));
+                Assert.That(webState.TargetUri.Host, Is.EqualTo("httpclient.example"));
             });
+        }
+
+        [Test]
+        public void OnHttpClientWebRequestCreated_WhenWebRequestIsNull_DoesNotAssociate()
+        {
+            using var httpClient = new HttpClient();
+            using var httpRequest = new HttpRequestMessage(HttpMethod.Get, "https://httpclient.example/path");
+
+            var result = OnHttpClientRequest(
+                httpRequest,
+                httpClient,
+                GetHttpClientSendAsyncMethod(),
+                CreateContext());
+
+            Assert.DoesNotThrow(() => OutboundRequestSink.OnHttpClientWebRequestCreated(httpRequest, null!));
+            Assert.That(result, Is.True);
+        }
+
+        [Test]
+        public void OnHttpClientWebRequestCreated_WhenHttpRequestHasNoState_DoesNotAssociate()
+        {
+            using var httpRequest = new HttpRequestMessage(HttpMethod.Get, "https://httpclient.example/path");
+#pragma warning disable SYSLIB0014
+            var webRequest = (HttpWebRequest)WebRequest.Create("https://framework.example/path");
+#pragma warning restore SYSLIB0014
+
+            OutboundRequestSink.OnHttpClientWebRequestCreated(httpRequest, webRequest);
+
+            Assert.That(OutboundRequestStateStore.TryGetWebRequestState(webRequest, out _), Is.False);
+        }
+
+        [Test]
+        public void SetHttpRequestState_WhenRequestAlreadyHasState_DoesNotThrow()
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, "https://httpclient.example/path");
+            var originalState = new OutboundRequestState(request.RequestUri!, CreateContext());
+            var duplicateState = new OutboundRequestState(new Uri("https://duplicate.example/path"), CreateContext());
+
+            OutboundRequestStateStore.SetHttpRequestState(request, originalState);
+
+            Assert.DoesNotThrow(() => OutboundRequestStateStore.SetHttpRequestState(request, duplicateState));
+            Assert.That(OutboundRequestStateStore.TryGetHttpRequestState(request, out var storedState), Is.True);
+            Assert.That(storedState, Is.SameAs(originalState));
+        }
+
+        [Test]
+        public void SetWebRequestState_WhenRequestAlreadyHasState_DoesNotThrow()
+        {
+#pragma warning disable SYSLIB0014
+            var request = (HttpWebRequest)WebRequest.Create("https://framework.example/path");
+#pragma warning restore SYSLIB0014
+            var originalState = new OutboundRequestState(request.RequestUri, CreateContext());
+            var duplicateState = new OutboundRequestState(new Uri("https://duplicate.example/path"), CreateContext());
+
+            OutboundRequestStateStore.SetWebRequestState(request, originalState);
+
+            Assert.DoesNotThrow(() => OutboundRequestStateStore.SetWebRequestState(request, duplicateState));
+            Assert.That(OutboundRequestStateStore.TryGetWebRequestState(request, out var storedState), Is.True);
+            Assert.That(storedState, Is.SameAs(originalState));
         }
 
         [Test]
@@ -535,48 +607,105 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void OnRequestFinalized_ClearsCallerRequestScope()
+        public async Task OnHttpClientRequestFinalized_WhenResponseTaskSucceeds_ReturnsResponse()
         {
-            var context = CreateContext();
-            context.ParsedUserInput = new Dictionary<string, string>
-            {
-                { "query.url", "http://private.example/admin" }
-            };
+            using var httpClient = new HttpClient();
+            using var request = new HttpRequestMessage(HttpMethod.Get, "http://public.example/");
 
-            var result = OnRequest(
-                new Uri("http://private.example/admin"),
-                GetHttpClientSendAsyncMethod(),
-                context);
-
-            Assert.That(result, Is.True);
-
-            object finalizerResult = null!;
-            OutboundRequestSink.OnRequestFinalized(ref finalizerResult, null!);
-
-            var hasCurrentRequest = OutboundRequestSink.TryGetCurrentRequestUri(out _);
-
-            Assert.That(hasCurrentRequest, Is.False);
-        }
-
-        [Test]
-        public async Task OnRequestFinalized_WhenResponseTaskSucceeds_ReturnsResponse()
-        {
-            var result = OnRequest(
-                new Uri("http://public.example/"),
+            var result = OnHttpClientRequest(
+                request,
+                httpClient,
                 GetHttpClientSendAsyncMethod(),
                 CreateContext());
 
             Assert.That(result, Is.True);
+            Assert.That(OutboundRequestStateStore.TryGetHttpRequestState(request, out _), Is.True);
 
             var response = new HttpResponseMessage(HttpStatusCode.NoContent);
-            object finalizerResult = Task.FromResult(response);
-            var finalException = OutboundRequestSink.OnRequestFinalized(ref finalizerResult, null!);
-            var finalResponse = await (Task<HttpResponseMessage>)finalizerResult;
+            var responseTask = new TaskCompletionSource<HttpResponseMessage>();
+            var finalizerResult = responseTask.Task;
+            var finalException = OutboundRequestSink.OnHttpClientRequestFinalized(request, ref finalizerResult, null!);
+
+            responseTask.SetResult(response);
+            var finalResponse = await finalizerResult;
 
             Assert.Multiple(() =>
             {
                 Assert.That(finalException, Is.Null);
                 Assert.That(finalResponse, Is.SameAs(response));
+            });
+        }
+
+        [Test]
+        public async Task OnHttpClientRequestFinalized_WhenResponseTaskAlreadyCompleted_ReturnsSameTask()
+        {
+            using var httpClient = new HttpClient();
+            using var request = new HttpRequestMessage(HttpMethod.Get, "http://public.example/");
+
+            var result = OnHttpClientRequest(
+                request,
+                httpClient,
+                GetHttpClientSendAsyncMethod(),
+                CreateContext());
+
+            Assert.That(result, Is.True);
+            Assert.That(OutboundRequestStateStore.TryGetHttpRequestState(request, out _), Is.True);
+
+            var response = new HttpResponseMessage(HttpStatusCode.NoContent);
+            var originalTask = Task.FromResult(response);
+            var finalizerResult = originalTask;
+            var finalException = OutboundRequestSink.OnHttpClientRequestFinalized(request, ref finalizerResult, null!);
+            var finalResponse = await finalizerResult;
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(finalException, Is.Null);
+                Assert.That(finalizerResult, Is.SameAs(originalTask));
+                Assert.That(finalResponse, Is.SameAs(response));
+            });
+        }
+
+        [Test]
+        public async Task OnWebRequestFinalized_WhenWebResponseTaskFailsWithDetectedException_ThrowsDetectedException()
+        {
+#pragma warning disable SYSLIB0014
+            var webRequest = (HttpWebRequest)WebRequest.Create("http://webrequest.example/path");
+#pragma warning restore SYSLIB0014
+
+            var result = OnWebRequest(
+                webRequest,
+                GetMethod(typeof(WebRequest), nameof(WebRequest.GetResponseAsync)),
+                CreateContext());
+
+            Assert.That(result, Is.True);
+            Assert.That(OutboundRequestStateStore.TryGetWebRequestState(webRequest, out var state), Is.True);
+
+            var detectedException = new AikidoException("blocked web response");
+            state.DetectedException = detectedException;
+
+            var finalizerResult = Task.FromException<WebResponse>(new WebException("raw failure"));
+            var finalException = OutboundRequestSink.OnWebRequestFinalized(webRequest, ref finalizerResult, null!);
+            var exception = Assert.ThrowsAsync<AikidoException>(async () => await finalizerResult);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(finalException, Is.Null);
+                Assert.That(exception, Is.SameAs(detectedException));
+            });
+        }
+
+        [Test]
+        public void OnWebRequestFinalized_WhenRequestIsNull_LeavesResponseTaskUnchanged()
+        {
+            var originalTask = Task.FromException<WebResponse>(new WebException("raw failure"));
+            var finalizerResult = originalTask;
+
+            var finalException = OutboundRequestSink.OnWebRequestFinalized(null!, ref finalizerResult, null!);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(finalException, Is.Null);
+                Assert.That(finalizerResult, Is.SameAs(originalTask));
             });
         }
 
@@ -650,13 +779,13 @@ namespace Aikido.Zen.Test
         private bool OnHttpClientRequest(HttpRequestMessage? request, HttpClient? httpClient, MethodInfo methodInfo, Context? context)
         {
             _activeContext = context;
-            return OutboundRequestSink.OnRequestHttpClient(request!, httpClient!, methodInfo);
+            return OutboundRequestSink.OnHttpClientRequest(request!, httpClient!, methodInfo);
         }
 
         private bool OnWebRequest(WebRequest? request, MethodInfo methodInfo, Context? context)
         {
             _activeContext = context;
-            return OutboundRequestSink.OnRequestWebRequest(request!, methodInfo);
+            return OutboundRequestSink.OnWebRequest(request!, methodInfo);
         }
 
         private static MethodInfo GetMethod(Type type, string methodName, params Type[] parameterTypes)

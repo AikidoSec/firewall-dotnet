@@ -16,6 +16,14 @@ namespace Aikido.Zen.DotNetFramework
     {
         // we need to reference Harmony somewhere to ensure it is copied with our package
         private static HarmonyLib.Harmony harmony = new HarmonyLib.Harmony("reference");
+
+        // Store the request context in HttpContext.Items, matching the ASP.NET request lifetime.
+        // Sink lookups are best-effort through HttpContext.Current; detached work must carry
+        // its own state, as the outbound request sink does. AsyncLocal was also tried, but it
+        // was not reliable when BeginRequest, later request events, and EndRequest ran through
+        // different execution flows, and it does not cover unrelated threads.
+        internal const string ContextItemKey = "Aikido.Zen.Context";
+
         public static void Start()
         {
             // libzen_internals only available on 64
@@ -85,12 +93,28 @@ namespace Aikido.Zen.DotNetFramework
 
         public static Context GetContext()
         {
-            return (Context)HttpContext.Current?.Items["Aikido.Zen.Context"];
+            return HttpContext.Current?.Items[ContextItemKey] as Context;
         }
 
         public static User GetUser()
         {
             return GetContext()?.User;
+        }
+
+        internal static void SetCurrentContext(Context context)
+        {
+            if (HttpContext.Current != null)
+            {
+                HttpContext.Current.Items[ContextItemKey] = context;
+            }
+        }
+
+        internal static void ClearCurrentContext()
+        {
+            if (HttpContext.Current != null)
+            {
+                HttpContext.Current.Items.Remove(ContextItemKey);
+            }
         }
 
         internal static void CheckModules()

@@ -20,6 +20,7 @@ namespace Aikido.Zen.Core.Sinks
             return Inspector.Inspect(
                 __originalMethod,
                 OperationKind,
+                Patcher.GetContext(),
                 context => OnProcessStart(__instance, context));
         }
 
