@@ -60,7 +60,7 @@ jobs:
           path: zen-demo-dotnet-core/local-feed
 
       - name: Run Firewall QA Tests
-        uses: AikidoSec/firewall-tester-action@c33673db750b6153af0556556bfca764ce40c649
+        uses: AikidoSec/firewall-tester-action@772517cb217f3432cb48d1087d07fa8e2a0bf2f9
         with:
           dockerfile_path: ./zen-demo-dotnet-core/Dockerfile
           build_args: |
@@ -98,11 +98,10 @@ jobs:
           Write-Host "Ensured inbound firewall rule for TCP 3000 on all profiles."
 
       - name: Run Firewall QA Tests
-        uses: AikidoSec/firewall-tester-action@c33673db750b6153af0556556bfca764ce40c649
+        uses: AikidoSec/firewall-tester-action@772517cb217f3432cb48d1087d07fa8e2a0bf2f9
         with:
           dockerfile_path: ./zen-demo-dotnet-framework/Dockerfile
           build_args: |
             MSBUILD_ARGS=/nologo /p:AikidoZenDotNetFrameworkVersion=0.0.0-qa
           app_port: 80
           sleep_before_test: 15
-          max_parallel_tests: 5
