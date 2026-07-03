@@ -18,9 +18,10 @@ namespace Aikido.Zen.DotNetFramework
         private static HarmonyLib.Harmony harmony = new HarmonyLib.Harmony("reference");
 
         // Store the request context in HttpContext.Items, matching the ASP.NET request lifetime.
-        // AsyncLocal can flow into some child async work, but it does not consistently line up
-        // with ASP.NET pipeline events such as EndRequest. ConditionalWeakTable avoids those
-        // ambient context issues, but today we only use it for the smaller outbound request state.
+        // Sink lookups are best-effort through HttpContext.Current; detached work must carry
+        // its own state, as the outbound request sink does. AsyncLocal was also tried, but it
+        // was not reliable when BeginRequest, later request events, and EndRequest ran through
+        // different execution flows, and it does not cover unrelated threads.
         internal const string ContextItemKey = "Aikido.Zen.Context";
 
         public static void Start()

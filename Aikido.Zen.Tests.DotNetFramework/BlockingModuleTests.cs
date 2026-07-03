@@ -142,33 +142,5 @@ namespace Aikido.Zen.Tests.DotNetFramework
             }
         }
 
-        [Test]
-        public void GetContext_ReturnsLogicalCurrentContext_WhenHttpContextCurrentIsNull()
-        {
-            var originalCurrent = HttpContext.Current;
-
-            try
-            {
-                var context = new Context
-                {
-                    Url = "http://test.local/api/test",
-                    Path = "/api/test",
-                    Method = "GET",
-                    Route = "/api/test",
-                    RemoteAddress = "127.0.0.1"
-                };
-
-                HttpContext.Current = null;
-                FrameworkZen.SetCurrentContext(context);
-
-                Assert.That(FrameworkZen.GetContext(), Is.SameAs(context));
-            }
-            finally
-            {
-                FrameworkZen.ClearCurrentContext();
-                HttpContext.Current = originalCurrent;
-            }
-        }
-
     }
 }
