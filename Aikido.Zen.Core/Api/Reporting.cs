@@ -30,12 +30,12 @@ namespace Aikido.Zen.Core.Api
             }
             catch (TaskCanceledException ex)
             {
-                LogHelper.WarningLog(Agent.Logger, $"Failed to report event (possible timeout): {ex.Message}");
+                LogHelper.WarningLog(Agent.Logger, ex, "Failed to report event (possible timeout)");
                 return new ReportingAPIResponse { Success = false, Error = "timeout" };
             }
             catch (Exception ex)
             {
-                LogHelper.WarningLog(Agent.Logger, $"Failed to report event: {ex.Message}");
+                LogHelper.WarningLog(Agent.Logger, ex, "Failed to report event");
                 return new ReportingAPIResponse { Success = false, Error = "unknown_error" };
             }
         }
