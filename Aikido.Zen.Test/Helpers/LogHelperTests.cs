@@ -1,4 +1,5 @@
 using System.Reflection;
+using Aikido.Zen.Core;
 using Aikido.Zen.Core.Helpers;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -137,16 +138,62 @@ namespace Aikido.Zen.Test.Helpers
         public void WarningLog_WithException_ShouldLogExceptionAsWarning()
         {
             var message = "Test warning with exception";
-            var exception = new InvalidOperationException("test exception");
+            Exception exception;
+            try
+            {
+                throw new InvalidOperationException(
+                    "test\nexception",
+                    new TimeoutException("inner\ttimeout"));
+            }
+            catch (Exception ex)
+            {
+                exception = ex;
+            }
 
             LogHelper.WarningLog(_loggerMock.Object, exception, message);
 
             _loggerMock.Verify(logger => logger.Log(
                 It.Is<LogLevel>(level => level == LogLevel.Warning),
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString()!.EndsWith(message)),
-                exception,
+                It.Is<It.IsAnyType>((v, t) =>
+                    v.ToString()!.Contains(message) &&
+                    v.ToString()!.Contains("InvalidOperationException: testexception") &&
+                    v.ToString()!.Contains("Inner: TimeoutException: innertimeout") &&
+                    !v.ToString()!.Contains(nameof(WarningLog_WithException_ShouldLogExceptionAsWarning))),
+                It.Is<Exception?>(e => e == null),
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Once);
+        }
+
+        [Test]
+        public void DefaultLogger_WithException_ShouldUseSanitizedExceptionSummary()
+        {
+            var originalOut = Console.Out;
+            var originalLogger = Agent.Logger;
+            var output = new StringWriter();
+            try
+            {
+                Console.SetOut(output);
+                Agent.ConfigureLogger(null);
+                var exception = new InvalidOperationException(
+                    "outer\nmessage",
+                    new TimeoutException("inner\ttimeout"));
+                Exception? noException = null;
+                Func<string, Exception?, string> formatter = (state, _) => state;
+
+                Agent.Logger.Log(LogLevel.Warning, new EventId(), "Plain message", noException, formatter);
+                Agent.Logger.Log(LogLevel.Warning, new EventId(), "Failed\rmessage", exception, formatter);
+            }
+            finally
+            {
+                Console.SetOut(originalOut);
+                Agent.ConfigureLogger(originalLogger);
+            }
+
+            var logged = output.ToString();
+
+            Assert.That(logged, Does.Contain("Plain message"));
+            Assert.That(logged, Does.Contain("AIKIDO: Failedmessage: InvalidOperationException: outermessage Inner: TimeoutException: innertimeout"));
+            Assert.That(logged, Does.Not.Contain(nameof(DefaultLogger_WithException_ShouldUseSanitizedExceptionSummary)));
         }
 
         [Test]
