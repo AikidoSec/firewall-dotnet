@@ -32,8 +32,6 @@ namespace Aikido.Zen.Core
         public object ParsedBody { get; set; }
 
         internal bool Bypassed { get; set; }
-        internal bool ContextMiddlewareInstalled { get; set; }
-        internal bool BlockingMiddlewareInstalled { get; set; }
 
         public bool ConsumedRateLimitForIP { get; set; }
         public bool ConsumedRateLimitForUser { get; set; }

@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-using System.Linq;
 using System.Web; // Import for HTML encoding
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Helpers;
@@ -28,12 +26,6 @@ namespace Aikido.Zen.DotNetCore.Middleware
                     // call the next middleware
                     await next(context);
                     return;
-                }
-
-                var user = context.Items["Aikido.Zen.CurrentUser"] as User;
-                if (user != null)
-                {
-                    Agent.Instance.Context.AddUser(user, ipAddress: aikidoContext.RemoteAddress);
                 }
 
                 // block the request if the user is blocked

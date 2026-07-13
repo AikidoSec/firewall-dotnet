@@ -1,10 +1,16 @@
 using System.Net;
 using System.Net.Http.Json;
+using Aikido.Zen.Core;
 using Aikido.Zen.DotNetCore;
 using Aikido.Zen.Server.Mock.Models;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using SQLiteSampleApp;
+using ZenApi = Aikido.Zen.DotNetCore.Zen;
 
 namespace Aikido.Zen.Test.End2End
 {
@@ -21,25 +27,36 @@ namespace Aikido.Zen.Test.End2End
 
         private WebApplicationFactory<SQLiteStartup> CreateSampleAppFactory()
         {
-            var factory = new WebApplicationFactory<SQLiteStartup>()
+            return new WebApplicationFactory<SQLiteStartup>()
+                .WithWebHostBuilder(ConfigureSampleApp);
+        }
+
+        private WebApplicationFactory<SQLiteStartup> CreateLateSetUserSampleAppFactory()
+        {
+            return new WebApplicationFactory<SQLiteStartup>()
                 .WithWebHostBuilder(builder =>
                 {
-                    builder.ConfigureServices(services =>
-                    {
-                        services.AddZenFirewall(options =>
-                        {
-                            options.UseHttpClient(MockServerClient);
-                        });
-                    });
-                    builder.ConfigureAppConfiguration((context, config) =>
-                    {
-                        foreach (var envVar in SampleAppEnvironmentVariables)
-                        {
-                            Environment.SetEnvironmentVariable(envVar.Key, envVar.Value);
-                        }
-                    });
+                    builder.UseStartup<LateSetUserStartup>();
+                    ConfigureSampleApp(builder);
                 });
-            return factory;
+        }
+
+        private void ConfigureSampleApp(IWebHostBuilder builder)
+        {
+            builder.ConfigureServices(services =>
+            {
+                services.AddZenFirewall(options =>
+                {
+                    options.UseHttpClient(MockServerClient);
+                });
+            });
+            builder.ConfigureAppConfiguration((_, _) =>
+            {
+                foreach (var envVar in SampleAppEnvironmentVariables)
+                {
+                    Environment.SetEnvironmentVariable(envVar.Key, envVar.Value);
+                }
+            });
         }
 
         [OneTimeSetUp]
@@ -72,6 +89,47 @@ namespace Aikido.Zen.Test.End2End
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
             var responseBody = await response.Content.ReadAsStringAsync();
             Assert.That(responseBody, Does.Contain("Your request is blocked: User is blocked"));
+        }
+
+        [Test, NonParallelizable]
+        public async Task WhenBlockedUserIsSetAfterZenMiddleware_ShouldNotBlockAndShouldCaptureUserOnce()
+        {
+            const string userId = "late-user";
+            const string remoteAddress = "203.0.113.7";
+
+            Agent.Instance.Context.Config.Clear();
+            Agent.Instance.ClearContext();
+            await SetMode(false, true);
+            await MockServerClient.PostAsJsonAsync("/api/runtime/config", new Dictionary<string, object>
+            {
+                ["blockedUserIds"] = new[] { userId },
+            });
+
+            SampleAppClient = CreateLateSetUserSampleAppFactory().CreateClient();
+
+            for (var attempt = 0; attempt < 50 && !Agent.Instance.Context.Config.IsUserBlocked(userId); attempt++)
+            {
+                await Task.Delay(100);
+            }
+
+            Assert.That(
+                Agent.Instance.Context.Config.IsUserBlocked(userId),
+                Is.True,
+                "The test must load the blocked-user configuration before sending the request.");
+
+            using var request = new HttpRequestMessage(HttpMethod.Get, "/late-user");
+            request.Headers.Add("user", userId);
+            using var response = await SampleAppClient.SendAsync(request);
+
+            Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+
+            var capturedUser = Agent.Instance.Context.Users.SingleOrDefault(user => user.Id == userId);
+            Assert.Multiple(() =>
+            {
+                Assert.That(capturedUser, Is.Not.Null);
+                Assert.That(capturedUser?.Hits, Is.EqualTo(1));
+                Assert.That(capturedUser?.LastIpAddress, Is.EqualTo(remoteAddress));
+            });
         }
 
         [Test]
@@ -717,6 +775,43 @@ namespace Aikido.Zen.Test.End2End
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
             var responseBody = await response.Content.ReadAsStringAsync();
             Assert.That(responseBody, Does.Contain("Request blocked due to security policy."));
+        }
+    }
+
+    public class LateSetUserStartup
+    {
+        public void ConfigureServices(IServiceCollection services)
+        {
+            services.AddZenFirewall();
+        }
+
+        public void Configure(IApplicationBuilder app)
+        {
+            app.Use((context, next) =>
+            {
+                context.Connection.RemoteIpAddress = IPAddress.Parse("203.0.113.7");
+                return next();
+            });
+
+            app.UseRouting();
+            app.UseZenFirewall();
+
+            // Deliberately incorrect order for late SetUser E2E coverage.
+            app.Use((context, next) =>
+            {
+                var userId = context.Request.Headers["user"].ToString();
+                if (!string.IsNullOrEmpty(userId))
+                {
+                    ZenApi.SetUser(userId, userId, context);
+                }
+
+                return next();
+            });
+
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapGet("/late-user", () => Results.Ok());
+            });
         }
     }
 }

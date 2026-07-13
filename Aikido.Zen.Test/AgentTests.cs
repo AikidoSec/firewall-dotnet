@@ -40,7 +40,7 @@ namespace Aikido.Zen.Test
                 Method = "GET",
                 RemoteAddress = "127.0.0.1"
             };
-            _agent.CaptureRequestUser(context);
+            _agent.CaptureUser(context.User, context.RemoteAddress);
             _agent.IncrementTotalRequestCount();
             _agent.CaptureOutboundRequest("test.com", 443);
             var startedTime = _agent.Context.Started;
@@ -567,7 +567,7 @@ namespace Aikido.Zen.Test
             };
 
             // Act
-            _agent.CaptureRequestUser(context);
+            _agent.CaptureUser(context.User, context.RemoteAddress);
             _agent.IncrementTotalRequestCount();
 
             // Assert
@@ -590,7 +590,7 @@ namespace Aikido.Zen.Test
             };
 
             // Act
-            _agent.CaptureRequestUser(context);
+            _agent.CaptureUser(context.User, context.RemoteAddress);
             _agent.IncrementTotalRequestCount();
 
             // Assert

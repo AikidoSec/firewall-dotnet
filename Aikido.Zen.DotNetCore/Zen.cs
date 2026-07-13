@@ -17,6 +17,7 @@ namespace Aikido.Zen.DotNetCore
     {
         private static IServiceProvider _serviceProvider;
         private static IHttpContextAccessor _httpContextAccessor;
+        private static int _lateSetUserWarningLogged;
 
         public static void Initialize(IServiceProvider serviceProvider, IHttpContextAccessor httpContextAccessor)
         {
@@ -68,7 +69,30 @@ namespace Aikido.Zen.DotNetCore
         public static void SetUser(string id, string name, HttpContext context)
         {
             var user = new User(id, name);
-            context.Items["Aikido.Zen.CurrentUser"] = user;
+
+            var aikidoContext = context.Items["Aikido.Zen.Context"] as Context;
+            if (aikidoContext == null)
+            {
+                // Correct order: ContextMiddleware captures the stored user.
+                context.Items["Aikido.Zen.CurrentUser"] = user;
+                return;
+            }
+
+            if (Interlocked.Exchange(ref _lateSetUserWarningLogged, 1) == 0)
+            {
+                LogHelper.WarningLog(
+                    Agent.Logger,
+                    "Zen.SetUser(...) was called after the Zen middleware. Register the SetUser middleware before UseZenFirewall() so user reporting, blocking, and rate limiting work correctly.");
+            }
+
+            if (Context.IsBypassed(aikidoContext))
+            {
+                return;
+            }
+
+            // Preserve late users for end-of-request reporting.
+            // Blocking and rate limiting have already run.
+            aikidoContext.User = user;
         }
 
         public static void SetRateLimitGroup(string id, HttpContext context)
