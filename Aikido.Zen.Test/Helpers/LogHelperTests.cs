@@ -137,15 +137,17 @@ namespace Aikido.Zen.Test.Helpers
         public void WarningLog_WithException_ShouldLogExceptionAsWarning()
         {
             var message = "Test warning with exception";
-            var exception = new InvalidOperationException("test exception");
+            var exception = new InvalidOperationException("test\nexception");
 
             LogHelper.WarningLog(_loggerMock.Object, exception, message);
 
             _loggerMock.Verify(logger => logger.Log(
                 It.Is<LogLevel>(level => level == LogLevel.Warning),
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString()!.EndsWith(message)),
-                exception,
+                It.Is<It.IsAnyType>((v, t) =>
+                    v.ToString()!.Contains(message) &&
+                    v.ToString()!.Contains("System.InvalidOperationException: testexception")),
+                It.Is<Exception?>(e => e == null),
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Once);
         }
 

@@ -36,6 +36,16 @@ namespace Aikido.Zen.Core.Helpers
             }
         }
 
+        private static string SanitizeMessage(string message, Exception exception)
+        {
+            if (exception == null)
+            {
+                return SanitizeMessage(message);
+            }
+
+            return SanitizeMessage($"{message}: {exception}");
+        }
+
         /// <summary>
         /// Logs a debug message if debugging is enabled, after sanitizing the message and applying rate limiting.
         /// </summary>
@@ -54,17 +64,9 @@ namespace Aikido.Zen.Core.Helpers
             if (EnvironmentHelper.IsDebugging)
             {
                 // Sanitize the message to prevent log injection
-                string sanitizedMessage = SanitizeMessage(message);
-                if (exception == null)
-                {
-                    // we log the message to the outputs defined by the application
-                    logger.LogDebug(sanitizedMessage);
-                }
-                else
-                {
-                    // we log the message to the outputs defined by the application
-                    logger.LogDebug(exception, sanitizedMessage);
-                }
+                string sanitizedMessage = SanitizeMessage(message, exception);
+                // we log the message to the outputs defined by the application
+                logger.LogDebug(sanitizedMessage);
                 // we also log the message to the debug output in case the application is running in a debugger
                 Debug.WriteLine(sanitizedMessage);
             }
@@ -86,18 +88,9 @@ namespace Aikido.Zen.Core.Helpers
         public static void ErrorLog(ILogger logger, Exception exception, string message)
         {
             // Sanitize the message to prevent log injection
-            string sanitizedMessage = SanitizeMessage(message);
-
-            if (exception == null)
-            {
-                // we log the message to the outputs defined by the application
-                logger.LogError(sanitizedMessage);
-            }
-            else
-            {
-                // we log the message to the outputs defined by the application
-                logger.LogError(exception, sanitizedMessage);
-            }
+            string sanitizedMessage = SanitizeMessage(message, exception);
+            // we log the message to the outputs defined by the application
+            logger.LogError(sanitizedMessage);
         }
 
         /// <summary>
@@ -116,18 +109,9 @@ namespace Aikido.Zen.Core.Helpers
         public static void WarningLog(ILogger logger, Exception exception, string message)
         {
             // Sanitize the message to prevent log injection
-            string sanitizedMessage = SanitizeMessage(message);
-
-            if (exception == null)
-            {
-                // we log the message to the outputs defined by the application
-                logger.LogWarning(sanitizedMessage);
-            }
-            else
-            {
-                // we log the message to the outputs defined by the application
-                logger.LogWarning(exception, sanitizedMessage);
-            }
+            string sanitizedMessage = SanitizeMessage(message, exception);
+            // we log the message to the outputs defined by the application
+            logger.LogWarning(sanitizedMessage);
         }
 
         /// <summary>

@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using Aikido.Zen.Core.Helpers;
 using Microsoft.Extensions.Logging;
 
 namespace Aikido.Zen.Core
@@ -17,7 +18,7 @@ namespace Aikido.Zen.Core
             }
             if (exception != null)
             {
-                message = $"{message}{Environment.NewLine}{exception}";
+                message = LogHelper.SanitizeMessage($"{message}: {exception}");
             }
             // log to console, by default it works for .Net core web apps
             Console.WriteLine(message);
