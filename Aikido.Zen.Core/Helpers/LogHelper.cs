@@ -36,17 +36,46 @@ namespace Aikido.Zen.Core.Helpers
             }
         }
 
+        internal static string SanitizeMessage(string message, Exception exception)
+        {
+            if (exception == null)
+            {
+                return SanitizeMessage(message);
+            }
+
+            return SanitizeMessage($"{message}: {SummarizeException(exception)}");
+        }
+
+        private static string SummarizeException(Exception exception)
+        {
+            var summaries = new List<string>();
+            for (var current = exception; current != null; current = current.InnerException)
+            {
+                summaries.Add($"{current.GetType().Name}: {current.Message}");
+            }
+
+            return string.Join(" Inner: ", summaries);
+        }
+
         /// <summary>
         /// Logs a debug message if debugging is enabled, after sanitizing the message and applying rate limiting.
         /// </summary>
         /// <param name="logger">The logger instance to use.</param>
         /// <param name="message">The message to log.</param>
-        public static void DebugLog(ILogger logger, string message)
+        public static void DebugLog(ILogger logger, string message) => DebugLog(logger, null, message);
+
+        /// <summary>
+        /// Logs a debug message with an exception if debugging is enabled, after sanitizing the message.
+        /// </summary>
+        /// <param name="logger">The logger instance to use.</param>
+        /// <param name="exception">The exception associated with the debug message, if any.</param>
+        /// <param name="message">The message to log.</param>
+        public static void DebugLog(ILogger logger, Exception exception, string message)
         {
             if (EnvironmentHelper.IsDebugging)
             {
                 // Sanitize the message to prevent log injection
-                string sanitizedMessage = SanitizeMessage(message);
+                string sanitizedMessage = SanitizeMessage(message, exception);
                 // we log the message to the outputs defined by the application
                 logger.LogDebug(sanitizedMessage);
                 // we also log the message to the debug output in case the application is running in a debugger
@@ -70,18 +99,9 @@ namespace Aikido.Zen.Core.Helpers
         public static void ErrorLog(ILogger logger, Exception exception, string message)
         {
             // Sanitize the message to prevent log injection
-            string sanitizedMessage = SanitizeMessage(message);
-
-            if (exception == null)
-            {
-                // we log the message to the outputs defined by the application
-                logger.LogError(sanitizedMessage);
-            }
-            else
-            {
-                // we log the message to the outputs defined by the application
-                logger.LogError(exception, sanitizedMessage);
-            }
+            string sanitizedMessage = SanitizeMessage(message, exception);
+            // we log the message to the outputs defined by the application
+            logger.LogError(sanitizedMessage);
         }
 
         /// <summary>
@@ -100,18 +120,9 @@ namespace Aikido.Zen.Core.Helpers
         public static void WarningLog(ILogger logger, Exception exception, string message)
         {
             // Sanitize the message to prevent log injection
-            string sanitizedMessage = SanitizeMessage(message);
-
-            if (exception == null)
-            {
-                // we log the message to the outputs defined by the application
-                logger.LogWarning(sanitizedMessage);
-            }
-            else
-            {
-                // we log the message to the outputs defined by the application
-                logger.LogWarning(exception, sanitizedMessage);
-            }
+            string sanitizedMessage = SanitizeMessage(message, exception);
+            // we log the message to the outputs defined by the application
+            logger.LogWarning(sanitizedMessage);
         }
 
         /// <summary>
