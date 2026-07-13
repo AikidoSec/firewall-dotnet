@@ -287,6 +287,7 @@ namespace Aikido.Zen.Tests.DotNetFramework
                 var httpContext = new HttpContext(
                     new HttpRequest(string.Empty, "http://test.local/api/test", string.Empty),
                     new HttpResponse(new StringWriter()));
+                HttpContext.Current = httpContext;
                 var aikidoContext = new Context
                 {
                     Url = "http://test.local/api/test",
@@ -312,8 +313,55 @@ namespace Aikido.Zen.Tests.DotNetFramework
             finally
             {
                 Aikido.Zen.DotNetFramework.Zen.ClearCurrentContext();
+                HttpContext.Current = null;
                 Aikido.Zen.DotNetFramework.Zen.SetUserAction = originalSetUserAction;
                 Agent.Instance.ClearContext();
+            }
+        }
+
+        [Test]
+        public void PopulateAuthenticatedUser_ThenHandleBlocking_CapturesUserOnce()
+        {
+            Agent.Instance.ClearContext();
+            Agent.Instance.Context.Config.UpdateBlockedUsers(new[] { "blocked-user" });
+            var originalSetUserAction = Aikido.Zen.DotNetFramework.Zen.SetUserAction;
+
+            try
+            {
+                var user = new User("blocked-user", "Blocked User");
+                var httpContext = new HttpContext(
+                    new HttpRequest(string.Empty, "http://test.local/api/test", string.Empty),
+                    new HttpResponse(new StringWriter()));
+                HttpContext.Current = httpContext;
+                var aikidoContext = new Context
+                {
+                    Url = "http://test.local/api/test",
+                    Path = "/api/test",
+                    Method = "GET",
+                    Route = "/api/test",
+                    RemoteAddress = "127.0.0.1"
+                };
+                Aikido.Zen.DotNetFramework.Zen.SetCurrentContext(aikidoContext);
+                Aikido.Zen.DotNetFramework.Zen.SetUserAction = _ => user;
+
+                ContextModule.PopulateAuthenticatedUser(httpContext);
+                BlockingModule.HandleBlocking(httpContext, () => { });
+
+                var capturedUser = Agent.Instance.Context.Users.Single(u => u.Id == user.Id);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(capturedUser.Hits, Is.EqualTo(1));
+                    Assert.That(httpContext.Response.StatusCode, Is.EqualTo(403));
+                });
+            }
+            finally
+            {
+                Aikido.Zen.DotNetFramework.Zen.ClearCurrentContext();
+                HttpContext.Current = null;
+                Aikido.Zen.DotNetFramework.Zen.SetUserAction = originalSetUserAction;
+                Agent.Instance.ClearContext();
+                Agent.Instance.Context.Config.UpdateBlockedUsers(Array.Empty<string>());
             }
         }
 

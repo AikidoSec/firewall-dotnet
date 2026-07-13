@@ -45,12 +45,6 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                     return;
                 }
 
-                var user = aikidoContext.User;
-                if (user != null)
-                {
-                    Agent.Instance.Context.AddUser(user, aikidoContext.RemoteAddress);
-                }
-
                 // block the request if the user is blocked
                 if (Agent.Instance.Context.IsBlocked(aikidoContext, out var reason))
                 {
