@@ -50,12 +50,12 @@ namespace Aikido.Zen.Core.Api
             }
             catch (TaskCanceledException ex)
             {
-                LogHelper.DebugLog(Agent.Logger, $"Retrieving Firewall Lists timed out; will retry on a future config update: {ex.Message}");
+                LogHelper.DebugLog(Agent.Logger, ex, "Retrieving Firewall Lists timed out; will retry on a future config update");
                 return new FirewallListsAPIResponse { Success = false, Error = "timeout" };
             }
             catch (Exception ex)
             {
-                LogHelper.WarningLog(Agent.Logger, $"Failed to retrieve Firewall Lists: {ex.Message}");
+                LogHelper.WarningLog(Agent.Logger, ex, "Failed to retrieve Firewall Lists");
                 return new FirewallListsAPIResponse { Success = false, Error = "unknown_error" };
             }
         }

@@ -15,6 +15,10 @@ namespace Aikido.Zen.Core
             {
                 message = formatter(state, exception);
             }
+            if (exception != null)
+            {
+                message = $"{message}{Environment.NewLine}{exception}";
+            }
             // log to console, by default it works for .Net core web apps
             Console.WriteLine(message);
             // log to debug, by default it works for .Net framework web apps

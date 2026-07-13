@@ -41,14 +41,30 @@ namespace Aikido.Zen.Core.Helpers
         /// </summary>
         /// <param name="logger">The logger instance to use.</param>
         /// <param name="message">The message to log.</param>
-        public static void DebugLog(ILogger logger, string message)
+        public static void DebugLog(ILogger logger, string message) => DebugLog(logger, null, message);
+
+        /// <summary>
+        /// Logs a debug message with an exception if debugging is enabled, after sanitizing the message.
+        /// </summary>
+        /// <param name="logger">The logger instance to use.</param>
+        /// <param name="exception">The exception associated with the debug message, if any.</param>
+        /// <param name="message">The message to log.</param>
+        public static void DebugLog(ILogger logger, Exception exception, string message)
         {
             if (EnvironmentHelper.IsDebugging)
             {
                 // Sanitize the message to prevent log injection
                 string sanitizedMessage = SanitizeMessage(message);
-                // we log the message to the outputs defined by the application
-                logger.LogDebug(sanitizedMessage);
+                if (exception == null)
+                {
+                    // we log the message to the outputs defined by the application
+                    logger.LogDebug(sanitizedMessage);
+                }
+                else
+                {
+                    // we log the message to the outputs defined by the application
+                    logger.LogDebug(exception, sanitizedMessage);
+                }
                 // we also log the message to the debug output in case the application is running in a debugger
                 Debug.WriteLine(sanitizedMessage);
             }
