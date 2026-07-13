@@ -18,7 +18,7 @@ namespace Aikido.Zen.Core
             }
             if (exception != null)
             {
-                message = LogHelper.SanitizeMessage($"{message}: {exception}");
+                message = LogHelper.SanitizeMessage(message, exception);
             }
             // log to console, by default it works for .Net core web apps
             Console.WriteLine(message);

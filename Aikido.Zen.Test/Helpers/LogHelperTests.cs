@@ -137,7 +137,17 @@ namespace Aikido.Zen.Test.Helpers
         public void WarningLog_WithException_ShouldLogExceptionAsWarning()
         {
             var message = "Test warning with exception";
-            var exception = new InvalidOperationException("test\nexception");
+            Exception exception;
+            try
+            {
+                throw new InvalidOperationException(
+                    "test\nexception",
+                    new TimeoutException("inner\ttimeout"));
+            }
+            catch (Exception ex)
+            {
+                exception = ex;
+            }
 
             LogHelper.WarningLog(_loggerMock.Object, exception, message);
 
@@ -146,7 +156,9 @@ namespace Aikido.Zen.Test.Helpers
                 It.IsAny<EventId>(),
                 It.Is<It.IsAnyType>((v, t) =>
                     v.ToString()!.Contains(message) &&
-                    v.ToString()!.Contains("System.InvalidOperationException: testexception")),
+                    v.ToString()!.Contains("InvalidOperationException: testexception") &&
+                    v.ToString()!.Contains("Inner: TimeoutException: innertimeout") &&
+                    !v.ToString()!.Contains(nameof(WarningLog_WithException_ShouldLogExceptionAsWarning))),
                 It.Is<Exception?>(e => e == null),
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Once);
         }

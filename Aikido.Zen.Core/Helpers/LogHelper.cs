@@ -36,14 +36,25 @@ namespace Aikido.Zen.Core.Helpers
             }
         }
 
-        private static string SanitizeMessage(string message, Exception exception)
+        internal static string SanitizeMessage(string message, Exception exception)
         {
             if (exception == null)
             {
                 return SanitizeMessage(message);
             }
 
-            return SanitizeMessage($"{message}: {exception}");
+            return SanitizeMessage($"{message}: {SummarizeException(exception)}");
+        }
+
+        private static string SummarizeException(Exception exception)
+        {
+            var summaries = new List<string>();
+            for (var current = exception; current != null; current = current.InnerException)
+            {
+                summaries.Add($"{current.GetType().Name}: {current.Message}");
+            }
+
+            return string.Join(" Inner: ", summaries);
         }
 
         /// <summary>
