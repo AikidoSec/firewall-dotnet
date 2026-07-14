@@ -91,7 +91,7 @@ namespace Aikido.Zen.Tests.DotNetCore
 
             Assert.Multiple(() =>
             {
-                Assert.That(bypassedContext.User, Is.Null);
+                Assert.That(bypassedContext.User?.Id, Is.EqualTo("bypassed-user"));
                 Assert.That(Agent.Instance.Context.Users.Any(user => user.Id == "bypassed-user"), Is.False);
                 Assert.That(aikidoContext?.User?.Id, Is.EqualTo("user-456"));
                 Assert.That(Agent.Instance.Context.Users.Any(user => user.Id == "user-123"), Is.False);

@@ -85,11 +85,6 @@ namespace Aikido.Zen.DotNetCore
                     "Zen.SetUser(...) was called after the Zen middleware. Register the SetUser middleware before UseZenFirewall() so user blocking, and rate limiting work correctly.");
             }
 
-            if (Context.IsBypassed(aikidoContext))
-            {
-                return;
-            }
-
             // Preserve late users for end-of-request reporting.
             // Blocking and rate limiting have already run.
             aikidoContext.User = user;
