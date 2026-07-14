@@ -82,7 +82,7 @@ namespace Aikido.Zen.DotNetCore
             {
                 LogHelper.WarningLog(
                     Agent.Logger,
-                    "Zen.SetUser(...) was called after the Zen middleware. Register the SetUser middleware before UseZenFirewall() so user reporting, blocking, and rate limiting work correctly.");
+                    "Zen.SetUser(...) was called after the Zen middleware. Register the SetUser middleware before UseZenFirewall() so user blocking, and rate limiting work correctly.");
             }
 
             if (Context.IsBypassed(aikidoContext))
