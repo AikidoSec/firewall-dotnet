@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using System.Linq;
 using System.Web;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Models;
@@ -73,6 +72,7 @@ namespace Aikido.Zen.Tests.DotNetFramework
                 var httpContext = new HttpContext(
                     new HttpRequest(string.Empty, "http://test.local/api/test", string.Empty),
                     new HttpResponse(output));
+                HttpContext.Current = httpContext;
                 var aikidoContext = new Context
                 {
                     Url = "http://test.local/api/test",
@@ -87,13 +87,9 @@ namespace Aikido.Zen.Tests.DotNetFramework
 
                 BlockingModule.HandleBlocking(httpContext, () => completed = true);
 
-                var capturedUser = Agent.Instance.Context.Users.SingleOrDefault(u => u.Id == user.Id);
-
                 Assert.Multiple(() =>
                 {
-                    Assert.That(capturedUser, Is.Not.Null);
-                    Assert.That(capturedUser.Name, Is.EqualTo(user.Name));
-                    Assert.That(capturedUser.LastIpAddress, Is.EqualTo("127.0.0.1"));
+                    Assert.That(Agent.Instance.Context.Users, Is.Empty);
                     Assert.That(httpContext.Response.StatusCode, Is.EqualTo(403));
                     Assert.That(output.ToString(), Is.EqualTo("Your request is blocked: User is blocked"));
                     Assert.That(completed, Is.True);
@@ -102,6 +98,7 @@ namespace Aikido.Zen.Tests.DotNetFramework
             finally
             {
                 FrameworkZen.ClearCurrentContext();
+                HttpContext.Current = null;
                 Agent.Instance.ClearContext();
                 Agent.Instance.Context.Config.UpdateBlockedUsers(System.Array.Empty<string>());
             }

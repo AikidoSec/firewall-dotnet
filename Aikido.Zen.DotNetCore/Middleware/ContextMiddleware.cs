@@ -90,9 +90,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 context.ParsedUserInput = httpData.FlattenedData;
                 context.Body = request.Body;
                 context.ParsedBody = httpData.ParsedBody;
-                // Add user information to the agent
-                // every x minutes, this information will be sent to the Zen server as a heartbeat event, and the collected info will be cleared
-                Agent.Instance.CaptureRequestUser(context);
+
                 httpContext.Items["Aikido.Zen.Context"] = context;
             }
             catch (Exception e)
@@ -106,6 +104,8 @@ namespace Aikido.Zen.DotNetCore.Middleware
             }
             finally
             {
+                // Capture the final user once, including users set after the Zen middleware.
+                Agent.Instance.CaptureUser(context.User, context.RemoteAddress);
                 HandleCompletedRequest(context, httpContext.Response.StatusCode);
             }
         }

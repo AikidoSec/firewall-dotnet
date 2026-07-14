@@ -295,18 +295,6 @@ namespace Aikido.Zen.Core
         }
 
         /// <summary>
-        /// Captures the current user
-        /// </summary>
-        /// <param name="context">The current context</param>
-        public void CaptureRequestUser(Context context)
-        {
-            if (context.User != null)
-                _context.AddUser(context.User, context.RemoteAddress);
-            if (context.User != null)
-                LogHelper.DebugLog(Logger, $"Capturing inbound request from user: {context.User.Id}");
-        }
-
-        /// <summary>
         /// Increments the total request count
         /// </summary>
         public void IncrementTotalRequestCount()
@@ -335,13 +323,16 @@ namespace Aikido.Zen.Core
         }
 
         /// <summary>
-        /// Captures the current user
+        /// Captures the current user.
         /// </summary>
-        /// <param name="user"></param>
-        /// <param name="ipAddress"></param>
-        public void CaptureUser(User user, string ipAddress)
+        /// <param name="user">The current user.</param>
+        /// <param name="remoteAddress">The user's remote address.</param>
+        internal void CaptureUser(User user, string remoteAddress)
         {
-            _context.AddUser(user, ipAddress);
+            if (user == null)
+                return;
+
+            _context.AddUser(user, remoteAddress);
         }
 
         /// <summary>

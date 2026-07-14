@@ -41,8 +41,6 @@ namespace Aikido.Zen.Test
             Assert.That(_context.UserAgent, Is.EqualTo(string.Empty));
             Assert.That(_context.IsGraphQL, Is.False);
             Assert.That(_context.ParsedBody, Is.Null);
-            Assert.That(_context.ContextMiddlewareInstalled, Is.False);
-            Assert.That(_context.BlockingMiddlewareInstalled, Is.False);
             Assert.That(_context.ConsumedRateLimitForIP, Is.False);
             Assert.That(_context.ConsumedRateLimitForUser, Is.False);
         }

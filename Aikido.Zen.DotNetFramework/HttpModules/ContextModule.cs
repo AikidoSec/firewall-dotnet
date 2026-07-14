@@ -144,7 +144,6 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             context.ParsedUserInput = httpData.FlattenedData;
             context.Body = request.InputStream;
             context.ParsedBody = httpData.ParsedBody;
-            Agent.Instance.CaptureRequestUser(context);
         }
 
         private void Context_EndRequest(object sender, EventArgs e)
