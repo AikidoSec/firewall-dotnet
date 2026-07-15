@@ -31,7 +31,8 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
         {
             LogHelper.DebugLog(Agent.Logger, "ContextModule initialized");
             context.PostAuthenticateRequest += Context_PostAuthenticateRequest;
-            context.BeginRequest += Context_BeginRequest;
+            var beginRequestHelper = new EventHandlerTaskAsyncHelper(Context_BeginRequestAsync);
+            context.AddOnBeginRequestAsync(beginRequestHelper.BeginEventHandler, beginRequestHelper.EndEventHandler);
             context.EndRequest += Context_EndRequest;
         }
 
@@ -76,7 +77,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             }
         }
 
-        private void Context_BeginRequest(object sender, EventArgs e)
+        private async Task Context_BeginRequestAsync(object sender, EventArgs e)
         {
             LogHelper.DebugLog(Agent.Logger, "Capturing request context");
             var httpContext = ((HttpApplication)sender).Context;
@@ -115,7 +116,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 Zen.SetCurrentContext(context);
                 Agent.Instance.SetContextMiddlewareInstalled(true);
 
-                Task.Run(() => ReadAndCaptureHttpDataAsync(httpContext, context)).Wait();
+                await ReadAndCaptureHttpDataAsync(httpContext, context);
             }
             catch (Exception ex)
             {
