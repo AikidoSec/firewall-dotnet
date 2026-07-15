@@ -104,4 +104,5 @@ jobs:
           build_args: |
             MSBUILD_ARGS=/nologo /p:AikidoZenDotNetFrameworkVersion=0.0.0-qa
           app_port: 80
+          max_parallel_tests: 20
           sleep_before_test: 15
