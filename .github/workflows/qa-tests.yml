@@ -70,7 +70,7 @@ jobs:
 
   qa-tests-netfx:
     needs: build-package
-    runs-on: windows-latest
+    runs-on: windows-2022
     timeout-minutes: 60
     steps:
       - name: Checkout zen-demo-dotnet-framework
