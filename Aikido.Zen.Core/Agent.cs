@@ -8,6 +8,7 @@ using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Models.Events;
+using Aikido.Zen.Core.Realtime;
 using Aikido.Zen.Core.Vulnerabilities;
 using Microsoft.Extensions.Logging;
 
@@ -26,6 +27,8 @@ namespace Aikido.Zen.Core
         private readonly CancellationTokenSource _cancellationSource;
         private readonly Task _backgroundTask;
         private readonly ConcurrentDictionary<string, ScheduledItem> _scheduledEvents;
+        private readonly object _realtimeConfigTaskLock = new object();
+        private Task _realtimeConfigTask;
         internal DateTime LastConfigCheck { get; set; } = DateTime.UtcNow;
         public static ILogger Logger = new DefaultLogger();
 
@@ -122,11 +125,18 @@ namespace Aikido.Zen.Core
             QueueEvent(EnvironmentHelper.Token, Started.Create(),
             (evt, response) =>
             {
-                if (response.Success)
+                try
                 {
-                    var reportingResponse = response as ReportingAPIResponse;
-                    UpdateConfig(reportingResponse);
-                    UpdateFirewallLists().GetAwaiter().GetResult();
+                    if (response.Success)
+                    {
+                        var reportingResponse = response as ReportingAPIResponse;
+                        UpdateConfig(reportingResponse);
+                        UpdateFirewallLists().GetAwaiter().GetResult();
+                    }
+                }
+                finally
+                {
+                    StartRealtimeConfigUpdates();
                 }
             });
 
@@ -261,6 +271,18 @@ namespace Aikido.Zen.Core
 
                 // Wait for background task to complete gracefully
                 if (!_backgroundTask.Wait(TimeSpan.FromSeconds(30)))
+                {
+                    // pass through
+                }
+
+                Task realtimeConfigTask;
+                lock (_realtimeConfigTaskLock)
+                {
+                    realtimeConfigTask = _realtimeConfigTask;
+                }
+
+                if (realtimeConfigTask != null &&
+                    !realtimeConfigTask.Wait(TimeSpan.FromSeconds(30)))
                 {
                     // pass through
                 }
@@ -620,6 +642,52 @@ namespace Aikido.Zen.Core
 
             // Trigger config change if new configuration retrieved successfully
             return latestConfig.Success;
+        }
+
+        private async Task RefreshConfigIfNewerAsync(long configUpdatedAt)
+        {
+            LogHelper.DebugLog(Logger, "Realtime config update received");
+
+            if (configUpdatedAt <= _context.Config.ConfigLastUpdated)
+            {
+                return;
+            }
+
+            var latestConfig = await _api.Runtime.GetConfig(
+                EnvironmentHelper.Token,
+                _cancellationSource.Token).ConfigureAwait(false);
+            if (!latestConfig.Success ||
+                latestConfig.ConfigUpdatedAt <= _context.Config.ConfigLastUpdated)
+            {
+                return;
+            }
+
+            UpdateConfig(latestConfig);
+            await UpdateFirewallLists().ConfigureAwait(false);
+        }
+
+        private void StartRealtimeConfigUpdates()
+        {
+            if (!EnvironmentHelper.RealtimeConfigUpdatesEnabled ||
+                string.IsNullOrEmpty(EnvironmentHelper.Token) ||
+                _cancellationSource.IsCancellationRequested)
+            {
+                return;
+            }
+
+            lock (_realtimeConfigTaskLock)
+            {
+                if (_realtimeConfigTask != null)
+                {
+                    return;
+                }
+
+                _realtimeConfigTask = RealtimeConfigUpdateListener.RunAsync(
+                    _api.Runtime,
+                    EnvironmentHelper.Token,
+                    RefreshConfigIfNewerAsync,
+                    _cancellationSource.Token);
+            }
         }
 
         private void UpdateConfig(ReportingAPIResponse response)

@@ -36,6 +36,11 @@ namespace Aikido.Zen.Server.Mock.Models
         public class IPList
         {
             /// <summary>
+            /// Gets or sets the stable identifier of the IP list.
+            /// </summary>
+            public string Key { get; set; }
+
+            /// <summary>
             /// Gets or sets the source of the IP list.
             /// </summary>
             public string Source { get; set; }

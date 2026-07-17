@@ -3,6 +3,7 @@ using Aikido.Zen.Server.Mock.Models;
 using Aikido.Zen.Server.Mock.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using System.Text.Json;
 
 namespace Aikido.Zen.Server.Mock.Controllers
 {
@@ -36,6 +37,81 @@ namespace Aikido.Zen.Server.Mock.Controllers
                 var appModel = context.Items["app"] as AppModel;
                 _configService.UpdateConfig(appModel!.Id, config);
                 return Results.Json(new { success = true });
+            }).AddEndpointFilter<AuthFilter>();
+
+            app.MapGet("/api/runtime/stream", async Task<IResult> (HttpContext context) =>
+            {
+                var appModel = context.Items["app"] as AppModel;
+                var cancellationToken = context.RequestAborted;
+                var signalLock = new object();
+                var updateSignal = CreateUpdateSignal();
+
+                void OnConfigUpdated(int appId, long configUpdatedAt)
+                {
+                    if (appId != appModel!.Id)
+                    {
+                        return;
+                    }
+
+                    lock (signalLock)
+                    {
+                        updateSignal.TrySetResult(configUpdatedAt);
+                    }
+                }
+
+                context.Response.ContentType = "text/event-stream";
+                context.Response.Headers.CacheControl = "no-cache";
+                _configService.ConfigUpdated += OnConfigUpdated;
+
+                try
+                {
+                    await WriteConfigUpdate(
+                        context,
+                        _configService.GetConfigUpdatedAt(appModel!.Id),
+                        cancellationToken);
+
+                    while (!cancellationToken.IsCancellationRequested)
+                    {
+                        TaskCompletionSource<long> currentSignal;
+                        lock (signalLock)
+                        {
+                            currentSignal = updateSignal;
+                        }
+
+                        var pingTask = Task.Delay(TimeSpan.FromSeconds(30), cancellationToken);
+                        var completedTask = await Task.WhenAny(currentSignal.Task, pingTask);
+
+                        if (completedTask == currentSignal.Task)
+                        {
+                            var configUpdatedAt = await currentSignal.Task;
+                            lock (signalLock)
+                            {
+                                if (ReferenceEquals(updateSignal, currentSignal))
+                                {
+                                    updateSignal = CreateUpdateSignal();
+                                }
+                            }
+
+                            await WriteConfigUpdate(context, configUpdatedAt, cancellationToken);
+                        }
+                        else
+                        {
+                            await pingTask;
+                            await context.Response.WriteAsync(": ping\n\n", cancellationToken);
+                            await context.Response.Body.FlushAsync(cancellationToken);
+                        }
+                    }
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    // The client closed the stream.
+                }
+                finally
+                {
+                    _configService.ConfigUpdated -= OnConfigUpdated;
+                }
+
+                return Results.Empty;
             }).AddEndpointFilter<AuthFilter>();
 
             // Events endpoints
@@ -115,6 +191,24 @@ namespace Aikido.Zen.Server.Mock.Controllers
                 var token = _appService.CreateApp();
                 return Results.Json(new { token });
             });
+        }
+
+        private static TaskCompletionSource<long> CreateUpdateSignal()
+        {
+            return new TaskCompletionSource<long>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+        }
+
+        private static async Task WriteConfigUpdate(
+            HttpContext context,
+            long configUpdatedAt,
+            CancellationToken cancellationToken)
+        {
+            var data = JsonSerializer.Serialize(new { configUpdatedAt });
+            await context.Response.WriteAsync(
+                $"event: config-updated\ndata: {data}\n\n",
+                cancellationToken);
+            await context.Response.Body.FlushAsync(cancellationToken);
         }
     }
 }

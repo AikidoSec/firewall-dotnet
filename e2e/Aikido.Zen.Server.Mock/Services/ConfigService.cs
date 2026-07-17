@@ -10,6 +10,8 @@ public class ConfigService
     private readonly Dictionary<int, string> _blockedUserAgents = new();
     private readonly Dictionary<int, IEnumerable<FirewallListConfig.IPList>> _allowedIps = new();
 
+    public event Action<int, long>? ConfigUpdated;
+
     public Dictionary<string, object> GetConfig(int appId)
     {
         if (!_configs.TryGetValue(appId, out var config))
@@ -34,7 +36,7 @@ public class ConfigService
                 : value;
         }
 
-        _configs[appId]["configUpdatedAt"] = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        UpdateConfigTimestamp(appId);
     }
 
     public void UpdateBlockedIps(int appId, List<FirewallListConfig.IPList> ips)
@@ -88,12 +90,21 @@ public class ConfigService
         };
     }
 
+    public long GetConfigUpdatedAt(int appId)
+    {
+        var config = GetConfig(appId);
+        return Convert.ToInt64(config["configUpdatedAt"]);
+    }
+
     private void UpdateConfigTimestamp(int appId)
     {
-        if (_configs.TryGetValue(appId, out var config))
-        {
-            config["configUpdatedAt"] = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        }
+        var config = GetConfig(appId);
+        var currentTimestamp = Convert.ToInt64(config["configUpdatedAt"]);
+        var timestamp = Math.Max(
+            DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+            currentTimestamp + 1);
+        config["configUpdatedAt"] = timestamp;
+        ConfigUpdated?.Invoke(appId, timestamp);
     }
 
     private static List<string> _largeBlockedIpList = Enumerable.Range(0, 1000)

@@ -123,6 +123,14 @@ namespace Aikido.Zen.Benchmarks
             {
                 return Task.FromResult(new ReportingAPIResponse { Success = true });
             }
+
+            public Task<HttpStatusCode> SubscribeToConfigUpdates(
+                string token,
+                Func<long, Task> onUpdate,
+                CancellationToken cancellationToken)
+            {
+                return Task.FromResult(HttpStatusCode.Unauthorized);
+            }
         }
     }
 }

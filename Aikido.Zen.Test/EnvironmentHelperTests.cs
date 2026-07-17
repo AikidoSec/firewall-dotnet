@@ -178,5 +178,27 @@ namespace Aikido.Zen.Test.Helpers
                 Environment.SetEnvironmentVariable("AIKIDO_DISABLE_ENDPOINT_ROUTING_CHECK", originalValue);
             }
         }
+
+        [TestCase(null, false)]
+        [TestCase("false", false)]
+        [TestCase("true", true)]
+        [TestCase("1", true)]
+        public void RealtimeConfigUpdatesEnabled_ShouldReturnExpectedValue(string? value, bool expected)
+        {
+            var originalValue = Environment.GetEnvironmentVariable("AIKIDO_FEATURE_SSE");
+
+            try
+            {
+                Environment.SetEnvironmentVariable("AIKIDO_FEATURE_SSE", value);
+
+                Assert.That(
+                    EnvironmentHelper.RealtimeConfigUpdatesEnabled,
+                    Is.EqualTo(expected));
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("AIKIDO_FEATURE_SSE", originalValue);
+            }
+        }
     }
 }
