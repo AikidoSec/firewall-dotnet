@@ -393,6 +393,15 @@ namespace Aikido.Zen.Test
 
             var runtimeApiMock = new Mock<IRuntimeAPIClient>();
             runtimeApiMock
+                .Setup(api => api.GetConfigLastUpdated(
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new ConfigLastUpdatedAPIResponse
+                {
+                    Success = true,
+                    ConfigUpdatedAt = 200
+                });
+            runtimeApiMock
                 .Setup(api => api.GetConfig(
                     It.IsAny<string>(),
                     It.IsAny<CancellationToken>()))
@@ -411,6 +420,8 @@ namespace Aikido.Zen.Test
                     async (_, onUpdate, __) =>
                     {
                         await onUpdate(100);
+                        await onUpdate(200);
+                        await onUpdate(200);
                         await onUpdate(200);
                         return HttpStatusCode.Unauthorized;
                     });
@@ -447,7 +458,67 @@ namespace Aikido.Zen.Test
                 api => api.GetConfigLastUpdated(
                     It.IsAny<string>(),
                     It.IsAny<CancellationToken>()),
-                Times.Never);
+                Times.Once);
+            runtimeApiMock.Verify(
+                api => api.GetConfig(
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Test]
+        public async Task Start_WhenCalledAgain_DoesNotStartSecondRealtimeListener()
+        {
+            Environment.SetEnvironmentVariable("AIKIDO_FEATURE_SSE", "true");
+
+            var reportingApiMock = new Mock<IReportingAPIClient>();
+            reportingApiMock
+                .Setup(api => api.ReportAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<object>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new ReportingAPIResponse { Success = false });
+
+            var subscribed = new TaskCompletionSource<bool>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+            var runtimeApiMock = new Mock<IRuntimeAPIClient>();
+            runtimeApiMock
+                .Setup(api => api.SubscribeToConfigUpdates(
+                    It.IsAny<string>(),
+                    It.IsAny<Func<long, Task>>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns<string, Func<long, Task>, CancellationToken>(
+                    async (_, __, cancellationToken) =>
+                    {
+                        subscribed.TrySetResult(true);
+                        await Task.Delay(-1, cancellationToken);
+                        return HttpStatusCode.OK;
+                    });
+
+            _agent.Dispose();
+            _zenApiMock = ZenApiMock.CreateMock(
+                reportingApiMock.Object,
+                runtimeApiMock.Object);
+            _agent = new Agent(_zenApiMock.Object);
+
+            _agent.Start();
+            await subscribed.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+            var secondStartProcessed = new TaskCompletionSource<bool>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+            _agent.Start();
+            _agent.QueueEvent(
+                "test-token",
+                Started.Create(),
+                (_, __) => secondStartProcessed.TrySetResult(true));
+            await secondStartProcessed.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+            runtimeApiMock.Verify(
+                api => api.SubscribeToConfigUpdates(
+                    It.IsAny<string>(),
+                    It.IsAny<Func<long, Task>>(),
+                    It.IsAny<CancellationToken>()),
+                Times.Once);
         }
 
         [Test]

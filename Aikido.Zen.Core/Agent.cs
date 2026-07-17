@@ -27,8 +27,8 @@ namespace Aikido.Zen.Core
         private readonly CancellationTokenSource _cancellationSource;
         private readonly Task _backgroundTask;
         private readonly ConcurrentDictionary<string, ScheduledItem> _scheduledEvents;
-        private readonly object _realtimeConfigTaskLock = new object();
         private Task _realtimeConfigTask;
+        private int _configCheckRequested;
         internal DateTime LastConfigCheck { get; set; } = DateTime.UtcNow;
         public static ILogger Logger = new DefaultLogger();
 
@@ -275,14 +275,8 @@ namespace Aikido.Zen.Core
                     // pass through
                 }
 
-                Task realtimeConfigTask;
-                lock (_realtimeConfigTaskLock)
-                {
-                    realtimeConfigTask = _realtimeConfigTask;
-                }
-
-                if (realtimeConfigTask != null &&
-                    !realtimeConfigTask.Wait(TimeSpan.FromSeconds(30)))
+                if (_realtimeConfigTask != null &&
+                    !_realtimeConfigTask.Wait(TimeSpan.FromSeconds(30)))
                 {
                     // pass through
                 }
@@ -459,8 +453,9 @@ namespace Aikido.Zen.Core
             {
                 try
                 {
-                    // check for config updates every minute
-                    if (LastConfigCheck + TimeSpan.FromMinutes(1) < DateTime.UtcNow)
+                    // check for config updates when requested or every minute
+                    var configCheckRequested = Interlocked.Exchange(ref _configCheckRequested, 0) == 1;
+                    if (configCheckRequested || LastConfigCheck + TimeSpan.FromMinutes(1) < DateTime.UtcNow)
                     {
                         LastConfigCheck = DateTime.UtcNow;
                         if (ConfigChanged(out var response))
@@ -644,26 +639,16 @@ namespace Aikido.Zen.Core
             return latestConfig.Success;
         }
 
-        private async Task RefreshConfigIfNewerAsync(long configUpdatedAt)
+        private Task QueueConfigCheck(long configUpdatedAt)
         {
             LogHelper.DebugLog(Logger, "Realtime config update received");
 
-            if (configUpdatedAt <= _context.Config.ConfigLastUpdated)
+            if (configUpdatedAt > _context.Config.ConfigLastUpdated)
             {
-                return;
+                Interlocked.Exchange(ref _configCheckRequested, 1);
             }
 
-            var latestConfig = await _api.Runtime.GetConfig(
-                EnvironmentHelper.Token,
-                _cancellationSource.Token).ConfigureAwait(false);
-            if (!latestConfig.Success ||
-                latestConfig.ConfigUpdatedAt <= _context.Config.ConfigLastUpdated)
-            {
-                return;
-            }
-
-            UpdateConfig(latestConfig);
-            await UpdateFirewallLists().ConfigureAwait(false);
+            return Task.CompletedTask;
         }
 
         private void StartRealtimeConfigUpdates()
@@ -675,19 +660,16 @@ namespace Aikido.Zen.Core
                 return;
             }
 
-            lock (_realtimeConfigTaskLock)
+            if (_realtimeConfigTask != null)
             {
-                if (_realtimeConfigTask != null)
-                {
-                    return;
-                }
-
-                _realtimeConfigTask = RealtimeConfigUpdateListener.RunAsync(
-                    _api.Runtime,
-                    EnvironmentHelper.Token,
-                    RefreshConfigIfNewerAsync,
-                    _cancellationSource.Token);
+                return;
             }
+
+            _realtimeConfigTask = new RealtimeConfigUpdateListener().RunAsync(
+                _api.Runtime,
+                EnvironmentHelper.Token,
+                QueueConfigCheck,
+                _cancellationSource.Token);
         }
 
         private void UpdateConfig(ReportingAPIResponse response)

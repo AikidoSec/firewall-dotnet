@@ -7,27 +7,28 @@ using Aikido.Zen.Core.Helpers;
 
 namespace Aikido.Zen.Core.Realtime
 {
-    internal static class RealtimeConfigUpdateListener
+    internal sealed class RealtimeConfigUpdateListener
     {
+        private static readonly TimeSpan InitialReconnectDelay = TimeSpan.FromSeconds(5);
         private static readonly TimeSpan MaxReconnectDelay = TimeSpan.FromSeconds(60);
         private static readonly TimeSpan StableConnectionThreshold = TimeSpan.FromSeconds(30);
 
-        internal static async Task RunAsync(
+        internal TimeSpan ReconnectDelay { get; set; } = InitialReconnectDelay;
+        internal DateTime ConnectionStartedAt { get; set; }
+
+        internal async Task RunAsync(
             IRuntimeAPIClient runtimeApi,
             string token,
             Func<long, Task> onUpdate,
-            CancellationToken cancellationToken,
-            TimeSpan? initialReconnectDelay = null)
+            CancellationToken cancellationToken)
         {
-            var initialDelay = initialReconnectDelay ?? TimeSpan.FromSeconds(5);
-            var reconnectDelay = initialDelay;
             var random = new Random();
 
             try
             {
                 while (!cancellationToken.IsCancellationRequested)
                 {
-                    var connectedAt = DateTime.UtcNow;
+                    ConnectionStartedAt = DateTime.UtcNow;
 
                     try
                     {
@@ -60,17 +61,17 @@ namespace Aikido.Zen.Core.Realtime
                             "Realtime config connection failed; reconnecting");
                     }
 
-                    if (DateTime.UtcNow - connectedAt >= StableConnectionThreshold)
+                    if (DateTime.UtcNow - ConnectionStartedAt >= StableConnectionThreshold)
                     {
-                        reconnectDelay = initialDelay;
+                        ReconnectDelay = InitialReconnectDelay;
                     }
 
                     var jitter = TimeSpan.FromMilliseconds(
-                        reconnectDelay.TotalMilliseconds * random.NextDouble() / 2);
-                    await Task.Delay(reconnectDelay + jitter, cancellationToken).ConfigureAwait(false);
+                        ReconnectDelay.TotalMilliseconds * random.NextDouble() / 2);
+                    await Task.Delay(ReconnectDelay + jitter, cancellationToken).ConfigureAwait(false);
 
-                    reconnectDelay = TimeSpan.FromTicks(Math.Min(
-                        reconnectDelay.Ticks * 2,
+                    ReconnectDelay = TimeSpan.FromTicks(Math.Min(
+                        ReconnectDelay.Ticks * 2,
                         MaxReconnectDelay.Ticks));
                 }
             }

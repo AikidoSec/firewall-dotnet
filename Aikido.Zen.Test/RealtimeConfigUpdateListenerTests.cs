@@ -32,12 +32,16 @@ namespace Aikido.Zen.Test
                         : Task.FromResult(rejectedStatus);
                 });
 
-            await RealtimeConfigUpdateListener.RunAsync(
+            var listener = new RealtimeConfigUpdateListener
+            {
+                ReconnectDelay = TimeSpan.Zero
+            };
+
+            await listener.RunAsync(
                 runtimeApi.Object,
                 "test-token",
                 _ => Task.CompletedTask,
-                CancellationToken.None,
-                initialReconnectDelay: TimeSpan.FromMilliseconds(1));
+                CancellationToken.None);
 
             Assert.That(calls, Is.EqualTo(2));
         }
@@ -64,7 +68,8 @@ namespace Aikido.Zen.Test
 
             long received = 0;
             using var cancellationSource = new CancellationTokenSource();
-            var listenerTask = RealtimeConfigUpdateListener.RunAsync(
+            var listener = new RealtimeConfigUpdateListener();
+            var listenerTask = listener.RunAsync(
                 runtimeApi.Object,
                 "test-token",
                 configUpdatedAt =>
@@ -87,6 +92,10 @@ namespace Aikido.Zen.Test
             var disconnected = new TaskCompletionSource<bool>(
                 TaskCreationOptions.RunContinuationsAsynchronously);
             var runtimeApi = new Mock<IRuntimeAPIClient>();
+            var listener = new RealtimeConfigUpdateListener
+            {
+                ReconnectDelay = TimeSpan.FromSeconds(30)
+            };
             runtimeApi
                 .Setup(api => api.SubscribeToConfigUpdates(
                     It.IsAny<string>(),
@@ -94,28 +103,51 @@ namespace Aikido.Zen.Test
                     It.IsAny<CancellationToken>()))
                 .Returns(() =>
                 {
+                    listener.ConnectionStartedAt = DateTime.UtcNow.AddSeconds(-31);
                     disconnected.TrySetResult(true);
                     return Task.FromResult(HttpStatusCode.OK);
                 });
 
             using var cancellationSource = new CancellationTokenSource();
-            var listenerTask = RealtimeConfigUpdateListener.RunAsync(
+            var listenerTask = listener.RunAsync(
                 runtimeApi.Object,
                 "test-token",
                 _ => Task.CompletedTask,
-                cancellationSource.Token,
-                initialReconnectDelay: TimeSpan.FromSeconds(30));
+                cancellationSource.Token);
 
             await disconnected.Task.WaitAsync(TimeSpan.FromSeconds(5));
             cancellationSource.Cancel();
             await listenerTask.WaitAsync(TimeSpan.FromSeconds(5));
 
+            Assert.That(listener.ReconnectDelay, Is.EqualTo(TimeSpan.FromSeconds(5)));
             runtimeApi.Verify(
                 api => api.SubscribeToConfigUpdates(
                     It.IsAny<string>(),
                     It.IsAny<Func<long, Task>>(),
                     It.IsAny<CancellationToken>()),
                 Times.Once);
+        }
+
+        [Test]
+        public async Task RunAsync_DoesNotSubscribeWhenAlreadyCancelled()
+        {
+            var runtimeApi = new Mock<IRuntimeAPIClient>();
+            using var cancellationSource = new CancellationTokenSource();
+            cancellationSource.Cancel();
+
+            var listener = new RealtimeConfigUpdateListener();
+            await listener.RunAsync(
+                runtimeApi.Object,
+                "test-token",
+                _ => Task.CompletedTask,
+                cancellationSource.Token);
+
+            runtimeApi.Verify(
+                api => api.SubscribeToConfigUpdates(
+                    It.IsAny<string>(),
+                    It.IsAny<Func<long, Task>>(),
+                    It.IsAny<CancellationToken>()),
+                Times.Never);
         }
     }
 }

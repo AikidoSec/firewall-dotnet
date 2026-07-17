@@ -191,6 +191,7 @@ namespace Aikido.Zen.Test
                 StatusCode = HttpStatusCode.OK,
                 Content = new StringContent(
                     "\uFEFF: ping\r\n\r\n" +
+                    "retry\r\n" +
                     "event: config-updated\r\n" +
                     "data: {\r\n" +
                     "data: \"configUpdatedAt\": 123\r\n" +
@@ -208,15 +209,17 @@ namespace Aikido.Zen.Test
                 .ReturnsAsync(response);
 
             long configUpdatedAt = 0;
+            using var cancellationSource = new CancellationTokenSource();
 
             var statusCode = await _runtimeApiClient.SubscribeToConfigUpdates(
                 "test-token",
                 value =>
                 {
                     configUpdatedAt = value;
+                    cancellationSource.Cancel();
                     return Task.CompletedTask;
                 },
-                CancellationToken.None);
+                cancellationSource.Token);
 
             Assert.That(statusCode, Is.EqualTo(HttpStatusCode.OK));
             Assert.That(configUpdatedAt, Is.EqualTo(123L));
@@ -291,6 +294,34 @@ namespace Aikido.Zen.Test
                 CancellationToken.None);
 
             Assert.That(result, Is.EqualTo(statusCode));
+        }
+
+        [Test]
+        public void WaitForLineOrTimeout_ShouldStopWhenCancelled()
+        {
+            var readTask = new TaskCompletionSource<string>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+            using var cancellationSource = new CancellationTokenSource();
+            cancellationSource.Cancel();
+
+            Assert.ThrowsAsync<OperationCanceledException>(() =>
+                RuntimeAPIClient.WaitForLineOrTimeout(
+                    readTask.Task,
+                    cancellationSource.Token,
+                    TimeSpan.FromSeconds(1)));
+        }
+
+        [Test]
+        public void WaitForLineOrTimeout_ShouldThrowAfterTimeout()
+        {
+            var readTask = new TaskCompletionSource<string>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+
+            Assert.ThrowsAsync<TimeoutException>(() =>
+                RuntimeAPIClient.WaitForLineOrTimeout(
+                    readTask.Task,
+                    CancellationToken.None,
+                    TimeSpan.Zero));
         }
 
     }

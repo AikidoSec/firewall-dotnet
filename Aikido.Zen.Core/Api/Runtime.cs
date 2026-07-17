@@ -95,7 +95,10 @@ namespace Aikido.Zen.Core.Api
 
                         while (!cancellationToken.IsCancellationRequested)
                         {
-                            var line = await ReadLineWithTimeout(reader, cancellationToken).ConfigureAwait(false);
+                            var line = await WaitForLineOrTimeout(
+                                reader.ReadLineAsync(),
+                                cancellationToken,
+                                SseReadTimeout).ConfigureAwait(false);
                             if (line == null)
                             {
                                 return response.StatusCode;
@@ -132,15 +135,14 @@ namespace Aikido.Zen.Core.Api
             }
         }
 
-        private static async Task<string> ReadLineWithTimeout(
-            StreamReader reader,
-            CancellationToken cancellationToken)
+        internal static async Task<string> WaitForLineOrTimeout(
+            Task<string> readTask,
+            CancellationToken cancellationToken,
+            TimeSpan timeout)
         {
-            var readTask = reader.ReadLineAsync();
-
             using (var timeoutSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
             {
-                var timeoutTask = Task.Delay(SseReadTimeout, timeoutSource.Token);
+                var timeoutTask = Task.Delay(timeout, timeoutSource.Token);
                 var completedTask = await Task.WhenAny(readTask, timeoutTask).ConfigureAwait(false);
 
                 if (completedTask == readTask)
