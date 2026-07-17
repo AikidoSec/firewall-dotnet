@@ -3,7 +3,6 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Web;
 using Aikido.Zen.Core;
-using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.DotNetFramework.Configuration;
@@ -44,16 +43,6 @@ namespace Aikido.Zen.DotNetFramework
             AgentInfoHelper.SetAgentAssembly(typeof(Zen).Assembly);
             // patch the sinks
             CorePatcher.PatchSinks(GetContext);
-            // setup the agent
-            if (Agent.Instance == null)
-            {
-                var reportingHttpClient = ApiClientHttpClientFactory.Create();
-                var runtimeHttpClient = ApiClientHttpClientFactory.Create();
-                var reportingApiClient = new ReportingAPIClient(reportingHttpClient);
-                var runtimeApiClient = new RuntimeAPIClient(runtimeHttpClient);
-                var zenApi = new ZenApi(reportingApiClient, runtimeApiClient);
-                Agent.NewInstance(zenApi);
-            }
             // making sure the http modules are installed
             CheckModules();
             Agent.Instance.Start();
