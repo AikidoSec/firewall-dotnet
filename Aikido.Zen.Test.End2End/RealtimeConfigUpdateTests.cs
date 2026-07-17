@@ -15,8 +15,6 @@ namespace Aikido.Zen.Test.End2End
     [NonParallelizable]
     public class RealtimeConfigUpdateTests : WebApplicationTestBase
     {
-        private WebApplicationFactory<SQLiteStartup>? _sampleAppFactory;
-
         protected override Task SetupDatabaseContainers()
         {
             return Task.CompletedTask;
@@ -29,15 +27,14 @@ namespace Aikido.Zen.Test.End2End
             SampleAppEnvironmentVariables["AIKIDO_FEATURE_SSE"] = "true";
             await SetMode(disabled: false, block: true);
 
-            _sampleAppFactory = new WebApplicationFactory<SQLiteStartup>()
-                .WithWebHostBuilder(ConfigureSampleApp);
-            SampleAppClient = _sampleAppFactory.CreateClient();
+            SampleAppClient = new WebApplicationFactory<SQLiteStartup>()
+                .WithWebHostBuilder(ConfigureSampleApp)
+                .CreateClient();
         }
 
         [OneTimeTearDown]
         public override async Task OneTimeTearDown()
         {
-            _sampleAppFactory?.Dispose();
             Environment.SetEnvironmentVariable("AIKIDO_FEATURE_SSE", null);
             await base.OneTimeTearDown();
         }
