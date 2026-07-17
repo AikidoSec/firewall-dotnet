@@ -12,8 +12,10 @@ namespace Aikido.Zen.Test
 {
     public class RealtimeConfigUpdateListenerTests
     {
-        [Test]
-        public async Task RunAsync_RetriesTransientFailuresAndStopsOnRejectedToken()
+        [TestCase(HttpStatusCode.Unauthorized)]
+        [TestCase(HttpStatusCode.Forbidden)]
+        public async Task RunAsync_RetriesTransientFailuresAndStopsOnRejectedToken(
+            HttpStatusCode rejectedStatus)
         {
             var runtimeApi = new Mock<IRuntimeAPIClient>();
             var calls = 0;
@@ -27,7 +29,7 @@ namespace Aikido.Zen.Test
                     calls++;
                     return calls == 1
                         ? Task.FromException<HttpStatusCode>(new HttpRequestException("temporary failure"))
-                        : Task.FromResult(HttpStatusCode.Unauthorized);
+                        : Task.FromResult(rejectedStatus);
                 });
 
             await RealtimeConfigUpdateListener.RunAsync(
@@ -77,6 +79,43 @@ namespace Aikido.Zen.Test
             await listenerTask.WaitAsync(TimeSpan.FromSeconds(5));
 
             Assert.That(received, Is.EqualTo(321));
+        }
+
+        [Test]
+        public async Task RunAsync_StopsWhenCancelledDuringReconnectDelay()
+        {
+            var disconnected = new TaskCompletionSource<bool>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+            var runtimeApi = new Mock<IRuntimeAPIClient>();
+            runtimeApi
+                .Setup(api => api.SubscribeToConfigUpdates(
+                    It.IsAny<string>(),
+                    It.IsAny<Func<long, Task>>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns(() =>
+                {
+                    disconnected.TrySetResult(true);
+                    return Task.FromResult(HttpStatusCode.OK);
+                });
+
+            using var cancellationSource = new CancellationTokenSource();
+            var listenerTask = RealtimeConfigUpdateListener.RunAsync(
+                runtimeApi.Object,
+                "test-token",
+                _ => Task.CompletedTask,
+                cancellationSource.Token,
+                initialReconnectDelay: TimeSpan.FromSeconds(30));
+
+            await disconnected.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            cancellationSource.Cancel();
+            await listenerTask.WaitAsync(TimeSpan.FromSeconds(5));
+
+            runtimeApi.Verify(
+                api => api.SubscribeToConfigUpdates(
+                    It.IsAny<string>(),
+                    It.IsAny<Func<long, Task>>(),
+                    It.IsAny<CancellationToken>()),
+                Times.Once);
         }
     }
 }

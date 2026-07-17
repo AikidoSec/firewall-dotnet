@@ -66,11 +66,6 @@ namespace Aikido.Zen.Core.Api
             Func<long, Task> onUpdate,
             CancellationToken cancellationToken)
         {
-            if (onUpdate == null)
-            {
-                throw new ArgumentNullException(nameof(onUpdate));
-            }
-
             using (var request = APIHelper.CreateRequest(
                 token,
                 new Uri(EnvironmentHelper.AikidoRealtimeUrl),

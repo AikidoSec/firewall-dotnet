@@ -410,6 +410,7 @@ namespace Aikido.Zen.Test
                 .Returns<string, Func<long, Task>, CancellationToken>(
                     async (_, onUpdate, __) =>
                     {
+                        await onUpdate(100);
                         await onUpdate(200);
                         return HttpStatusCode.Unauthorized;
                     });

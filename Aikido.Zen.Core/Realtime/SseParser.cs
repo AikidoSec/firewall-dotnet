@@ -15,7 +15,7 @@ namespace Aikido.Zen.Core.Realtime
 
             if (_isFirstLine)
             {
-                line = line?.TrimStart('\uFEFF');
+                line = line.TrimStart('\uFEFF');
                 _isFirstLine = false;
             }
 

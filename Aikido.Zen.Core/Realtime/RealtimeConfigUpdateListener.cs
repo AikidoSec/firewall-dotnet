@@ -19,10 +19,6 @@ namespace Aikido.Zen.Core.Realtime
             CancellationToken cancellationToken,
             TimeSpan? initialReconnectDelay = null)
         {
-            runtimeApi = runtimeApi ?? throw new ArgumentNullException(nameof(runtimeApi));
-            token = token ?? throw new ArgumentNullException(nameof(token));
-            onUpdate = onUpdate ?? throw new ArgumentNullException(nameof(onUpdate));
-
             var initialDelay = initialReconnectDelay ?? TimeSpan.FromSeconds(5);
             var reconnectDelay = initialDelay;
             var random = new Random();
