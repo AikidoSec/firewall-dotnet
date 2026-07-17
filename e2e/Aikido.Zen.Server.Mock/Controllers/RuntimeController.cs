@@ -26,6 +26,16 @@ namespace Aikido.Zen.Server.Mock.Controllers
         public void ConfigureEndpoints(WebApplication app)
         {
             // Config endpoints
+            app.MapGet("/config", (HttpContext context) =>
+            {
+                var appModel = context.Items["app"] as AppModel;
+                return Results.Json(new
+                {
+                    success = true,
+                    configUpdatedAt = _configService.GetConfigUpdatedAt(appModel!.Id)
+                });
+            }).AddEndpointFilter<AuthFilter>();
+
             app.MapGet("/api/runtime/config", async (HttpContext context) =>
             {
                 var appModel = context.Items["app"] as AppModel;
