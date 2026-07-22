@@ -56,7 +56,7 @@ namespace Aikido.Zen.Server.Mock.Controllers
                 var signalLock = new object();
                 var updateSignal = CreateUpdateSignal();
 
-                void OnConfigUpdated(int appId, long configUpdatedAt)
+                void OnConfigUpdated(int appId)
                 {
                     if (appId != appModel!.Id)
                     {
@@ -65,7 +65,7 @@ namespace Aikido.Zen.Server.Mock.Controllers
 
                     lock (signalLock)
                     {
-                        updateSignal.TrySetResult(configUpdatedAt);
+                        updateSignal.TrySetResult(_configService.GetConfigUpdatedAt(appId));
                     }
                 }
 
