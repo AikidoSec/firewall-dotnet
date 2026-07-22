@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using Aikido.Zen.Core.Helpers;
 
 namespace Aikido.Zen.Test.Helpers
@@ -50,6 +51,21 @@ namespace Aikido.Zen.Test.Helpers
                 Assert.That(agentInfo.Platform.Version, Is.EqualTo(Environment.Version.ToString()));
                 Assert.That(agentInfo.Platform.Arch, Is.EqualTo(RuntimeInformation.ProcessArchitecture.ToString()));
             });
+        }
+
+        [Test]
+        public void SetAgentAssembly_ShouldSetAgentTargetFramework()
+        {
+            var assembly = typeof(AgentInfoHelperTests).Assembly;
+            var expectedTargetFramework = assembly
+                .GetCustomAttributes(typeof(TargetFrameworkAttribute), false)
+                .Cast<TargetFrameworkAttribute>()
+                .Single()
+                .FrameworkName;
+
+            AgentInfoHelper.SetAgentAssembly(assembly);
+
+            Assert.That(AgentInfoHelper.GetInfo().Platform.TargetFramework, Is.EqualTo(expectedTargetFramework));
         }
 
         [Test]

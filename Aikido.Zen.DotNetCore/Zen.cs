@@ -39,7 +39,7 @@ namespace Aikido.Zen.DotNetCore
                 throw new InvalidOperationException("Aikido.Zen.DotNetCore.Zen.Initialize must be called before Zen.Start().");
             }
 
-            AgentInfoHelper.SetVersion(typeof(Zen).Assembly.GetName().Version.ToString());
+            AgentInfoHelper.SetAgentAssembly(typeof(Zen).Assembly);
             var options = _serviceProvider.GetRequiredService<IOptions<AikidoOptions>>();
 
             if (!string.IsNullOrEmpty(options?.Value?.AikidoToken))

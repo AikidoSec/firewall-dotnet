@@ -1,8 +1,10 @@
 using Aikido.Zen.Core.Models;
 using System;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 [assembly: InternalsVisibleTo("Aikido.Zen.Tests")]
 [assembly: InternalsVisibleTo("Aikido.Zen.DotNetCore")]
 [assembly: InternalsVisibleTo("Aikido.Zen.DotNetFramework")]
@@ -59,9 +61,12 @@ namespace Aikido.Zen.Core.Helpers
             return version;
         }
 
-        internal static void SetVersion(string version)
+        internal static void SetAgentAssembly(Assembly assembly)
         {
-            _cachedAgentInfo.Version = CleanVersion(version);
+            _cachedAgentInfo.Version = CleanVersion(assembly.GetName().Version.ToString());
+            _cachedAgentInfo.Platform.TargetFramework = assembly
+                .GetCustomAttribute<TargetFrameworkAttribute>()
+                ?.FrameworkName;
         }
     }
 }
