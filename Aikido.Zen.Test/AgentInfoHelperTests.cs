@@ -1,3 +1,5 @@
+using System.Reflection;
+using System.Reflection.Emit;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Aikido.Zen.Core.Helpers;
@@ -66,6 +68,28 @@ namespace Aikido.Zen.Test.Helpers
             AgentInfoHelper.SetAgentAssembly(assembly);
 
             Assert.That(AgentInfoHelper.GetInfo().Platform.TargetFramework, Is.EqualTo(expectedTargetFramework));
+        }
+
+        [Test]
+        public void SetAgentAssembly_NullAssembly_ShouldClearTargetFramework()
+        {
+            AgentInfoHelper.SetAgentAssembly(typeof(AgentInfoHelperTests).Assembly);
+
+            AgentInfoHelper.SetAgentAssembly(null!);
+
+            Assert.That(AgentInfoHelper.GetInfo().Platform.TargetFramework, Is.Empty);
+        }
+
+        [Test]
+        public void SetAgentAssembly_AssemblyWithoutTargetFramework_ShouldUseEmptyString()
+        {
+            var assembly = AssemblyBuilder.DefineDynamicAssembly(
+                new AssemblyName("AssemblyWithoutTargetFramework"),
+                AssemblyBuilderAccess.Run);
+
+            AgentInfoHelper.SetAgentAssembly(assembly);
+
+            Assert.That(AgentInfoHelper.GetInfo().Platform.TargetFramework, Is.Empty);
         }
 
         [Test]

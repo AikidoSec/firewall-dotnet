@@ -63,10 +63,17 @@ namespace Aikido.Zen.Core.Helpers
 
         internal static void SetAgentAssembly(Assembly assembly)
         {
+            if (assembly == null)
+            {
+                _cachedAgentInfo.Version = string.Empty;
+                _cachedAgentInfo.Platform.TargetFramework = string.Empty;
+                return;
+            }
+
             _cachedAgentInfo.Version = CleanVersion(assembly.GetName().Version.ToString());
             _cachedAgentInfo.Platform.TargetFramework = assembly
                 .GetCustomAttribute<TargetFrameworkAttribute>()
-                ?.FrameworkName;
+                ?.FrameworkName ?? string.Empty;
         }
     }
 }
