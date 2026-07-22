@@ -78,6 +78,8 @@ namespace Aikido.Zen.Core.Api
                 request.Headers.Add("X-Agent-Platform", "dotnet");
                 request.Headers.Add("X-Agent-Version", AgentInfoHelper.ZenVersion);
 
+                // ResponseHeadersRead limits HttpClient.Timeout to receiving the headers;
+                // stream inactivity is handled separately by SseReadTimeout.
                 using (var response = await _httpClient.SendAsync(
                     request,
                     HttpCompletionOption.ResponseHeadersRead,

@@ -99,10 +99,7 @@ public class ConfigService
     private void UpdateConfigTimestamp(int appId)
     {
         var config = GetConfig(appId);
-        var currentTimestamp = Convert.ToInt64(config["configUpdatedAt"]);
-        var timestamp = Math.Max(
-            DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-            currentTimestamp + 1);
+        var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         config["configUpdatedAt"] = timestamp;
         ConfigUpdated?.Invoke(appId, timestamp);
     }
