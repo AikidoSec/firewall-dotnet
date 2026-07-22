@@ -66,14 +66,17 @@ namespace Aikido.Zen.Core.Helpers
             if (assembly == null)
             {
                 _cachedAgentInfo.Version = string.Empty;
-                _cachedAgentInfo.Platform.TargetFramework = string.Empty;
+                _cachedAgentInfo.Platform.Version = string.Empty;
                 return;
             }
 
             _cachedAgentInfo.Version = CleanVersion(assembly.GetName().Version.ToString());
-            _cachedAgentInfo.Platform.TargetFramework = assembly
+            var targetFramework = assembly
                 .GetCustomAttribute<TargetFrameworkAttribute>()
-                ?.FrameworkName ?? string.Empty;
+                ?.FrameworkName;
+            _cachedAgentInfo.Platform.Version = string.IsNullOrEmpty(targetFramework)
+                ? Environment.Version.ToString()
+                : $"{Environment.Version} ({targetFramework})";
         }
     }
 }

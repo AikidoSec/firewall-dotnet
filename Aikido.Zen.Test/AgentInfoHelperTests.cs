@@ -19,6 +19,7 @@ namespace Aikido.Zen.Test.Helpers
             _originalBlockingValue = Environment.GetEnvironmentVariable("AIKIDO_BLOCK");
             _originalLambdaValue = Environment.GetEnvironmentVariable("AWS_LAMBDA_FUNCTION_NAME");
             _originalAzureValue = Environment.GetEnvironmentVariable("WEBSITE_INSTANCE_ID");
+            AgentInfoHelper.SetAgentAssembly(typeof(AgentInfoHelperTests).Assembly);
         }
 
         [TearDown]
@@ -50,38 +51,34 @@ namespace Aikido.Zen.Test.Helpers
                 Assert.That(agentInfo.Os.Name, Is.EqualTo(Environment.OSVersion.Platform.ToString()));
 
                 // Platform Info
-                Assert.That(agentInfo.Platform.Version, Is.EqualTo(Environment.Version.ToString()));
+                Assert.That(agentInfo.Platform.Version, Is.EqualTo(
+                    $"{Environment.Version} ({GetTargetFrameworkName(typeof(AgentInfoHelperTests).Assembly)})"));
                 Assert.That(agentInfo.Platform.Arch, Is.EqualTo(RuntimeInformation.ProcessArchitecture.ToString()));
             });
         }
 
         [Test]
-        public void SetAgentAssembly_ShouldSetAgentTargetFramework()
+        public void SetAgentAssembly_ShouldAppendTargetFrameworkToPlatformVersion()
         {
             var assembly = typeof(AgentInfoHelperTests).Assembly;
-            var expectedTargetFramework = assembly
-                .GetCustomAttributes(typeof(TargetFrameworkAttribute), false)
-                .Cast<TargetFrameworkAttribute>()
-                .Single()
-                .FrameworkName;
+            var expectedPlatformVersion = $"{Environment.Version} ({GetTargetFrameworkName(assembly)})";
 
             AgentInfoHelper.SetAgentAssembly(assembly);
+            AgentInfoHelper.SetAgentAssembly(assembly);
 
-            Assert.That(AgentInfoHelper.GetInfo().Platform.TargetFramework, Is.EqualTo(expectedTargetFramework));
+            Assert.That(AgentInfoHelper.GetInfo().Platform.Version, Is.EqualTo(expectedPlatformVersion));
         }
 
         [Test]
-        public void SetAgentAssembly_NullAssembly_ShouldClearTargetFramework()
+        public void SetAgentAssembly_NullAssembly_ShouldClearPlatformVersion()
         {
-            AgentInfoHelper.SetAgentAssembly(typeof(AgentInfoHelperTests).Assembly);
-
             AgentInfoHelper.SetAgentAssembly(null!);
 
-            Assert.That(AgentInfoHelper.GetInfo().Platform.TargetFramework, Is.Empty);
+            Assert.That(AgentInfoHelper.GetInfo().Platform.Version, Is.Empty);
         }
 
         [Test]
-        public void SetAgentAssembly_AssemblyWithoutTargetFramework_ShouldUseEmptyString()
+        public void SetAgentAssembly_AssemblyWithoutTargetFramework_ShouldKeepRuntimeVersion()
         {
             var assembly = AssemblyBuilder.DefineDynamicAssembly(
                 new AssemblyName("AssemblyWithoutTargetFramework"),
@@ -89,7 +86,7 @@ namespace Aikido.Zen.Test.Helpers
 
             AgentInfoHelper.SetAgentAssembly(assembly);
 
-            Assert.That(AgentInfoHelper.GetInfo().Platform.TargetFramework, Is.Empty);
+            Assert.That(AgentInfoHelper.GetInfo().Platform.Version, Is.EqualTo(Environment.Version.ToString()));
         }
 
         [Test]
@@ -170,6 +167,15 @@ namespace Aikido.Zen.Test.Helpers
             {
                 Environment.SetEnvironmentVariable(variable, value);
             }
+        }
+
+        private static string GetTargetFrameworkName(Assembly assembly)
+        {
+            return assembly
+                .GetCustomAttributes(typeof(TargetFrameworkAttribute), false)
+                .Cast<TargetFrameworkAttribute>()
+                .Single()
+                .FrameworkName;
         }
 
         [Test]
