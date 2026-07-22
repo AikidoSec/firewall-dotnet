@@ -67,6 +67,12 @@ namespace Aikido.Zen.Core.Helpers
         public static bool DisableEndpointRoutingCheck => GetBooleanValue("AIKIDO_DISABLE_ENDPOINT_ROUTING_CHECK");
 
         /// <summary>
+        /// Determines whether realtime SSE config notifications are enabled.
+        /// The one-minute config poll remains active as a fallback.
+        /// </summary>
+        public static bool RealtimeConfigUpdatesEnabled => GetBooleanValue("AIKIDO_FEATURE_SSE");
+
+        /// <summary>
         /// Helper method to determine if an environment variable is set to "true" or "1".
         /// </summary>
         /// <param name="variableName">The name of the environment variable to check.</param>

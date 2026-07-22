@@ -5,6 +5,7 @@ using Aikido.Zen.Core.Models.Events;
 using Aikido.Zen.Tests.Mocks;
 using Microsoft.Extensions.Logging;
 using Moq;
+using System.Net;
 using System.Reflection;
 
 namespace Aikido.Zen.Test
@@ -19,6 +20,7 @@ namespace Aikido.Zen.Test
         public void Setup()
         {
             Environment.SetEnvironmentVariable("AIKIDO_TOKEN", "test-token");
+            Environment.SetEnvironmentVariable("AIKIDO_FEATURE_SSE", null);
             _zenApiMock = ZenApiMock.CreateMock();
             _agent = new Agent(_zenApiMock.Object);
         }
@@ -27,6 +29,7 @@ namespace Aikido.Zen.Test
         public void TearDown()
         {
             _agent.Dispose();
+            Environment.SetEnvironmentVariable("AIKIDO_FEATURE_SSE", null);
         }
 
         [Test]
@@ -344,6 +347,178 @@ namespace Aikido.Zen.Test
                 r => r.GetFirewallLists(It.IsAny<string>(), It.IsAny<CancellationToken>()),
                 Times.Once
             );
+        }
+
+        [Test]
+        public async Task Start_WhenRealtimeEnabled_AppliesNotifiedConfigAndFirewallLists()
+        {
+            Environment.SetEnvironmentVariable("AIKIDO_FEATURE_SSE", "true");
+
+            var reportingApiMock = new Mock<IReportingAPIClient>();
+            reportingApiMock
+                .Setup(api => api.ReportAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<object>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new ReportingAPIResponse
+                {
+                    Success = true,
+                    ConfigUpdatedAt = 100,
+                    Endpoints = Array.Empty<EndpointConfig>()
+                });
+
+            var firewallListCalls = 0;
+            reportingApiMock
+                .Setup(api => api.GetFirewallLists(
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns(() =>
+                {
+                    firewallListCalls++;
+                    return Task.FromResult(new FirewallListsAPIResponse
+                    {
+                        Success = true,
+                        BlockedIPAddresses = firewallListCalls > 1
+                            ? new[]
+                            {
+                                new FirewallListsAPIResponse.IPList
+                                {
+                                    Key = "realtime",
+                                    Ips = new[] { "203.0.113.20" }
+                                }
+                            }
+                            : Array.Empty<FirewallListsAPIResponse.IPList>()
+                    });
+                });
+
+            var runtimeApiMock = new Mock<IRuntimeAPIClient>();
+            runtimeApiMock
+                .Setup(api => api.GetConfigLastUpdated(
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new ConfigLastUpdatedAPIResponse
+                {
+                    Success = true,
+                    ConfigUpdatedAt = 200
+                });
+            runtimeApiMock
+                .Setup(api => api.GetConfig(
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new ReportingAPIResponse
+                {
+                    Success = true,
+                    ConfigUpdatedAt = 200,
+                    Endpoints = Array.Empty<EndpointConfig>()
+                });
+            runtimeApiMock
+                .Setup(api => api.SubscribeToConfigUpdates(
+                    It.IsAny<string>(),
+                    It.IsAny<Func<long, Task>>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns<string, Func<long, Task>, CancellationToken>(
+                    async (_, onUpdate, __) =>
+                    {
+                        await onUpdate(100);
+                        await onUpdate(200);
+                        await onUpdate(200);
+                        await onUpdate(200);
+                        return HttpStatusCode.Unauthorized;
+                    });
+
+            _agent.Dispose();
+            _zenApiMock = ZenApiMock.CreateMock(
+                reportingApiMock.Object,
+                runtimeApiMock.Object);
+            _agent = new Agent(_zenApiMock.Object);
+
+            _agent.Start();
+
+            var deadline = DateTime.UtcNow.AddSeconds(5);
+            while (!_agent.Context.Config.GetMatchingBlockedIPListKeys("203.0.113.20").Any() &&
+                   DateTime.UtcNow < deadline)
+            {
+                await Task.Delay(25);
+            }
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(_agent.Context.Config.ConfigLastUpdated, Is.EqualTo(200));
+                Assert.That(
+                    _agent.Context.Config.GetMatchingBlockedIPListKeys("203.0.113.20"),
+                    Is.EquivalentTo(new[] { "realtime" }));
+            });
+            runtimeApiMock.Verify(
+                api => api.SubscribeToConfigUpdates(
+                    "test-token",
+                    It.IsAny<Func<long, Task>>(),
+                    It.IsAny<CancellationToken>()),
+                Times.Once);
+            runtimeApiMock.Verify(
+                api => api.GetConfigLastUpdated(
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()),
+                Times.Once);
+            runtimeApiMock.Verify(
+                api => api.GetConfig(
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Test]
+        public async Task Start_WhenCalledAgain_DoesNotStartSecondRealtimeListener()
+        {
+            Environment.SetEnvironmentVariable("AIKIDO_FEATURE_SSE", "true");
+
+            var reportingApiMock = new Mock<IReportingAPIClient>();
+            reportingApiMock
+                .Setup(api => api.ReportAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<object>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new ReportingAPIResponse { Success = false });
+
+            var subscribed = new TaskCompletionSource<bool>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+            var runtimeApiMock = new Mock<IRuntimeAPIClient>();
+            runtimeApiMock
+                .Setup(api => api.SubscribeToConfigUpdates(
+                    It.IsAny<string>(),
+                    It.IsAny<Func<long, Task>>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns<string, Func<long, Task>, CancellationToken>(
+                    async (_, __, cancellationToken) =>
+                    {
+                        subscribed.TrySetResult(true);
+                        await Task.Delay(-1, cancellationToken);
+                        return HttpStatusCode.OK;
+                    });
+
+            _agent.Dispose();
+            _zenApiMock = ZenApiMock.CreateMock(
+                reportingApiMock.Object,
+                runtimeApiMock.Object);
+            _agent = new Agent(_zenApiMock.Object);
+
+            _agent.Start();
+            await subscribed.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+            var secondStartProcessed = new TaskCompletionSource<bool>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+            _agent.Start();
+            _agent.QueueEvent(
+                "test-token",
+                Started.Create(),
+                (_, __) => secondStartProcessed.TrySetResult(true));
+            await secondStartProcessed.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+            runtimeApiMock.Verify(
+                api => api.SubscribeToConfigUpdates(
+                    It.IsAny<string>(),
+                    It.IsAny<Func<long, Task>>(),
+                    It.IsAny<CancellationToken>()),
+                Times.Once);
         }
 
         [Test]
