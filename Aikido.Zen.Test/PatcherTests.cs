@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.Reflection;
 using System.Threading;
 using Aikido.Zen.Core;
+using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Sinks;
 using HarmonyLib;
 
@@ -38,6 +39,32 @@ namespace Aikido.Zen.Test
             Assert.DoesNotThrow(() => Patcher.PatchSinks(() => _context));
             Assert.DoesNotThrow(() => Patcher.Unpatch());
             Assert.DoesNotThrow(() => Patcher.Unpatch());
+        }
+
+        [Test]
+        public void PrepareSinks_AppliesPatchesWithoutActivatingInspection()
+        {
+            var inspected = false;
+            var method = GetMethod(typeof(File), nameof(File.ReadAllText), typeof(string));
+            Patcher.PrepareSinks();
+
+            var continueOriginal = Inspector.Inspect(
+                method,
+                "test",
+                _context,
+                _ =>
+                {
+                    inspected = true;
+                    return InspectionResult.Allow();
+                });
+
+            AssertPrefixPatch(method);
+            Assert.Multiple(() =>
+            {
+                Assert.That(Patcher.SinksActive, Is.False);
+                Assert.That(continueOriginal, Is.True);
+                Assert.That(inspected, Is.False);
+            });
         }
 
         [Test]
@@ -83,6 +110,7 @@ namespace Aikido.Zen.Test
             var patches = Harmony.GetPatchInfo(method);
 
             Assert.That(Patcher.GetContext(), Is.SameAs(secondContext));
+            Assert.That(Patcher.SinksActive, Is.True);
             Assert.That(patches.Prefixes.Count(prefix => prefix.owner == HarmonyId), Is.EqualTo(1));
             Assert.That(patches.Finalizers.Count(finalizer => finalizer.owner == HarmonyId), Is.EqualTo(1));
         }

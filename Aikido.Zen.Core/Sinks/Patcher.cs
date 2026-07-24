@@ -14,6 +14,7 @@ namespace Aikido.Zen.Core.Sinks
         private static readonly object PatchLock = new object();
         private static Func<Context> _getContext = () => null;
         private static bool _sinksPatched;
+        private static volatile bool _sinksActive;
 
         private static readonly Type[] PatchCatalogs =
         {
@@ -24,26 +25,23 @@ namespace Aikido.Zen.Core.Sinks
             typeof(SqlClientSink)
         };
 
+        internal static bool SinksActive => _sinksActive;
+
+        internal static void PrepareSinks()
+        {
+            lock (PatchLock)
+            {
+                PrepareSinksLocked();
+            }
+        }
+
         internal static void PatchSinks(Func<Context> getContext)
         {
             lock (PatchLock)
             {
                 _getContext = getContext ?? (() => null);
-
-                // Harmony patches are process-wide. Even though Zen.Start replaces the
-                // Agent singleton, repatching would register another prefix/finalizer
-                // and cause the same sink to run multiple times for one runtime call.
-                if (_sinksPatched)
-                {
-                    return;
-                }
-
-                foreach (var catalog in PatchCatalogs)
-                {
-                    PatchCatalog(catalog);
-                }
-
-                _sinksPatched = true;
+                PrepareSinksLocked();
+                _sinksActive = true;
             }
         }
 
@@ -51,6 +49,8 @@ namespace Aikido.Zen.Core.Sinks
         {
             lock (PatchLock)
             {
+                _sinksActive = false;
+
                 if (Harmony.HasAnyPatches(HarmonyId))
                 {
                     _harmony.UnpatchAll(HarmonyId);
@@ -64,6 +64,23 @@ namespace Aikido.Zen.Core.Sinks
         internal static Context GetContext()
         {
             return _getContext();
+        }
+
+        private static void PrepareSinksLocked()
+        {
+            // This flag is AppDomain-local. A replacement ASP.NET AppDomain therefore
+            // reapplies the process-wide detours so they no longer reference unloaded code.
+            if (_sinksPatched)
+            {
+                return;
+            }
+
+            foreach (var catalog in PatchCatalogs)
+            {
+                PatchCatalog(catalog);
+            }
+
+            _sinksPatched = true;
         }
 
         internal static void PatchCatalog(Type catalogType)

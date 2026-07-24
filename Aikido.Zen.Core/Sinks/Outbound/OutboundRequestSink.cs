@@ -43,6 +43,8 @@ namespace Aikido.Zen.Core.Sinks
         [SinkPrefix(typeof(HttpClient), "Send", "System.Net.Http.HttpRequestMessage", "System.Threading.CancellationToken")]
         internal static bool OnHttpClientRequest(HttpRequestMessage request, HttpClient __instance, MethodBase __originalMethod)
         {
+            if (!Patcher.SinksActive) return true;
+
             var context = Patcher.GetContext();
             var targetUri = ResolveUri(request, __instance);
             var isNestedRequest = OutboundRequestStateStore.TryGetHttpRequestState(request, out _);
@@ -66,6 +68,8 @@ namespace Aikido.Zen.Core.Sinks
         [SinkPostfix("System.Net.Http", "System.Net.Http.HttpClientHandler", "CreateAndPrepareWebRequest", "System.Net.Http.HttpRequestMessage")]
         internal static void OnHttpClientWebRequestCreated(HttpRequestMessage request, HttpWebRequest __result)
         {
+            if (!Patcher.SinksActive) return;
+
             OutboundRequestStateStore.AssociateHttpRequestWithWebRequest(request, __result);
         }
 
@@ -75,6 +79,8 @@ namespace Aikido.Zen.Core.Sinks
         [SinkFinalizer(typeof(HttpClient), "SendAsync", "System.Net.Http.HttpRequestMessage", "System.Threading.CancellationToken")]
         internal static Exception OnHttpClientRequestFinalized(HttpRequestMessage request, ref Task<HttpResponseMessage> __result, Exception __exception)
         {
+            if (!Patcher.SinksActive) return __exception;
+
             if (__result != null && OutboundRequestStateStore.TryGetHttpRequestState(request, out var state))
             {
                 __result = ThrowDetectedException(__result, state);
@@ -89,6 +95,8 @@ namespace Aikido.Zen.Core.Sinks
         [SinkPrefix(typeof(HttpWebRequest), "GetResponseAsync")]
         internal static bool OnWebRequest(WebRequest __instance, MethodBase __originalMethod)
         {
+            if (!Patcher.SinksActive) return true;
+
             var context = Patcher.GetContext();
             var targetUri = __instance?.RequestUri;
 
@@ -108,6 +116,8 @@ namespace Aikido.Zen.Core.Sinks
         [SinkFinalizer(typeof(HttpWebRequest), "GetResponseAsync")]
         internal static Exception OnWebRequestFinalized(WebRequest __instance, ref Task<WebResponse> __result, Exception __exception)
         {
+            if (!Patcher.SinksActive) return __exception;
+
             if (__result != null && OutboundRequestStateStore.TryGetWebRequestState(__instance as HttpWebRequest, out var state))
             {
                 __result = ThrowDetectedException(__result, state);
@@ -124,6 +134,8 @@ namespace Aikido.Zen.Core.Sinks
         [SinkPrefix("System.Net.Http", "System.Net.Http.Http3Connection", "SendAsync", "System.Net.Http.HttpRequestMessage", "System.Net.Http.Http3Connection+WaitForHttp3ConnectionActivity", "System.Boolean", "System.Threading.CancellationToken")]
         internal static bool OnHttpClientConnectionRequest(HttpRequestMessage request, object __instance, MethodBase __originalMethod, ref Task<HttpResponseMessage> __result)
         {
+            if (!Patcher.SinksActive) return true;
+
             if (!OutboundRequestStateStore.TryGetHttpRequestState(request, out var state))
             {
                 return true;
@@ -154,6 +166,8 @@ namespace Aikido.Zen.Core.Sinks
         [SinkPrefix("System", "System.Net.ConnectStream", "WriteHeaders", "System.Boolean")]
         internal static bool OnFrameworkRequest(object __instance, object ___m_Connection, MethodBase __originalMethod)
         {
+            if (!Patcher.SinksActive) return true;
+
             var request = ReflectionHelper.GetMemberValue(__instance, "m_Request") as HttpWebRequest;
             if (!OutboundRequestStateStore.TryGetWebRequestState(request, out var state))
             {

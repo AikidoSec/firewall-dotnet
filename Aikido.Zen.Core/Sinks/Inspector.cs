@@ -18,6 +18,8 @@ namespace Aikido.Zen.Core.Sinks
             Context context,
             Func<Context, InspectionResult> inspect)
         {
+            if (!Patcher.SinksActive) return true;
+
             if (IsInspecting.Value)
             {
                 return true;
