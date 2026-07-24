@@ -1,5 +1,7 @@
 # Setting the current user
 
+Zen does not collect identities automatically. User tracking is enabled only when you call `Zen.SetUser`.
+
 ## .NET Core
 
 To set the current user, you can use the `Zen.SetUser` method in your middleware:

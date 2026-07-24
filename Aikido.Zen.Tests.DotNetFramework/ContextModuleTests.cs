@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Security.Principal;
 using System.Web;
 using System.Web.Routing;
 using Aikido.Zen.Core;
@@ -273,6 +274,21 @@ namespace Aikido.Zen.Tests.DotNetFramework
             Assert.That(result["Accept[1]"], Is.EqualTo("application/json"));
             Assert.That(result.ContainsKey("Accept[2]"), Is.True);
             Assert.That(result["Accept[2]"], Is.EqualTo("application/xml"));
+        }
+
+        [Test]
+        public void SetUserAction_DoesNotTrackAuthenticatedPrincipalByDefault()
+        {
+            var httpContext = new HttpContext(
+                new HttpRequest(string.Empty, "http://test.local/api/test", string.Empty),
+                new HttpResponse(new StringWriter()))
+            {
+                User = new GenericPrincipal(new GenericIdentity("authenticated-user"), Array.Empty<string>())
+            };
+
+            var user = Aikido.Zen.DotNetFramework.Zen.SetUserAction(httpContext);
+
+            Assert.That(user, Is.Null);
         }
 
         [Test]

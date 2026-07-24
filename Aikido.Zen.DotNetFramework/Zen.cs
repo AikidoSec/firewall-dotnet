@@ -60,11 +60,8 @@ namespace Aikido.Zen.DotNetFramework
             EnvironmentHelper.ReportValues();
         }
 
-        internal static Func<HttpContext, User> SetUserAction { get; set; } = (context) => !string.IsNullOrEmpty(context.User.Identity?.Name)
-            // if we have an identity, set the user to that identity automatically
-            ? new User(context.User.Identity.Name, context.User.Identity.Name)
-            // otherwise, return null
-            : null;
+        // User tracking is opt-in. Do not infer an identity from HttpContext.
+        internal static Func<HttpContext, User> SetUserAction { get; set; } = _ => null;
 
         internal static Func<HttpContext, string> SetRateLimitGroupAction { get; set; } = _ => string.Empty;
 
