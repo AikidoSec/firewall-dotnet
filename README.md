@@ -145,6 +145,8 @@ using Microsoft.AspNet.Identity;
 
 Ensure that your project runs on .NET Framework 4.6 or higher.
 
+Zen does not collect identities automatically. User tracking is enabled only when you call `Zen.SetUser`.
+
 - Install the package from NuGet.
 
 If your .NET Framework project uses SDK-style `PackageReference`, run:
