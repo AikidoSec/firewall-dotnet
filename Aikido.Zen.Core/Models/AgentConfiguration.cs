@@ -27,6 +27,7 @@ namespace Aikido.Zen.Core.Models
         private List<(string Key, Regex Pattern)> _userAgentDetails = new List<(string Key, Regex Pattern)>();
         private List<(string Key, IPRange List)> _monitoredIPAddresses = new List<(string Key, IPRange List)>();
         private readonly ConcurrentDictionary<string, string> _domains = new ConcurrentDictionary<string, string>();
+        private readonly ConcurrentDictionary<string, string> _enabledFeatures = new ConcurrentDictionary<string, string>();
         private readonly object _endpointsLock = new object();
         private readonly object _monitoringLock = new object();
         private volatile bool _blockNewOutgoingRequests;
@@ -47,6 +48,7 @@ namespace Aikido.Zen.Core.Models
             _userAgentDetails = new List<(string Key, Regex Pattern)>();
             _monitoredIPAddresses = new List<(string Key, IPRange List)>();
             _domains.Clear();
+            _enabledFeatures.Clear();
             _blockNewOutgoingRequests = false;
             _blockList = new BlockList();
             HeartbeatIntervalInMS = 0;
@@ -70,6 +72,16 @@ namespace Aikido.Zen.Core.Models
         public bool IsUserExcludedFromRateLimiting(string userId)
         {
             return _usersExcludedFromRateLimiting.ContainsKey(userId);
+        }
+
+        /// <summary>
+        /// Checks whether a server-provided feature flag is enabled.
+        /// </summary>
+        /// <param name="feature">The name of the feature.</param>
+        /// <returns>True if the feature is enabled, false otherwise.</returns>
+        public bool IsFeatureEnabled(string feature)
+        {
+            return feature != null && _enabledFeatures.ContainsKey(feature);
         }
 
         /// <summary>
@@ -187,6 +199,22 @@ namespace Aikido.Zen.Core.Models
         }
 
         /// <summary>
+        /// Updates the server-provided feature flags.
+        /// </summary>
+        /// <param name="features">The list of enabled feature names.</param>
+        public void UpdateEnabledFeatures(IEnumerable<string> features)
+        {
+            _enabledFeatures.Clear();
+            if (features != null)
+            {
+                foreach (var feature in features)
+                {
+                    _enabledFeatures.TryAdd(feature, feature);
+                }
+            }
+        }
+
+        /// <summary>
         /// Updates the list of rate-limited routes.
         /// </summary>
         /// <param name="endpoints">The list of endpoint configurations.</param>
@@ -251,6 +279,11 @@ namespace Aikido.Zen.Core.Models
             if (response.BlockNewOutgoingRequests.HasValue && response.Domains != null)
             {
                 UpdateOutboundDomains(response.BlockNewOutgoingRequests.Value, response.Domains);
+            }
+
+            if (response.EnabledFeatures != null)
+            {
+                UpdateEnabledFeatures(response.EnabledFeatures);
             }
         }
 

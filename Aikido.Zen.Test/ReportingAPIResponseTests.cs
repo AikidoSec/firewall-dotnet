@@ -20,6 +20,7 @@ namespace Aikido.Zen.Test
             Assert.That(response.BlockedUserIds, Is.Null);
             Assert.That(response.ExcludedUserIdsFromRateLimiting, Is.Null);
             Assert.That(response.BypassedIPAddresses, Is.Null);
+            Assert.That(response.EnabledFeatures, Is.Null);
         }
 
         [Test]
@@ -40,6 +41,7 @@ namespace Aikido.Zen.Test
                 BlockedUserIds = new[] { "user1", "user2" },
                 ExcludedUserIdsFromRateLimiting = new[] { "user3" },
                 BypassedIPAddresses = new[] { "1.1.1.1", "2.2.2.2" },
+                EnabledFeatures = new[] { "realtime_updates" },
                 ReceivedAnyStats = true,
                 Success = true
             };
@@ -57,6 +59,7 @@ namespace Aikido.Zen.Test
             Assert.That(response.BypassedIPAddresses, Has.Exactly(2).Items);
             Assert.That(response.BypassedIPAddresses, Contains.Item("1.1.1.1"));
             Assert.That(response.BypassedIPAddresses, Contains.Item("2.2.2.2"));
+            Assert.That(response.EnabledFeatures, Is.EquivalentTo(new[] { "realtime_updates" }));
             Assert.That(response.ReceivedAnyStats, Is.True);
             Assert.That(response.Success, Is.True);
         }
@@ -91,7 +94,8 @@ namespace Aikido.Zen.Test
                   "blockNewOutgoingRequests": true,
                   "domains": [
                     { "hostname": "allowed.example", "mode": "allow" }
-                  ]
+                  ],
+                  "enabledFeatures": ["realtime_updates"]
                 }
                 """;
 
@@ -105,6 +109,7 @@ namespace Aikido.Zen.Test
             Assert.That(response.Domains.Count(), Is.EqualTo(1));
             Assert.That(response.Domains.First().Hostname, Is.EqualTo("allowed.example"));
             Assert.That(response.Domains.First().Mode, Is.EqualTo("allow"));
+            Assert.That(response.EnabledFeatures, Is.EquivalentTo(new[] { "realtime_updates" }));
         }
     }
 }

@@ -60,5 +60,11 @@ namespace Aikido.Zen.Core.Api
         /// Null means the field was omitted from the backend response.
         /// </summary>
         public IEnumerable<OutboundDomainConfig> Domains { get; set; }
+
+        /// <summary>
+        /// Gets or sets the server-provided feature flags enabled for this service.
+        /// Null means the field was omitted from the backend response.
+        /// </summary>
+        public IEnumerable<string> EnabledFeatures { get; set; }
     }
 }
