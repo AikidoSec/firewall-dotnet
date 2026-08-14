@@ -81,7 +81,7 @@ namespace Aikido.Zen.Core.Models
         /// <returns>True if the feature is enabled, false otherwise.</returns>
         public bool IsFeatureEnabled(string feature)
         {
-            return feature != null && _enabledFeatures.ContainsKey(feature);
+            return _enabledFeatures.ContainsKey(feature);
         }
 
         /// <summary>
