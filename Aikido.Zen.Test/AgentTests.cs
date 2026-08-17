@@ -467,6 +467,108 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public async Task Start_WhenServerEnablesRealtimeFeature_StartsRealtimeListener()
+        {
+            var reportingApiMock = new Mock<IReportingAPIClient>();
+            reportingApiMock
+                .Setup(api => api.ReportAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<object>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new ReportingAPIResponse
+                {
+                    Success = true,
+                    ConfigUpdatedAt = 100,
+                    Endpoints = Array.Empty<EndpointConfig>(),
+                    EnabledFeatures = new[] { "realtime_updates" }
+                });
+            reportingApiMock
+                .Setup(api => api.GetFirewallLists(
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new FirewallListsAPIResponse { Success = true });
+
+            var subscribed = new TaskCompletionSource<bool>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+            var runtimeApiMock = new Mock<IRuntimeAPIClient>();
+            runtimeApiMock
+                .Setup(api => api.SubscribeToConfigUpdates(
+                    It.IsAny<string>(),
+                    It.IsAny<Func<long, Task>>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns<string, Func<long, Task>, CancellationToken>(
+                    async (_, __, cancellationToken) =>
+                    {
+                        subscribed.TrySetResult(true);
+                        await Task.Delay(-1, cancellationToken);
+                        return HttpStatusCode.OK;
+                    });
+
+            _agent.Dispose();
+            _zenApiMock = ZenApiMock.CreateMock(
+                reportingApiMock.Object,
+                runtimeApiMock.Object);
+            _agent = new Agent(_zenApiMock.Object);
+
+            _agent.Start();
+            await subscribed.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+            runtimeApiMock.Verify(
+                api => api.SubscribeToConfigUpdates(
+                    "test-token",
+                    It.IsAny<Func<long, Task>>(),
+                    It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Test]
+        public async Task Start_WhenServerEnablesUnrelatedFeature_DoesNotStartRealtimeListener()
+        {
+            var reportingApiMock = new Mock<IReportingAPIClient>();
+            reportingApiMock
+                .Setup(api => api.ReportAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<object>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new ReportingAPIResponse
+                {
+                    Success = true,
+                    ConfigUpdatedAt = 100,
+                    Endpoints = Array.Empty<EndpointConfig>(),
+                    EnabledFeatures = new[] { "some_other_feature" }
+                });
+            reportingApiMock
+                .Setup(api => api.GetFirewallLists(
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new FirewallListsAPIResponse { Success = true });
+
+            var runtimeApiMock = new Mock<IRuntimeAPIClient>();
+
+            _agent.Dispose();
+            _zenApiMock = ZenApiMock.CreateMock(
+                reportingApiMock.Object,
+                runtimeApiMock.Object);
+            _agent = new Agent(_zenApiMock.Object);
+
+            var started = new TaskCompletionSource<bool>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+            _agent.Start();
+            _agent.QueueEvent(
+                "test-token",
+                Started.Create(),
+                (_, __) => started.TrySetResult(true));
+            await started.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+            runtimeApiMock.Verify(
+                api => api.SubscribeToConfigUpdates(
+                    It.IsAny<string>(),
+                    It.IsAny<Func<long, Task>>(),
+                    It.IsAny<CancellationToken>()),
+                Times.Never);
+        }
+
+        [Test]
         public async Task Start_WhenCalledAgain_DoesNotStartSecondRealtimeListener()
         {
             Environment.SetEnvironmentVariable("AIKIDO_FEATURE_SSE", "true");

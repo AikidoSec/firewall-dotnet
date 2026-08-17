@@ -32,6 +32,7 @@ namespace Aikido.Zen.Test
                     Route = "/test",
                 }],
                 BypassedIPAddresses = ["123.123.123.123"],
+                EnabledFeatures = new List<string> { "realtime_updates" },
                 ConfigUpdatedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
             });
             var context = new Context
@@ -52,6 +53,7 @@ namespace Aikido.Zen.Test
             Assert.That(_config.Endpoints, Is.Empty);
             Assert.That(_config.BlockList.IsIPBypassed("123.123.123.123"), Is.False);
             Assert.That(_config.BlockList.IsEmpty(), Is.True);
+            Assert.That(_config.IsFeatureEnabled("realtime_updates"), Is.False);
         }
 
         [Test]
@@ -74,6 +76,81 @@ namespace Aikido.Zen.Test
 
             // Act & Assert
             Assert.That(_config.IsUserBlocked(userId), Is.False);
+        }
+
+        [Test]
+        public void IsFeatureEnabled_WithNoFeaturesSet_ReturnsFalse()
+        {
+            // Act & Assert
+            Assert.That(_config.IsFeatureEnabled("realtime_updates"), Is.False);
+        }
+
+        [Test]
+        public void UpdateEnabledFeatures_WithFeature_EnablesOnlyThatFeature()
+        {
+            // Act
+            _config.UpdateEnabledFeatures(new List<string> { "realtime_updates" });
+
+            // Assert
+            Assert.That(_config.IsFeatureEnabled("realtime_updates"), Is.True);
+            Assert.That(_config.IsFeatureEnabled("some_other_feature"), Is.False);
+        }
+
+        [Test]
+        public void UpdateEnabledFeatures_ReplacesPreviouslyEnabledFeatures()
+        {
+            // Arrange
+            _config.UpdateEnabledFeatures(new List<string> { "realtime_updates" });
+
+            // Act
+            _config.UpdateEnabledFeatures(new List<string>());
+
+            // Assert
+            Assert.That(_config.IsFeatureEnabled("realtime_updates"), Is.False);
+        }
+
+        [Test]
+        public void UpdateEnabledFeatures_WithNullEntry_IgnoresInvalidFeature()
+        {
+            // Act
+            Assert.DoesNotThrow(() => _config.UpdateEnabledFeatures(new[]
+            {
+                null!,
+                "realtime_updates"
+            }));
+
+            // Assert
+            Assert.That(_config.IsFeatureEnabled("realtime_updates"), Is.True);
+        }
+
+        [Test]
+        public void UpdateConfig_WithEnabledFeatures_UpdatesFeatureFlags()
+        {
+            // Arrange
+            var response = new ReportingAPIResponse
+            {
+                EnabledFeatures = new List<string> { "realtime_updates" },
+                ConfigUpdatedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+            };
+
+            // Act
+            _config.UpdateConfig(response);
+
+            // Assert
+            Assert.That(_config.IsFeatureEnabled("realtime_updates"), Is.True);
+        }
+
+        [Test]
+        public void UpdateConfig_WithOmittedEnabledFeatures_PreservesExistingValues()
+        {
+            // Arrange
+            _config.UpdateEnabledFeatures(new List<string> { "realtime_updates" });
+
+            // Act
+            _config.UpdateConfig(new ReportingAPIResponse { Success = true });
+
+            // Assert
+            Assert.That(_config.IsFeatureEnabled("realtime_updates"), Is.True);
         }
 
         [Test]

@@ -653,9 +653,13 @@ namespace Aikido.Zen.Core
 
         private void StartRealtimeConfigUpdates()
         {
-            if (!EnvironmentHelper.RealtimeConfigUpdatesEnabled ||
-                string.IsNullOrEmpty(EnvironmentHelper.Token) ||
-                _cancellationSource.IsCancellationRequested)
+
+            if (string.IsNullOrEmpty(EnvironmentHelper.Token) || _cancellationSource.IsCancellationRequested)
+            {
+                return;
+            }
+
+            if (!EnvironmentHelper.RealtimeConfigUpdatesEnabled && !_context.Config.IsFeatureEnabled("realtime_updates"))
             {
                 return;
             }
