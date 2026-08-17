@@ -110,6 +110,20 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void UpdateEnabledFeatures_WithNullEntry_IgnoresInvalidFeature()
+        {
+            // Act
+            Assert.DoesNotThrow(() => _config.UpdateEnabledFeatures(new[]
+            {
+                null!,
+                "realtime_updates"
+            }));
+
+            // Assert
+            Assert.That(_config.IsFeatureEnabled("realtime_updates"), Is.True);
+        }
+
+        [Test]
         public void UpdateConfig_WithEnabledFeatures_UpdatesFeatureFlags()
         {
             // Arrange

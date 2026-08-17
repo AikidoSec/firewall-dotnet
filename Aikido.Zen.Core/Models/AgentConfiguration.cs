@@ -209,7 +209,10 @@ namespace Aikido.Zen.Core.Models
             {
                 foreach (var feature in features)
                 {
-                    _enabledFeatures.TryAdd(feature, feature);
+                    if (feature != null)
+                    {
+                        _enabledFeatures.TryAdd(feature, feature);
+                    }
                 }
             }
         }
