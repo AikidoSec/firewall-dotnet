@@ -30,7 +30,6 @@ namespace Aikido.Zen.Test
             Environment.SetEnvironmentVariable("AIKIDO_TOKEN", "test-token");
             Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", "true");
             Environment.SetEnvironmentVariable("AIKIDO_ENDPOINT", "http://localhost:3000");
-            Environment.SetEnvironmentVariable("AIKIDO_REALTIME_ENDPOINT", "http://localhost:3001");
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", null);
 
             _reportingApiMock = new Mock<IReportingAPIClient>();
