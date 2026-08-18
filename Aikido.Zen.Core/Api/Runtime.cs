@@ -25,7 +25,7 @@ namespace Aikido.Zen.Core.Api
         {
             try
             {
-                var request = APIHelper.CreateRequest(token, new Uri(EnvironmentHelper.AikidoRealtimeUrl), "config", HttpMethod.Get);
+                var request = APIHelper.CreateRequest(token, new Uri(EnvironmentHelper.AikidoUrl), "config", HttpMethod.Get);
                 var response = await _httpClient.SendAsync(request, cancellationToken);
                 return APIHelper.ToAPIResponse<ConfigLastUpdatedAPIResponse>(response);
             }
@@ -68,7 +68,7 @@ namespace Aikido.Zen.Core.Api
         {
             using (var request = APIHelper.CreateRequest(
                 token,
-                new Uri(EnvironmentHelper.AikidoRealtimeUrl),
+                new Uri(EnvironmentHelper.AikidoUrl),
                 "/api/runtime/stream",
                 HttpMethod.Get))
             {

@@ -30,7 +30,6 @@ public class DataRegionEndpointEnd2EndTests
     {
         CaptureAndSetEnvironment("AIKIDO_TOKEN", RegionToken);
         CaptureAndSetEnvironment("AIKIDO_ENDPOINT", null);
-        CaptureAndSetEnvironment("AIKIDO_REALTIME_ENDPOINT", null);
         CaptureAndSetEnvironment("AIKIDO_BLOCK", "false");
         CaptureAndSetEnvironment("AIKIDO_DISABLE", null);
 
@@ -63,8 +62,6 @@ public class DataRegionEndpointEnd2EndTests
     [Test, NonParallelizable]
     public async Task StartupReporting_ShouldUseRegionSpecificGuardEndpoint_WhenEndpointIsNotSet()
     {
-        Assert.That(EnvironmentHelper.AikidoRealtimeUrl, Is.EqualTo("https://guard.us.aikido.dev"));
-
         _sampleAppClient = CreateSampleAppClient();
 
         using var response = await _sampleAppClient.GetAsync("/health");

@@ -119,34 +119,6 @@ namespace Aikido.Zen.Test.Helpers
         }
 
         [Test]
-        public void AikidoRealtimeUrl_ShouldReturnExpectedValue_WhenEnvironmentVariableIsSet()
-        {
-            // Arrange
-            Environment.SetEnvironmentVariable("AIKIDO_REALTIME_ENDPOINT", "https://custom-realtime.aikido.dev");
-
-            // Act
-            var url = EnvironmentHelper.AikidoRealtimeUrl;
-
-            // Assert
-            Assert.That(url, Is.EqualTo("https://custom-realtime.aikido.dev"));
-        }
-
-        [TestCase("AIK_RUNTIME_1_2_US_random", "https://guard.us.aikido.dev")]
-        [TestCase("AIK_RUNTIME_1_2_ME_random", "https://guard.me.aikido.dev")]
-        [TestCase("AIK_RUNTIME_1_2_AU_random", "https://guard.au.aikido.dev")]
-        [TestCase("AIK_RUNTIME_1_2_EU_random", "https://guard.aikido.dev")]
-        [TestCase("AIK_RUNTIME_1_2_random", "https://guard.aikido.dev")]
-        public void AikidoRealtimeUrl_ShouldBeDerivedFromTokenRegion_WhenEnvironmentVariableIsNotSet(string token, string expectedUrl)
-        {
-            Environment.SetEnvironmentVariable("AIKIDO_REALTIME_ENDPOINT", null);
-            Environment.SetEnvironmentVariable("AIKIDO_TOKEN", token);
-
-            var url = EnvironmentHelper.AikidoRealtimeUrl;
-
-            Assert.That(url, Is.EqualTo(expectedUrl));
-        }
-
-        [Test]
         public void BlockInvalidSql_ShouldReturnFalse_WhenEnvironmentVariableIsNotSet()
         {
             // Arrange
