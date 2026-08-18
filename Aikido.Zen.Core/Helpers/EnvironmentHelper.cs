@@ -28,7 +28,7 @@ namespace Aikido.Zen.Core.Helpers
         public static string AikidoUrl => Environment.GetEnvironmentVariable("AIKIDO_ENDPOINT") ?? GetAikidoUrlFromToken(Token);
 
         /// <summary>
-        /// Gets the Aikido real-time URL from the environment variables or defaults to https://guard.aikido.dev.
+        /// Gets the Aikido real-time URL from the environment variables or derives it from the token's region.
         /// </summary>
         public static string AikidoRealtimeUrl => Environment.GetEnvironmentVariable("AIKIDO_REALTIME_ENDPOINT") ?? GetAikidoUrlFromToken(Token);
 
