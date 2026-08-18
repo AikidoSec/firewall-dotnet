@@ -131,17 +131,19 @@ namespace Aikido.Zen.Test.Helpers
             Assert.That(url, Is.EqualTo("https://custom-realtime.aikido.dev"));
         }
 
-        [Test]
-        public void AikidoRealtimeUrl_ShouldReturnDefaultValue_WhenEnvironmentVariableIsNotSet()
+        [TestCase("AIK_RUNTIME_1_2_US_random", "https://guard.us.aikido.dev")]
+        [TestCase("AIK_RUNTIME_1_2_ME_random", "https://guard.me.aikido.dev")]
+        [TestCase("AIK_RUNTIME_1_2_AU_random", "https://guard.au.aikido.dev")]
+        [TestCase("AIK_RUNTIME_1_2_EU_random", "https://guard.aikido.dev")]
+        [TestCase("AIK_RUNTIME_1_2_random", "https://guard.aikido.dev")]
+        public void AikidoRealtimeUrl_ShouldBeDerivedFromTokenRegion_WhenEnvironmentVariableIsNotSet(string token, string expectedUrl)
         {
-            // Arrange
             Environment.SetEnvironmentVariable("AIKIDO_REALTIME_ENDPOINT", null);
+            Environment.SetEnvironmentVariable("AIKIDO_TOKEN", token);
 
-            // Act
             var url = EnvironmentHelper.AikidoRealtimeUrl;
 
-            // Assert
-            Assert.That(url, Is.EqualTo("https://runtime.aikido.dev"));
+            Assert.That(url, Is.EqualTo(expectedUrl));
         }
 
         [Test]
