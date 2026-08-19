@@ -41,6 +41,7 @@ namespace Aikido.Zen.Core
         internal const int RetryDelayMs = 250;
         private const int EmptyQueueDelayMs = 100;
         private const int ErrorRetryDelayMs = 1000;
+        private const int ShutdownTimeoutMs = 5000;
 
         private AgentContext _context;
 
@@ -244,42 +245,11 @@ namespace Aikido.Zen.Core
         {
             try
             {
-                // Cancel any pending operations
                 _cancellationSource.Cancel();
-
-                // Process any remaining events in the queue synchronously
-                while (!_eventQueue.IsEmpty)
-                {
-                    if (_eventQueue.TryDequeue(out var eventItem))
-                    {
-                        try
-                        {
-                            var response = _api.Reporting.ReportAsync(eventItem.Token, eventItem.Event, CancellationToken.None)
-                                .ConfigureAwait(false)
-                                .GetAwaiter()
-                                .GetResult();
-                            eventItem.Callback?.Invoke(eventItem.Event, response);
-                            LogHelper.DebugLog(Logger, $"Event processed: {eventItem.Event.Type}");
-                        }
-                        catch (Exception)
-                        {
-                            // pass through
-                            LogHelper.DebugLog(Logger, $"Error processing event: {eventItem.Event.Type}");
-                        }
-                    }
-                }
-
-                // Wait for background task to complete gracefully
-                if (!_backgroundTask.Wait(TimeSpan.FromSeconds(30)))
-                {
-                    // pass through
-                }
-
-                if (_realtimeConfigTask != null &&
-                    !_realtimeConfigTask.Wait(TimeSpan.FromSeconds(30)))
-                {
-                    // pass through
-                }
+                var tasks = _realtimeConfigTask == null
+                    ? new[] { _backgroundTask }
+                    : new[] { _backgroundTask, _realtimeConfigTask };
+                Task.WaitAll(tasks, ShutdownTimeoutMs);
             }
             catch (Exception)
             {

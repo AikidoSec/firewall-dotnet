@@ -93,12 +93,6 @@ namespace Aikido.Zen.DotNetCore
 
             // make sure we use the httpcontext accessor
             services.AddHttpContextAccessor();
-            // now we can register our context accessor
-            services.AddTransient<ContextAccessor>(factory =>
-            {
-                var httpContextAccessor = factory.GetRequiredService<IHttpContextAccessor>();
-                return new ContextAccessor(httpContextAccessor);
-            });
 
             // Configure Zen API with optional custom settings
             var builder = new ZenFirewallBuilder(services);
@@ -123,8 +117,7 @@ namespace Aikido.Zen.DotNetCore
             }
 
             var contextAccessor = app.ApplicationServices.GetRequiredService<IHttpContextAccessor>();
-            Zen.Initialize(app.ApplicationServices, contextAccessor);
-            Zen.Start();
+            Zen.Start(app.ApplicationServices, contextAccessor);
             app.UseMiddleware<ContextMiddleware>();
             app.UseMiddleware<BlockingMiddleware>();
             return app;

@@ -6,6 +6,7 @@ using Aikido.Zen.Core.Models;
 using Aikido.Zen.DotNetCore.RuntimeSca;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Runtime.InteropServices;
@@ -13,19 +14,14 @@ using CorePatcher = Aikido.Zen.Core.Sinks.Patcher;
 
 namespace Aikido.Zen.DotNetCore
 {
-    public class Zen
+    public static class Zen
     {
-        private static IServiceProvider _serviceProvider;
-        private static IHttpContextAccessor _httpContextAccessor;
+        private static volatile IHttpContextAccessor _httpContextAccessor;
         private static int _lateSetUserWarningLogged;
 
-        public static void Initialize(IServiceProvider serviceProvider, IHttpContextAccessor httpContextAccessor)
-        {
-            _serviceProvider = serviceProvider;
-            _httpContextAccessor = httpContextAccessor;
-        }
-
-        public static void Start()
+        internal static void Start(
+            IServiceProvider serviceProvider,
+            IHttpContextAccessor httpContextAccessor)
         {
             // libzen_internals only available on 64
             if (!Environment.Is64BitProcess)
@@ -34,18 +30,14 @@ namespace Aikido.Zen.DotNetCore
                     $"Aikido Zen does not support 32-bit processes. Detected process architecture: {RuntimeInformation.ProcessArchitecture}");
             }
 
-            if (_serviceProvider == null || _httpContextAccessor == null)
-            {
-                throw new InvalidOperationException("Aikido.Zen.DotNetCore.Zen.Initialize must be called before Zen.Start().");
-            }
-
             AgentInfoHelper.SetAgentAssembly(typeof(Zen).Assembly);
-            var options = _serviceProvider.GetRequiredService<IOptions<AikidoOptions>>();
+            var options = serviceProvider.GetRequiredService<IOptions<AikidoOptions>>();
+            Agent agent = null;
 
             if (!string.IsNullOrEmpty(options?.Value?.AikidoToken))
             {
-                var agent = Agent.NewInstance(_serviceProvider.GetRequiredService<IZenApi>());
-                var agentLogger = _serviceProvider.GetService<ILogger<Agent>>();
+                agent = Agent.NewInstance(serviceProvider.GetRequiredService<IZenApi>());
+                var agentLogger = serviceProvider.GetService<ILogger<Agent>>();
                 if (agentLogger != null)
                 {
                     Agent.ConfigureLogger(agentLogger);
@@ -53,17 +45,55 @@ namespace Aikido.Zen.DotNetCore
 
                 agent.Start();
 
-                var exceptionLogger = _serviceProvider.GetService<ILogger<AikidoException>>();
+                var exceptionLogger = serviceProvider.GetService<ILogger<AikidoException>>();
                 if (exceptionLogger != null)
                 {
                     AikidoException.ConfigureLogger(exceptionLogger);
                 }
 
                 EnvironmentHelper.ReportValues();
+            }
+
+            _httpContextAccessor = httpContextAccessor;
+            CorePatcher.PatchSinks(GetContext);
+
+            if (agent != null)
+            {
                 RuntimeAssemblyTracker.Instance.SubscribeToAppDomain(AppDomain.CurrentDomain);
             }
 
-            CorePatcher.PatchSinks(GetContext);
+            try
+            {
+                serviceProvider
+                    .GetService<IHostApplicationLifetime>()?
+                    .ApplicationStopped.Register(() => Stop(agent));
+            }
+            catch (Exception ex)
+            {
+                LogHelper.ErrorLog(Agent.Logger, ex, "Failed to register the application shutdown callback");
+            }
+        }
+
+        private static void Stop(Agent agent)
+        {
+            _httpContextAccessor = null;
+            try
+            {
+                CorePatcher.Unpatch();
+            }
+            catch (Exception ex)
+            {
+                LogHelper.ErrorLog(Agent.Logger, ex, "Failed to unpatch sinks during application shutdown");
+            }
+
+            try
+            {
+                agent?.Dispose();
+            }
+            catch (Exception ex)
+            {
+                LogHelper.ErrorLog(Agent.Logger, ex, "Failed to dispose the agent during application shutdown");
+            }
         }
 
         public static void SetUser(string id, string name, HttpContext context)
@@ -100,24 +130,9 @@ namespace Aikido.Zen.DotNetCore
             context.Items["Aikido.Zen.RateLimitGroup"] = id;
         }
 
-        public static Context GetContext()
+        internal static Context GetContext()
         {
-            if (_serviceProvider != null)
-            {
-                var contextAccessor = _serviceProvider.GetService(typeof(ContextAccessor)) as ContextAccessor;
-                return contextAccessor?.CurrentContext;
-            }
             return _httpContextAccessor?.HttpContext?.Items["Aikido.Zen.Context"] as Context;
-        }
-
-        public static User GetUser()
-        {
-            if (_serviceProvider == null)
-            {
-                return null;
-            }
-            var contextAccessor = _serviceProvider.GetService(typeof(ContextAccessor)) as ContextAccessor;
-            return contextAccessor?.CurrentUser;
         }
 
         /// <summary>
