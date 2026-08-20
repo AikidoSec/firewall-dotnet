@@ -119,32 +119,6 @@ namespace Aikido.Zen.Test.Helpers
         }
 
         [Test]
-        public void AikidoRealtimeUrl_ShouldReturnExpectedValue_WhenEnvironmentVariableIsSet()
-        {
-            // Arrange
-            Environment.SetEnvironmentVariable("AIKIDO_REALTIME_ENDPOINT", "https://custom-realtime.aikido.dev");
-
-            // Act
-            var url = EnvironmentHelper.AikidoRealtimeUrl;
-
-            // Assert
-            Assert.That(url, Is.EqualTo("https://custom-realtime.aikido.dev"));
-        }
-
-        [Test]
-        public void AikidoRealtimeUrl_ShouldReturnDefaultValue_WhenEnvironmentVariableIsNotSet()
-        {
-            // Arrange
-            Environment.SetEnvironmentVariable("AIKIDO_REALTIME_ENDPOINT", null);
-
-            // Act
-            var url = EnvironmentHelper.AikidoRealtimeUrl;
-
-            // Assert
-            Assert.That(url, Is.EqualTo("https://runtime.aikido.dev"));
-        }
-
-        [Test]
         public void BlockInvalidSql_ShouldReturnFalse_WhenEnvironmentVariableIsNotSet()
         {
             // Arrange

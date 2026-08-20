@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Aikido.Zen.Core;
+using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.DotNetCore;
 using Aikido.Zen.Server.Mock;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -29,7 +30,6 @@ public class DataRegionEndpointEnd2EndTests
     {
         CaptureAndSetEnvironment("AIKIDO_TOKEN", RegionToken);
         CaptureAndSetEnvironment("AIKIDO_ENDPOINT", null);
-        CaptureAndSetEnvironment("AIKIDO_REALTIME_ENDPOINT", "http://localhost:3000");
         CaptureAndSetEnvironment("AIKIDO_BLOCK", "false");
         CaptureAndSetEnvironment("AIKIDO_DISABLE", null);
 

@@ -28,11 +28,6 @@ namespace Aikido.Zen.Core.Helpers
         public static string AikidoUrl => Environment.GetEnvironmentVariable("AIKIDO_ENDPOINT") ?? GetAikidoUrlFromToken(Token);
 
         /// <summary>
-        /// Gets the Aikido real-time URL from the environment variables or defaults to a predefined URL.
-        /// </summary>
-        public static string AikidoRealtimeUrl => Environment.GetEnvironmentVariable("AIKIDO_REALTIME_ENDPOINT") ?? "https://runtime.aikido.dev";
-
-        /// <summary>
         /// Determines if the system is in debugging mode by checking the environment variable.
         /// </summary>
         public static bool IsDebugging => GetBooleanValue("AIKIDO_DEBUG");
@@ -139,10 +134,6 @@ namespace Aikido.Zen.Core.Helpers
             if (string.IsNullOrEmpty(AikidoUrl))
             {
                 LogHelper.InfoLog(Agent.Logger, "Aikido URL not set, Zen will not report any events and receive no configuration updates.");
-            }
-            if (string.IsNullOrEmpty(AikidoRealtimeUrl))
-            {
-                LogHelper.InfoLog(Agent.Logger, "Aikido realtime URL not set");
             }
             if (DryMode)
             {
