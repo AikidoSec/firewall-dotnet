@@ -43,6 +43,7 @@ namespace Aikido.Zen.Core
         internal const int RetryDelayMs = 250;
         private const int EmptyQueueDelayMs = 100;
         private const int ErrorRetryDelayMs = 1000;
+        private const int RealtimeConfigRefreshThrottleSeconds = 9;
 
         private AgentContext _context;
 
@@ -665,7 +666,7 @@ namespace Aikido.Zen.Core
         {
             var now = Stopwatch.GetTimestamp();
             if (_lastRealtimeConfigRefreshStartedAt is long lastStartedAt &&
-                now - lastStartedAt < Stopwatch.Frequency * 9)
+                now - lastStartedAt < Stopwatch.Frequency * RealtimeConfigRefreshThrottleSeconds)
             {
                 return true;
             }

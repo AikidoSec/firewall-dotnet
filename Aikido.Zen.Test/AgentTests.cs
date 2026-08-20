@@ -5,6 +5,7 @@ using Aikido.Zen.Core.Models.Events;
 using Aikido.Zen.Tests.Mocks;
 using Microsoft.Extensions.Logging;
 using Moq;
+using System.Diagnostics;
 using System.Net;
 using System.Reflection;
 
@@ -1305,6 +1306,57 @@ namespace Aikido.Zen.Test
 
             _zenApiMock.Verify(x => x.Runtime.GetConfigLastUpdated(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
             _zenApiMock.Verify(x => x.Runtime.GetConfig(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Test]
+        public void QueueConfigCheck_WhenRealtimeUpdatesArriveTooFast_ThrottlesSubsequentRequest()
+        {
+            // Arrange
+            _agent.Context.Config.ConfigLastUpdated = 100;
+            var queueConfigCheck = typeof(Agent).GetMethod("QueueConfigCheck", BindingFlags.NonPublic | BindingFlags.Instance);
+            var configCheckRequestedField = typeof(Agent).GetField("_configCheckRequested", BindingFlags.NonPublic | BindingFlags.Instance);
+
+            // Act - first realtime update newer than the current config is accepted
+            queueConfigCheck.Invoke(_agent, new object[] { 200L });
+            var requestedAfterFirstUpdate = (int)configCheckRequestedField.GetValue(_agent);
+
+            // simulate the recurring task loop consuming the request flag
+            configCheckRequestedField.SetValue(_agent, 0);
+
+            // a second update arriving immediately after should be throttled
+            queueConfigCheck.Invoke(_agent, new object[] { 300L });
+            var requestedAfterSecondUpdate = (int)configCheckRequestedField.GetValue(_agent);
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(requestedAfterFirstUpdate, Is.EqualTo(1));
+                Assert.That(requestedAfterSecondUpdate, Is.EqualTo(0));
+            });
+        }
+
+        [Test]
+        public void QueueConfigCheck_AfterThrottleWindowElapses_RequestsConfigCheckAgain()
+        {
+            // Arrange
+            _agent.Context.Config.ConfigLastUpdated = 100;
+            var queueConfigCheck = typeof(Agent).GetMethod("QueueConfigCheck", BindingFlags.NonPublic | BindingFlags.Instance);
+            var configCheckRequestedField = typeof(Agent).GetField("_configCheckRequested", BindingFlags.NonPublic | BindingFlags.Instance);
+            var lastRefreshField = typeof(Agent).GetField("_lastRealtimeConfigRefreshStartedAt", BindingFlags.NonPublic | BindingFlags.Instance);
+            var throttleSeconds = (int)typeof(Agent).GetField("RealtimeConfigRefreshThrottleSeconds", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null);
+
+            queueConfigCheck.Invoke(_agent, new object[] { 200L });
+            configCheckRequestedField.SetValue(_agent, 0);
+
+            // simulate that the throttle window has already elapsed
+            var staleTimestamp = Stopwatch.GetTimestamp() - Stopwatch.Frequency * (throttleSeconds + 1);
+            lastRefreshField.SetValue(_agent, (long?)staleTimestamp);
+
+            // Act
+            queueConfigCheck.Invoke(_agent, new object[] { 300L });
+
+            // Assert
+            Assert.That(configCheckRequestedField.GetValue(_agent), Is.EqualTo(1));
         }
 
         [Test]
