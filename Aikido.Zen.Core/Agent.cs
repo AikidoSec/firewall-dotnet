@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -29,6 +30,7 @@ namespace Aikido.Zen.Core
         private readonly ConcurrentDictionary<string, ScheduledItem> _scheduledEvents;
         private Task _realtimeConfigTask;
         private int _configCheckRequested;
+        private long? _lastRealtimeConfigRefreshStartedAt;
         internal DateTime LastConfigCheck { get; set; } = DateTime.UtcNow;
         public static ILogger Logger = new DefaultLogger();
 
@@ -643,12 +645,33 @@ namespace Aikido.Zen.Core
         {
             LogHelper.DebugLog(Logger, "Realtime config update received");
 
-            if (configUpdatedAt > _context.Config.ConfigLastUpdated)
+            if (configUpdatedAt <= _context.Config.ConfigLastUpdated)
             {
-                Interlocked.Exchange(ref _configCheckRequested, 1);
+                return Task.CompletedTask;
             }
 
+            if (ConfigUpdateArrivedTooFast())
+            {
+                LogHelper.DebugLog(Logger, "Ignoring realtime config update during refresh throttle");
+                return Task.CompletedTask;
+            }
+
+            Interlocked.Exchange(ref _configCheckRequested, 1);
+
             return Task.CompletedTask;
+        }
+
+        private bool ConfigUpdateArrivedTooFast()
+        {
+            var now = Stopwatch.GetTimestamp();
+            if (_lastRealtimeConfigRefreshStartedAt is long lastStartedAt &&
+                now - lastStartedAt < Stopwatch.Frequency * 9)
+            {
+                return true;
+            }
+
+            _lastRealtimeConfigRefreshStartedAt = now;
+            return false;
         }
 
         private void StartRealtimeConfigUpdates()
