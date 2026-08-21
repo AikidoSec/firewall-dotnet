@@ -1292,7 +1292,7 @@ namespace Aikido.Zen.Test
             _zenApiMock = ZenApiMock.CreateMock(
                 runtime: runtimeApiClientMock.Object);
             _agent = new Agent(_zenApiMock.Object);
-            _agent.LastConfigCheck = DateTime.UtcNow.AddMinutes(-2);
+            Interlocked.Exchange(ref _agent._nextPeriodicConfigRefreshAt, 0);
 
             // Act
             await Task.Delay(1000);
@@ -1305,6 +1305,55 @@ namespace Aikido.Zen.Test
 
             _zenApiMock.Verify(x => x.Runtime.GetConfigLastUpdated(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
             _zenApiMock.Verify(x => x.Runtime.GetConfig(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Test]
+        public async Task QueueConfigCheck_WhenUpdateArrivesDuringThrottle_DiscardsIt()
+        {
+            // Arrange
+            var configRefreshRequested = new TaskCompletionSource<bool>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+            var runtimeApiClientMock = new Mock<IRuntimeAPIClient>();
+            runtimeApiClientMock
+                .Setup(x => x.GetConfigLastUpdated(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .Callback(() => configRefreshRequested.TrySetResult(true))
+                .ReturnsAsync(new ConfigLastUpdatedAPIResponse
+                {
+                    Success = false,
+                    Error = "temporary_error"
+                });
+
+            _agent.Dispose();
+            _zenApiMock = ZenApiMock.CreateMock(runtime: runtimeApiClientMock.Object);
+            _agent = new Agent(_zenApiMock.Object);
+            _agent.Context.Config.ConfigLastUpdated = 100;
+            Interlocked.Exchange(ref _agent._nextRealtimeConfigRefreshAllowedAt, long.MaxValue);
+
+            // Act - an update received during the throttle is ignored
+            await _agent.QueueConfigCheck(200);
+            await Task.Delay(300);
+
+            runtimeApiClientMock.Verify(
+                x => x.GetConfigLastUpdated(It.IsAny<string>(), It.IsAny<CancellationToken>()),
+                Times.Never);
+
+            // ending the throttle does not schedule a delayed refresh
+            Interlocked.Exchange(ref _agent._nextRealtimeConfigRefreshAllowedAt, 0);
+            await Task.Delay(300);
+
+            runtimeApiClientMock.Verify(
+                x => x.GetConfigLastUpdated(It.IsAny<string>(), It.IsAny<CancellationToken>()),
+                Times.Never);
+
+            // a new update received after the throttle still starts a refresh
+            await _agent.QueueConfigCheck(300);
+            var completedTask = await Task.WhenAny(configRefreshRequested.Task, Task.Delay(2000));
+
+            // Assert
+            Assert.That(completedTask, Is.SameAs(configRefreshRequested.Task));
+            runtimeApiClientMock.Verify(
+                x => x.GetConfigLastUpdated(It.IsAny<string>(), It.IsAny<CancellationToken>()),
+                Times.Once);
         }
 
         [Test]
