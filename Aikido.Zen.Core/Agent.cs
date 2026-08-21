@@ -494,15 +494,18 @@ namespace Aikido.Zen.Core
             }
         }
 
-        // A config refresh is due when the realtime throttle allows a pending update,
+        // A config refresh is due when a realtime update is eligible under the throttle,
         // or when the periodic refresh interval has elapsed.
         private bool IsConfigRefreshDue()
         {
             var now = Stopwatch.GetTimestamp();
 
-            var realtimeRefreshDue =
-                now >= _nextRealtimeConfigRefreshAllowedAt &&
-                Interlocked.Exchange(ref _configCheckRequested, 0) == 1;
+            // Consume the request before checking the throttle to discard rather than defer it.
+            var realtimeRefreshRequested = Interlocked.Exchange(ref _configCheckRequested, 0) == 1;
+
+            var realtimeRefreshDue = realtimeRefreshRequested &&
+                                     now >= _nextRealtimeConfigRefreshAllowedAt;
+
             var periodicRefreshDue = now >= _nextPeriodicConfigRefreshAt;
 
             if (realtimeRefreshDue || periodicRefreshDue)

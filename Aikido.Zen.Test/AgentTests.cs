@@ -1308,7 +1308,7 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public async Task QueueConfigCheck_WhenUpdatesArriveDuringThrottle_RetainsOneTrailingRefresh()
+        public async Task QueueConfigCheck_WhenUpdateArrivesDuringThrottle_DiscardsIt()
         {
             // Arrange
             var configRefreshRequested = new TaskCompletionSource<bool>(
@@ -1329,22 +1329,28 @@ namespace Aikido.Zen.Test
             _agent.Context.Config.ConfigLastUpdated = 100;
             Interlocked.Exchange(ref _agent._nextRealtimeConfigRefreshAllowedAt, long.MaxValue);
 
-            // Act - updates are retained and coalesced while throttled
+            // Act - an update received during the throttle is ignored
             await _agent.QueueConfigCheck(200);
-            await _agent.QueueConfigCheck(300);
             await Task.Delay(300);
 
             runtimeApiClientMock.Verify(
                 x => x.GetConfigLastUpdated(It.IsAny<string>(), It.IsAny<CancellationToken>()),
                 Times.Never);
 
-            // allow the retained refresh to start
+            // ending the throttle does not schedule a delayed refresh
             Interlocked.Exchange(ref _agent._nextRealtimeConfigRefreshAllowedAt, 0);
+            await Task.Delay(300);
+
+            runtimeApiClientMock.Verify(
+                x => x.GetConfigLastUpdated(It.IsAny<string>(), It.IsAny<CancellationToken>()),
+                Times.Never);
+
+            // a new update received after the throttle still starts a refresh
+            await _agent.QueueConfigCheck(300);
             var completedTask = await Task.WhenAny(configRefreshRequested.Task, Task.Delay(2000));
 
-            // Assert - exactly one refresh runs and no additional refresh follows without a new event
+            // Assert
             Assert.That(completedTask, Is.SameAs(configRefreshRequested.Task));
-            await Task.Delay(300);
             runtimeApiClientMock.Verify(
                 x => x.GetConfigLastUpdated(It.IsAny<string>(), It.IsAny<CancellationToken>()),
                 Times.Once);
