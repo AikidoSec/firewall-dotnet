@@ -30,8 +30,8 @@ namespace Aikido.Zen.Core
         private readonly ConcurrentDictionary<string, ScheduledItem> _scheduledEvents;
         private Task _realtimeConfigTask;
         private int _configCheckRequested;
-        private long? _lastRealtimeConfigRefreshStartedAt;
-        internal DateTime LastConfigCheck { get; set; } = DateTime.UtcNow;
+        internal long _nextRealtimeConfigRefreshAllowedAt;
+        internal long _nextPeriodicConfigRefreshAt;
         public static ILogger Logger = new DefaultLogger();
 
         private readonly ReportingStatus _reportingStatus = new ReportingStatus();
@@ -44,6 +44,7 @@ namespace Aikido.Zen.Core
         private const int EmptyQueueDelayMs = 100;
         private const int ErrorRetryDelayMs = 1000;
         private const int RealtimeConfigRefreshThrottleSeconds = 9;
+        private const int PeriodicConfigRefreshIntervalSeconds = 60;
 
         private AgentContext _context;
 
@@ -102,9 +103,11 @@ namespace Aikido.Zen.Core
             _eventQueue = new ConcurrentQueue<QueuedItem>();
             _scheduledEvents = new ConcurrentDictionary<string, ScheduledItem>();
             _cancellationSource = new CancellationTokenSource();
-            _backgroundTask = Task.Run(ProcessRecurringTasksAsync);
             _context = new AgentContext();
             _attackWaveDetector = new AttackWaveDetector();
+            _nextPeriodicConfigRefreshAt =
+                Stopwatch.GetTimestamp() + Stopwatch.Frequency * PeriodicConfigRefreshIntervalSeconds;
+            _backgroundTask = Task.Run(ProcessRecurringTasksAsync);
         }
 
         /// <summary>
@@ -456,11 +459,8 @@ namespace Aikido.Zen.Core
             {
                 try
                 {
-                    // check for config updates when requested or every minute
-                    var configCheckRequested = Interlocked.Exchange(ref _configCheckRequested, 0) == 1;
-                    if (configCheckRequested || LastConfigCheck + TimeSpan.FromMinutes(1) < DateTime.UtcNow)
+                    if (IsConfigRefreshDue())
                     {
-                        LastConfigCheck = DateTime.UtcNow;
                         if (ConfigChanged(out var response))
                         {
                             UpdateConfig(response);
@@ -492,6 +492,27 @@ namespace Aikido.Zen.Core
                     await HandleUnexpectedError();
                 }
             }
+        }
+
+        // A config refresh is due when the realtime throttle allows a pending update,
+        // or when the periodic refresh interval has elapsed.
+        private bool IsConfigRefreshDue()
+        {
+            var now = Stopwatch.GetTimestamp();
+
+            var realtimeRefreshDue =
+                now >= _nextRealtimeConfigRefreshAllowedAt &&
+                Interlocked.Exchange(ref _configCheckRequested, 0) == 1;
+            var periodicRefreshDue = now >= _nextPeriodicConfigRefreshAt;
+
+            if (realtimeRefreshDue || periodicRefreshDue)
+            {
+                _nextRealtimeConfigRefreshAllowedAt = now + Stopwatch.Frequency * RealtimeConfigRefreshThrottleSeconds;
+                _nextPeriodicConfigRefreshAt = now + Stopwatch.Frequency * PeriodicConfigRefreshIntervalSeconds;
+                return true;
+            }
+
+            return false;
         }
 
         private async Task ProcessScheduledEvents()
@@ -642,7 +663,7 @@ namespace Aikido.Zen.Core
             return latestConfig.Success;
         }
 
-        private Task QueueConfigCheck(long configUpdatedAt)
+        internal Task QueueConfigCheck(long configUpdatedAt)
         {
             LogHelper.DebugLog(Logger, "Realtime config update received");
 
@@ -651,28 +672,9 @@ namespace Aikido.Zen.Core
                 return Task.CompletedTask;
             }
 
-            if (ConfigUpdateArrivedTooFast())
-            {
-                LogHelper.DebugLog(Logger, "Ignoring realtime config update during refresh throttle");
-                return Task.CompletedTask;
-            }
-
             Interlocked.Exchange(ref _configCheckRequested, 1);
 
             return Task.CompletedTask;
-        }
-
-        private bool ConfigUpdateArrivedTooFast()
-        {
-            var now = Stopwatch.GetTimestamp();
-            if (_lastRealtimeConfigRefreshStartedAt is long lastStartedAt &&
-                now - lastStartedAt < Stopwatch.Frequency * RealtimeConfigRefreshThrottleSeconds)
-            {
-                return true;
-            }
-
-            _lastRealtimeConfigRefreshStartedAt = now;
-            return false;
         }
 
         private void StartRealtimeConfigUpdates()
