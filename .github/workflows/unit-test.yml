@@ -68,7 +68,7 @@ jobs:
               continue-on-error: true
               with:
                   token: ${{ secrets.CODECOV_TOKEN }}
-                  files: ./coverage/coverage.xml
+                  files: ./coverage/lcov.info
                   fail_ci_if_error: true
                   slug: AikidoSec/firewall-dotnet
 
