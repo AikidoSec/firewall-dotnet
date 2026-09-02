@@ -208,8 +208,8 @@ Task("Test")
             {
                 testArguments = testArguments
                     .Append("/p:CollectCoverage=true")
-                    .Append("/p:CoverletOutputFormat=opencover")
-                    .Append($"/p:CoverletOutput={coverageDir.FullPath}/coverage.xml")
+                    .Append("/p:CoverletOutputFormat=lcov")
+                    .Append($"/p:CoverletOutput={coverageDir.FullPath}/lcov.info")
                     .Append("/p:Include=[Aikido.Zen.*]*")
                     .Append("/p:Exclude=[Aikido.Zen.Test]*");
             }
@@ -271,7 +271,7 @@ Task("Test")
         }
         Information($"Test task completed successfully. Coverage report at: {coverageDir.FullPath}");
 
-        if (!FileExists($"{coverageDir.FullPath}/coverage.xml"))
+        if (!FileExists($"{coverageDir.FullPath}/lcov.info"))
         {
             Warning("Coverage file was not generated!");
         }

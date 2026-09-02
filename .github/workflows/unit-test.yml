@@ -5,6 +5,7 @@ on:
     push: {}
 permissions:
     contents: read
+    id-token: write
 
 jobs:
     build-and-test:
@@ -68,6 +69,12 @@ jobs:
               continue-on-error: true
               with:
                   token: ${{ secrets.CODECOV_TOKEN }}
-                  files: ./coverage/coverage.xml
+                  files: ./coverage/lcov.info
                   fail_ci_if_error: true
                   slug: AikidoSec/firewall-dotnet
+
+            - name: Upload coverage to Aikido
+              if: ${{ matrix.dotnet-version == '10.0.x' }} # Aikido.Zen.Tests targets net10 only
+              uses: AikidoSec/code-coverage-github-action@c649d671735d625ec9d39bab5efae5921160ea63 #v0.1.0
+              with:
+                  lcov-file-paths: coverage/lcov.info
