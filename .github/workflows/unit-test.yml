@@ -5,6 +5,7 @@ on:
     push: {}
 permissions:
     contents: read
+    id-token: write
 
 jobs:
     build-and-test:
