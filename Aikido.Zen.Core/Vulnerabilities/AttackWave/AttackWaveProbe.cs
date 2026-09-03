@@ -65,7 +65,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
             "docker-compose.override.yml","docker-compose.dev.yml","Cargo.lock","secrets.yml","secrets.yaml","docker-compose.staging.yml",
             "docker-compose.production.yml","yaws-key.pem","mysql_config.ini","firewall.log","log4j.properties",
             "serviceAccountCredentials.json","haproxy.cfg","service-account-credentials.json","vpn.log","system.log","webuser-auth.xml",
-            "fastcgi.conf","smb.conf","iis.log","pom.xml","openapi.json","vim_settings.xml","winscp.ini","ws_ftp.ini",
+            "fastcgi.conf","smb.conf","iis.log","pom.xml","vim_settings.xml","winscp.ini","ws_ftp.ini",
         }, StringComparer.OrdinalIgnoreCase);
 
         private static readonly HashSet<string> Directories = new HashSet<string>(
