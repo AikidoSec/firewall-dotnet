@@ -9,7 +9,10 @@
     <description>Aikido Security Zen .NET Core Firewall</description>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <license type="file">LICENSE</license>
+    <projectUrl>https://github.com/AikidoSec/firewall-dotnet</projectUrl>
+    <readme>README.md</readme>
     <copyright>Copyright 2026 Aikido</copyright>
+    <repository type="git" url="https://github.com/AikidoSec/firewall-dotnet.git" />
     <frameworkReferences>
       <group targetFramework="net10.0">
         <frameworkReference name="Microsoft.AspNetCore.App" />
@@ -34,6 +37,7 @@
   </metadata>
   <files>
     <file src="../LICENSE" target="LICENSE" />
+    <file src="../README.md" target="README.md" />
     <file src="Aikido.Zen.DotNetCore.targets" target="Build\" />
     <file src="FodyWeavers.xml" target="Build\" />
     <file src="bin\Release\net10.0\Aikido.Zen.Core.dll" target="lib\net10.0" />

@@ -9,14 +9,18 @@
     <description>Aikido Security Zen .NET Framework Firewall</description>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <license type="file">LICENSE</license>
+    <projectUrl>https://github.com/AikidoSec/firewall-dotnet</projectUrl>
+    <readme>README.md</readme>
     <copyright>Copyright 2026 Aikido</copyright>
     <tags>firewall .NET</tags>
+    <repository type="git" url="https://github.com/AikidoSec/firewall-dotnet.git" />
     <dependencies>
         <dependency id="Lib.Harmony" version="[2.4.2,)" />
     </dependencies>
   </metadata>
   <files>
     <file src="../LICENSE" target="LICENSE" />
+    <file src="../README.md" target="README.md" />
     <file src="Aikido.Zen.DotNetFramework.targets" target="Build\" />
     <file src="FodyWeavers.xml" target="Build\" />
     <file src="bin\Release\net48\libraries\libzen_internals_x86_64-pc-windows-gnu.dll" target="Build\libraries\" />
