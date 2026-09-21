@@ -100,6 +100,37 @@ namespace Aikido.Zen.Tests.DotNetCore
         }
 
         [Test]
+        public void Track_DoesNotThrowWhenTheConfiguredLoggerThrows()
+        {
+            var originalDebug = Environment.GetEnvironmentVariable("AIKIDO_DEBUG");
+            var originalToken = Environment.GetEnvironmentVariable("AIKIDO_TOKEN");
+            var throwingLogger = new Mock<ILogger>();
+            throwingLogger
+                .Setup(logger => logger.Log(
+                    It.IsAny<LogLevel>(),
+                    It.IsAny<EventId>(),
+                    It.IsAny<It.IsAnyType>(),
+                    It.IsAny<Exception?>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()))
+                .Throws(new InvalidOperationException("Logger failed"));
+
+            try
+            {
+                Environment.SetEnvironmentVariable("AIKIDO_DEBUG", "true");
+                Environment.SetEnvironmentVariable("AIKIDO_TOKEN", "test-token");
+                Agent.ConfigureLogger(throwingLogger.Object);
+
+                Assert.DoesNotThrow(() => ZenApi.Track(string.Empty));
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("AIKIDO_DEBUG", originalDebug);
+                Environment.SetEnvironmentVariable("AIKIDO_TOKEN", originalToken);
+                Agent.ConfigureLogger(_loggerMock.Object);
+            }
+        }
+
+        [Test]
         public void SetRateLimitGroup_SetsGroupOnHttpContext()
         {
             var context = new DefaultHttpContext();
