@@ -5,10 +5,12 @@ on:
     push: {}
 permissions:
     contents: read
-    id-token: write
 
 jobs:
     build-and-test:
+        permissions:
+            contents: read
+            id-token: write # Aikido code coverage authenticates through GitHub OIDC.
         runs-on: windows-2025-vs2026 # needs to be windows because we support .NET framework
         timeout-minutes: 30
         strategy:
@@ -29,11 +31,14 @@ jobs:
         env:
             DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
             DOTNET_CLI_TELEMETRY_OPTOUT: true
+            DOTNET_VERSION: ${{ matrix.dotnet-version }}
 
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+              with:
+                  persist-credentials: false
 
-            - uses: actions/cache@v3
+            - uses: actions/cache@6f8efc29b200d32929f49075959781ed54ec270c # v3.5.0
               with:
                   path: |
                       ~/.nuget/packages
@@ -44,12 +49,12 @@ jobs:
 
             - name: Setup .NET
               if: ${{ matrix.dotnet-version == '6.0.x' || matrix.dotnet-version == '7.0.x' }} # .NET Framework and .NET Core 8/9/10 are built-in
-              uses: actions/setup-dotnet@v5.1.0
+              uses: actions/setup-dotnet@baa11fbfe1d6520db94683bd5c7a3818018e4309 # v5.1.0
               with:
                   dotnet-version: ${{ matrix.dotnet-version }}
 
             - name: Add msbuild to PATH
-              uses: microsoft/setup-msbuild@v2
+              uses: microsoft/setup-msbuild@6fb02220983dee41ce7ae257b6f4d8f9bf5ed4ce # v2.0.0
               with:
                   vs-version: "[17.2,19.0)"
 
@@ -61,7 +66,7 @@ jobs:
             - name: Build and Test
               run: |
                   dotnet tool install --global Cake.Tool
-                  dotnet cake --target=Test --configuration=Release --framework=${{ matrix.dotnet-version }}
+                  dotnet cake --target=Test --configuration=Release --framework="$env:DOTNET_VERSION"
 
             - name: Upload coverage to Codecov
               if: ${{ matrix.dotnet-version == '10.0.x' }} # Aikido.Zen.Tests targets net10 only
@@ -74,7 +79,7 @@ jobs:
                   slug: AikidoSec/firewall-dotnet
 
             - name: Upload coverage to Aikido
-              if: ${{ matrix.dotnet-version == '10.0.x' }} # Aikido.Zen.Tests targets net10 only
-              uses: AikidoSec/code-coverage-github-action@18138c9866f45cb159779a167d6e1330c967fe28 #v0.1.1
+              if: ${{ matrix.dotnet-version == '10.0.x' && startsWith(github.ref, 'refs/heads/') }} # Aikido.Zen.Tests targets net10 only
+              uses: AikidoSec/code-coverage-github-action@0ff927b71e21fab272b1ea628629dcb6a53cbd23 # v1.1.0
               with:
                   lcov-file-paths: coverage/lcov.info
