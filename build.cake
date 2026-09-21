@@ -154,7 +154,7 @@ Task("Test")
     .Does(() =>
     {
         var coverageDir = MakeAbsolute(Directory("./coverage"));
-        EnsureDirectoryExists(coverageDir);
+        CleanDirectory(coverageDir);
 
         // Get test projects from Aikido.Zen.Test directory
         var testProjects = GetFiles("./**/Aikido.Zen.Test*.csproj") as IEnumerable<FilePath>;
@@ -207,11 +207,10 @@ Task("Test")
             if (project.FullPath.EndsWith("Aikido.Zen.Tests.csproj"))
             {
                 testArguments = testArguments
-                    .Append("/p:CollectCoverage=true")
-                    .Append("/p:CoverletOutputFormat=lcov")
-                    .Append($"/p:CoverletOutput={coverageDir.FullPath}/lcov.info")
-                    .Append("/p:Include=[Aikido.Zen.*]*")
-                    .Append("/p:Exclude=[Aikido.Zen.Test]*");
+                    .Append("--collect")
+                    .AppendQuoted("XPlat Code Coverage;Format=lcov;Include=[Aikido.Zen.*]*;Exclude=[Aikido.Zen.Test]*")
+                    .Append("--results-directory")
+                    .AppendQuoted(coverageDir.FullPath);
             }
 
             try
@@ -269,12 +268,9 @@ Task("Test")
                 throw;
             }
         }
+        var coverageReport = GetFiles($"{coverageDir.FullPath}/*/coverage.info").Single();
+        CopyFile(coverageReport, $"{coverageDir.FullPath}/lcov.info");
         Information($"Test task completed successfully. Coverage report at: {coverageDir.FullPath}");
-
-        if (!FileExists($"{coverageDir.FullPath}/lcov.info"))
-        {
-            Warning("Coverage file was not generated!");
-        }
     });
 
 /// <summary>
