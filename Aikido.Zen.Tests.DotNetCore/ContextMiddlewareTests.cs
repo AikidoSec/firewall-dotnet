@@ -68,6 +68,51 @@ namespace Aikido.Zen.Tests.DotNetCore
                 name);
         }
 
+        [TestCase(true, 200)]
+        [TestCase(true, 302)]
+        [TestCase(false, 200)]
+        public async Task InvokeAsync_EndpointProtectionControlsRequestReporting(bool forceProtectionOff, int statusCode)
+        {
+            var originalDisable = Environment.GetEnvironmentVariable("AIKIDO_DISABLE");
+            try
+            {
+                Environment.SetEnvironmentVariable("AIKIDO_DISABLE", "false");
+                Agent.Instance.Context.Config.Clear();
+                Agent.Instance.ClearContext();
+                Agent.Instance.Context.Config.UpdateRatelimitedRoutes(new[]
+                {
+                    new EndpointConfig { Route = "/api/test", Method = "GET", ForceProtectionOff = forceProtectionOff }
+                });
+                var context = new DefaultHttpContext();
+                context.Request.Scheme = "http";
+                context.Request.Host = new HostString("test.local");
+                context.Request.Path = "/api/test";
+                context.Request.Method = "GET";
+                var nextCalled = false;
+
+                await _contextMiddleware.InvokeAsync(context, httpContext =>
+                {
+                    nextCalled = true;
+                    httpContext.Response.StatusCode = statusCode;
+                    return Task.CompletedTask;
+                });
+
+                var heartbeat = Aikido.Zen.Core.Models.Events.Heartbeat.Create(Agent.Instance.Context);
+                Assert.Multiple(() =>
+                {
+                    Assert.That(nextCalled, Is.True);
+                    Assert.That(heartbeat.Stats.Requests.Total, Is.EqualTo(forceProtectionOff ? 0 : 1));
+                    Assert.That(heartbeat.Routes.Count(), Is.EqualTo(forceProtectionOff ? 0 : 1));
+                });
+            }
+            finally
+            {
+                Agent.Instance.ClearContext();
+                Agent.Instance.Context.Config.Clear();
+                Environment.SetEnvironmentVariable("AIKIDO_DISABLE", originalDisable);
+            }
+        }
+
         [Test]
         public async Task InvokeAsync_BypassedIp_CallsNextWithBypassedFlagWithoutCapturingStats()
         {

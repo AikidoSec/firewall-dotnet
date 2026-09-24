@@ -26,6 +26,56 @@ namespace Aikido.Zen.Tests.DotNetFramework
             _contextModule = new ContextModule();
         }
 
+        [TestCase(true, 200)]
+        [TestCase(true, 302)]
+        [TestCase(false, 200)]
+        public void EndRequest_EndpointProtectionControlsRequestReporting(bool forceProtectionOff, int statusCode)
+        {
+            var originalHttpContext = HttpContext.Current;
+            try
+            {
+                Agent.Instance.Context.Config.Clear();
+                Agent.Instance.ClearContext();
+                Agent.Instance.Context.Config.UpdateRatelimitedRoutes(new[]
+                {
+                    new EndpointConfig { Route = "/api/test", Method = "GET", ForceProtectionOff = forceProtectionOff }
+                });
+                var httpContext = new HttpContext(
+                    new HttpRequest(string.Empty, "http://test.local/api/test", string.Empty),
+                    new HttpResponse(new StringWriter()));
+                httpContext.Response.StatusCode = statusCode;
+                HttpContext.Current = httpContext;
+                Aikido.Zen.DotNetFramework.Zen.SetCurrentContext(new Context
+                {
+                    Route = "/api/test",
+                    Path = "/api/test",
+                    Method = "GET",
+                    Url = "http://test.local/api/test"
+                });
+                var application = new HttpApplication();
+                typeof(HttpApplication).GetField("_context", BindingFlags.NonPublic | BindingFlags.Instance)
+                    .SetValue(application, httpContext);
+
+                typeof(ContextModule).GetMethod("Context_EndRequest", BindingFlags.NonPublic | BindingFlags.Instance)
+                    .Invoke(_contextModule, new object[] { application, EventArgs.Empty });
+
+                var heartbeat = Aikido.Zen.Core.Models.Events.Heartbeat.Create(Agent.Instance.Context);
+                Assert.Multiple(() =>
+                {
+                    Assert.That(heartbeat.Stats.Requests.Total, Is.EqualTo(forceProtectionOff ? 0 : 1));
+                    Assert.That(heartbeat.Routes.Count(), Is.EqualTo(forceProtectionOff ? 0 : 1));
+                    Assert.That(Aikido.Zen.DotNetFramework.Zen.GetContext(), Is.Null);
+                });
+            }
+            finally
+            {
+                Aikido.Zen.DotNetFramework.Zen.ClearCurrentContext();
+                HttpContext.Current = originalHttpContext;
+                Agent.Instance.ClearContext();
+                Agent.Instance.Context.Config.Clear();
+            }
+        }
+
         [Test]
         public void GetParametrizedRoute_ReturnsCorrectRoutePattern_ForStaticFiles()
         {

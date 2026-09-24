@@ -6,6 +6,45 @@ namespace Aikido.Zen.Test.Helpers
 {
     internal class RouteHelperTests
     {
+        [TestCase("/api/resource/{id}", "GET", true, false)]
+        [TestCase("/api/resource/{id}", "GET", false, true)]
+        [TestCase("/api/*", "GET", true, false)]
+        [TestCase("/api/resource/{id}", "*", true, false)]
+        [TestCase("/api/resource/123", "GET", true, false)]
+        [TestCase("/api/other", "GET", true, true)]
+        [TestCase("/api/resource/{id}", "POST", true, true)]
+        public void ShouldAddRoute_RespectsEndpointProtection(
+            string endpointRoute, string endpointMethod, bool forceProtectionOff, bool expected)
+        {
+            var config = Agent.Instance.Context.Config;
+            var originalEndpoints = config.Endpoints;
+            try
+            {
+                config.UpdateRatelimitedRoutes(new[]
+                {
+                    new EndpointConfig
+                    {
+                        Route = endpointRoute,
+                        Method = endpointMethod,
+                        ForceProtectionOff = forceProtectionOff
+                    }
+                });
+                var context = new Context
+                {
+                    Route = "/api/resource/{id}",
+                    Path = "/api/resource/123",
+                    Method = "GET",
+                    Url = "https://example.com/api/resource/123"
+                };
+
+                Assert.That(RouteHelper.ShouldAddRoute(context, 200), Is.EqualTo(expected));
+            }
+            finally
+            {
+                config.UpdateRatelimitedRoutes(originalEndpoints);
+            }
+        }
+
         [TestCase("{parameter}", true)]
         [TestCase("{parameter", false)]
         [TestCase("parameter}", false)]
