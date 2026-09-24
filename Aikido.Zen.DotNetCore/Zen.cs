@@ -100,6 +100,29 @@ namespace Aikido.Zen.DotNetCore
             context.Items["Aikido.Zen.RateLimitGroup"] = id;
         }
 
+        public static void Track(string eventName)
+        {
+            if (EnvironmentHelper.IsDisabled || string.IsNullOrEmpty(EnvironmentHelper.Token))
+            {
+                return;
+            }
+
+            try
+            {
+                Agent.Instance.SendCustomEvent(eventName, GetContext());
+            }
+            catch (Exception ex)
+            {
+                try
+                {
+                    LogHelper.DebugLog(Agent.Logger, ex, "Failed to track custom event");
+                }
+                catch
+                {
+                }
+            }
+        }
+
         public static Context GetContext()
         {
             if (_serviceProvider != null)

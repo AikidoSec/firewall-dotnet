@@ -35,6 +35,7 @@ namespace Aikido.Zen.Core
         public static ILogger Logger = new DefaultLogger();
 
         private readonly ReportingStatus _reportingStatus = new ReportingStatus();
+        private int _trackWithoutContextWarningLogged;
 
         // Rate limiting and timing constants for the event processing loop
         private const int RateLimitPerSecond = 10;
@@ -413,6 +414,49 @@ namespace Aikido.Zen.Core
             }
 
             Context.AddAttackDetected(blocked);
+        }
+
+        public virtual void SendCustomEvent(string eventName, Context context)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(EnvironmentHelper.Token))
+                {
+                    return;
+                }
+                if (string.IsNullOrEmpty(eventName))
+                {
+                    LogHelper.InfoLog(Logger, "track(...) expects a non-empty string as event name.");
+                    return;
+                }
+                if (context == null)
+                {
+                    if (Interlocked.Exchange(ref _trackWithoutContextWarningLogged, 1) == 0)
+                    {
+                        LogHelper.WarningLog(
+                            Logger,
+                            "Track(...) was called without a context. The event will not be tracked. Make sure to call Track(...) within an HTTP request.");
+                    }
+                    return;
+                }
+                if (global::Aikido.Zen.Core.Context.IsBypassed(context) ||
+                    _cancellationSource.IsCancellationRequested)
+                {
+                    return;
+                }
+
+                QueueEvent(EnvironmentHelper.Token, CustomEvent.Create(eventName, context));
+            }
+            catch (Exception ex)
+            {
+                try
+                {
+                    LogHelper.DebugLog(Logger, ex, "Failed to track custom event");
+                }
+                catch
+                {
+                }
+            }
         }
 
         /// <summary>

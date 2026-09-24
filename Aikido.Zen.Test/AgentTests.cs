@@ -739,6 +739,77 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public async Task SendCustomEvent_ReportsValidEventAndIgnoresBypassedContext()
+        {
+            var reportedEvent = new TaskCompletionSource<CustomEvent>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var reportingApiMock = new Mock<IReportingAPIClient>();
+            reportingApiMock
+                .Setup(api => api.ReportAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<object>(),
+                    It.IsAny<CancellationToken>()))
+                .Callback<string, object, CancellationToken>((_, evt, _) => reportedEvent.TrySetResult((CustomEvent)evt))
+                .ReturnsAsync(new ReportingAPIResponse { Success = true });
+
+            _agent.Dispose();
+            _zenApiMock = ZenApiMock.CreateMock(reportingApiMock.Object);
+            _agent = new Agent(_zenApiMock.Object);
+            var context = new Context
+            {
+                Method = "POST",
+                RemoteAddress = "192.0.2.1",
+                Source = "aspnetcore",
+                Route = "/login",
+            };
+
+            _agent.SendCustomEvent("ignored.for.bypassed.request", new Context { Bypassed = true });
+            _agent.SendCustomEvent("user.login_failed", context);
+
+            var customEvent = await reportedEvent.Task.WaitAsync(TimeSpan.FromSeconds(2));
+            Assert.Multiple(() =>
+            {
+                Assert.That(customEvent.Name, Is.EqualTo("user.login_failed"));
+                Assert.That(customEvent.Request.IpAddress, Is.EqualTo("192.0.2.1"));
+                Assert.That(customEvent.Request.Route, Is.EqualTo("/login"));
+            });
+        }
+
+        [Test]
+        public async Task SendCustomEvent_DoesNotWaitForDelivery()
+        {
+            var reportingStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var finishReporting = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var reportingApiMock = new Mock<IReportingAPIClient>();
+            reportingApiMock
+                .Setup(api => api.ReportAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<object>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns<string, object, CancellationToken>(async (_, _, _) =>
+                {
+                    reportingStarted.TrySetResult();
+                    await finishReporting.Task;
+                    return new ReportingAPIResponse { Success = true };
+                });
+
+            _agent.Dispose();
+            _zenApiMock = ZenApiMock.CreateMock(reportingApiMock.Object);
+            _agent = new Agent(_zenApiMock.Object);
+            var context = new Context { Method = "POST", RemoteAddress = "192.0.2.1" };
+
+            try
+            {
+                await Task.Run(() => _agent.SendCustomEvent("user.login_failed", context))
+                    .WaitAsync(TimeSpan.FromSeconds(2));
+                await reportingStarted.Task.WaitAsync(TimeSpan.FromSeconds(2));
+            }
+            finally
+            {
+                finishReporting.TrySetResult();
+            }
+        }
+
+        [Test]
         public void ScheduleEvent_WithNullToken_ThrowsArgumentNullException()
         {
             var item = new Agent.ScheduledItem { Token = null };

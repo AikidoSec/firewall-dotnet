@@ -75,6 +75,29 @@ namespace Aikido.Zen.DotNetFramework
             SetRateLimitGroupAction = setRateLimitGroup ?? (_ => string.Empty);
         }
 
+        public static void Track(string eventName)
+        {
+            if (EnvironmentHelper.IsDisabled || string.IsNullOrEmpty(EnvironmentHelper.Token))
+            {
+                return;
+            }
+
+            try
+            {
+                Agent.Instance.SendCustomEvent(eventName, GetContext());
+            }
+            catch (Exception ex)
+            {
+                try
+                {
+                    LogHelper.DebugLog(Agent.Logger, ex, "Failed to track custom event");
+                }
+                catch
+                {
+                }
+            }
+        }
+
         private static HttpApplication GetApplicationInstanceOrThrow()
         {
             var applicationInstance = HttpContext.Current?.ApplicationInstance;
