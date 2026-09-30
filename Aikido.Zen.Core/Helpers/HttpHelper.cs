@@ -313,7 +313,6 @@ namespace Aikido.Zen.Core.Helpers
                 return string.Empty;
             }
 
-            // No whitespace around the '/': the pair is already contiguous.
             if (subTypeStart == typeStart + typeLength + 1)
             {
                 return contentType.Substring(typeStart, typeLength + 1 + subTypeLength);
