@@ -615,5 +615,73 @@
         "contentType": "   ",
         "expectedFlattenedData": {},
         "expectedParsedBody": null
-    }
+    },
+        {
+            "routeParams": {},
+            "queryParams": {},
+            "headers": {},
+            "cookies": {},
+            "body": "{\"file\":\"../appsettings.json\"}",
+            "contentType": "application/json _",
+            "expectedFlattenedData": {
+                "body.file": "../appsettings.json"
+            },
+            "expectedParsedBody": {
+                "file": "../appsettings.json"
+            }
+        },
+        {
+            "routeParams": {},
+            "queryParams": {},
+            "headers": {},
+            "cookies": {},
+            "body": "{\"file\":\"../appsettings.json\"}",
+            "contentType": "application /json _",
+            "expectedFlattenedData": {
+                "body.file": "../appsettings.json"
+            },
+            "expectedParsedBody": {
+                "file": "../appsettings.json"
+            }
+        },
+        {
+            "routeParams": {},
+            "queryParams": {},
+            "headers": {},
+            "cookies": {},
+            "body": "<root><key>value</key></root>",
+            "contentType": "application/xml _",
+            "expectedFlattenedData": {
+                "body.key": "value"
+            },
+            "expectedParsedBody": {
+                "key": "value"
+            }
+        },
+        {
+            "routeParams": {},
+            "queryParams": {},
+            "headers": {},
+            "cookies": {},
+            "body": "plain text body",
+            "contentType": "text/plain _",
+            "expectedFlattenedData": {
+                "body.textplain": "plain text body"
+            },
+            "expectedParsedBody": "plain text body"
+        },
+        {
+            "routeParams": {},
+            "queryParams": {},
+            "headers": {},
+            "cookies": {},
+            "body": "key1=value1",
+            "contentType": "application/x-www-form-urlencoded _",
+            "expectedFlattenedData": {
+                "body.key1": "value1"
+            },
+            "expectedParsedBody": {
+                "key1": "value1"
+            }
+        }
 ]

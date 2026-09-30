@@ -258,29 +258,106 @@ namespace Aikido.Zen.Core.Helpers
             return formData;
         }
 
-        private static string GetMediaType(string contentType)
+        /// <summary>
+        /// Extracts the type/subtype of a Content-Type header. Matches ASP.NET Core's handling so we don't
+        /// skip bodies sent with a header that MediaTypeHeaderValue rejects ("application/json _").
+        /// </summary>
+        internal static string GetMediaType(string contentType)
         {
-            if (string.IsNullOrWhiteSpace(contentType))
+            if (string.IsNullOrEmpty(contentType))
             {
                 return string.Empty;
             }
 
-            if (MediaTypeHeaderValue.TryParse(contentType, out var parsedContentType))
+            var index = 0;
+            var length = contentType.Length;
+
+            while (index < length && IsOptionalWhiteSpace(contentType[index]))
             {
-                var mediaType = parsedContentType.MediaType.Value;
-                if (!string.IsNullOrWhiteSpace(mediaType))
-                {
-                    return mediaType;
-                }
+                index++;
             }
 
-            var separatorIndex = contentType.IndexOf(';');
-            if (separatorIndex >= 0)
+            var typeStart = index;
+            while (index < length && IsTokenChar(contentType[index]))
             {
-                return contentType.Substring(0, separatorIndex).Trim();
+                index++;
+            }
+            var typeLength = index - typeStart;
+
+            while (index < length && IsOptionalWhiteSpace(contentType[index]))
+            {
+                index++;
             }
 
-            return contentType.Trim();
+            if (typeLength == 0 || index >= length || contentType[index] != '/')
+            {
+                return string.Empty;
+            }
+
+            index++;
+
+            while (index < length && IsOptionalWhiteSpace(contentType[index]))
+            {
+                index++;
+            }
+
+            var subTypeStart = index;
+            while (index < length && IsTokenChar(contentType[index]))
+            {
+                index++;
+            }
+            var subTypeLength = index - subTypeStart;
+
+            if (subTypeLength == 0)
+            {
+                return string.Empty;
+            }
+
+            // No whitespace around the '/': the pair is already contiguous.
+            if (subTypeStart == typeStart + typeLength + 1)
+            {
+                return contentType.Substring(typeStart, typeLength + 1 + subTypeLength);
+            }
+
+            return string.Concat(
+                contentType.Substring(typeStart, typeLength),
+                "/",
+                contentType.Substring(subTypeStart, subTypeLength));
+        }
+
+        // RFC 7230 token character. Anything else ends the type or subtype.
+        private static bool IsTokenChar(char c)
+        {
+            if (c >= 'a' && c <= 'z') return true;
+            if (c >= 'A' && c <= 'Z') return true;
+            if (c >= '0' && c <= '9') return true;
+
+            switch (c)
+            {
+                case '!':
+                case '#':
+                case '$':
+                case '%':
+                case '&':
+                case '\'':
+                case '*':
+                case '+':
+                case '-':
+                case '.':
+                case '^':
+                case '_':
+                case '`':
+                case '|':
+                case '~':
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        private static bool IsOptionalWhiteSpace(char c)
+        {
+            return c == ' ' || c == '\t';
         }
 
         private static bool IsJsonMediaType(string mediaType)
