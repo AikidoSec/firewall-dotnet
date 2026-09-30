@@ -325,34 +325,15 @@ namespace Aikido.Zen.Core.Helpers
                 contentType.Substring(subTypeStart, subTypeLength));
         }
 
+        private const string TokenPunctuation = "!#$%&'*+-.^_`|~";
+
         // RFC 7230 token character. Anything else ends the type or subtype.
         private static bool IsTokenChar(char c)
         {
-            if (c >= 'a' && c <= 'z') return true;
-            if (c >= 'A' && c <= 'Z') return true;
-            if (c >= '0' && c <= '9') return true;
-
-            switch (c)
-            {
-                case '!':
-                case '#':
-                case '$':
-                case '%':
-                case '&':
-                case '\'':
-                case '*':
-                case '+':
-                case '-':
-                case '.':
-                case '^':
-                case '_':
-                case '`':
-                case '|':
-                case '~':
-                    return true;
-                default:
-                    return false;
-            }
+            return (c >= 'a' && c <= 'z')
+                || (c >= 'A' && c <= 'Z')
+                || (c >= '0' && c <= '9')
+                || TokenPunctuation.IndexOf(c) >= 0;
         }
 
         private static bool IsOptionalWhiteSpace(char c)
