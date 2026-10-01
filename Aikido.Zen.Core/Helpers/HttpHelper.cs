@@ -270,64 +270,60 @@ namespace Aikido.Zen.Core.Helpers
             }
 
             var index = 0;
-            var length = contentType.Length;
-
-            while (index < length && IsOptionalWhiteSpace(contentType[index]))
-            {
-                index++;
-            }
-
-            var typeStart = index;
-            while (index < length && IsTokenChar(contentType[index]))
-            {
-                index++;
-            }
-            var typeLength = index - typeStart;
-
-            while (index < length && IsOptionalWhiteSpace(contentType[index]))
-            {
-                index++;
-            }
-
-            if (typeLength == 0 || index >= length || contentType[index] != '/')
+            var type = ReadToken(contentType, ref index);
+            if (type.Length == 0 || !TryConsumeSlash(contentType, ref index))
             {
                 return string.Empty;
+            }
+
+            var subType = ReadToken(contentType, ref index);
+            if (subType.Length == 0)
+            {
+                return string.Empty;
+            }
+
+            return type + "/" + subType;
+        }
+
+        // Reads one token, skipping any whitespace before it, and advances past it.
+        private static string ReadToken(string value, ref int index)
+        {
+            while (index < value.Length && IsOptionalWhiteSpace(value[index]))
+            {
+                index++;
+            }
+
+            var start = index;
+            while (index < value.Length && IsTokenChar(value[index]))
+            {
+                index++;
+            }
+
+            return value.Substring(start, index - start);
+        }
+
+        // Consumes the '/' between type and subtype, which may have whitespace before it.
+        private static bool TryConsumeSlash(string value, ref int index)
+        {
+            while (index < value.Length && IsOptionalWhiteSpace(value[index]))
+            {
+                index++;
+            }
+
+            if (index >= value.Length || value[index] != '/')
+            {
+                return false;
             }
 
             index++;
-
-            while (index < length && IsOptionalWhiteSpace(contentType[index]))
-            {
-                index++;
-            }
-
-            var subTypeStart = index;
-            while (index < length && IsTokenChar(contentType[index]))
-            {
-                index++;
-            }
-            var subTypeLength = index - subTypeStart;
-
-            if (subTypeLength == 0)
-            {
-                return string.Empty;
-            }
-
-            // No whitespace around the '/': the pair is already contiguous.
-            if (subTypeStart == typeStart + typeLength + 1)
-            {
-                return contentType.Substring(typeStart, typeLength + 1 + subTypeLength);
-            }
-
-            return string.Concat(
-                contentType.Substring(typeStart, typeLength),
-                "/",
-                contentType.Substring(subTypeStart, subTypeLength));
+            return true;
         }
 
         private const string TokenPunctuation = "!#$%&'*+-.^_`|~";
 
-        // RFC 7230 token character. Anything else ends the type or subtype.
+        // RFC 7230 token character. Anything else ends the type or subtype, which is why this is an allow
+        // list: char.IsLetterOrDigit would accept Unicode letters the RFC excludes, and listing delimiters
+        // instead would treat every non-ASCII character as part of the subtype.
         private static bool IsTokenChar(char c)
         {
             return (c >= 'a' && c <= 'z')
