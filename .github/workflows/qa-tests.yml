@@ -89,21 +89,6 @@ jobs:
           name: nuget-package
           path: zen-demo-dotnet-framework/local-feed
 
-      - name: Start Docker
-        shell: pwsh
-        run: |
-          Start-Service docker -ErrorAction SilentlyContinue
-
-          for ($i = 0; $i -lt 60; $i++) {
-            docker version
-            if ($LASTEXITCODE -eq 0) {
-              exit 0
-            }
-            Start-Sleep -Seconds 2
-          }
-
-          throw 'Docker daemon did not become ready.'
-
       - name: Run Firewall QA Tests
         uses: AikidoSec/firewall-tester-action@3d448c6929e168148cf74c3d998d1dd5950d40ee # v1.1.1
         with:
