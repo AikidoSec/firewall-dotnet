@@ -313,6 +313,25 @@ namespace Aikido.Zen.Test
             });
         }
 
+        [Test]
+        public void Detect_WhenOverlongIdnInputPrecedesSsrfInput_DetectsSsrf()
+        {
+            var overlongIdnHostname = new string('\u00e4', 58);
+            var context = new Context
+            {
+                Url = "https://service.example/read",
+                ParsedUserInput = new SortedDictionary<string, string>
+                {
+                    ["query.0"] = overlongIdnHostname,
+                    ["query.1"] = "http://localhost/admin"
+                }
+            };
+
+            var result = SSRFDetector.Detect(new Uri("http://localhost/admin"), IPAddress.Loopback, context);
+
+            Assert.That(result.AttackKind, Is.EqualTo(AttackKind.Ssrf));
+        }
+
         [TestCase("localhost", "localhost")]
         [TestCase("\u24DBocalhost", "localhost")]
         [TestCase("b\u00fccher.example", "xn--bcher-kva.example")]
