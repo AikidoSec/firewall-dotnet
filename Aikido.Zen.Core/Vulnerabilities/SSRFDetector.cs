@@ -143,6 +143,21 @@ namespace Aikido.Zen.Core.Vulnerabilities
             }
 
             var normalizedHostname = hostname.Trim().TrimEnd('.').TrimStart('[').TrimEnd(']').ToLowerInvariant();
+            var isAscii = true;
+            foreach (var character in normalizedHostname)
+            {
+                if (character > 0x7f)
+                {
+                    isAscii = false;
+                    break;
+                }
+            }
+
+            if (isAscii)
+            {
+                return normalizedHostname;
+            }
+
             try
             {
                 return HostnameIdnMapping.GetAscii(normalizedHostname).ToLowerInvariant();
