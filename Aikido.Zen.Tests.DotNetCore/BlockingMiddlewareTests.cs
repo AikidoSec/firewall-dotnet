@@ -94,8 +94,9 @@ namespace Aikido.Zen.Tests.DotNetCore
             }
         }
 
-        [Test]
-        public async Task InvokeAsync_RateLimitedResponse_SetsRetryAfterInSeconds()
+        [TestCase(false)]
+        [TestCase(true)]
+        public async Task InvokeAsync_RateLimitedResponse_SetsRetryAfterInSeconds(bool forceProtectionOff)
         {
             const string route = "/api/retry-after-test";
             const string remoteAddress = "198.51.100.42";
@@ -111,6 +112,7 @@ namespace Aikido.Zen.Tests.DotNetCore
                     {
                         Method = "GET",
                         Route = route,
+                        ForceProtectionOff = forceProtectionOff,
                         RateLimiting = new RateLimitingConfig
                         {
                             Enabled = true,

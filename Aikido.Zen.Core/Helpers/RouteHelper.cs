@@ -226,6 +226,11 @@ namespace Aikido.Zen.Core.Helpers
                 return false;
             }
 
+            if (Agent.Instance.Context.Config.IsProtectionDisabledForEndpoint(context))
+            {
+                return false;
+            }
+
             // Split the route into segments
             var segments = context.Route
                 .Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
