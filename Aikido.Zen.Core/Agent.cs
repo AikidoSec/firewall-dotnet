@@ -461,13 +461,7 @@ namespace Aikido.Zen.Core
             }
             catch (Exception ex)
             {
-                try
-                {
-                    LogHelper.DebugLog(Logger, ex, "Failed to track custom event");
-                }
-                catch
-                {
-                }
+                LogHelper.DebugLog(Logger, ex, "Failed to track custom event");
             }
         }
 

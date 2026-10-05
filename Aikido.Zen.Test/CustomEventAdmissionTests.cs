@@ -99,31 +99,6 @@ namespace Aikido.Zen.Test
             VerifyNothingReported();
         }
 
-        [TestCase("")]
-        [TestCase("user.login_failed")]
-        public void SendCustomEvent_WhenGuardLoggingThrows_DoesNotThrow(string eventName)
-        {
-            Environment.SetEnvironmentVariable("AIKIDO_DEBUG", "true");
-            _logger.Setup(logger => logger.Log(
-                    It.IsAny<LogLevel>(),
-                    It.IsAny<EventId>(),
-                    It.IsAny<It.IsAnyType>(),
-                    It.IsAny<Exception?>(),
-                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()))
-                .Throws(new InvalidOperationException("Logger failed"));
-
-            Assert.DoesNotThrow(() => _agent!.SendCustomEvent(eventName, null));
-            DisposeAgent();
-
-            VerifyNothingReported();
-            _logger.Verify(logger => logger.Log(
-                LogLevel.Debug,
-                It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((value, _) => value.ToString()!.Contains("Failed to track custom event")),
-                It.IsAny<Exception?>(),
-                It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Once);
-        }
-
         [Test]
         public void SendCustomEvent_ReportsFirst25CallsAcrossNamesAndWarnsOnce()
         {

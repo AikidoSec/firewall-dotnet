@@ -8,7 +8,6 @@ using Aikido.Zen.Core;
 using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Models.Events;
-using Microsoft.Extensions.Logging;
 using Moq;
 using NUnit.Framework;
 using FrameworkZen = Aikido.Zen.DotNetFramework.Zen;
@@ -82,45 +81,5 @@ namespace Aikido.Zen.Tests.DotNetFramework
             }
         }
 
-        [Test]
-        public void Track_DoesNotThrowWhenTheConfiguredLoggerThrows()
-        {
-            var originalDisable = Environment.GetEnvironmentVariable("AIKIDO_DISABLE");
-            var originalDebug = Environment.GetEnvironmentVariable("AIKIDO_DEBUG");
-            var originalToken = Environment.GetEnvironmentVariable("AIKIDO_TOKEN");
-            var originalLogger = Agent.Logger;
-            var throwingLogger = new Mock<ILogger>();
-            throwingLogger
-                .Setup(logger => logger.Log(
-                    It.IsAny<LogLevel>(),
-                    It.IsAny<EventId>(),
-                    It.IsAny<It.IsAnyType>(),
-                    It.IsAny<Exception>(),
-                    It.IsAny<Func<It.IsAnyType, Exception, string>>()))
-                .Throws(new InvalidOperationException("Logger failed"));
-
-            try
-            {
-                Environment.SetEnvironmentVariable("AIKIDO_DISABLE", "false");
-                Environment.SetEnvironmentVariable("AIKIDO_DEBUG", "true");
-                Environment.SetEnvironmentVariable("AIKIDO_TOKEN", "test-token");
-                Agent.ConfigureLogger(throwingLogger.Object);
-
-                Assert.DoesNotThrow(() => FrameworkZen.Track(string.Empty));
-                throwingLogger.Verify(logger => logger.Log(
-                    It.IsAny<LogLevel>(),
-                    It.IsAny<EventId>(),
-                    It.IsAny<It.IsAnyType>(),
-                    It.IsAny<Exception>(),
-                    It.IsAny<Func<It.IsAnyType, Exception, string>>()), Times.AtLeastOnce());
-            }
-            finally
-            {
-                Environment.SetEnvironmentVariable("AIKIDO_DISABLE", originalDisable);
-                Environment.SetEnvironmentVariable("AIKIDO_DEBUG", originalDebug);
-                Environment.SetEnvironmentVariable("AIKIDO_TOKEN", originalToken);
-                Agent.ConfigureLogger(originalLogger);
-            }
-        }
     }
 }

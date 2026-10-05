@@ -88,13 +88,7 @@ namespace Aikido.Zen.DotNetFramework
             }
             catch (Exception ex)
             {
-                try
-                {
-                    LogHelper.DebugLog(Agent.Logger, ex, "Failed to track custom event");
-                }
-                catch
-                {
-                }
+                LogHelper.DebugLog(Agent.Logger, ex, "Failed to track custom event");
             }
         }
 
