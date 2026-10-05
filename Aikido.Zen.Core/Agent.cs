@@ -25,6 +25,7 @@ namespace Aikido.Zen.Core
     {
         private readonly IZenApi _api;
         private readonly ConcurrentQueue<QueuedItem> _eventQueue;
+        private const int MaxCustomEventsPerRequest = 25;
         private readonly CancellationTokenSource _cancellationSource;
         private readonly Task _backgroundTask;
         private readonly ConcurrentDictionary<string, ScheduledItem> _scheduledEvents;
@@ -442,6 +443,17 @@ namespace Aikido.Zen.Core
                 if (global::Aikido.Zen.Core.Context.IsBypassed(context) ||
                     _cancellationSource.IsCancellationRequested)
                 {
+                    return;
+                }
+
+                var trackedEvents = context.IncrementCustomEventCount();
+                if (trackedEvents > MaxCustomEventsPerRequest)
+                {
+                    if (trackedEvents == MaxCustomEventsPerRequest + 1)
+                    {
+                        LogHelper.WarningLog(Logger,
+                            $"Track(...) accepts at most {MaxCustomEventsPerRequest} custom events per request. Additional events are dropped and may not trigger Playbooks.");
+                    }
                     return;
                 }
 

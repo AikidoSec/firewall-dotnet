@@ -16,6 +16,8 @@ After adding `Zen.Track()`, trigger the event at least once. It will then appear
 
 Call `Zen.Track()` while handling an HTTP request. Zen associates the event with the request's IP address. Playbook counts are per IP, not across your whole app. If you call [`Zen.SetUser()`](user.md) before `Zen.Track()`, Zen also includes the current user. `Zen.SetUser()` is optional. Events without a user are still tracked.
 
+Tracking is asynchronous and does not wait for delivery. Zen accepts the first 25 custom events per HTTP request, across all event names. Additional events are dropped, with one warning logged per request.
+
 Event names can use any format. We recommend lowercase, dot-separated names such as `user.login_failed`.
 
 <details>

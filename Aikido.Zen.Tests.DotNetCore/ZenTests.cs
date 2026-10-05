@@ -1,8 +1,13 @@
+using System.Collections.Concurrent;
 using System.Net;
 using Aikido.Zen.Core;
+using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Models;
+using Aikido.Zen.Core.Models.Events;
+using Aikido.Zen.DotNetCore;
 using Aikido.Zen.DotNetCore.Middleware;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
 using ZenApi = Aikido.Zen.DotNetCore.Zen;
@@ -99,9 +104,85 @@ namespace Aikido.Zen.Tests.DotNetCore
             });
         }
 
+        [TestCase(false, "test-token", true)]
+        [TestCase(true, "test-token", false)]
+        [TestCase(false, null, false)]
+        public async Task Track_ReportsFirst25EventsPerRequestOnlyWhenEnabled(bool disabled, string? token, bool shouldReport)
+        {
+            var originalDisable = Environment.GetEnvironmentVariable("AIKIDO_DISABLE");
+            var originalToken = Environment.GetEnvironmentVariable("AIKIDO_TOKEN");
+            var reportedEvents = new ConcurrentQueue<CustomEvent>();
+            var reportingApi = new Mock<IReportingAPIClient>();
+            reportingApi
+                .Setup(api => api.ReportAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<CancellationToken>()))
+                .Callback<string, object, CancellationToken>((_, evt, _) => reportedEvents.Enqueue((CustomEvent)evt))
+                .ReturnsAsync(new ReportingAPIResponse { Success = true });
+            var agent = Agent.NewInstance(new Aikido.Zen.Core.Api.ZenApi(reportingApi.Object, Mock.Of<IRuntimeAPIClient>()));
+            var accessor = new HttpContextAccessor();
+            using var services = new ServiceCollection()
+                .AddSingleton<IHttpContextAccessor>(accessor)
+                .AddSingleton(new ContextAccessor(accessor))
+                .BuildServiceProvider();
+
+            try
+            {
+                Environment.SetEnvironmentVariable("AIKIDO_TOKEN", token);
+                ZenApi.Initialize(services, accessor);
+                for (var requestIndex = 0; requestIndex < 2; requestIndex++)
+                {
+                    var httpContext = new DefaultHttpContext();
+                    httpContext.Request.Scheme = "https";
+                    httpContext.Request.Host = new HostString("test.local");
+                    httpContext.Request.Path = "/login";
+                    httpContext.Request.Method = "POST";
+                    httpContext.Connection.RemoteIpAddress = IPAddress.Parse("203.0.113.7");
+                    accessor.HttpContext = httpContext;
+                    Environment.SetEnvironmentVariable("AIKIDO_DISABLE", "false");
+                    ZenApi.SetUser($"user-{requestIndex}", "Test User", httpContext);
+
+                    await new ContextMiddleware([]).InvokeAsync(httpContext, _ =>
+                    {
+                        Environment.SetEnvironmentVariable("AIKIDO_DISABLE", disabled ? "true" : "false");
+                        for (var eventIndex = 0; eventIndex < 30; eventIndex++)
+                        {
+                            ZenApi.Track($"request-{requestIndex}.event-{eventIndex}");
+                        }
+                        return Task.CompletedTask;
+                    });
+                }
+
+                agent.Dispose();
+                Assert.That(reportedEvents.Count, Is.EqualTo(shouldReport ? 50 : 0));
+                if (shouldReport)
+                {
+                    for (var requestIndex = 0; requestIndex < 2; requestIndex++)
+                    {
+                        var requestEvents = reportedEvents.Where(evt => evt.User.Id == $"user-{requestIndex}").ToArray();
+                        Assert.Multiple(() =>
+                        {
+                            Assert.That(requestEvents.Select(evt => evt.Name), Is.EquivalentTo(
+                                Enumerable.Range(0, 25).Select(eventIndex => $"request-{requestIndex}.event-{eventIndex}")));
+                            Assert.That(requestEvents.Select(evt => evt.Request.Method), Is.All.EqualTo("POST"));
+                            Assert.That(requestEvents.Select(evt => evt.Request.IpAddress), Is.All.EqualTo("203.0.113.7"));
+                            Assert.That(requestEvents.Select(evt => evt.Request.Route), Is.All.EqualTo("/login"));
+                        });
+                    }
+                }
+            }
+            finally
+            {
+                agent.Dispose();
+                ZenApi.Initialize(null, null);
+                accessor.HttpContext = null;
+                Environment.SetEnvironmentVariable("AIKIDO_DISABLE", originalDisable);
+                Environment.SetEnvironmentVariable("AIKIDO_TOKEN", originalToken);
+            }
+        }
+
         [Test]
         public void Track_DoesNotThrowWhenTheConfiguredLoggerThrows()
         {
+            var originalDisable = Environment.GetEnvironmentVariable("AIKIDO_DISABLE");
             var originalDebug = Environment.GetEnvironmentVariable("AIKIDO_DEBUG");
             var originalToken = Environment.GetEnvironmentVariable("AIKIDO_TOKEN");
             var throwingLogger = new Mock<ILogger>();
@@ -116,14 +197,22 @@ namespace Aikido.Zen.Tests.DotNetCore
 
             try
             {
+                Environment.SetEnvironmentVariable("AIKIDO_DISABLE", "false");
                 Environment.SetEnvironmentVariable("AIKIDO_DEBUG", "true");
                 Environment.SetEnvironmentVariable("AIKIDO_TOKEN", "test-token");
                 Agent.ConfigureLogger(throwingLogger.Object);
 
                 Assert.DoesNotThrow(() => ZenApi.Track(string.Empty));
+                throwingLogger.Verify(logger => logger.Log(
+                    It.IsAny<LogLevel>(),
+                    It.IsAny<EventId>(),
+                    It.IsAny<It.IsAnyType>(),
+                    It.IsAny<Exception?>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.AtLeastOnce());
             }
             finally
             {
+                Environment.SetEnvironmentVariable("AIKIDO_DISABLE", originalDisable);
                 Environment.SetEnvironmentVariable("AIKIDO_DEBUG", originalDebug);
                 Environment.SetEnvironmentVariable("AIKIDO_TOKEN", originalToken);
                 Agent.ConfigureLogger(_loggerMock.Object);
