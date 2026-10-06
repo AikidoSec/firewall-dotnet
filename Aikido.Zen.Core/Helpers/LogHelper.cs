@@ -128,7 +128,11 @@ namespace Aikido.Zen.Core.Helpers
             logger.LogWarning(sanitizedMessage);
         }
 
-        // Use fixed messages because each distinct message is retained for the process lifetime.
+        /// <summary>
+        /// Logs each distinct warning message once for the lifetime of the process, after sanitizing it.
+        /// </summary>
+        /// <param name="logger">The logger instance to use for the first occurrence.</param>
+        /// <param name="message">A fixed message; each distinct value is retained for the process lifetime.</param>
         public static void WarningLogOnce(ILogger logger, string message)
         {
             if (_loggedWarnings.TryAdd(message, 0))
