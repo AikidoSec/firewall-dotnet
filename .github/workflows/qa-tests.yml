@@ -89,6 +89,13 @@ jobs:
           name: nuget-package
           path: zen-demo-dotnet-framework/local-feed
 
+      - name: Set up Docker Compose
+        uses: docker/setup-compose-action@54042514f505b273907334ae2b9cdbb9a0213c1a
+        with:
+          # Bundled Compose ignores --parallel when starting containers.
+          # From 5.5.1, containers start one at a time while tests still run in parallel.
+          version: v5.5.1
+
       - name: Run Firewall QA Tests
         uses: AikidoSec/firewall-tester-action@3d448c6929e168148cf74c3d998d1dd5950d40ee # v1.1.1
         with:
