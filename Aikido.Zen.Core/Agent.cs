@@ -436,7 +436,7 @@ namespace Aikido.Zen.Core
                 }
                 if (string.IsNullOrEmpty(eventName))
                 {
-                    LogHelper.InfoLog(Logger, "track(...) expects a non-empty string as event name.");
+                    LogHelper.InfoLog(Logger, "Track(...) expects a non-empty string as event name.");
                     return;
                 }
                 if (context == null)
