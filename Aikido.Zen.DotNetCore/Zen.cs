@@ -17,7 +17,6 @@ namespace Aikido.Zen.DotNetCore
     {
         private static IServiceProvider _serviceProvider;
         private static IHttpContextAccessor _httpContextAccessor;
-        private static int _lateSetUserWarningLogged;
 
         public static void Initialize(IServiceProvider serviceProvider, IHttpContextAccessor httpContextAccessor)
         {
@@ -78,12 +77,9 @@ namespace Aikido.Zen.DotNetCore
                 return;
             }
 
-            if (Interlocked.Exchange(ref _lateSetUserWarningLogged, 1) == 0)
-            {
-                LogHelper.WarningLog(
-                    Agent.Logger,
-                    "Zen.SetUser(...) was called after the Zen middleware. Register the SetUser middleware before UseZenFirewall() so user blocking, and rate limiting work correctly.");
-            }
+            LogHelper.WarningLogOnce(
+                Agent.Logger,
+                "Zen.SetUser(...) was called after the Zen middleware. Register the SetUser middleware before UseZenFirewall() so user blocking, and rate limiting work correctly.");
 
             // Preserve late users for end-of-request reporting.
             // Blocking and rate limiting have already run.
@@ -98,6 +94,23 @@ namespace Aikido.Zen.DotNetCore
             }
 
             context.Items["Aikido.Zen.RateLimitGroup"] = id;
+        }
+
+        public static void Track(string eventName)
+        {
+            if (EnvironmentHelper.IsDisabled || string.IsNullOrEmpty(EnvironmentHelper.Token))
+            {
+                return;
+            }
+
+            try
+            {
+                Agent.Instance.SendCustomEvent(eventName, GetContext());
+            }
+            catch (Exception ex)
+            {
+                LogHelper.DebugLog(Agent.Logger, ex, "Failed to track custom event");
+            }
         }
 
         public static Context GetContext()

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Microsoft.Extensions.Logging;
@@ -14,6 +15,8 @@ namespace Aikido.Zen.Core.Helpers
         private static readonly TimeSpan LogTimeSpan = TimeSpan.FromMinutes(60);
         private static readonly Queue<DateTime> _logTimestamps = new Queue<DateTime>();
         private static readonly object _logLock = new object();
+        private static readonly ConcurrentDictionary<string, byte> _loggedWarnings =
+            new ConcurrentDictionary<string, byte>();
 
         private static bool ShouldLog()
         {
@@ -126,6 +129,19 @@ namespace Aikido.Zen.Core.Helpers
         }
 
         /// <summary>
+        /// Logs each distinct warning message once for the lifetime of the process.
+        /// </summary>
+        /// <param name="logger">The logger instance to use for the first occurrence.</param>
+        /// <param name="message">A fixed message; each distinct value is retained for the process lifetime.</param>
+        public static void WarningLogOnce(ILogger logger, string message)
+        {
+            if (_loggedWarnings.TryAdd(message, 0))
+            {
+                WarningLog(logger, message);
+            }
+        }
+
+        /// <summary>
         /// Logs an information message, after sanitizing the message and applying rate limiting.
         /// </summary>
         /// <param name="logger">The logger instance to use.</param>
@@ -171,12 +187,13 @@ namespace Aikido.Zen.Core.Helpers
         }
 
         // mainly used for testing
-        internal static void ClearQueue()
+        internal static void Reset()
         {
             lock (_logLock)
             {
                 _logTimestamps.Clear();
             }
+            _loggedWarnings.Clear();
         }
     }
 }

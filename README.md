@@ -239,6 +239,7 @@ public void Configuration(IAppBuilder app)
 - [AWS Secrets Manager](docs/aws-secrets-manager.md) — using AWS Secrets Manager with Zen
 - [Set the current user](docs/user.md) — identify users for rate limiting, blocking, and attack reports
 - [Rate limiting groups](docs/user.md#rate-limiting-groups) — apply rate limits per team, tenant, or company
+- [Track custom events](docs/track.md): trigger events that Playbooks can act on
 
 ## Reporting to your Aikido Security dashboard
 

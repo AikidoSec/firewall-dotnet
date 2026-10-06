@@ -80,6 +80,7 @@
   <ItemGroup>
     <Compile Include="BlockingModuleTests.cs" />
     <Compile Include="ContextModuleTests.cs" />
+    <Compile Include="ZenTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

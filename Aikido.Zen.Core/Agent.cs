@@ -25,6 +25,8 @@ namespace Aikido.Zen.Core
     {
         private readonly IZenApi _api;
         private readonly ConcurrentQueue<QueuedItem> _eventQueue;
+        private const int MaxCustomEventsPerRequest = 25;
+        private const int MaxQueuedEvents = 100;
         private readonly CancellationTokenSource _cancellationSource;
         private readonly Task _backgroundTask;
         private readonly ConcurrentDictionary<string, ScheduledItem> _scheduledEvents;
@@ -179,7 +181,16 @@ namespace Aikido.Zen.Core
                 Callback = callback,
             };
 
-            _eventQueue.Enqueue(queuedItem);
+            lock (_eventQueue)
+            {
+                if (_eventQueue.Count >= MaxQueuedEvents &&
+                    !(evt is Started) && !(evt is Heartbeat))
+                {
+                    return;
+                }
+
+                _eventQueue.Enqueue(queuedItem);
+            }
         }
 
         /// <summary>
@@ -413,6 +424,51 @@ namespace Aikido.Zen.Core
             }
 
             Context.AddAttackDetected(blocked);
+        }
+
+        public virtual void SendCustomEvent(string eventName, Context context)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(EnvironmentHelper.Token))
+                {
+                    return;
+                }
+                if (string.IsNullOrEmpty(eventName))
+                {
+                    LogHelper.InfoLog(Logger, "Track(...) expects a non-empty string as event name.");
+                    return;
+                }
+                if (context == null)
+                {
+                    LogHelper.WarningLogOnce(
+                        Logger,
+                        "Track(...) was called without a context. The event will not be tracked. Make sure to call Track(...) within an HTTP request.");
+                    return;
+                }
+                if (global::Aikido.Zen.Core.Context.IsBypassed(context) ||
+                    _cancellationSource.IsCancellationRequested)
+                {
+                    return;
+                }
+
+                var trackedEvents = context.IncrementCustomEventCount();
+                if (trackedEvents > MaxCustomEventsPerRequest)
+                {
+                    if (trackedEvents == MaxCustomEventsPerRequest + 1)
+                    {
+                        LogHelper.WarningLog(Logger,
+                            $"Track(...) accepts at most {MaxCustomEventsPerRequest} custom events per request. Additional events are dropped and may not trigger Playbooks.");
+                    }
+                    return;
+                }
+
+                QueueEvent(EnvironmentHelper.Token, CustomEvent.Create(eventName, context));
+            }
+            catch (Exception ex)
+            {
+                LogHelper.DebugLog(Logger, ex, "Failed to track custom event");
+            }
         }
 
         /// <summary>

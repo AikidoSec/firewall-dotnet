@@ -1,12 +1,15 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 using Aikido.Zen.Core.Models;
 
 namespace Aikido.Zen.Core
 {
     public class Context
     {
+        private int _customEventCount;
+
         public string Url { get; set; } = string.Empty;
         public string Path { get; set; } = string.Empty;
         public string Method { get; set; } = string.Empty;
@@ -47,6 +50,11 @@ namespace Aikido.Zen.Core
 
             public Uri Source { get; set; }
             public Uri Destination { get; set; }
+        }
+
+        internal int IncrementCustomEventCount()
+        {
+            return Interlocked.Increment(ref _customEventCount);
         }
 
         internal static bool IsNullOrBypassed(Context context)
