@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Api;
+using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models.Events;
 using Aikido.Zen.Tests.Mocks;
 using Microsoft.Extensions.Logging;
@@ -22,6 +23,7 @@ namespace Aikido.Zen.Test
         [SetUp]
         public void SetUp()
         {
+            LogHelper.Reset();
             _originalToken = Environment.GetEnvironmentVariable("AIKIDO_TOKEN");
             _originalDebug = Environment.GetEnvironmentVariable("AIKIDO_DEBUG");
             _originalLogger = Agent.Logger;
@@ -119,7 +121,7 @@ namespace Aikido.Zen.Test
         [Test]
         public void SendCustomEvent_EachRequestHasItsOwnAllowanceAndWarning()
         {
-            for (var request = 0; request < 5; request++)
+            for (var request = 0; request < 3; request++)
             {
                 var context = new Context { Route = $"/request-{request}" };
                 for (var i = 0; i < 30; i++)
@@ -131,8 +133,8 @@ namespace Aikido.Zen.Test
 
             Assert.That(_reported.GroupBy(evt => evt.Request.Route)
                 .Select(group => (group.Key, Count: group.Count())), Is.EquivalentTo(
-                    Enumerable.Range(0, 5).Select(i => ($"/request-{i}", Count: 25))));
-            VerifyLimitWarnings(Times.Exactly(5));
+                    Enumerable.Range(0, 3).Select(i => ($"/request-{i}", Count: 25))));
+            VerifyLimitWarnings(Times.Exactly(3));
         }
 
         [Test]

@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Net;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Api;
+using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Models.Events;
 using Aikido.Zen.DotNetCore;
@@ -21,6 +22,7 @@ namespace Aikido.Zen.Tests.DotNetCore
         [SetUp]
         public void SetUp()
         {
+            LogHelper.Reset();
             _loggerMock = new Mock<ILogger>();
             Agent.ConfigureLogger(_loggerMock.Object);
             Agent.Instance.Context.Config.Clear();

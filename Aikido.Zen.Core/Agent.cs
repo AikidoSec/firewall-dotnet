@@ -26,6 +26,7 @@ namespace Aikido.Zen.Core
         private readonly IZenApi _api;
         private readonly ConcurrentQueue<QueuedItem> _eventQueue;
         private const int MaxCustomEventsPerRequest = 25;
+        private const int MaxQueuedEvents = 100;
         private readonly CancellationTokenSource _cancellationSource;
         private readonly Task _backgroundTask;
         private readonly ConcurrentDictionary<string, ScheduledItem> _scheduledEvents;
@@ -36,7 +37,6 @@ namespace Aikido.Zen.Core
         public static ILogger Logger = new DefaultLogger();
 
         private readonly ReportingStatus _reportingStatus = new ReportingStatus();
-        private int _trackWithoutContextWarningLogged;
 
         // Rate limiting and timing constants for the event processing loop
         private const int RateLimitPerSecond = 10;
@@ -181,7 +181,16 @@ namespace Aikido.Zen.Core
                 Callback = callback,
             };
 
-            _eventQueue.Enqueue(queuedItem);
+            lock (_eventQueue)
+            {
+                if (_eventQueue.Count >= MaxQueuedEvents &&
+                    !(evt is Started) && !(evt is Heartbeat))
+                {
+                    return;
+                }
+
+                _eventQueue.Enqueue(queuedItem);
+            }
         }
 
         /// <summary>
@@ -432,12 +441,9 @@ namespace Aikido.Zen.Core
                 }
                 if (context == null)
                 {
-                    if (Interlocked.Exchange(ref _trackWithoutContextWarningLogged, 1) == 0)
-                    {
-                        LogHelper.WarningLog(
-                            Logger,
-                            "Track(...) was called without a context. The event will not be tracked. Make sure to call Track(...) within an HTTP request.");
-                    }
+                    LogHelper.WarningLogOnce(
+                        Logger,
+                        "Track(...) was called without a context. The event will not be tracked. Make sure to call Track(...) within an HTTP request.");
                     return;
                 }
                 if (global::Aikido.Zen.Core.Context.IsBypassed(context) ||

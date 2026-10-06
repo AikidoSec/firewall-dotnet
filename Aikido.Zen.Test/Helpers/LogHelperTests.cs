@@ -20,7 +20,7 @@ namespace Aikido.Zen.Test.Helpers
             _loggerMock = new Mock<ILogger>();
             Environment.SetEnvironmentVariable("AIKIDO_DEBUG", "false");
 
-            LogHelper.ClearQueue();
+            LogHelper.Reset();
         }
 
         [Test]
@@ -116,6 +116,47 @@ namespace Aikido.Zen.Test.Helpers
                 It.Is<It.IsAnyType>((v, t) => v.ToString().EndsWith(message)),
                 It.IsAny<Exception?>(),
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Once);
+        }
+
+        [Test]
+        public void WarningLogOnce_ConcurrentCallsAcrossLoggers_LogEachMessageOnce()
+        {
+            var otherLogger = new Mock<ILogger>();
+            var messages = new[] { "First\nwarning", "Second\twarning" };
+
+            Parallel.For(0, 1000, index =>
+            {
+                var logger = index % 2 == 0 ? _loggerMock.Object : otherLogger.Object;
+                LogHelper.WarningLogOnce(logger, messages[(index / 2) % messages.Length]);
+            });
+
+            var loggedMessages = _loggerMock.Invocations.Concat(otherLogger.Invocations)
+                .Where(invocation => invocation.Method.Name == nameof(ILogger.Log))
+                .Select(invocation => invocation.Arguments[2].ToString());
+
+            Assert.That(loggedMessages, Is.EquivalentTo(new[]
+            {
+                "AIKIDO: Firstwarning",
+                "AIKIDO: Secondwarning",
+            }));
+        }
+
+        [Test]
+        public void WarningLogOnce_DoesNotSuppressRegularWarnings()
+        {
+            const string message = "Repeated warning";
+
+            LogHelper.WarningLogOnce(_loggerMock.Object, message);
+            LogHelper.WarningLogOnce(_loggerMock.Object, message);
+            LogHelper.WarningLog(_loggerMock.Object, message);
+            LogHelper.WarningLog(_loggerMock.Object, message);
+
+            _loggerMock.Verify(logger => logger.Log(
+                LogLevel.Warning,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((value, _) => value.ToString() == "AIKIDO: Repeated warning"),
+                It.IsAny<Exception?>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Exactly(3));
         }
 
         [Test]
