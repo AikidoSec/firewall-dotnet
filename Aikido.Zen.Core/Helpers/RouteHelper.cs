@@ -170,6 +170,18 @@ namespace Aikido.Zen.Core.Helpers
                 var patternSegment = patternSpan.GetNextSegment(out patternSpan);
                 var pathSegment = pathSpan.GetNextSegment(out pathSpan);
 
+                // Check if pattern segment is a catch-all parameter (e.g. {**rest})
+                // Catch-all parameters match all remaining path segments
+                if (patternSegment.Length > 3 && 
+                    patternSegment[0] == '{' && 
+                    patternSegment[1] == '*' && 
+                    patternSegment[2] == '*' && 
+                    patternSegment[patternSegment.Length - 1] == '}')
+                {
+                    // Catch-all matches everything remaining, so we're done
+                    return true;
+                }
+
                 // If pattern segment is a route parameter (e.g. {id}),
                 // skip comparison since any value is valid
                 if (patternSegment.IsRouteParameter())
@@ -180,8 +192,38 @@ namespace Aikido.Zen.Core.Helpers
                     return false;
             }
 
-            // Route only matches if both pattern and path are fully consumed
-            return patternSpan.IsEmpty && pathSpan.IsEmpty;
+            // Handle remaining pattern segments - check if they are all optional
+            while (!patternSpan.IsEmpty)
+            {
+                var patternSegment = patternSpan.GetNextSegment(out patternSpan);
+                
+                // Check if this is an optional parameter (e.g. {id?})
+                if (patternSegment.Length > 2 && 
+                    patternSegment[0] == '{' && 
+                    patternSegment[patternSegment.Length - 1] == '}' &&
+                    patternSegment[patternSegment.Length - 2] == '?')
+                {
+                    // Optional parameter can be omitted, continue checking
+                    continue;
+                }
+                
+                // Check if this is a catch-all parameter (e.g. {**rest})
+                if (patternSegment.Length > 3 && 
+                    patternSegment[0] == '{' && 
+                    patternSegment[1] == '*' && 
+                    patternSegment[2] == '*' && 
+                    patternSegment[patternSegment.Length - 1] == '}')
+                {
+                    // Catch-all can match zero segments
+                    continue;
+                }
+                
+                // Non-optional segment remains in pattern but path is exhausted
+                return false;
+            }
+
+            // Path is fully consumed and all remaining pattern segments (if any) are optional
+            return pathSpan.IsEmpty;
         }
 
         /// <summary>
