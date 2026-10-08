@@ -1,7 +1,6 @@
 using System.IO;
 using System.Net;
 using System.Security.Claims;
-using System.Text.Json;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Exceptions;
 using Aikido.Zen.DotNetCore;
@@ -121,16 +120,7 @@ namespace SampleApp.Common
                 // Health endpoint
                 endpoints.MapGet("/health", () =>
                 {
-                    try
-                    {
-                        var env = Environment.GetEnvironmentVariables();
-                        return Results.Ok(JsonSerializer.Serialize(env));
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"Error in /health endpoint: {ex}");
-                        throw;
-                    }
+                    return Results.Ok(new { status = "healthy" });
                 });
 
                 // Endpoint to trigger an outbound HTTP request for testing hostname capture
