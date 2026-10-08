@@ -45,15 +45,90 @@ namespace Aikido.Zen.Core.Helpers
 
         /// <summary>
         /// Determines whether to trust the X-Forwarded-For header.
-        /// Should be set to false if the application is not behind a reverse proxy.
+        /// Should be set to true only if the application is behind a trusted reverse proxy.
+        /// Defaults to false for security (prevents IP spoofing).
         /// </summary>
-        public static bool TrustProxy => GetBooleanValue("AIKIDO_TRUST_PROXY", true);
+        public static bool TrustProxy => GetBooleanValue("AIKIDO_TRUST_PROXY", false);
 
         /// <summary>
-        /// Determines whether to trust the X-Forwarded-For header.
-        /// Should be set to false if the application is not behind a reverse proxy.
+        /// Gets the header name to use for client IP extraction when behind a proxy.
+        /// Defaults to X-FORWARDED-FOR.
         /// </summary>
         public static string ClientIpHeader => Environment.GetEnvironmentVariable("AIKIDO_CLIENT_IP_HEADER") ?? "X-FORWARDED-FOR";
+
+        /// <summary>
+        /// Gets the comma-separated list of trusted proxy IP addresses or CIDR ranges.
+        /// Only requests from these proxies will have their forwarding headers trusted.
+        /// If not set and TrustProxy is true, all proxies are trusted (insecure).
+        /// </summary>
+        public static string TrustedProxies => Environment.GetEnvironmentVariable("AIKIDO_TRUSTED_PROXIES");
+
+        private static Aikido.Zen.Core.Models.Ip.IPRange _trustedProxyRange = null;
+        private static bool _trustedProxyRangeInitialized = false;
+        private static readonly object _trustedProxyLock = new object();
+
+        /// <summary>
+        /// Resets the trusted proxy cache. Used for testing purposes.
+        /// </summary>
+        internal static void ResetTrustedProxyCache()
+        {
+            lock (_trustedProxyLock)
+            {
+                _trustedProxyRange = null;
+                _trustedProxyRangeInitialized = false;
+            }
+        }
+
+        /// <summary>
+        /// Checks if a given IP address is in the trusted proxy list.
+        /// Returns true if no trusted proxies are configured (legacy behavior for backward compatibility).
+        /// </summary>
+        /// <param name="ip">The IP address to check.</param>
+        /// <returns>True if the IP is a trusted proxy or no proxies are configured, false otherwise.</returns>
+        public static bool IsTrustedProxy(string ip)
+        {
+            if (!_trustedProxyRangeInitialized)
+            {
+                lock (_trustedProxyLock)
+                {
+                    if (!_trustedProxyRangeInitialized)
+                    {
+                        var trustedProxies = TrustedProxies;
+                        if (!string.IsNullOrWhiteSpace(trustedProxies))
+                        {
+                            _trustedProxyRange = new Aikido.Zen.Core.Models.Ip.IPRange();
+                            var proxies = trustedProxies.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
+                            foreach (var proxy in proxies)
+                            {
+                                var trimmedProxy = proxy.Trim();
+                                if (!string.IsNullOrWhiteSpace(trimmedProxy))
+                                {
+                                    foreach (var cidr in IPHelper.ToCidrString(trimmedProxy))
+                                    {
+                                        _trustedProxyRange.InsertRange(cidr);
+                                    }
+                                }
+                            }
+                        }
+                        _trustedProxyRangeInitialized = true;
+                    }
+                }
+            }
+
+            // If no trusted proxies configured, trust all (legacy behavior)
+            if (_trustedProxyRange == null || !_trustedProxyRange.HasItems)
+            {
+                return true;
+            }
+
+            // Validate the IP is in the trusted proxy range
+            if (!IPHelper.IsValidIp(ip))
+            {
+                return false;
+            }
+
+            return _trustedProxyRange.IsIpInRange(ip);
+        }
 
         /// <summary>
         /// Determines whether to skip the ASP.NET Core endpoint routing startup guard.

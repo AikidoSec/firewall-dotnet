@@ -190,8 +190,18 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
 
         private static string GetClientIp(HttpContext httpContext)
         {
+            var remoteAddr = httpContext.Request.ServerVariables["REMOTE_ADDR"];
+
             if (EnvironmentHelper.TrustProxy)
             {
+                // Validate that the immediate peer is a trusted proxy before trusting forwarding headers
+                if (!EnvironmentHelper.IsTrustedProxy(remoteAddr))
+                {
+                    // The immediate peer is not a trusted proxy, so we cannot trust the forwarding header
+                    // Return the actual remote IP address to prevent IP spoofing
+                    return remoteAddr;
+                }
+
                 var headerVarName = $"HTTP_{EnvironmentHelper.ClientIpHeader.ToUpper().Replace("-", "_")}";
                 var ipHeader = httpContext.Request.ServerVariables[headerVarName];
                 var ipList = IPHeaderHelper.ParseIpHeader(ipHeader);
@@ -206,7 +216,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 }
             }
 
-            return httpContext.Request.ServerVariables["REMOTE_ADDR"];
+            return remoteAddr;
         }
 
         /// <summary>

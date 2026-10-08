@@ -257,8 +257,18 @@ namespace Aikido.Zen.DotNetCore.Middleware
             //   - the last ip entry in the X-Forwarded-For header (which also gets removed from the X-Forwarded-For list)
             // However, the standard specifies the client's ip to be the first entry in the X-Forwarded-For list.
 
+            var remoteIpAddress = httpContext.Connection?.RemoteIpAddress?.ToString() ?? string.Empty;
+
             if (EnvironmentHelper.TrustProxy)
             {
+                // Validate that the immediate peer is a trusted proxy before trusting forwarding headers
+                if (!EnvironmentHelper.IsTrustedProxy(remoteIpAddress))
+                {
+                    // The immediate peer is not a trusted proxy, so we cannot trust the forwarding header
+                    // Return the actual remote IP address to prevent IP spoofing
+                    return remoteIpAddress;
+                }
+
                 // Usually X-Forwarded-For, but can be set to something else via AIKIDO_CLIENT_IP_HEADER
                 var headerVarName = EnvironmentHelper.ClientIpHeader;
                 if (httpContext.Request?.Headers?.TryGetValue(headerVarName, out var ipStringValues) == true)
@@ -279,7 +289,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
             }
 
             // No X-Forwarded-For header, or X-Forwarded-For is present and ASP NET already popped the last list entry in RemoteIpAddress
-            return httpContext.Connection?.RemoteIpAddress?.ToString() ?? string.Empty;
+            return remoteIpAddress;
         }
 
         /// <summary>
