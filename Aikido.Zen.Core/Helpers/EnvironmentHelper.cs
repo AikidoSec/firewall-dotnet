@@ -39,9 +39,9 @@ namespace Aikido.Zen.Core.Helpers
 
         /// <summary>
         /// Determines whether to block SQL queries that fail tokenization when user input is present.
-        /// Defaults to false (allow by default).
+        /// Defaults to true (block by default).
         /// </summary>
-        public static bool BlockInvalidSql => GetBooleanValue("AIKIDO_BLOCK_INVALID_SQL");
+        public static bool BlockInvalidSql => GetBooleanValue("AIKIDO_BLOCK_INVALID_SQL", true);
 
         /// <summary>
         /// Determines whether to trust the X-Forwarded-For header.

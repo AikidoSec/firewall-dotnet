@@ -164,10 +164,10 @@ namespace Aikido.Zen.Core.Vulnerabilities
                     return (SQLInjectionDetectionResult)result;
                 case 2:
                     LogHelper.ErrorLog(Agent.Logger, "Error in detecting SQL injection: internal error");
-                    return SQLInjectionDetectionResult.NotDetected;
+                    return SQLInjectionDetectionResult.FailedToTokenize;
                 default:
                     LogHelper.ErrorLog(Agent.Logger, $"Unexpected result from SQL injection detection: {result}");
-                    return SQLInjectionDetectionResult.NotDetected;
+                    return SQLInjectionDetectionResult.FailedToTokenize;
             }
         }
 

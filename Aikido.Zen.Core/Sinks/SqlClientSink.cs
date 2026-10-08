@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.Data.Common;
 using System.Reflection;
 using Aikido.Zen.Core.Helpers;
@@ -116,7 +118,23 @@ namespace Aikido.Zen.Core.Sinks
             {
                 // Use Agent.Logger (assuming static logger)
                 LogHelper.ErrorLog(Agent.Logger, "Error during SQL injection detection.");
-                // Allow original method execution despite detection error
+                // Fail closed: if user input is present, block the query
+                if (context?.ParsedUserInput != null && context.ParsedUserInput.Count > 0)
+                {
+                    return InspectionResult.Block(
+                        AttackKind.SqlInjection,
+                        null,
+                        string.Empty,
+                        new Dictionary<string, string>
+                        {
+                            { "sql", sql ?? string.Empty },
+                            { "dialect", dialect.ToHumanName() },
+                            { "detectionError", "true" }
+                        },
+                        Array.Empty<string>()
+                    );
+                }
+                // Allow original method execution if no user input is present
                 return InspectionResult.Allow();
             }
 

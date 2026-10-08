@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Threading;
@@ -53,6 +54,20 @@ namespace Aikido.Zen.Core.Sinks
                 catch
                 {
                     LogHelper.ErrorLog(Agent.Logger, $"Error during {operationKind} inspection.");
+                    // Fail closed for SQL operations when user input is present
+                    if (operationKind == "sql_op" && context?.ParsedUserInput != null && context.ParsedUserInput.Count > 0)
+                    {
+                        result = InspectionResult.Block(
+                            AttackKind.SqlInjection,
+                            null,
+                            string.Empty,
+                            new Dictionary<string, string>
+                            {
+                                { "inspectionError", "true" }
+                            },
+                            Array.Empty<string>()
+                        );
+                    }
                 }
                 stopwatch.Stop();
 

@@ -119,7 +119,7 @@ namespace Aikido.Zen.Test.Helpers
         }
 
         [Test]
-        public void BlockInvalidSql_ShouldReturnFalse_WhenEnvironmentVariableIsNotSet()
+        public void BlockInvalidSql_ShouldReturnTrue_WhenEnvironmentVariableIsNotSet()
         {
             // Arrange
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK_INVALID_SQL", null);
@@ -128,7 +128,7 @@ namespace Aikido.Zen.Test.Helpers
             var blockInvalidSql = EnvironmentHelper.BlockInvalidSql;
 
             // Assert
-            Assert.That(blockInvalidSql, Is.False);
+            Assert.That(blockInvalidSql, Is.True);
         }
 
         [TestCase(null, false)]
