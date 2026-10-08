@@ -30,6 +30,8 @@ namespace SampleApp.Common
         {
             services.AddZenFirewall();
             services.AddHttpClient();
+            services.AddAuthentication();
+            services.AddAuthorization();
         }
 
         /// <summary>
@@ -56,16 +58,21 @@ namespace SampleApp.Common
                 }
                 if (context.Request.Headers.ContainsKey("user"))
                 {
-                    context.User = new ClaimsPrincipal(new ClaimsIdentity(new Claim[]
+                    // Create an authenticated identity by specifying an authentication type
+                    var identity = new ClaimsIdentity(new Claim[]
                     {
                         new Claim(ClaimTypes.Name, context.Request.Headers["user"]!),
-                    }));
+                    }, "TestAuthentication");
+                    context.User = new ClaimsPrincipal(identity);
                     Zen.SetUser(context.Request.Headers["user"].ToString(), context.Request.Headers["user"].ToString(), context);
                 }
                 return next();
             });
 
             app.UseRouting();
+
+            app.UseAuthentication();
+            app.UseAuthorization();
 
             app.UseDeveloperExceptionPage();
             app.UseZenFirewall();

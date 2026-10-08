@@ -186,7 +186,9 @@ public class UmbracoSampleAppTests : WebApplicationTestBase
         var maliciousCommand = "ls $(echo)";
 
         // Act
-        var response = await SampleAppClient.GetAsync("/api/pets/command?command=" + Uri.EscapeDataString(maliciousCommand));
+        var request = new HttpRequestMessage(HttpMethod.Get, "/api/pets/command?command=" + Uri.EscapeDataString(maliciousCommand));
+        request.Headers.Add("user", "testuser");
+        var response = await SampleAppClient.SendAsync(request);
 
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
@@ -202,7 +204,9 @@ public class UmbracoSampleAppTests : WebApplicationTestBase
         var maliciousCommand = "ls $(echo)";
 
         // Act
-        var response = await SampleAppClient.GetAsync("/api/pets/command?command=" + Uri.EscapeDataString(maliciousCommand));
+        var request = new HttpRequestMessage(HttpMethod.Get, "/api/pets/command?command=" + Uri.EscapeDataString(maliciousCommand));
+        request.Headers.Add("user", "testuser");
+        var response = await SampleAppClient.SendAsync(request);
 
         // Assert
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));

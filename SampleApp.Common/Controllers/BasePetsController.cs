@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 using Aikido.Zen.Core.Exceptions;
+using Microsoft.AspNetCore.Authorization;
 
 namespace SampleApp.Common.Controllers
 {
@@ -48,6 +49,12 @@ namespace SampleApp.Common.Controllers
 
             endpoints.MapGet("/api/pets/command", (HttpContext context) =>
             {
+                // Require authentication for this sensitive endpoint
+                if (context.User?.Identity?.IsAuthenticated != true)
+                {
+                    return Results.Unauthorized();
+                }
+                
                 var command = context.Request.Query["command"];
                 try
                 {
