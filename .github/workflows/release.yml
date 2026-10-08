@@ -10,7 +10,6 @@ jobs:
     publish:
         permissions:
             contents: read
-            id-token: write # NuGet trusted publishing uses GitHub OIDC.
         runs-on: windows-2025-vs2026
         timeout-minutes: 30
 
@@ -24,7 +23,27 @@ jobs:
             - name: Checkout code
               uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
               with:
+                  ref: ${{ github.event.release.tag_name }}
                   persist-credentials: false
+
+            - name: Verify release tag points to default branch
+              shell: pwsh
+              run: |
+                  $ErrorActionPreference = "Stop"
+                  $tagName = "${{ github.event.release.tag_name }}"
+                  $defaultBranch = "${{ github.event.repository.default_branch }}"
+                  
+                  # Get the commit SHA for the tag
+                  $tagCommit = git rev-parse "$tagName^{commit}"
+                  Write-Host "Tag $tagName points to commit: $tagCommit"
+                  
+                  # Check if this commit is reachable from the default branch
+                  git fetch origin "$defaultBranch"
+                  $isAncestor = git merge-base --is-ancestor $tagCommit "origin/$defaultBranch"
+                  if ($LASTEXITCODE -ne 0) {
+                    throw "Release tag $tagName (commit $tagCommit) is not an ancestor of the default branch $defaultBranch. Only releases from the default branch are allowed."
+                  }
+                  Write-Host "Verified: Tag $tagName is on the default branch $defaultBranch"
 
             - name: Install .NET versions that we need for building the library
               uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4.3.1
@@ -56,6 +75,37 @@ jobs:
                   if ([string]::IsNullOrWhiteSpace($env:NUGET_USER)) {
                     throw "Set vars.NUGET_USER or secrets.NUGET_USER to the nuget.org profile name used for trusted publishing."
                   }
+
+            - name: Validate package artifacts before publishing
+              shell: pwsh
+              run: |
+                  $ErrorActionPreference = "Stop"
+                  $expectedPackages = @("Aikido.Zen.DotNetFramework", "Aikido.Zen.DotNetCore")
+                  $packages = Get-ChildItem -Path artifacts\*.nupkg -Exclude *.symbols.nupkg
+                  
+                  if ($packages.Count -eq 0) {
+                    throw "No packages found in artifacts directory"
+                  }
+                  
+                  Write-Host "Found $($packages.Count) package(s) to publish:"
+                  foreach ($pkg in $packages) {
+                    Write-Host "  - $($pkg.Name)"
+                    
+                    # Verify package name matches expected pattern
+                    $matched = $false
+                    foreach ($expected in $expectedPackages) {
+                      if ($pkg.Name -like "$expected.*") {
+                        $matched = $true
+                        break
+                      }
+                    }
+                    
+                    if (-not $matched) {
+                      throw "Unexpected package found: $($pkg.Name). Only packages matching $($expectedPackages -join ', ') are allowed."
+                    }
+                  }
+                  
+                  Write-Host "All packages validated successfully"
 
             - name: NuGet login (OIDC -> temp API key)
               uses: NuGet/login@d22cc5f58ff5b88bf9bd452535b4335137e24544 # v1.1.0
