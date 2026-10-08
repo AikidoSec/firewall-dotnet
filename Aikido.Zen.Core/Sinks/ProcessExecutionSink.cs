@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
+using System.Text;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Vulnerabilities;
@@ -41,7 +42,29 @@ namespace Aikido.Zen.Core.Sinks
                 // Only inspect if context and process info are available
                 if (processStartInfo != null && context != null)
                 {
-                    command = processStartInfo.FileName + " " + processStartInfo.Arguments;
+                    // Build the complete command including both Arguments and ArgumentList
+                    var commandBuilder = new StringBuilder();
+                    commandBuilder.Append(processStartInfo.FileName);
+                    
+                    // Add legacy Arguments property if present
+                    if (!string.IsNullOrEmpty(processStartInfo.Arguments))
+                    {
+                        commandBuilder.Append(" ");
+                        commandBuilder.Append(processStartInfo.Arguments);
+                    }
+                    
+                    // Add modern ArgumentList property if present
+                    // ArgumentList is available in .NET Core 2.1+ and .NET Standard 2.1+
+                    if (processStartInfo.ArgumentList != null && processStartInfo.ArgumentList.Count > 0)
+                    {
+                        foreach (var arg in processStartInfo.ArgumentList)
+                        {
+                            commandBuilder.Append(" ");
+                            commandBuilder.Append(arg);
+                        }
+                    }
+                    
+                    command = commandBuilder.ToString();
 
                     // Inspect the FileName and Arguments for shell injection
                     foreach (var userInput in context.ParsedUserInput)

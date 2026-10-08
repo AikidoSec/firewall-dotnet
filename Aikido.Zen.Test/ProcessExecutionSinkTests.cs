@@ -177,6 +177,61 @@ namespace Aikido.Zen.Test
             Assert.That(_context.AttackDetected, Is.False);
         }
 
+        [Test]
+        public void OnProcessStart_WithShellInjectionInArgumentList_ThrowsException()
+        {
+            // Arrange
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
+            _context.ParsedUserInput = new Dictionary<string, string> {
+                { "body.command", "$(echo malicious)" }
+            };
+            _startInfo.FileName = "sh";
+            // Use ArgumentList instead of Arguments
+            _startInfo.ArgumentList.Add("-c");
+            _startInfo.ArgumentList.Add("$(echo malicious)");
+
+            // Act & Assert
+            var ex = Assert.Throws<AikidoException>(() =>
+                OnProcessStart(new Process { StartInfo = _startInfo }, _context)
+            );
+            Assert.That(ex.Message, Does.Contain("Zen has blocked a shell injection"));
+        }
+
+        [Test]
+        public void OnProcessStart_WithShellInjectionInArgumentListAndArguments_ThrowsException()
+        {
+            // Arrange
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
+            _context.ParsedUserInput = new Dictionary<string, string> {
+                { "body.command", "$(echo malicious)" }
+            };
+            _startInfo.FileName = "sh";
+            _startInfo.Arguments = "-c";
+            // Add malicious content via ArgumentList
+            _startInfo.ArgumentList.Add("$(echo malicious)");
+
+            // Act & Assert
+            var ex = Assert.Throws<AikidoException>(() =>
+                OnProcessStart(new Process { StartInfo = _startInfo }, _context)
+            );
+            Assert.That(ex.Message, Does.Contain("Zen has blocked a shell injection"));
+        }
+
+        [Test]
+        public void OnProcessStart_WithSafeArgumentList_ReturnsTrue()
+        {
+            // Arrange
+            _startInfo.FileName = "echo";
+            _startInfo.ArgumentList.Add("hello");
+            _startInfo.ArgumentList.Add("world");
+
+            // Act
+            var result = OnProcessStart(new Process { StartInfo = _startInfo }, _context);
+
+            // Assert
+            Assert.That(result, Is.True);
+        }
+
         [TearDown]
         public void TearDown()
         {
