@@ -134,8 +134,8 @@
     {
         "command": "ls \"whatever;\"",
         "userInput": "whatever;",
-        "description": "SAFE: Semicolon inside double quotes",
-        "isInjection": false
+        "description": "INJECTION: Semicolon inside double quotes (unsafe in shell -c context)",
+        "isInjection": true
     },
     {
         "command": "ls 'whatever;'",
