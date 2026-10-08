@@ -50,7 +50,9 @@ Task("DownloadLibraries")
     .Does(() =>
     {
         EnsureDirectoryExists(librariesDir);
+        
         // check if the same version is already downloaded
+        var skipDownload = false;
         var files = GetFiles($"{librariesDir}/**/*.sha256sum");
         if (files.Count > 0)
         {
@@ -59,45 +61,92 @@ Task("DownloadLibraries")
             var currVersion = content.Split('-')[1];
             if (currVersion == zenInternalsVersion)
             {
-                Information("Libraries already downloaded. skipping download.");
-                return;
+                Information("Libraries already downloaded for version {0}. Skipping download but verifying integrity.", zenInternalsVersion);
+                skipDownload = true;
             }
         }
 
-        foreach (var file in filesToDownload)
+        if (!skipDownload)
         {
-            var url = $"{baseUrl}{file}";
-            var destination = $"{librariesDir}/{file}";
-            Exception lastException = null;
-
-            for (var attempt = 1; attempt <= downloadRetries; attempt++)
+            foreach (var file in filesToDownload)
             {
-                try
+                var url = $"{baseUrl}{file}";
+                var destination = $"{librariesDir}/{file}";
+                Exception lastException = null;
+
+                for (var attempt = 1; attempt <= downloadRetries; attempt++)
                 {
-                    Information($"Downloading {url}. Attempt {attempt}/{downloadRetries}.");
-                    DownloadFile(url, destination);
-                    lastException = null;
-                    break;
-                }
-                catch (Exception ex)
-                {
-                    lastException = ex;
-                    if (attempt == downloadRetries)
+                    try
                     {
+                        Information($"Downloading {url}. Attempt {attempt}/{downloadRetries}.");
+                        DownloadFile(url, destination);
+                        lastException = null;
                         break;
                     }
+                    catch (Exception ex)
+                    {
+                        lastException = ex;
+                        if (attempt == downloadRetries)
+                        {
+                            break;
+                        }
 
-                    Warning($"Download failed for {url}. Error: {ex.Message}. Retrying in {downloadRetryDelaySeconds}s.");
-                    System.Threading.Thread.Sleep(TimeSpan.FromSeconds(downloadRetryDelaySeconds * attempt));
+                        Warning($"Download failed for {url}. Error: {ex.Message}. Retrying in {downloadRetryDelaySeconds}s.");
+                        System.Threading.Thread.Sleep(TimeSpan.FromSeconds(downloadRetryDelaySeconds * attempt));
+                    }
+                }
+
+                if (lastException != null)
+                {
+                    throw new Exception($"Failed to download {url} after {downloadRetries} attempts.", lastException);
+                }
+            }
+        }
+
+        // Verify integrity of downloaded native libraries
+        Information("Verifying integrity of downloaded native libraries...");
+        foreach (var file in filesToDownload)
+        {
+            // Skip checksum files themselves
+            if (file.EndsWith(".sha256sum"))
+            {
+                continue;
+            }
+
+            var libraryPath = $"{librariesDir}/{file}";
+            var checksumPath = $"{libraryPath}.sha256sum";
+
+            if (!System.IO.File.Exists(checksumPath))
+            {
+                throw new Exception($"Checksum file not found for {file}. Expected: {checksumPath}");
+            }
+
+            // Read expected checksum from .sha256sum file
+            var checksumContent = System.IO.File.ReadAllText(checksumPath).Trim();
+            // The .sha256sum file format is typically: "<hash>  <filename>" or just "<hash>"
+            var expectedChecksum = checksumContent.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries)[0].ToLowerInvariant();
+
+            // Compute actual SHA256 hash of the downloaded library
+            string actualChecksum;
+            using (var sha256 = System.Security.Cryptography.SHA256.Create())
+            {
+                using (var stream = System.IO.File.OpenRead(libraryPath))
+                {
+                    var hashBytes = sha256.ComputeHash(stream);
+                    actualChecksum = BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
                 }
             }
 
-            if (lastException != null)
+            // Compare checksums
+            if (actualChecksum != expectedChecksum)
             {
-                throw new Exception($"Failed to download {url} after {downloadRetries} attempts.", lastException);
+                throw new Exception($"Integrity verification failed for {file}. Expected SHA256: {expectedChecksum}, Actual: {actualChecksum}. The downloaded file may be corrupted or tampered with.");
             }
+
+            Information($"Integrity verified for {file}: {actualChecksum}");
         }
-        Information("DownloadLibraries task completed successfully.");
+
+        Information("DownloadLibraries task completed successfully. All native libraries verified.");
     });
 
 Task("Restore")
