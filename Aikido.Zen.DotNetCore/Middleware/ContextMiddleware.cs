@@ -212,7 +212,13 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 for (int i = 0; i < values.Count; i++)
                 {
                     string dictKey = i == 0 ? kvp.Key : $"{kvp.Key}[{i}]";
-                    result[dictKey] = values[i];
+                    // Prevent attacker-controlled literal keys from overwriting synthetic indexed keys.
+                    // For example, if ?command=ok&command=;id is processed first, it creates command=ok and command[1]=;id.
+                    // A subsequent literal ?command[1]=safe should not overwrite the synthetic command[1]=;id entry.
+                    if (!result.ContainsKey(dictKey))
+                    {
+                        result[dictKey] = values[i];
+                    }
                 }
             }
 
@@ -236,7 +242,13 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 for (int i = 0; i < values.Count; i++)
                 {
                     string dictKey = i == 0 ? kvp.Key : $"{kvp.Key}[{i}]";
-                    result[dictKey] = values[i];
+                    // Prevent attacker-controlled literal keys from overwriting synthetic indexed keys.
+                    // For example, if X-Custom: a, X-Custom: b is processed first, it creates X-Custom=a and X-Custom[1]=b.
+                    // A subsequent literal X-Custom[1]: safe should not overwrite the synthetic X-Custom[1]=b entry.
+                    if (!result.ContainsKey(dictKey))
+                    {
+                        result[dictKey] = values[i];
+                    }
                 }
 
             }
