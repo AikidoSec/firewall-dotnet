@@ -97,6 +97,10 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                     return;
                 }
 
+                // Get application-specific configuration to ensure proper tenant isolation
+                // in shared worker process scenarios
+                var appConfig = AikidoConfiguration.Options;
+
                 var context = new Context
                 {
                     Url = httpContext.Request.Url.ToString(),
@@ -111,6 +115,9 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                     Source = "DotNetFramework",
                     Route = GetParametrizedRoute(httpContext),
                     RouteParams = FlattenRouteParameters(httpContext.Request.RequestContext.RouteData.Values),
+                    // Store application-specific credentials to prevent cross-application tenant leakage
+                    ApplicationToken = appConfig?.AikidoToken,
+                    ApplicationUrl = appConfig?.AikidoUrl,
                 };
 
                 Zen.SetCurrentContext(context);

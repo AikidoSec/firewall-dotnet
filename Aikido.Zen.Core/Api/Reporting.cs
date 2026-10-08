@@ -17,14 +17,22 @@ namespace Aikido.Zen.Core.Api
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
         }
 
-        public async Task<ReportingAPIResponse> ReportAsync(string token, object @event, CancellationToken cancellationToken)
+        public Task<ReportingAPIResponse> ReportAsync(string token, object @event, CancellationToken cancellationToken)
+        {
+            return ReportAsync(token, null, @event, cancellationToken);
+        }
+
+        public async Task<ReportingAPIResponse> ReportAsync(string token, string url, object @event, CancellationToken cancellationToken)
         {
             try
             {
+                // Use the provided URL or fall back to the environment variable
+                var aikidoUrl = !string.IsNullOrEmpty(url) ? url : EnvironmentHelper.AikidoUrl;
+                
                 // make sure the json string does not use unicode the escape characters
                 var eventAsJson = JsonSerializer.Serialize(@event, ZenApi.JsonSerializerOptions);
                 var requestContent = new StringContent(eventAsJson, Encoding.UTF8, "application/json");
-                var request = APIHelper.CreateRequest(token, new Uri(EnvironmentHelper.AikidoUrl), "api/runtime/events", HttpMethod.Post, requestContent);
+                var request = APIHelper.CreateRequest(token, new Uri(aikidoUrl), "api/runtime/events", HttpMethod.Post, requestContent);
                 var response = await _httpClient.SendAsync(request, cancellationToken);
                 return APIHelper.ToAPIResponse<ReportingAPIResponse>(response);
             }

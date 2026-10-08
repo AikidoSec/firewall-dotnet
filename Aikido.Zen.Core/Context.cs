@@ -36,6 +36,20 @@ namespace Aikido.Zen.Core
 
         internal bool Bypassed { get; set; }
 
+        /// <summary>
+        /// Application-specific Aikido token. When set, this token is used for reporting events
+        /// instead of the process-wide environment variable. This ensures proper tenant isolation
+        /// in shared worker process scenarios (e.g., multiple ASP.NET Framework applications in one IIS worker process).
+        /// </summary>
+        internal string ApplicationToken { get; set; }
+
+        /// <summary>
+        /// Application-specific Aikido URL. When set, this URL is used for reporting events
+        /// instead of the process-wide environment variable. This ensures proper tenant isolation
+        /// in shared worker process scenarios (e.g., multiple ASP.NET Framework applications in one IIS worker process).
+        /// </summary>
+        internal string ApplicationUrl { get; set; }
+
         public bool ConsumedRateLimitForIP { get; set; }
         public bool ConsumedRateLimitForUser { get; set; }
 

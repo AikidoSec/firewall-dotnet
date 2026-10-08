@@ -33,8 +33,10 @@ namespace Aikido.Zen.DotNetFramework
                     $"Aikido Zen does not support 32-bit processes. Detected process architecture: {RuntimeInformation.ProcessArchitecture}");
             }
 
-            // initialize the options, this will ensure the environment variables are set
+            // Initialize the application-specific configuration
+            // This ensures each ASP.NET application in a shared worker process uses its own credentials
             AikidoConfiguration.Init();
+            
             if (Environment.GetEnvironmentVariable("AIKIDO_DISABLE") == "true")
             {
                 return;

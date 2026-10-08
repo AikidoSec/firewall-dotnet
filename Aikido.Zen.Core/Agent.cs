@@ -171,12 +171,25 @@ namespace Aikido.Zen.Core
         /// <param name="callback">Optional callback to execute when the event is processed</param>
         public void QueueEvent(string token, IEvent evt, Action<IEvent, APIResponse> callback = null)
         {
+            QueueEvent(token, null, evt, callback);
+        }
+
+        /// <summary>
+        /// Queues an event for processing and reporting to the Zen API.
+        /// </summary>
+        /// <param name="token">The authentication token</param>
+        /// <param name="url">The Aikido URL (null to use environment variable)</param>
+        /// <param name="evt">The event to queue</param>
+        /// <param name="callback">Optional callback to execute when the event is processed</param>
+        public void QueueEvent(string token, string url, IEvent evt, Action<IEvent, APIResponse> callback = null)
+        {
             if (string.IsNullOrEmpty(token)) throw new ArgumentNullException(nameof(token));
             if (evt == null) throw new ArgumentNullException(nameof(evt));
 
             var queuedItem = new QueuedItem
             {
                 Token = token,
+                Url = url,
                 Event = evt,
                 Callback = callback,
             };
@@ -271,7 +284,7 @@ namespace Aikido.Zen.Core
                     {
                         try
                         {
-                            var response = _api.Reporting.ReportAsync(eventItem.Token, eventItem.Event, CancellationToken.None)
+                            var response = _api.Reporting.ReportAsync(eventItem.Token, eventItem.Url, eventItem.Event, CancellationToken.None)
                                 .ConfigureAwait(false)
                                 .GetAwaiter()
                                 .GetResult();
@@ -401,6 +414,34 @@ namespace Aikido.Zen.Core
         }
 
         /// <summary>
+        /// Gets the Aikido token for the given context.
+        /// Prioritizes application-specific token from the context to ensure proper tenant isolation
+        /// in shared worker process scenarios, falling back to the process-wide environment variable.
+        /// </summary>
+        /// <param name="context">The request context that may contain application-specific credentials</param>
+        /// <returns>The Aikido token to use for reporting</returns>
+        private static string GetTokenForContext(Context context)
+        {
+            return !string.IsNullOrEmpty(context?.ApplicationToken)
+                ? context.ApplicationToken
+                : EnvironmentHelper.Token;
+        }
+
+        /// <summary>
+        /// Gets the Aikido URL for the given context.
+        /// Prioritizes application-specific URL from the context to ensure proper tenant isolation
+        /// in shared worker process scenarios, falling back to the process-wide environment variable.
+        /// </summary>
+        /// <param name="context">The request context that may contain application-specific credentials</param>
+        /// <returns>The Aikido URL to use for reporting</returns>
+        private static string GetUrlForContext(Context context)
+        {
+            return !string.IsNullOrEmpty(context?.ApplicationUrl)
+                ? context.ApplicationUrl
+                : EnvironmentHelper.AikidoUrl;
+        }
+
+        /// <summary>
         /// Sends out an attack event
         /// </summary>
         /// <param name="kind">The attack kind</param>
@@ -417,10 +458,14 @@ namespace Aikido.Zen.Core
         {
             LogHelper.AttackLog(Logger, $"Attack detected: {kind} in {source} {operation}, blocked: {blocked}");
 
+            // Get the token and URL for this context (application-specific or process-wide)
+            var token = GetTokenForContext(context);
+            var url = GetUrlForContext(context);
+            
             // Prevent sending events if no token is configured
-            if (!string.IsNullOrEmpty(EnvironmentHelper.Token))
+            if (!string.IsNullOrEmpty(token))
             {
-                QueueEvent(EnvironmentHelper.Token, DetectedAttack.Create(kind, source, payload, operation, context, module, metadata, blocked, paths));
+                QueueEvent(token, url, DetectedAttack.Create(kind, source, payload, operation, context, module, metadata, blocked, paths));
             }
 
             Context.AddAttackDetected(blocked);
@@ -430,7 +475,11 @@ namespace Aikido.Zen.Core
         {
             try
             {
-                if (string.IsNullOrEmpty(EnvironmentHelper.Token))
+                // Get the token and URL for this context (application-specific or process-wide)
+                var token = GetTokenForContext(context);
+                var url = GetUrlForContext(context);
+                
+                if (string.IsNullOrEmpty(token))
                 {
                     return;
                 }
@@ -463,7 +512,7 @@ namespace Aikido.Zen.Core
                     return;
                 }
 
-                QueueEvent(EnvironmentHelper.Token, CustomEvent.Create(eventName, context));
+                QueueEvent(token, url, CustomEvent.Create(eventName, context));
             }
             catch (Exception ex)
             {
@@ -480,10 +529,14 @@ namespace Aikido.Zen.Core
         {
             LogHelper.AttackLog(Logger, $"Attack wave detected from {context.RemoteAddress}");
 
+            // Get the token and URL for this context (application-specific or process-wide)
+            var token = GetTokenForContext(context);
+            var url = GetUrlForContext(context);
+            
             // Prevent sending events if no token is configured
-            if (!string.IsNullOrEmpty(EnvironmentHelper.Token))
+            if (!string.IsNullOrEmpty(token))
             {
-                QueueEvent(EnvironmentHelper.Token, DetectedAttackWave.Create(context, samples));
+                QueueEvent(token, url, DetectedAttackWave.Create(context, samples));
             }
 
             // Currently we do not block attack waves
@@ -584,7 +637,7 @@ namespace Aikido.Zen.Core
                 var scheduledItem = kvp.Value;
                 if (now >= scheduledItem.NextRun)
                 {
-                    QueueEvent(scheduledItem.Token, scheduledItem.EventFactory.Invoke(), scheduledItem.Callback);
+                    QueueEvent(scheduledItem.Token, scheduledItem.Url, scheduledItem.EventFactory.Invoke(), scheduledItem.Callback);
 
                     var nextInterval = kvp.Key == Heartbeat.ScheduleId
                         ? Heartbeat.GetNextInterval()
@@ -593,6 +646,7 @@ namespace Aikido.Zen.Core
                     var updatedItem = new ScheduledItem
                     {
                         Token = scheduledItem.Token,
+                        Url = scheduledItem.Url,
                         EventFactory = scheduledItem.EventFactory,
                         Interval = nextInterval,
                         NextRun = scheduledItem.NextRun.Add(nextInterval),
@@ -648,7 +702,7 @@ namespace Aikido.Zen.Core
             {
                 requestsThisSecond++;
                 LogHelper.DebugLog(Logger, $"Sending event: {queuedItem.Event.Type}");
-                var response = await _api.Reporting.ReportAsync(queuedItem.Token, queuedItem.Event, _cancellationSource.Token)
+                var response = await _api.Reporting.ReportAsync(queuedItem.Token, queuedItem.Url, queuedItem.Event, _cancellationSource.Token)
                     .ConfigureAwait(false);
 
                 _reportingStatus.OnEventReported(queuedItem.Event.Type, response.Success);
@@ -780,6 +834,7 @@ namespace Aikido.Zen.Core
         public class QueuedItem
         {
             public string Token { get; set; }
+            public string Url { get; set; }
             public IEvent Event { get; set; }
             public Action<IEvent, APIResponse> Callback { get; set; }
         }
@@ -787,6 +842,7 @@ namespace Aikido.Zen.Core
         public class ScheduledItem
         {
             public string Token { get; set; }
+            public string Url { get; set; }
             public Func<IEvent> EventFactory { get; set; }
             public TimeSpan Interval { get; set; }
             public DateTime NextRun { get; set; }
