@@ -47,13 +47,15 @@ namespace Aikido.Zen.Core
         private const int ErrorRetryDelayMs = 1000;
         private const int RealtimeConfigRefreshThrottleSeconds = 9;
         private const int PeriodicConfigRefreshIntervalSeconds = 60;
+        private const int ShutdownTimeoutMs = 5000;
 
         private AgentContext _context;
 
         private readonly AttackWaveDetector _attackWaveDetector;
+        private int _disposed;
 
         // instance
-        private static Agent _instance;
+        private static volatile Agent _instance;
         private static readonly object InstanceLock = new object();
 
         /// <summary>
@@ -70,6 +72,14 @@ namespace Aikido.Zen.Core
         {
             get
             {
+                // Read a published instance without the lock: NewInstance holds it while the previous agent
+                // finishes its work, and that work reaches Agent.Instance through the patched sinks
+                var instance = _instance;
+                if (instance != null)
+                {
+                    return instance;
+                }
+
                 lock (InstanceLock)
                 {
                     if (_instance == null)
@@ -259,19 +269,26 @@ namespace Aikido.Zen.Core
         /// </summary>
         public void Dispose()
         {
-            try
+            // Both the application host stopping and a replacement agent dispose the agent
+            if (Interlocked.Exchange(ref _disposed, 1) == 1)
             {
-                // Cancel any pending operations
-                _cancellationSource.Cancel();
+                return;
+            }
 
-                // Process any remaining events in the queue synchronously
-                while (!_eventQueue.IsEmpty)
+            // Keep shutdown bounded when the Zen API is slow or unreachable
+            using (var shutdownTimeout = new CancellationTokenSource(ShutdownTimeoutMs))
+            {
+                try
                 {
-                    if (_eventQueue.TryDequeue(out var eventItem))
+                    // Cancel any pending operations
+                    _cancellationSource.Cancel();
+
+                    // Process any remaining events in the queue synchronously
+                    while (!shutdownTimeout.IsCancellationRequested && _eventQueue.TryDequeue(out var eventItem))
                     {
                         try
                         {
-                            var response = _api.Reporting.ReportAsync(eventItem.Token, eventItem.Event, CancellationToken.None)
+                            var response = _api.Reporting.ReportAsync(eventItem.Token, eventItem.Event, shutdownTimeout.Token)
                                 .ConfigureAwait(false)
                                 .GetAwaiter()
                                 .GetResult();
@@ -284,27 +301,21 @@ namespace Aikido.Zen.Core
                             LogHelper.DebugLog(Logger, $"Error processing event: {eventItem.Event.Type}");
                         }
                     }
-                }
 
-                // Wait for background task to complete gracefully
-                if (!_backgroundTask.Wait(TimeSpan.FromSeconds(30)))
+                    // Wait for background tasks to complete gracefully
+                    var tasks = _realtimeConfigTask == null
+                        ? new[] { _backgroundTask }
+                        : new[] { _backgroundTask, _realtimeConfigTask };
+                    Task.WaitAll(tasks, shutdownTimeout.Token);
+                }
+                catch (Exception)
                 {
                     // pass through
                 }
-
-                if (_realtimeConfigTask != null &&
-                    !_realtimeConfigTask.Wait(TimeSpan.FromSeconds(30)))
+                finally
                 {
-                    // pass through
+                    _cancellationSource.Dispose();
                 }
-            }
-            catch (Exception)
-            {
-                // pass through
-            }
-            finally
-            {
-                _cancellationSource.Dispose();
             }
         }
 

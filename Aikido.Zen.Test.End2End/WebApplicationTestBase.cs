@@ -4,7 +4,6 @@ using DotNet.Testcontainers.Networks;
 using Microsoft.AspNetCore.Mvc.Testing;
 using NUnit.Framework;
 using System.Net.Http.Json;
-using Aikido.Zen.Core;
 using Aikido.Zen.Server.Mock;
 using Microsoft.AspNetCore.Hosting;
 using SampleApp.Common;
@@ -86,18 +85,6 @@ namespace Aikido.Zen.Test.End2End
         [TearDown]
         public async Task DisposeSampleAppFactories()
         {
-            if (_sampleAppFactories.Count == 0)
-            {
-                return;
-            }
-
-            // Zen keeps the last sample app's service provider and agent in statics, so release them before the hosts go away:
-            // - the patched sinks would otherwise resolve the context from a disposed provider
-            // - the next sample app replaces the agent while holding the lock that the previous agent's background work needs,
-            //   which can stall that startup until Agent.Dispose stops waiting (30s)
-            Aikido.Zen.DotNetCore.Zen.Initialize(null, null);
-            Agent.Instance.Dispose();
-
             // Every sample app host keeps file watchers (inotify instances on Linux) open until it is disposed
             foreach (var factory in _sampleAppFactories)
             {

@@ -6,6 +6,7 @@ using Aikido.Zen.Core.Models;
 using Aikido.Zen.DotNetCore.RuntimeSca;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Runtime.InteropServices;
@@ -15,8 +16,8 @@ namespace Aikido.Zen.DotNetCore
 {
     public class Zen
     {
-        private static IServiceProvider _serviceProvider;
-        private static IHttpContextAccessor _httpContextAccessor;
+        private static volatile IServiceProvider _serviceProvider;
+        private static volatile IHttpContextAccessor _httpContextAccessor;
 
         public static void Initialize(IServiceProvider serviceProvider, IHttpContextAccessor httpContextAccessor)
         {
@@ -38,13 +39,17 @@ namespace Aikido.Zen.DotNetCore
                 throw new InvalidOperationException("Aikido.Zen.DotNetCore.Zen.Initialize must be called before Zen.Start().");
             }
 
+            var serviceProvider = _serviceProvider;
+            var httpContextAccessor = _httpContextAccessor;
+            Agent agent = null;
+
             AgentInfoHelper.SetAgentAssembly(typeof(Zen).Assembly);
-            var options = _serviceProvider.GetRequiredService<IOptions<AikidoOptions>>();
+            var options = serviceProvider.GetRequiredService<IOptions<AikidoOptions>>();
 
             if (!string.IsNullOrEmpty(options?.Value?.AikidoToken))
             {
-                var agent = Agent.NewInstance(_serviceProvider.GetRequiredService<IZenApi>());
-                var agentLogger = _serviceProvider.GetService<ILogger<Agent>>();
+                agent = Agent.NewInstance(serviceProvider.GetRequiredService<IZenApi>());
+                var agentLogger = serviceProvider.GetService<ILogger<Agent>>();
                 if (agentLogger != null)
                 {
                     Agent.ConfigureLogger(agentLogger);
@@ -52,7 +57,7 @@ namespace Aikido.Zen.DotNetCore
 
                 agent.Start();
 
-                var exceptionLogger = _serviceProvider.GetService<ILogger<AikidoException>>();
+                var exceptionLogger = serviceProvider.GetService<ILogger<AikidoException>>();
                 if (exceptionLogger != null)
                 {
                     AikidoException.ConfigureLogger(exceptionLogger);
@@ -63,6 +68,41 @@ namespace Aikido.Zen.DotNetCore
             }
 
             CorePatcher.PatchSinks(GetContext);
+
+            try
+            {
+                serviceProvider
+                    .GetService<IHostApplicationLifetime>()?
+                    .ApplicationStopped.Register(() => Stop(serviceProvider, httpContextAccessor, agent));
+            }
+            catch (Exception ex)
+            {
+                LogHelper.ErrorLog(Agent.Logger, ex, "Failed to register the application shutdown callback");
+            }
+        }
+
+        // The patched sinks outlive the host, so release what it handed to Zen and stop the agent it started.
+        // Another host may have started Zen since, so only clear what still belongs to this one.
+        private static void Stop(IServiceProvider serviceProvider, IHttpContextAccessor httpContextAccessor, Agent agent)
+        {
+            if (_httpContextAccessor == httpContextAccessor)
+            {
+                _httpContextAccessor = null;
+            }
+
+            if (_serviceProvider == serviceProvider)
+            {
+                _serviceProvider = null;
+            }
+
+            try
+            {
+                agent?.Dispose();
+            }
+            catch (Exception ex)
+            {
+                LogHelper.ErrorLog(Agent.Logger, ex, "Failed to dispose the agent during application shutdown");
+            }
         }
 
         public static void SetUser(string id, string name, HttpContext context)
@@ -113,24 +153,16 @@ namespace Aikido.Zen.DotNetCore
             }
         }
 
+        // Read through the accessor rather than the host's service provider: the patched sinks call this
+        // on every thread, also after the host and its provider have been disposed
         public static Context GetContext()
         {
-            if (_serviceProvider != null)
-            {
-                var contextAccessor = _serviceProvider.GetService(typeof(ContextAccessor)) as ContextAccessor;
-                return contextAccessor?.CurrentContext;
-            }
             return _httpContextAccessor?.HttpContext?.Items["Aikido.Zen.Context"] as Context;
         }
 
         public static User GetUser()
         {
-            if (_serviceProvider == null)
-            {
-                return null;
-            }
-            var contextAccessor = _serviceProvider.GetService(typeof(ContextAccessor)) as ContextAccessor;
-            return contextAccessor?.CurrentUser;
+            return _httpContextAccessor?.HttpContext?.Items["Aikido.Zen.CurrentUser"] as User;
         }
 
         /// <summary>

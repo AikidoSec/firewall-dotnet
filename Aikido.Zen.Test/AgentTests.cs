@@ -287,6 +287,67 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public async Task NewInstance_WhenPreviousAgentWorkReadsInstance_DoesNotWaitForShutdownTimeout()
+        {
+            var instanceField = typeof(Agent).GetField("_instance", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.That(instanceField, Is.Not.Null);
+
+            var reportStarted = new TaskCompletionSource<CancellationToken>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var releaseReport = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var reportingApiMock = new Mock<IReportingAPIClient>();
+            reportingApiMock
+                .Setup(r => r.ReportAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<CancellationToken>()))
+                .Returns<string, object, CancellationToken>(async (_, _, cancellationToken) =>
+                {
+                    reportStarted.TrySetResult(cancellationToken);
+                    await releaseReport.Task;
+                    return new ReportingAPIResponse { Success = true };
+                });
+
+            var first = Agent.NewInstance(ZenApiMock.CreateMock(reporting: reportingApiMock.Object).Object);
+            Agent? instanceSeenByPreviousAgent = null;
+            // Sinks reach Agent.Instance the same way while the previous agent reports its own events
+            first.QueueEvent("test-token", Started.Create(), (_, _) => instanceSeenByPreviousAgent = Agent.Instance);
+            Task<Agent>? replacement = null;
+
+            try
+            {
+                Assert.That(await Task.WhenAny(reportStarted.Task, Task.Delay(TimeSpan.FromSeconds(5))), Is.SameAs(reportStarted.Task));
+                var reportCancellationToken = await reportStarted.Task;
+
+                replacement = Task.Run(() => Agent.NewInstance(ZenApiMock.CreateMock().Object));
+                var deadline = DateTime.UtcNow.AddSeconds(5);
+                while (!reportCancellationToken.IsCancellationRequested && DateTime.UtcNow < deadline)
+                {
+                    await Task.Delay(10);
+                }
+                Assert.That(reportCancellationToken.IsCancellationRequested, Is.True, "NewInstance should be disposing the previous agent");
+
+                var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+                releaseReport.TrySetResult(true);
+                var second = await replacement;
+                stopwatch.Stop();
+
+                Assert.That(stopwatch.Elapsed, Is.LessThan(TimeSpan.FromSeconds(2)));
+                Assert.That(instanceSeenByPreviousAgent, Is.SameAs(first));
+                Assert.That(Agent.Instance, Is.SameAs(second));
+            }
+            finally
+            {
+                releaseReport.TrySetResult(true);
+                if (replacement != null)
+                {
+                    (await replacement).Dispose();
+                }
+                else
+                {
+                    first.Dispose();
+                }
+                instanceField!.SetValue(null, null);
+            }
+        }
+
+        [Test]
         public async Task Start_QueuesStartedEventAndSchedulesHeartbeat()
         {
             // Arrange

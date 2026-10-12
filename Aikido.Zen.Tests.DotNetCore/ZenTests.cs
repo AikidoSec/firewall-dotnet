@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Net;
+using System.Reflection;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Helpers;
@@ -9,7 +10,9 @@ using Aikido.Zen.DotNetCore;
 using Aikido.Zen.DotNetCore.Middleware;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
 using ZenApi = Aikido.Zen.DotNetCore.Zen;
 
@@ -123,7 +126,6 @@ namespace Aikido.Zen.Tests.DotNetCore
             var accessor = new HttpContextAccessor();
             using var services = new ServiceCollection()
                 .AddSingleton<IHttpContextAccessor>(accessor)
-                .AddSingleton(new ContextAccessor(accessor))
                 .BuildServiceProvider();
 
             try
@@ -199,6 +201,88 @@ namespace Aikido.Zen.Tests.DotNetCore
             ZenApi.SetRateLimitGroup(string.Empty, context);
 
             Assert.That(context.Items.ContainsKey("Aikido.Zen.RateLimitGroup"), Is.False);
+        }
+
+        [Test]
+        [NonParallelizable]
+        public void GetContext_AfterServiceProviderIsDisposed_ReadsFromHttpContextAccessor()
+        {
+            var context = new Context();
+            var user = new User("user-1", "Test User");
+            var accessor = new HttpContextAccessor { HttpContext = new DefaultHttpContext() };
+            accessor.HttpContext.Items["Aikido.Zen.Context"] = context;
+            accessor.HttpContext.Items["Aikido.Zen.CurrentUser"] = user;
+            var services = new ServiceCollection()
+                .AddSingleton<IHttpContextAccessor>(accessor)
+                .BuildServiceProvider();
+
+            try
+            {
+                ZenApi.Initialize(services, accessor);
+                services.Dispose();
+
+                Assert.That(ZenApi.GetContext(), Is.SameAs(context));
+                Assert.That(ZenApi.GetUser(), Is.SameAs(user));
+            }
+            finally
+            {
+                ZenApi.Initialize(null, null);
+                accessor.HttpContext = null;
+            }
+        }
+
+        [Test]
+        [NonParallelizable]
+        public void ApplicationStopped_ClearsContextAndDisposesAgent()
+        {
+            var instanceField = typeof(Agent).GetField("_instance", BindingFlags.NonPublic | BindingFlags.Static);
+            var disposedField = typeof(Agent).GetField("_disposed", BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.That(instanceField, Is.Not.Null);
+            Assert.That(disposedField, Is.Not.Null);
+
+            using var applicationStopped = new CancellationTokenSource();
+            var context = new Context();
+            var accessor = new HttpContextAccessor { HttpContext = new DefaultHttpContext() };
+            accessor.HttpContext.Items["Aikido.Zen.Context"] = context;
+            var applicationLifetime = new Mock<IHostApplicationLifetime>();
+            applicationLifetime.SetupGet(lifetime => lifetime.ApplicationStopped).Returns(applicationStopped.Token);
+            var serviceProvider = new Mock<IServiceProvider>();
+            serviceProvider
+                .Setup(provider => provider.GetService(typeof(IOptions<AikidoOptions>)))
+                .Returns(Options.Create(new AikidoOptions { AikidoToken = "test-token" }));
+            var reportingApi = new Mock<IReportingAPIClient>();
+            reportingApi
+                .Setup(api => api.ReportAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new ReportingAPIResponse { Success = true });
+            serviceProvider
+                .Setup(provider => provider.GetService(typeof(IZenApi)))
+                .Returns(new Aikido.Zen.Core.Api.ZenApi(reportingApi.Object, Mock.Of<IRuntimeAPIClient>()));
+            serviceProvider
+                .Setup(provider => provider.GetService(typeof(IHostApplicationLifetime)))
+                .Returns(applicationLifetime.Object);
+
+            try
+            {
+                ZenApi.Initialize(serviceProvider.Object, accessor);
+                ZenApi.Start();
+                var agent = Agent.Instance;
+                Assert.That(ZenApi.GetContext(), Is.SameAs(context));
+
+                applicationStopped.Cancel();
+
+                Assert.That(ZenApi.GetContext(), Is.Null);
+                Assert.That(disposedField!.GetValue(agent), Is.EqualTo(1));
+            }
+            finally
+            {
+                if (!applicationStopped.IsCancellationRequested)
+                {
+                    applicationStopped.Cancel();
+                }
+                ZenApi.Initialize(null, null);
+                accessor.HttpContext = null;
+                instanceField!.SetValue(null, null);
+            }
         }
     }
 }
