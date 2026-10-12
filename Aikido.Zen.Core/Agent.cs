@@ -72,8 +72,7 @@ namespace Aikido.Zen.Core
         {
             get
             {
-                // Read a published instance without the lock: NewInstance holds it while the previous agent
-                // finishes its work, and that work reaches Agent.Instance through the patched sinks
+                // The lock only guards creating and swapping the instance
                 var instance = _instance;
                 if (instance != null)
                 {
@@ -86,7 +85,7 @@ namespace Aikido.Zen.Core
                     {
                         var reportingHttpClient = ApiClientHttpClientFactory.Create();
                         var runtimeHttpClient = ApiClientHttpClientFactory.Create();
-                        NewInstance(new ZenApi(new ReportingAPIClient(reportingHttpClient), new RuntimeAPIClient(runtimeHttpClient)));
+                        _instance = new Agent(new ZenApi(new ReportingAPIClient(reportingHttpClient), new RuntimeAPIClient(runtimeHttpClient)));
                     }
 
                     return _instance;
@@ -98,18 +97,28 @@ namespace Aikido.Zen.Core
         // instead of handing out a disposed agent
         internal static void ClearInstance(Agent agent)
         {
-            Interlocked.CompareExchange(ref _instance, null, agent);
+            lock (InstanceLock)
+            {
+                if (_instance == agent)
+                {
+                    _instance = null;
+                }
+            }
         }
 
         internal static Agent NewInstance(IZenApi api)
         {
+            var agent = new Agent(api);
+            Agent previous;
             lock (InstanceLock)
             {
-                // Stop previous background work like config polls before publishing the replacement instance
-                _instance?.Dispose();
-                _instance = new Agent(api);
-                return _instance;
+                previous = _instance;
+                _instance = agent;
             }
+
+            // Stop the previous agent outside the lock: its remaining work still calls Agent.Instance through the patched sinks
+            previous?.Dispose();
+            return agent;
         }
 
         /// <summary>
