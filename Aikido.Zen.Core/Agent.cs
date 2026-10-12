@@ -94,6 +94,13 @@ namespace Aikido.Zen.Core
             }
         }
 
+        // Unpublishes the agent if it is still the current instance, so the next Agent.Instance creates a fresh one
+        // instead of handing out a disposed agent
+        internal static void ClearInstance(Agent agent)
+        {
+            Interlocked.CompareExchange(ref _instance, null, agent);
+        }
+
         internal static Agent NewInstance(IZenApi api)
         {
             lock (InstanceLock)

@@ -16,8 +16,8 @@ namespace Aikido.Zen.DotNetCore
 {
     public class Zen
     {
-        private static volatile IServiceProvider _serviceProvider;
-        private static volatile IHttpContextAccessor _httpContextAccessor;
+        private static IServiceProvider _serviceProvider;
+        private static IHttpContextAccessor _httpContextAccessor;
 
         public static void Initialize(IServiceProvider serviceProvider, IHttpContextAccessor httpContextAccessor)
         {
@@ -82,22 +82,21 @@ namespace Aikido.Zen.DotNetCore
         }
 
         // The patched sinks outlive the host, so release what it handed to Zen and stop the agent it started.
-        // Another host may have started Zen since, so only clear what still belongs to this one.
+        // Another host may have started Zen since, so only clear what still belongs to this one, atomically.
         private static void Stop(IServiceProvider serviceProvider, IHttpContextAccessor httpContextAccessor, Agent agent)
         {
-            if (_httpContextAccessor == httpContextAccessor)
-            {
-                _httpContextAccessor = null;
-            }
+            Interlocked.CompareExchange(ref _httpContextAccessor, null, httpContextAccessor);
+            Interlocked.CompareExchange(ref _serviceProvider, null, serviceProvider);
 
-            if (_serviceProvider == serviceProvider)
+            if (agent == null)
             {
-                _serviceProvider = null;
+                return;
             }
 
             try
             {
-                agent?.Dispose();
+                Agent.ClearInstance(agent);
+                agent.Dispose();
             }
             catch (Exception ex)
             {
