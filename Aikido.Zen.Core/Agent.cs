@@ -53,7 +53,7 @@ namespace Aikido.Zen.Core
         private readonly AttackWaveDetector _attackWaveDetector;
 
         // instance
-        private static Agent _instance;
+        private static volatile Agent _instance;
         private static readonly object InstanceLock = new object();
 
         /// <summary>
@@ -70,6 +70,12 @@ namespace Aikido.Zen.Core
         {
             get
             {
+                var instance = _instance;
+                if (instance != null)
+                {
+                    return instance;
+                }
+
                 lock (InstanceLock)
                 {
                     if (_instance == null)
