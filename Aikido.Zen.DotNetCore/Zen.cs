@@ -6,7 +6,6 @@ using Aikido.Zen.Core.Models;
 using Aikido.Zen.DotNetCore.RuntimeSca;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Runtime.InteropServices;
@@ -39,17 +38,13 @@ namespace Aikido.Zen.DotNetCore
                 throw new InvalidOperationException("Aikido.Zen.DotNetCore.Zen.Initialize must be called before Zen.Start().");
             }
 
-            var serviceProvider = _serviceProvider;
-            var httpContextAccessor = _httpContextAccessor;
-            Agent agent = null;
-
             AgentInfoHelper.SetAgentAssembly(typeof(Zen).Assembly);
-            var options = serviceProvider.GetRequiredService<IOptions<AikidoOptions>>();
+            var options = _serviceProvider.GetRequiredService<IOptions<AikidoOptions>>();
 
             if (!string.IsNullOrEmpty(options?.Value?.AikidoToken))
             {
-                agent = Agent.NewInstance(serviceProvider.GetRequiredService<IZenApi>());
-                var agentLogger = serviceProvider.GetService<ILogger<Agent>>();
+                var agent = Agent.NewInstance(_serviceProvider.GetRequiredService<IZenApi>());
+                var agentLogger = _serviceProvider.GetService<ILogger<Agent>>();
                 if (agentLogger != null)
                 {
                     Agent.ConfigureLogger(agentLogger);
@@ -57,7 +52,7 @@ namespace Aikido.Zen.DotNetCore
 
                 agent.Start();
 
-                var exceptionLogger = serviceProvider.GetService<ILogger<AikidoException>>();
+                var exceptionLogger = _serviceProvider.GetService<ILogger<AikidoException>>();
                 if (exceptionLogger != null)
                 {
                     AikidoException.ConfigureLogger(exceptionLogger);
@@ -68,40 +63,6 @@ namespace Aikido.Zen.DotNetCore
             }
 
             CorePatcher.PatchSinks(GetContext);
-
-            try
-            {
-                serviceProvider
-                    .GetService<IHostApplicationLifetime>()?
-                    .ApplicationStopped.Register(() => Stop(serviceProvider, httpContextAccessor, agent));
-            }
-            catch (Exception ex)
-            {
-                LogHelper.ErrorLog(Agent.Logger, ex, "Failed to register the application shutdown callback");
-            }
-        }
-
-        // The patched sinks outlive the host, so release what it handed to Zen and stop the agent it started.
-        // Another host may have started Zen since, so only clear what still belongs to this one, atomically.
-        private static void Stop(IServiceProvider serviceProvider, IHttpContextAccessor httpContextAccessor, Agent agent)
-        {
-            Interlocked.CompareExchange(ref _httpContextAccessor, null, httpContextAccessor);
-            Interlocked.CompareExchange(ref _serviceProvider, null, serviceProvider);
-
-            if (agent == null)
-            {
-                return;
-            }
-
-            try
-            {
-                Agent.ClearInstance(agent);
-                agent.Dispose();
-            }
-            catch (Exception ex)
-            {
-                LogHelper.ErrorLog(Agent.Logger, ex, "Failed to dispose the agent during application shutdown");
-            }
         }
 
         public static void SetUser(string id, string name, HttpContext context)

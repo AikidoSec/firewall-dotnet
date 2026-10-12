@@ -1,6 +1,5 @@
 using System.Collections.Concurrent;
 using System.Net;
-using System.Reflection;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Helpers;
@@ -10,9 +9,7 @@ using Aikido.Zen.DotNetCore;
 using Aikido.Zen.DotNetCore.Middleware;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Moq;
 using ZenApi = Aikido.Zen.DotNetCore.Zen;
 
@@ -229,103 +226,6 @@ namespace Aikido.Zen.Tests.DotNetCore
                 ZenApi.Initialize(null, null);
                 accessor.HttpContext = null;
             }
-        }
-
-        [Test]
-        [NonParallelizable]
-        public void ApplicationStopped_ClearsContextAndDisposesAgent()
-        {
-            using var applicationStopped = new CancellationTokenSource();
-            var context = new Context();
-            var accessor = new HttpContextAccessor { HttpContext = new DefaultHttpContext() };
-            accessor.HttpContext.Items["Aikido.Zen.Context"] = context;
-
-            try
-            {
-                StartHost(accessor, applicationStopped.Token);
-                var agent = Agent.Instance;
-                Assert.That(ZenApi.GetContext(), Is.SameAs(context));
-
-                applicationStopped.Cancel();
-
-                Assert.That(ZenApi.GetContext(), Is.Null);
-                Assert.That(AgentDisposedField.GetValue(agent), Is.EqualTo(1));
-                Assert.That(AgentInstanceField.GetValue(null), Is.Null, "A later Agent.Instance should create a fresh agent");
-            }
-            finally
-            {
-                applicationStopped.Cancel();
-                ResetHostState(accessor);
-            }
-        }
-
-        [Test]
-        [NonParallelizable]
-        public void ApplicationStopped_AfterNewerHostStarted_KeepsNewerHostState()
-        {
-            using var firstStopped = new CancellationTokenSource();
-            using var secondStopped = new CancellationTokenSource();
-            var firstAccessor = new HttpContextAccessor();
-            var secondAccessor = new HttpContextAccessor();
-
-            try
-            {
-                StartHost(firstAccessor, firstStopped.Token);
-                var firstAgent = Agent.Instance;
-                StartHost(secondAccessor, secondStopped.Token);
-                var secondAgent = Agent.Instance;
-
-                firstStopped.Cancel();
-
-                Assert.That(ZenAccessorField.GetValue(null), Is.SameAs(secondAccessor));
-                Assert.That(AgentInstanceField.GetValue(null), Is.SameAs(secondAgent));
-                Assert.That(AgentDisposedField.GetValue(firstAgent), Is.EqualTo(1));
-                Assert.That(AgentDisposedField.GetValue(secondAgent), Is.EqualTo(0));
-            }
-            finally
-            {
-                firstStopped.Cancel();
-                secondStopped.Cancel();
-                ResetHostState(secondAccessor);
-            }
-        }
-
-        private static readonly FieldInfo AgentInstanceField = typeof(Agent).GetField("_instance", BindingFlags.NonPublic | BindingFlags.Static)!;
-        private static readonly FieldInfo AgentDisposedField = typeof(Agent).GetField("_disposed", BindingFlags.NonPublic | BindingFlags.Instance)!;
-        private static readonly FieldInfo ZenAccessorField = typeof(ZenApi).GetField("_httpContextAccessor", BindingFlags.NonPublic | BindingFlags.Static)!;
-
-        private static void StartHost(IHttpContextAccessor accessor, CancellationToken applicationStopped)
-        {
-            var applicationLifetime = new Mock<IHostApplicationLifetime>();
-            applicationLifetime.SetupGet(lifetime => lifetime.ApplicationStopped).Returns(applicationStopped);
-            var reportingApi = new Mock<IReportingAPIClient>();
-            reportingApi
-                .Setup(api => api.ReportAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new ReportingAPIResponse { Success = true });
-            var serviceProvider = new Mock<IServiceProvider>();
-            serviceProvider
-                .Setup(provider => provider.GetService(typeof(IOptions<AikidoOptions>)))
-                .Returns(Options.Create(new AikidoOptions { AikidoToken = "test-token" }));
-            serviceProvider
-                .Setup(provider => provider.GetService(typeof(IZenApi)))
-                .Returns(new Aikido.Zen.Core.Api.ZenApi(reportingApi.Object, Mock.Of<IRuntimeAPIClient>()));
-            serviceProvider
-                .Setup(provider => provider.GetService(typeof(IHostApplicationLifetime)))
-                .Returns(applicationLifetime.Object);
-
-            ZenApi.Initialize(serviceProvider.Object, accessor);
-            ZenApi.Start();
-        }
-
-        private static void ResetHostState(HttpContextAccessor accessor)
-        {
-            ZenApi.Initialize(null, null);
-            accessor.HttpContext = null;
-            if (AgentInstanceField.GetValue(null) is Agent agent)
-            {
-                agent.Dispose();
-            }
-            AgentInstanceField.SetValue(null, null);
         }
     }
 }
