@@ -25,6 +25,7 @@ jobs:
                     - RateLimitingHelperBenchmarks
                     - SQLInjectionDetectionBenchmarks
                     - ShellInjectionDetectionBenchmarks
+                    - SinkLookupBenchmarks
 
         env:
             DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true

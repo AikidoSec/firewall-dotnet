@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Aikido.Zen.Core\Aikido.Zen.Core.csproj" />
+    <ProjectReference Include="..\Aikido.Zen.DotNetCore\Aikido.Zen.DotNetCore.csproj" />
   </ItemGroup>
 
 </Project>
