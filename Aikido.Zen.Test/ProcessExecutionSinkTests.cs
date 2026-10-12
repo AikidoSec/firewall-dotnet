@@ -114,6 +114,102 @@ namespace Aikido.Zen.Test
             Assert.That(ex.Message, Does.Contain("Zen has blocked a shell injection"));
         }
 
+        [TestCase("sh", "-c \"echo ok;id\"", "echo ok;id")]
+        [TestCase("sh", "-c \"echo ok && id\"", "echo ok && id")]
+        [TestCase("sh", "-c \"echo ok\nid\"", "echo ok\nid")]
+        [TestCase("/bin/bash", "-c \"id\"", "id")]
+        [TestCase("sh", "-c \"curl -s https://example.com/x -o /tmp/x\"", "curl -s https://example.com/x -o /tmp/x")]
+        [TestCase("sh", "-c \"echo a\";id;\"\"", "a\";id;\"")]
+        [TestCase("pwsh", "-c \"Get-Date; whoami\"", "Get-Date; whoami")]
+        [TestCase("pwsh", "-ExecutionPolicy Bypass -Command \"Get-Date; whoami\"", "Get-Date; whoami")]
+        [TestCase("bash", "-o errexit -c \"echo FIRST; echo SECOND\"", "echo FIRST; echo SECOND")]
+        [TestCase("cmd.exe", "/c \"echo ok & whoami\"", "echo ok & whoami")]
+        [TestCase("cmd.exe", "/d /s /c \"echo ok & whoami\"", "echo ok & whoami")]
+        public void OnProcessStart_WithShellInjectionInArguments_ThrowsException(string fileName, string arguments, string userInput)
+        {
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
+            _context.ParsedUserInput = new Dictionary<string, string> {
+                { "query.command", userInput }
+            };
+            _startInfo.FileName = fileName;
+            _startInfo.Arguments = arguments;
+
+            var ex = Assert.Throws<AikidoException>(() =>
+                OnProcessStart(new Process { StartInfo = _startInfo }, _context)
+            );
+            Assert.That(ex.Message, Does.Contain("Zen has blocked a shell injection"));
+        }
+
+        [TestCase("sh", new[] { "-c", "echo ok;id" }, "echo ok;id")]
+        [TestCase("cmd.exe", new[] { "/c", "echo ok & whoami" }, "echo ok & whoami")]
+        [TestCase("deploy.bat", new[] { "\"&whoami" }, "\"&whoami")]
+        public void OnProcessStart_WithShellInjectionInArgumentList_ThrowsException(string fileName, string[] arguments, string userInput)
+        {
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
+            _context.ParsedUserInput = new Dictionary<string, string> {
+                { "query.command", userInput }
+            };
+            _startInfo.FileName = fileName;
+            foreach (var argument in arguments)
+            {
+                _startInfo.ArgumentList.Add(argument);
+            }
+
+            var ex = Assert.Throws<AikidoException>(() =>
+                OnProcessStart(new Process { StartInfo = _startInfo }, _context)
+            );
+            Assert.That(ex.Message, Does.Contain("Zen has blocked a shell injection"));
+        }
+
+        [TestCase("bash", "-c \"grep 'foo;id' /var/log/app.log\"", "foo;id")]
+        [TestCase("sh", "-c \"echo 'hello world'\"", "hello world")]
+        [TestCase("git", "commit -m \"Tom & Jerry\"", "Tom & Jerry")]
+        [TestCase("git", "commit -m \"Tom & Jerry\" -- sh", "Tom & Jerry")]
+        [TestCase("ls", "\"whatever;\"", "whatever;")]
+        [TestCase("cmd.exe", "/c echo \"Tom & Jerry\"", "Tom & Jerry")]
+        [TestCase("cmd.exe", "/c \"echo \"Tom & Jerry\"\"", "Tom & Jerry")]
+        [TestCase("cmd.exe", "/c echo \"a\" /c\"Tom & Jerry\"", "Tom & Jerry")]
+        [TestCase("bash", "deploy.sh \"two words\"", "two words")]
+        [TestCase("sh", "-- script.sh -c \"Tom & Jerry\"", "Tom & Jerry")]
+        [TestCase("pwsh", "-File script.ps1 \"Tom & Jerry\"", "Tom & Jerry")]
+        [TestCase("deploy.bat", "\"Tom & Jerry\"", "Tom & Jerry")]
+        public void OnProcessStart_WithSafeUserInput_ReturnsTrue(string fileName, string arguments, string userInput)
+        {
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
+            _context.ParsedUserInput = new Dictionary<string, string> {
+                { "query.input", userInput }
+            };
+            _startInfo.FileName = fileName;
+            _startInfo.Arguments = arguments;
+
+            var result = OnProcessStart(new Process { StartInfo = _startInfo }, _context);
+
+            Assert.That(result, Is.True);
+            Assert.That(_context.AttackDetected, Is.False);
+        }
+
+        [TestCase("git", new[] { "commit", "-m", "Tom & Jerry; $(id)" }, "Tom & Jerry; $(id)")]
+        [TestCase("cmd.exe", new[] { "/c", "echo", "Tom & Jerry" }, "Tom & Jerry")]
+        [TestCase("sh", new[] { "-c", "echo \"$1\"", "sh", "Tom & Jerry" }, "Tom & Jerry")]
+        [TestCase("deploy.bat", new[] { "Tom & Jerry" }, "Tom & Jerry")]
+        public void OnProcessStart_WithSafeUserInputInArgumentList_ReturnsTrue(string fileName, string[] arguments, string userInput)
+        {
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
+            _context.ParsedUserInput = new Dictionary<string, string> {
+                { "query.message", userInput }
+            };
+            _startInfo.FileName = fileName;
+            foreach (var argument in arguments)
+            {
+                _startInfo.ArgumentList.Add(argument);
+            }
+
+            var result = OnProcessStart(new Process { StartInfo = _startInfo }, _context);
+
+            Assert.That(result, Is.True);
+            Assert.That(_context.AttackDetected, Is.False);
+        }
+
         [Test]
         public void OnProcessStart_WithShellInjectionInDryMode_ReturnsTrue()
         {

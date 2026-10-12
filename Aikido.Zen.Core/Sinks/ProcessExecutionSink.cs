@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
@@ -24,16 +25,9 @@ namespace Aikido.Zen.Core.Sinks
                 context => OnProcessStart(__instance, context));
         }
 
-        /// <summary>
-        /// Inspects the process start arguments for potential shell injection vulnerabilities.
-        /// </summary>
-        /// <param name="process">The process being executed.</param>
-        /// <param name="context">The context of the process execution.</param>
-        /// <returns>The inspection result. Contains a blocking exception if a blocked attack is detected.</returns>
         private static InspectionResult OnProcessStart(Process process, Context context)
         {
             var result = InspectionResult.Allow();
-            string command; // Store command for logging/stats if needed
 
             try
             {
@@ -41,12 +35,13 @@ namespace Aikido.Zen.Core.Sinks
                 // Only inspect if context and process info are available
                 if (processStartInfo != null && context != null)
                 {
-                    command = processStartInfo.FileName + " " + processStartInfo.Arguments;
+                    var commands = ProcessHelper.GetCommandsToInspect(processStartInfo);
 
                     // Inspect the FileName and Arguments for shell injection
                     foreach (var userInput in context.ParsedUserInput)
                     {
-                        if (ShellInjectionDetector.IsShellInjection(command, userInput.Value))
+                        var command = commands.FirstOrDefault(c => ShellInjectionDetector.IsShellInjection(c, userInput.Value));
+                        if (command != null)
                         {
                             // Log or throw an exception to report the issue
                             var metadata = new Dictionary<string, string> {
