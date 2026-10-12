@@ -15,7 +15,9 @@ namespace Aikido.Zen.Core.Helpers
             "sh", "bash", "zsh", "dash", "ksh", "fish", "tcsh", "csh"
         };
         private static readonly HashSet<string> powerShells = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "powershell", "pwsh" };
-        private static readonly HashSet<string> powerShellCommandFlags = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "-c", "-Command" };
+        private static readonly Regex powerShellSwitch = new Regex(
+            @"^\s*(?:([-\u2013\u2014\u2015])\1?|/)(?:(?<command>c|co|com|comm|comma|comman|command)"
+            + @"|f|fi|fil|file|cwa|commandwithargs)\s*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
         private static readonly Regex cmdSwitch = new Regex(@"(?:^|\s)/[ck]\s*", RegexOptions.IgnoreCase);
         private static readonly char[] pathSeparators = { '/', '\\' };
 
@@ -68,8 +70,9 @@ namespace Aikido.Zen.Core.Helpers
 
         private static string GetPowerShellCommand(List<string> argv)
         {
-            // PowerShell's -Command consumes all remaining arguments as code.
-            return argv.Skip(1).Any(powerShellCommandFlags.Contains) ? string.Join(" ", argv) : null;
+            // After -File or -CommandWithArgs, later switches can be script arguments.
+            var commandSwitch = argv.Skip(1).Select(argument => powerShellSwitch.Match(argument)).FirstOrDefault(match => match.Success);
+            return commandSwitch?.Groups["command"].Success == true ? string.Join(" ", argv) : null;
         }
 
         private static string GetCmdCommand(ProcessStartInfo startInfo)
@@ -176,7 +179,9 @@ namespace Aikido.Zen.Core.Helpers
 
         private static IEnumerable<string> GetArgumentList(ProcessStartInfo startInfo)
         {
-            return argumentListProperty?.GetValue(startInfo) as IEnumerable<string> ?? Array.Empty<string>();
+            return argumentListProperty == null
+                ? Array.Empty<string>()
+                : (IEnumerable<string>)argumentListProperty.GetValue(startInfo);
         }
 
         private static bool IsBatchFile(string program)
@@ -188,8 +193,7 @@ namespace Aikido.Zen.Core.Helpers
         private static string GetProgramName(string program)
         {
             // Path methods throw on invalid path characters in .NET Framework.
-            var name = program ?? string.Empty;
-            name = name.Substring(name.LastIndexOfAny(pathSeparators) + 1);
+            var name = program.Substring(program.LastIndexOfAny(pathSeparators) + 1);
             return name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? name.Substring(0, name.Length - 4) : name;
         }
     }

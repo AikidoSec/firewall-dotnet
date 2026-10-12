@@ -121,6 +121,8 @@ namespace Aikido.Zen.Test
         [TestCase("sh", "-c \"curl -s https://example.com/x -o /tmp/x\"", "curl -s https://example.com/x -o /tmp/x")]
         [TestCase("sh", "-c \"echo a\";id;\"\"", "a\";id;\"")]
         [TestCase("pwsh", "-c \"Get-Date; whoami\"", "Get-Date; whoami")]
+        [TestCase("pwsh", "-Com \"Get-Date; whoami\"", "Get-Date; whoami")]
+        [TestCase("powershell.exe", "/co \"Get-Date; whoami\"", "Get-Date; whoami")]
         [TestCase("pwsh", "-ExecutionPolicy Bypass -Command \"Get-Date; whoami\"", "Get-Date; whoami")]
         [TestCase("bash", "-o errexit -c \"echo FIRST; echo SECOND\"", "echo FIRST; echo SECOND")]
         [TestCase("cmd.exe", "/c \"echo ok & whoami\"", "echo ok & whoami")]
@@ -141,6 +143,9 @@ namespace Aikido.Zen.Test
         }
 
         [TestCase("sh", new[] { "-c", "echo ok;id" }, "echo ok;id")]
+        [TestCase("pwsh", new[] { "-CoM", "Get-Date; whoami" }, "Get-Date; whoami")]
+        [TestCase("pwsh", new[] { "--command", "Get-Date; whoami" }, "Get-Date; whoami")]
+        [TestCase("pwsh", new[] { " -Com ", "Get-Date; whoami" }, "Get-Date; whoami")]
         [TestCase("cmd.exe", new[] { "/c", "echo ok & whoami" }, "echo ok & whoami")]
         [TestCase("deploy.bat", new[] { "\"&whoami" }, "\"&whoami")]
         public void OnProcessStart_WithShellInjectionInArgumentList_ThrowsException(string fileName, string[] arguments, string userInput)
@@ -172,6 +177,9 @@ namespace Aikido.Zen.Test
         [TestCase("bash", "deploy.sh \"two words\"", "two words")]
         [TestCase("sh", "-- script.sh -c \"Tom & Jerry\"", "Tom & Jerry")]
         [TestCase("pwsh", "-File script.ps1 \"Tom & Jerry\"", "Tom & Jerry")]
+        [TestCase("pwsh", "-File script.ps1 -Com \"Tom & Jerry\"", "Tom & Jerry")]
+        [TestCase("pwsh", "-f script.ps1 -Command \"Tom & Jerry\"", "Tom & Jerry")]
+        [TestCase("pwsh", "-cwa \"Write-Output $args[0]\" -Com \"Tom & Jerry\"", "Tom & Jerry")]
         [TestCase("deploy.bat", "\"Tom & Jerry\"", "Tom & Jerry")]
         public void OnProcessStart_WithSafeUserInput_ReturnsTrue(string fileName, string arguments, string userInput)
         {
@@ -191,6 +199,8 @@ namespace Aikido.Zen.Test
         [TestCase("git", new[] { "commit", "-m", "Tom & Jerry; $(id)" }, "Tom & Jerry; $(id)")]
         [TestCase("cmd.exe", new[] { "/c", "echo", "Tom & Jerry" }, "Tom & Jerry")]
         [TestCase("sh", new[] { "-c", "echo \"$1\"", "sh", "Tom & Jerry" }, "Tom & Jerry")]
+        [TestCase("pwsh", new[] { "-File", "script.ps1", "-Com", "Tom & Jerry" }, "Tom & Jerry")]
+        [TestCase("pwsh", new[] { "-CommandWithArgs", "Write-Output $args[0]", "-Com", "Tom & Jerry" }, "Tom & Jerry")]
         [TestCase("deploy.bat", new[] { "Tom & Jerry" }, "Tom & Jerry")]
         public void OnProcessStart_WithSafeUserInputInArgumentList_ReturnsTrue(string fileName, string[] arguments, string userInput)
         {
