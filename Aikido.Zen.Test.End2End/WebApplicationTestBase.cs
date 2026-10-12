@@ -4,6 +4,7 @@ using DotNet.Testcontainers.Networks;
 using Microsoft.AspNetCore.Mvc.Testing;
 using NUnit.Framework;
 using System.Net.Http.Json;
+using Aikido.Zen.Core;
 using Aikido.Zen.Server.Mock;
 using Microsoft.AspNetCore.Hosting;
 using SampleApp.Common;
@@ -21,6 +22,7 @@ namespace Aikido.Zen.Test.End2End
         protected WebApplicationFactory<Aikido.Zen.Server.Mock.MockServerStartup> MockServerFactory { get; private set; } = null!;
         protected string MockServerToken = "test-token";
         protected const int MockServerPort = 3000;
+        private readonly List<IAsyncDisposable> _sampleAppFactories = new();
 
         protected IDictionary<string, string> SampleAppEnvironmentVariables = new Dictionary<string, string>
         {
@@ -41,6 +43,18 @@ namespace Aikido.Zen.Test.End2End
             SampleAppEnvironmentVariables["AIKIDO_DISABLE"] = disabled.ToString().ToLower();
             SampleAppEnvironmentVariables["AIKIDO_BLOCK"] = block.ToString().ToLower();
             await MockServerClient.PostAsync("/api/runtime/config", JsonContent.Create(new { Block = block }));
+        }
+
+        /// <summary>
+        /// Registers a sample app factory so its host and clients are disposed after the current test
+        /// </summary>
+        /// <param name="factory">The sample app factory created by the test</param>
+        /// <returns>The same factory, for chaining</returns>
+        protected WebApplicationFactory<TEntryPoint> DisposeAfterTest<TEntryPoint>(WebApplicationFactory<TEntryPoint> factory)
+            where TEntryPoint : class
+        {
+            _sampleAppFactories.Add(factory);
+            return factory;
         }
 
         [OneTimeSetUp]
@@ -67,6 +81,29 @@ namespace Aikido.Zen.Test.End2End
             SampleAppEnvironmentVariables["AIKIDO_TOKEN"] = MockServerToken;
             // set the base url for the mock server
             SampleAppEnvironmentVariables["AIKIDO_ENDPOINT"] = $"http://localhost:{MockServerPort}";
+        }
+
+        [TearDown]
+        public async Task DisposeSampleAppFactories()
+        {
+            if (_sampleAppFactories.Count == 0)
+            {
+                return;
+            }
+
+            // Zen keeps the last sample app's service provider and agent in statics, so release them before the hosts go away:
+            // - the patched sinks would otherwise resolve the context from a disposed provider
+            // - the next sample app replaces the agent while holding the lock that the previous agent's background work needs,
+            //   which can stall that startup until Agent.Dispose stops waiting (30s)
+            Aikido.Zen.DotNetCore.Zen.Initialize(null, null);
+            Agent.Instance.Dispose();
+
+            // Every sample app host keeps file watchers (inotify instances on Linux) open until it is disposed
+            foreach (var factory in _sampleAppFactories)
+            {
+                await factory.DisposeAsync();
+            }
+            _sampleAppFactories.Clear();
         }
 
         [OneTimeTearDown]
