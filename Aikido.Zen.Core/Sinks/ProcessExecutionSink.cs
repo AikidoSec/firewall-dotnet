@@ -35,30 +35,29 @@ namespace Aikido.Zen.Core.Sinks
                 // Only inspect if context and process info are available
                 if (processStartInfo != null && context != null)
                 {
-                    var commands = ProcessHelper.GetCommandsToInspect(processStartInfo);
+                    var commands = ShellInjectionDetector.GetCommandsToInspect(processStartInfo);
 
                     // Inspect the FileName and Arguments for shell injection
                     foreach (var userInput in context.ParsedUserInput)
                     {
-                        var command = commands.FirstOrDefault(c => ShellInjectionDetector.IsShellInjection(c, userInput.Value));
-                        if (command != null)
+                        var command = commands.FirstOrDefault(c => c != null && ShellInjectionDetector.IsShellInjection(c, userInput.Value));
+                        if (command == null)
                         {
-                            // Log or throw an exception to report the issue
-                            var metadata = new Dictionary<string, string> {
-                                { "command", command }
-                            };
-
-                            result = InspectionResult.Block(
-                                AttackKind.ShellInjection,
-                                UserInputHelper.GetAttackSourceFromUserInputKey(userInput.Key),
-                                userInput.Value,
-                                metadata,
-                                new[] { UserInputHelper.GetAttackPathFromUserInputKey(userInput.Key) }
-                            );
-
-                            // Break after first detection for this process start
-                            break;
+                            continue;
                         }
+                        var metadata = new Dictionary<string, string> {
+                            { "command", command }
+                        };
+
+                        result = InspectionResult.Block(
+                            AttackKind.ShellInjection,
+                            UserInputHelper.GetAttackSourceFromUserInputKey(userInput.Key),
+                            userInput.Value,
+                            metadata,
+                            new[] { UserInputHelper.GetAttackPathFromUserInputKey(userInput.Key) }
+                        );
+
+                        break;
                     }
                 }
             }

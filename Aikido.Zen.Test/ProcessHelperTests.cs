@@ -27,99 +27,19 @@ namespace Aikido.Zen.Test.Helpers
         [TestCase("-c \"echo 'x y'\"", new[] { "-c", "echo 'x y'" })]
         [TestCase("'a b'", new[] { "'a", "b'" })]
         [TestCase("-c \"echo a\";id;\"\"", new[] { "-c", "echo a;id;" })]
-        public void ParseArguments_SplitsLikeProcessStart(string arguments, string[] expected)
+        public void DecodeProcessArguments_SplitsLikeProcessStart(string arguments, string[] expected)
         {
-            Assert.That(ProcessHelper.ParseArguments(arguments), Is.EqualTo(expected));
+            Assert.That(ProcessHelper.DecodeProcessArguments(arguments), Is.EqualTo(expected));
         }
 
         [Test]
-        public void GetArgv_ReturnsFileNameAndArguments()
+        public void GetArguments_DecodesArgumentsAndPreservesArgumentListValues()
         {
-            Assert.That(ProcessHelper.GetArgv(new ProcessStartInfo("sh", "-c \"echo ok;id\"")), Is.EqualTo(new[] { "sh", "-c", "echo ok;id" }));
-            Assert.That(ProcessHelper.GetArgv(new ProcessStartInfo("sh", new[] { "-c", "echo ok;id" })), Is.EqualTo(new[] { "sh", "-c", "echo ok;id" }));
-            Assert.That(ProcessHelper.GetArgv(new ProcessStartInfo("sh")), Is.EqualTo(new[] { "sh" }));
-        }
+            var expected = new[] { "commit", "-m", "two \"quoted\" words" };
 
-        // sh and similar shells
-        [TestCase("sh", "-c \"echo ok;id\"", "sh -c echo ok;id")]
-        [TestCase("/bin/sh", "-c id", "/bin/sh -c id")]
-        [TestCase("BASH.EXE", "-ec \"id\"", "BASH.EXE -ec id")]
-        [TestCase("sh", "-c \"echo $1\" sh \"Tom & Jerry\"", "sh -c echo $1")]
-        [TestCase("bash", "-o errexit -c \"echo FIRST; echo SECOND\"", "bash -o errexit -c echo FIRST; echo SECOND")]
-        [TestCase("bash", "-eo errexit -c \"echo FIRST; echo SECOND\"", "bash -eo errexit -c echo FIRST; echo SECOND")]
-        [TestCase("fish", "-d exec -c \"echo FIRST; echo SECOND\"", "fish -d exec -c echo FIRST; echo SECOND")]
-        [TestCase("bash", "deploy.sh \"two words\"", null)]
-        [TestCase("sh", "-- script.sh -c \"Tom & Jerry\"", null)]
-        [TestCase("sh", "-c", null)]
-        // PowerShell
-        [TestCase("powershell.exe", "-NoProfile -Command \"Get-Date; whoami\"", "powershell.exe -NoProfile -Command Get-Date; whoami")]
-        [TestCase("pwsh", "-c Get-Date", "pwsh -c Get-Date")]
-        [TestCase("pwsh", "-co \"Get-Date; whoami\"", "pwsh -co Get-Date; whoami")]
-        [TestCase("powershell.exe", "-CoM \"Get-Date; whoami\"", "powershell.exe -CoM Get-Date; whoami")]
-        [TestCase("pwsh", "-comm \"Get-Date; whoami\"", "pwsh -comm Get-Date; whoami")]
-        [TestCase("pwsh", "-comma \"Get-Date; whoami\"", "pwsh -comma Get-Date; whoami")]
-        [TestCase("pwsh", "-comman \"Get-Date; whoami\"", "pwsh -comman Get-Date; whoami")]
-        [TestCase("pwsh", "/Command \"Get-Date; whoami\"", "pwsh /Command Get-Date; whoami")]
-        [TestCase("pwsh", "--command \"Get-Date; whoami\"", "pwsh --command Get-Date; whoami")]
-        [TestCase("powershell.exe", "\u2013Com \"Get-Date; whoami\"", "powershell.exe \u2013Com Get-Date; whoami")]
-        [TestCase("pwsh", "\u2014Com \"Get-Date; whoami\"", "pwsh \u2014Com Get-Date; whoami")]
-        [TestCase("pwsh", "\u2015Com \"Get-Date; whoami\"", "pwsh \u2015Com Get-Date; whoami")]
-        [TestCase("pwsh", "-ExecutionPolicy Bypass -Command \"Get-Date; whoami\"", "pwsh -ExecutionPolicy Bypass -Command Get-Date; whoami")]
-        [TestCase("pwsh", "-ep Bypass -Command \"Get-Date; whoami\"", "pwsh -ep Bypass -Command Get-Date; whoami")]
-        [TestCase("pwsh", "-File script.ps1 \"Tom & Jerry\"", null)]
-        [TestCase("pwsh", "-File script.ps1 -Com \"Tom & Jerry\"", null)]
-        [TestCase("pwsh", "-f script.ps1 -Command \"Tom & Jerry\"", null)]
-        [TestCase("pwsh", "-ConfigurationName config", null)]
-        [TestCase("pwsh", "-CommandWithArgs \"Write-Output $args[0]\" -Com \"Tom & Jerry\"", null)]
-        [TestCase("pwsh", "-cwa \"Write-Output $args[0]\" -Com \"Tom & Jerry\"", null)]
-        [TestCase("pwsh", "\"\" - / --", null)]
-        [TestCase("pwsh", "---command \"Get-Date; whoami\"", null)]
-        [TestCase("pwsh", "//Com \"Get-Date; whoami\"", null)]
-        [TestCase("pwsh", "-\u2013Com \"Get-Date; whoami\"", null)]
-        // cmd.exe and batch files
-        [TestCase("cmd.exe", "/c \"echo ok & whoami\"", "cmd.exe /c echo ok & whoami")]
-        [TestCase("cmd.exe", "/d /s /c \"echo ok & whoami\"", "cmd.exe /d /s /c echo ok & whoami")]
-        [TestCase("cmd.exe", "/c echo \"Tom & Jerry\"", "cmd.exe /c echo \"Tom & Jerry\"")]
-        [TestCase("cmd.exe", "/c echo \"a\" /c\"Tom & Jerry\"", "cmd.exe /c echo \"a\" /c\"Tom & Jerry\"")]
-        [TestCase("C:\\Windows\\System32\\CMD.EXE", "/C \"echo \"a b\"\" x", "C:\\Windows\\System32\\CMD.EXE /C echo \"a b\" x")]
-        [TestCase("C:\\scripts\\deploy.BAT", "\"Tom & Jerry\"", "C:\\scripts\\deploy.BAT \"Tom & Jerry\"")]
-        // No shell
-        [TestCase("git", "log --author sh", null)]
-        [TestCase("git", "commit -m \"add fish recipe\"", null)]
-        [TestCase("git", "commit -m \"a|b<c>\\\"d\"", null)]
-        [TestCase("ssh", "-c aes256-ctr host", null)]
-        [TestCase("sudo", "-u www sh -c \"id\" sh data", null)]
-        [TestCase("docker", "exec app sh -c \"echo ok;id\"", null)]
-        [TestCase("ssh", "host \"echo FIRST; echo SECOND\" sh -c \"echo safe\"", null)]
-        [TestCase("echo", "sh -c \"Tom & Jerry\"", null)]
-        [TestCase("/usr/bin/shasum", "-c sums.txt", null)]
-        [TestCase("bash.sh", "-c id", null)]
-        [TestCase("", "", null)]
-        public void GetCommandsToInspect_ReturnsOriginalAndNormalizedCommands(string fileName, string arguments, string? expected)
-        {
-            var original = fileName + " " + arguments;
-            Assert.That(ProcessHelper.GetCommandsToInspect(new ProcessStartInfo(fileName, arguments)),
-                Is.EqualTo(expected == null ? new[] { original } : new[] { original, expected }));
-        }
-
-        [Test]
-        public void GetCommandsToInspect_WithArgumentList_ReturnsOriginalAndNormalizedCommands()
-        {
-            Assert.That(ProcessHelper.GetCommandsToInspect(new ProcessStartInfo("sh", new[] { "-c", "echo \"$1\"", "sh", "Tom & Jerry" })), Is.EqualTo(new[] { "sh ", "sh -c echo \"$1\"" }));
-            Assert.That(ProcessHelper.GetCommandsToInspect(new ProcessStartInfo("cmd.exe", new[] { "/c", "echo", "Tom & Jerry" })), Is.EqualTo(new[] { "cmd.exe ", "cmd.exe /c echo \"Tom & Jerry\"" }));
-            Assert.That(ProcessHelper.GetCommandsToInspect(new ProcessStartInfo("cmd.exe", new[] { "/c", "echo ok & whoami" })), Is.EqualTo(new[] { "cmd.exe ", "cmd.exe /c echo ok & whoami" }));
-            Assert.That(ProcessHelper.GetCommandsToInspect(new ProcessStartInfo("deploy.bat", new[] { "\"&whoami" })), Is.EqualTo(new[] { "deploy.bat ", "deploy.bat \"\"&whoami\"" }));
-        }
-
-        [TestCase("/c powershell.exe -Command \"Write-Output FIRST; Write-Output SECOND\"")]
-        [TestCase("/c \"powershell.exe -Command \"Write-Output FIRST; Write-Output SECOND\"\"")]
-        public void GetCommandsToInspect_WithNestedPowerShell_OnlyNormalizesCmd(string arguments)
-        {
-            Assert.That(ProcessHelper.GetCommandsToInspect(new ProcessStartInfo("cmd.exe", arguments)), Is.EqualTo(new[]
-            {
-                "cmd.exe " + arguments,
-                "cmd.exe /c powershell.exe -Command \"Write-Output FIRST; Write-Output SECOND\""
-            }));
+            Assert.That(ProcessHelper.GetArguments(new ProcessStartInfo("git", "commit -m \"two \\\"quoted\\\" words\"")), Is.EqualTo(expected));
+            Assert.That(ProcessHelper.GetArguments(new ProcessStartInfo("git", new[] { "commit", "-m", "two \"quoted\" words" })), Is.EqualTo(expected));
+            Assert.That(ProcessHelper.GetArguments(new ProcessStartInfo("git")), Is.Empty);
         }
 
     }
