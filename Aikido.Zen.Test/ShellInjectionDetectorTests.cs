@@ -1,4 +1,4 @@
-using System.Diagnostics;
+using Aikido.Zen.Core.Sinks;
 using System.Text.Json;
 using Aikido.Zen.Core.Vulnerabilities;
 using NUnit.Framework;
@@ -191,6 +191,11 @@ namespace Aikido.Zen.Test
         [TestCase("pwsh", "-ep Bypass -Command \"Get-Date; whoami\"", "pwsh -ep Bypass -Command Get-Date; whoami")]
         [TestCase("pwsh", "-NoLogo -NoProfile -NonInteractive -Command \"Get-Date; whoami\"", "pwsh -NoLogo -NoProfile -NonInteractive -Command Get-Date; whoami")]
         [TestCase("pwsh", "-NoProfile -ExecutionPolicy Bypass -NonInteractive -Command \"Get-Date; whoami\"", "pwsh -NoProfile -ExecutionPolicy Bypass -NonInteractive -Command Get-Date; whoami")]
+        [TestCase("pwsh", "-NoProfile -InputFormat Text -NonInteractive -Command \"Get-Date; whoami\"", "pwsh -NoProfile -InputFormat Text -NonInteractive -Command Get-Date; whoami")]
+        [TestCase("pwsh", "-inp xMl -Command \"Get-Date; whoami\"", "pwsh -inp xMl -Command Get-Date; whoami")]
+        [TestCase("pwsh", "-WorkingDirectory \"Tom & Jerry\" -Command \"Write-Output ok\"", "pwsh -Command Write-Output ok")]
+        [TestCase("pwsh", "-NoProfile -wd \"Tom & Jerry\" -NonInteractive -Command \"Get-Date; whoami\"", "pwsh -Command Get-Date; whoami")]
+        [TestCase("pwsh", "-WorkingDirectory -Command -Command \"Get-Date; whoami\"", "pwsh -Command Get-Date; whoami")]
         [TestCase("powershell.exe", "-Sta -NoExit -Command \"Get-Date\"", "powershell.exe -Sta -NoExit -Command Get-Date")]
         [TestCase("powershell.exe", "-Mta -Command \"Get-Date\"", "powershell.exe -Mta -Command Get-Date")]
         [TestCase("pwsh", "-File script.ps1 \"Tom & Jerry\"", null)]
@@ -206,6 +211,10 @@ namespace Aikido.Zen.Test
         // cmd.exe and batch files
         [TestCase("cmd.exe", "/c \"echo ok & whoami\"", "cmd.exe /c echo ok & whoami")]
         [TestCase("cmd.exe", "/d /s /c \"echo ok & whoami\"", "cmd.exe /d /s /c echo ok & whoami")]
+        [TestCase("cmd.exe", "/q /c \"echo ok & whoami\"", "cmd.exe /q /c echo ok & whoami")]
+        [TestCase("cmd.exe", "/v:on /c \"echo ok & whoami\"", "cmd.exe /v:on /c echo ok & whoami")]
+        [TestCase("cmd.exe", "/d /q /v:on /c \"echo ok & whoami\"", "cmd.exe /d /q /v:on /c echo ok & whoami")]
+        [TestCase("cmd.exe", "/q /k \"echo ok & whoami\"", "cmd.exe /q /k echo ok & whoami")]
         [TestCase("cmd.exe", "/k \"echo ok & whoami\"", "cmd.exe /k echo ok & whoami")]
         [TestCase("cmd.exe", "/d /s /k \"echo ok & whoami\"", "cmd.exe /d /s /k echo ok & whoami")]
         [TestCase("cmd.exe", "/s /d /K \"echo ok & whoami\"", "cmd.exe /s /d /K echo ok & whoami")]
@@ -233,7 +242,7 @@ namespace Aikido.Zen.Test
         [TestCase("", "", null)]
         public void GetShellCommand_ReturnsNormalizedCommand(string fileName, string arguments, string? expected)
         {
-            Assert.That(ShellInjectionDetector.GetShellCommand(new ProcessStartInfo(fileName, arguments)), Is.EqualTo(expected));
+            Assert.That(ShellInjectionDetector.GetShellCommand(fileName, arguments, ProcessExecutionSink.DecodeProcessArguments(arguments).ToList()), Is.EqualTo(expected));
         }
 
         [TestCase("sh", new[] { "-c", "echo \"$1\"", "sh", "Tom & Jerry" }, "sh -c echo \"$1\"")]
@@ -242,11 +251,15 @@ namespace Aikido.Zen.Test
         [TestCase("pwsh", new[] { "-NoLogo", "-NoProfile", "-NonInteractive", "-Command", "Get-Date; whoami" }, "pwsh -NoLogo -NoProfile -NonInteractive -Command Get-Date; whoami")]
         [TestCase("cmd.exe", new[] { "/c", "echo", "Tom & Jerry" }, "cmd.exe /c echo \"Tom & Jerry\"")]
         [TestCase("cmd.exe", new[] { "/c", "echo ok & whoami" }, "cmd.exe /c echo ok & whoami")]
+        [TestCase("cmd.exe", new[] { "/q", "/c", "echo ok & whoami" }, "cmd.exe /q /c echo ok & whoami")]
+        [TestCase("cmd.exe", new[] { "/v:on", "/c", "echo ok & whoami" }, "cmd.exe /v:on /c echo ok & whoami")]
         [TestCase("cmd.exe", new[] { "/k", "echo ok & whoami" }, "cmd.exe /k echo ok & whoami")]
         [TestCase("cmd.exe", new[] { "/d", "/s", "/k", "echo ok & whoami" }, "cmd.exe /d /s /k echo ok & whoami")]
         [TestCase("deploy.bat", new[] { "\"&whoami" }, "deploy.bat \"\"&whoami\"")]
         [TestCase("bash", new[] { "--rcfile", "Tom & Jerry", "-c", "printf ok" }, null)]
-        [TestCase("pwsh", new[] { "-WorkingDirectory", "Tom & Jerry", "-Command", "Write-Output ok" }, null)]
+        [TestCase("pwsh", new[] { "-WorkingDirectory", "Tom & Jerry", "-Command", "Write-Output ok" }, "pwsh -Command Write-Output ok")]
+        [TestCase("pwsh", new[] { "-if", "XML", "-Command", "Get-Date; whoami" }, "pwsh -if XML -Command Get-Date; whoami")]
+        [TestCase("pwsh", new[] { "-wo", "Tom & Jerry", "-Command", "Get-Date; whoami" }, "pwsh -Command Get-Date; whoami")]
         [TestCase("sh", new[] { "-e -c", "echo ok;id" }, null)]
         [TestCase("sh", new[] { "-cfoo", "echo ok;id" }, null)]
         [TestCase("sh", new[] { "-c\n", "echo ok;id" }, null)]
@@ -256,7 +269,7 @@ namespace Aikido.Zen.Test
         [TestCase("pwsh", new[] { "-Unknown", "-Command", "Get-Date; whoami" }, null)]
         public void GetShellCommand_WithArgumentList_ReturnsNormalizedCommand(string fileName, string[] arguments, string? expected)
         {
-            Assert.That(ShellInjectionDetector.GetShellCommand(new ProcessStartInfo(fileName, arguments)), Is.EqualTo(expected));
+            Assert.That(ShellInjectionDetector.GetShellCommand(fileName, string.Empty, arguments.ToList()), Is.EqualTo(expected));
         }
 
         [TestCase("bash", "-o errexit -c \"echo FIRST; echo SECOND\"")]
@@ -268,7 +281,13 @@ namespace Aikido.Zen.Test
         [TestCase("fish", "-d exec -c \"echo FIRST; echo SECOND\"")]
         [TestCase("sh", "-nc \"echo FIRST; echo SECOND\"")]
         [TestCase("fish", "-C \"echo ok;id\" -c \"printf safe\"")]
-        [TestCase("pwsh", "-WorkingDirectory \"Tom & Jerry\" -Command \"Write-Output ok\"")]
+        [TestCase("pwsh", "-InputFormat")]
+        [TestCase("pwsh", "-InputFormat -Command \"Get-Date; whoami\"")]
+        [TestCase("pwsh", "-InputFormat JSON -Command \"Get-Date; whoami\"")]
+        [TestCase("pwsh", "-InputFormat \" Text \" -Command \"Get-Date; whoami\"")]
+        [TestCase("pwsh", "-WorkingDirectory")]
+        [TestCase("pwsh", "-WorkingDirectory -Command \"Get-Date; whoami\"")]
+        [TestCase("pwsh", "-WorkingDirectory directory -InputFormat Text -Command \"Get-Date; whoami\"")]
         [TestCase("sh", "-cfoo \"echo ok;id\"")]
         [TestCase("sh", "-c\n \"echo ok;id\"")]
         [TestCase("sh", "\"-e -c\" \"echo ok;id\"")]
@@ -278,16 +297,16 @@ namespace Aikido.Zen.Test
         [TestCase("pwsh", "-ExecutionPolicy Bypass -ExecutionPolicy Bypass -Command \"Get-Date; whoami\"")]
         public void GetShellCommand_WithUnsupportedOptions_ReturnsNull(string fileName, string arguments)
         {
-            Assert.That(ShellInjectionDetector.GetShellCommand(new ProcessStartInfo(fileName, arguments)), Is.Null);
+            Assert.That(ShellInjectionDetector.GetShellCommand(fileName, arguments, ProcessExecutionSink.DecodeProcessArguments(arguments).ToList()), Is.Null);
         }
 
         [TestCase("Bypass")]
         [TestCase("bYpAsS")]
         public void GetShellCommand_WithExecutionPolicy_ReturnsNormalizedCommand(string policy)
         {
-            var startInfo = new ProcessStartInfo("pwsh", new[] { "-ExecutionPolicy", policy, "-Command", "Get-Date; whoami" });
+            var arguments = new[] { "-ExecutionPolicy", policy, "-Command", "Get-Date; whoami" }.ToList();
 
-            Assert.That(ShellInjectionDetector.GetShellCommand(startInfo), Is.EqualTo($"pwsh -ExecutionPolicy {policy} -Command Get-Date; whoami"));
+            Assert.That(ShellInjectionDetector.GetShellCommand("pwsh", string.Empty, arguments), Is.EqualTo($"pwsh -ExecutionPolicy {policy} -Command Get-Date; whoami"));
         }
 
         [TestCase("")]
@@ -305,17 +324,69 @@ namespace Aikido.Zen.Test
         [TestCase("Unexpected")]
         public void GetShellCommand_WithUnsupportedExecutionPolicy_ReturnsNull(string policy)
         {
-            var startInfo = new ProcessStartInfo("pwsh", new[] { "-ExecutionPolicy", policy, "-Command", "Get-Date; whoami" });
+            var arguments = new[] { "-ExecutionPolicy", policy, "-Command", "Get-Date; whoami" }.ToList();
 
-            Assert.That(ShellInjectionDetector.GetShellCommand(startInfo), Is.Null);
+            Assert.That(ShellInjectionDetector.GetShellCommand("pwsh", string.Empty, arguments), Is.Null);
         }
 
         [TestCase("/c powershell.exe -Command \"Write-Output FIRST; Write-Output SECOND\"")]
         [TestCase("/c \"powershell.exe -Command \"Write-Output FIRST; Write-Output SECOND\"\"")]
         public void GetShellCommand_WithNestedPowerShell_OnlyNormalizesCmd(string arguments)
         {
-            Assert.That(ShellInjectionDetector.GetShellCommand(new ProcessStartInfo("cmd.exe", arguments)),
+            Assert.That(ShellInjectionDetector.GetShellCommand("cmd.exe", arguments, ProcessExecutionSink.DecodeProcessArguments(arguments).ToList()),
                 Is.EqualTo("cmd.exe /c powershell.exe -Command \"Write-Output FIRST; Write-Output SECOND\""));
+        }
+
+        [TestCase("sh", "-c \"echo a\";id;\"\"", "a\";id;\"", true)]
+        [TestCase("sh", "-c \"echo \\\"ok\\\";id\"", "echo \"ok\";id", true)]
+        [TestCase("sh", "-c \"id\"", "id", true)]
+        [TestCase("bash", "-o errexit -c whoami", "whoami", true)]
+        [TestCase("bash", "-c \"grep 'foo;id' /var/log/app.log\"", "foo;id", false)]
+        [TestCase("git", "commit -m \"Tom & Jerry\" -- sh", "Tom & Jerry", false)]
+        [TestCase("cmd.exe", "/q /c \"echo \"Tom & Jerry\"\"", "Tom & Jerry", false)]
+        [TestCase("cmd.exe", "/q /c echo \"a\" /c\"Tom & Jerry\"", "Tom & Jerry", false)]
+        [TestCase("sh", "-e script.sh -c \"Tom & Jerry\"", "Tom & Jerry", false)]
+        [TestCase("bash", "--rcfile \"Tom & Jerry\" -c \"printf ok\"", "Tom & Jerry", false)]
+        [TestCase("pwsh", "-WorkingDirectory \"Tom & Jerry\" -Command \"Write-Output ok\"", "Tom & Jerry", false)]
+        [TestCase("pwsh", "-WorkingDirectory \"Tom & Jerry\" -Command \"Write-Output 'Tom & Jerry'\"", "Tom & Jerry", false)]
+        [TestCase("pwsh", "-WorkingDirectory \"Tom & Jerry\" -Command \"Write-Output 'Tom & Jerry'; Tom & Jerry\"", "Tom & Jerry", true)]
+        [TestCase("pwsh", "-NoProfile -InputFormat Text -NonInteractive -Command \"Get-Date; whoami\"", "Get-Date; whoami", true)]
+        [TestCase("pwsh", "-NoProfile -wd \"Tom & Jerry\" -NonInteractive -Command \"Get-Date; whoami\"", "Get-Date; whoami", true)]
+        public void GetCommandsToInspect_WithArguments_DetectsInjection(string fileName, string rawArguments, string userInput, bool expected)
+        {
+            var arguments = ProcessExecutionSink.DecodeProcessArguments(rawArguments).ToList();
+            var commands = ShellInjectionDetector.GetCommandsToInspect(fileName, rawArguments, arguments);
+
+            Assert.That(commands.Any(command => command != null && ShellInjectionDetector.IsShellInjection(command, userInput)), Is.EqualTo(expected));
+        }
+
+        [TestCase("sh", new[] { "-c", "echo \"ok\";id" }, "echo \"ok\";id", true)]
+        [TestCase("pwsh", new[] { " -Com ", "Get-Date; whoami" }, "Get-Date; whoami", true)]
+        [TestCase("pwsh", new[] { "-NoProfile", "-Command", "whoami" }, "-NoProfile -Command whoami", true)]
+        [TestCase("bash", new[] { "-e", "-c", "id" }, "-e -c id", true)]
+        [TestCase("sh", new[] { "-c", "id" }, "sh -c id", true)]
+        [TestCase("sh", new[] { "-c", "whoami\0" }, "whoami\0", true)]
+        [TestCase("deploy.bat", new[] { "\"&whoami" }, "\"&whoami", true)]
+        [TestCase("deploy.bat", new[] { "Tom & Jerry" }, "Tom & Jerry", false)]
+        [TestCase("git", new[] { "commit", "-m", "Tom & Jerry; $(id)" }, "Tom & Jerry; $(id)", false)]
+        [TestCase("cmd.exe", new[] { "/v:on", "/c", "echo", "Tom & Jerry" }, "Tom & Jerry", false)]
+        [TestCase("sh", new[] { "-c", "printf '%s' \"Tom & Jerry\"" }, "Tom & Jerry", false)]
+        [TestCase("sh", new[] { "-c", "echo \"$1\"", "sh", "Tom & Jerry" }, "Tom & Jerry", false)]
+        [TestCase("sh", new[] { "script.sh", "-c", "Tom & Jerry" }, "Tom & Jerry", false)]
+        [TestCase("pwsh", new[] { "-File", "script.ps1", "-Com", "Tom & Jerry" }, "Tom & Jerry", false)]
+        [TestCase("pwsh", new[] { "-CommandWithArgs", "Write-Output $args[0]", "-Com", "Tom & Jerry" }, "Tom & Jerry", false)]
+        [TestCase("sh", new[] { "-c", "" }, "", false)]
+        [TestCase("pwsh", new[] { "-Command", "" }, "", false)]
+        [TestCase("pwsh", new[] { "-NoProfile", "-if", "text", "-NonInteractive", "-Command", "Get-Date; whoami" }, "Get-Date; whoami", true)]
+        [TestCase("pwsh", new[] { "-NoProfile", "-wo", "Tom & Jerry", "-NonInteractive", "-Command", "Get-Date; whoami" }, "Get-Date; whoami", true)]
+        [TestCase("pwsh", new[] { "-WorkingDirectory", "Tom & Jerry", "-Command", "Write-Output ok" }, "Tom & Jerry", false)]
+        [TestCase("pwsh", new[] { "-WorkingDirectory", "Tom & Jerry", "-Command", "Write-Output 'Tom & Jerry'" }, "Tom & Jerry", false)]
+        [TestCase("pwsh", new[] { "-WorkingDirectory", "Tom & Jerry", "-Command", "Write-Output 'Tom & Jerry'; Tom & Jerry" }, "Tom & Jerry", true)]
+        public void GetCommandsToInspect_WithArgumentList_DetectsInjection(string fileName, string[] arguments, string userInput, bool expected)
+        {
+            var commands = ShellInjectionDetector.GetCommandsToInspect(fileName, string.Empty, arguments.ToList());
+
+            Assert.That(commands.Any(command => command != null && ShellInjectionDetector.IsShellInjection(command, userInput)), Is.EqualTo(expected));
         }
 
         public static IEnumerable<TestCaseData> GetTestData()

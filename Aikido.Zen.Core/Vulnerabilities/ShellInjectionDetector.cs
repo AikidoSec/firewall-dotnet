@@ -1,10 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
-using Aikido.Zen.Core.Helpers;
 
 [assembly: InternalsVisibleTo("Aikido.Zen.Tests")]
 namespace Aikido.Zen.Core.Vulnerabilities
@@ -34,10 +32,11 @@ namespace Aikido.Zen.Core.Vulnerabilities
         // PowerShell accepts abbreviated switches, surrounding whitespace and these Unicode dashes.
         private static readonly Regex powerShellSwitch = new Regex(
             @"\A\s*(?:([-\u2013\u2014\u2015])\1?|/)(?:(?<command>c|co|com|comm|comma|comman|command)"
-            + @"|(?<startup>NoProfile|NoLogo|NonInteractive|NoExit|Sta|Mta)|(?<policy>ExecutionPolicy|ep))\s*\z",
+            + @"|(?<startup>NoProfile|NoLogo|NonInteractive|NoExit|Sta|Mta)|(?<policy>ExecutionPolicy|ep)"
+            + @"|(?<inputFormat>InputFormat|inp|if)|(?<directory>WorkingDirectory|wd|wo))\s*\z",
             RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
         private static readonly Regex quotedCmdCommand = new Regex(
-            @"\A(?<prefix>[ \t]*(?:/[ds][ \t]+)*/[ck][ \t]*)""(?<command>.*)""",
+            @"\A(?<prefix>[ \t]*(?:/(?:[dsqau]|[efv]:(?:on|off)|t:[0-9a-f]{1,2})[ \t]+)*/[ck][ \t]*)""(?<command>.*)""",
             RegexOptions.IgnoreCase | RegexOptions.Singleline);
         private static readonly char[] pathSeparators = { '/', '\\' };
 
@@ -68,35 +67,35 @@ namespace Aikido.Zen.Core.Vulnerabilities
             return ContainsShellSyntax(command, userInput);
         }
 
-        internal static string[] GetCommandsToInspect(ProcessStartInfo startInfo)
+        internal static string[] GetCommandsToInspect(string fileName, string rawArguments, List<string> arguments)
         {
             // Decoding can remove quotes belonging to user input that the detector matches verbatim.
-            return new[] { startInfo.FileName + " " + startInfo.Arguments, GetShellCommand(startInfo) };
+            return new[] { fileName + " " + rawArguments, GetShellCommand(fileName, rawArguments, arguments) };
         }
 
         // Shells execute command arguments as code: sh -c "echo ok;id" executes echo ok;id.
         // Only normalize supported direct launches; script arguments and nested shells need different rules.
-        internal static string GetShellCommand(ProcessStartInfo startInfo)
+        internal static string GetShellCommand(string fileName, string rawArguments, List<string> arguments)
         {
-            var program = GetProgramName(startInfo.FileName);
+            var program = GetProgramName(fileName);
             string command;
             if (IsBatchFile(program) || string.Equals(program, "cmd", StringComparison.OrdinalIgnoreCase))
             {
-                command = GetCmdCommand(startInfo);
+                command = GetCmdCommand(fileName, rawArguments, arguments);
             }
             else if (unixShells.Contains(program))
             {
-                command = GetUnixShellCommand(ProcessHelper.GetArguments(startInfo));
+                command = GetUnixShellCommand(arguments);
             }
             else if (powerShells.Contains(program))
             {
-                command = GetPowerShellCommand(ProcessHelper.GetArguments(startInfo));
+                command = GetPowerShellCommand(arguments);
             }
             else
             {
                 return null;
             }
-            return command == null ? null : startInfo.FileName + " " + command;
+            return command == null ? null : fileName + " " + command;
         }
 
         private static string GetUnixShellCommand(List<string> arguments)
@@ -110,24 +109,30 @@ namespace Aikido.Zen.Core.Vulnerabilities
         private static string GetPowerShellCommand(List<string> arguments)
         {
             int commandIndex = arguments.TakeWhile(arg => powerShellSwitch.Match(arg).Groups["startup"].Success).Count();
-            if (commandIndex + 1 < arguments.Count && powerShellSwitch.Match(arguments[commandIndex]).Groups["policy"].Success
-                && string.Equals(arguments[commandIndex + 1], "Bypass", StringComparison.OrdinalIgnoreCase))
+            var option = commandIndex + 1 < arguments.Count ? powerShellSwitch.Match(arguments[commandIndex]) : Match.Empty;
+            var value = commandIndex + 1 < arguments.Count ? arguments[commandIndex + 1] : null;
+            bool hasDirectory = option.Groups["directory"].Success;
+            bool hasPolicy = option.Groups["policy"].Success && string.Equals(value, "Bypass", StringComparison.OrdinalIgnoreCase);
+            bool hasInputFormat = option.Groups["inputFormat"].Success
+                && (string.Equals(value, "Text", StringComparison.OrdinalIgnoreCase) || string.Equals(value, "XML", StringComparison.OrdinalIgnoreCase));
+            if (hasDirectory || hasPolicy || hasInputFormat)
             {
                 commandIndex += 2;
                 commandIndex += arguments.Skip(commandIndex).TakeWhile(arg => powerShellSwitch.Match(arg).Groups["startup"].Success).Count();
             }
+            // Directory values are data, even when they contain shell syntax such as Tom & Jerry.
             return commandIndex + 1 < arguments.Count && powerShellSwitch.Match(arguments[commandIndex]).Groups["command"].Success
-                ? string.Join(" ", arguments) : null;
+                ? string.Join(" ", arguments.Skip(hasDirectory ? commandIndex : 0)) : null;
         }
 
-        private static string GetCmdCommand(ProcessStartInfo startInfo)
+        private static string GetCmdCommand(string fileName, string rawArguments, List<string> argumentValues)
         {
-            var arguments = !string.IsNullOrEmpty(startInfo.Arguments)
-                ? startInfo.Arguments
-                : string.Join(" ", ProcessHelper.GetArguments(startInfo).Select(QuoteCmdArgument));
+            var arguments = !string.IsNullOrEmpty(rawArguments)
+                ? rawArguments
+                : string.Join(" ", argumentValues.Select(QuoteCmdArgument));
             // cmd removes the opening and last quote around its /c or /k command, leaving inner quotes intact.
             // For example, /c "echo "Tom & Jerry"" becomes /c echo "Tom & Jerry", where & is still quoted.
-            if (!IsBatchFile(GetProgramName(startInfo.FileName)))
+            if (!IsBatchFile(GetProgramName(fileName)))
             {
                 arguments = quotedCmdCommand.Replace(arguments, "${prefix}${command}");
             }
