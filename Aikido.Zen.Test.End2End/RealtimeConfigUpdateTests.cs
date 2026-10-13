@@ -20,6 +20,8 @@ namespace Aikido.Zen.Test.End2End
             return Task.CompletedTask;
         }
 
+        private WebApplicationFactory<SQLiteStartup>? _sampleAppFactory;
+
         [OneTimeSetUp]
         public override async Task OneTimeSetUp()
         {
@@ -27,14 +29,19 @@ namespace Aikido.Zen.Test.End2End
             SampleAppEnvironmentVariables["AIKIDO_FEATURE_SSE"] = "true";
             await SetMode(disabled: false, block: true);
 
-            SampleAppClient = new WebApplicationFactory<SQLiteStartup>()
-                .WithWebHostBuilder(ConfigureSampleApp)
-                .CreateClient();
+            // Shared by all tests in this fixture, so it is disposed after the fixture instead of after each test
+            _sampleAppFactory = new WebApplicationFactory<SQLiteStartup>()
+                .WithWebHostBuilder(ConfigureSampleApp);
+            SampleAppClient = _sampleAppFactory.CreateClient();
         }
 
         [OneTimeTearDown]
         public override async Task OneTimeTearDown()
         {
+            if (_sampleAppFactory != null)
+            {
+                await _sampleAppFactory.DisposeAsync();
+            }
             Environment.SetEnvironmentVariable("AIKIDO_FEATURE_SSE", null);
             await base.OneTimeTearDown();
         }

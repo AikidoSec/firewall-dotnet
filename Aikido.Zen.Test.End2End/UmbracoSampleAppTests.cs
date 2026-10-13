@@ -27,7 +27,7 @@ public class UmbracoSampleAppTests : WebApplicationTestBase
                     services.AddZenFirewall(options => options.UseHttpClient(MockServerClient));
                 });
             });
-        return factory;
+        return DisposeAfterTest(factory);
     }
 
     protected override async Task SetupDatabaseContainers()

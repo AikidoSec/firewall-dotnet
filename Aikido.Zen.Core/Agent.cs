@@ -53,7 +53,7 @@ namespace Aikido.Zen.Core
         private readonly AttackWaveDetector _attackWaveDetector;
 
         // instance
-        private static Agent _instance;
+        private static volatile Agent _instance;
         private static readonly object InstanceLock = new object();
 
         /// <summary>
@@ -70,6 +70,12 @@ namespace Aikido.Zen.Core
         {
             get
             {
+                var instance = _instance;
+                if (instance != null)
+                {
+                    return instance;
+                }
+
                 lock (InstanceLock)
                 {
                     if (_instance == null)
@@ -86,13 +92,18 @@ namespace Aikido.Zen.Core
 
         internal static Agent NewInstance(IZenApi api)
         {
+            Agent agent;
+            Agent previous;
             lock (InstanceLock)
             {
-                // Stop previous background work like config polls before publishing the replacement instance
-                _instance?.Dispose();
-                _instance = new Agent(api);
-                return _instance;
+                agent = new Agent(api);
+                previous = _instance;
+                _instance = agent;
             }
+
+            // Stop the previous agent outside the lock: its remaining work still calls Agent.Instance through the patched sinks
+            previous?.Dispose();
+            return agent;
         }
 
         /// <summary>

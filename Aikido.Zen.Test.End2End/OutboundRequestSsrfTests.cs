@@ -136,7 +136,7 @@ namespace Aikido.Zen.Test.End2End
 
         private WebApplicationFactory<SQLiteStartup> CreateSampleAppFactory()
         {
-            return new WebApplicationFactory<SQLiteStartup>()
+            return DisposeAfterTest(new WebApplicationFactory<SQLiteStartup>()
                 .WithWebHostBuilder(builder =>
                 {
                     builder.ConfigureServices(services =>
@@ -150,7 +150,7 @@ namespace Aikido.Zen.Test.End2End
                             Environment.SetEnvironmentVariable(envVar.Key, envVar.Value);
                         }
                     });
-                });
+                }));
         }
 
     }

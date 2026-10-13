@@ -27,18 +27,18 @@ namespace Aikido.Zen.Test.End2End
 
         private WebApplicationFactory<SQLiteStartup> CreateSampleAppFactory()
         {
-            return new WebApplicationFactory<SQLiteStartup>()
-                .WithWebHostBuilder(ConfigureSampleApp);
+            return DisposeAfterTest(new WebApplicationFactory<SQLiteStartup>()
+                .WithWebHostBuilder(ConfigureSampleApp));
         }
 
         private WebApplicationFactory<SQLiteStartup> CreateLateSetUserSampleAppFactory()
         {
-            return new WebApplicationFactory<SQLiteStartup>()
+            return DisposeAfterTest(new WebApplicationFactory<SQLiteStartup>()
                 .WithWebHostBuilder(builder =>
                 {
                     builder.UseStartup<LateSetUserStartup>();
                     ConfigureSampleApp(builder);
-                });
+                }));
         }
 
         private void ConfigureSampleApp(IWebHostBuilder builder)

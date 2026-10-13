@@ -21,6 +21,7 @@ public class DataRegionEndpointEnd2EndTests
     private readonly Dictionary<string, string?> _originalEnvironment = new();
     private WebApplicationFactory<MockServerStartup> _mockServerFactory = null!;
     private HttpClient _mockServerClient = null!;
+    private WebApplicationFactory<SQLiteStartup>? _sampleAppFactory;
     private HttpClient _sampleAppClient = null!;
     private RecordingAuthRewriteHandler _recordingHandler = null!;
     private string _mockServerToken = null!;
@@ -49,6 +50,8 @@ public class DataRegionEndpointEnd2EndTests
     public void TearDown()
     {
         _sampleAppClient?.Dispose();
+        _sampleAppFactory?.Dispose();
+        _sampleAppFactory = null;
         _mockServerClient?.Dispose();
         _mockServerFactory?.Dispose();
         _recordingHandler?.Dispose();
@@ -87,15 +90,15 @@ public class DataRegionEndpointEnd2EndTests
 
     private HttpClient CreateSampleAppClient()
     {
-        return new WebApplicationFactory<SQLiteStartup>()
+        _sampleAppFactory = new WebApplicationFactory<SQLiteStartup>()
             .WithWebHostBuilder(builder =>
             {
                 builder.ConfigureServices(services =>
                 {
                     services.AddZenFirewall(options => options.UseHttpClient(_mockServerClient));
                 });
-            })
-            .CreateClient();
+            });
+        return _sampleAppFactory.CreateClient();
     }
 
     private async Task<List<Dictionary<string, JsonElement>>> WaitForMockServerEvents()
