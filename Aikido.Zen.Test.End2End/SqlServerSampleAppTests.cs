@@ -31,7 +31,7 @@ public class SqlServerSampleAppTests : WebApplicationTestBase
                     }
                 });
             });
-        return factory;
+        return DisposeAfterTest(factory);
     }
 
     protected override async Task SetupDatabaseContainers()

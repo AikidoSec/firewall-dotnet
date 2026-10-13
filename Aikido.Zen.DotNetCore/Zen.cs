@@ -113,24 +113,16 @@ namespace Aikido.Zen.DotNetCore
             }
         }
 
+        // Read through the accessor rather than the host's service provider: the patched sinks call this
+        // on every thread, also after the host and its provider have been disposed
         public static Context GetContext()
         {
-            if (_serviceProvider != null)
-            {
-                var contextAccessor = _serviceProvider.GetService(typeof(ContextAccessor)) as ContextAccessor;
-                return contextAccessor?.CurrentContext;
-            }
             return _httpContextAccessor?.HttpContext?.Items["Aikido.Zen.Context"] as Context;
         }
 
         public static User GetUser()
         {
-            if (_serviceProvider == null)
-            {
-                return null;
-            }
-            var contextAccessor = _serviceProvider.GetService(typeof(ContextAccessor)) as ContextAccessor;
-            return contextAccessor?.CurrentUser;
+            return _httpContextAccessor?.HttpContext?.Items["Aikido.Zen.CurrentUser"] as User;
         }
 
         /// <summary>

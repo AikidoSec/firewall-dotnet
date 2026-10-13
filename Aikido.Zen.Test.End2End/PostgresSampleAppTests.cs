@@ -32,7 +32,7 @@ public class PostgresSampleAppTests : WebApplicationTestBase
                     }
                 });
             });
-        return factory;
+        return DisposeAfterTest(factory);
     }
 
     protected override async Task SetupDatabaseContainers()

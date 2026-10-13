@@ -50,7 +50,7 @@ namespace Aikido.Zen.Test.End2End
                      }
                  });
              });
-            return factory;
+            return DisposeAfterTest(factory);
         }
 
         /// <summary>

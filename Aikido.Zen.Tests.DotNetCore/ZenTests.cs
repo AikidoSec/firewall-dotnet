@@ -123,7 +123,6 @@ namespace Aikido.Zen.Tests.DotNetCore
             var accessor = new HttpContextAccessor();
             using var services = new ServiceCollection()
                 .AddSingleton<IHttpContextAccessor>(accessor)
-                .AddSingleton(new ContextAccessor(accessor))
                 .BuildServiceProvider();
 
             try
@@ -199,6 +198,34 @@ namespace Aikido.Zen.Tests.DotNetCore
             ZenApi.SetRateLimitGroup(string.Empty, context);
 
             Assert.That(context.Items.ContainsKey("Aikido.Zen.RateLimitGroup"), Is.False);
+        }
+
+        [Test]
+        [NonParallelizable]
+        public void GetContext_AfterServiceProviderIsDisposed_ReadsFromHttpContextAccessor()
+        {
+            var context = new Context();
+            var user = new User("user-1", "Test User");
+            var accessor = new HttpContextAccessor { HttpContext = new DefaultHttpContext() };
+            accessor.HttpContext.Items["Aikido.Zen.Context"] = context;
+            accessor.HttpContext.Items["Aikido.Zen.CurrentUser"] = user;
+            var services = new ServiceCollection()
+                .AddSingleton<IHttpContextAccessor>(accessor)
+                .BuildServiceProvider();
+
+            try
+            {
+                ZenApi.Initialize(services, accessor);
+                services.Dispose();
+
+                Assert.That(ZenApi.GetContext(), Is.SameAs(context));
+                Assert.That(ZenApi.GetUser(), Is.SameAs(user));
+            }
+            finally
+            {
+                ZenApi.Initialize(null, null);
+                accessor.HttpContext = null;
+            }
         }
     }
 }

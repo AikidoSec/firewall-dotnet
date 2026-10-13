@@ -247,42 +247,61 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void NewInstance_DisposesPreviousInstanceBeforePublishingReplacement()
+        public async Task NewInstance_WhenPreviousAgentWorkReadsInstance_DoesNotWaitForShutdownTimeout()
         {
             var instanceField = typeof(Agent).GetField("_instance", BindingFlags.NonPublic | BindingFlags.Static);
-            var cancellationSourceField = typeof(Agent).GetField("_cancellationSource", BindingFlags.NonPublic | BindingFlags.Instance);
-            var backgroundTaskField = typeof(Agent).GetField("_backgroundTask", BindingFlags.NonPublic | BindingFlags.Instance);
             Assert.That(instanceField, Is.Not.Null);
-            Assert.That(cancellationSourceField, Is.Not.Null);
-            Assert.That(backgroundTaskField, Is.Not.Null);
 
-            var first = Agent.NewInstance(_zenApiMock.Object);
-            var firstCancellationSource = cancellationSourceField!.GetValue(first) as CancellationTokenSource;
-            var firstBackgroundTask = backgroundTaskField!.GetValue(first) as Task;
-            Assert.That(firstCancellationSource, Is.Not.Null);
-            Assert.That(firstBackgroundTask, Is.Not.Null);
+            var reportStarted = new TaskCompletionSource<CancellationToken>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var releaseReport = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var reportingApiMock = new Mock<IReportingAPIClient>();
+            reportingApiMock
+                .Setup(r => r.ReportAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<CancellationToken>()))
+                .Returns<string, object, CancellationToken>(async (_, _, cancellationToken) =>
+                {
+                    reportStarted.TrySetResult(cancellationToken);
+                    await releaseReport.Task;
+                    return new ReportingAPIResponse { Success = true };
+                });
 
-            firstCancellationSource!.Cancel();
-            Assert.That(firstBackgroundTask!.Wait(TimeSpan.FromSeconds(5)), Is.True);
-
-            Agent? instanceSeenByOldCallback = null;
-            first.QueueEvent("test-token", Started.Create(), (_, _) =>
-            {
-                instanceSeenByOldCallback = Agent.Instance;
-            });
-
-            var second = Agent.NewInstance(ZenApiMock.CreateMock().Object);
+            var first = Agent.NewInstance(ZenApiMock.CreateMock(reporting: reportingApiMock.Object).Object);
+            // Sinks reach Agent.Instance the same way while the previous agent reports its own events
+            first.QueueEvent("test-token", Started.Create(), (_, _) => _ = Agent.Instance);
+            Task<Agent>? replacement = null;
 
             try
             {
-                Assert.That(instanceSeenByOldCallback, Is.SameAs(first));
+                Assert.That(await Task.WhenAny(reportStarted.Task, Task.Delay(TimeSpan.FromSeconds(5))), Is.SameAs(reportStarted.Task));
+                var reportCancellationToken = await reportStarted.Task;
+
+                replacement = Task.Run(() => Agent.NewInstance(ZenApiMock.CreateMock().Object));
+                var deadline = DateTime.UtcNow.AddSeconds(5);
+                while (!reportCancellationToken.IsCancellationRequested && DateTime.UtcNow < deadline)
+                {
+                    await Task.Delay(10);
+                }
+                Assert.That(reportCancellationToken.IsCancellationRequested, Is.True, "NewInstance should be disposing the previous agent");
+
+                var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+                releaseReport.TrySetResult(true);
+                var second = await replacement;
+                stopwatch.Stop();
+
+                Assert.That(stopwatch.Elapsed, Is.LessThan(TimeSpan.FromSeconds(2)));
                 Assert.That(Agent.Instance, Is.SameAs(second));
             }
             finally
             {
-                second.Dispose();
+                releaseReport.TrySetResult(true);
+                if (replacement != null)
+                {
+                    (await replacement).Dispose();
+                }
+                else
+                {
+                    first.Dispose();
+                }
                 instanceField!.SetValue(null, null);
-                _agent = new Agent(_zenApiMock.Object);
             }
         }
 
