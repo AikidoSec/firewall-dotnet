@@ -14,6 +14,11 @@ namespace Aikido.Zen.Core.Sinks
     {
         private const string OperationKind = "exec_op";
 
+        // Use runtime escaping to inspect ArgumentList like an equivalent Arguments string.
+        // .NET Framework only supports Arguments and has no BuildArguments method.
+        private static readonly MethodInfo buildArgumentsMethod = typeof(ProcessStartInfo)
+            .GetMethod("BuildArguments", BindingFlags.Instance | BindingFlags.NonPublic);
+
         [SinkPrefix(typeof(Process), "Start")]
         internal static bool OnProcessStartInstance(Process __instance, MethodBase __originalMethod)
         {
@@ -41,7 +46,8 @@ namespace Aikido.Zen.Core.Sinks
                 // Only inspect if context and process info are available
                 if (processStartInfo != null && context != null)
                 {
-                    command = processStartInfo.FileName + " " + processStartInfo.Arguments;
+                    var arguments = (string)buildArgumentsMethod?.Invoke(processStartInfo, null) ?? processStartInfo.Arguments;
+                    command = processStartInfo.FileName + " " + arguments;
 
                     // Inspect the FileName and Arguments for shell injection
                     foreach (var userInput in context.ParsedUserInput)

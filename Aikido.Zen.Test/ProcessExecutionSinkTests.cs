@@ -114,6 +114,69 @@ namespace Aikido.Zen.Test
             Assert.That(ex.Message, Does.Contain("Zen has blocked a shell injection"));
         }
 
+        [TestCase("git", new[] { "commit", "-m", "Tom & Jerry" }, "commit -m \"Tom & Jerry\"", "Tom & Jerry", false)]
+        [TestCase("git", new[] { "commit", "-m", "cost $5" }, "commit -m \"cost $5\"", "cost $5", true)]
+        [TestCase("sh", new[] { "-c", "$(echo)" }, "-c $(echo)", "$(echo)", true)]
+        [TestCase("sh", new[] { "-c", "echo FIRST; echo SECOND" }, "-c \"echo FIRST; echo SECOND\"", "echo FIRST; echo SECOND", false)]
+        [TestCase("pwsh", new[] { "-Command", "$(echo)" }, "-Command $(echo)", "$(echo)", true)]
+        [TestCase("cmd.exe", new[] { "/c", "echo FIRST & echo SECOND" }, "/c \"echo FIRST & echo SECOND\"", "echo FIRST & echo SECOND", false)]
+        [TestCase("git", new[] { "commit", "-m", "say \"hello\"" }, "commit -m \"say \\\"hello\\\"\"", "say \"hello\"", false)]
+        [TestCase("git", new[] { "diff", "C:\\My Files\\" }, "diff \"C:\\My Files\\\\\"", "My Files", true)]
+        public void OnProcessStart_WithArgumentList_MatchesArguments(string fileName, string[] arguments, string rawArguments, string userInput, bool expectedAttack)
+        {
+            var startInfos = new[]
+            {
+                new ProcessStartInfo(fileName, rawArguments),
+                new ProcessStartInfo(fileName, arguments)
+            };
+
+            foreach (var startInfo in startInfos)
+            {
+                var context = new Context
+                {
+                    ParsedUserInput = new Dictionary<string, string> { { "query.command", userInput } }
+                };
+                using var process = new Process { StartInfo = startInfo };
+
+                OnProcessStart(process, context);
+
+                Assert.That(context.AttackDetected, Is.EqualTo(expectedAttack));
+            }
+        }
+
+        [TestCase("Instance")]
+        [TestCase("StartInfo")]
+        [TestCase("ArgumentList")]
+        public void ProcessStart_WithArgumentList_UsesExistingHook(string entryPoint)
+        {
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
+            _context.ParsedUserInput = new Dictionary<string, string> { { "query.command", "$(echo)" } };
+            _activeContext = _context;
+            var arguments = new[] { "-c", "$(echo)" };
+            using var process = new Process { StartInfo = new ProcessStartInfo("aikido-nonexistent-process", arguments) };
+            TestDelegate start = entryPoint switch
+            {
+                "Instance" => () => { process.Start(); },
+                "StartInfo" => () => { Process.Start(process.StartInfo)?.Dispose(); },
+                _ => () => { Process.Start(process.StartInfo.FileName, arguments)?.Dispose(); }
+            };
+
+            Assert.Throws<AikidoException>(start);
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void OnProcessStart_WithSafeArgumentList_ReturnsTrue(bool withArguments)
+        {
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
+            _context.ParsedUserInput = new Dictionary<string, string> { { "query.message", "Tom & Jerry" } };
+            var arguments = withArguments ? new[] { "commit", "-m", "Tom & Jerry" } : Array.Empty<string>();
+            var startInfo = new ProcessStartInfo("git", arguments);
+
+            Assert.That(OnProcessStart(new Process { StartInfo = startInfo }, _context), Is.True);
+            Assert.That(_context.AttackDetected, Is.False);
+        }
+
         [Test]
         public void OnProcessStart_WithShellInjectionInDryMode_ReturnsTrue()
         {
