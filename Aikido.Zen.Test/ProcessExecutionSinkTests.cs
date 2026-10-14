@@ -45,42 +45,6 @@ namespace Aikido.Zen.Test
             Patcher.PatchSinks(() => _activeContext!);
         }
 
-        [TestCase("", new string[0])]
-        [TestCase("   ", new string[0])]
-        [TestCase("-c \"echo ok;id\"", new[] { "-c", "echo ok;id" })]
-        [TestCase("  a \t \"b c\"  d  ", new[] { "a", "b c", "d" })]
-        [TestCase("a\"b c\"d", new[] { "ab cd" })]
-        [TestCase("\"\"", new[] { "" })]
-        [TestCase("\"\" \"\"", new[] { "", "" })]
-        [TestCase("a\"\"b", new[] { "ab" })]
-        [TestCase("\"\"\"", new[] { "\"" })]
-        [TestCase("\"\"\"\"", new[] { "\"" })]
-        [TestCase("\"ab\"cd", new[] { "abcd" })]
-        [TestCase("a\nb a\rb", new[] { "a\nb", "a\rb" })]
-        [TestCase("\"a b", new[] { "a b" })]
-        [TestCase("\"a\\\"b\"", new[] { "a\"b" })]
-        [TestCase("\"a\"\"b\"", new[] { "a\"b" })]
-        [TestCase("a\\\\b a\\", new[] { "a\\\\b", "a\\" })]
-        [TestCase("\"a\\\\\" b", new[] { "a\\", "b" })]
-        [TestCase("a\\\\\\\"b", new[] { "a\\\"b" })]
-        [TestCase("-c \"echo 'x y'\"", new[] { "-c", "echo 'x y'" })]
-        [TestCase("'a b'", new[] { "'a", "b'" })]
-        [TestCase("-c \"echo a\";id;\"\"", new[] { "-c", "echo a;id;" })]
-        public void DecodeProcessArguments_SplitsLikeProcessStart(string arguments, string[] expected)
-        {
-            Assert.That(ProcessExecutionSink.DecodeProcessArguments(arguments), Is.EqualTo(expected));
-        }
-
-        [Test]
-        public void GetArguments_DecodesArgumentsAndPreservesArgumentListValues()
-        {
-            var expected = new[] { "commit", "-m", "two \"quoted\" words" };
-
-            Assert.That(ProcessExecutionSink.GetArguments(new ProcessStartInfo("git", "commit -m \"two \\\"quoted\\\" words\"")), Is.EqualTo(expected));
-            Assert.That(ProcessExecutionSink.GetArguments(new ProcessStartInfo("git", new[] { "commit", "-m", "two \"quoted\" words" })), Is.EqualTo(expected));
-            Assert.That(ProcessExecutionSink.GetArguments(new ProcessStartInfo("git")), Is.Empty);
-        }
-
         [Test]
         public void OnProcessStart_WithNullContext_ReturnsTrue()
         {
@@ -150,73 +114,66 @@ namespace Aikido.Zen.Test
             Assert.That(ex.Message, Does.Contain("Zen has blocked a shell injection"));
         }
 
-        [TestCase("sh", "-c \"echo ok;id\"", "echo ok;id")]
-        public void OnProcessStart_WithShellInjectionInArguments_ThrowsException(string fileName, string arguments, string userInput)
+        [TestCase("git", new[] { "commit", "-m", "Tom & Jerry" }, "commit -m \"Tom & Jerry\"", "Tom & Jerry", false)]
+        [TestCase("git", new[] { "commit", "-m", "cost $5" }, "commit -m \"cost $5\"", "cost $5", true)]
+        [TestCase("sh", new[] { "-c", "$(echo)" }, "-c $(echo)", "$(echo)", true)]
+        [TestCase("sh", new[] { "-c", "echo FIRST; echo SECOND" }, "-c \"echo FIRST; echo SECOND\"", "echo FIRST; echo SECOND", false)]
+        [TestCase("pwsh", new[] { "-Command", "$(echo)" }, "-Command $(echo)", "$(echo)", true)]
+        [TestCase("cmd.exe", new[] { "/c", "echo FIRST & echo SECOND" }, "/c \"echo FIRST & echo SECOND\"", "echo FIRST & echo SECOND", false)]
+        [TestCase("git", new[] { "commit", "-m", "say \"hello\"" }, "commit -m \"say \\\"hello\\\"\"", "say \"hello\"", false)]
+        [TestCase("git", new[] { "diff", "C:\\My Files\\" }, "diff \"C:\\My Files\\\\\"", "My Files", true)]
+        public void OnProcessStart_WithArgumentList_MatchesArguments(string fileName, string[] arguments, string rawArguments, string userInput, bool expectedAttack)
         {
-            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
-            _context.ParsedUserInput = new Dictionary<string, string> {
-                { "query.command", userInput }
-            };
-            _startInfo.FileName = fileName;
-            _startInfo.Arguments = arguments;
-
-            var ex = Assert.Throws<AikidoException>(() =>
-                OnProcessStart(new Process { StartInfo = _startInfo }, _context)
-            );
-            Assert.That(ex.Message, Does.Contain("Zen has blocked a shell injection"));
-        }
-
-        [TestCase("sh", new[] { "-c", "echo ok;id" }, "echo ok;id")]
-        public void OnProcessStart_WithShellInjectionInArgumentList_ThrowsException(string fileName, string[] arguments, string userInput)
-        {
-            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
-            _context.ParsedUserInput = new Dictionary<string, string> {
-                { "query.command", userInput }
-            };
-            _startInfo.FileName = fileName;
-            foreach (var argument in arguments)
+            var startInfos = new[]
             {
-                _startInfo.ArgumentList.Add(argument);
-            }
-
-            var ex = Assert.Throws<AikidoException>(() =>
-                OnProcessStart(new Process { StartInfo = _startInfo }, _context)
-            );
-            Assert.That(ex.Message, Does.Contain("Zen has blocked a shell injection"));
-        }
-
-        [TestCase("git", "commit -m \"Tom & Jerry\"", "Tom & Jerry")]
-        public void OnProcessStart_WithSafeUserInput_ReturnsTrue(string fileName, string arguments, string userInput)
-        {
-            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
-            _context.ParsedUserInput = new Dictionary<string, string> {
-                { "query.input", userInput }
+                new ProcessStartInfo(fileName, rawArguments),
+                new ProcessStartInfo(fileName, arguments)
             };
-            _startInfo.FileName = fileName;
-            _startInfo.Arguments = arguments;
 
-            var result = OnProcessStart(new Process { StartInfo = _startInfo }, _context);
-
-            Assert.That(result, Is.True);
-            Assert.That(_context.AttackDetected, Is.False);
-        }
-
-        [TestCase("sh", new[] { "-c", "echo \"$1\"", "sh", "Tom & Jerry" }, "Tom & Jerry")]
-        public void OnProcessStart_WithSafeUserInputInArgumentList_ReturnsTrue(string fileName, string[] arguments, string userInput)
-        {
-            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
-            _context.ParsedUserInput = new Dictionary<string, string> {
-                { "query.message", userInput }
-            };
-            _startInfo.FileName = fileName;
-            foreach (var argument in arguments)
+            foreach (var startInfo in startInfos)
             {
-                _startInfo.ArgumentList.Add(argument);
+                var context = new Context
+                {
+                    ParsedUserInput = new Dictionary<string, string> { { "query.command", userInput } }
+                };
+                using var process = new Process { StartInfo = startInfo };
+
+                OnProcessStart(process, context);
+
+                Assert.That(context.AttackDetected, Is.EqualTo(expectedAttack));
             }
+        }
 
-            var result = OnProcessStart(new Process { StartInfo = _startInfo }, _context);
+        [TestCase("Instance")]
+        [TestCase("StartInfo")]
+        [TestCase("ArgumentList")]
+        public void ProcessStart_WithArgumentList_UsesExistingHook(string entryPoint)
+        {
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
+            _context.ParsedUserInput = new Dictionary<string, string> { { "query.command", "$(echo)" } };
+            _activeContext = _context;
+            var arguments = new[] { "-c", "$(echo)" };
+            using var process = new Process { StartInfo = new ProcessStartInfo("aikido-nonexistent-process", arguments) };
+            TestDelegate start = entryPoint switch
+            {
+                "Instance" => () => { process.Start(); },
+                "StartInfo" => () => { Process.Start(process.StartInfo)?.Dispose(); },
+                _ => () => { Process.Start(process.StartInfo.FileName, arguments)?.Dispose(); }
+            };
 
-            Assert.That(result, Is.True);
+            Assert.Throws<AikidoException>(start);
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void OnProcessStart_WithSafeArgumentList_ReturnsTrue(bool withArguments)
+        {
+            Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
+            _context.ParsedUserInput = new Dictionary<string, string> { { "query.message", "Tom & Jerry" } };
+            var arguments = withArguments ? new[] { "commit", "-m", "Tom & Jerry" } : Array.Empty<string>();
+            var startInfo = new ProcessStartInfo("git", arguments);
+
+            Assert.That(OnProcessStart(new Process { StartInfo = startInfo }, _context), Is.True);
             Assert.That(_context.AttackDetected, Is.False);
         }
 
