@@ -234,6 +234,10 @@ namespace Aikido.Zen.Test
                     !request.Headers.AcceptEncoding.Any() &&
                     request.Headers.CacheControl!.NoCache &&
                     request.Headers.GetValues("X-Agent-Platform").Single() == "dotnet" &&
+                    request.Headers.GetValues("X-Agent-Library").Single() == "firewall-dotnet" &&
+                    request.Headers.GetValues("X-Agent-Hostname").Count() == 1 &&
+                    request.Headers.GetValues("X-Agent-IP-Address").Count() == 1 &&
+                    request.Headers.GetValues("X-Agent-Session-Id").Count() == 1 &&
                     request.Headers.GetValues("X-Agent-Version").Single() == AgentInfoHelper.ZenVersion),
                 ItExpr.IsAny<CancellationToken>());
         }

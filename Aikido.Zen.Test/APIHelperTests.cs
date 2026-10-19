@@ -12,6 +12,7 @@ namespace Aikido.Zen.Test.Helpers
     {
         private Uri _baseUrl;
         private const string TestToken = "test-token";
+        private const string UuidV7Pattern = "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$";
 
         [SetUp]
         public void Setup()
@@ -60,6 +61,65 @@ namespace Aikido.Zen.Test.Helpers
                 Assert.That(request.Headers.Authorization.Scheme, Is.EqualTo(TestToken));
                 Assert.That(request.Content, Is.Null);
             });
+        }
+
+        [Test]
+        public void CreateRequest_ShouldAddAgentHeadersWithSameSessionIdAcrossRequests()
+        {
+            var agentInfo = AgentInfoHelper.GetInfo();
+
+            var first = APIHelper.CreateRequest(TestToken, _baseUrl, "/first", HttpMethod.Get);
+            var second = APIHelper.CreateRequest(TestToken, _baseUrl, "/second", HttpMethod.Post);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(first.Headers.GetValues("X-Agent-Platform").Single(), Is.EqualTo("dotnet"));
+                Assert.That(first.Headers.GetValues("X-Agent-Library").Single(), Is.EqualTo("firewall-dotnet"));
+                Assert.That(first.Headers.GetValues("X-Agent-Version").Single(), Is.EqualTo(AgentInfoHelper.ZenVersion));
+                Assert.That(first.Headers.GetValues("X-Agent-Hostname").Single(), Is.EqualTo(agentInfo.Hostname).Or.EqualTo("unknown"));
+                Assert.That(first.Headers.GetValues("X-Agent-IP-Address").Single(), Is.EqualTo(agentInfo.IpAddress).Or.EqualTo("unknown"));
+                Assert.That(
+                    second.Headers.GetValues("X-Agent-Session-Id").Single(),
+                    Is.EqualTo(first.Headers.GetValues("X-Agent-Session-Id").Single()));
+            });
+        }
+
+        [Test]
+        public void AgentRequestHeaders_NewUuidV7_ShouldReturnValidUuidV7WithCurrentTimestamp()
+        {
+            var before = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            var id = AgentRequestHeaders.NewUuidV7();
+            var after = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+            var milliseconds = Convert.ToInt64(id.Substring(0, 8) + id.Substring(9, 4), 16);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(id, Does.Match(UuidV7Pattern));
+                Assert.That(milliseconds, Is.InRange(before, after));
+                Assert.That(AgentRequestHeaders.NewUuidV7(), Is.Not.EqualTo(id));
+            });
+        }
+
+        [TestCase(null)]
+        [TestCase("")]
+        [TestCase("bad\r\nhost")]
+        public void CreateRequest_ShouldSendUnknownHostname_WhenHostnameIsEmptyOrInvalid(string? hostname)
+        {
+            var agentInfo = AgentInfoHelper.GetInfo();
+            var originalHostname = agentInfo.Hostname;
+            agentInfo.Hostname = hostname!;
+
+            try
+            {
+                var request = APIHelper.CreateRequest(TestToken, _baseUrl, "/test", HttpMethod.Get);
+
+                Assert.That(request.Headers.GetValues("X-Agent-Hostname").Single(), Is.EqualTo("unknown"));
+            }
+            finally
+            {
+                agentInfo.Hostname = originalHostname;
+            }
         }
 
         [Test]
