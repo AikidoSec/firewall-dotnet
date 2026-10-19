@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.Net.Http;
 using System.Security.Cryptography;
 
@@ -22,11 +23,10 @@ namespace Aikido.Zen.Core.Helpers
             request.Headers.Add("X-Agent-Version", AgentInfoHelper.ZenVersion);
             try
             {
-                request.Headers.Add("X-Agent-Hostname", hostname);
+                request.Headers.Add("X-Agent-Hostname", new IdnMapping().GetAscii(hostname));
             }
-            catch (FormatException)
+            catch (ArgumentException)
             {
-                // Headers.Add throws on values with line breaks.
                 request.Headers.Add("X-Agent-Hostname", "unknown");
             }
             request.Headers.Add("X-Agent-IP-Address", ipAddress);

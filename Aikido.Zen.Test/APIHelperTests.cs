@@ -76,7 +76,7 @@ namespace Aikido.Zen.Test.Helpers
                 Assert.That(first.Headers.GetValues("X-Agent-Platform").Single(), Is.EqualTo("dotnet"));
                 Assert.That(first.Headers.GetValues("X-Agent-Library").Single(), Is.EqualTo("firewall-dotnet"));
                 Assert.That(first.Headers.GetValues("X-Agent-Version").Single(), Is.EqualTo(AgentInfoHelper.ZenVersion));
-                Assert.That(first.Headers.GetValues("X-Agent-Hostname").Single(), Is.EqualTo(agentInfo.Hostname).Or.EqualTo("unknown"));
+                Assert.That(first.Headers.GetValues("X-Agent-Hostname").Single(), Does.Match(@"^[\x20-\x7e]+$"));
                 Assert.That(first.Headers.GetValues("X-Agent-IP-Address").Single(), Is.EqualTo(agentInfo.IpAddress).Or.EqualTo("unknown"));
                 Assert.That(
                     second.Headers.GetValues("X-Agent-Session-Id").Single(),
@@ -101,10 +101,15 @@ namespace Aikido.Zen.Test.Helpers
             });
         }
 
-        [TestCase(null)]
-        [TestCase("")]
-        [TestCase("bad\r\nhost")]
-        public void CreateRequest_ShouldSendUnknownHostname_WhenHostnameIsEmptyOrInvalid(string? hostname)
+        [TestCase(null, "unknown")]
+        [TestCase("", "unknown")]
+        [TestCase("bad\r\nhost", "unknown")]
+        [TestCase("\ud800", "unknown")]
+        [TestCase("normal-host", "normal-host")]
+        [TestCase("xn--mnchen-3ya", "xn--mnchen-3ya")]
+        [TestCase("m\u00fcnchen", "xn--mnchen-3ya")]
+        [TestCase("\u670d\u52a1\u5668", "xn--zfru1ggxt")]
+        public void CreateRequest_ShouldSendAsciiHostname(string? hostname, string expected)
         {
             var agentInfo = AgentInfoHelper.GetInfo();
             var originalHostname = agentInfo.Hostname;
@@ -114,7 +119,7 @@ namespace Aikido.Zen.Test.Helpers
             {
                 var request = APIHelper.CreateRequest(TestToken, _baseUrl, "/test", HttpMethod.Get);
 
-                Assert.That(request.Headers.GetValues("X-Agent-Hostname").Single(), Is.EqualTo("unknown"));
+                Assert.That(request.Headers.GetValues("X-Agent-Hostname").Single(), Is.EqualTo(expected));
             }
             finally
             {
