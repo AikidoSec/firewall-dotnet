@@ -75,8 +75,6 @@ namespace Aikido.Zen.Core.Api
                 request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
                 request.Headers.AcceptEncoding.Clear();
                 request.Headers.CacheControl = new CacheControlHeaderValue { NoCache = true };
-                request.Headers.Add("X-Agent-Platform", "dotnet");
-                request.Headers.Add("X-Agent-Version", AgentInfoHelper.ZenVersion);
 
                 // ResponseHeadersRead limits HttpClient.Timeout to receiving the headers;
                 // stream inactivity is handled separately by SseReadTimeout.

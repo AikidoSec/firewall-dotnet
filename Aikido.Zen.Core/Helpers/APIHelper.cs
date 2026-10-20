@@ -12,6 +12,7 @@ namespace Aikido.Zen.Core.Helpers
             var request = new HttpRequestMessage(method, new Uri(baseUrl, path));
             request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue(token);
             request.Headers.AcceptEncoding.Add(new System.Net.Http.Headers.StringWithQualityHeaderValue("gzip"));
+            AgentRequestHeaders.AddTo(request);
 
             if (content != null)
             {
