@@ -13,5 +13,6 @@
     <FileVersion>$(VersionPrefix)</FileVersion>
     <InformationalVersion>$(Version)</InformationalVersion>
     <PackageVersion>$(Version)</PackageVersion>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
   </PropertyGroup>
 </Project>
