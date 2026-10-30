@@ -192,6 +192,27 @@ namespace Aikido.Zen.Test.Helpers
             Assert.That(nullResult, Is.Null);
         }
 
+        [TestCase("\"x' OR '1'='1\"", "body", "body.value", "x' OR '1'='1")]
+        [TestCase("\"\\u002e\\u002e/appsettings.json\"", "body", "body.value", "../appsettings.json")]
+        [TestCase("\"\"", "body", "body.value", "")]
+        [TestCase("42", "body", "body.value", "42")]
+        [TestCase("-1.25", "body", "body.value", "-1.25")]
+        [TestCase("true", "body", "body.value", "True")]
+        [TestCase("false", "body", "body.value", "False")]
+        [TestCase("null", "body", "body.value", "")]
+        [TestCase("\"value\"", null, "value", "value")]
+        [TestCase("\"value\"", "", "value", "value")]
+        [TestCase("\"value\"", "body", "body.value", "value")]
+        public void FlattenJson_ShouldCaptureTopLevelScalars(string json, string? prefix, string expectedKey, string expectedValue)
+        {
+            using var document = JsonDocument.Parse(json);
+            var result = new Dictionary<string, string>();
+
+            JsonHelper.FlattenJson(result, document.RootElement, prefix);
+
+            Assert.That(result, Is.EquivalentTo(new Dictionary<string, string> { { expectedKey, expectedValue } }));
+        }
+
         [Test]
         public void FlattenJson_ShouldHandleObjectsAndArrays()
         {
