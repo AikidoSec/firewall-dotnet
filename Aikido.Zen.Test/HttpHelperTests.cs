@@ -192,6 +192,30 @@ namespace Aikido.Zen.Test.Helpers
             Assert.That(nullResult, Is.Null);
         }
 
+        [TestCase("\"x' OR '1'='1\"", "x' OR '1'='1")]
+        [TestCase("\"\\u002e\\u002e/appsettings.json\"", "../appsettings.json")]
+        [TestCase("\"\"", "")]
+        [TestCase("42", "42")]
+        [TestCase("-1.25", "-1.25")]
+        [TestCase("true", "True")]
+        [TestCase("false", "False")]
+        [TestCase("null", "")]
+        public async Task ReadAndFlattenHttpDataAsync_ShouldCaptureTopLevelJsonScalars(string body, string expected)
+        {
+            using var bodyStream = new MemoryStream(Encoding.UTF8.GetBytes(body));
+
+            var result = await HttpHelper.ReadAndFlattenHttpDataAsync(
+                new Dictionary<string, string>(),
+                new Dictionary<string, string>(),
+                new Dictionary<string, string>(),
+                new Dictionary<string, string>(),
+                bodyStream,
+                "application/json");
+
+            Assert.That(result.FlattenedData, Is.EquivalentTo(new Dictionary<string, string> { { "body", expected } }));
+            Assert.That(bodyStream.Position, Is.Zero);
+        }
+
         [Test]
         public void FlattenJson_ShouldHandleObjectsAndArrays()
         {

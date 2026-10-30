@@ -52,6 +52,11 @@ namespace Aikido.Zen.Core.Helpers
                     }
                 }
             }
+            else
+            {
+                // Remaining JsonValueKind values are String, Number, True, False, or Null.
+                result[prefix] = element.ToString();
+            }
         }
 
         /// <summary>
