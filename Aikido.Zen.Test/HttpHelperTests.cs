@@ -212,8 +212,21 @@ namespace Aikido.Zen.Test.Helpers
                 bodyStream,
                 "application/json");
 
-            Assert.That(result.FlattenedData, Is.EquivalentTo(new Dictionary<string, string> { { "body", expected } }));
+            Assert.That(result.FlattenedData, Is.EquivalentTo(new Dictionary<string, string> { { "body.value", expected } }));
             Assert.That(bodyStream.Position, Is.Zero);
+        }
+
+        [TestCase(null, "value")]
+        [TestCase("", "value")]
+        [TestCase("body", "body.value")]
+        public void FlattenJson_ShouldCaptureScalarWithOptionalPrefix(string? prefix, string expectedKey)
+        {
+            using var document = JsonDocument.Parse("\"value\"");
+            var result = new Dictionary<string, string>();
+
+            JsonHelper.FlattenJson(result, document.RootElement, prefix);
+
+            Assert.That(result, Is.EquivalentTo(new Dictionary<string, string> { { expectedKey, "value" } }));
         }
 
         [Test]

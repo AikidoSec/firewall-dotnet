@@ -55,7 +55,8 @@ namespace Aikido.Zen.Core.Helpers
             else
             {
                 // Remaining JsonValueKind values are String, Number, True, False, or Null.
-                result[prefix] = element.ToString();
+                string key = string.IsNullOrEmpty(prefix) ? "value" : $"{prefix}.value";
+                result[key] = element.ToString();
             }
         }
 
