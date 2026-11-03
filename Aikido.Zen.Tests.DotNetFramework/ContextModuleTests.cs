@@ -434,6 +434,7 @@ namespace Aikido.Zen.Tests.DotNetFramework
         [Test]
         public void PopulateRateLimitGroup_UpdatesExistingContextGroup()
         {
+            var originalHttpContext = HttpContext.Current;
             var originalSetRateLimitGroupAction = Aikido.Zen.DotNetFramework.Zen.SetRateLimitGroupAction;
 
             try
@@ -441,6 +442,7 @@ namespace Aikido.Zen.Tests.DotNetFramework
                 var httpContext = new HttpContext(
                     new HttpRequest(string.Empty, "http://test.local/api/test", string.Empty),
                     new HttpResponse(new StringWriter()));
+                HttpContext.Current = httpContext;
                 var aikidoContext = new Context();
                 Aikido.Zen.DotNetFramework.Zen.SetCurrentContext(aikidoContext);
                 Aikido.Zen.DotNetFramework.Zen.SetRateLimitGroupAction = _ => "configured-group";
@@ -452,6 +454,7 @@ namespace Aikido.Zen.Tests.DotNetFramework
             finally
             {
                 Aikido.Zen.DotNetFramework.Zen.ClearCurrentContext();
+                HttpContext.Current = originalHttpContext;
                 Aikido.Zen.DotNetFramework.Zen.SetRateLimitGroupAction = originalSetRateLimitGroupAction;
             }
         }

@@ -117,8 +117,12 @@ namespace Aikido.Zen.Tests.DotNetFramework
         [Test]
         public void GetUser_ReturnsContextUser()
         {
+            var originalHttpContext = HttpContext.Current;
             try
             {
+                HttpContext.Current = new HttpContext(
+                    new HttpRequest(string.Empty, "http://test.local/api/test", string.Empty),
+                    new HttpResponse(new StringWriter()));
                 var user = new User("context-user", "Context User");
                 var context = new Context
                 {
@@ -136,6 +140,7 @@ namespace Aikido.Zen.Tests.DotNetFramework
             finally
             {
                 FrameworkZen.ClearCurrentContext();
+                HttpContext.Current = originalHttpContext;
             }
         }
 
