@@ -114,8 +114,8 @@
       },
       "BouncyCastle.Cryptography": {
         "type": "Transitive",
-        "resolved": "2.6.2",
-        "contentHash": "7oWOcvnntmMKNzDLsdxAYqApt+AjpRpP2CShjMfIa3umZ42UQMvH0tl1qAliYPNYO6vTdcGMqnRrCPmsfzTI1w=="
+        "resolved": "2.7.0",
+        "contentHash": "U+12df8UEWHgBi04YVf/Lgi2dy3SItlIYvHjjEVa/BngCQIzDCDRBk50DDByCfDvSbe5pRNFr3b7UrVK2kMcLw=="
       },
       "Dazinator.Extensions.FileProviders": {
         "type": "Transitive",
@@ -2908,6 +2908,7 @@
         "type": "Project",
         "dependencies": {
           "Aikido.Zen.DotNetCore": "[1.2.5, )",
+          "BouncyCastle.Cryptography": "[2.7.0, )",
           "MySql.Data": "[9.1.0, )",
           "MySqlConnector": "[2.4.0, )",
           "SampleApp.Common": "[1.2.5, )"
@@ -2949,6 +2950,7 @@
         "type": "Project",
         "dependencies": {
           "Aikido.Zen.DotNetCore": "[1.2.5, )",
+          "BouncyCastle.Cryptography": "[2.7.0, )",
           "Microsoft.ICU.ICU4C.Runtime": "[72.1.0.3, )",
           "MimeKit": "[4.15.1, )",
           "SampleApp.Common": "[1.2.5, )",

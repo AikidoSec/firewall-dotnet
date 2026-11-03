@@ -52,7 +52,7 @@
     <PackageReference Include="BenchmarkDotNet" Version="0.14.0" />
     <PackageReference Include="BenchmarkDotNet.Annotations" Version="0.14.0" />
     <PackageReference Include="bootstrap" Version="5.2.3" />
-    <PackageReference Include="BouncyCastle.Cryptography" Version="2.3.1" />
+    <PackageReference Include="BouncyCastle.Cryptography" Version="2.7.0" />
     <PackageReference Include="CommandLineParser" Version="2.9.1" />
     <PackageReference Include="EntityFramework" Version="6.4.4" />
     <PackageReference Include="Gee.External.Capstone" Version="2.3.0" />
