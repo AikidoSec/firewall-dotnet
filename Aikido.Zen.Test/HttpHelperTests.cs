@@ -2,6 +2,7 @@ using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 using System.Text;
 using System.Text.Json;
+using System.Xml;
 
 namespace Aikido.Zen.Test.Helpers
 {
@@ -228,6 +229,27 @@ namespace Aikido.Zen.Test.Helpers
             Assert.That(result["key1.subkey"], Is.EqualTo("value"));
             Assert.That(result["key2.0"], Is.EqualTo("item1"));
             Assert.That(result["key2.1"], Is.EqualTo("item2"));
+        }
+
+        [TestCase("plain text", "plain text")]
+        [TestCase("<![CDATA[x' OR '1'='1]]>", "x' OR '1'='1")]
+        [TestCase("<![CDATA[../appsettings.json]]>", "../appsettings.json")]
+        [TestCase("x' <![CDATA[OR '1'='1]]>", "x' OR '1'='1")]
+        [TestCase("<![CDATA[x' OR '1'='1]]> tail", "x' OR '1'='1 tail")]
+        [TestCase("<![CDATA[..]]><![CDATA[/appsettings.json]]>", "../appsettings.json")]
+        [TestCase("x'<![CDATA[ OR ]]>'1'='1", "x' OR '1'='1")]
+        [TestCase("<![CDATA[]]>", "")]
+        [TestCase("<![CDATA[  value  ]]>", "value")]
+        [TestCase("a<!--ignored--><![CDATA[b]]>c", "abc")]
+        public void FlattenXml_ShouldCaptureTextAndCData(string content, string expected)
+        {
+            var document = new XmlDocument();
+            document.LoadXml($"<root>{content}</root>");
+            var result = new Dictionary<string, string>();
+
+            XmlHelper.FlattenXml(result, document.DocumentElement!, "body");
+
+            Assert.That(result, Is.EquivalentTo(new Dictionary<string, string> { { "body", expected } }));
         }
 
         [Test]
