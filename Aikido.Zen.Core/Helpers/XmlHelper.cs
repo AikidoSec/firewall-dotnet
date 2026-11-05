@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Xml;
 
 namespace Aikido.Zen.Core.Helpers
@@ -36,13 +37,20 @@ namespace Aikido.Zen.Core.Helpers
                 }
             }
 
+            StringBuilder text = null;
             foreach (XmlNode childNode in element.ChildNodes)
             {
-                if (childNode is XmlText textNode)
+                if (childNode is XmlText || childNode is XmlCDataSection)
                 {
-                    // If newPrefix is empty, use the element's name directly
-                    result[string.IsNullOrEmpty(newPrefix) ? element.Name : newPrefix] = textNode.Value.Trim();
+                    text = text ?? new StringBuilder();
+                    text.Append(childNode.Value);
                 }
+            }
+
+            if (text != null)
+            {
+                // Text and CDATA can split one input, so inspect their combined value.
+                result[string.IsNullOrEmpty(newPrefix) ? element.Name : newPrefix] = text.ToString().Trim();
             }
         }
 
