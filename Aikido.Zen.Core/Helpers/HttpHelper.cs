@@ -128,6 +128,11 @@ namespace Aikido.Zen.Core.Helpers
                         if (IsJsonMediaType(mediaType))
                         {
                             string jsonContent = await reader.ReadToEndAsync();
+                            if (jsonContent.Length == 0)
+                            {
+                                return null;
+                            }
+
                             using (JsonDocument document = JsonDocument.Parse(jsonContent))
                             {
                                 JsonHelper.FlattenJson(result, document.RootElement, "body");
