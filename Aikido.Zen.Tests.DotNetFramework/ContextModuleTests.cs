@@ -4,11 +4,15 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Security.Principal;
+using System.Threading.Tasks;
 using System.Web;
+using System.Web.Hosting;
 using System.Web.Routing;
 using Aikido.Zen.Core;
+using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.DotNetFramework.HttpModules;
+using Moq;
 using NUnit.Framework;
 
 
@@ -24,6 +28,62 @@ namespace Aikido.Zen.Tests.DotNetFramework
         {
             RouteTable.Routes.Clear();
             _contextModule = new ContextModule();
+        }
+
+        [TestCase("session=first", 1)]
+        [TestCase("session=first; session=second", 1)]
+        [TestCase("session=first; session=second; session=third", 1)]
+        [TestCase("session=first; other=second; session=third", 2)]
+        public async Task BeginRequest_CapturesRequestWithRepeatedCookieNames(string cookieHeader, int expectedCookieCount)
+        {
+            var originalHttpContext = HttpContext.Current;
+            var originalDisable = Environment.GetEnvironmentVariable("AIKIDO_DISABLE");
+            var agent = Agent.NewInstance(new ZenApi(Mock.Of<IReportingAPIClient>(), Mock.Of<IRuntimeAPIClient>()));
+            try
+            {
+                Environment.SetEnvironmentVariable("AIKIDO_DISABLE", "false");
+                var httpContext = new HttpContext(new CookieWorkerRequest(cookieHeader));
+                HttpContext.Current = httpContext;
+                var application = new HttpApplication();
+                typeof(HttpApplication).GetField("_context", BindingFlags.NonPublic | BindingFlags.Instance)
+                    .SetValue(application, httpContext);
+
+                await (Task)typeof(ContextModule).GetMethod("Context_BeginRequestAsync", BindingFlags.NonPublic | BindingFlags.Instance)
+                    .Invoke(_contextModule, new object[] { application, EventArgs.Empty });
+
+                var context = Aikido.Zen.DotNetFramework.Zen.GetContext();
+                Assert.That(context, Is.Not.Null);
+                Assert.Multiple(() =>
+                {
+                    Assert.That(context.Cookies.Count, Is.EqualTo(expectedCookieCount));
+                    Assert.That(context.Cookies["session"], Is.EqualTo("first"));
+                    Assert.That(context.ParsedUserInput["cookies.session"], Is.EqualTo("first"));
+                    Assert.That(context.ParsedUserInput["query.q"], Is.EqualTo("needle"));
+                });
+            }
+            finally
+            {
+                Aikido.Zen.DotNetFramework.Zen.ClearCurrentContext();
+                HttpContext.Current = originalHttpContext;
+                Environment.SetEnvironmentVariable("AIKIDO_DISABLE", originalDisable);
+                agent.Dispose();
+            }
+        }
+
+        private class CookieWorkerRequest : SimpleWorkerRequest
+        {
+            private readonly string _cookieHeader;
+
+            public CookieWorkerRequest(string cookieHeader)
+                : base("/", Path.GetTempPath(), "api/test", "q=needle", new StringWriter())
+            {
+                _cookieHeader = cookieHeader;
+            }
+
+            public override string GetKnownRequestHeader(int index)
+            {
+                return index == HeaderCookie ? _cookieHeader : base.GetKnownRequestHeader(index);
+            }
         }
 
         [TestCase(true, 200)]
