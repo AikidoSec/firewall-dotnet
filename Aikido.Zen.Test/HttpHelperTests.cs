@@ -1,5 +1,8 @@
+using Aikido.Zen.Core;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
+using Microsoft.Extensions.Logging;
+using Moq;
 using System.Text;
 using System.Text.Json;
 using System.Xml;
@@ -172,6 +175,48 @@ namespace Aikido.Zen.Test.Helpers
             var parsedBody = (Dictionary<string, object>)result.ParsedBody;
             Assert.That(parsedBody["userCommand"]?.ToString(), Is.EqualTo("whoami"));
             Assert.That(bodyStream.Position, Is.EqualTo(0));
+        }
+
+        [TestCase("", false)]
+        [TestCase(" \r\n\t", true)]
+        [TestCase("{invalid", true)]
+        [NonParallelizable]
+        public async Task ReadAndFlattenHttpDataAsync_ShouldOnlyIgnoreEmptyJsonBodies(string body, bool shouldLogError)
+        {
+            var originalDebug = Environment.GetEnvironmentVariable("AIKIDO_DEBUG");
+            var originalLogger = Agent.Logger;
+            var logger = new Mock<ILogger>();
+
+            try
+            {
+                Environment.SetEnvironmentVariable("AIKIDO_DEBUG", "true");
+                Agent.ConfigureLogger(logger.Object);
+                using var bodyStream = new MemoryStream(Encoding.UTF8.GetBytes(body));
+
+                var result = await HttpHelper.ReadAndFlattenHttpDataAsync(
+                    new Dictionary<string, string>(),
+                    new Dictionary<string, string> { { "name", "updated" } },
+                    new Dictionary<string, string>(),
+                    new Dictionary<string, string>(),
+                    bodyStream,
+                    "application/json");
+
+                Assert.That(result.ParsedBody, Is.Null);
+                Assert.That(result.FlattenedData["query.name"], Is.EqualTo("updated"));
+                Assert.That(bodyStream.Position, Is.Zero);
+                Assert.That(bodyStream.CanRead, Is.True);
+                logger.Verify(l => l.Log(
+                    LogLevel.Error,
+                    It.IsAny<EventId>(),
+                    It.IsAny<It.IsAnyType>(),
+                    It.IsAny<Exception?>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Exactly(shouldLogError ? 1 : 0));
+            }
+            finally
+            {
+                Agent.ConfigureLogger(originalLogger);
+                Environment.SetEnvironmentVariable("AIKIDO_DEBUG", originalDebug);
+            }
         }
 
         [Test]
