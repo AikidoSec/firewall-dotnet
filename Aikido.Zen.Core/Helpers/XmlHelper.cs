@@ -8,16 +8,23 @@ namespace Aikido.Zen.Core.Helpers
     /// <summary>
     /// Helper class for processing XML data.
     /// </summary>
-    public static class XmlHelper
+    internal static class XmlHelper
     {
+        internal const int MaxDepth = 64;
+
         /// <summary>
         /// Flattens an XML element into a dictionary with dot-notation keys.
         /// </summary>
         /// <param name="result">The dictionary to store flattened data.</param>
         /// <param name="element">The XML element to flatten.</param>
         /// <param name="prefix">The prefix for keys in the dictionary.</param>
-        public static void FlattenXml(IDictionary<string, string> result, XmlElement element, string prefix)
+        internal static void FlattenXml(IDictionary<string, string> result, XmlElement element, string prefix, int depth = 0)
         {
+            if (depth >= MaxDepth)
+            {
+                return;
+            }
+
             // Determine the new prefix based on whether the current element is the root or a child
             string newPrefix = string.IsNullOrEmpty(prefix) ? string.Empty : prefix;
 
@@ -33,7 +40,7 @@ namespace Aikido.Zen.Core.Helpers
                     var childElement = group.Value[i];
                     // Use indexed prefix only if there are multiple children with the same name
                     string indexedPrefix = group.Value.Count > 1 ? $"{newPrefix}.{group.Key}.{i}" : $"{newPrefix}.{group.Key}";
-                    FlattenXml(result, childElement, indexedPrefix);
+                    FlattenXml(result, childElement, indexedPrefix, depth + 1);
                 }
             }
 
@@ -59,8 +66,13 @@ namespace Aikido.Zen.Core.Helpers
         /// </summary>
         /// <param name="element">The XML element to convert.</param>
         /// <returns>The converted object.</returns>
-        public static object XmlToObject(XmlElement element)
+        internal static object XmlToObject(XmlElement element, int depth = 0)
         {
+            if (depth >= MaxDepth)
+            {
+                return new Dictionary<string, object>();
+            }
+
             if (!element.HasChildNodes || (element.ChildNodes.Count == 1 && element.FirstChild is XmlText))
             {
                 return element.InnerText.Trim();
@@ -76,11 +88,11 @@ namespace Aikido.Zen.Core.Helpers
             {
                 if (group.Value.Count > 1)
                 {
-                    dict[group.Key] = group.Value.Select(child => XmlToObject(child)).ToList();
+                    dict[group.Key] = group.Value.Select(child => XmlToObject(child, depth + 1)).ToList();
                 }
                 else
                 {
-                    dict[group.Key] = XmlToObject(group.Value[0]);
+                    dict[group.Key] = XmlToObject(group.Value[0], depth + 1);
                 }
             }
 
