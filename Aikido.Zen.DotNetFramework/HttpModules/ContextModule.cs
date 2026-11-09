@@ -105,7 +105,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                     Query = FlattenQueryParameters(httpContext.Request.QueryString),
                     Headers = FlattenHeaders(httpContext.Request.Headers),
                     RemoteAddress = clientIp,
-                    Cookies = httpContext.Request.Cookies.AllKeys.ToDictionary(k => k, k => httpContext.Request.Cookies[k].Value),
+                    Cookies = httpContext.Request.Cookies.AllKeys.Distinct().ToDictionary(k => k, k => httpContext.Request.Cookies[k].Value),
                     // User is resolved later in PostAuthenticateRequest and then backfilled into this context.
                     UserAgent = httpContext.Request.UserAgent,
                     Source = "DotNetFramework",
@@ -137,7 +137,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 routeParams: context.RouteParams,
                 queryParams: context.Query,
                 headers: request.Headers.AllKeys.ToDictionary(k => k, k => request.Headers.Get(k)),
-                cookies: request.Cookies.AllKeys.ToDictionary(k => k, k => request.Cookies[k].Value),
+                cookies: context.Cookies,
                 body: request.InputStream,
                 contentType: request.ContentType
             );
