@@ -69,9 +69,9 @@ namespace Aikido.Zen.Test
         public void OnProcessStart_WithBypassedContext_ReturnsTrue()
         {
             _context.Bypassed = true;
-            _context.ParsedUserInput = new Dictionary<string, string>
+            _context.ParsedUserInput = new List<UserInput>
             {
-                { "body.command", "$(echo)" }
+                new UserInput("body.command", "$(echo)")
             };
             _startInfo.FileName = "sh";
             _startInfo.Arguments = "-c \"$(echo)\"";
@@ -101,8 +101,8 @@ namespace Aikido.Zen.Test
         {
             // Arrange
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
-            _context.ParsedUserInput = new Dictionary<string, string> {
-                { "body.command", "$(echo)" }
+            _context.ParsedUserInput = new List<UserInput> {
+                new UserInput("body.command", "$(echo)")
             };
             _startInfo.FileName = "sh";
             _startInfo.Arguments = "-c \"$(echo)\"";
@@ -134,7 +134,7 @@ namespace Aikido.Zen.Test
             {
                 var context = new Context
                 {
-                    ParsedUserInput = new Dictionary<string, string> { { "query.command", userInput } }
+                    ParsedUserInput = new List<UserInput> { new UserInput("query.command", userInput) }
                 };
                 using var process = new Process { StartInfo = startInfo };
 
@@ -150,7 +150,7 @@ namespace Aikido.Zen.Test
         public void ProcessStart_WithArgumentList_UsesExistingHook(string entryPoint)
         {
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
-            _context.ParsedUserInput = new Dictionary<string, string> { { "query.command", "$(echo)" } };
+            _context.ParsedUserInput = new List<UserInput> { new UserInput("query.command", "$(echo)") };
             _activeContext = _context;
             var arguments = new[] { "-c", "$(echo)" };
             using var process = new Process { StartInfo = new ProcessStartInfo("aikido-nonexistent-process", arguments) };
@@ -169,7 +169,7 @@ namespace Aikido.Zen.Test
         public void OnProcessStart_WithSafeArgumentList_ReturnsTrue(bool withArguments)
         {
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
-            _context.ParsedUserInput = new Dictionary<string, string> { { "query.message", "Tom & Jerry" } };
+            _context.ParsedUserInput = new List<UserInput> { new UserInput("query.message", "Tom & Jerry") };
             var arguments = withArguments ? new[] { "commit", "-m", "Tom & Jerry" } : Array.Empty<string>();
             var startInfo = new ProcessStartInfo("git", arguments);
 
@@ -182,8 +182,8 @@ namespace Aikido.Zen.Test
         {
             // Arrange
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "false");
-            _context.ParsedUserInput = new Dictionary<string, string> {
-                { "body.command", "maliciousCommand" }
+            _context.ParsedUserInput = new List<UserInput> {
+                new UserInput("body.command", "maliciousCommand")
             };
             _startInfo.FileName = "maliciousCommand";
             _startInfo.Arguments = "--inject";
@@ -202,9 +202,9 @@ namespace Aikido.Zen.Test
             _context.Method = "POST";
             _context.Route = "/api/execute";
             _context.Path = "/api/execute";
-            _context.ParsedUserInput = new Dictionary<string, string>
+            _context.ParsedUserInput = new List<UserInput>
             {
-                { "body.command", "$(echo)" }
+                new UserInput("body.command", "$(echo)")
             };
             _startInfo.FileName = "sh";
             _startInfo.Arguments = "-c \"$(echo)\"";

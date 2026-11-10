@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using Aikido.Zen.Core.Models;
 using Microsoft.Net.Http.Headers;
 
@@ -17,20 +16,21 @@ namespace Aikido.Zen.Core.Helpers
         /// <summary>
         /// Processes all values and adds URI decoded variants where applicable (e.g. who%61mi => whoami).
         /// </summary>
-        /// <param name="result">The dictionary to store processed data.</param>
-        public static void ProcessUriValues(IDictionary<string, string> values)
+        /// <param name="values">The input values to process.</param>
+        public static void ProcessUriValues(List<UserInput> values)
         {
             if (values == null || values.Count == 0)
             {
                 return;
             }
 
-            foreach (var key in values.Keys.ToList())
+            var originalCount = values.Count;
+            for (int i = 0; i < originalCount; i++)
             {
-                string original = values[key];
-                if (TryDecodeUriComponent(original, out string decoded))
+                var input = values[i];
+                if (TryDecodeUriComponent(input.Value, out string decoded))
                 {
-                    values[$"{key}|decoded"] = decoded;
+                    values.Add(new UserInput($"{input.Location}|decoded", decoded));
                 }
             }
         }
@@ -110,54 +110,54 @@ namespace Aikido.Zen.Core.Helpers
         }
 
         /// <summary>
-        /// Processes query parameters and adds them to the result dictionary.
+        /// Processes query parameters and adds them to the result list.
         /// </summary>
         /// <param name="queryParams">The query parameters dictionary.</param>
-        /// <param name="result">The dictionary to store processed data.</param>
-        public static void ProcessQueryParameters(IDictionary<string, string> queryParams, IDictionary<string, string> result)
+        /// <param name="result">The list to store processed data.</param>
+        public static void ProcessQueryParameters(IDictionary<string, string> queryParams, List<UserInput> result)
         {
             foreach (var query in queryParams)
             {
-                result[$"query.{query.Key}"] = query.Value;
+                result.Add(new UserInput($"query.{query.Key}", query.Value));
             }
         }
 
         /// <summary>
-        /// Processes route parameters and adds them to the result dictionary.
+        /// Processes route parameters and adds them to the result list.
         /// </summary>
         /// <param name="routeParams">The route parameters dictionary.</param>
-        /// <param name="result">The dictionary to store processed data.</param>
-        public static void ProcessRouteParameters(IDictionary<string, string> routeParams, IDictionary<string, string> result)
+        /// <param name="result">The list to store processed data.</param>
+        public static void ProcessRouteParameters(IDictionary<string, string> routeParams, List<UserInput> result)
         {
             foreach (var routeParam in routeParams)
             {
-                result[$"route.{routeParam.Key}"] = routeParam.Value;
+                result.Add(new UserInput($"route.{routeParam.Key}", routeParam.Value));
             }
         }
 
         /// <summary>
-        /// Processes headers and adds them to the result dictionary.
+        /// Processes headers and adds them to the result list.
         /// </summary>
         /// <param name="headers">The headers dictionary.</param>
-        /// <param name="result">The dictionary to store processed data.</param>
-        public static void ProcessHeaders(IDictionary<string, string> headers, IDictionary<string, string> result)
+        /// <param name="result">The list to store processed data.</param>
+        public static void ProcessHeaders(IDictionary<string, string> headers, List<UserInput> result)
         {
             foreach (var header in headers)
             {
-                result[$"headers.{header.Key}"] = header.Value;
+                result.Add(new UserInput($"headers.{header.Key}", header.Value));
             }
         }
 
         /// <summary>
-        /// Processes cookies and adds them to the result dictionary.
+        /// Processes cookies and adds them to the result list.
         /// </summary>
         /// <param name="cookies">The cookies dictionary.</param>
-        /// <param name="result">The dictionary to store processed data.</param>
-        public static void ProcessCookies(IDictionary<string, string> cookies, IDictionary<string, string> result)
+        /// <param name="result">The list to store processed data.</param>
+        public static void ProcessCookies(IDictionary<string, string> cookies, List<UserInput> result)
         {
             foreach (var cookie in cookies)
             {
-                result[$"cookies.{cookie.Key}"] = cookie.Value;
+                result.Add(new UserInput($"cookies.{cookie.Key}", cookie.Value));
             }
         }
 

@@ -61,10 +61,10 @@ namespace Aikido.Zen.Core.Sinks
 
                             result = InspectionResult.Block(
                                 AttackKind.ShellInjection,
-                                UserInputHelper.GetAttackSourceFromUserInputKey(userInput.Key),
+                                UserInputHelper.GetAttackSourceFromUserInputKey(userInput.Location),
                                 userInput.Value,
                                 metadata,
-                                new[] { UserInputHelper.GetAttackPathFromUserInputKey(userInput.Key) }
+                                new[] { UserInputHelper.GetAttackPathFromUserInputKey(userInput.Location) }
                             );
 
                             // Break after first detection for this process start

@@ -60,13 +60,13 @@ namespace Aikido.Zen.Core.Vulnerabilities
                         continue;
                     }
 
-                    var source = UserInputHelper.GetAttackSourceFromUserInputKey(userInput.Key);
+                    var source = UserInputHelper.GetAttackSourceFromUserInputKey(userInput.Location);
                     return InspectionResult.Block(
                         AttackKind.Ssrf,
                         source: source,
                         payload: userInput.Value,
                         metadata: CreateMetadata(hostname, port, privateIPAddress),
-                        paths: new[] { UserInputHelper.GetAttackPathFromUserInputKey(userInput.Key) });
+                        paths: new[] { UserInputHelper.GetAttackPathFromUserInputKey(userInput.Location) });
                 }
             }
 

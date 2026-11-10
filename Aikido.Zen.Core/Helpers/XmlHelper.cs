@@ -1,3 +1,4 @@
+using Aikido.Zen.Core.Models;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -13,12 +14,12 @@ namespace Aikido.Zen.Core.Helpers
         internal const int MaxDepth = 64;
 
         /// <summary>
-        /// Flattens an XML element into a dictionary with dot-notation keys.
+        /// Flattens an XML element into a list of values and dot-notation locations.
         /// </summary>
-        /// <param name="result">The dictionary to store flattened data.</param>
+        /// <param name="result">The list to store flattened data.</param>
         /// <param name="element">The XML element to flatten.</param>
-        /// <param name="prefix">The prefix for keys in the dictionary.</param>
-        internal static void FlattenXml(IDictionary<string, string> result, XmlElement element, string prefix, int depth = 0)
+        /// <param name="prefix">The prefix for input locations.</param>
+        internal static void FlattenXml(List<UserInput> result, XmlElement element, string prefix, int depth = 0)
         {
             if (depth >= MaxDepth)
             {
@@ -57,7 +58,7 @@ namespace Aikido.Zen.Core.Helpers
             if (text != null)
             {
                 // Text and CDATA can split one input, so inspect their combined value.
-                result[string.IsNullOrEmpty(newPrefix) ? element.Name : newPrefix] = text.ToString().Trim();
+                result.Add(new UserInput(string.IsNullOrEmpty(newPrefix) ? element.Name : newPrefix, text.ToString().Trim()));
             }
         }
 

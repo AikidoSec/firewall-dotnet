@@ -1,3 +1,4 @@
+using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Helpers;
@@ -24,7 +25,7 @@ namespace Aikido.Zen.Test.Helpers
             _context = new Context
             {
                 AttackDetected = false,
-                ParsedUserInput = new System.Collections.Generic.Dictionary<string, string>(),
+                ParsedUserInput = new List<UserInput>(),
                 Body = new MemoryStream()
             };
             Environment.SetEnvironmentVariable("AIKIDO_TOKEN", "test-token");
@@ -55,7 +56,7 @@ namespace Aikido.Zen.Test.Helpers
         {
             // Arrange
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "false");
-            _context.ParsedUserInput.Add("test", filename);
+            _context.ParsedUserInput.Add(new UserInput("test", filename));
 
             // Act
             bool result = DetectPathTraversal(filename, _context, ModuleName, Operation);
@@ -85,8 +86,8 @@ namespace Aikido.Zen.Test.Helpers
 
             bool result = DetectPathTraversal(filename, _context, ModuleName, Operation);
 
-            Assert.That(parsed.FlattenedData["query.path"], Is.EqualTo(encodedInput));
-            Assert.That(parsed.FlattenedData["query.path|decoded"], Is.EqualTo("../secrets/key.txt"));
+            Assert.That(parsed.FlattenedData.Single(input => input.Location == "query.path").Value, Is.EqualTo(encodedInput));
+            Assert.That(parsed.FlattenedData.Single(input => input.Location == "query.path|decoded").Value, Is.EqualTo("../secrets/key.txt"));
             Assert.That(result, Is.True);
             Assert.That(_context.AttackDetected, Is.True);
         }
@@ -108,14 +109,14 @@ namespace Aikido.Zen.Test.Helpers
 
             bool result = DetectPathTraversal(path, _context, ModuleName, Operation);
 
-            Assert.That(parsed.FlattenedData["query.path"], Is.EqualTo(encodedInput));
+            Assert.That(parsed.FlattenedData.Single(input => input.Location == "query.path").Value, Is.EqualTo(encodedInput));
             if (encodedInput == decodedInput)
             {
-                Assert.That(parsed.FlattenedData.ContainsKey("query.path|decoded"), Is.False);
+                Assert.That(parsed.FlattenedData.Any(input => input.Location == "query.path|decoded"), Is.False);
             }
             else
             {
-                Assert.That(parsed.FlattenedData["query.path|decoded"], Is.EqualTo(decodedInput));
+                Assert.That(parsed.FlattenedData.Single(input => input.Location == "query.path|decoded").Value, Is.EqualTo(decodedInput));
             }
             Assert.That(result, Is.EqualTo(expectedAttack), description);
             Assert.That(_context.AttackDetected, Is.EqualTo(expectedAttack), description);
@@ -144,7 +145,7 @@ namespace Aikido.Zen.Test.Helpers
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "false");
 
             _context.ParsedUserInput.Clear();
-            _context.ParsedUserInput.Add("query.file", "../test.txt");
+            _context.ParsedUserInput.Add(new UserInput("query.file", "../test.txt"));
 
             var filename = "/var/www/data/../test.txt";
 

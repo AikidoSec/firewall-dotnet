@@ -20,7 +20,7 @@ namespace Aikido.Zen.Test.Helpers
             IDictionary<string, string> cookies,
             string body,
             string contentType,
-            IDictionary<string, string> expectedFlattenedData,
+            List<UserInput> expectedFlattenedData,
             object expectedParsedBody)
         {
             // Arrange
@@ -31,10 +31,7 @@ namespace Aikido.Zen.Test.Helpers
 
             // Assert
             Assert.That(result.FlattenedData, Is.Not.Null);
-            foreach (var expected in expectedFlattenedData)
-            {
-                Assert.That(result.FlattenedData[expected.Key], Is.EqualTo(expected.Value));
-            }
+            Assert.That(result.FlattenedData, Is.EquivalentTo(expectedFlattenedData));
 
             if (expectedParsedBody != null)
             {
@@ -104,7 +101,7 @@ namespace Aikido.Zen.Test.Helpers
             public IDictionary<string, string>? Cookies { get; set; }
             public string? Body { get; set; }
             public string? ContentType { get; set; }
-            public IDictionary<string, string>? ExpectedFlattenedData { get; set; }
+            public List<UserInput>? ExpectedFlattenedData { get; set; }
             public object? ExpectedParsedBody { get; set; }
         }
 
@@ -134,25 +131,25 @@ namespace Aikido.Zen.Test.Helpers
                 "application/json");
 
             // Assert
-            Assert.That(result.FlattenedData["route.command"], Is.EqualTo("who%61mi"));
-            Assert.That(result.FlattenedData["query.path"], Is.EqualTo("%2e%2e%2fetc%2fpasswd"));
-            Assert.That(result.FlattenedData["query.emoji"], Is.EqualTo("%F0%9F%98%80"));
-            Assert.That(result.FlattenedData["query.double"], Is.EqualTo("%2577%2568%256f%2561%256d%2569"));
-            Assert.That(result.FlattenedData["query.invalid"], Is.EqualTo("%E0%A4%A"));
-            Assert.That(result.FlattenedData["headers.X-Custom"], Is.EqualTo("a+b%2Bc"));
-            Assert.That(result.FlattenedData["cookies.session"], Is.EqualTo("abc%31%32%33"));
-            Assert.That(result.FlattenedData["body.cmd"], Is.EqualTo("who%61mi"));
-            Assert.That(result.FlattenedData["body.literal"], Is.EqualTo("a+b"));
+            Assert.That(result.FlattenedData.Single(input => input.Location == "route.command").Value, Is.EqualTo("who%61mi"));
+            Assert.That(result.FlattenedData.Single(input => input.Location == "query.path").Value, Is.EqualTo("%2e%2e%2fetc%2fpasswd"));
+            Assert.That(result.FlattenedData.Single(input => input.Location == "query.emoji").Value, Is.EqualTo("%F0%9F%98%80"));
+            Assert.That(result.FlattenedData.Single(input => input.Location == "query.double").Value, Is.EqualTo("%2577%2568%256f%2561%256d%2569"));
+            Assert.That(result.FlattenedData.Single(input => input.Location == "query.invalid").Value, Is.EqualTo("%E0%A4%A"));
+            Assert.That(result.FlattenedData.Single(input => input.Location == "headers.X-Custom").Value, Is.EqualTo("a+b%2Bc"));
+            Assert.That(result.FlattenedData.Single(input => input.Location == "cookies.session").Value, Is.EqualTo("abc%31%32%33"));
+            Assert.That(result.FlattenedData.Single(input => input.Location == "body.cmd").Value, Is.EqualTo("who%61mi"));
+            Assert.That(result.FlattenedData.Single(input => input.Location == "body.literal").Value, Is.EqualTo("a+b"));
 
-            Assert.That(result.FlattenedData["route.command|decoded"], Is.EqualTo("whoami"));
-            Assert.That(result.FlattenedData["query.path|decoded"], Is.EqualTo("../etc/passwd"));
-            Assert.That(result.FlattenedData["query.emoji|decoded"], Is.EqualTo("\U0001F600"));
-            Assert.That(result.FlattenedData["query.double|decoded"], Is.EqualTo("whoami"));
-            Assert.That(result.FlattenedData["headers.X-Custom|decoded"], Is.EqualTo("a+b+c"));
-            Assert.That(result.FlattenedData["cookies.session|decoded"], Is.EqualTo("abc123"));
-            Assert.That(result.FlattenedData["body.cmd|decoded"], Is.EqualTo("whoami"));
-            Assert.That(result.FlattenedData.ContainsKey("query.invalid|decoded"), Is.False);
-            Assert.That(result.FlattenedData.ContainsKey("body.literal|decoded"), Is.False);
+            Assert.That(result.FlattenedData.Single(input => input.Location == "route.command|decoded").Value, Is.EqualTo("whoami"));
+            Assert.That(result.FlattenedData.Single(input => input.Location == "query.path|decoded").Value, Is.EqualTo("../etc/passwd"));
+            Assert.That(result.FlattenedData.Single(input => input.Location == "query.emoji|decoded").Value, Is.EqualTo("\U0001F600"));
+            Assert.That(result.FlattenedData.Single(input => input.Location == "query.double|decoded").Value, Is.EqualTo("whoami"));
+            Assert.That(result.FlattenedData.Single(input => input.Location == "headers.X-Custom|decoded").Value, Is.EqualTo("a+b+c"));
+            Assert.That(result.FlattenedData.Single(input => input.Location == "cookies.session|decoded").Value, Is.EqualTo("abc123"));
+            Assert.That(result.FlattenedData.Single(input => input.Location == "body.cmd|decoded").Value, Is.EqualTo("whoami"));
+            Assert.That(result.FlattenedData.Any(input => input.Location == "query.invalid|decoded"), Is.False);
+            Assert.That(result.FlattenedData.Any(input => input.Location == "body.literal|decoded"), Is.False);
         }
 
         [Test]
@@ -169,7 +166,7 @@ namespace Aikido.Zen.Test.Helpers
                 bodyStream,
                 "application/json");
 
-            Assert.That(result.FlattenedData["body.userCommand"], Is.EqualTo("whoami"));
+            Assert.That(result.FlattenedData.Single(input => input.Location == "body.userCommand").Value, Is.EqualTo("whoami"));
             Assert.That(result.ParsedBody, Is.TypeOf<Dictionary<string, object>>());
 
             var parsedBody = (Dictionary<string, object>)result.ParsedBody;
@@ -202,7 +199,7 @@ namespace Aikido.Zen.Test.Helpers
                     "application/json");
 
                 Assert.That(result.ParsedBody, Is.Null);
-                Assert.That(result.FlattenedData["query.name"], Is.EqualTo("updated"));
+                Assert.That(result.FlattenedData.Single(input => input.Location == "query.name").Value, Is.EqualTo("updated"));
                 Assert.That(bodyStream.Position, Is.Zero);
                 Assert.That(bodyStream.CanRead, Is.True);
                 logger.Verify(l => l.Log(
@@ -252,11 +249,11 @@ namespace Aikido.Zen.Test.Helpers
         public void FlattenJson_ShouldCaptureTopLevelScalars(string json, string? prefix, string expectedKey, string expectedValue)
         {
             using var document = JsonDocument.Parse(json);
-            var result = new Dictionary<string, string>();
+            var result = new List<UserInput>();
 
             JsonHelper.FlattenJson(result, document.RootElement, prefix);
 
-            Assert.That(result, Is.EquivalentTo(new Dictionary<string, string> { { expectedKey, expectedValue } }));
+            Assert.That(result, Is.EquivalentTo(new List<UserInput> { new UserInput(expectedKey, expectedValue) }));
         }
 
         [Test]
@@ -265,15 +262,15 @@ namespace Aikido.Zen.Test.Helpers
             // Arrange
             var json = "{\"key1\": {\"subkey\": \"value\"}, \"key2\": [\"item1\", \"item2\"]}";
             var element = JsonDocument.Parse(json).RootElement;
-            var result = new Dictionary<string, string>();
+            var result = new List<UserInput>();
 
             // Act
             JsonHelper.FlattenJson(result, element, "");
 
             // Assert
-            Assert.That(result["key1.subkey"], Is.EqualTo("value"));
-            Assert.That(result["key2.0"], Is.EqualTo("item1"));
-            Assert.That(result["key2.1"], Is.EqualTo("item2"));
+            Assert.That(result.Single(input => input.Location == "key1.subkey").Value, Is.EqualTo("value"));
+            Assert.That(result.Single(input => input.Location == "key2.0").Value, Is.EqualTo("item1"));
+            Assert.That(result.Single(input => input.Location == "key2.1").Value, Is.EqualTo("item2"));
         }
 
         [TestCase("plain text", "plain text")]
@@ -290,11 +287,11 @@ namespace Aikido.Zen.Test.Helpers
         {
             var document = new XmlDocument();
             document.LoadXml($"<root>{content}</root>");
-            var result = new Dictionary<string, string>();
+            var result = new List<UserInput>();
 
             XmlHelper.FlattenXml(result, document.DocumentElement!, "body");
 
-            Assert.That(result, Is.EquivalentTo(new Dictionary<string, string> { { "body", expected } }));
+            Assert.That(result, Is.EquivalentTo(new List<UserInput> { new UserInput("body", expected) }));
         }
 
         [Test]

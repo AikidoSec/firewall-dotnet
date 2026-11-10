@@ -1,3 +1,4 @@
+using Aikido.Zen.Core.Models;
 using System.Data.Common;
 using System.IO;
 using System.Net;
@@ -22,7 +23,7 @@ namespace Aikido.Zen.Test
             Patcher.Unpatch();
             _context = new Context
             {
-                ParsedUserInput = new Dictionary<string, string>()
+                ParsedUserInput = new List<UserInput>()
             };
         }
 

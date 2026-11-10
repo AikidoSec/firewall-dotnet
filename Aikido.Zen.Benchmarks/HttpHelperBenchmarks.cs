@@ -182,7 +182,7 @@ namespace Aikido.Zen.Benchmarks
             _multipartFormBody.Position = 0;
 
             if (PayloadSize >= LargeMultipartPayloadSize &&
-                !result.FlattenedData.TryGetValue(MultipartFileResultKey, out _))
+                !result.FlattenedData.Any(input => input.Location == MultipartFileResultKey))
             {
                 throw new InvalidOperationException("The multipart file section was not parsed.");
             }

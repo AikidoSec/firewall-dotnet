@@ -57,8 +57,8 @@ namespace Aikido.Zen.Tests.DotNetFramework
                 {
                     Assert.That(context.Cookies.Count, Is.EqualTo(expectedCookieCount));
                     Assert.That(context.Cookies["session"], Is.EqualTo("first"));
-                    Assert.That(context.ParsedUserInput["cookies.session"], Is.EqualTo("first"));
-                    Assert.That(context.ParsedUserInput["query.q"], Is.EqualTo("needle"));
+                    Assert.That(context.ParsedUserInput.Single(input => input.Location == "cookies.session").Value, Is.EqualTo("first"));
+                    Assert.That(context.ParsedUserInput.Single(input => input.Location == "query.q").Value, Is.EqualTo("needle"));
                 });
             }
             finally
