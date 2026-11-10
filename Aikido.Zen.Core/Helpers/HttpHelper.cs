@@ -82,7 +82,6 @@ namespace Aikido.Zen.Core.Helpers
                 LogHelper.ErrorLog(Agent.Logger, $"caught error while parsing body: {e.Message}");
             }
 
-            // Add decoded URI strings to result list where applicable
             UserInputHelper.ProcessUriValues(result);
 
             return new HttpDataResult
