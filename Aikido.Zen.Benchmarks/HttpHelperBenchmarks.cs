@@ -32,7 +32,6 @@ namespace Aikido.Zen.Benchmarks
         private const string FormContentType = "application/x-www-form-urlencoded";
         private const int LargeMultipartPayloadSize = 1000;
         private const int MultipartFileSizeBytes = 10 * 1024 * 1024;
-        private string MultipartFileResultKey => $"body.section.{PayloadSize}.file.dummy.txt";
         private string MultipartFormContentType => $"multipart/form-data; boundary={_boundary}";
 
         [Params(10, 1000)]
@@ -182,7 +181,7 @@ namespace Aikido.Zen.Benchmarks
             _multipartFormBody.Position = 0;
 
             if (PayloadSize >= LargeMultipartPayloadSize &&
-                !result.FlattenedData.Any(input => input.Location == MultipartFileResultKey))
+                !result.FlattenedData.Any(input => input.Value.Length == MultipartFileSizeBytes))
             {
                 throw new InvalidOperationException("The multipart file section was not parsed.");
             }
