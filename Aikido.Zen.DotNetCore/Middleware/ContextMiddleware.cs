@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Concurrent;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using Aikido.Zen.Core;
@@ -33,7 +32,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 return;
             }
 
-            if (!TryPrepareContext(httpContext, out var queryDictionary, out var headersDictionary, out var context))
+            if (!TryPrepareContext(httpContext, out var context))
             {
                 // if preparing the context failed, we can't capture the request, so we just call the next middleware
                 await next(httpContext);
@@ -75,7 +74,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 var httpData = await HttpHelper.ReadAndFlattenHttpDataAsync(
                     routeParams: context.RouteParams,
                     queryParams: context.Query,
-                    headers: headersDictionary.ToDictionary(h => h.Key, h => string.Join(',', h.Value)),
+                    headers: request.Headers.ToDictionary(h => h.Key, h => string.Join(',', h.Value.ToArray())),
                     cookies: context.Cookies,
                     body: request.Body,
                     contentType: request.ContentType
@@ -134,13 +133,10 @@ namespace Aikido.Zen.DotNetCore.Middleware
             }
         }
 
-        private bool TryPrepareContext(HttpContext httpContext, out ConcurrentDictionary<string, string[]> queryDictionary, out ConcurrentDictionary<string, string[]> headersDictionary, out Context context)
+        private bool TryPrepareContext(HttpContext httpContext, out Context context)
         {
             try
             {
-                // Convert headers and query parameters to thread-safe dictionaries
-                queryDictionary = new ConcurrentDictionary<string, string[]>(httpContext.Request.Query.ToDictionary(q => q.Key, q => q.Value.ToArray()));
-                headersDictionary = new ConcurrentDictionary<string, string[]>(httpContext.Request.Headers.ToDictionary(h => h.Key, h => h.Value.ToArray()));
                 context = new Context
                 {
                     Url = httpContext.Request.GetDisplayUrl(),
@@ -162,8 +158,6 @@ namespace Aikido.Zen.DotNetCore.Middleware
             catch (Exception ex)
             {
                 LogHelper.ErrorLog(Agent.Logger, $"Error preparing context: {ex.Message}");
-                queryDictionary = null;
-                headersDictionary = null;
                 context = null;
                 return false;
             }

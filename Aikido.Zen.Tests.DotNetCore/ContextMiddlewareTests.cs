@@ -270,10 +270,10 @@ namespace Aikido.Zen.Tests.DotNetCore
             Aikido.Zen.DotNetCore.Zen.SetRateLimitGroup("team-1", httpContext);
 
             var method = typeof(ContextMiddleware).GetMethod("TryPrepareContext", BindingFlags.NonPublic | BindingFlags.Instance)!;
-            var args = new object?[] { httpContext, null, null, null };
+            var args = new object?[] { httpContext, null };
 
             var prepared = (bool)method.Invoke(_contextMiddleware, args)!;
-            var context = (Context)args[3]!;
+            var context = (Context)args[1]!;
 
             Assert.That(prepared, Is.True);
             Assert.That(context.RateLimitGroup, Is.EqualTo("team-1"));
