@@ -25,76 +25,29 @@ namespace Aikido.Zen.DotNetCore.Middleware
 
         public async Task InvokeAsync(HttpContext httpContext, RequestDelegate next)
         {
-            if (EnvironmentHelper.IsDisabled)
+            Context context = null;
+
+            if (!EnvironmentHelper.IsDisabled)
             {
-                // call the next middleware
-                await next(httpContext);
-                return;
-            }
-
-            if (!TryPrepareContext(httpContext, out var context))
-            {
-                // if preparing the context failed, we can't capture the request, so we just call the next middleware
-                await next(httpContext);
-                return;
-            }
-
-            if (Agent.Instance.Context.Config.BlockList.IsIPBypassed(context.RemoteAddress))
-            {
-                // Store bypass marker context so patches can still honor bypass.
-                httpContext.Items["Aikido.Zen.Context"] = new Context { Bypassed = true };
-                await next(httpContext);
-                return;
-            }
-
-            try
-            {
-                LogHelper.DebugLog(Agent.Logger, "Capturing request context");
-
-                Agent.Instance.SetContextMiddlewareInstalled(true);
-
-
-                var request = httpContext.Request;
-                request.EnableBuffering();
-
-                // we need to allow SynchronousIO for xml parsing.
-                var syncIOFeature = httpContext.Features.Get<IHttpBodyControlFeature>();
-                var initialAllowSynchronousIOValue = syncIOFeature?.AllowSynchronousIO;
-                request.ContentType ??= string.Empty;
-                // since the feature could be missing, we need to check if it's null before accessing it
-                if (syncIOFeature?.AllowSynchronousIO != null)
+                try
                 {
-                    if (request.ContentType.IndexOf("xml", StringComparison.OrdinalIgnoreCase) >= 0
-                        || request.ContentType.IndexOf("multipart", StringComparison.OrdinalIgnoreCase) >= 0)
+                    var remoteAddress = GetClientIp(httpContext);
+                    if (Agent.Instance.Context.Config.BlockList.IsIPBypassed(remoteAddress))
                     {
-                        syncIOFeature.AllowSynchronousIO = true;
+                        // Store bypass marker context so patches can still honor bypass.
+                        context = new Context { Bypassed = true };
                     }
+                    else
+                    {
+                        context = await CaptureContextAsync(httpContext, remoteAddress);
+                    }
+
+                    httpContext.Items["Aikido.Zen.Context"] = context;
                 }
-
-                var httpData = await HttpHelper.ReadAndFlattenHttpDataAsync(
-                    routeParams: context.RouteParams,
-                    queryParams: context.Query,
-                    headers: request.Headers.ToDictionary(h => h.Key, h => string.Join(',', h.Value.ToArray())),
-                    cookies: context.Cookies,
-                    body: request.Body,
-                    contentType: request.ContentType
-                );
-
-                // restore the original value of initialAllowSynchronousIOValue
-                if (syncIOFeature != null && initialAllowSynchronousIOValue != null)
+                catch (Exception e)
                 {
-                    syncIOFeature.AllowSynchronousIO = initialAllowSynchronousIOValue.Value;
+                    LogHelper.ErrorLog(Agent.Logger, $"Error capturing request: {e.Message}");
                 }
-
-                context.ParsedUserInput = httpData.FlattenedData;
-                context.Body = request.Body;
-                context.ParsedBody = httpData.ParsedBody;
-
-                httpContext.Items["Aikido.Zen.Context"] = context;
-            }
-            catch (Exception e)
-            {
-                LogHelper.ErrorLog(Agent.Logger, $"Error capturing request: {e.Message}");
             }
 
             try
@@ -103,9 +56,12 @@ namespace Aikido.Zen.DotNetCore.Middleware
             }
             finally
             {
-                // Capture the final user once, including users set after the Zen middleware.
-                Agent.Instance.CaptureUser(context.User, context.RemoteAddress);
-                HandleCompletedRequest(context, httpContext.Response.StatusCode);
+                if (!Context.IsNullOrBypassed(context))
+                {
+                    // Capture the final user once, including users set after the Zen middleware.
+                    Agent.Instance.CaptureUser(context.User, context.RemoteAddress);
+                    HandleCompletedRequest(context, httpContext.Response.StatusCode);
+                }
             }
         }
 
@@ -133,35 +89,67 @@ namespace Aikido.Zen.DotNetCore.Middleware
             }
         }
 
-        private bool TryPrepareContext(HttpContext httpContext, out Context context)
+        private async Task<Context> CaptureContextAsync(HttpContext httpContext, string remoteAddress)
         {
+            LogHelper.DebugLog(Agent.Logger, "Capturing request context");
+            Agent.Instance.SetContextMiddlewareInstalled(true);
+
+            var request = httpContext.Request;
+            var query = FlattenQueryParameters(request.Query);
+            var headers = FlattenHeaders(request.Headers);
+            var cookies = request.Cookies.ToDictionary(c => c.Key, c => c.Value);
+            var routeParams = FlattenRouteParameters(httpContext.GetRouteData().Values);
+            request.EnableBuffering();
+
+            // we need to allow SynchronousIO for xml parsing.
+            var syncIOFeature = httpContext.Features.Get<IHttpBodyControlFeature>();
+            var initialAllowSynchronousIOValue = syncIOFeature?.AllowSynchronousIO ?? false;
+            request.ContentType ??= string.Empty;
             try
             {
-                context = new Context
+                if (syncIOFeature != null &&
+                    (request.ContentType.IndexOf("xml", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                     request.ContentType.IndexOf("multipart", StringComparison.OrdinalIgnoreCase) >= 0))
                 {
-                    Url = httpContext.Request.GetDisplayUrl(),
-                    Path = httpContext.Request.Path.ToString(),
-                    Method = httpContext.Request.Method,
-                    Query = FlattenQueryParameters(httpContext.Request.Query),
-                    Headers = FlattenHeaders(httpContext.Request.Headers),
-                    RemoteAddress = GetClientIp(httpContext),
-                    Cookies = httpContext.Request.Cookies.ToDictionary(c => c.Key, c => c.Value),
-                    UserAgent = httpContext.Request.Headers.TryGetValue("User-Agent", out var userAgent) ? userAgent.FirstOrDefault() ?? string.Empty : string.Empty,
+                    syncIOFeature.AllowSynchronousIO = true;
+                }
+
+                var httpData = await HttpHelper.ReadAndFlattenHttpDataAsync(
+                    routeParams: routeParams,
+                    queryParams: query,
+                    headers: request.Headers.ToDictionary(h => h.Key, h => string.Join(',', h.Value.ToArray())),
+                    cookies: cookies,
+                    body: request.Body,
+                    contentType: request.ContentType
+                );
+
+                return new Context
+                {
+                    Url = request.GetDisplayUrl(),
+                    Path = request.Path.ToString(),
+                    Method = request.Method,
+                    Query = query,
+                    Headers = headers,
+                    RemoteAddress = remoteAddress,
+                    Cookies = cookies,
+                    UserAgent = request.Headers.TryGetValue("User-Agent", out var userAgent) ? userAgent.FirstOrDefault() ?? string.Empty : string.Empty,
                     Source = Environment.Version.Major >= 5 ? "DotNetCore" : "DotNetFramework",
                     Route = GetParametrizedRoute(httpContext),
-                    RouteParams = FlattenRouteParameters(httpContext.GetRouteData().Values),
+                    RouteParams = routeParams,
                     User = httpContext.Items["Aikido.Zen.CurrentUser"] as User,
-                    RateLimitGroup = httpContext.Items["Aikido.Zen.RateLimitGroup"] as string ?? string.Empty
+                    RateLimitGroup = httpContext.Items["Aikido.Zen.RateLimitGroup"] as string ?? string.Empty,
+                    Body = request.Body,
+                    ParsedBody = httpData.ParsedBody,
+                    ParsedUserInput = httpData.FlattenedData
                 };
-                return true;
             }
-            catch (Exception ex)
+            finally
             {
-                LogHelper.ErrorLog(Agent.Logger, $"Error preparing context: {ex.Message}");
-                context = null;
-                return false;
+                if (syncIOFeature != null)
+                {
+                    syncIOFeature.AllowSynchronousIO = initialAllowSynchronousIOValue;
+                }
             }
-
         }
 
         private static IDictionary<string, string> FlattenRouteParameters(RouteValueDictionary routeValues)
