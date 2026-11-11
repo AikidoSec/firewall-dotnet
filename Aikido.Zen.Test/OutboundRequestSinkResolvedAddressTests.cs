@@ -318,9 +318,9 @@ namespace Aikido.Zen.Test
                 Route = "/outbound",
                 Url = "https://app.local/outbound",
                 RemoteAddress = "203.0.113.10",
-                ParsedUserInput = new Dictionary<string, string>
+                ParsedUserInput = new List<UserInput>
                 {
-                    { "query.url", userInput }
+                    new UserInput("query.url", userInput)
                 }
             };
         }

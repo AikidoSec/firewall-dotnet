@@ -503,9 +503,9 @@ namespace Aikido.Zen.Test
             var url = $"http://127.0.0.1:{server.Port}/admin";
 
             var context = CreateContext();
-            context.ParsedUserInput = new Dictionary<string, string>
+            context.ParsedUserInput = new List<UserInput>
             {
-                { "query.url", url }
+                new UserInput("query.url", url)
             };
             _activeContext = context;
             DetectedAttack? reportedAttack = null;
@@ -550,9 +550,9 @@ namespace Aikido.Zen.Test
             using var request = new HttpRequestMessage(HttpMethod.Get, url);
 
             var context = CreateContext();
-            context.ParsedUserInput = new Dictionary<string, string>
+            context.ParsedUserInput = new List<UserInput>
             {
-                { "query.url", url }
+                new UserInput("query.url", url)
             };
             _activeContext = context;
 
@@ -577,9 +577,9 @@ namespace Aikido.Zen.Test
             var url = $"http://127.0.0.1:{server.Port}/admin";
 
             var context = CreateContext();
-            context.ParsedUserInput = new Dictionary<string, string>
+            context.ParsedUserInput = new List<UserInput>
             {
-                { "body.url", url }
+                new UserInput("body.url", url)
             };
             _activeContext = context;
 
@@ -723,16 +723,16 @@ namespace Aikido.Zen.Test
             var url = $"http://127.0.0.1:{server.Port}/admin";
 
             _activeContext = CreateContext();
-            _activeContext.ParsedUserInput = new Dictionary<string, string>();
+            _activeContext.ParsedUserInput = new List<UserInput>();
             using (var warmupResponse = await httpClient.GetAsync(url))
             {
                 warmupResponse.EnsureSuccessStatusCode();
             }
 
             var context = CreateContext();
-            context.ParsedUserInput = new Dictionary<string, string>
+            context.ParsedUserInput = new List<UserInput>
             {
-                { "query.url", url }
+                new UserInput("query.url", url)
             };
             _activeContext = context;
 

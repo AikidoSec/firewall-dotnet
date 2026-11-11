@@ -34,10 +34,10 @@ namespace Aikido.Zen.Core.Helpers
 
                 return InspectionResult.Block(
                     AttackKind.SqlInjection,
-                    UserInputHelper.GetAttackSourceFromUserInputKey(userInput.Key),
+                    UserInputHelper.GetAttackSourceFromUserInputKey(userInput.Location),
                     userInput.Value,
                     metadata,
-                    new[] { UserInputHelper.GetAttackPathFromUserInputKey(userInput.Key) }
+                    new[] { UserInputHelper.GetAttackPathFromUserInputKey(userInput.Location) }
                 );
             }
             return InspectionResult.Allow();

@@ -1,3 +1,4 @@
+using Aikido.Zen.Core.Models;
 using System.Text;
 using System.Xml;
 using Aikido.Zen.Core.Helpers;
@@ -15,14 +16,14 @@ namespace Aikido.Zen.Test.Helpers
         {
             var document = new XmlDocument();
             document.LoadXml(CreateNestedXml(depth));
-            var result = new Dictionary<string, string>();
+            var result = new List<UserInput>();
 
             XmlHelper.FlattenXml(result, document.DocumentElement!, "body");
 
             if (depth < XmlHelper.MaxDepth)
             {
                 var key = "body" + string.Concat(Enumerable.Repeat(".a", depth));
-                Assert.That(result, Is.EquivalentTo(new Dictionary<string, string> { { key, "leaf" } }));
+                Assert.That(result, Is.EquivalentTo(new List<UserInput> { new UserInput(key, "leaf") }));
             }
             else
             {
@@ -76,9 +77,9 @@ namespace Aikido.Zen.Test.Helpers
             var result = await HttpHelper.ReadAndFlattenHttpDataAsync(empty, empty, empty, empty, body, contentType);
 
             var prefix = multipart ? "body.section.0" : "body";
-            Assert.That(result.FlattenedData, Is.EquivalentTo(new Dictionary<string, string>
+            Assert.That(result.FlattenedData, Is.EquivalentTo(new List<UserInput>
             {
-                { prefix + ".safe", "retained" }
+                new UserInput(prefix + ".safe", "retained")
             }));
             var parsedBody = (Dictionary<string, object>)(multipart
                 ? ((Dictionary<string, object>)result.ParsedBody)["xml"]

@@ -21,7 +21,7 @@ namespace Aikido.Zen.Test
         {
             _context = new Context
             {
-                ParsedUserInput = new Dictionary<string, string>()
+                ParsedUserInput = new List<UserInput>()
             };
             _methodInfo = typeof(DbCommand).GetMethod("ExecuteNonQuery")
                     ?? throw new InvalidOperationException("Could not find DbCommand.ExecuteNonQuery.");
@@ -62,9 +62,9 @@ namespace Aikido.Zen.Test
         {
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
             _context.Bypassed = true;
-            _context.ParsedUserInput = new Dictionary<string, string>
+            _context.ParsedUserInput = new List<UserInput>
             {
-                { "body.query", "1' OR '1'='1'" }
+                new UserInput("body.query", "1' OR '1'='1'")
             };
             var sql = "SELECT * FROM users WHERE id = '1' OR '1'='1'";
 
@@ -106,8 +106,8 @@ namespace Aikido.Zen.Test
         public void OnCommandExecuting_WithSQLInjection_ThrowsException()
         {
             // Arrange
-            _context.ParsedUserInput = new Dictionary<string, string> {
-             { "body.query", "1' OR '1'='1'" }
+            _context.ParsedUserInput = new List<UserInput> {
+             new UserInput("body.query", "1' OR '1'='1'")
             };
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
             var sql = "SELECT * FROM users WHERE id = '1' OR '1'='1'";
@@ -139,9 +139,9 @@ namespace Aikido.Zen.Test
             _context.Method = "POST";
             _context.Route = "/api/create";
             _context.Path = "/api/create";
-            _context.ParsedUserInput = new Dictionary<string, string>
+            _context.ParsedUserInput = new List<UserInput>
             {
-                { "body.query", "1' OR '1'='1'" }
+                new UserInput("body.query", "1' OR '1'='1'")
             };
 
             Agent.Instance.Context.Config.UpdateRatelimitedRoutes(new[]
@@ -208,9 +208,9 @@ namespace Aikido.Zen.Test
         public void OnCommandExecuting_WithExecuteSqlRawMethod_UsesSqlArgument()
         {
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
-            _context.ParsedUserInput = new Dictionary<string, string>
+            _context.ParsedUserInput = new List<UserInput>
             {
-                { "body.query", "1' OR '1'='1'" }
+                new UserInput("body.query", "1' OR '1'='1'")
             };
             var methodInfo = typeof(TestSqlMethods).GetMethod(nameof(TestSqlMethods.ExecuteSqlRaw));
             var sql = "SELECT * FROM users WHERE id = '1' OR '1'='1'";
@@ -257,9 +257,9 @@ namespace Aikido.Zen.Test
         public void OnCommandExecuting_MySqlXSqlStatementWithInterpolatedInput_Throws()
         {
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK", "true");
-            _context.ParsedUserInput = new Dictionary<string, string>
+            _context.ParsedUserInput = new List<UserInput>
             {
-                { "body.query", "1' OR '1'='1" }
+                new UserInput("body.query", "1' OR '1'='1")
             };
 
             var statement = new TestSqlStatement

@@ -16,7 +16,7 @@ using Microsoft.Net.Http.Headers;
 namespace Aikido.Zen.Core.Helpers
 {
     /// <summary>
-    /// Helper class for processing HTTP request data and extracting it into a flattened dictionary format.
+    /// Helper class for processing HTTP request data and extracting it into a list of values and input locations.
     /// </summary>
     public class HttpHelper
     {
@@ -26,9 +26,9 @@ namespace Aikido.Zen.Core.Helpers
         public class HttpDataResult
         {
             /// <summary>
-            /// The flattened request data with dot notation keys
+            /// The extracted request values and their dot-notation locations
             /// </summary>
-            public IDictionary<string, string> FlattenedData { get; set; }
+            public List<UserInput> FlattenedData { get; set; }
 
             /// <summary>
             /// The parsed request body as a dictionary
@@ -37,7 +37,7 @@ namespace Aikido.Zen.Core.Helpers
         }
 
         /// <summary>
-        /// Reads and flattens HTTP request data into a dictionary with dot-notation keys.
+        /// Reads and flattens HTTP request data into a list of values and dot-notation locations.
         /// </summary>
         /// <param name="routeParams">The route parameters dictionary.</param>
         /// <param name="queryParams">The query parameters dictionary.</param>
@@ -54,7 +54,7 @@ namespace Aikido.Zen.Core.Helpers
             Stream body,
             string contentType)
         {
-            var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var result = new List<UserInput>();
             object parsedBody = null;
 
             // Process Route Parameters
@@ -82,7 +82,6 @@ namespace Aikido.Zen.Core.Helpers
                 LogHelper.ErrorLog(Agent.Logger, $"caught error while parsing body: {e.Message}");
             }
 
-            // Add decoded URI strings to result dictionary where applicable
             UserInputHelper.ProcessUriValues(result);
 
             return new HttpDataResult
@@ -107,7 +106,7 @@ namespace Aikido.Zen.Core.Helpers
             }
         }
 
-        private static async Task<object> ProcessRequestBodyAsync(Stream body, string contentType, IDictionary<string, string> result)
+        private static async Task<object> ProcessRequestBodyAsync(Stream body, string contentType, List<UserInput> result)
         {
             object parsedBody = null;
 
@@ -156,7 +155,7 @@ namespace Aikido.Zen.Core.Helpers
                             var formDict = new Dictionary<string, object>();
                             foreach (var pair in formPairs)
                             {
-                                result[$"body.{pair.Key}"] = pair.Value;
+                                result.Add(new UserInput($"body.{pair.Key}", pair.Value));
                                 formDict[pair.Key] = pair.Value.ToString();
                             }
                             parsedBody = formDict;
@@ -164,7 +163,7 @@ namespace Aikido.Zen.Core.Helpers
                         else if (IsTextPlainMediaType(mediaType))
                         {
                             string textContent = await reader.ReadToEndAsync();
-                            result["body.textplain"] = textContent;
+                            result.Add(new UserInput("body.textplain", textContent));
                             parsedBody = textContent;
                         }
                     }
@@ -189,7 +188,7 @@ namespace Aikido.Zen.Core.Helpers
             return parsedBody;
         }
 
-        private static async Task<object> ProcessMultipartFormDataAsync(Stream body, string boundary, IDictionary<string, string> result)
+        private static async Task<object> ProcessMultipartFormDataAsync(Stream body, string boundary, List<UserInput> result)
         {
             var reader = new MultipartReader(boundary, body);
             MultipartSection section = null;
@@ -247,14 +246,14 @@ namespace Aikido.Zen.Core.Helpers
                         {
                             formData[contentDisposition.Name.Value] = fileInfo;
                         }
-                        result[$"body.section.{sectionIndex}.file.{fileName}"] = fileContent;
+                        result.Add(new UserInput($"body.section.{sectionIndex}.file.{fileName}", fileContent));
                     }
                     else if (contentDisposition.IsFormDisposition())
                     {
                         var formField = contentDisposition.Name.Value;
                         var fieldValue = await section.ReadAsStringAsync();
                         formData[formField] = fieldValue;
-                        result[$"body.section.{sectionIndex}.{formField}"] = fieldValue;
+                        result.Add(new UserInput($"body.section.{sectionIndex}.{formField}", fieldValue));
                     }
                 }
                 sectionIndex++;

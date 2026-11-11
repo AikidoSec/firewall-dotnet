@@ -27,10 +27,10 @@ namespace Aikido.Zen.Core.Helpers
 
                     return InspectionResult.Block(
                         AttackKind.PathTraversal,
-                        UserInputHelper.GetAttackSourceFromUserInputKey(userInput.Key), // "query.url" -> "query"
+                        UserInputHelper.GetAttackSourceFromUserInputKey(userInput.Location), // "query.url" -> "query"
                         userInput.Value,
                         metadata,
-                        new[] { UserInputHelper.GetAttackPathFromUserInputKey(userInput.Key) } // "query.url" -> ".url"
+                        new[] { UserInputHelper.GetAttackPathFromUserInputKey(userInput.Location) } // "query.url" -> ".url"
                     );
                 }
             }

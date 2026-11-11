@@ -29,7 +29,7 @@ namespace Aikido.Zen.Core
         public string[] Subdomains { get; set; } = Array.Empty<string>();
         public Dictionary<string, HashSet<string>> Cache { get; set; } = new Dictionary<string, HashSet<string>>();
         public List<RedirectInfo> OutgoingRequestRedirects { get; set; } = new List<RedirectInfo>();
-        public IDictionary<string, string> ParsedUserInput { get; set; } = new Dictionary<string, string>();
+        public List<UserInput> ParsedUserInput { get; set; } = new List<UserInput>();
         public string UserAgent { get; set; } = string.Empty;
         public bool IsGraphQL => Graphql != null && Graphql.Length > 0;
         public object ParsedBody { get; set; }

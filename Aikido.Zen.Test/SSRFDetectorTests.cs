@@ -135,9 +135,9 @@ namespace Aikido.Zen.Test
             var context = new Context
             {
                 Url = "http://localhost:8080/api/request",
-                ParsedUserInput = new Dictionary<string, string>
+                ParsedUserInput = new List<UserInput>
                 {
-                    { "query.url", "http://localhost:8080/admin" }
+                    new UserInput("query.url", "http://localhost:8080/admin")
                 }
             };
 
@@ -161,9 +161,9 @@ namespace Aikido.Zen.Test
             var context = new Context
             {
                 Url = "http://app.local/api/request",
-                ParsedUserInput = new Dictionary<string, string>
+                ParsedUserInput = new List<UserInput>
                 {
-                    { "query.url", "localhost:8080/admin" }
+                    new UserInput("query.url", "localhost:8080/admin")
                 }
             };
 
@@ -241,10 +241,10 @@ namespace Aikido.Zen.Test
             var context = new Context
             {
                 Url = "https://app.local/outbound",
-                ParsedUserInput = new Dictionary<string, string>
+                ParsedUserInput = new List<UserInput>
                 {
-                    { "query.url", "not a url" },
-                    { "body.url", "http://other.example/admin" }
+                    new UserInput("query.url", "not a url"),
+                    new UserInput("body.url", "http://other.example/admin")
                 }
             };
 
@@ -262,9 +262,9 @@ namespace Aikido.Zen.Test
             var context = new Context
             {
                 Url = "https://app.local/outbound",
-                ParsedUserInput = new Dictionary<string, string>
+                ParsedUserInput = new List<UserInput>
                 {
-                    { "query.url", "http://backend/admin" }
+                    new UserInput("query.url", "http://backend/admin")
                 }
             };
 
@@ -285,7 +285,8 @@ namespace Aikido.Zen.Test
             var context = new Context
             {
                 Url = "https://service.example/read",
-                ParsedUserInput = Enumerable.Range(0, 20).ToDictionary(i => $"query.value{i}", _ => new string('a', length))
+                ParsedUserInput = Enumerable.Range(0, 20)
+                    .Select(i => new UserInput($"query.value{i}", new string('a', length))).ToList()
             };
             var target = new Uri("https://account.blob.core.windows.net/container/blob");
             var remote = IPAddress.Parse("10.20.30.40");
@@ -320,10 +321,10 @@ namespace Aikido.Zen.Test
             var context = new Context
             {
                 Url = "https://service.example/read",
-                ParsedUserInput = new SortedDictionary<string, string>
+                ParsedUserInput = new List<UserInput>
                 {
-                    ["query.0"] = overlongIdnHostname,
-                    ["query.1"] = "http://localhost/admin"
+                    new UserInput("query.0", overlongIdnHostname),
+                    new UserInput("query.1", "http://localhost/admin")
                 }
             };
 
@@ -343,7 +344,7 @@ namespace Aikido.Zen.Test
             var context = new Context
             {
                 Url = "https://service.example/read",
-                ParsedUserInput = new Dictionary<string, string> { ["query.url"] = $"http://{userHost}/admin" }
+                ParsedUserInput = new List<UserInput> { new UserInput("query.url", $"http://{userHost}/admin") }
             };
             var result = SSRFDetector.Detect(new Uri($"http://{targetHost}/admin"), IPAddress.Loopback, context);
             Assert.That(result.AttackKind, Is.EqualTo(AttackKind.Ssrf));

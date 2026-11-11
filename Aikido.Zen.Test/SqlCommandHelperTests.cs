@@ -39,11 +39,11 @@ namespace Aikido.Zen.Test.Helpers
                 {
                     { "auth", "token123" }
                 },
-                ParsedUserInput = new Dictionary<string, string>
+                ParsedUserInput = new List<UserInput>
                 {
-                    { "query.id", "123" },
-                    { "body.name", "John" },
-                    { "headers.auth", "token123" }
+                    new UserInput("query.id", "123"),
+                    new UserInput("body.name", "John"),
+                    new UserInput("headers.auth", "token123")
                 }
             };
 
@@ -66,9 +66,9 @@ namespace Aikido.Zen.Test.Helpers
             string moduleName = "TestModule";
             string operation = "SELECT";
 
-            _context.ParsedUserInput = new Dictionary<string, string>
+            _context.ParsedUserInput = new List<UserInput>
             {
-                { "query.injection", "1' OR '1'='1" }
+                new UserInput("query.injection", "1' OR '1'='1")
             };
 
             // Act
@@ -105,9 +105,9 @@ namespace Aikido.Zen.Test.Helpers
                 .ReturnsAsync(new ConfigLastUpdatedAPIResponse { Success = true });
 
             Agent.NewInstance(ZenApiMock.CreateMock(reportingApiMock.Object, runtimeApiMock.Object).Object);
-            _context.ParsedUserInput = new Dictionary<string, string>
+            _context.ParsedUserInput = new List<UserInput>
             {
-                { "query.injection", "1' OR '1'='1" }
+                new UserInput("query.injection", "1' OR '1'='1")
             };
 
             DetectSQLInjection(
@@ -154,9 +154,9 @@ namespace Aikido.Zen.Test.Helpers
                 .ReturnsAsync(new ConfigLastUpdatedAPIResponse { Success = true });
 
             Agent.NewInstance(ZenApiMock.CreateMock(reportingApiMock.Object, runtimeApiMock.Object).Object);
-            _context.ParsedUserInput = new Dictionary<string, string>
+            _context.ParsedUserInput = new List<UserInput>
             {
-                { "query.injection", InvalidSqlUserInput }
+                new UserInput("query.injection", InvalidSqlUserInput)
             };
 
             var result = DetectSQLInjection(
@@ -192,9 +192,9 @@ namespace Aikido.Zen.Test.Helpers
             string moduleName = "TestModule";
             string operation = "SELECT";
 
-            _context.ParsedUserInput = new Dictionary<string, string>
+            _context.ParsedUserInput = new List<UserInput>
             {
-                { "query.id", "123" }
+                new UserInput("query.id", "123")
             };
 
             // Act
@@ -216,9 +216,9 @@ namespace Aikido.Zen.Test.Helpers
         {
             Environment.SetEnvironmentVariable("AIKIDO_BLOCK_INVALID_SQL", "false");
 
-            _context.ParsedUserInput = new Dictionary<string, string>
+            _context.ParsedUserInput = new List<UserInput>
             {
-                { "query.injection", InvalidSqlUserInput }
+                new UserInput("query.injection", InvalidSqlUserInput)
             };
 
             var result = DetectSQLInjection(
@@ -240,7 +240,7 @@ namespace Aikido.Zen.Test.Helpers
             string sqlCommand = "SELECT * FROM Users";
             var emptyContext = new Context
             {
-                ParsedUserInput = new Dictionary<string, string>()
+                ParsedUserInput = new List<UserInput>()
             };
 
             // Act
@@ -312,10 +312,10 @@ namespace Aikido.Zen.Test.Helpers
             string moduleName = "TestModule";
             string operation = "SELECT";
 
-            _context.ParsedUserInput = new Dictionary<string, string>
+            _context.ParsedUserInput = new List<UserInput>
             {
-                { "query.id", "123" },
-                { "query.name", "John" }
+                new UserInput("query.id", "123"),
+                new UserInput("query.name", "John")
             };
 
             // Act

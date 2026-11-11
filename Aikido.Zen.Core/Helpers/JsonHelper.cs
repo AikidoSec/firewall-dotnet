@@ -1,3 +1,4 @@
+using Aikido.Zen.Core.Models;
 using System.Collections.Generic;
 using System.Text.Json;
 
@@ -9,12 +10,12 @@ namespace Aikido.Zen.Core.Helpers
     public static class JsonHelper
     {
         /// <summary>
-        /// Flattens a JSON element into a dictionary with dot-notation keys.
+        /// Flattens a JSON element into a list of values and dot-notation locations.
         /// </summary>
-        /// <param name="result">The dictionary to store flattened data.</param>
+        /// <param name="result">The list to store flattened data.</param>
         /// <param name="element">The JSON element to flatten.</param>
-        /// <param name="prefix">The prefix for keys in the dictionary.</param>
-        public static void FlattenJson(IDictionary<string, string> result, JsonElement element, string prefix)
+        /// <param name="prefix">The prefix for input locations.</param>
+        public static void FlattenJson(List<UserInput> result, JsonElement element, string prefix)
         {
             if (element.ValueKind == JsonValueKind.Array)
             {
@@ -28,7 +29,7 @@ namespace Aikido.Zen.Core.Helpers
                     }
                     else
                     {
-                        result[arrayPrefix] = item.ToString();
+                        result.Add(new UserInput(arrayPrefix, item.ToString()));
                     }
                     index++;
                 }
@@ -48,7 +49,7 @@ namespace Aikido.Zen.Core.Helpers
                     }
                     else
                     {
-                        result[key] = property.Value.ToString();
+                        result.Add(new UserInput(key, property.Value.ToString()));
                     }
                 }
             }
@@ -56,7 +57,7 @@ namespace Aikido.Zen.Core.Helpers
             {
                 // Remaining JsonValueKind values are String, Number, True, False, or Null.
                 string key = string.IsNullOrEmpty(prefix) ? "value" : $"{prefix}.value";
-                result[key] = element.ToString();
+                result.Add(new UserInput(key, element.ToString()));
             }
         }
 
