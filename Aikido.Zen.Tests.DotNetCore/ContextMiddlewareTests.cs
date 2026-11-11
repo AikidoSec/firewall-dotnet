@@ -126,6 +126,9 @@ namespace Aikido.Zen.Tests.DotNetCore
             context.Request.ContentType = "application/json";
             context.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes("""{"name":"test"}"""));
             context.Connection.RemoteIpAddress = IPAddress.Parse(bypassedIp);
+            var queryFeature = new Mock<IQueryFeature>();
+            queryFeature.SetupGet(feature => feature.Query).Throws(new InvalidOperationException("Query must not be read for bypassed requests"));
+            context.Features.Set(queryFeature.Object);
 
             var nextCalled = false;
             RequestDelegate next = httpContext =>
@@ -156,6 +159,7 @@ namespace Aikido.Zen.Tests.DotNetCore
                     Assert.That(Agent.Instance.Context.Requests, Is.EqualTo(0));
                     Assert.That(Agent.Instance.Context.Routes, Is.Empty);
                 });
+                queryFeature.VerifyGet(feature => feature.Query, Times.Never);
             }
             finally
             {
@@ -259,24 +263,128 @@ namespace Aikido.Zen.Tests.DotNetCore
         }
 
         [Test]
-        public void TryPrepareContext_SetsRateLimitGroupFromHttpContextItems()
+        public async Task InvokeAsync_CapturesCompleteContextAndRateLimitGroupBeforeNext()
         {
+            var originalDisable = Environment.GetEnvironmentVariable("AIKIDO_DISABLE");
             var httpContext = new DefaultHttpContext();
             httpContext.Request.Scheme = "http";
             httpContext.Request.Host = new HostString("test.local");
             httpContext.Request.Path = "/api/test";
-            httpContext.Request.Method = "GET";
+            httpContext.Request.Method = "POST";
+            httpContext.Request.QueryString = new QueryString("?q=search");
+            httpContext.Request.ContentType = "application/json";
+            httpContext.Request.Headers["X-Custom"] = new Microsoft.Extensions.Primitives.StringValues(new[] { "first", "second" });
+            httpContext.Request.Headers["Cookie"] = "session=session-1";
+            httpContext.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes("""{"name":"test"}"""));
             httpContext.Connection.RemoteIpAddress = IPAddress.Parse("1.2.3.4");
             Aikido.Zen.DotNetCore.Zen.SetRateLimitGroup("team-1", httpContext);
 
-            var method = typeof(ContextMiddleware).GetMethod("TryPrepareContext", BindingFlags.NonPublic | BindingFlags.Instance)!;
-            var args = new object?[] { httpContext, null, null, null };
+            try
+            {
+                Environment.SetEnvironmentVariable("AIKIDO_DISABLE", "false");
+                Agent.Instance.Context.Config.Clear();
+                Agent.Instance.ClearContext();
+                var nextCalled = false;
+                await _contextMiddleware.InvokeAsync(httpContext, current =>
+                {
+                    nextCalled = true;
+                    var context = (Context)current.Items["Aikido.Zen.Context"]!;
+                    Assert.Multiple(() =>
+                    {
+                        Assert.That(context.RateLimitGroup, Is.EqualTo("team-1"));
+                        Assert.That(context.RemoteAddress, Is.EqualTo("1.2.3.4"));
+                        Assert.That(context.Method, Is.EqualTo("POST"));
+                        Assert.That(context.Query["q"], Is.EqualTo("search"));
+                        Assert.That(context.Headers["X-Custom"], Is.EqualTo("first"));
+                        Assert.That(context.Headers["X-Custom[1]"], Is.EqualTo("second"));
+                        Assert.That(context.Cookies["session"], Is.EqualTo("session-1"));
+                        Assert.That(context.ParsedUserInput["body.name"], Is.EqualTo("test"));
+                        Assert.That(context.ParsedUserInput["query.q"], Is.EqualTo("search"));
+                        Assert.That(context.ParsedUserInput["headers.X-Custom"], Is.EqualTo("first,second"));
+                        Assert.That(((Dictionary<string, object>)context.ParsedBody)["name"], Is.EqualTo("test"));
+                        Assert.That(context.Body, Is.SameAs(current.Request.Body));
+                        Assert.That(context.Body.Position, Is.Zero);
+                    });
+                    return Task.CompletedTask;
+                });
+                Assert.That(nextCalled, Is.True);
+            }
+            finally
+            {
+                Agent.Instance.ClearContext();
+                Agent.Instance.Context.Config.Clear();
+                Environment.SetEnvironmentVariable("AIKIDO_DISABLE", originalDisable);
+            }
+        }
 
-            var prepared = (bool)method.Invoke(_contextMiddleware, args)!;
-            var context = (Context)args[3]!;
+        [Test]
+        public void InvokeAsync_WhenCaptureFails_PropagatesNextExceptionWithoutRetrying()
+        {
+            var originalDisable = Environment.GetEnvironmentVariable("AIKIDO_DISABLE");
+            var httpContext = new DefaultHttpContext();
+            httpContext.Connection.RemoteIpAddress = IPAddress.Parse("1.2.3.4");
+            var queryFeature = new Mock<IQueryFeature>();
+            queryFeature.SetupGet(feature => feature.Query).Throws(new InvalidOperationException("Cannot read query"));
+            httpContext.Features.Set(queryFeature.Object);
+            var nextCalls = 0;
+            try
+            {
+                Environment.SetEnvironmentVariable("AIKIDO_DISABLE", "false");
+                Agent.Instance.Context.Config.Clear();
+                Agent.Instance.ClearContext();
+                var exception = Assert.ThrowsAsync<ApplicationException>(() => _contextMiddleware.InvokeAsync(httpContext, _ =>
+                {
+                    nextCalls++;
+                    throw new ApplicationException("Downstream failure");
+                }));
+                Assert.Multiple(() =>
+                {
+                    Assert.That(exception!.Message, Is.EqualTo("Downstream failure"));
+                    Assert.That(nextCalls, Is.EqualTo(1));
+                    Assert.That(httpContext.Items.ContainsKey("Aikido.Zen.Context"), Is.False);
+                });
+            }
+            finally
+            {
+                Agent.Instance.ClearContext();
+                Agent.Instance.Context.Config.Clear();
+                Environment.SetEnvironmentVariable("AIKIDO_DISABLE", originalDisable);
+            }
+        }
 
-            Assert.That(prepared, Is.True);
-            Assert.That(context.RateLimitGroup, Is.EqualTo("team-1"));
+        [TestCase(false)]
+        [TestCase(true)]
+        public async Task InvokeAsync_RestoresSynchronousIoBeforeNext(bool initialAllowSynchronousIO)
+        {
+            var originalDisable = Environment.GetEnvironmentVariable("AIKIDO_DISABLE");
+            var httpContext = new DefaultHttpContext();
+            httpContext.Request.Scheme = "http";
+            httpContext.Request.Host = new HostString("test.local");
+            httpContext.Request.Method = "POST";
+            httpContext.Request.ContentType = "application/xml";
+            httpContext.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes("<root><name>test</name></root>"));
+            var bodyControl = new Mock<IHttpBodyControlFeature>();
+            bodyControl.SetupProperty(feature => feature.AllowSynchronousIO, initialAllowSynchronousIO);
+            httpContext.Features.Set(bodyControl.Object);
+            try
+            {
+                Environment.SetEnvironmentVariable("AIKIDO_DISABLE", "false");
+                Agent.Instance.Context.Config.Clear();
+                Agent.Instance.ClearContext();
+                await _contextMiddleware.InvokeAsync(httpContext, current =>
+                {
+                    Assert.That(current.Items.ContainsKey("Aikido.Zen.Context"), Is.True);
+                    Assert.That(bodyControl.Object.AllowSynchronousIO, Is.EqualTo(initialAllowSynchronousIO));
+                    return Task.CompletedTask;
+                });
+                bodyControl.VerifySet(feature => feature.AllowSynchronousIO = true, Times.AtLeastOnce);
+            }
+            finally
+            {
+                Agent.Instance.ClearContext();
+                Agent.Instance.Context.Config.Clear();
+                Environment.SetEnvironmentVariable("AIKIDO_DISABLE", originalDisable);
+            }
         }
 
         [Test]
