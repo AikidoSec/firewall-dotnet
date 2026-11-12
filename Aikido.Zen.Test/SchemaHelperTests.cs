@@ -75,6 +75,27 @@ namespace Aikido.Zen.Test.Helpers
             Assert.That(result.Items!.Type, Is.EquivalentTo(new[] { "string", "number" }));
         }
 
+        [TestCase(false)]
+        [TestCase(true)]
+        public void MergeDataSchemas_WithScalarAndArray_PreservesBothTypesAndItems(bool arrayFirst)
+        {
+            var scalar = SchemaHelper.GetDataSchema("red");
+            var array = SchemaHelper.GetDataSchema(new[] { "red", "blue" });
+            var merged = arrayFirst
+                ? SchemaHelper.MergeDataSchemas(array, scalar)
+                : SchemaHelper.MergeDataSchemas(scalar, array);
+
+            Assert.That(merged.Type, Is.EquivalentTo(new[] { "string", "array" }));
+            Assert.That(merged.Items, Is.Not.Null);
+            Assert.That(merged.Items!.Type, Is.EqualTo(new[] { "string" }));
+
+            var withAnotherScalar = SchemaHelper.MergeDataSchemas(merged, SchemaHelper.GetDataSchema("green"));
+            var withAnotherArray = SchemaHelper.MergeDataSchemas(withAnotherScalar, SchemaHelper.GetDataSchema(new[] { "yellow", "orange" }));
+
+            Assert.That(withAnotherArray.Type, Is.EquivalentTo(new[] { "string", "array" }));
+            Assert.That(withAnotherArray.Items!.Type, Is.EqualTo(new[] { "string" }));
+        }
+
         [Test]
         public void MergeDataSchemas_WithDifferentFormats_ClearsFormat()
         {

@@ -161,12 +161,14 @@ namespace Aikido.Zen.Core.Helpers
                                     result.Add(new UserInput(location, value));
                                 }
 
-                                var formValue = pair.Value.ToString();
-                                formDict[pair.Key] = formValue;
-
                                 if (pair.Value.Count > 1)
                                 {
-                                    result.Add(new UserInput(location, formValue));
+                                    result.Add(new UserInput(location, pair.Value.ToString()));
+                                    formDict[pair.Key] = pair.Value.ToArray();
+                                }
+                                else
+                                {
+                                    formDict[pair.Key] = pair.Value.ToString();
                                 }
                             }
                             parsedBody = formDict;
