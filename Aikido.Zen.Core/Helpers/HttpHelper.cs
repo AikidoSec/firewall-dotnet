@@ -1,29 +1,24 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Xml;
-using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 using Microsoft.AspNetCore.WebUtilities;
-using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
 
-[assembly: InternalsVisibleTo("Aikido.Zen.Tests")]
 namespace Aikido.Zen.Core.Helpers
 {
     /// <summary>
     /// Helper class for processing HTTP request data and extracting it into a list of values and input locations.
     /// </summary>
-    public class HttpHelper
+    internal class HttpHelper
     {
         /// <summary>
         /// Represents the result of processing HTTP request data
         /// </summary>
-        public class HttpDataResult
+        internal class HttpDataResult
         {
             /// <summary>
             /// The extracted request values and their dot-notation locations
@@ -46,7 +41,7 @@ namespace Aikido.Zen.Core.Helpers
         /// <param name="body">The request body stream.</param>
         /// <param name="contentType">The content type of the request.</param>
         /// <returns>A HttpDataResult containing both flattened data and parsed body.</returns>
-        public static async Task<HttpDataResult> ReadAndFlattenHttpDataAsync(
+        internal static async Task<HttpDataResult> ReadAndFlattenHttpDataAsync(
             IDictionary<string, string> routeParams,
             IDictionary<string, string> queryParams,
             IDictionary<string, string> headers,
@@ -96,7 +91,7 @@ namespace Aikido.Zen.Core.Helpers
         /// </summary>
         /// <param name="body"></param>
         /// <returns></returns>
-        public static string GetRawBody(Stream body)
+        internal static string GetRawBody(Stream body)
         {
             // we read the stream, but leave it open so it can be read out later by http modules or middleware.
             // we try to detect the encdoding by looking for byte order marks at the beginning of the file, and use UTF-8 as a fallback.
@@ -150,26 +145,28 @@ namespace Aikido.Zen.Core.Helpers
                         }
                         else if (IsFormUrlEncodedMediaType(mediaType))
                         {
-                            string formString = await reader.ReadToEndAsync();
-                            var formPairs = QueryHelpers.ParseQuery(formString);
-                            var formDict = new Dictionary<string, object>();
-                            foreach (var pair in formPairs)
+                            using (var formReader = new FormReader(body))
                             {
-                                var location = $"body.{pair.Key}";
-                                foreach (var value in pair.Value)
+                                var formPairs = await formReader.ReadFormAsync();
+                                var formDict = new Dictionary<string, object>();
+                                foreach (var pair in formPairs)
                                 {
-                                    result.Add(new UserInput(location, value));
-                                }
+                                    var location = $"body.{pair.Key}";
+                                    foreach (var value in pair.Value)
+                                    {
+                                        result.Add(new UserInput(location, value));
+                                    }
 
-                                var formValue = pair.Value.ToString();
-                                formDict[pair.Key] = formValue;
+                                    var formValue = pair.Value.ToString();
+                                    formDict[pair.Key] = formValue;
 
-                                if (pair.Value.Count > 1)
-                                {
-                                    result.Add(new UserInput(location, formValue));
+                                    if (pair.Value.Count > 1)
+                                    {
+                                        result.Add(new UserInput(location, formValue));
+                                    }
                                 }
+                                parsedBody = formDict;
                             }
-                            parsedBody = formDict;
                         }
                         else if (IsTextPlainMediaType(mediaType))
                         {
