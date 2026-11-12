@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Xml;
 using Aikido.Zen.Core.Models;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Primitives;
 using Microsoft.Net.Http.Headers;
 
 namespace Aikido.Zen.Core.Helpers
@@ -120,24 +121,7 @@ namespace Aikido.Zen.Core.Helpers
                         using (var formReader = new FormReader(body))
                         {
                             var formPairs = await formReader.ReadFormAsync();
-                            var formDict = new Dictionary<string, object>();
-                            foreach (var pair in formPairs)
-                            {
-                                var location = $"body.{pair.Key}";
-                                foreach (var value in pair.Value)
-                                {
-                                    result.Add(new UserInput(location, value));
-                                }
-
-                                var formValue = pair.Value.ToString();
-                                formDict[pair.Key] = formValue;
-
-                                if (pair.Value.Count > 1)
-                                {
-                                    result.Add(new UserInput(location, formValue));
-                                }
-                            }
-                            return formDict;
+                            return FlattenFormFields(formPairs, result);
                         }
                     }
 
@@ -195,6 +179,28 @@ namespace Aikido.Zen.Core.Helpers
             }
 
             return parsedBody;
+        }
+
+        private static Dictionary<string, object> FlattenFormFields(Dictionary<string, StringValues> formPairs, List<UserInput> result)
+        {
+            var formDict = new Dictionary<string, object>();
+            foreach (var pair in formPairs)
+            {
+                var location = $"body.{pair.Key}";
+                foreach (var value in pair.Value)
+                {
+                    result.Add(new UserInput(location, value));
+                }
+
+                var formValue = pair.Value.ToString();
+                formDict[pair.Key] = formValue;
+
+                if (pair.Value.Count > 1)
+                {
+                    result.Add(new UserInput(location, formValue));
+                }
+            }
+            return formDict;
         }
 
         private static async Task<object> ProcessMultipartFormDataAsync(Stream body, string boundary, List<UserInput> result)
