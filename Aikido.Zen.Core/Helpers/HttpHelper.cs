@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using System.Xml;
 using Aikido.Zen.Core.Models;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Primitives;
 using Microsoft.Net.Http.Headers;
@@ -48,7 +49,8 @@ namespace Aikido.Zen.Core.Helpers
             IDictionary<string, string> headers,
             IDictionary<string, string> cookies,
             Stream body,
-            string contentType)
+            string contentType,
+            HttpRequest request = null)
         {
             var result = new List<UserInput>();
             object parsedBody = null;
@@ -70,7 +72,7 @@ namespace Aikido.Zen.Core.Helpers
             {
                 if (body != null && body.CanRead)
                 {
-                    parsedBody = await ProcessRequestBodyAsync(body, contentType, result);
+                    parsedBody = await ProcessRequestBodyAsync(body, contentType, result, request);
                 }
             }
             catch (Exception e)
@@ -102,7 +104,7 @@ namespace Aikido.Zen.Core.Helpers
             }
         }
 
-        private static async Task<object> ProcessRequestBodyAsync(Stream body, string contentType, List<UserInput> result)
+        private static async Task<object> ProcessRequestBodyAsync(Stream body, string contentType, List<UserInput> result, HttpRequest request)
         {
             object parsedBody = null;
 
@@ -116,14 +118,18 @@ namespace Aikido.Zen.Core.Helpers
                 {
                     var mediaType = GetMediaType(contentType);
 
-                    // FormReader enforces form limits while reading and creates its own StreamReader.
-                    // Handle forms first to avoid allocating the general reader below.
                     if (IsFormUrlEncodedMediaType(mediaType))
                     {
+                        // Use ASP.NET Core's configured limits and cached form.
+                        if (request != null)
+                        {
+                            return FlattenFormFields(await request.ReadFormAsync(), result);
+                        }
+
+                        // System.Web has no ReadFormAsync; FormReader enforces the 1024-value limit while reading.
                         using (var formReader = new FormReader(body))
                         {
-                            var formPairs = await formReader.ReadFormAsync();
-                            return FlattenFormFields(formPairs, result);
+                            return FlattenFormFields(await formReader.ReadFormAsync(), result);
                         }
                     }
 
@@ -183,7 +189,7 @@ namespace Aikido.Zen.Core.Helpers
             return parsedBody;
         }
 
-        private static Dictionary<string, object> FlattenFormFields(Dictionary<string, StringValues> formPairs, List<UserInput> result)
+        private static Dictionary<string, object> FlattenFormFields(IEnumerable<KeyValuePair<string, StringValues>> formPairs, List<UserInput> result)
         {
             var formDict = new Dictionary<string, object>();
             foreach (var pair in formPairs)

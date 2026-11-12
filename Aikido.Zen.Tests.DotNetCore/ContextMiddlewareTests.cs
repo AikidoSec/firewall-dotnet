@@ -113,9 +113,10 @@ namespace Aikido.Zen.Tests.DotNetCore
             }
         }
 
-        [TestCase(1024)]
-        [TestCase(1025)]
-        public async Task InvokeAsync_FormInspectionLimit_DoesNotChangeApplicationHandling(int count)
+        [TestCase(1024, 1024)]
+        [TestCase(1025, 1024)]
+        [TestCase(1025, 4096)]
+        public async Task InvokeAsync_FormInspectionLimit_DoesNotChangeApplicationHandling(int count, int valueCountLimit)
         {
             var originalDisable = Environment.GetEnvironmentVariable("AIKIDO_DISABLE");
             try
@@ -131,7 +132,10 @@ namespace Aikido.Zen.Tests.DotNetCore
                 context.Request.Method = "POST";
                 context.Request.ContentType = "application/x-www-form-urlencoded";
                 context.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes(body));
-                context.Features.Set<IFormFeature>(new FormFeature(context.Request, new FormOptions { ValueCountLimit = 4096 }));
+                if (valueCountLimit != 1024)
+                {
+                    context.Features.Set<IFormFeature>(new FormFeature(context.Request, new FormOptions { ValueCountLimit = valueCountLimit }));
+                }
                 var nextCalled = false;
 
                 await _contextMiddleware.InvokeAsync(context, async httpContext =>
@@ -140,8 +144,15 @@ namespace Aikido.Zen.Tests.DotNetCore
                     using var reader = new StreamReader(httpContext.Request.Body, leaveOpen: true);
                     Assert.That(await reader.ReadToEndAsync(), Is.EqualTo(body));
                     httpContext.Request.Body.Position = 0;
-                    var form = await httpContext.Request.ReadFormAsync();
-                    Assert.That(form["field"].Count, Is.EqualTo(count));
+                    if (count > valueCountLimit)
+                    {
+                        Assert.ThrowsAsync<InvalidDataException>(async () => await httpContext.Request.ReadFormAsync());
+                    }
+                    else
+                    {
+                        var form = await httpContext.Request.ReadFormAsync();
+                        Assert.That(form["field"].Count, Is.EqualTo(count));
+                    }
                     httpContext.Response.StatusCode = StatusCodes.Status201Created;
                 });
 
@@ -149,7 +160,7 @@ namespace Aikido.Zen.Tests.DotNetCore
                 Assert.That(context.Response.StatusCode, Is.EqualTo(StatusCodes.Status201Created));
                 var captured = context.Items["Aikido.Zen.Context"] as Context;
                 Assert.That(captured, Is.Not.Null);
-                Assert.That(captured!.ParsedUserInput.Count(input => input.Location == "body.field"), Is.EqualTo(count > 1024 ? 0 : count + 1));
+                Assert.That(captured!.ParsedUserInput.Count(input => input.Location == "body.field"), Is.EqualTo(count > valueCountLimit ? 0 : count + 1));
             }
             finally
             {
