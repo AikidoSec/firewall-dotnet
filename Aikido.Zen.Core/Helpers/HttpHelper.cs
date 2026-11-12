@@ -155,8 +155,19 @@ namespace Aikido.Zen.Core.Helpers
                             var formDict = new Dictionary<string, object>();
                             foreach (var pair in formPairs)
                             {
-                                result.Add(new UserInput($"body.{pair.Key}", pair.Value));
-                                formDict[pair.Key] = pair.Value.ToString();
+                                var location = $"body.{pair.Key}";
+                                foreach (var value in pair.Value)
+                                {
+                                    result.Add(new UserInput(location, value));
+                                }
+
+                                var formValue = pair.Value.ToString();
+                                formDict[pair.Key] = formValue;
+
+                                if (pair.Value.Count > 1)
+                                {
+                                    result.Add(new UserInput(location, formValue));
+                                }
                             }
                             parsedBody = formDict;
                         }
