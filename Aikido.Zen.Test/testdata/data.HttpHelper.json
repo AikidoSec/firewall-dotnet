@@ -826,7 +826,7 @@
             {"location": "body.file", "value": "second"},
             {"location": "body.file", "value": "first,second"}
         ],
-        "expectedParsedBody": {"file": "first,second"}
+        "expectedParsedBody": {"file": ["first", "second"]}
     },
     {
         "routeParams": {},
@@ -841,7 +841,7 @@
             {"location": "body.file", "value": ""},
             {"location": "body.file", "value": "second"}
         ],
-        "expectedParsedBody": {"file": "second"}
+        "expectedParsedBody": {"file": ["", "second", ""]}
     },
     {
         "routeParams": {},
@@ -855,7 +855,7 @@
             {"location": "body.file", "value": "third"},
             {"location": "body.file", "value": "first,second,third"}
         ],
-        "expectedParsedBody": {"file": "first,second,third"}
+        "expectedParsedBody": {"file": ["first,second", "third"]}
     },
     {
         "routeParams": {},
@@ -870,7 +870,7 @@
             {"location": "body.file", "value": "first,second"},
             {"location": "body.file.0", "value": "literal"}
         ],
-        "expectedParsedBody": {"file": "first,second", "file.0": "literal"}
+        "expectedParsedBody": {"file": ["first", "second"], "file.0": "literal"}
     },
     {
         "routeParams": {},
@@ -886,6 +886,6 @@
             {"location": "body.file", "value": "../private/settings.json"},
             {"location": "body.file", "value": "../private/settings.json,safe.txt"}
         ],
-        "expectedParsedBody": {"file": "%2e%2e%2fprivate%2fsettings.json,safe.txt"}
+        "expectedParsedBody": {"file": ["%2e%2e%2fprivate%2fsettings.json", "safe.txt"]}
     }
 ]

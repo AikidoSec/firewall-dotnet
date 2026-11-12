@@ -268,6 +268,65 @@ namespace Aikido.Zen.Test.Helpers
         }
 
         [Test]
+        public async Task GetApiInfo_WithSingleAndMultipleFormValues_ReturnsCorrectTypes()
+        {
+            const string contentType = "application/x-www-form-urlencoded";
+            var headers = new Dictionary<string, string> { { "content-type", contentType } };
+            using var bodyStream = new MemoryStream(Encoding.UTF8.GetBytes("color=red&color=blue&size=small"));
+            var parsed = await HttpHelper.ReadAndFlattenHttpDataAsync(
+                new Dictionary<string, string>(),
+                new Dictionary<string, string>(),
+                headers,
+                new Dictionary<string, string>(),
+                bodyStream,
+                contentType);
+            var context = new Context { Headers = headers, ParsedBody = parsed.ParsedBody };
+
+            var result = OpenAPIHelper.GetApiInfo(context);
+
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result!.Body, Is.Not.Null);
+            Assert.That(result.Body!.Type, Is.EqualTo("form-urlencoded"));
+            var properties = result.Body.Schema.Properties!;
+            Assert.Multiple(() =>
+            {
+                Assert.That(properties["color"].Type, Is.EqualTo(new[] { "array" }));
+                Assert.That(properties["color"].Items!.Type, Is.EqualTo(new[] { "string" }));
+                Assert.That(properties["size"].Type, Is.EqualTo(new[] { "string" }));
+            });
+        }
+
+        [TestCase("color=red", "color=red&color=blue")]
+        [TestCase("color=red&color=blue", "color=red")]
+        public async Task UpdateApiInfo_WithChangingFormMultiplicity_PreservesBothShapes(string firstBody, string secondBody)
+        {
+            const string contentType = "application/x-www-form-urlencoded";
+            var headers = new Dictionary<string, string> { { "content-type", contentType } };
+            var route = new Route { ApiSpec = new APISpec() };
+
+            foreach (var body in new[] { firstBody, secondBody, firstBody, secondBody })
+            {
+                using var bodyStream = new MemoryStream(Encoding.UTF8.GetBytes(body));
+                var parsed = await HttpHelper.ReadAndFlattenHttpDataAsync(
+                    new Dictionary<string, string>(),
+                    new Dictionary<string, string>(),
+                    headers,
+                    new Dictionary<string, string>(),
+                    bodyStream,
+                    contentType);
+                var context = new Context { Headers = headers, ParsedBody = parsed.ParsedBody };
+
+                OpenAPIHelper.UpdateApiInfo(context, route, 10);
+            }
+
+            Assert.That(route.ApiSpec.Body, Is.Not.Null);
+            var schema = route.ApiSpec.Body!.Schema.Properties!["color"];
+            Assert.That(schema.Type, Is.EquivalentTo(new[] { "string", "array" }));
+            Assert.That(schema.Items, Is.Not.Null);
+            Assert.That(schema.Items!.Type, Is.EqualTo(new[] { "string" }));
+        }
+
+        [Test]
         public void GetApiInfo_WithPrimitiveArrayBody_ReturnsCorrectSpec()
         {
             var context = CreateTestContext(

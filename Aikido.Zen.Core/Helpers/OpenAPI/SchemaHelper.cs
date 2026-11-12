@@ -217,6 +217,17 @@ namespace Aikido.Zen.Core.Helpers.OpenAPI
 
         private static DataSchema MergeTypes(DataSchema first, DataSchema second)
         {
+            if ((first.Type.Contains("array") || second.Type.Contains("array")) &&
+                !first.Type.Contains("object") && !second.Type.Contains("object"))
+            {
+                return new DataSchema
+                {
+                    Type = MergeTypeArrays(first.Type, second.Type),
+                    Items = MergeDataSchemas(first.Items, second.Items),
+                    Optional = first.Optional || second.Optional
+                };
+            }
+
             if (!OnlyContainsPrimitiveTypes(first.Type) || !OnlyContainsPrimitiveTypes(second.Type))
             {
                 return first.Type.Contains("null") ? second : first;
