@@ -170,6 +170,57 @@ namespace Aikido.Zen.Tests.DotNetCore
             }
         }
 
+        [TestCase("application/x-www-form-urlencoded _", 2)]
+        [TestCase("application/x-www-form-urlencoded; charset=\"utf-8", 2)]
+        [TestCase("application/x-www-form-urlencoded _", 1024)]
+        [TestCase("application/x-www-form-urlencoded _", 1025)]
+        public async Task InvokeAsync_MalformedFormContentType_UsesBoundedInspectionWithoutChangingRequest(string contentType, int count)
+        {
+            var originalDisable = Environment.GetEnvironmentVariable("AIKIDO_DISABLE");
+            try
+            {
+                Environment.SetEnvironmentVariable("AIKIDO_DISABLE", "false");
+                Agent.Instance.Context.Config.Clear();
+                Agent.Instance.ClearContext();
+                var body = string.Join("&", Enumerable.Range(0, count).Select(index => $"field=value{index}"));
+                var context = new DefaultHttpContext();
+                context.Request.Scheme = "http";
+                context.Request.Host = new HostString("test.local");
+                context.Request.Path = "/api/test";
+                context.Request.Method = "POST";
+                context.Request.ContentType = contentType;
+                context.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes(body));
+                Assert.That(context.Request.HasFormContentType, Is.False);
+                var nextCalled = false;
+
+                await _contextMiddleware.InvokeAsync(context, async httpContext =>
+                {
+                    nextCalled = true;
+                    Assert.That(httpContext.Request.ContentType, Is.EqualTo(contentType));
+                    Assert.That(httpContext.Request.Body.Position, Is.Zero);
+                    using var reader = new StreamReader(httpContext.Request.Body, leaveOpen: true);
+                    Assert.That(await reader.ReadToEndAsync(), Is.EqualTo(body));
+                    httpContext.Response.StatusCode = StatusCodes.Status201Created;
+                });
+
+                Assert.That(nextCalled, Is.True);
+                Assert.That(context.Response.StatusCode, Is.EqualTo(StatusCodes.Status201Created));
+                var captured = context.Items["Aikido.Zen.Context"] as Context;
+                Assert.That(captured, Is.Not.Null);
+                var bodyValues = captured!.ParsedUserInput.Where(input => input.Location == "body.field").Select(input => input.Value);
+                var expected = count > 1024
+                    ? Array.Empty<string>()
+                    : Enumerable.Range(0, count).Select(index => $"value{index}").Append(string.Join(",", Enumerable.Range(0, count).Select(index => $"value{index}")));
+                Assert.That(bodyValues, Is.EqualTo(expected));
+            }
+            finally
+            {
+                Agent.Instance.ClearContext();
+                Agent.Instance.Context.Config.Clear();
+                Environment.SetEnvironmentVariable("AIKIDO_DISABLE", originalDisable);
+            }
+        }
+
         [Test]
         public async Task InvokeAsync_BypassedIp_CallsNextWithBypassedFlagWithoutCapturingStats()
         {

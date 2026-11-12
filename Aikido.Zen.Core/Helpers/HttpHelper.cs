@@ -121,7 +121,7 @@ namespace Aikido.Zen.Core.Helpers
                     if (IsFormUrlEncodedMediaType(mediaType))
                     {
                         // Use ASP.NET Core's configured limits and cached form.
-                        if (request != null)
+                        if (request != null && request.HasFormContentType)
                         {
                             return FlattenFormFields(await request.ReadFormAsync(), result);
                         }
