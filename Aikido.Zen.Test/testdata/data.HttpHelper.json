@@ -775,8 +775,7 @@
     {
         "routeParams": {},
         "queryParams": {
-            "path": "%2e%2e%2fsecret",
-            "path|decoded": "literal"
+            "path": "%2e%2e%2fsecret"
         },
         "headers": {},
         "cookies": {},
@@ -784,8 +783,7 @@
         "contentType": "application/json",
         "expectedFlattenedData": [
             {"location": "query.path", "value": "%2e%2e%2fsecret"},
-            {"location": "query.path|decoded", "value": "literal"},
-            {"location": "query.path|decoded", "value": "../secret"}
+            {"location": "query.path", "value": "../secret"}
         ],
         "expectedParsedBody": null
     },
@@ -800,7 +798,7 @@
         "contentType": "application/json",
         "expectedFlattenedData": [
             {"location": "query.path", "value": "a%252520b"},
-            {"location": "query.path|decoded", "value": "a%20b"}
+            {"location": "query.path", "value": "a%20b"}
         ],
         "expectedParsedBody": null
     }

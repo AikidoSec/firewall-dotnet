@@ -30,7 +30,7 @@ namespace Aikido.Zen.Core.Helpers
                 var input = values[i];
                 if (TryDecodeUriComponent(input.Value, out string decoded))
                 {
-                    values.Add(new UserInput($"{input.Location}|decoded", decoded));
+                    values.Add(new UserInput(input.Location, decoded));
                 }
             }
         }
@@ -70,16 +70,7 @@ namespace Aikido.Zen.Core.Helpers
                 return string.Empty;
             }
 
-            var normalizedPath = key;
-            // ParsedUserInput may contain synthetic decoded variants such as "query.url|decoded".
-            // The reported attack path should still point to the original field, e.g. ".url".
-            var decodedSuffixIndex = normalizedPath.IndexOf('|');
-            if (decodedSuffixIndex >= 0)
-            {
-                normalizedPath = normalizedPath.Substring(0, decodedSuffixIndex);
-            }
-
-            var segments = normalizedPath.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries);
+            var segments = key.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries);
             if (segments.Length == 0)
             {
                 return string.Empty;

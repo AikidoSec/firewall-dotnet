@@ -6,7 +6,6 @@ namespace Aikido.Zen.Test
     public class UserInputHelperTests
     {
         [TestCase("query.url", ".url")]
-        [TestCase("query.url|decoded", ".url")]
         [TestCase("body.image.url", ".image.url")]
         [TestCase("body.items.0.url", ".items.[0].url")]
         [TestCase("headers.Authorization", ".Authorization")]
