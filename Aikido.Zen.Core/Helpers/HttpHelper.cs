@@ -116,6 +116,8 @@ namespace Aikido.Zen.Core.Helpers
                 {
                     var mediaType = GetMediaType(contentType);
 
+                    // FormReader enforces form limits while reading and creates its own StreamReader.
+                    // Handle forms first to avoid allocating the general reader below.
                     if (IsFormUrlEncodedMediaType(mediaType))
                     {
                         using (var formReader = new FormReader(body))
