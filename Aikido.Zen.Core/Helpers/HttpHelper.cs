@@ -115,6 +115,32 @@ namespace Aikido.Zen.Core.Helpers
                 {
                     var mediaType = GetMediaType(contentType);
 
+                    if (IsFormUrlEncodedMediaType(mediaType))
+                    {
+                        using (var formReader = new FormReader(body))
+                        {
+                            var formPairs = await formReader.ReadFormAsync();
+                            var formDict = new Dictionary<string, object>();
+                            foreach (var pair in formPairs)
+                            {
+                                var location = $"body.{pair.Key}";
+                                foreach (var value in pair.Value)
+                                {
+                                    result.Add(new UserInput(location, value));
+                                }
+
+                                var formValue = pair.Value.ToString();
+                                formDict[pair.Key] = formValue;
+
+                                if (pair.Value.Count > 1)
+                                {
+                                    result.Add(new UserInput(location, formValue));
+                                }
+                            }
+                            return formDict;
+                        }
+                    }
+
                     // we read the stream, but leave it open so it can be read out later by http modules or middleware.
                     // we try to detect the encdoding by looking for byte order marks at the beginning of the file, and use UTF-8 as a fallback.
                     using (var reader = new StreamReader(body, detectEncodingFromByteOrderMarks: true, bufferSize: 4096, leaveOpen: true, encoding: System.Text.Encoding.UTF8))
@@ -141,31 +167,6 @@ namespace Aikido.Zen.Core.Helpers
                                 xmlDoc.Load(xmlReader);
                                 XmlHelper.FlattenXml(result, xmlDoc.DocumentElement, "body");
                                 parsedBody = XmlHelper.XmlToObject(xmlDoc.DocumentElement);
-                            }
-                        }
-                        else if (IsFormUrlEncodedMediaType(mediaType))
-                        {
-                            using (var formReader = new FormReader(body))
-                            {
-                                var formPairs = await formReader.ReadFormAsync();
-                                var formDict = new Dictionary<string, object>();
-                                foreach (var pair in formPairs)
-                                {
-                                    var location = $"body.{pair.Key}";
-                                    foreach (var value in pair.Value)
-                                    {
-                                        result.Add(new UserInput(location, value));
-                                    }
-
-                                    var formValue = pair.Value.ToString();
-                                    formDict[pair.Key] = formValue;
-
-                                    if (pair.Value.Count > 1)
-                                    {
-                                        result.Add(new UserInput(location, formValue));
-                                    }
-                                }
-                                parsedBody = formDict;
                             }
                         }
                         else if (IsTextPlainMediaType(mediaType))
