@@ -131,25 +131,25 @@ namespace Aikido.Zen.Test.Helpers
                 "application/json");
 
             // Assert
-            Assert.That(result.FlattenedData.Single(input => input.Location == "route.command").Value, Is.EqualTo("who%61mi"));
-            Assert.That(result.FlattenedData.Single(input => input.Location == "query.path").Value, Is.EqualTo("%2e%2e%2fetc%2fpasswd"));
-            Assert.That(result.FlattenedData.Single(input => input.Location == "query.emoji").Value, Is.EqualTo("%F0%9F%98%80"));
-            Assert.That(result.FlattenedData.Single(input => input.Location == "query.double").Value, Is.EqualTo("%2577%2568%256f%2561%256d%2569"));
-            Assert.That(result.FlattenedData.Single(input => input.Location == "query.invalid").Value, Is.EqualTo("%E0%A4%A"));
-            Assert.That(result.FlattenedData.Single(input => input.Location == "headers.X-Custom").Value, Is.EqualTo("a+b%2Bc"));
-            Assert.That(result.FlattenedData.Single(input => input.Location == "cookies.session").Value, Is.EqualTo("abc%31%32%33"));
-            Assert.That(result.FlattenedData.Single(input => input.Location == "body.cmd").Value, Is.EqualTo("who%61mi"));
-            Assert.That(result.FlattenedData.Single(input => input.Location == "body.literal").Value, Is.EqualTo("a+b"));
-
-            Assert.That(result.FlattenedData.Single(input => input.Location == "route.command|decoded").Value, Is.EqualTo("whoami"));
-            Assert.That(result.FlattenedData.Single(input => input.Location == "query.path|decoded").Value, Is.EqualTo("../etc/passwd"));
-            Assert.That(result.FlattenedData.Single(input => input.Location == "query.emoji|decoded").Value, Is.EqualTo("\U0001F600"));
-            Assert.That(result.FlattenedData.Single(input => input.Location == "query.double|decoded").Value, Is.EqualTo("whoami"));
-            Assert.That(result.FlattenedData.Single(input => input.Location == "headers.X-Custom|decoded").Value, Is.EqualTo("a+b+c"));
-            Assert.That(result.FlattenedData.Single(input => input.Location == "cookies.session|decoded").Value, Is.EqualTo("abc123"));
-            Assert.That(result.FlattenedData.Single(input => input.Location == "body.cmd|decoded").Value, Is.EqualTo("whoami"));
-            Assert.That(result.FlattenedData.Any(input => input.Location == "query.invalid|decoded"), Is.False);
-            Assert.That(result.FlattenedData.Any(input => input.Location == "body.literal|decoded"), Is.False);
+            Assert.That(result.FlattenedData, Is.EquivalentTo(new[]
+            {
+                new UserInput("route.command", "who%61mi"),
+                new UserInput("query.path", "%2e%2e%2fetc%2fpasswd"),
+                new UserInput("query.emoji", "%F0%9F%98%80"),
+                new UserInput("query.double", "%2577%2568%256f%2561%256d%2569"),
+                new UserInput("query.invalid", "%E0%A4%A"),
+                new UserInput("headers.X-Custom", "a+b%2Bc"),
+                new UserInput("cookies.session", "abc%31%32%33"),
+                new UserInput("body.cmd", "who%61mi"),
+                new UserInput("body.literal", "a+b"),
+                new UserInput("route.command", "whoami"),
+                new UserInput("query.path", "../etc/passwd"),
+                new UserInput("query.emoji", "\U0001F600"),
+                new UserInput("query.double", "whoami"),
+                new UserInput("headers.X-Custom", "a+b+c"),
+                new UserInput("cookies.session", "abc123"),
+                new UserInput("body.cmd", "whoami")
+            }));
         }
 
         [Test]

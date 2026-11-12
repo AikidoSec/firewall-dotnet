@@ -86,8 +86,8 @@ namespace Aikido.Zen.Test.Helpers
 
             bool result = DetectPathTraversal(filename, _context, ModuleName, Operation);
 
-            Assert.That(parsed.FlattenedData.Single(input => input.Location == "query.path").Value, Is.EqualTo(encodedInput));
-            Assert.That(parsed.FlattenedData.Single(input => input.Location == "query.path|decoded").Value, Is.EqualTo("../secrets/key.txt"));
+            Assert.That(parsed.FlattenedData.Where(input => input.Location == "query.path").Select(input => input.Value),
+                Is.EquivalentTo(new[] { encodedInput, "../secrets/key.txt" }));
             Assert.That(result, Is.True);
             Assert.That(_context.AttackDetected, Is.True);
         }
@@ -109,15 +109,9 @@ namespace Aikido.Zen.Test.Helpers
 
             bool result = DetectPathTraversal(path, _context, ModuleName, Operation);
 
-            Assert.That(parsed.FlattenedData.Single(input => input.Location == "query.path").Value, Is.EqualTo(encodedInput));
-            if (encodedInput == decodedInput)
-            {
-                Assert.That(parsed.FlattenedData.Any(input => input.Location == "query.path|decoded"), Is.False);
-            }
-            else
-            {
-                Assert.That(parsed.FlattenedData.Single(input => input.Location == "query.path|decoded").Value, Is.EqualTo(decodedInput));
-            }
+            var expectedValues = encodedInput == decodedInput ? new[] { encodedInput } : new[] { encodedInput, decodedInput };
+            Assert.That(parsed.FlattenedData.Where(input => input.Location == "query.path").Select(input => input.Value),
+                Is.EquivalentTo(expectedValues));
             Assert.That(result, Is.EqualTo(expectedAttack), description);
             Assert.That(_context.AttackDetected, Is.EqualTo(expectedAttack), description);
         }
