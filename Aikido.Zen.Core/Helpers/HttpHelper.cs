@@ -1,29 +1,26 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Xml;
-using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.WebUtilities;
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Primitives;
 using Microsoft.Net.Http.Headers;
 
-[assembly: InternalsVisibleTo("Aikido.Zen.Tests")]
 namespace Aikido.Zen.Core.Helpers
 {
     /// <summary>
     /// Helper class for processing HTTP request data and extracting it into a list of values and input locations.
     /// </summary>
-    public class HttpHelper
+    internal class HttpHelper
     {
         /// <summary>
         /// Represents the result of processing HTTP request data
         /// </summary>
-        public class HttpDataResult
+        internal class HttpDataResult
         {
             /// <summary>
             /// The extracted request values and their dot-notation locations
@@ -46,13 +43,14 @@ namespace Aikido.Zen.Core.Helpers
         /// <param name="body">The request body stream.</param>
         /// <param name="contentType">The content type of the request.</param>
         /// <returns>A HttpDataResult containing both flattened data and parsed body.</returns>
-        public static async Task<HttpDataResult> ReadAndFlattenHttpDataAsync(
+        internal static async Task<HttpDataResult> ReadAndFlattenHttpDataAsync(
             IDictionary<string, string> routeParams,
             IDictionary<string, string> queryParams,
             IDictionary<string, string> headers,
             IDictionary<string, string> cookies,
             Stream body,
-            string contentType)
+            string contentType,
+            HttpRequest request = null)
         {
             var result = new List<UserInput>();
             object parsedBody = null;
@@ -74,7 +72,7 @@ namespace Aikido.Zen.Core.Helpers
             {
                 if (body != null && body.CanRead)
                 {
-                    parsedBody = await ProcessRequestBodyAsync(body, contentType, result);
+                    parsedBody = await ProcessRequestBodyAsync(body, contentType, result, request);
                 }
             }
             catch (Exception e)
@@ -96,7 +94,7 @@ namespace Aikido.Zen.Core.Helpers
         /// </summary>
         /// <param name="body"></param>
         /// <returns></returns>
-        public static string GetRawBody(Stream body)
+        internal static string GetRawBody(Stream body)
         {
             // we read the stream, but leave it open so it can be read out later by http modules or middleware.
             // we try to detect the encdoding by looking for byte order marks at the beginning of the file, and use UTF-8 as a fallback.
@@ -106,7 +104,7 @@ namespace Aikido.Zen.Core.Helpers
             }
         }
 
-        private static async Task<object> ProcessRequestBodyAsync(Stream body, string contentType, List<UserInput> result)
+        private static async Task<object> ProcessRequestBodyAsync(Stream body, string contentType, List<UserInput> result, HttpRequest request)
         {
             object parsedBody = null;
 
@@ -119,6 +117,21 @@ namespace Aikido.Zen.Core.Helpers
                 else
                 {
                     var mediaType = GetMediaType(contentType);
+
+                    if (IsFormUrlEncodedMediaType(mediaType))
+                    {
+                        // Use ASP.NET Core's configured limits and cached form.
+                        if (request != null && request.HasFormContentType)
+                        {
+                            return FlattenFormFields(await request.ReadFormAsync(), result);
+                        }
+
+                        // System.Web has no ReadFormAsync; FormReader enforces the 1024-value limit while reading.
+                        using (var formReader = new FormReader(body))
+                        {
+                            return FlattenFormFields(await formReader.ReadFormAsync(), result);
+                        }
+                    }
 
                     // we read the stream, but leave it open so it can be read out later by http modules or middleware.
                     // we try to detect the encdoding by looking for byte order marks at the beginning of the file, and use UTF-8 as a fallback.
@@ -148,18 +161,6 @@ namespace Aikido.Zen.Core.Helpers
                                 parsedBody = XmlHelper.XmlToObject(xmlDoc.DocumentElement);
                             }
                         }
-                        else if (IsFormUrlEncodedMediaType(mediaType))
-                        {
-                            string formString = await reader.ReadToEndAsync();
-                            var formPairs = QueryHelpers.ParseQuery(formString);
-                            var formDict = new Dictionary<string, object>();
-                            foreach (var pair in formPairs)
-                            {
-                                result.Add(new UserInput($"body.{pair.Key}", pair.Value));
-                                formDict[pair.Key] = pair.Value.ToString();
-                            }
-                            parsedBody = formDict;
-                        }
                         else if (IsTextPlainMediaType(mediaType))
                         {
                             string textContent = await reader.ReadToEndAsync();
@@ -186,6 +187,28 @@ namespace Aikido.Zen.Core.Helpers
             }
 
             return parsedBody;
+        }
+
+        private static Dictionary<string, object> FlattenFormFields(IEnumerable<KeyValuePair<string, StringValues>> formPairs, List<UserInput> result)
+        {
+            var formDict = new Dictionary<string, object>();
+            foreach (var pair in formPairs)
+            {
+                var location = $"body.{pair.Key}";
+                foreach (var value in pair.Value)
+                {
+                    result.Add(new UserInput(location, value));
+                }
+
+                var formValue = pair.Value.ToString();
+                formDict[pair.Key] = formValue;
+
+                if (pair.Value.Count > 1)
+                {
+                    result.Add(new UserInput(location, formValue));
+                }
+            }
+            return formDict;
         }
 
         private static async Task<object> ProcessMultipartFormDataAsync(Stream body, string boundary, List<UserInput> result)

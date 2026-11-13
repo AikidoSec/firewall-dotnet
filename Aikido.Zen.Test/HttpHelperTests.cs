@@ -216,6 +216,50 @@ namespace Aikido.Zen.Test.Helpers
             }
         }
 
+        [TestCase(1024, true, false)]
+        [TestCase(1025, true, false)]
+        [TestCase(1024, false, false)]
+        [TestCase(1025, false, false)]
+        [TestCase(1024, true, true)]
+        [TestCase(1025, true, true)]
+        public async Task ReadAndFlattenHttpDataAsync_ShouldLimitFormValuesWithoutChangingBody(int count, bool repeatedKey, bool emptyValues)
+        {
+            var pairs = Enumerable.Range(0, count).Select(index =>
+                $"{(repeatedKey ? "field" : $"field{index}")}={(emptyValues ? "" : "%2561")}");
+            var body = string.Join("&", pairs);
+            using var bodyStream = new MemoryStream(Encoding.UTF8.GetBytes(body));
+
+            var result = await HttpHelper.ReadAndFlattenHttpDataAsync(
+                new Dictionary<string, string>(),
+                new Dictionary<string, string> { { "name", "updated" } },
+                new Dictionary<string, string>(),
+                new Dictionary<string, string>(),
+                bodyStream,
+                "application/x-www-form-urlencoded");
+
+            Assert.That(result.FlattenedData.Single(input => input.Location == "query.name").Value, Is.EqualTo("updated"));
+            if (count > 1024)
+            {
+                Assert.That(result.ParsedBody, Is.Null);
+                Assert.That(result.FlattenedData.Any(input => input.Location.StartsWith("body.")), Is.False);
+            }
+            else
+            {
+                Assert.That(result.ParsedBody, Is.TypeOf<Dictionary<string, object>>());
+                var bodyInputs = result.FlattenedData.Where(input => input.Location.StartsWith("body.")).ToList();
+                Assert.That(bodyInputs.Count(input => input.Value == (emptyValues ? "" : "%61")), Is.EqualTo(count + (repeatedKey && emptyValues ? 1 : 0)));
+                if (!emptyValues)
+                {
+                    Assert.That(bodyInputs.Count(input => input.Value == "a"), Is.EqualTo(count));
+                }
+            }
+
+            Assert.That(bodyStream.Position, Is.Zero);
+            Assert.That(bodyStream.CanRead, Is.True);
+            using var reader = new StreamReader(bodyStream, leaveOpen: true);
+            Assert.That(await reader.ReadToEndAsync(), Is.EqualTo(body));
+        }
+
         [Test]
         public void ToJsonObj_ShouldHandleTrueFalseNull()
         {

@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Security.Principal;
+using System.Text;
 using System.Threading.Tasks;
 using System.Web;
 using System.Web.Hosting;
@@ -67,6 +68,74 @@ namespace Aikido.Zen.Tests.DotNetFramework
                 HttpContext.Current = originalHttpContext;
                 Environment.SetEnvironmentVariable("AIKIDO_DISABLE", originalDisable);
                 agent.Dispose();
+            }
+        }
+
+        [TestCase(1024)]
+        [TestCase(1025)]
+        public async Task BeginRequest_FormInspectionLimit_DoesNotChangeApplicationBody(int count)
+        {
+            var originalHttpContext = HttpContext.Current;
+            var originalDisable = Environment.GetEnvironmentVariable("AIKIDO_DISABLE");
+            var agent = Agent.NewInstance(new ZenApi(Mock.Of<IReportingAPIClient>(), Mock.Of<IRuntimeAPIClient>()));
+            try
+            {
+                Environment.SetEnvironmentVariable("AIKIDO_DISABLE", "false");
+                var body = string.Join("&", Enumerable.Repeat("field=value", count));
+                var httpContext = new HttpContext(new FormWorkerRequest(body));
+                HttpContext.Current = httpContext;
+                var application = new HttpApplication();
+                typeof(HttpApplication).GetField("_context", BindingFlags.NonPublic | BindingFlags.Instance)
+                    .SetValue(application, httpContext);
+
+                await (Task)typeof(ContextModule).GetMethod("Context_BeginRequestAsync", BindingFlags.NonPublic | BindingFlags.Instance)
+                    .Invoke(_contextModule, new object[] { application, EventArgs.Empty });
+
+                var captured = httpContext.Items[Aikido.Zen.DotNetFramework.Zen.ContextItemKey] as Context;
+                Assert.That(captured, Is.Not.Null);
+                Assert.That(captured.ParsedUserInput.Count(input => input.Location == "body.field"), Is.EqualTo(count > 1024 ? 0 : count + 1));
+                Assert.That(httpContext.Response.StatusCode, Is.EqualTo(200));
+                Assert.That(httpContext.Request.InputStream.Position, Is.Zero);
+                using (var reader = new StreamReader(httpContext.Request.InputStream))
+                {
+                    Assert.That(reader.ReadToEnd(), Is.EqualTo(body));
+                }
+            }
+            finally
+            {
+                Aikido.Zen.DotNetFramework.Zen.ClearCurrentContext();
+                HttpContext.Current = originalHttpContext;
+                Environment.SetEnvironmentVariable("AIKIDO_DISABLE", originalDisable);
+                agent.Dispose();
+            }
+        }
+
+        private class FormWorkerRequest : SimpleWorkerRequest
+        {
+            private readonly byte[] _body;
+
+            public FormWorkerRequest(string body)
+                : base("/", Path.GetTempPath(), "api/test", "", new StringWriter())
+            {
+                _body = Encoding.UTF8.GetBytes(body);
+            }
+
+            public override string GetHttpVerbName() => "POST";
+            public override byte[] GetPreloadedEntityBody() => _body;
+            public override bool IsEntireEntityBodyIsPreloaded() => true;
+            public override int GetTotalEntityBodyLength() => _body.Length;
+
+            public override string GetKnownRequestHeader(int index)
+            {
+                if (index == HeaderContentType)
+                {
+                    return "application/x-www-form-urlencoded";
+                }
+                if (index == HeaderContentLength)
+                {
+                    return _body.Length.ToString();
+                }
+                return base.GetKnownRequestHeader(index);
             }
         }
 

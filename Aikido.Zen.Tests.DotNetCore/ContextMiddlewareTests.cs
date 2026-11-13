@@ -113,6 +113,114 @@ namespace Aikido.Zen.Tests.DotNetCore
             }
         }
 
+        [TestCase(1024, 1024)]
+        [TestCase(1025, 1024)]
+        [TestCase(1025, 4096)]
+        public async Task InvokeAsync_FormInspectionLimit_DoesNotChangeApplicationHandling(int count, int valueCountLimit)
+        {
+            var originalDisable = Environment.GetEnvironmentVariable("AIKIDO_DISABLE");
+            try
+            {
+                Environment.SetEnvironmentVariable("AIKIDO_DISABLE", "false");
+                Agent.Instance.Context.Config.Clear();
+                Agent.Instance.ClearContext();
+                var body = string.Join("&", Enumerable.Repeat("field=value", count));
+                var context = new DefaultHttpContext();
+                context.Request.Scheme = "http";
+                context.Request.Host = new HostString("test.local");
+                context.Request.Path = "/api/test";
+                context.Request.Method = "POST";
+                context.Request.ContentType = "application/x-www-form-urlencoded";
+                context.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes(body));
+                if (valueCountLimit != 1024)
+                {
+                    context.Features.Set<IFormFeature>(new FormFeature(context.Request, new FormOptions { ValueCountLimit = valueCountLimit }));
+                }
+                var nextCalled = false;
+
+                await _contextMiddleware.InvokeAsync(context, async httpContext =>
+                {
+                    nextCalled = true;
+                    using var reader = new StreamReader(httpContext.Request.Body, leaveOpen: true);
+                    Assert.That(await reader.ReadToEndAsync(), Is.EqualTo(body));
+                    httpContext.Request.Body.Position = 0;
+                    if (count > valueCountLimit)
+                    {
+                        Assert.ThrowsAsync<InvalidDataException>(async () => await httpContext.Request.ReadFormAsync());
+                    }
+                    else
+                    {
+                        var form = await httpContext.Request.ReadFormAsync();
+                        Assert.That(form["field"].Count, Is.EqualTo(count));
+                    }
+                    httpContext.Response.StatusCode = StatusCodes.Status201Created;
+                });
+
+                Assert.That(nextCalled, Is.True);
+                Assert.That(context.Response.StatusCode, Is.EqualTo(StatusCodes.Status201Created));
+                var captured = context.Items["Aikido.Zen.Context"] as Context;
+                Assert.That(captured, Is.Not.Null);
+                Assert.That(captured!.ParsedUserInput.Count(input => input.Location == "body.field"), Is.EqualTo(count > valueCountLimit ? 0 : count + 1));
+            }
+            finally
+            {
+                Agent.Instance.ClearContext();
+                Agent.Instance.Context.Config.Clear();
+                Environment.SetEnvironmentVariable("AIKIDO_DISABLE", originalDisable);
+            }
+        }
+
+        [TestCase("application/x-www-form-urlencoded _", 2)]
+        [TestCase("application/x-www-form-urlencoded; charset=\"utf-8", 2)]
+        [TestCase("application/x-www-form-urlencoded _", 1024)]
+        [TestCase("application/x-www-form-urlencoded _", 1025)]
+        public async Task InvokeAsync_MalformedFormContentType_UsesBoundedInspectionWithoutChangingRequest(string contentType, int count)
+        {
+            var originalDisable = Environment.GetEnvironmentVariable("AIKIDO_DISABLE");
+            try
+            {
+                Environment.SetEnvironmentVariable("AIKIDO_DISABLE", "false");
+                Agent.Instance.Context.Config.Clear();
+                Agent.Instance.ClearContext();
+                var body = string.Join("&", Enumerable.Range(0, count).Select(index => $"field=value{index}"));
+                var context = new DefaultHttpContext();
+                context.Request.Scheme = "http";
+                context.Request.Host = new HostString("test.local");
+                context.Request.Path = "/api/test";
+                context.Request.Method = "POST";
+                context.Request.ContentType = contentType;
+                context.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes(body));
+                Assert.That(context.Request.HasFormContentType, Is.False);
+                var nextCalled = false;
+
+                await _contextMiddleware.InvokeAsync(context, async httpContext =>
+                {
+                    nextCalled = true;
+                    Assert.That(httpContext.Request.ContentType, Is.EqualTo(contentType));
+                    Assert.That(httpContext.Request.Body.Position, Is.Zero);
+                    using var reader = new StreamReader(httpContext.Request.Body, leaveOpen: true);
+                    Assert.That(await reader.ReadToEndAsync(), Is.EqualTo(body));
+                    httpContext.Response.StatusCode = StatusCodes.Status201Created;
+                });
+
+                Assert.That(nextCalled, Is.True);
+                Assert.That(context.Response.StatusCode, Is.EqualTo(StatusCodes.Status201Created));
+                var captured = context.Items["Aikido.Zen.Context"] as Context;
+                Assert.That(captured, Is.Not.Null);
+                var bodyValues = captured!.ParsedUserInput.Where(input => input.Location == "body.field").Select(input => input.Value);
+                var expected = count > 1024
+                    ? Array.Empty<string>()
+                    : Enumerable.Range(0, count).Select(index => $"value{index}").Append(string.Join(",", Enumerable.Range(0, count).Select(index => $"value{index}")));
+                Assert.That(bodyValues, Is.EqualTo(expected));
+            }
+            finally
+            {
+                Agent.Instance.ClearContext();
+                Agent.Instance.Context.Config.Clear();
+                Environment.SetEnvironmentVariable("AIKIDO_DISABLE", originalDisable);
+            }
+        }
+
         [Test]
         public async Task InvokeAsync_BypassedIp_CallsNextWithBypassedFlagWithoutCapturingStats()
         {
