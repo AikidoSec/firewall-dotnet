@@ -1,6 +1,8 @@
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Jobs;
 using Aikido.Zen.Core.Helpers;
+using Aikido.Zen.Core;
+using Aikido.Zen.DotNetCore.Middleware;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -8,6 +10,8 @@ using System.Threading.Tasks;
 using System.Text;
 using System.Linq;
 using BenchmarkDotNet.Columns;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
 
 namespace Aikido.Zen.Benchmarks
 {
@@ -23,6 +27,7 @@ namespace Aikido.Zen.Benchmarks
         private Stream _jsonBody;
         private Stream _xmlBody;
         private Stream _formBody;
+        private ContextMiddleware _formMiddleware;
         private Stream _multipartFormBody;
 
         private string _boundary;
@@ -119,6 +124,7 @@ namespace Aikido.Zen.Benchmarks
             _jsonBody = new MemoryStream(Encoding.UTF8.GetBytes(jsonContent));
             _xmlBody = new MemoryStream(Encoding.UTF8.GetBytes(xmlContent));
             _formBody = new MemoryStream(Encoding.UTF8.GetBytes(formContent));
+            _formMiddleware = new ContextMiddleware(Array.Empty<EndpointDataSource>());
             _multipartFormBody = new MemoryStream(Encoding.UTF8.GetBytes(multipartContent));
         }
 
@@ -155,16 +161,21 @@ namespace Aikido.Zen.Benchmarks
         [Benchmark]
         public async Task<int> ProcessFormRequest()
         {
-            var result = await HttpHelper.ReadAndFlattenHttpDataAsync(
-                _routeParams,
-                _queryParams,
-                _headers,
-                _cookies,
-                _formBody,
-                FormContentType
-            );
+            var context = new DefaultHttpContext();
+            context.Request.Scheme = "http";
+            context.Request.Host = new HostString("benchmark.local");
+            context.Request.Path = "/form";
+            context.Request.Method = "POST";
+            context.Request.ContentType = FormContentType;
+            context.Request.Body = _formBody;
+
+            await _formMiddleware.InvokeAsync(context, async httpContext =>
+            {
+                await httpContext.Request.ReadFormAsync();
+            });
+
             _formBody.Position = 0;
-            return result.FlattenedData.Count;
+            return ((Context)context.Items["Aikido.Zen.Context"]).ParsedUserInput.Count;
         }
 
         [Benchmark]
