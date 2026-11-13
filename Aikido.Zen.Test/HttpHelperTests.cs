@@ -140,7 +140,9 @@ namespace Aikido.Zen.Test.Helpers
                 new UserInput("query.invalid", "%E0%A4%A"),
                 new UserInput("headers.X-Custom", "a+b%2Bc"),
                 new UserInput("cookies.session", "abc%31%32%33"),
+                new UserInput("body.cmd", "cmd"),
                 new UserInput("body.cmd", "who%61mi"),
+                new UserInput("body.literal", "literal"),
                 new UserInput("body.literal", "a+b"),
                 new UserInput("route.command", "whoami"),
                 new UserInput("query.path", "../etc/passwd"),
@@ -166,7 +168,8 @@ namespace Aikido.Zen.Test.Helpers
                 bodyStream,
                 "application/json");
 
-            Assert.That(result.FlattenedData.Single(input => input.Location == "body.userCommand").Value, Is.EqualTo("whoami"));
+            Assert.That(result.FlattenedData.Where(input => input.Location == "body.userCommand").Select(input => input.Value),
+                Is.EquivalentTo(new[] { "userCommand", "whoami" }));
             Assert.That(result.ParsedBody, Is.TypeOf<Dictionary<string, object>>());
 
             var parsedBody = (Dictionary<string, object>)result.ParsedBody;
@@ -279,17 +282,17 @@ namespace Aikido.Zen.Test.Helpers
             Assert.That(nullResult, Is.Null);
         }
 
-        [TestCase("\"x' OR '1'='1\"", "body", "body.value", "x' OR '1'='1")]
-        [TestCase("\"\\u002e\\u002e/appsettings.json\"", "body", "body.value", "../appsettings.json")]
-        [TestCase("\"\"", "body", "body.value", "")]
-        [TestCase("42", "body", "body.value", "42")]
-        [TestCase("-1.25", "body", "body.value", "-1.25")]
-        [TestCase("true", "body", "body.value", "True")]
-        [TestCase("false", "body", "body.value", "False")]
-        [TestCase("null", "body", "body.value", "")]
-        [TestCase("\"value\"", null, "value", "value")]
-        [TestCase("\"value\"", "", "value", "value")]
-        [TestCase("\"value\"", "body", "body.value", "value")]
+        [TestCase("\"x' OR '1'='1\"", "body", "body", "x' OR '1'='1")]
+        [TestCase("\"\\u002e\\u002e/appsettings.json\"", "body", "body", "../appsettings.json")]
+        [TestCase("\"\"", "body", "body", "")]
+        [TestCase("42", "body", "body", "42")]
+        [TestCase("-1.25", "body", "body", "-1.25")]
+        [TestCase("true", "body", "body", "True")]
+        [TestCase("false", "body", "body", "False")]
+        [TestCase("null", "body", "body", "")]
+        [TestCase("\"value\"", null, "", "value")]
+        [TestCase("\"value\"", "", "", "value")]
+        [TestCase("\"value\"", "body", "body", "value")]
         public void FlattenJson_ShouldCaptureTopLevelScalars(string json, string? prefix, string expectedKey, string expectedValue)
         {
             using var document = JsonDocument.Parse(json);
@@ -312,9 +315,15 @@ namespace Aikido.Zen.Test.Helpers
             JsonHelper.FlattenJson(result, element, "");
 
             // Assert
-            Assert.That(result.Single(input => input.Location == "key1.subkey").Value, Is.EqualTo("value"));
-            Assert.That(result.Single(input => input.Location == "key2.0").Value, Is.EqualTo("item1"));
-            Assert.That(result.Single(input => input.Location == "key2.1").Value, Is.EqualTo("item2"));
+            Assert.That(result, Is.EquivalentTo(new[]
+            {
+                new UserInput("key1", "key1"),
+                new UserInput("key1.subkey", "subkey"),
+                new UserInput("key1.subkey", "value"),
+                new UserInput("key2", "key2"),
+                new UserInput("key2.0", "item1"),
+                new UserInput("key2.1", "item2")
+            }));
         }
 
         [TestCase("plain text", "plain text")]

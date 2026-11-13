@@ -15,6 +15,7 @@
         "body": "{\"key\":\"value\"}",
         "contentType": "application/json",
         "expectedFlattenedData": [
+            {"location": "body.key", "value": "key"},
             {"location": "route.param1", "value": "value1"},
             {"location": "query.param1", "value": "value1"},
             {"location": "headers.header1", "value": "value1"},
@@ -41,6 +42,7 @@
         "body": "{\"key\":\"value\"}",
         "contentType": "application/json",
         "expectedFlattenedData": [
+            {"location": "body.key", "value": "key"},
             {"location": "route.param1", "value": "value1"},
             {"location": "query.param1", "value": "value1"},
             {"location": "headers.header1", "value": "value1"},
@@ -165,6 +167,7 @@
         "body": "--boundary\r\nContent-Disposition: form-data; name=\"jsonData\"\r\nContent-Type: application/json\r\n\r\n{\"key\":\"value\"}\r\n--boundary--",
         "contentType": "multipart/form-data; boundary=boundary",
         "expectedFlattenedData": [
+            {"location": "body.section.0.key", "value": "key"},
             {"location": "route.param1", "value": "value1"},
             {"location": "query.param1", "value": "value1"},
             {"location": "headers.header1", "value": "value1"},
@@ -332,6 +335,7 @@
         "body": "{\"key\":\"value\"}",
         "contentType": "application/json",
         "expectedFlattenedData": [
+            {"location": "body.key", "value": "key"},
             {"location": "route.param1", "value": "value1"},
             {"location": "query.param1", "value": "value1"},
             {"location": "query.param2", "value": "value2"},
@@ -385,6 +389,7 @@
         "body": "{\"key\":\"value\"}",
         "contentType": "application/json",
         "expectedFlattenedData": [
+            {"location": "body.key", "value": "key"},
             {"location": "route.param1", "value": "value1"},
             {"location": "query.param1", "value": "value1"},
             {"location": "headers.header1", "value": "value1"},
@@ -460,6 +465,7 @@
         "body": "{\"query\":\"value\"}",
         "contentType": "Application/JSON",
         "expectedFlattenedData": [
+            {"location": "body.query", "value": "query"},
             {"location": "body.query", "value": "value"}
         ],
         "expectedParsedBody": {
@@ -474,6 +480,7 @@
         "body": "{\"id\":\"42\"}",
         "contentType": "text/json",
         "expectedFlattenedData": [
+            {"location": "body.id", "value": "id"},
             {"location": "body.id", "value": "42"}
         ],
         "expectedParsedBody": {
@@ -488,6 +495,7 @@
         "body": "{\"id\":\"1\"}",
         "contentType": "application/vnd.api+json",
         "expectedFlattenedData": [
+            {"location": "body.id", "value": "id"},
             {"location": "body.id", "value": "1"}
         ],
         "expectedParsedBody": {
@@ -558,6 +566,7 @@
         "body": "--boundary\r\nContent-Disposition: form-data; name=\"jsonData\"\r\nContent-Type: application/json; charset=utf-8\r\n\r\n{\"key\":\"value\"}\r\n--boundary--",
         "contentType": "multipart/form-data; boundary=boundary",
         "expectedFlattenedData": [
+            {"location": "body.section.0.key", "value": "key"},
             {"location": "body.section.0.key", "value": "value"}
         ],
         "expectedParsedBody": {
@@ -624,6 +633,7 @@
             "body": "{\"file\":\"../appsettings.json\"}",
             "contentType": "application/json _",
             "expectedFlattenedData": [
+                {"location": "body.file", "value": "file"},
                 {"location": "body.file", "value": "../appsettings.json"}
             ],
             "expectedParsedBody": {
@@ -638,6 +648,7 @@
             "body": "{\"file\":\"../appsettings.json\"}",
             "contentType": "application /json _",
             "expectedFlattenedData": [
+                {"location": "body.file", "value": "file"},
                 {"location": "body.file", "value": "../appsettings.json"}
             ],
             "expectedParsedBody": {
@@ -692,6 +703,9 @@
         "body": "{\"file\":{\"name\":\"first\"},\"file.name\":\"literal\"}",
         "contentType": "application/json",
         "expectedFlattenedData": [
+            {"location": "body.file", "value": "file"},
+            {"location": "body.file.name", "value": "name"},
+            {"location": "body.file.name", "value": "file.name"},
             {"location": "body.file.name", "value": "first"},
             {"location": "body.file.name", "value": "literal"}
         ],
@@ -710,6 +724,9 @@
         "body": "{\"file.name\":\"literal\",\"file\":{\"name\":\"first\"}}",
         "contentType": "application/json",
         "expectedFlattenedData": [
+            {"location": "body.file.name", "value": "file.name"},
+            {"location": "body.file", "value": "file"},
+            {"location": "body.file.name", "value": "name"},
             {"location": "body.file.name", "value": "literal"},
             {"location": "body.file.name", "value": "first"}
         ],
@@ -728,6 +745,9 @@
         "body": "{\"file\":{\"name\":\"same\"},\"file.name\":\"same\"}",
         "contentType": "application/json",
         "expectedFlattenedData": [
+            {"location": "body.file", "value": "file"},
+            {"location": "body.file.name", "value": "name"},
+            {"location": "body.file.name", "value": "file.name"},
             {"location": "body.file.name", "value": "same"},
             {"location": "body.file.name", "value": "same"}
         ],
@@ -746,6 +766,8 @@
         "body": "{\"Name\":\"first\",\"name\":\"second\"}",
         "contentType": "application/json",
         "expectedFlattenedData": [
+            {"location": "body.Name", "value": "Name"},
+            {"location": "body.name", "value": "name"},
             {"location": "body.Name", "value": "first"},
             {"location": "body.name", "value": "second"}
         ],
@@ -887,5 +909,169 @@
             {"location": "body.file", "value": "../private/settings.json,safe.txt"}
         ],
         "expectedParsedBody": {"file": "%2e%2e%2fprivate%2fsettings.json,safe.txt"}
+    },
+    {
+        "routeParams": {},
+        "queryParams": {},
+        "headers": {},
+        "cookies": {},
+        "body": "{\"x' OR '1'='1\":\"benign\"}",
+        "contentType": "application/json",
+        "expectedFlattenedData": [
+            {"location": "body.x' OR '1'='1", "value": "x' OR '1'='1"},
+            {"location": "body.x' OR '1'='1", "value": "benign"}
+        ],
+        "expectedParsedBody": {"x' OR '1'='1": "benign"}
+    },
+    {
+        "routeParams": {},
+        "queryParams": {},
+        "headers": {},
+        "cookies": {},
+        "body": "{\"outer\":{\"\\u002e\\u002e/appsettings.json\":\"safe\"}}",
+        "contentType": "application/json",
+        "expectedFlattenedData": [
+            {"location": "body.outer", "value": "outer"},
+            {"location": "body.outer.../appsettings.json", "value": "../appsettings.json"},
+            {"location": "body.outer.../appsettings.json", "value": "safe"}
+        ],
+        "expectedParsedBody": {"outer": {"../appsettings.json": "safe"}}
+    },
+    {
+        "routeParams": {},
+        "queryParams": {},
+        "headers": {},
+        "cookies": {},
+        "body": "[{\"x' OR '1'='1\":null}]",
+        "contentType": "application/json",
+        "expectedFlattenedData": [
+            {"location": "body.0.x' OR '1'='1", "value": "x' OR '1'='1"},
+            {"location": "body.0.x' OR '1'='1", "value": ""}
+        ],
+        "expectedParsedBody": [{"x' OR '1'='1": null}]
+    },
+    {
+        "routeParams": {},
+        "queryParams": {},
+        "headers": {},
+        "cookies": {},
+        "body": "{\"objectKey\":{},\"arrayKey\":[]}",
+        "contentType": "application/json",
+        "expectedFlattenedData": [
+            {"location": "body.objectKey", "value": "objectKey"},
+            {"location": "body.arrayKey", "value": "arrayKey"}
+        ],
+        "expectedParsedBody": {"objectKey": {}, "arrayKey": []}
+    },
+    {
+        "routeParams": {},
+        "queryParams": {},
+        "headers": {},
+        "cookies": {},
+        "body": "{\"\":\"empty\",\"same\":\"same\",\"same\":\"second\"}",
+        "contentType": "application/json",
+        "expectedFlattenedData": [
+            {"location": "body.", "value": ""},
+            {"location": "body.", "value": "empty"},
+            {"location": "body.same", "value": "same"},
+            {"location": "body.same", "value": "same"},
+            {"location": "body.same", "value": "same"},
+            {"location": "body.same", "value": "second"}
+        ],
+        "expectedParsedBody": {"": "empty", "same": "second"}
+    },
+    {
+        "routeParams": {},
+        "queryParams": {},
+        "headers": {},
+        "cookies": {},
+        "body": "{\"%252e%252e%252fappsettings.json\":\"safe\"}",
+        "contentType": "application/json",
+        "expectedFlattenedData": [
+            {"location": "body.%252e%252e%252fappsettings.json", "value": "%252e%252e%252fappsettings.json"},
+            {"location": "body.%252e%252e%252fappsettings.json", "value": "safe"},
+            {"location": "body.%252e%252e%252fappsettings.json", "value": "../appsettings.json"}
+        ],
+        "expectedParsedBody": {"%252e%252e%252fappsettings.json": "safe"}
+    },
+    {
+        "routeParams": {},
+        "queryParams": {},
+        "headers": {},
+        "cookies": {},
+        "body": "--boundary\r\nContent-Disposition: form-data; name=\"jsonData\"\r\nContent-Type: application/json\r\n\r\n{\"x' OR '1'='1\":\"benign\"}\r\n--boundary--",
+        "contentType": "multipart/form-data; boundary=boundary",
+        "expectedFlattenedData": [
+            {"location": "body.section.0.x' OR '1'='1", "value": "x' OR '1'='1"},
+            {"location": "body.section.0.x' OR '1'='1", "value": "benign"}
+        ],
+        "expectedParsedBody": {"jsonData": {"x' OR '1'='1": "benign"}}
+    },
+    {
+        "routeParams": {},
+        "queryParams": {},
+        "headers": {},
+        "cookies": {},
+        "body": "[[{\"\\u002e\\u002e/appsettings.json\":\"safe\"}]]",
+        "contentType": "application/json",
+        "expectedFlattenedData": [
+            {"location": "body.0.0.../appsettings.json", "value": "../appsettings.json"},
+            {"location": "body.0.0.../appsettings.json", "value": "safe"}
+        ],
+        "expectedParsedBody": [[{"../appsettings.json": "safe"}]]
+    },
+    {
+        "routeParams": {},
+        "queryParams": {},
+        "headers": {},
+        "cookies": {},
+        "body": "[[\"first\",42,true,false,null,[\"last\"]]]",
+        "contentType": "application/json",
+        "expectedFlattenedData": [
+            {"location": "body.0.0", "value": "first"},
+            {"location": "body.0.1", "value": "42"},
+            {"location": "body.0.2", "value": "True"},
+            {"location": "body.0.3", "value": "False"},
+            {"location": "body.0.4", "value": ""},
+            {"location": "body.0.5.0", "value": "last"}
+        ],
+        "expectedParsedBody": [["first", 42, true, false, null, ["last"]]]
+    },
+    {
+        "routeParams": {},
+        "queryParams": {},
+        "headers": {},
+        "cookies": {},
+        "body": "\"x' OR '1'='1\"",
+        "contentType": "application/json",
+        "expectedFlattenedData": [
+            {"location": "body", "value": "x' OR '1'='1"}
+        ],
+        "expectedParsedBody": "x' OR '1'='1"
+    },
+    {
+        "routeParams": {},
+        "queryParams": {},
+        "headers": {},
+        "cookies": {},
+        "body": "\"%252e%252e%252fappsettings.json\"",
+        "contentType": "application/json",
+        "expectedFlattenedData": [
+            {"location": "body", "value": "%252e%252e%252fappsettings.json"},
+            {"location": "body", "value": "../appsettings.json"}
+        ],
+        "expectedParsedBody": "%252e%252e%252fappsettings.json"
+    },
+    {
+        "routeParams": {},
+        "queryParams": {},
+        "headers": {},
+        "cookies": {},
+        "body": "--boundary\r\nContent-Disposition: form-data; name=\"jsonData\"\r\nContent-Type: application/json\r\n\r\n\"../appsettings.json\"\r\n--boundary--",
+        "contentType": "multipart/form-data; boundary=boundary",
+        "expectedFlattenedData": [
+            {"location": "body.section.0", "value": "../appsettings.json"}
+        ],
+        "expectedParsedBody": {"jsonData": "../appsettings.json"}
     }
 ]
