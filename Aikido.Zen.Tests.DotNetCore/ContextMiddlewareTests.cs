@@ -406,7 +406,8 @@ namespace Aikido.Zen.Tests.DotNetCore
                         Assert.That(context.Headers["X-Custom"], Is.EqualTo("first"));
                         Assert.That(context.Headers["X-Custom[1]"], Is.EqualTo("second"));
                         Assert.That(context.Cookies["session"], Is.EqualTo("session-1"));
-                        Assert.That(context.ParsedUserInput.Single(input => input.Location == "body.name").Value, Is.EqualTo("test"));
+                        Assert.That(context.ParsedUserInput.Where(input => input.Location == "body.name").Select(input => input.Value),
+                            Is.EquivalentTo(new[] { "name", "test" }));
                         Assert.That(context.ParsedUserInput.Single(input => input.Location == "query.q").Value, Is.EqualTo("search"));
                         Assert.That(context.ParsedUserInput.Single(input => input.Location == "headers.X-Custom").Value, Is.EqualTo("first,second"));
                         Assert.That(((Dictionary<string, object>)context.ParsedBody)["name"], Is.EqualTo("test"));

@@ -7,7 +7,7 @@ namespace Aikido.Zen.Core.Helpers
     /// <summary>
     /// Helper class for processing JSON data.
     /// </summary>
-    public static class JsonHelper
+    internal static class JsonHelper
     {
         /// <summary>
         /// Flattens a JSON element into a list of values and dot-notation locations.
@@ -15,7 +15,7 @@ namespace Aikido.Zen.Core.Helpers
         /// <param name="result">The list to store flattened data.</param>
         /// <param name="element">The JSON element to flatten.</param>
         /// <param name="prefix">The prefix for input locations.</param>
-        public static void FlattenJson(List<UserInput> result, JsonElement element, string prefix)
+        internal static void FlattenJson(List<UserInput> result, JsonElement element, string prefix)
         {
             if (element.ValueKind == JsonValueKind.Array)
             {
@@ -23,14 +23,7 @@ namespace Aikido.Zen.Core.Helpers
                 foreach (var item in element.EnumerateArray())
                 {
                     string arrayPrefix = string.IsNullOrEmpty(prefix) ? index.ToString() : $"{prefix}.{index}";
-                    if (item.ValueKind == JsonValueKind.Object)
-                    {
-                        FlattenJson(result, item, arrayPrefix);
-                    }
-                    else
-                    {
-                        result.Add(new UserInput(arrayPrefix, item.ToString()));
-                    }
+                    FlattenJson(result, item, arrayPrefix);
                     index++;
                 }
             }
@@ -39,25 +32,14 @@ namespace Aikido.Zen.Core.Helpers
                 foreach (var property in element.EnumerateObject())
                 {
                     string key = string.IsNullOrEmpty(prefix) ? property.Name : $"{prefix}.{property.Name}";
-                    if (property.Value.ValueKind == JsonValueKind.Object)
-                    {
-                        FlattenJson(result, property.Value, key);
-                    }
-                    else if (property.Value.ValueKind == JsonValueKind.Array)
-                    {
-                        FlattenJson(result, property.Value, key);
-                    }
-                    else
-                    {
-                        result.Add(new UserInput(key, property.Value.ToString()));
-                    }
+                    result.Add(new UserInput(key, property.Name));
+                    FlattenJson(result, property.Value, key);
                 }
             }
             else
             {
                 // Remaining JsonValueKind values are String, Number, True, False, or Null.
-                string key = string.IsNullOrEmpty(prefix) ? "value" : $"{prefix}.value";
-                result.Add(new UserInput(key, element.ToString()));
+                result.Add(new UserInput(prefix ?? string.Empty, element.ToString()));
             }
         }
 
@@ -66,7 +48,7 @@ namespace Aikido.Zen.Core.Helpers
         /// </summary>
         /// <param name="element">The JsonElement to convert.</param>
         /// <returns>The converted object.</returns>
-        public static object ToJsonObj(JsonElement element)
+        internal static object ToJsonObj(JsonElement element)
         {
             switch (element.ValueKind)
             {
