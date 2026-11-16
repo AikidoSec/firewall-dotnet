@@ -190,23 +190,11 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
 
         private static string GetClientIp(HttpContext httpContext)
         {
-            if (EnvironmentHelper.TrustProxy)
-            {
-                var headerVarName = $"HTTP_{EnvironmentHelper.ClientIpHeader.ToUpper().Replace("-", "_")}";
-                var ipHeader = httpContext.Request.ServerVariables[headerVarName];
-                var ipList = IPHeaderHelper.ParseIpHeader(ipHeader);
-
-                // Return the first valid non-private IP address
-                foreach (var ip in ipList)
-                {
-                    if (IPHelper.IsValidIp(ip) && !IPHelper.IsPrivateOrLocalIp(ip))
-                    {
-                        return ip;
-                    }
-                }
-            }
-
-            return httpContext.Request.ServerVariables["REMOTE_ADDR"];
+            var serverVariables = httpContext.Request.ServerVariables;
+            var ipHeader = IPHeaderHelper.ShouldTrustProxy(EnvironmentHelper.TrustProxy)
+                ? serverVariables[$"HTTP_{EnvironmentHelper.ClientIpHeader.ToUpper().Replace("-", "_")}"]
+                : null;
+            return IPHeaderHelper.GetClientIpFromHeader(ipHeader) ?? serverVariables["REMOTE_ADDR"];
         }
 
         /// <summary>

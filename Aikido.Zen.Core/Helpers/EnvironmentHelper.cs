@@ -47,7 +47,7 @@ namespace Aikido.Zen.Core.Helpers
         /// Determines whether to trust the X-Forwarded-For header.
         /// Should be set to false if the application is not behind a reverse proxy.
         /// </summary>
-        internal static bool TrustProxy => GetBooleanValue("AIKIDO_TRUST_PROXY", true);
+        internal static string TrustProxy => Environment.GetEnvironmentVariable("AIKIDO_TRUST_PROXY");
 
         /// <summary>
         /// Determines whether to trust the X-Forwarded-For header.

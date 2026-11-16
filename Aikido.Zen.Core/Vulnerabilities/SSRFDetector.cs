@@ -226,7 +226,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
 
         internal static bool IsRequestToItself(Uri serverUri, string outboundHostname, int? outboundPort)
         {
-            if (!EnvironmentHelper.TrustProxy)
+            if (!IPHeaderHelper.ShouldTrustProxy(EnvironmentHelper.TrustProxy))
             {
                 return false;
             }
