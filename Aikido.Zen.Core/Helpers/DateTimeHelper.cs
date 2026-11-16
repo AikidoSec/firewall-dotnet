@@ -5,7 +5,7 @@ namespace Aikido.Zen.Core.Helpers
     /// <summary>
     /// Helper class for DateTime related operations.
     /// </summary>
-    public class DateTimeHelper
+    internal class DateTimeHelper
     {
         /// <summary>
         /// Gets the current UTC time as Unix timestamp in milliseconds.

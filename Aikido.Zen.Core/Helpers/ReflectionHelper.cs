@@ -9,7 +9,7 @@ namespace Aikido.Zen.Core.Helpers
     /// <summary>
     /// Helper class for reflection-related operations.
     /// </summary>
-    public static class ReflectionHelper
+    internal static class ReflectionHelper
     {
         private static IDictionary<string, Type> _types;
         private static IDictionary<string, Assembly> _assemblies;

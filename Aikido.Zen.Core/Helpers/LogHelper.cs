@@ -9,7 +9,7 @@ namespace Aikido.Zen.Core.Helpers
     /// <summary>
     /// Helper class for logging operations in the Aikido Zen system.
     /// </summary>
-    public static class LogHelper
+    internal static class LogHelper
     {
         private static readonly int MaxLogs = 1000;
         private static readonly TimeSpan LogTimeSpan = TimeSpan.FromMinutes(60);

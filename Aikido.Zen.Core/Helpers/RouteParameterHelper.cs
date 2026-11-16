@@ -9,7 +9,7 @@ namespace Aikido.Zen.Core.Helpers
     /// <summary>
     /// Helper class for detecting and converting URL segments into parameterized routes
     /// </summary>
-    public static class RouteParameterHelper
+    internal static class RouteParameterHelper
     {
         private static readonly char[] LowercaseChars = "abcdefghijklmnopqrstuvwxyz".ToCharArray();
         private static readonly char[] UppercaseChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".ToCharArray();

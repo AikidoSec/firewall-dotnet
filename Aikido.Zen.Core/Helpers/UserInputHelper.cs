@@ -9,7 +9,7 @@ namespace Aikido.Zen.Core.Helpers
     /// <summary>
     /// Helper class for processing user input paths.
     /// </summary>
-    public static class UserInputHelper
+    internal static class UserInputHelper
     {
         private const int MaxDecodeUriPasses = 2;
 

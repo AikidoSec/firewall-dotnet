@@ -6,7 +6,7 @@ namespace Aikido.Zen.Core.Helpers
     /// <summary>
     /// Helper class for resolving LLM method results from various types and wrappers
     /// </summary>
-    public static class LLMResultHelper
+    internal static class LLMResultHelper
     {
         /// <summary>
         /// Resolves the actual result from various wrapper types commonly used in LLM operations

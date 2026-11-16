@@ -2,7 +2,7 @@ using System;
 
 namespace Aikido.Zen.Core.Helpers
 {
-    public static class StringHelper
+    internal static class StringHelper
     {
         public static bool Contains(this ReadOnlySpan<char> source, ReadOnlySpan<char> value)
         {

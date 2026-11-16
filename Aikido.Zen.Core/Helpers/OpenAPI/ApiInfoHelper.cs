@@ -8,7 +8,7 @@ namespace Aikido.Zen.Core.Helpers.OpenAPI
     /// <summary>
     /// Helper class for handling API information
     /// </summary>
-    public static class ApiInfoHelper
+    internal static class ApiInfoHelper
     {
         /// <summary>
         /// Get API information from a context

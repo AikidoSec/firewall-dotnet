@@ -14,7 +14,7 @@ namespace Aikido.Zen.Core.Helpers
     /// <summary>
     /// Helper class for implementing rate limiting functionality
     /// </summary>
-    public static class RateLimitingHelper
+    internal static class RateLimitingHelper
     {
         private static LRUCache<string, List<long>> RateLimitedItems = new LRUCache<string, List<long>>(10000, 120 * 60 * 1000); // 10000 items, 120 minutes TTL
         private static readonly object _lock = new object();

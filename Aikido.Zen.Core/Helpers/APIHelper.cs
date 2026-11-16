@@ -5,7 +5,7 @@ using Aikido.Zen.Core.Api;
 
 namespace Aikido.Zen.Core.Helpers
 {
-    public class APIHelper
+    internal class APIHelper
     {
         public static HttpRequestMessage CreateRequest(string token, Uri baseUrl, string path, HttpMethod method, HttpContent content = null)
         {

@@ -7,7 +7,7 @@ using Aikido.Zen.Core.Models;
 
 namespace Aikido.Zen.Core.Helpers
 {
-    public static class RouteHelper
+    internal static class RouteHelper
     {
 
         private static readonly string[] ExcludedMethods = { "OPTIONS", "HEAD" };

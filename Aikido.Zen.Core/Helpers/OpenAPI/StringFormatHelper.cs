@@ -7,7 +7,7 @@ namespace Aikido.Zen.Core.Helpers.OpenAPI
     /// <summary>
     /// Helper class for determining string formats according to OpenAPI specification
     /// </summary>
-    public static class StringFormatHelper
+    internal static class StringFormatHelper
     {
         private static readonly HashSet<string> IndicationChars = new HashSet<string> { "-", ":", "@", ".", "://" };
 

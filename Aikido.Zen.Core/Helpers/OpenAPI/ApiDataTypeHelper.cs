@@ -5,7 +5,7 @@ namespace Aikido.Zen.Core.Helpers.OpenAPI
     /// <summary>
     /// Helper class for determining API data types
     /// </summary>
-    public static class ApiDataTypeHelper
+    internal static class ApiDataTypeHelper
     {
         /// <summary>
         /// Get the body data type based on content type header

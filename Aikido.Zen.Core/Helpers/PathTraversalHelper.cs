@@ -7,7 +7,7 @@ namespace Aikido.Zen.Core.Helpers
     /// <summary>
     /// A helper class for path traversal detection
     /// </summary>
-    public class PathTraversalHelper
+    internal class PathTraversalHelper
     {
         internal static InspectionResult DetectPathTraversal(string path, Context context)
         {

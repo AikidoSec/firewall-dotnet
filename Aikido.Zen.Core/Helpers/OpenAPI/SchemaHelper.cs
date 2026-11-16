@@ -10,7 +10,7 @@ namespace Aikido.Zen.Core.Helpers.OpenAPI
     /// <summary>
     /// Helper class for merging schemas and generating data schemas
     /// </summary>
-    public static class SchemaHelper
+    internal static class SchemaHelper
     {
         private const int MaxDepth = 20;
         private const int MaxProperties = 100;

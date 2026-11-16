@@ -4,7 +4,7 @@ using System.Net;
 
 namespace Aikido.Zen.Core.Helpers
 {
-    public class IPHeaderHelper
+    internal class IPHeaderHelper
     {
         /// <summary>
         /// Parses the X-Forwarded-For header or similar headers to extract IP addresses.

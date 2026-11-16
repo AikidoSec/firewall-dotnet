@@ -8,7 +8,7 @@ using System.Text.RegularExpressions;
 namespace Aikido.Zen.Core.Helpers
 
 {
-    public static class StackTraceHelper
+    internal static class StackTraceHelper
     {
         /// <summary>
         /// Returns a cleaned and truncated stack trace.

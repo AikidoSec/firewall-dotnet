@@ -5,7 +5,7 @@ using System;
 
 namespace Aikido.Zen.Core.Helpers
 {
-    public class IPHelper
+    internal class IPHelper
     {
         private static readonly IPRange _privateIpRanges = InitializePrivateRanges();
 

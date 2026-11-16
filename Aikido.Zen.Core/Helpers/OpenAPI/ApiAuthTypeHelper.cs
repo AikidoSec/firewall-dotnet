@@ -7,7 +7,7 @@ namespace Aikido.Zen.Core.Helpers.OpenAPI
     /// <summary>
     /// Helper class for handling API authentication types
     /// </summary>
-    public static class ApiAuthTypeHelper
+    internal static class ApiAuthTypeHelper
     {
         private static readonly string[] CommonApiKeyHeaderNames = new string[]
         {

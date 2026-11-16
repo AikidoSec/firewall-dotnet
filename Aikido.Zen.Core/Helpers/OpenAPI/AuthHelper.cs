@@ -7,7 +7,7 @@ namespace Aikido.Zen.Core.Helpers.OpenAPI
     /// <summary>
     /// Helper class for merging authentication types
     /// </summary>
-    public static class AuthHelper
+    internal static class AuthHelper
     {
         /// <summary>
         /// Merge two lists of API authentication types

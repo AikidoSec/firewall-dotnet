@@ -5,7 +5,7 @@ namespace Aikido.Zen.Core.Helpers
     /// <summary>
     /// Helper class for accessing environment variables related to the Aikido Zen system.
     /// </summary>
-    public static class EnvironmentHelper
+    internal static class EnvironmentHelper
     {
         /// <summary>
         /// Gets the Aikido token from the environment variables.

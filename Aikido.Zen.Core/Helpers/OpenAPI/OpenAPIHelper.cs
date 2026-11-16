@@ -6,7 +6,7 @@ namespace Aikido.Zen.Core.Helpers.OpenAPI
     /// <summary>
     /// Helper class for OpenAPI specification
     /// </summary>
-    public static class OpenAPIHelper
+    internal static class OpenAPIHelper
     {
         private const int MaxDepth = 20;
         private const int MaxProperties = 100;
