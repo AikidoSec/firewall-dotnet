@@ -6,6 +6,19 @@ namespace Aikido.Zen.Core.Helpers
 {
     internal class IPHeaderHelper
     {
+        internal static string GetClientIpFromHeader(string header)
+        {
+            foreach (var ip in ParseIpHeader(header))
+            {
+                if (IPHelper.IsValidIp(ip) && !IPHelper.IsPrivateOrLocalIp(ip))
+                {
+                    return ip;
+                }
+            }
+
+            return null;
+        }
+
         /// <summary>
         /// Parses the X-Forwarded-For header or similar headers to extract IP addresses.
         /// Removes any port numbers and normalizes IPv6 addresses by removing brackets.

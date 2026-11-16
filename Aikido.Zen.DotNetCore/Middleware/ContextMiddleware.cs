@@ -235,34 +235,16 @@ namespace Aikido.Zen.DotNetCore.Middleware
         /// <returns>The client IP address as a string</returns>
         private static string GetClientIp(HttpContext httpContext)
         {
-            // RemoteIpAddress was almost good enough to return directly, as it already contains either:
-            //   - the regular connection remote ip, or
-            //   - the last ip entry in the X-Forwarded-For header (which also gets removed from the X-Forwarded-For list)
-            // However, the standard specifies the client's ip to be the first entry in the X-Forwarded-For list.
-
-            if (EnvironmentHelper.TrustProxy)
+            string ipHeader = null;
+            if (EnvironmentHelper.TrustProxy &&
+                httpContext.Request?.Headers?.TryGetValue(EnvironmentHelper.ClientIpHeader, out var ipStringValues) == true)
             {
-                // Usually X-Forwarded-For, but can be set to something else via AIKIDO_CLIENT_IP_HEADER
-                var headerVarName = EnvironmentHelper.ClientIpHeader;
-                if (httpContext.Request?.Headers?.TryGetValue(headerVarName, out var ipStringValues) == true)
-                {
-                    // X-Forwarded-For can contain multiple IPs
-                    var ipHeader = ipStringValues.ToString();
-                    var ipList = IPHeaderHelper.ParseIpHeader(ipHeader);
-
-                    foreach (var ip in ipList)
-                    {
-                        // Return the first valid non-private IP address
-                        if (IPHelper.IsValidIp(ip) && !IPHelper.IsPrivateOrLocalIp(ip))
-                        {
-                            return ip;
-                        }
-                    }
-                }
+                ipHeader = ipStringValues.ToString();
             }
 
-            // No X-Forwarded-For header, or X-Forwarded-For is present and ASP NET already popped the last list entry in RemoteIpAddress
-            return httpContext.Connection?.RemoteIpAddress?.ToString() ?? string.Empty;
+            return IPHeaderHelper.GetClientIpFromHeader(ipHeader)
+                ?? httpContext.Connection?.RemoteIpAddress?.ToString()
+                ?? string.Empty;
         }
 
         /// <summary>
