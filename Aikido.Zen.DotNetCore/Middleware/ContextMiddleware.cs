@@ -236,7 +236,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
         private static string GetClientIp(HttpContext httpContext)
         {
             string ipHeader = null;
-            if (EnvironmentHelper.TrustProxy &&
+            if (IPHeaderHelper.ShouldTrustProxy(EnvironmentHelper.TrustProxy) &&
                 httpContext.Request?.Headers?.TryGetValue(EnvironmentHelper.ClientIpHeader, out var ipStringValues) == true)
             {
                 ipHeader = ipStringValues.ToString();

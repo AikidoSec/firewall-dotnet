@@ -191,7 +191,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
         private static string GetClientIp(HttpContext httpContext)
         {
             var serverVariables = httpContext.Request.ServerVariables;
-            var ipHeader = EnvironmentHelper.TrustProxy
+            var ipHeader = IPHeaderHelper.ShouldTrustProxy(EnvironmentHelper.TrustProxy)
                 ? serverVariables[$"HTTP_{EnvironmentHelper.ClientIpHeader.ToUpper().Replace("-", "_")}"]
                 : null;
             return IPHeaderHelper.GetClientIpFromHeader(ipHeader) ?? serverVariables["REMOTE_ADDR"];
