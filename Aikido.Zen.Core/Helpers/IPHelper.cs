@@ -5,7 +5,7 @@ using System;
 
 namespace Aikido.Zen.Core.Helpers
 {
-    public class IPHelper
+    internal class IPHelper
     {
         private static readonly IPRange _privateIpRanges = InitializePrivateRanges();
 
@@ -63,7 +63,7 @@ namespace Aikido.Zen.Core.Helpers
             return ranges;
         }
 
-        public static string Server
+        internal static string Server
         {
             get
             {
@@ -86,7 +86,7 @@ namespace Aikido.Zen.Core.Helpers
         /// </summary>
         /// <param name="ip">The IP address to check.</param>
         /// <returns>True if the IP address is valid, false otherwise.</returns>
-        public static bool IsValidIp(string ip)
+        internal static bool IsValidIp(string ip)
         {
             return IPAddress.TryParse(ip, out _);
         }
@@ -97,7 +97,7 @@ namespace Aikido.Zen.Core.Helpers
         /// <param name="startIp">The start IP address.</param>
         /// <param name="endIp">The end IP address.</param>
         /// <returns>A list of CIDR string representations of the IP address range.</returns>
-        public static List<string> ToCidrString(string startIp, string endIp = null)
+        internal static List<string> ToCidrString(string startIp, string endIp = null)
         {
             if (endIp == null)
             {
@@ -145,7 +145,7 @@ namespace Aikido.Zen.Core.Helpers
         /// </summary>
         /// <param name="ip">The IP address to check.</param>
         /// <returns>True if the IP address is a private or local IP address, false otherwise.</returns>
-        public static bool IsPrivateOrLocalIp(string ip)
+        internal static bool IsPrivateOrLocalIp(string ip)
         {
             if (!IPAddress.TryParse(ip, out var parsedIp))
             {
@@ -161,7 +161,7 @@ namespace Aikido.Zen.Core.Helpers
         /// </summary>
         /// <param name="ip">The IPv4 address to map.</param>
         /// <returns>The mapped IPv6 address.</returns>
-        public static string IPv4ToIPv6(string ip)
+        internal static string IPv4ToIPv6(string ip)
         {
             if (!ip.Contains("/"))
             {

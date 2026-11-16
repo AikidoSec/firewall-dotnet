@@ -14,7 +14,7 @@ namespace Aikido.Zen.Core.Helpers
     /// <summary>
     /// Helper class for implementing rate limiting functionality
     /// </summary>
-    public static class RateLimitingHelper
+    internal static class RateLimitingHelper
     {
         private static LRUCache<string, List<long>> RateLimitedItems = new LRUCache<string, List<long>>(10000, 120 * 60 * 1000); // 10000 items, 120 minutes TTL
         private static readonly object _lock = new object();
@@ -26,7 +26,7 @@ namespace Aikido.Zen.Core.Helpers
         /// <param name="windowSizeInMS">Time window in milliseconds for rate limiting</param>
         /// <param name="maxRequests">Maximum number of requests allowed within the time window</param>
         /// <returns>True if request is allowed, false if it should be rate limited</returns>
-        public static bool IsAllowed(string key, int windowSizeInMS, int maxRequests)
+        internal static bool IsAllowed(string key, int windowSizeInMS, int maxRequests)
         {
             if (maxRequests <= 0) return false;
             if (windowSizeInMS <= 0) return true;

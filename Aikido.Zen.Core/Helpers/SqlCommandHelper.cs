@@ -7,7 +7,7 @@ namespace Aikido.Zen.Core.Helpers
     /// <summary>
     /// A helper class for SQL commands
     /// </summary>
-    public class SqlCommandHelper
+    internal class SqlCommandHelper
     {
         internal static InspectionResult DetectSQLInjection(string commandText, SQLDialect dialect, Context context)
         {

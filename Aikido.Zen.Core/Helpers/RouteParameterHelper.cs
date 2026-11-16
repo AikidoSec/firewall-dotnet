@@ -9,7 +9,7 @@ namespace Aikido.Zen.Core.Helpers
     /// <summary>
     /// Helper class for detecting and converting URL segments into parameterized routes
     /// </summary>
-    public static class RouteParameterHelper
+    internal static class RouteParameterHelper
     {
         private static readonly char[] LowercaseChars = "abcdefghijklmnopqrstuvwxyz".ToCharArray();
         private static readonly char[] UppercaseChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".ToCharArray();
@@ -33,7 +33,7 @@ namespace Aikido.Zen.Core.Helpers
         /// </summary>
         /// <param name="url">The URL to convert into a parameterized route</param>
         /// <returns>A parameterized route string, or null if the URL cannot be parsed</returns>
-        public static string BuildRouteFromUrl(string url)
+        internal static string BuildRouteFromUrl(string url)
         {
             try
             {
@@ -66,7 +66,7 @@ namespace Aikido.Zen.Core.Helpers
         /// <summary>
         /// Determines if a string appears to be a secret based on character composition and patterns
         /// </summary>
-        public static bool LooksLikeASecret(string str)
+        internal static bool LooksLikeASecret(string str)
         {
             if (str.Length <= MinimumSecretLength)
                 return false;

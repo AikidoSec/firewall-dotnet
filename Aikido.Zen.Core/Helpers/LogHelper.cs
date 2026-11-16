@@ -9,7 +9,7 @@ namespace Aikido.Zen.Core.Helpers
     /// <summary>
     /// Helper class for logging operations in the Aikido Zen system.
     /// </summary>
-    public static class LogHelper
+    internal static class LogHelper
     {
         private static readonly int MaxLogs = 1000;
         private static readonly TimeSpan LogTimeSpan = TimeSpan.FromMinutes(60);
@@ -65,7 +65,7 @@ namespace Aikido.Zen.Core.Helpers
         /// </summary>
         /// <param name="logger">The logger instance to use.</param>
         /// <param name="message">The message to log.</param>
-        public static void DebugLog(ILogger logger, string message) => DebugLog(logger, null, message);
+        internal static void DebugLog(ILogger logger, string message) => DebugLog(logger, null, message);
 
         /// <summary>
         /// Logs a debug message with an exception if debugging is enabled, after sanitizing the message.
@@ -73,7 +73,7 @@ namespace Aikido.Zen.Core.Helpers
         /// <param name="logger">The logger instance to use.</param>
         /// <param name="exception">The exception associated with the debug message, if any.</param>
         /// <param name="message">The message to log.</param>
-        public static void DebugLog(ILogger logger, Exception exception, string message)
+        internal static void DebugLog(ILogger logger, Exception exception, string message)
         {
             if (EnvironmentHelper.IsDebugging)
             {
@@ -91,7 +91,7 @@ namespace Aikido.Zen.Core.Helpers
         /// </summary>
         /// <param name="logger">The logger instance to use.</param>
         /// <param name="message">The message to log.</param>
-        public static void ErrorLog(ILogger logger, string message) => ErrorLog(logger, null, message);
+        internal static void ErrorLog(ILogger logger, string message) => ErrorLog(logger, null, message);
 
         /// <summary>
         /// Logs an error message, after sanitizing the message and applying rate limiting.
@@ -99,7 +99,7 @@ namespace Aikido.Zen.Core.Helpers
         /// <param name="logger">The logger instance to use.</param>
         /// <param name="exception">The exception associated with the error, if any.</param>
         /// <param name="message">The message to log.</param>
-        public static void ErrorLog(ILogger logger, Exception exception, string message)
+        internal static void ErrorLog(ILogger logger, Exception exception, string message)
         {
             // Sanitize the message to prevent log injection
             string sanitizedMessage = SanitizeMessage(message, exception);
@@ -112,7 +112,7 @@ namespace Aikido.Zen.Core.Helpers
         /// </summary>
         /// <param name="logger">The logger instance to use.</param>
         /// <param name="message">The message to log.</param>
-        public static void WarningLog(ILogger logger, string message) => WarningLog(logger, null, message);
+        internal static void WarningLog(ILogger logger, string message) => WarningLog(logger, null, message);
 
         /// <summary>
         /// Logs a warning message, after sanitizing the message.
@@ -120,7 +120,7 @@ namespace Aikido.Zen.Core.Helpers
         /// <param name="logger">The logger instance to use.</param>
         /// <param name="exception">The exception associated with the warning, if any.</param>
         /// <param name="message">The message to log.</param>
-        public static void WarningLog(ILogger logger, Exception exception, string message)
+        internal static void WarningLog(ILogger logger, Exception exception, string message)
         {
             // Sanitize the message to prevent log injection
             string sanitizedMessage = SanitizeMessage(message, exception);
@@ -133,7 +133,7 @@ namespace Aikido.Zen.Core.Helpers
         /// </summary>
         /// <param name="logger">The logger instance to use for the first occurrence.</param>
         /// <param name="message">A fixed message; each distinct value is retained for the process lifetime.</param>
-        public static void WarningLogOnce(ILogger logger, string message)
+        internal static void WarningLogOnce(ILogger logger, string message)
         {
             if (_loggedWarnings.TryAdd(message, 0))
             {
@@ -146,7 +146,7 @@ namespace Aikido.Zen.Core.Helpers
         /// </summary>
         /// <param name="logger">The logger instance to use.</param>
         /// <param name="message">The message to log.</param>
-        public static void InfoLog(ILogger logger, string message)
+        internal static void InfoLog(ILogger logger, string message)
         {
             // Sanitize the message to prevent log injection
             string sanitizedMessage = SanitizeMessage(message);
@@ -162,7 +162,7 @@ namespace Aikido.Zen.Core.Helpers
         /// </summary>
         /// <param name="logger">The logger instance to use.</param>
         /// <param name="message">The message to log, typically detailing an attack attempt or security event.</param>
-        public static void AttackLog(ILogger logger, string message)
+        internal static void AttackLog(ILogger logger, string message)
         {
             if (ShouldLog())
             {
@@ -175,7 +175,7 @@ namespace Aikido.Zen.Core.Helpers
         /// </summary>
         /// <param name="message">The message to sanitize.</param>
         /// <returns>The sanitized message.</returns>
-        public static string SanitizeMessage(string message)
+        internal static string SanitizeMessage(string message)
         {
             // if log does not start with "AIKIDO: " then add it
             if (!message.StartsWith("AIKIDO: "))
