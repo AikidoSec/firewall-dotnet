@@ -28,7 +28,7 @@ namespace Aikido.Zen.Core.Helpers
         /// <param name="methodName">The name of the method to get from the type.</param>
         /// <param name="parameterTypeNames">The names of the parameter types for the method.</param>
         /// <returns>The MethodInfo of the specified method, or null if not found.</returns>
-        public static MethodInfo GetMethodFromAssembly(string assemblyName, string typeName, string methodName, params string[] parameterTypeNames)
+        internal static MethodInfo GetMethodFromAssembly(string assemblyName, string typeName, string methodName, params string[] parameterTypeNames)
         {
             // Check if assembly name is null or empty
             if (string.IsNullOrEmpty(assemblyName))
@@ -239,7 +239,7 @@ namespace Aikido.Zen.Core.Helpers
             return dictionary;
         }
 
-        public static void ClearCache()
+        internal static void ClearCache()
         {
             _types.Clear();
             _assemblies.Clear();

@@ -25,7 +25,7 @@ namespace Aikido.Zen.Core.Helpers.OpenAPI
         /// <param name="first">The first schema to merge</param>
         /// <param name="second">The second schema to merge</param>
         /// <returns>A merged schema combining both input schemas</returns>
-        public static DataSchema MergeDataSchemas(DataSchema first, DataSchema second)
+        internal static DataSchema MergeDataSchemas(DataSchema first, DataSchema second)
         {
             if (first == null)
                 return second;
@@ -89,7 +89,7 @@ namespace Aikido.Zen.Core.Helpers.OpenAPI
         /// <param name="data">The data to analyze</param>
         /// <param name="depth">Current recursion depth</param>
         /// <returns>A DataSchema describing the data structure</returns>
-        public static DataSchema GetDataSchema(object data, int depth = 0)
+        internal static DataSchema GetDataSchema(object data, int depth = 0)
         {
             var visited = new HashSet<object>(_referenceEqualityComparer);
 

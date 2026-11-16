@@ -13,7 +13,7 @@ namespace Aikido.Zen.Core.Helpers
         /// </summary>
         /// <param name="result">The result object to resolve</param>
         /// <returns>The resolved result object</returns>
-        public static object ResolveResult(object result)
+        internal static object ResolveResult(object result)
         {
             if (result == null)
                 return null;

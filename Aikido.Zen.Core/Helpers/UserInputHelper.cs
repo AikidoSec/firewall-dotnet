@@ -17,7 +17,7 @@ namespace Aikido.Zen.Core.Helpers
         /// Processes all values and adds URI decoded variants where applicable (e.g. who%61mi => whoami).
         /// </summary>
         /// <param name="values">The input values to process.</param>
-        public static void ProcessUriValues(List<UserInput> values)
+        internal static void ProcessUriValues(List<UserInput> values)
         {
             if (values == null || values.Count == 0)
             {
@@ -40,7 +40,7 @@ namespace Aikido.Zen.Core.Helpers
         /// </summary>
         /// <param name="key">The key to analyze.</param>
         /// <returns>The source of the user input.</returns>
-        public static Source GetAttackSourceFromUserInputKey(string key)
+        internal static Source GetAttackSourceFromUserInputKey(string key)
         {
             key = key.ToLower();
 
@@ -63,7 +63,7 @@ namespace Aikido.Zen.Core.Helpers
             return Source.Body;
         }
 
-        public static string GetAttackPathFromUserInputKey(string key)
+        internal static string GetAttackPathFromUserInputKey(string key)
         {
             if (string.IsNullOrWhiteSpace(key))
             {
@@ -105,7 +105,7 @@ namespace Aikido.Zen.Core.Helpers
         /// </summary>
         /// <param name="queryParams">The query parameters dictionary.</param>
         /// <param name="result">The list to store processed data.</param>
-        public static void ProcessQueryParameters(IDictionary<string, string> queryParams, List<UserInput> result)
+        internal static void ProcessQueryParameters(IDictionary<string, string> queryParams, List<UserInput> result)
         {
             foreach (var query in queryParams)
             {
@@ -118,7 +118,7 @@ namespace Aikido.Zen.Core.Helpers
         /// </summary>
         /// <param name="routeParams">The route parameters dictionary.</param>
         /// <param name="result">The list to store processed data.</param>
-        public static void ProcessRouteParameters(IDictionary<string, string> routeParams, List<UserInput> result)
+        internal static void ProcessRouteParameters(IDictionary<string, string> routeParams, List<UserInput> result)
         {
             foreach (var routeParam in routeParams)
             {
@@ -131,7 +131,7 @@ namespace Aikido.Zen.Core.Helpers
         /// </summary>
         /// <param name="headers">The headers dictionary.</param>
         /// <param name="result">The list to store processed data.</param>
-        public static void ProcessHeaders(IDictionary<string, string> headers, List<UserInput> result)
+        internal static void ProcessHeaders(IDictionary<string, string> headers, List<UserInput> result)
         {
             foreach (var header in headers)
             {
@@ -144,7 +144,7 @@ namespace Aikido.Zen.Core.Helpers
         /// </summary>
         /// <param name="cookies">The cookies dictionary.</param>
         /// <param name="result">The list to store processed data.</param>
-        public static void ProcessCookies(IDictionary<string, string> cookies, List<UserInput> result)
+        internal static void ProcessCookies(IDictionary<string, string> cookies, List<UserInput> result)
         {
             foreach (var cookie in cookies)
             {
@@ -158,7 +158,7 @@ namespace Aikido.Zen.Core.Helpers
         /// <param name="contentType">The content type to check.</param>
         /// <param name="boundary">The boundary string extracted from the content type.</param>
         /// <returns>True if the content type is multipart, false otherwise.</returns>
-        public static bool IsMultipart(string contentType, out string boundary)
+        internal static bool IsMultipart(string contentType, out string boundary)
         {
             bool isMultipart = MediaTypeHeaderValue.TryParse(contentType, out var parsedContentType) && parsedContentType.MediaType.Equals("multipart/form-data", StringComparison.OrdinalIgnoreCase);
             if (!isMultipart)

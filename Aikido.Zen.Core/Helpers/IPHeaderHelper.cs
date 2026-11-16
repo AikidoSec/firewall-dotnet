@@ -11,7 +11,7 @@ namespace Aikido.Zen.Core.Helpers
         /// Removes any port numbers and normalizes IPv6 addresses by removing brackets.
         /// Does not validate the IP addresses
         /// </summary>
-        public static string[] ParseIpHeader(string header)
+        internal static string[] ParseIpHeader(string header)
         {
             if (string.IsNullOrWhiteSpace(header))
             {
@@ -26,7 +26,7 @@ namespace Aikido.Zen.Core.Helpers
                 .ToArray();
         }
 
-        public static string ParseSingleIp(string ip)
+        internal static string ParseSingleIp(string ip)
         {
             // According to RFC7239 the X-Forwarded-For header can contain port numbers
             // We need to return the IP without any port

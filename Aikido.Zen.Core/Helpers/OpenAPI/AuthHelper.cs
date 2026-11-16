@@ -15,7 +15,7 @@ namespace Aikido.Zen.Core.Helpers.OpenAPI
         /// <param name="existing">The existing list of authentication types</param>
         /// <param name="newAuth">The new list of authentication types to merge</param>
         /// <returns>A merged list of authentication types</returns>
-        public static List<APIAuthType> MergeApiAuthTypes(List<APIAuthType> existing, List<APIAuthType> newAuth)
+        internal static List<APIAuthType> MergeApiAuthTypes(List<APIAuthType> existing, List<APIAuthType> newAuth)
         {
             if (newAuth == null || !newAuth.Any())
                 return existing;

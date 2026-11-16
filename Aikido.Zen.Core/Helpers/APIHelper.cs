@@ -7,7 +7,7 @@ namespace Aikido.Zen.Core.Helpers
 {
     internal class APIHelper
     {
-        public static HttpRequestMessage CreateRequest(string token, Uri baseUrl, string path, HttpMethod method, HttpContent content = null)
+        internal static HttpRequestMessage CreateRequest(string token, Uri baseUrl, string path, HttpMethod method, HttpContent content = null)
         {
             var request = new HttpRequestMessage(method, new Uri(baseUrl, path));
             request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue(token);
@@ -22,7 +22,7 @@ namespace Aikido.Zen.Core.Helpers
             return request;
         }
 
-        public static T ToAPIResponse<T>(HttpResponseMessage response) where T : APIResponse, new()
+        internal static T ToAPIResponse<T>(HttpResponseMessage response) where T : APIResponse, new()
         {
             if ((int)response.StatusCode == 429) // Too many requests
             {

@@ -10,62 +10,62 @@ namespace Aikido.Zen.Core.Helpers
         /// <summary>
         /// Gets the Aikido token from the environment variables.
         /// </summary>
-        public static string Token => Environment.GetEnvironmentVariable("AIKIDO_TOKEN");
+        internal static string Token => Environment.GetEnvironmentVariable("AIKIDO_TOKEN");
 
         /// <summary>
         /// Determines if the system is in dry mode by checking the environment variable.
         /// </summary>
-        public static bool DryMode => !GetBooleanValue("AIKIDO_BLOCK");
+        internal static bool DryMode => !GetBooleanValue("AIKIDO_BLOCK");
 
         /// <summary>
         /// Gets the maximum number of API discovery samples from the environment variables.
         /// </summary>
-        public static int MaxApiDiscoverySamples => int.TryParse(Environment.GetEnvironmentVariable("MAX_API_DISCOVERY_SAMPLES"), out int maxHits) ? maxHits : 10;
+        internal static int MaxApiDiscoverySamples => int.TryParse(Environment.GetEnvironmentVariable("MAX_API_DISCOVERY_SAMPLES"), out int maxHits) ? maxHits : 10;
 
         /// <summary>
         /// Gets the Aikido URL from the environment variables or derives it from the token's region.
         /// </summary>
-        public static string AikidoUrl => Environment.GetEnvironmentVariable("AIKIDO_ENDPOINT") ?? GetAikidoUrlFromToken(Token);
+        internal static string AikidoUrl => Environment.GetEnvironmentVariable("AIKIDO_ENDPOINT") ?? GetAikidoUrlFromToken(Token);
 
         /// <summary>
         /// Determines if the system is in debugging mode by checking the environment variable.
         /// </summary>
-        public static bool IsDebugging => GetBooleanValue("AIKIDO_DEBUG");
+        internal static bool IsDebugging => GetBooleanValue("AIKIDO_DEBUG");
 
         /// <summary>
         /// Determines if the system is disabled by checking the environment variable.
         /// </summary>
-        public static bool IsDisabled => GetBooleanValue("AIKIDO_DISABLE");
+        internal static bool IsDisabled => GetBooleanValue("AIKIDO_DISABLE");
 
         /// <summary>
         /// Determines whether to block SQL queries that fail tokenization when user input is present.
         /// Defaults to false (allow by default).
         /// </summary>
-        public static bool BlockInvalidSql => GetBooleanValue("AIKIDO_BLOCK_INVALID_SQL");
+        internal static bool BlockInvalidSql => GetBooleanValue("AIKIDO_BLOCK_INVALID_SQL");
 
         /// <summary>
         /// Determines whether to trust the X-Forwarded-For header.
         /// Should be set to false if the application is not behind a reverse proxy.
         /// </summary>
-        public static bool TrustProxy => GetBooleanValue("AIKIDO_TRUST_PROXY", true);
+        internal static bool TrustProxy => GetBooleanValue("AIKIDO_TRUST_PROXY", true);
 
         /// <summary>
         /// Determines whether to trust the X-Forwarded-For header.
         /// Should be set to false if the application is not behind a reverse proxy.
         /// </summary>
-        public static string ClientIpHeader => Environment.GetEnvironmentVariable("AIKIDO_CLIENT_IP_HEADER") ?? "X-FORWARDED-FOR";
+        internal static string ClientIpHeader => Environment.GetEnvironmentVariable("AIKIDO_CLIENT_IP_HEADER") ?? "X-FORWARDED-FOR";
 
         /// <summary>
         /// Determines whether to skip the ASP.NET Core endpoint routing startup guard.
         /// Defaults to false so route discovery and endpoint-specific policies use complete routing information.
         /// </summary>
-        public static bool DisableEndpointRoutingCheck => GetBooleanValue("AIKIDO_DISABLE_ENDPOINT_ROUTING_CHECK");
+        internal static bool DisableEndpointRoutingCheck => GetBooleanValue("AIKIDO_DISABLE_ENDPOINT_ROUTING_CHECK");
 
         /// <summary>
         /// Determines whether realtime SSE config notifications are enabled.
         /// The one-minute config poll remains active as a fallback.
         /// </summary>
-        public static bool RealtimeConfigUpdatesEnabled => GetBooleanValue("AIKIDO_FEATURE_SSE");
+        internal static bool RealtimeConfigUpdatesEnabled => GetBooleanValue("AIKIDO_FEATURE_SSE");
 
         /// <summary>
         /// Helper method to determine if an environment variable is set to "true" or "1".
@@ -105,7 +105,7 @@ namespace Aikido.Zen.Core.Helpers
         /// </summary>
         /// <param name="token">The Aikido runtime token, e.g. AIK_RUNTIME_{sys_group_id}_{service_id}_{region}_{random}.</param>
         /// <returns>The region code (e.g. "EU", "US", "ME", "AU"). Defaults to "EU" if the token does not contain a region.</returns>
-        public static string ExtractRegionFromToken(string token)
+        internal static string ExtractRegionFromToken(string token)
         {
             if (string.IsNullOrEmpty(token) || !token.StartsWith("AIK_RUNTIME_"))
             {
@@ -125,7 +125,7 @@ namespace Aikido.Zen.Core.Helpers
             return "EU";
         }
 
-        public static void ReportValues()
+        internal static void ReportValues()
         {
             if (string.IsNullOrEmpty(Token))
             {

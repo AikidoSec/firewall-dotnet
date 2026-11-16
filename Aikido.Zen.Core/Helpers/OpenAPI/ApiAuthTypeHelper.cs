@@ -36,7 +36,7 @@ namespace Aikido.Zen.Core.Helpers.OpenAPI
         /// </summary>
         /// <param name="context">The context containing headers and cookies</param>
         /// <returns>List of API authentication types, or null if none found</returns>
-        public static List<APIAuthType> GetApiAuthType(Context context)
+        internal static List<APIAuthType> GetApiAuthType(Context context)
         {
             if ((context.Headers == null || !context.Headers.Any()) && (context.Cookies == null || !context.Cookies.Any()))
                 return null;

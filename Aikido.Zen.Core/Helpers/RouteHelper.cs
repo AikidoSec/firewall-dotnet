@@ -113,7 +113,7 @@ namespace Aikido.Zen.Core.Helpers
         /// </summary>
         /// <param name="routePattern">The route pattern string to normalize.</param>
         /// <returns>A normalized route pattern string.</returns>
-        public static string NormalizeRoutePattern(string routePattern)
+        internal static string NormalizeRoutePattern(string routePattern)
         {
             if (string.IsNullOrEmpty(routePattern))
             {
@@ -129,7 +129,7 @@ namespace Aikido.Zen.Core.Helpers
         /// <param name="pattern">The route pattern (e.g. "api/users/{id}")</param>
         /// <param name="path">The actual URL path to match against</param>
         /// <returns>True if the path matches the pattern, false otherwise</returns>
-        public static bool MatchRoute(string pattern, string path)
+        internal static bool MatchRoute(string pattern, string path)
         {
             // Convert strings to spans and trim leading slashes for consistent comparison
             ReadOnlySpan<char> patternSpan = pattern.TrimStart('/').AsSpan();
@@ -189,7 +189,7 @@ namespace Aikido.Zen.Core.Helpers
         /// </summary>
         /// <param name="span">The route segment to check</param>
         /// <returns>True if segment is a parameter (e.g. {id}), false otherwise</returns>
-        public static bool IsRouteParameter(this ReadOnlySpan<char> span)
+        internal static bool IsRouteParameter(this ReadOnlySpan<char> span)
             => span.StartsWith("{".AsSpan()) && span.EndsWith("}".AsSpan());
 
 
@@ -199,7 +199,7 @@ namespace Aikido.Zen.Core.Helpers
         /// <param name="context">The context containing route and method information.</param>
         /// <param name="httpStatusCode">The HTTP status code of the request.</param>
         /// <returns>True if the route should be added, false otherwise.</returns>
-        public static bool ShouldAddRoute(Context context, int httpStatusCode)
+        internal static bool ShouldAddRoute(Context context, int httpStatusCode)
         {
             var logMessage = "Not enough context, skipping route";
             // Check for null context
@@ -277,7 +277,7 @@ namespace Aikido.Zen.Core.Helpers
         /// <param name="endpoints">The list of endpoints to match against.</param>
         /// <param name="endpoint">The highest priority matching endpoint, if found.</param>
         /// <returns>True if an exact route/URL match is found according to the priority rules, false otherwise.</returns>
-        public static bool HasExactMatch(Context context, IEnumerable<EndpointConfig> endpoints, out EndpointConfig endpoint)
+        internal static bool HasExactMatch(Context context, IEnumerable<EndpointConfig> endpoints, out EndpointConfig endpoint)
         {
             endpoint = null;
             if (context == null || string.IsNullOrEmpty(context.Method) || endpoints == null)
@@ -317,7 +317,7 @@ namespace Aikido.Zen.Core.Helpers
         /// </summary>
         /// <param name="path">The path to check</param>
         /// <returns>True if the path is a single segment, false otherwise</returns>
-        public static bool PathIsSingleSegment(string path)
+        internal static bool PathIsSingleSegment(string path)
         {
             var segments = path.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
             return segments.Length <= 1;
@@ -329,7 +329,7 @@ namespace Aikido.Zen.Core.Helpers
         /// <param name="context">The context containing request information</param>
         /// <param name="endpoints">The list of endpoints to match against</param>
         /// <returns>A list of matching endpoints, sorted by specificity</returns>
-        public static List<EndpointConfig> MatchEndpoints(Context context, IEnumerable<EndpointConfig> endpoints)
+        internal static List<EndpointConfig> MatchEndpoints(Context context, IEnumerable<EndpointConfig> endpoints)
         {
             var matches = new List<EndpointConfig>();
 

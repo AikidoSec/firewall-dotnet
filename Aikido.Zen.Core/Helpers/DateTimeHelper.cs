@@ -11,7 +11,7 @@ namespace Aikido.Zen.Core.Helpers
         /// Gets the current UTC time as Unix timestamp in milliseconds.
         /// </summary>
         /// <returns>The number of milliseconds that have elapsed since 1970-01-01T00:00:00Z.</returns>
-        public static long UTCNowUnixMilliseconds()
+        internal static long UTCNowUnixMilliseconds()
         {
             return DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         }

@@ -26,7 +26,7 @@ namespace Aikido.Zen.Core.Helpers
         /// <param name="windowSizeInMS">Time window in milliseconds for rate limiting</param>
         /// <param name="maxRequests">Maximum number of requests allowed within the time window</param>
         /// <returns>True if request is allowed, false if it should be rate limited</returns>
-        public static bool IsAllowed(string key, int windowSizeInMS, int maxRequests)
+        internal static bool IsAllowed(string key, int windowSizeInMS, int maxRequests)
         {
             if (maxRequests <= 0) return false;
             if (windowSizeInMS <= 0) return true;

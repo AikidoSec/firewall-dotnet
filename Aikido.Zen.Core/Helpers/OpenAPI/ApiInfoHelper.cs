@@ -15,7 +15,7 @@ namespace Aikido.Zen.Core.Helpers.OpenAPI
         /// </summary>
         /// <param name="context">The context to extract API information from</param>
         /// <returns>API specification or null if no relevant information is found</returns>
-        public static APISpec GetApiInfo(Context context)
+        internal static APISpec GetApiInfo(Context context)
         {
             try
             {
@@ -68,7 +68,7 @@ namespace Aikido.Zen.Core.Helpers.OpenAPI
         /// <param name="context">The context containing new information</param>
         /// <param name="existingRoute">The existing route to update</param>
         /// <param name="maxSamples">Maximum number of samples to process</param>
-        public static void UpdateApiInfo(Context context, Route existingRoute, int maxSamples)
+        internal static void UpdateApiInfo(Context context, Route existingRoute, int maxSamples)
         {
             if (existingRoute.Hits > maxSamples)
                 return;

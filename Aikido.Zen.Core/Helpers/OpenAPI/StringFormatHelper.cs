@@ -16,7 +16,7 @@ namespace Aikido.Zen.Core.Helpers.OpenAPI
         /// </summary>
         /// <param name="str">The string to analyze</param>
         /// <returns>The OpenAPI format of the string, or null if no specific format is detected</returns>
-        public static string GetStringFormat(string str)
+        internal static string GetStringFormat(string str)
         {
             // Skip if too short or too long
             if (str.Length < 5 || str.Length > 255)

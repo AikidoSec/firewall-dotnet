@@ -12,7 +12,7 @@ namespace Aikido.Zen.Core.Helpers.OpenAPI
         /// </summary>
         /// <param name="headers">Dictionary of HTTP headers</param>
         /// <returns>The data type as a string, or null if not determined</returns>
-        public static string GetBodyDataType(IDictionary<string, string> headers)
+        internal static string GetBodyDataType(IDictionary<string, string> headers)
         {
             if (!headers.TryGetValue("content-type", out var contentTypeValue) && !headers.TryGetValue("Content-Type", out contentTypeValue))
             {
