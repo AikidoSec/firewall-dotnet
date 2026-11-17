@@ -17,6 +17,9 @@ namespace Aikido.Zen.Core.Helpers
     /// </summary>
     internal class HttpHelper
     {
+        // Above ASP.NET Core's default (1024), so apps that raised their limit are still inspected.
+        private const int MaxFormValueCount = 10_000;
+
         /// <summary>
         /// Represents the result of processing HTTP request data
         /// </summary>
@@ -49,8 +52,7 @@ namespace Aikido.Zen.Core.Helpers
             IDictionary<string, string> headers,
             IDictionary<string, string> cookies,
             Stream body,
-            string contentType,
-            HttpRequest request = null)
+            string contentType)
         {
             var result = new List<UserInput>();
             object parsedBody = null;
@@ -72,7 +74,7 @@ namespace Aikido.Zen.Core.Helpers
             {
                 if (body != null && body.CanRead)
                 {
-                    parsedBody = await ProcessRequestBodyAsync(body, contentType, result, request);
+                    parsedBody = await ProcessRequestBodyAsync(body, contentType, result);
                 }
             }
             catch (Exception e)
@@ -104,7 +106,7 @@ namespace Aikido.Zen.Core.Helpers
             }
         }
 
-        private static async Task<object> ProcessRequestBodyAsync(Stream body, string contentType, List<UserInput> result, HttpRequest request)
+        private static async Task<object> ProcessRequestBodyAsync(Stream body, string contentType, List<UserInput> result)
         {
             object parsedBody = null;
 
@@ -120,14 +122,8 @@ namespace Aikido.Zen.Core.Helpers
 
                     if (IsFormUrlEncodedMediaType(mediaType))
                     {
-                        // Use ASP.NET Core's configured limits and cached form.
-                        if (request != null && request.HasFormContentType)
-                        {
-                            return FlattenFormFields(await request.ReadFormAsync(), result);
-                        }
-
-                        // System.Web has no ReadFormAsync; FormReader enforces the 1024-value limit while reading.
-                        using (var formReader = new FormReader(body))
+                        // Parse with our own reader instead of request.ReadFormAsync, so the app's request is not altered.
+                        using (var formReader = new FormReader(body) { ValueCountLimit = MaxFormValueCount })
                         {
                             return FlattenFormFields(await formReader.ReadFormAsync(), result);
                         }

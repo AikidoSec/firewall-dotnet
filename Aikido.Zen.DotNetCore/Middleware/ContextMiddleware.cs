@@ -120,8 +120,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
                     headers: request.Headers.ToDictionary(h => h.Key, h => string.Join(',', h.Value.ToArray())),
                     cookies: cookies,
                     body: request.Body,
-                    contentType: request.ContentType,
-                    request: request
+                    contentType: request.ContentType
                 );
 
                 return new Context

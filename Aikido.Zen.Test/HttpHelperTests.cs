@@ -221,10 +221,15 @@ namespace Aikido.Zen.Test.Helpers
 
         [TestCase(1024, true, false)]
         [TestCase(1025, true, false)]
+        [TestCase(10000, true, false)]
+        [TestCase(10001, true, false)]
         [TestCase(1024, false, false)]
         [TestCase(1025, false, false)]
+        [TestCase(10000, false, false)]
+        [TestCase(10001, false, false)]
         [TestCase(1024, true, true)]
         [TestCase(1025, true, true)]
+        [TestCase(10001, true, true)]
         public async Task ReadAndFlattenHttpDataAsync_ShouldLimitFormValuesWithoutChangingBody(int count, bool repeatedKey, bool emptyValues)
         {
             var pairs = Enumerable.Range(0, count).Select(index =>
@@ -241,7 +246,7 @@ namespace Aikido.Zen.Test.Helpers
                 "application/x-www-form-urlencoded");
 
             Assert.That(result.FlattenedData.Single(input => input.Location == "query.name").Value, Is.EqualTo("updated"));
-            if (count > 1024)
+            if (count > 10000)
             {
                 Assert.That(result.ParsedBody, Is.Null);
                 Assert.That(result.FlattenedData.Any(input => input.Location.StartsWith("body.")), Is.False);

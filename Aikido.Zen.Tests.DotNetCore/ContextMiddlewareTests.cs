@@ -116,6 +116,8 @@ namespace Aikido.Zen.Tests.DotNetCore
         [TestCase(1024, 1024)]
         [TestCase(1025, 1024)]
         [TestCase(1025, 4096)]
+        [TestCase(10000, 10000)]
+        [TestCase(10001, 10001)]
         public async Task InvokeAsync_FormInspectionLimit_DoesNotChangeApplicationHandling(int count, int valueCountLimit)
         {
             var originalDisable = Environment.GetEnvironmentVariable("AIKIDO_DISABLE");
@@ -160,7 +162,52 @@ namespace Aikido.Zen.Tests.DotNetCore
                 Assert.That(context.Response.StatusCode, Is.EqualTo(StatusCodes.Status201Created));
                 var captured = context.Items["Aikido.Zen.Context"] as Context;
                 Assert.That(captured, Is.Not.Null);
-                Assert.That(captured!.ParsedUserInput.Count(input => input.Location == "body.field"), Is.EqualTo(count > valueCountLimit ? 0 : count + 1));
+                Assert.That(captured!.ParsedUserInput.Count(input => input.Location == "body.field"), Is.EqualTo(count > 10000 ? 0 : count + 1));
+            }
+            finally
+            {
+                Agent.Instance.ClearContext();
+                Agent.Instance.Context.Config.Clear();
+                Environment.SetEnvironmentVariable("AIKIDO_DISABLE", originalDisable);
+            }
+        }
+
+        [TestCase(10)]
+        [TestCase(1025)]
+        public async Task InvokeAsync_FormRequest_DownstreamBodyRewriteIsHonoredAndInputStillInspected(int count)
+        {
+            var originalDisable = Environment.GetEnvironmentVariable("AIKIDO_DISABLE");
+            try
+            {
+                Environment.SetEnvironmentVariable("AIKIDO_DISABLE", "false");
+                Agent.Instance.Context.Config.Clear();
+                Agent.Instance.ClearContext();
+                var body = "username=mallory&role=admin&" + string.Join("&", Enumerable.Repeat("pad=x", count - 2));
+                var context = new DefaultHttpContext();
+                context.Request.Scheme = "http";
+                context.Request.Host = new HostString("test.local");
+                context.Request.Path = "/signup";
+                context.Request.Method = "POST";
+                context.Request.ContentType = "application/x-www-form-urlencoded";
+                context.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes(body));
+                IFormCollection? formSeenByApp = null;
+
+                await _contextMiddleware.InvokeAsync(context, async httpContext =>
+                {
+                    // mass-assignment guard: strip "role" by rewriting the body before the app parses the form
+                    var sanitized = Encoding.UTF8.GetBytes("username=mallory");
+                    httpContext.Request.Body = new MemoryStream(sanitized);
+                    httpContext.Request.ContentLength = sanitized.Length;
+                    formSeenByApp = await httpContext.Request.ReadFormAsync();
+                });
+
+                Assert.That(formSeenByApp, Is.Not.Null);
+                Assert.That(formSeenByApp!.ContainsKey("role"), Is.False);
+                Assert.That(formSeenByApp["username"].ToString(), Is.EqualTo("mallory"));
+
+                var captured = context.Items["Aikido.Zen.Context"] as Context;
+                Assert.That(captured, Is.Not.Null);
+                Assert.That(captured!.ParsedUserInput.Any(input => input.Location == "body.role" && input.Value == "admin"), Is.True);
             }
             finally
             {
@@ -174,6 +221,7 @@ namespace Aikido.Zen.Tests.DotNetCore
         [TestCase("application/x-www-form-urlencoded; charset=\"utf-8", 2)]
         [TestCase("application/x-www-form-urlencoded _", 1024)]
         [TestCase("application/x-www-form-urlencoded _", 1025)]
+        [TestCase("application/x-www-form-urlencoded _", 10001)]
         public async Task InvokeAsync_MalformedFormContentType_UsesBoundedInspectionWithoutChangingRequest(string contentType, int count)
         {
             var originalDisable = Environment.GetEnvironmentVariable("AIKIDO_DISABLE");
@@ -208,7 +256,7 @@ namespace Aikido.Zen.Tests.DotNetCore
                 var captured = context.Items["Aikido.Zen.Context"] as Context;
                 Assert.That(captured, Is.Not.Null);
                 var bodyValues = captured!.ParsedUserInput.Where(input => input.Location == "body.field").Select(input => input.Value);
-                var expected = count > 1024
+                var expected = count > 10000
                     ? Array.Empty<string>()
                     : Enumerable.Range(0, count).Select(index => $"value{index}").Append(string.Join(",", Enumerable.Range(0, count).Select(index => $"value{index}")));
                 Assert.That(bodyValues, Is.EqualTo(expected));
