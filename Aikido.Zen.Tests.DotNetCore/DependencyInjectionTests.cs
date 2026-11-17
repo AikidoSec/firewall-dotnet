@@ -10,6 +10,30 @@ namespace Aikido.Zen.Tests.DotNetCore
 {
     public class DependencyInjectionTests
     {
+        [TestCase("true")]
+        [TestCase("1")]
+        public void ZenFirewall_WhenDisabled_SkipsServiceAndMiddlewareRegistration(string setting)
+        {
+            var originalValue = Environment.GetEnvironmentVariable("AIKIDO_DISABLE");
+
+            try
+            {
+                Environment.SetEnvironmentVariable("AIKIDO_DISABLE", setting);
+
+                var services = new ServiceCollection();
+                services.AddZenFirewall();
+                Assert.That(services, Is.Empty);
+
+                using var serviceProvider = services.BuildServiceProvider();
+                var app = new ApplicationBuilder(serviceProvider);
+                Assert.That(app.UseZenFirewall(), Is.SameAs(app));
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("AIKIDO_DISABLE", originalValue);
+            }
+        }
+
         [Test]
         public void UseZenFirewall_WithoutUseRouting_Throws()
         {
