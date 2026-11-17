@@ -73,6 +73,8 @@ namespace Aikido.Zen.Tests.DotNetFramework
 
         [TestCase(1024)]
         [TestCase(1025)]
+        [TestCase(10000)]
+        [TestCase(10001)]
         public async Task BeginRequest_FormInspectionLimit_DoesNotChangeApplicationBody(int count)
         {
             var originalHttpContext = HttpContext.Current;
@@ -81,7 +83,7 @@ namespace Aikido.Zen.Tests.DotNetFramework
             try
             {
                 Environment.SetEnvironmentVariable("AIKIDO_DISABLE", "false");
-                var body = string.Join("&", Enumerable.Repeat("field=value", count));
+                var body = string.Join("&", Enumerable.Repeat("f=v", count));
                 var httpContext = new HttpContext(new FormWorkerRequest(body));
                 HttpContext.Current = httpContext;
                 var application = new HttpApplication();
@@ -93,7 +95,7 @@ namespace Aikido.Zen.Tests.DotNetFramework
 
                 var captured = httpContext.Items[Aikido.Zen.DotNetFramework.Zen.ContextItemKey] as Context;
                 Assert.That(captured, Is.Not.Null);
-                Assert.That(captured.ParsedUserInput.Count(input => input.Location == "body.field"), Is.EqualTo(count > 1024 ? 0 : count + 1));
+                Assert.That(captured.ParsedUserInput.Count(input => input.Location == "body.f"), Is.EqualTo(count > 10000 ? 0 : count + 1));
                 Assert.That(httpContext.Response.StatusCode, Is.EqualTo(200));
                 Assert.That(httpContext.Request.InputStream.Position, Is.Zero);
                 using (var reader = new StreamReader(httpContext.Request.InputStream))
