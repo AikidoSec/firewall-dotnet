@@ -9,12 +9,18 @@ using System.Threading.Tasks;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
+using Aikido.Zen.DotNetCore;
 using Aikido.Zen.DotNetCore.Middleware;
+using Aikido.Zen.DotNetCore.StartupFilters;
 using Aikido.Zen.Tests.Mocks;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Routing.Patterns;
+using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using NUnit.Framework;
 
@@ -757,6 +763,14 @@ namespace Aikido.Zen.Tests.DotNetCore
             Assert.That(result["Accept[2]"], Is.EqualTo("application/xml"));
         }
 
+        private string GetClientIp()
+        {
+            _mockHttpContext.SetupGet(context => context.Items).Returns(new Dictionary<object, object?>());
+            var context = _mockHttpContext.Object;
+            ContextMiddleware.CaptureClientIpHeader(context);
+            return (string)_getClientIpMethod.Invoke(null, new object[] { context })!;
+        }
+
         [Test]
         public void GetClientIp_ReturnsEmpty_WhenNoHeadersOrRemoteAddress()
         {
@@ -764,7 +778,7 @@ namespace Aikido.Zen.Tests.DotNetCore
             Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", "false");
 
             // Act
-            var resultWithoutTrustProxy = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+            var resultWithoutTrustProxy = GetClientIp();
 
             // Assert
             Assert.That(resultWithoutTrustProxy, Is.Empty);
@@ -773,7 +787,7 @@ namespace Aikido.Zen.Tests.DotNetCore
             Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", "true");
 
             // Act
-            var resultWithTrustProxy = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+            var resultWithTrustProxy = GetClientIp();
 
             // Assert
             Assert.That(resultWithTrustProxy, Is.Empty);
@@ -787,7 +801,7 @@ namespace Aikido.Zen.Tests.DotNetCore
             _mockConnection.Object.RemoteIpAddress = IPAddress.Parse("1.2.3.4");
 
             // Act
-            var resultWithoutTrustProxy = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+            var resultWithoutTrustProxy = GetClientIp();
 
             // Assert
             Assert.That(resultWithoutTrustProxy, Is.EqualTo("1.2.3.4"));
@@ -796,7 +810,7 @@ namespace Aikido.Zen.Tests.DotNetCore
             Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", "true");
 
             // Act
-            var resultWithTrustProxy = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+            var resultWithTrustProxy = GetClientIp();
 
             // Assert
             Assert.That(resultWithTrustProxy, Is.EqualTo("1.2.3.4"));
@@ -816,7 +830,7 @@ namespace Aikido.Zen.Tests.DotNetCore
             _mockHttpContext.Setup(c => c.Request.Headers).Returns(headers);
 
             // Act
-            var result1 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+            var result1 = GetClientIp();
 
             // Assert
             Assert.That(result1, Is.EqualTo("1.2.3.4"));
@@ -826,7 +840,7 @@ namespace Aikido.Zen.Tests.DotNetCore
             headers["X-FORWARDED-FOR"] = "a3ad:8f95:d2a8:454b:cf19:be6e:73c6:f880";
 
             // Act
-            var result2 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+            var result2 = GetClientIp();
 
             // Assert
             Assert.That(result2, Is.EqualTo("df89:84af:85e0:c55f:960c:341a:2cc6:734d"));
@@ -846,7 +860,7 @@ namespace Aikido.Zen.Tests.DotNetCore
             _mockHttpContext.Setup(c => c.Request.Headers).Returns(headers);
 
             // Act
-            var result = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+            var result = GetClientIp();
 
             // Assert
             Assert.That(result, Is.EqualTo("1.2.3.4"));
@@ -865,7 +879,7 @@ namespace Aikido.Zen.Tests.DotNetCore
             _mockHttpContext.Setup(c => c.Request.Headers).Returns(headers);
 
             // Act
-            var result1 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+            var result1 = GetClientIp();
 
             // Assert
             Assert.That(result1, Is.EqualTo("9.9.9.9"));
@@ -874,7 +888,7 @@ namespace Aikido.Zen.Tests.DotNetCore
             headers["X-FORWARDED-FOR"] = "[a3ad:8f95:d2a8:454b:cf19:be6e:73c6:f880]:8080";
 
             // Act
-            var result2 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+            var result2 = GetClientIp();
 
             // Assert
             Assert.That(result2, Is.EqualTo("a3ad:8f95:d2a8:454b:cf19:be6e:73c6:f880"));
@@ -883,7 +897,7 @@ namespace Aikido.Zen.Tests.DotNetCore
             headers["X-FORWARDED-FOR"] = "[a3ad:8f95:d2a8:454b:cf19:be6e:73c6:f880]";
 
             // Act
-            var result3 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+            var result3 = GetClientIp();
 
             // Assert
             Assert.That(result3, Is.EqualTo("a3ad:8f95:d2a8:454b:cf19:be6e:73c6:f880"));
@@ -894,7 +908,7 @@ namespace Aikido.Zen.Tests.DotNetCore
             _mockConnection.Object.RemoteIpAddress = IPAddress.Parse("df89:84af:85e0:c55f:960c:341a:2cc6:734d");
 
             // Act
-            var result4 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+            var result4 = GetClientIp();
 
             // Assert
             Assert.That(result4, Is.EqualTo("df89:84af:85e0:c55f:960c:341a:2cc6:734d"));
@@ -913,7 +927,7 @@ namespace Aikido.Zen.Tests.DotNetCore
             _mockHttpContext.Setup(c => c.Request.Headers).Returns(headers);
 
             // Act
-            var result1 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+            var result1 = GetClientIp();
 
             // Assert
             Assert.That(result1, Is.EqualTo("9.9.9.9"));
@@ -922,7 +936,7 @@ namespace Aikido.Zen.Tests.DotNetCore
             headers["X-FORWARDED-FOR"] = ",9.9.9.9";
 
             // Act
-            var result2 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+            var result2 = GetClientIp();
 
             // Assert
             Assert.That(result2, Is.EqualTo("9.9.9.9"));
@@ -931,7 +945,7 @@ namespace Aikido.Zen.Tests.DotNetCore
             headers["X-FORWARDED-FOR"] = ",9.9.9.9,";
 
             // Act
-            var result3 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+            var result3 = GetClientIp();
 
             // Assert
             Assert.That(result3, Is.EqualTo("9.9.9.9"));
@@ -940,7 +954,7 @@ namespace Aikido.Zen.Tests.DotNetCore
             headers["X-FORWARDED-FOR"] = ",9.9.9.9,,";
 
             // Act
-            var result4 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+            var result4 = GetClientIp();
 
             // Assert
             Assert.That(result4, Is.EqualTo("9.9.9.9"));
@@ -959,7 +973,7 @@ namespace Aikido.Zen.Tests.DotNetCore
             _mockHttpContext.Setup(c => c.Request.Headers).Returns(headers);
 
             // Act
-            var result1 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+            var result1 = GetClientIp();
 
             // Assert
             Assert.That(result1, Is.EqualTo("1.2.3.4"));
@@ -969,7 +983,7 @@ namespace Aikido.Zen.Tests.DotNetCore
             headers["X-FORWARDED-FOR"] = "::1";
 
             // Act
-            var result2 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+            var result2 = GetClientIp();
 
             // Assert
             Assert.That(result2, Is.EqualTo("df89:84af:85e0:c55f:960c:341a:2cc6:734d"));
@@ -988,7 +1002,7 @@ namespace Aikido.Zen.Tests.DotNetCore
             _mockHttpContext.Setup(c => c.Request.Headers).Returns(headers);
 
             // Act
-            var result1 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+            var result1 = GetClientIp();
 
             // Assert
             Assert.That(result1, Is.EqualTo("9.9.9.9"));
@@ -998,7 +1012,7 @@ namespace Aikido.Zen.Tests.DotNetCore
             headers["X-FORWARDED-FOR"] = "::1, a3ad:8f95:d2a8:454b:cf19:be6e:73c6:f880";
 
             // Act
-            var result2 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+            var result2 = GetClientIp();
 
             // Assert
             Assert.That(result2, Is.EqualTo("a3ad:8f95:d2a8:454b:cf19:be6e:73c6:f880"));
@@ -1017,7 +1031,7 @@ namespace Aikido.Zen.Tests.DotNetCore
             _mockHttpContext.Setup(c => c.Request.Headers).Returns(headers);
 
             // Act
-            var result1 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+            var result1 = GetClientIp();
 
             // Assert
             Assert.That(result1, Is.EqualTo("9.9.9.9"));
@@ -1027,7 +1041,7 @@ namespace Aikido.Zen.Tests.DotNetCore
             headers["X-FORWARDED-FOR"] = "a3ad:8f95:d2a8:454b:cf19:be6e:73c6:f880";
 
             // Act
-            var result2 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+            var result2 = GetClientIp();
 
             // Assert
             Assert.That(result2, Is.EqualTo("a3ad:8f95:d2a8:454b:cf19:be6e:73c6:f880"));
@@ -1046,7 +1060,7 @@ namespace Aikido.Zen.Tests.DotNetCore
             _mockHttpContext.Setup(c => c.Request.Headers).Returns(headers);
 
             // Act
-            var result1 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+            var result1 = GetClientIp();
 
             // Assert
             Assert.That(result1, Is.EqualTo("9.9.9.9"));
@@ -1056,7 +1070,7 @@ namespace Aikido.Zen.Tests.DotNetCore
             headers["X-FORWARDED-FOR"] = "a3ad:8f95:d2a8:454b:cf19:be6e:73c6:f880, ::1";
 
             // Act
-            var result2 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+            var result2 = GetClientIp();
 
             // Assert
             Assert.That(result2, Is.EqualTo("a3ad:8f95:d2a8:454b:cf19:be6e:73c6:f880"));
@@ -1075,7 +1089,7 @@ namespace Aikido.Zen.Tests.DotNetCore
             _mockHttpContext.Setup(c => c.Request.Headers).Returns(headers);
 
             // Act
-            var result1 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+            var result1 = GetClientIp();
 
             // Assert
             Assert.That(result1, Is.EqualTo("9.9.9.9"));
@@ -1085,7 +1099,7 @@ namespace Aikido.Zen.Tests.DotNetCore
             headers["X-FORWARDED-FOR"] = "a3ad:8f95:d2a8:454b:cf19:be6e:73c6:f880, 3b07:2fba:0270:2149:5fc1:2049:5f04:2131, 791d:967e:428a:90b9:8f6f:4fcc:5d88:015d";
 
             // Act
-            var result2 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+            var result2 = GetClientIp();
 
             // Assert
             Assert.That(result2, Is.EqualTo("a3ad:8f95:d2a8:454b:cf19:be6e:73c6:f880"));
@@ -1104,7 +1118,7 @@ namespace Aikido.Zen.Tests.DotNetCore
             _mockHttpContext.Setup(c => c.Request.Headers).Returns(headers);
 
             // Act
-            var result1 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+            var result1 = GetClientIp();
 
             // Assert
             Assert.That(result1, Is.EqualTo("9.9.9.9"));
@@ -1113,7 +1127,7 @@ namespace Aikido.Zen.Tests.DotNetCore
             headers["X-FORWARDED-FOR"] = "9.9.9.9, 127.0.0.1, 192.168.0.1, 192.168.0.2";
 
             // Act
-            var result2 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+            var result2 = GetClientIp();
 
             // Assert
             Assert.That(result2, Is.EqualTo("9.9.9.9"));
@@ -1134,7 +1148,7 @@ namespace Aikido.Zen.Tests.DotNetCore
             _mockHttpContext.Setup(c => c.Request.Headers).Returns(headers);
 
             // Act
-            var result1 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+            var result1 = GetClientIp();
 
             // Assert
             Assert.That(result1, Is.EqualTo("1.2.3.4"));
@@ -1143,7 +1157,7 @@ namespace Aikido.Zen.Tests.DotNetCore
             Environment.SetEnvironmentVariable("AIKIDO_CLIENT_IP_HEADER", "connecting-ip");
 
             // Act
-            var result2 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+            var result2 = GetClientIp();
 
             // Assert
             Assert.That(result2, Is.EqualTo("9.9.9.9"));
@@ -1152,7 +1166,7 @@ namespace Aikido.Zen.Tests.DotNetCore
             headers.Remove("connecting-ip");
 
             // Act
-            var result3 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+            var result3 = GetClientIp();
 
             // Assert
             Assert.That(result3, Is.EqualTo("1.2.3.4"));
@@ -1162,7 +1176,7 @@ namespace Aikido.Zen.Tests.DotNetCore
             Environment.SetEnvironmentVariable("AIKIDO_CLIENT_IP_HEADER", "connecting-IP");
 
             // Act
-            var result4 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+            var result4 = GetClientIp();
 
             // Assert
             Assert.That(result4, Is.EqualTo("9.9.9.9"));
@@ -1171,7 +1185,7 @@ namespace Aikido.Zen.Tests.DotNetCore
             Environment.SetEnvironmentVariable("AIKIDO_CLIENT_IP_HEADER", string.Empty);
 
             // Act
-            var result5 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+            var result5 = GetClientIp();
 
             // Assert
             Assert.That(result5, Is.EqualTo("1.2.3.4"));
@@ -1181,10 +1195,63 @@ namespace Aikido.Zen.Tests.DotNetCore
             headers["X-FORWARDED-FOR"] = "127.0.0.1, 192.168.0.1, 5.6.7.8";
 
             // Act
-            var result6 = (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+            var result6 = GetClientIp();
 
             // Assert
             Assert.That(result6, Is.EqualTo("5.6.7.8"));
+        }
+
+        [TestCase(false, false)]
+        [TestCase(true, false)]
+        [TestCase(true, true)]
+        public async Task InvokeAsync_UsesOriginalHeader_WhenForwardingRunsBeforeZen(
+            bool hostAddsForwarding, bool filterAlreadyRegistered)
+        {
+            var originalDisable = Environment.GetEnvironmentVariable("AIKIDO_DISABLE");
+            var originalTrust = Environment.GetEnvironmentVariable("AIKIDO_TRUST_PROXY");
+            var originalHeader = Environment.GetEnvironmentVariable("AIKIDO_CLIENT_IP_HEADER");
+            try
+            {
+                Environment.SetEnvironmentVariable("AIKIDO_DISABLE", "false");
+                Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", "true");
+                Environment.SetEnvironmentVariable("AIKIDO_CLIENT_IP_HEADER", null);
+
+                var builder = WebApplication.CreateBuilder(new[] { $"--ForwardedHeaders_Enabled={hostAddsForwarding}" });
+                builder.WebHost.UseUrls("http://127.0.0.1:0");
+                builder.Services.Configure<ForwardedHeadersOptions>(options =>
+                {
+                    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor;
+                    options.ForwardLimit = 2;
+                    options.KnownProxies.Add(IPAddress.Loopback);
+                    options.KnownProxies.Add(IPAddress.Parse("8.8.8.8"));
+                });
+                if (filterAlreadyRegistered)
+                {
+                    builder.Services.AddSingleton<IStartupFilter, ZenStartupFilter>();
+                }
+                builder.Services.AddZenFirewall();
+                await using var app = builder.Build();
+                if (!hostAddsForwarding)
+                {
+                    app.UseForwardedHeaders();
+                }
+
+                app.UseRouting();
+                app.UseZenFirewall();
+                app.Run(context => context.Response.WriteAsync(
+                    $"{context.Connection.RemoteIpAddress}|{context.Request.Headers["X-Forwarded-For"]}|{Aikido.Zen.DotNetCore.Zen.GetContext()?.RemoteAddress}"));
+
+                await app.StartAsync();
+                using var client = new HttpClient();
+                client.DefaultRequestHeaders.Add("X-Forwarded-For", "192.168.0.5, 10.42.0.10, 8.8.8.8");
+                Assert.That(await client.GetStringAsync(app.Urls.Single()), Is.EqualTo("10.42.0.10|192.168.0.5|8.8.8.8"));
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("AIKIDO_DISABLE", originalDisable);
+                Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", originalTrust);
+                Environment.SetEnvironmentVariable("AIKIDO_CLIENT_IP_HEADER", originalHeader);
+            }
         }
     }
 }

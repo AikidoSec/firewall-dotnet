@@ -17,6 +17,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
     /// </summary>
     public class ContextMiddleware : IMiddleware
     {
+        private static readonly object ClientIpHeaderKey = new();
         private readonly IEnumerable<Endpoint> _endpoints;
         public ContextMiddleware(IEnumerable<EndpointDataSource> endpointSources)
         {
@@ -234,16 +235,19 @@ namespace Aikido.Zen.DotNetCore.Middleware
         /// <returns>The client IP address as a string</returns>
         private static string GetClientIp(HttpContext httpContext)
         {
-            string ipHeader = null;
-            if (IPHeaderHelper.ShouldTrustProxy(EnvironmentHelper.TrustProxy) &&
-                httpContext.Request?.Headers?.TryGetValue(EnvironmentHelper.ClientIpHeader, out var ipStringValues) == true)
-            {
-                ipHeader = ipStringValues.ToString();
-            }
-
-            return IPHeaderHelper.GetClientIpFromHeader(ipHeader)
+            httpContext.Items.TryGetValue(ClientIpHeaderKey, out var capturedHeader);
+            return IPHeaderHelper.GetClientIpFromHeader(capturedHeader as string)
                 ?? httpContext.Connection?.RemoteIpAddress?.ToString()
                 ?? string.Empty;
+        }
+
+        internal static void CaptureClientIpHeader(HttpContext context)
+        {
+            var header = IPHeaderHelper.ShouldTrustProxy(EnvironmentHelper.TrustProxy) &&
+                context.Request?.Headers?.TryGetValue(EnvironmentHelper.ClientIpHeader, out var values) == true
+                ? values.ToString()
+                : null;
+            context.Items.TryAdd(ClientIpHeaderKey, header);
         }
 
         /// <summary>

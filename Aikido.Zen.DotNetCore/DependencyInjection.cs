@@ -2,7 +2,9 @@ using Aikido.Zen.Core;
 using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.DotNetCore.Middleware;
+using Aikido.Zen.DotNetCore.StartupFilters;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -137,6 +139,9 @@ namespace Aikido.Zen.DotNetCore
 
         internal static IServiceCollection AddAikidoZenMiddleware(this IServiceCollection services)
         {
+            // Run before the host's forwarding middleware trims X-Forwarded-For.
+            services.Insert(0, ServiceDescriptor.Singleton<IStartupFilter, ZenStartupFilter>());
+
             services.AddTransient<ContextMiddleware>();
             services.AddTransient<BlockingMiddleware>();
             return services;
