@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using Aikido.Zen.Core.Models;
-using Microsoft.Net.Http.Headers;
 
 namespace Aikido.Zen.Core.Helpers
 {
@@ -150,24 +149,6 @@ namespace Aikido.Zen.Core.Helpers
             {
                 result.Add(new UserInput($"cookies.{cookie.Key}", cookie.Value));
             }
-        }
-
-        /// <summary>
-        /// Checks if the content type is multipart and extracts the boundary string.
-        /// </summary>
-        /// <param name="contentType">The content type to check.</param>
-        /// <param name="boundary">The boundary string extracted from the content type.</param>
-        /// <returns>True if the content type is multipart, false otherwise.</returns>
-        internal static bool IsMultipart(string contentType, out string boundary)
-        {
-            bool isMultipart = MediaTypeHeaderValue.TryParse(contentType, out var parsedContentType) && parsedContentType.MediaType.Equals("multipart/form-data", StringComparison.OrdinalIgnoreCase);
-            if (!isMultipart)
-            {
-                boundary = null;
-                return false;
-            }
-            boundary = parsedContentType.Boundary.Value;
-            return isMultipart;
         }
 
         private static bool TryDecodeUriComponent(string input, out string decoded)

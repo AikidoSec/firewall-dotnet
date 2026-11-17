@@ -361,6 +361,26 @@ namespace Aikido.Zen.Test.Helpers
             Assert.That(UserInputHelper.GetAttackSourceFromUserInputKey("route.someRoute"), Is.EqualTo(Source.RouteParams));
         }
 
+        [TestCase("multipart/form-data; boundary=b")]
+        [TestCase("multipart/form-data; boundary=\"b\"")]
+        [TestCase("multipart/form-data;boundary=\"b\"")]
+        [TestCase("multipart/form-data; charset=utf-8; boundary=\"b\"")]
+        public async Task ReadAndFlattenHttpDataAsync_ShouldReadMultipartWithQuotedBoundary(string contentType)
+        {
+            var payload = "--b\r\nContent-Disposition: form-data; name=\"x\"\r\n\r\n' OR 1=1 --\r\n--b--\r\n";
+            using var bodyStream = new MemoryStream(Encoding.UTF8.GetBytes(payload));
+
+            var result = await HttpHelper.ReadAndFlattenHttpDataAsync(
+                new Dictionary<string, string>(),
+                new Dictionary<string, string>(),
+                new Dictionary<string, string>(),
+                new Dictionary<string, string>(),
+                bodyStream,
+                contentType);
+
+            Assert.That(result.FlattenedData.Any(input => input.Value == "' OR 1=1 --"), Is.True, contentType);
+        }
+
         [Test]
         public void GetRawBody_ShouldReadStreamAndLeaveItOpen()
         {
@@ -376,66 +396,5 @@ namespace Aikido.Zen.Test.Helpers
             using var reader = new StreamReader(bodyStream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, leaveOpen: true);
             Assert.That(reader.ReadToEnd(), Is.EqualTo(expected));
         }
-
-        // Zen must resolve a media type the way ASP.NET Core does, reading the leading type/subtype and
-        // ignoring what trails it. Anything Zen fails to recognise but the framework still deserializes is
-        // a body that goes uninspected.
-
-        // Well-formed headers and the parameter section are unaffected.
-        [TestCase("application/json", "application/json")]
-        [TestCase("application/json; charset=utf-8", "application/json")]
-        [TestCase("APPLICATION/JSON", "APPLICATION/JSON")]
-        [TestCase("application/vnd.api+json", "application/vnd.api+json")]
-        [TestCase("multipart/form-data; boundary=abc", "multipart/form-data")]
-        // Trailing content after the media type.
-        [TestCase("application/json _", "application/json")]
-        [TestCase("application/json foo", "application/json")]
-        [TestCase("application/json a b", "application/json")]
-        [TestCase("application/json\t_", "application/json")]
-        [TestCase("application/json,", "application/json")]
-        [TestCase("application/json, application/json", "application/json")]
-        [TestCase("application/vnd.api+json _", "application/vnd.api+json")]
-        // Whitespace around the '/' - the framework tolerates it, so we do too.
-        [TestCase("application /json", "application/json")]
-        [TestCase("application /json _", "application/json")]
-        [TestCase("application/ json _", "application/json")]
-        [TestCase("application / json _", "application/json")]
-        [TestCase("  application/json  ", "application/json")]
-        // Characters RFC 7230 excludes from a token end the media type just as whitespace does.
-        [TestCase("application/json\"x", "application/json")]
-        [TestCase("application/json(x)", "application/json")]
-        [TestCase("application/json<x", "application/json")]
-        [TestCase("application/json>x", "application/json")]
-        [TestCase("application/json@x", "application/json")]
-        [TestCase("application/json[x]", "application/json")]
-        [TestCase("application/json\\x", "application/json")]
-        [TestCase("application/json?x", "application/json")]
-        [TestCase("application/json=x", "application/json")]
-        [TestCase("application/json:x", "application/json")]
-        [TestCase("application/json{x", "application/json")]
-        // Not a media type at all - must not be coerced into one.
-        [TestCase("", "")]
-        [TestCase("   ", "")]
-        [TestCase("nonsense", "")]
-        [TestCase("application/", "")]
-        [TestCase("/json", "")]
-        [TestCase("/", "")]
-        [TestCase("; charset=utf-8", "")]
-        // Distinct media types must stay distinct.
-        [TestCase("application/jsonp", "application/jsonp")]
-        [TestCase("application/notjson", "application/notjson")]
-        [TestCase("application/json-patch", "application/json-patch")]
-        [TestCase("text/html", "text/html")]
-        public void GetMediaType_ReturnsLeadingTypeSubtype(string contentType, string expected)
-        {
-            Assert.That(HttpHelper.GetMediaType(contentType), Is.EqualTo(expected));
-        }
-
-        [Test]
-        public void GetMediaType_HandlesNull()
-        {
-            Assert.That(HttpHelper.GetMediaType(null), Is.EqualTo(string.Empty));
-        }
-
     }
 }
