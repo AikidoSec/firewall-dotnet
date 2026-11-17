@@ -76,7 +76,7 @@ namespace Aikido.Zen.DotNetCore
         /// <returns>The service collection for method chaining</returns>
         public static IServiceCollection AddZenFirewall(this IServiceCollection services, Action<ZenFirewallBuilder> configureOptions = null)
         {
-            if (Environment.GetEnvironmentVariable("AIKIDO_DISABLE") == "true")
+            if (EnvironmentHelper.IsDisabled)
             {
                 return services;
             }
@@ -109,7 +109,7 @@ namespace Aikido.Zen.DotNetCore
 
         public static IApplicationBuilder UseZenFirewall(this IApplicationBuilder app)
         {
-            if (Environment.GetEnvironmentVariable("AIKIDO_DISABLE") == "true")
+            if (EnvironmentHelper.IsDisabled)
             {
                 return app;
             }
