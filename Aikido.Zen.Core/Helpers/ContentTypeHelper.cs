@@ -130,7 +130,6 @@ namespace Aikido.Zen.Core.Helpers
             return unquoted.ToString();
         }
 
-        // Reads one token, skipping any whitespace before it, and advances past it.
         private static string ReadToken(string value, ref int index)
         {
             while (index < value.Length && IsOptionalWhiteSpace(value[index]))
