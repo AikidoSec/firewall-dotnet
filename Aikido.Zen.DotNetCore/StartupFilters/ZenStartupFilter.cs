@@ -5,15 +5,13 @@ using Microsoft.AspNetCore.Hosting;
 namespace Aikido.Zen.DotNetCore.StartupFilters;
 public class ZenStartupFilter : IStartupFilter
 {
-	public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next)
+	public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next) => app =>
 	{
-		return builder =>
+		app.Use(nextRequest => context =>
 		{
-			// Insert our middleware at the beginning of the pipeline
-			builder.UseMiddleware<ContextMiddleware>();
-
-			// Call the next registered startup filter
-			next(builder);
-		};
-	}
+			ContextMiddleware.CaptureClientIpHeader(context);
+			return nextRequest(context);
+		});
+		next(app);
+	};
 }
