@@ -66,39 +66,15 @@ namespace Aikido.Zen.Test.Helpers
             Assert.That(ContentTypeHelper.GetMediaType(null), Is.EqualTo(string.Empty));
         }
 
-        [TestCase("text/plain; charset=utf-16", "charset", "utf-16")]
-        [TestCase("text/plain; CHARSET=utf-16", "charset", "utf-16")]
-        [TestCase("text/plain; charset=\"utf-16\"", "charset", "utf-16")]
-        [TestCase("text/plain;charset=utf-16", "charset", "utf-16")]
-        [TestCase("text/plain; charset = utf-16", "charset", "utf-16")]
-        [TestCase("text/plain; charset=utf-16; format=flowed", "charset", "utf-16")]
-        [TestCase("text/plain; format=flowed; charset=utf-16", "charset", "utf-16")]
-        // Malformed text after the media type must not hide the parameters.
-        [TestCase("application/json _; charset=utf-16", "charset", "utf-16")]
-        // A ';' inside a quoted value does not start a new parameter.
-        [TestCase("multipart/form-data; note=\"a;b\"; boundary=xyz", "boundary", "xyz")]
-        [TestCase("multipart/form-data; note=\"a;boundary=evil\"; boundary=xyz", "boundary", "xyz")]
-        [TestCase("multipart/form-data; boundary=\"a;b\"", "boundary", "a;b")]
-        [TestCase("multipart/form-data; boundary=\"a\\\"b\"", "boundary", "a\"b")]
-        [TestCase("text/plain; charset=\"\"", "charset", "")]
-        [TestCase("text/plain", "charset", null)]
-        [TestCase("text/plain;", "charset", null)]
-        [TestCase("text/plain; charset", "charset", null)]
-        [TestCase("text/plain; =utf-16", "charset", null)]
-        [TestCase("text/plain; xcharset=utf-16", "charset", null)]
-        [TestCase("", "charset", null)]
-        [TestCase(null, "charset", null)]
-        public void GetParameter_ReturnsUnquotedValue(string? contentType, string name, string? expected)
-        {
-            Assert.That(ContentTypeHelper.GetParameter(contentType!, name), Is.EqualTo(expected));
-        }
-
         [TestCase("multipart/form-data; boundary=abc", "abc")]
         [TestCase("multipart/form-data;boundary=abc", "abc")]
         [TestCase("multipart/form-data; boundary=\"abc\"", "abc")]
         [TestCase("MULTIPART/FORM-DATA; BOUNDARY=abc", "abc")]
         [TestCase("multipart/form-data; charset=utf-8; boundary=abc", "abc")]
         [TestCase("multipart/form-data; boundary=\"a b\"", "a b")]
+        [TestCase("multipart/form-data; boundary=\"a\\b\"", "a\\b")]
+        [TestCase("multipart/form-data; boundary=\"a;b\"", "a;b")]
+        [TestCase("multipart/form-data; note=\"a;b\"; boundary=xyz", "xyz")]
         public void TryGetMultipartBoundary_ReturnsBoundary(string contentType, string expected)
         {
             Assert.That(ContentTypeHelper.TryGetMultipartBoundary(contentType, out var boundary), Is.True);
@@ -109,6 +85,7 @@ namespace Aikido.Zen.Test.Helpers
         [TestCase("multipart/form-data;")]
         [TestCase("multipart/form-data; boundary=")]
         [TestCase("multipart/form-data; boundary=\"\"")]
+        [TestCase("multipart/form-data _; boundary=abc")]
         [TestCase("multipart/mixed; boundary=abc")]
         [TestCase("application/json; boundary=abc")]
         [TestCase("")]

@@ -1,5 +1,5 @@
 using System;
-using System.Text;
+using Microsoft.Net.Http.Headers;
 
 namespace Aikido.Zen.Core.Helpers
 {
@@ -36,98 +36,19 @@ namespace Aikido.Zen.Core.Helpers
         }
 
         /// <summary>
-        /// Returns the value of a parameter such as charset or boundary, without surrounding quotes, or null when it is missing.
-        /// </summary>
-        internal static string GetParameter(string contentType, string name)
-        {
-            if (string.IsNullOrEmpty(contentType))
-            {
-                return null;
-            }
-
-            // The media type is skipped up to its first ';', so malformed text in it can't hide the parameters.
-            var separator = contentType.IndexOf(';');
-            while (separator >= 0)
-            {
-                var start = separator + 1;
-                var end = FindParameterEnd(contentType, start);
-                var parameter = contentType.Substring(start, end - start);
-                var equals = parameter.IndexOf('=');
-                if (equals > 0 && parameter.Substring(0, equals).Trim().Equals(name, StringComparison.OrdinalIgnoreCase))
-                {
-                    return Unquote(parameter.Substring(equals + 1).Trim());
-                }
-
-                separator = end < contentType.Length ? end : -1;
-            }
-
-            return null;
-        }
-
-        /// <summary>
         /// Returns true for a multipart/form-data content type that names a boundary.
         /// </summary>
         internal static bool TryGetMultipartBoundary(string contentType, out string boundary)
         {
             boundary = null;
-            if (!GetMediaType(contentType).Equals("multipart/form-data", StringComparison.OrdinalIgnoreCase))
+            if (!MediaTypeHeaderValue.TryParse(contentType, out var parsed) ||
+                !parsed.MediaType.Equals("multipart/form-data", StringComparison.OrdinalIgnoreCase))
             {
                 return false;
             }
 
-            boundary = GetParameter(contentType, "boundary");
+            boundary = HeaderUtilities.RemoveQuotes(parsed.Boundary).Value;
             return !string.IsNullOrEmpty(boundary);
-        }
-
-        // Finds the next ';' that is not inside a quoted value, or the end of the header.
-        private static int FindParameterEnd(string value, int start)
-        {
-            var inQuotes = false;
-            for (var i = start; i < value.Length; i++)
-            {
-                if (inQuotes)
-                {
-                    if (value[i] == '\\')
-                    {
-                        i++;
-                    }
-                    else if (value[i] == '"')
-                    {
-                        inQuotes = false;
-                    }
-                }
-                else if (value[i] == '"')
-                {
-                    inQuotes = true;
-                }
-                else if (value[i] == ';')
-                {
-                    return i;
-                }
-            }
-
-            return value.Length;
-        }
-
-        private static string Unquote(string value)
-        {
-            if (value.Length == 0 || value[0] != '"')
-            {
-                return value;
-            }
-
-            var unquoted = new StringBuilder();
-            for (var i = 1; i < value.Length && value[i] != '"'; i++)
-            {
-                if (value[i] == '\\' && i + 1 < value.Length)
-                {
-                    i++;
-                }
-
-                unquoted.Append(value[i]);
-            }
-
-            return unquoted.ToString();
         }
 
         private static string ReadToken(string value, ref int index)
