@@ -38,12 +38,9 @@ namespace Aikido.Zen.Core.Models.Ip
                     {
                         foreach (var ip in endpoint.AllowedIPAddresses)
                         {
-                            foreach (var cidr in IPHelper.ToCidrString(ip))
+                            if (!trie.InsertRange(ip))
                             {
-                                if (!trie.InsertRange(cidr))
-                                {
-                                    return;
-                                }
+                                return;
                             }
                         }
                     }
@@ -128,12 +125,9 @@ namespace Aikido.Zen.Core.Models.Ip
                 var allowedIps = new IPRange();
                 foreach (var ip in ips)
                 {
-                    foreach (var cidr in IPHelper.ToCidrString(ip))
+                    if (!allowedIps.InsertRange(ip))
                     {
-                        if (!allowedIps.InsertRange(cidr))
-                        {
-                            return;
-                        }
+                        return;
                     }
                 }
                 _allowedIps = allowedIps;
