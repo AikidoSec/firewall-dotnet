@@ -22,8 +22,8 @@ namespace Aikido.Zen.Test
             var ip6 = "2001:0db8:85a3:0000:0000:8a2e:0370:7334";
 
             // Act
-            Assert.That(_ipRange.InsertRange(ip), Is.True);
-            Assert.That(_ipRange.InsertRange(ip6), Is.True);
+            _ipRange.InsertRange(ip);
+            _ipRange.InsertRange(ip6);
 
             // Assert
             Assert.That(_ipRange.IsIpInRange(ip));
@@ -38,8 +38,8 @@ namespace Aikido.Zen.Test
             var cidr6 = "2001:0db8:85a3:0000:0000:8a2e:0370:7334/64";
 
             // Act
-            Assert.That(_ipRange.InsertRange(cidr), Is.True);
-            Assert.That(_ipRange.InsertRange(cidr6), Is.True);
+            _ipRange.InsertRange(cidr);
+            _ipRange.InsertRange(cidr6);
 
             // Assert
             Assert.That(_ipRange.IsIpInRange("192.168.1.1"));
@@ -65,11 +65,11 @@ namespace Aikido.Zen.Test
         [TestCase("2606:4700::1111/129")]
         [TestCase("2606:4700::1111/invalid")]
         [TestCase("2606:4700::1111/128/64")]
-        public void InsertRange_RejectsInvalidInputWithoutChangingExistingRanges(string? range)
+        public void InsertRange_IgnoresInvalidInputWithoutChangingExistingRanges(string? range)
         {
             _ipRange.InsertRange("9.9.9.9");
 
-            Assert.That(_ipRange.InsertRange(range), Is.False);
+            _ipRange.InsertRange(range);
 
             Assert.Multiple(() =>
             {

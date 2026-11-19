@@ -45,12 +45,12 @@ class IPRange
     /// Supports both IPv4 and IPv6.
     /// </summary>
     /// <param name="cidrOrIp">The CIDR notation of the IP range or a single IP address.</param>
-    public bool InsertRange(string cidrOrIp)
+    public void InsertRange(string cidrOrIp)
     {
         var parts = cidrOrIp?.Split('/');
         if (parts == null || parts.Length > 2 || !IPAddress.TryParse(parts[0], out IPAddress ipAddress))
         {
-            return false;
+            return;
         }
 
         bool isIPv6 = ipAddress.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6;
@@ -59,7 +59,7 @@ class IPRange
         if (parts.Length == 2 &&
             (!int.TryParse(parts[1], NumberStyles.None, CultureInfo.InvariantCulture, out prefixLength) || prefixLength > maxPrefix))
         {
-            return false;
+            return;
         }
 
         _lock.EnterWriteLock();
@@ -88,7 +88,6 @@ class IPRange
             }
 
             currentNode.IsTerminal = true;
-            return true;
         }
         finally
         {
