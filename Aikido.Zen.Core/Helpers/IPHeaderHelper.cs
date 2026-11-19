@@ -13,7 +13,7 @@ namespace Aikido.Zen.Core.Helpers
 
         internal static string GetClientIpFromHeader(string header)
         {
-            foreach (var ip in ParseIpHeader(header))
+            foreach (var ip in ParseIpHeader(header).Reverse())
             {
                 if (IPHelper.IsValidIp(ip) && !IPHelper.IsPrivateOrLocalIp(ip))
                 {
