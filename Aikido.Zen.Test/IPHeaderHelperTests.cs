@@ -78,5 +78,16 @@ namespace Aikido.Zen.Test.Helpers
                );
             });
         }
+
+        [TestCase("7.7.7.7, 8.8.8.8", "8.8.8.8")]
+        [TestCase("7.7.7.7, 8.8.8.8, 10.0.0.1, unknown,", "8.8.8.8")]
+        [TestCase("2606:4700::1111, [2001:4860:4860::8888]:443, ::1", "2001:4860:4860::8888")]
+        [TestCase("10.0.0.1, unknown", null)]
+        [TestCase("", null)]
+        [TestCase(null, null)]
+        public void GetClientIpFromHeader_SelectsRightmostPublicIp(string? header, string? expected)
+        {
+            Assert.That(IPHeaderHelper.GetClientIpFromHeader(header), Is.EqualTo(expected));
+        }
     }
 }

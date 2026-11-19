@@ -1077,7 +1077,7 @@ namespace Aikido.Zen.Tests.DotNetCore
         }
 
         [Test]
-        public void GetClientIp_UsesFirstPublicEntry_WhenMultipleXForwardedForValues()
+        public void GetClientIp_UsesRightmostPublicEntry_WhenMultipleXForwardedForValues()
         {
             // Arrange
             Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", "true");
@@ -1092,7 +1092,7 @@ namespace Aikido.Zen.Tests.DotNetCore
             var result1 = GetClientIp();
 
             // Assert
-            Assert.That(result1, Is.EqualTo("9.9.9.9"));
+            Assert.That(result1, Is.EqualTo("7.7.7.7"));
 
             // Arrange
             _mockConnection.Object.RemoteIpAddress = IPAddress.Parse("df89:84af:85e0:c55f:960c:341a:2cc6:734d");
@@ -1102,11 +1102,11 @@ namespace Aikido.Zen.Tests.DotNetCore
             var result2 = GetClientIp();
 
             // Assert
-            Assert.That(result2, Is.EqualTo("a3ad:8f95:d2a8:454b:cf19:be6e:73c6:f880"));
+            Assert.That(result2, Is.EqualTo("791d:967e:428a:90b9:8f6f:4fcc:5d88:15d"));
         }
 
         [Test]
-        public void GetClientIp_UsesFirstPublicEntry_WhenManyXForwardedForValues()
+        public void GetClientIp_SkipsPrivateEntries_WhenManyXForwardedForValues()
         {
             // Arrange
             Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", "true");
@@ -1223,7 +1223,7 @@ namespace Aikido.Zen.Tests.DotNetCore
                     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor;
                     options.ForwardLimit = 2;
                     options.KnownProxies.Add(IPAddress.Loopback);
-                    options.KnownProxies.Add(IPAddress.Parse("8.8.8.8"));
+                    options.KnownProxies.Add(IPAddress.Parse("10.42.0.10"));
                 });
                 if (filterAlreadyRegistered)
                 {
@@ -1243,8 +1243,8 @@ namespace Aikido.Zen.Tests.DotNetCore
 
                 await app.StartAsync();
                 using var client = new HttpClient();
-                client.DefaultRequestHeaders.Add("X-Forwarded-For", "192.168.0.5, 10.42.0.10, 8.8.8.8");
-                Assert.That(await client.GetStringAsync(app.Urls.Single()), Is.EqualTo("10.42.0.10|192.168.0.5|8.8.8.8"));
+                client.DefaultRequestHeaders.Add("X-Forwarded-For", "7.7.7.7, 8.8.8.8, 10.42.0.10");
+                Assert.That(await client.GetStringAsync(app.Urls.Single()), Is.EqualTo("8.8.8.8|7.7.7.7|8.8.8.8"));
             }
             finally
             {
