@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Xml;
@@ -52,7 +53,8 @@ namespace Aikido.Zen.Core.Helpers
             IDictionary<string, string> headers,
             IDictionary<string, string> cookies,
             Stream body,
-            string contentType)
+            string contentType,
+            Encoding requestEncoding = null)
         {
             var result = new List<UserInput>();
             object parsedBody = null;
@@ -74,7 +76,15 @@ namespace Aikido.Zen.Core.Helpers
             {
                 if (body != null && body.CanRead)
                 {
-                    parsedBody = await ProcessRequestBodyAsync(body, contentType, result);
+                    parsedBody = await ProcessRequestBodyAsync(body, contentType, result, Encoding.UTF8);
+
+                    // Apps may honor or ignore the charset they resolved from the header, so also inspect the body decoded with it.
+                    // The encoding isn't used for multipart, so a second pass would only duplicate its inputs.
+                    if (requestEncoding != null && requestEncoding.CodePage != Encoding.UTF8.CodePage && requestEncoding.CodePage != 65000 && body.CanSeek
+                        && !ContentTypeHelper.TryGetMultipartBoundary(contentType, out _))
+                    {
+                        parsedBody = await ProcessRequestBodyAsync(body, contentType, result, requestEncoding) ?? parsedBody;
+                    }
                 }
             }
             catch (Exception e)
@@ -106,7 +116,7 @@ namespace Aikido.Zen.Core.Helpers
             }
         }
 
-        private static async Task<object> ProcessRequestBodyAsync(Stream body, string contentType, List<UserInput> result)
+        private static async Task<object> ProcessRequestBodyAsync(Stream body, string contentType, List<UserInput> result, Encoding encoding)
         {
             object parsedBody = null;
 
@@ -123,15 +133,14 @@ namespace Aikido.Zen.Core.Helpers
                     if (IsFormUrlEncodedMediaType(mediaType))
                     {
                         // Parse with our own reader instead of request.ReadFormAsync, so the app's request is not altered.
-                        using (var formReader = new FormReader(body) { ValueCountLimit = MaxFormValueCount })
+                        using (var formReader = new FormReader(body, encoding) { ValueCountLimit = MaxFormValueCount })
                         {
                             return FlattenFormFields(await formReader.ReadFormAsync(), result);
                         }
                     }
 
                     // we read the stream, but leave it open so it can be read out later by http modules or middleware.
-                    // we try to detect the encdoding by looking for byte order marks at the beginning of the file, and use UTF-8 as a fallback.
-                    using (var reader = new StreamReader(body, detectEncodingFromByteOrderMarks: true, bufferSize: 4096, leaveOpen: true, encoding: System.Text.Encoding.UTF8))
+                    using (var reader = new StreamReader(body, detectEncodingFromByteOrderMarks: true, bufferSize: 4096, leaveOpen: true, encoding: encoding))
                     {
                         if (IsJsonMediaType(mediaType))
                         {

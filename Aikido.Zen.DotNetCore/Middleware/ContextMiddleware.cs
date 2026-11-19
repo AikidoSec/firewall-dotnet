@@ -1,6 +1,7 @@
 using System;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Text;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
@@ -8,6 +9,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Net.Http.Headers;
 
 [assembly: InternalsVisibleTo("Aikido.Zen.Tests.DotNetCore")]
 namespace Aikido.Zen.DotNetCore.Middleware
@@ -121,7 +123,8 @@ namespace Aikido.Zen.DotNetCore.Middleware
                     headers: request.Headers.ToDictionary(h => h.Key, h => string.Join(',', h.Value.ToArray())),
                     cookies: cookies,
                     body: request.Body,
-                    contentType: request.ContentType
+                    contentType: request.ContentType,
+                    requestEncoding: GetRequestEncoding(request)
                 );
 
                 return new Context
@@ -150,6 +153,25 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 {
                     syncIOFeature.AllowSynchronousIO = initialAllowSynchronousIOValue;
                 }
+            }
+        }
+
+        // The charset ASP.NET Core's JSON and form readers take from the header (quotes removed, as MVC does).
+        internal static Encoding GetRequestEncoding(HttpRequest request)
+        {
+            try
+            {
+                var charset = HeaderUtilities.RemoveQuotes(request.GetTypedHeaders().ContentType?.Charset ?? default).Value;
+                if (string.IsNullOrEmpty(charset))
+                {
+                    return null;
+                }
+
+                return Encoding.GetEncoding(charset);
+            }
+            catch (Exception ex) when (ex is ArgumentException || ex is NotSupportedException)
+            {
+                return null;
             }
         }
 

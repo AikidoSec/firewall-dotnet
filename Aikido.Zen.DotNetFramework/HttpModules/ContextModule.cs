@@ -139,7 +139,8 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 headers: request.Headers.AllKeys.ToDictionary(k => k, k => request.Headers.Get(k)),
                 cookies: context.Cookies,
                 body: request.InputStream,
-                contentType: request.ContentType
+                contentType: request.ContentType,
+                requestEncoding: request.ContentEncoding
             );
 
             context.ParsedUserInput = httpData.FlattenedData;

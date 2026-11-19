@@ -112,14 +112,53 @@ namespace Aikido.Zen.Tests.DotNetFramework
             }
         }
 
+        [Test]
+        public async Task BeginRequest_Utf16JsonBody_IsInspectedWithTheRequestCharset()
+        {
+            var originalHttpContext = HttpContext.Current;
+            var originalDisable = Environment.GetEnvironmentVariable("AIKIDO_DISABLE");
+            var agent = Agent.NewInstance(new ZenApi(Mock.Of<IReportingAPIClient>(), Mock.Of<IRuntimeAPIClient>()));
+            try
+            {
+                Environment.SetEnvironmentVariable("AIKIDO_DISABLE", "false");
+                var body = Encoding.Unicode.GetBytes("{\"name\":\"' OR 1=1 --\"}");
+                var httpContext = new HttpContext(new FormWorkerRequest(body, "application/json; charset=utf-16"));
+                HttpContext.Current = httpContext;
+                var application = new HttpApplication();
+                typeof(HttpApplication).GetField("_context", BindingFlags.NonPublic | BindingFlags.Instance)
+                    .SetValue(application, httpContext);
+
+                await (Task)typeof(ContextModule).GetMethod("Context_BeginRequestAsync", BindingFlags.NonPublic | BindingFlags.Instance)
+                    .Invoke(_contextModule, new object[] { application, EventArgs.Empty });
+
+                var captured = httpContext.Items[Aikido.Zen.DotNetFramework.Zen.ContextItemKey] as Context;
+                Assert.That(captured, Is.Not.Null);
+                Assert.That(captured.ParsedUserInput.Any(input => input.Value == "' OR 1=1 --"), Is.True);
+            }
+            finally
+            {
+                Aikido.Zen.DotNetFramework.Zen.ClearCurrentContext();
+                HttpContext.Current = originalHttpContext;
+                Environment.SetEnvironmentVariable("AIKIDO_DISABLE", originalDisable);
+                agent.Dispose();
+            }
+        }
+
         private class FormWorkerRequest : SimpleWorkerRequest
         {
             private readonly byte[] _body;
+            private readonly string _contentType;
 
             public FormWorkerRequest(string body)
+                : this(Encoding.UTF8.GetBytes(body), "application/x-www-form-urlencoded")
+            {
+            }
+
+            public FormWorkerRequest(byte[] body, string contentType)
                 : base("/", Path.GetTempPath(), "api/test", "", new StringWriter())
             {
-                _body = Encoding.UTF8.GetBytes(body);
+                _body = body;
+                _contentType = contentType;
             }
 
             public override string GetHttpVerbName() => "POST";
@@ -131,7 +170,7 @@ namespace Aikido.Zen.Tests.DotNetFramework
             {
                 if (index == HeaderContentType)
                 {
-                    return "application/x-www-form-urlencoded";
+                    return _contentType;
                 }
                 if (index == HeaderContentLength)
                 {
