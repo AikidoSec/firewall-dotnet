@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Threading;
@@ -46,19 +47,24 @@ class IPRange
     /// <param name="cidrOrIp">The CIDR notation of the IP range or a single IP address.</param>
     public void InsertRange(string cidrOrIp)
     {
+        var parts = cidrOrIp?.Split('/');
+        if (parts == null || parts.Length > 2 || !IPAddress.TryParse(parts[0], out IPAddress ipAddress))
+        {
+            return;
+        }
+
+        bool isIPv6 = ipAddress.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6;
+        int maxPrefix = isIPv6 ? 128 : 32;
+        int prefixLength = maxPrefix;
+        if (parts.Length == 2 &&
+            (!int.TryParse(parts[1], NumberStyles.None, CultureInfo.InvariantCulture, out prefixLength) || prefixLength > maxPrefix))
+        {
+            return;
+        }
+
         _lock.EnterWriteLock();
         try
         {
-            var parts = cidrOrIp.Split('/');
-            var ipString = parts[0];
-            if (!IPAddress.TryParse(ipString, out IPAddress ipAddress))
-            {
-                return;
-            }
-
-            bool isIPv6 = ipAddress.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6;
-            int prefixLength = parts.Length > 1 ? int.Parse(parts[1]) : (isIPv6 ? 128 : 32);
-
             var currentNode = isIPv6 ? _ipv6Root : _ipv4Root;
             var addressBytes = ipAddress.GetAddressBytes();
 

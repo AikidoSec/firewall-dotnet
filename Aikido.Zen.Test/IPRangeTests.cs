@@ -50,6 +50,35 @@ namespace Aikido.Zen.Test
             Assert.That(_ipRange.IsIpInRange("2001:0db8:85a3:0000:0000:8a2e:0370:7334:ffff"), Is.False);
         }
 
+        [TestCase(null)]
+        [TestCase("")]
+        [TestCase("invalid")]
+        [TestCase("8.8.8.8/")]
+        [TestCase("8.8.8.8/-1")]
+        [TestCase("8.8.8.8/33")]
+        [TestCase("8.8.8.8/invalid")]
+        [TestCase("8.8.8.8/99999999999999999999")]
+        [TestCase("8.8.8.8/24/32")]
+        [TestCase("8.8.8.8/0/24")]
+        [TestCase("8.8.8.8//24")]
+        [TestCase("2606:4700::1111/-1")]
+        [TestCase("2606:4700::1111/129")]
+        [TestCase("2606:4700::1111/invalid")]
+        [TestCase("2606:4700::1111/128/64")]
+        public void InsertRange_IgnoresInvalidInputWithoutChangingExistingRanges(string? range)
+        {
+            _ipRange.InsertRange("9.9.9.9");
+
+            Assert.DoesNotThrow(() => _ipRange.InsertRange(range));
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(_ipRange.IsIpInRange("9.9.9.9"), Is.True);
+                Assert.That(_ipRange.IsIpInRange("8.8.8.8"), Is.False);
+                Assert.That(_ipRange.IsIpInRange("2606:4700::1111"), Is.False);
+            });
+        }
+
         [Test]
         public void IsIpInRange_WithEmptyRange_ShouldReturnFalse()
         {
