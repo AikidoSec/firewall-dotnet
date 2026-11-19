@@ -38,10 +38,7 @@ namespace Aikido.Zen.Core.Models.Ip
                     {
                         foreach (var ip in endpoint.AllowedIPAddresses)
                         {
-                            if (!trie.InsertRange(ip))
-                            {
-                                return;
-                            }
+                            trie.InsertRange(ip);
                         }
                     }
                     endpointConfigs.Add((endpoint, trie));
@@ -125,10 +122,7 @@ namespace Aikido.Zen.Core.Models.Ip
                 var allowedIps = new IPRange();
                 foreach (var ip in ips)
                 {
-                    if (!allowedIps.InsertRange(ip))
-                    {
-                        return;
-                    }
+                    allowedIps.InsertRange(ip);
                 }
                 _allowedIps = allowedIps;
             }
@@ -220,12 +214,9 @@ namespace Aikido.Zen.Core.Models.Ip
                 foreach (var matchingEndpoint in matchingEndpoints.Where(e => (e.AllowedIPAddresses?.Count() ?? 0) > 0))
                 {
                     var endpointConfig = _endpointConfigs.First(x => x.Config == matchingEndpoint);
-                    if (endpointConfig.AllowedIPs.HasItems)
+                    if (endpointConfig.AllowedIPs.HasItems && !endpointConfig.AllowedIPs.IsIpInRange(context.RemoteAddress))
                     {
-                        if (!endpointConfig.AllowedIPs.IsIpInRange(context.RemoteAddress))
-                        {
-                            return false; // If IP is not allowed for this endpoint, return false
-                        }
+                        return false; // If IP is not allowed for this endpoint, return false
                     }
                 }
 
