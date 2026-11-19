@@ -119,6 +119,54 @@ namespace Aikido.Zen.Tests.DotNetCore
             }
         }
 
+        [TestCase("application/json; charset=utf-16", "utf-16")]
+        [TestCase("application/json; foo; charset=utf-16", "utf-16")]
+        [TestCase("application/json; charset=\"utf-16\"", "utf-16")]
+        [TestCase("application/json; profile=\"a; charset=utf-8\"; charset=utf-16", "utf-16")]
+        [TestCase("application/json; profile=\"a; charset=utf-16\"", null)]
+        [TestCase("application/json; charset=bogus", null)]
+        [TestCase("application/json _; charset=utf-16", null)]
+        [TestCase("application/json", null)]
+        [TestCase(null, null)]
+        public void GetRequestEncoding_ReadsTheCharsetTheJsonAndFormReadersUse(string? contentType, string? expected)
+        {
+            var request = new DefaultHttpContext().Request;
+            request.ContentType = contentType;
+
+            Assert.That(ContextMiddleware.GetRequestEncoding(request)?.WebName, Is.EqualTo(expected));
+        }
+
+        [Test]
+        public async Task InvokeAsync_Utf16JsonBody_IsInspectedWithTheRequestCharset()
+        {
+            var originalDisable = Environment.GetEnvironmentVariable("AIKIDO_DISABLE");
+            try
+            {
+                Environment.SetEnvironmentVariable("AIKIDO_DISABLE", "false");
+                Agent.Instance.Context.Config.Clear();
+                Agent.Instance.ClearContext();
+                var context = new DefaultHttpContext();
+                context.Request.Scheme = "http";
+                context.Request.Host = new HostString("test.local");
+                context.Request.Path = "/api/test";
+                context.Request.Method = "POST";
+                context.Request.ContentType = "application/json; charset=utf-16";
+                context.Request.Body = new MemoryStream(Encoding.Unicode.GetBytes("{\"name\":\"' OR 1=1 --\"}"));
+
+                await _contextMiddleware.InvokeAsync(context, _ => Task.CompletedTask);
+
+                var captured = context.Items["Aikido.Zen.Context"] as Context;
+                Assert.That(captured, Is.Not.Null);
+                Assert.That(captured!.ParsedUserInput.Any(input => input.Value == "' OR 1=1 --"), Is.True);
+            }
+            finally
+            {
+                Agent.Instance.ClearContext();
+                Agent.Instance.Context.Config.Clear();
+                Environment.SetEnvironmentVariable("AIKIDO_DISABLE", originalDisable);
+            }
+        }
+
         [TestCase(1024, 1024)]
         [TestCase(1025, 1024)]
         [TestCase(1025, 4096)]
