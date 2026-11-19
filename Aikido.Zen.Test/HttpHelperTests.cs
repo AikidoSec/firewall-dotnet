@@ -219,6 +219,98 @@ namespace Aikido.Zen.Test.Helpers
             }
         }
 
+        [TestCase("application/x-www-form-urlencoded", "name=' OR 1=1 --")]
+        [TestCase("application/json", "{\"name\":\"' OR 1=1 --\"}")]
+        [TestCase("application/json _", "{\"name\":\"' OR 1=1 --\"}")]
+        [TestCase("application/xml", "<r><name>' OR 1=1 --</name></r>")]
+        [TestCase("text/plain", "' OR 1=1 --")]
+        public async Task ReadAndFlattenHttpDataAsync_ShouldDecodeBodyWithRequestEncoding(string contentType, string payload)
+        {
+            // the encoding the app resolved, then the encoding the body is really sent in (apps may honor or ignore the header)
+            foreach (var (requestEncoding, bodyEncoding) in new[]
+            {
+                ("utf-16", "utf-16"),
+                ("utf-16BE", "utf-16BE"),
+                ("utf-32", "utf-32"),
+                ("utf-8", "utf-8"),
+                ("iso-8859-1", "iso-8859-1"),
+                ("iso-8859-1", "utf-8"),
+                ("utf-16", "utf-8"),
+                ((string?)null, "utf-8"),
+            })
+            {
+                using var bodyStream = new MemoryStream(Encoding.GetEncoding(bodyEncoding).GetBytes(payload));
+
+                var result = await HttpHelper.ReadAndFlattenHttpDataAsync(
+                    new Dictionary<string, string>(),
+                    new Dictionary<string, string>(),
+                    new Dictionary<string, string>(),
+                    new Dictionary<string, string>(),
+                    bodyStream,
+                    contentType,
+                    requestEncoding == null ? null : Encoding.GetEncoding(requestEncoding));
+
+                Assert.That(result.FlattenedData.Any(input => input.Value == "' OR 1=1 --"), Is.True, $"{contentType} {requestEncoding} {bodyEncoding}");
+                Assert.That(result.ParsedBody, Is.Not.Null, $"{contentType} {requestEncoding} {bodyEncoding}");
+            }
+        }
+
+        [Test]
+        public async Task ReadAndFlattenHttpDataAsync_ShouldParseBodyWithRequestEncoding()
+        {
+            using var bodyStream = new MemoryStream(Encoding.GetEncoding("iso-8859-1").GetBytes("{\"café\":\"x\"}"));
+
+            var result = await HttpHelper.ReadAndFlattenHttpDataAsync(
+                new Dictionary<string, string>(),
+                new Dictionary<string, string>(),
+                new Dictionary<string, string>(),
+                new Dictionary<string, string>(),
+                bodyStream,
+                "application/json",
+                Encoding.GetEncoding("iso-8859-1"));
+
+            Assert.That(((Dictionary<string, object>)result.ParsedBody).Keys, Is.EqualTo(new[] { "café" }));
+        }
+
+        [Test]
+        public async Task ReadAndFlattenHttpDataAsync_ShouldParseBodyWithRequestEncodingWhenUtf8Fails()
+        {
+            using var bodyStream = new MemoryStream(Encoding.Unicode.GetBytes("{\"café\":\"x\"}"));
+
+            var result = await HttpHelper.ReadAndFlattenHttpDataAsync(
+                new Dictionary<string, string>(),
+                new Dictionary<string, string>(),
+                new Dictionary<string, string>(),
+                new Dictionary<string, string>(),
+                bodyStream,
+                "application/json",
+                Encoding.Unicode);
+
+            Assert.That(((Dictionary<string, object>)result.ParsedBody).Keys, Is.EqualTo(new[] { "café" }));
+        }
+
+        [Test]
+        public async Task ReadAndFlattenHttpDataAsync_ShouldNotReadMultipartTwiceForRequestEncoding()
+        {
+            var body = "--b\r\nContent-Disposition: form-data; name=\"f\"\r\n\r\nvalue\r\n--b--\r\n";
+            var inputs = new List<int>();
+            foreach (var encoding in new Encoding[] { null, Encoding.Unicode })
+            {
+                using var bodyStream = new MemoryStream(Encoding.UTF8.GetBytes(body));
+
+                var result = await HttpHelper.ReadAndFlattenHttpDataAsync(
+                    new Dictionary<string, string>(),
+                    new Dictionary<string, string>(),
+                    new Dictionary<string, string>(),
+                    new Dictionary<string, string>(),
+                    bodyStream,
+                    "multipart/form-data; boundary=b",
+                    encoding);
+                inputs.Add(result.FlattenedData.Count);
+            }
+
+            Assert.That(inputs[1], Is.EqualTo(inputs[0]));
+        }
         [TestCase(1024, true, false)]
         [TestCase(1025, true, false)]
         [TestCase(10000, true, false)]
