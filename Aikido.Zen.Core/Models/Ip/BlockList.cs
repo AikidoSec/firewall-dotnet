@@ -30,7 +30,8 @@ namespace Aikido.Zen.Core.Models.Ip
             _lock.EnterWriteLock();
             try
             {
-                _endpointConfigs = endpoints.Select(endpoint =>
+                var endpointConfigs = new List<(EndpointConfig Config, IPRange AllowedIPs)>();
+                foreach (var endpoint in endpoints)
                 {
                     var trie = new IPRange();
                     if (endpoint.AllowedIPAddresses != null)
@@ -39,12 +40,16 @@ namespace Aikido.Zen.Core.Models.Ip
                         {
                             foreach (var cidr in IPHelper.ToCidrString(ip))
                             {
-                                trie.InsertRange(cidr);
+                                if (!trie.InsertRange(cidr))
+                                {
+                                    return;
+                                }
                             }
                         }
                     }
-                    return (endpoint, trie);
-                }).ToList();
+                    endpointConfigs.Add((endpoint, trie));
+                }
+                _endpointConfigs = endpointConfigs;
             }
             finally
             {
@@ -120,14 +125,18 @@ namespace Aikido.Zen.Core.Models.Ip
             _lock.EnterWriteLock();
             try
             {
-                _allowedIps = new IPRange();
+                var allowedIps = new IPRange();
                 foreach (var ip in ips)
                 {
                     foreach (var cidr in IPHelper.ToCidrString(ip))
                     {
-                        _allowedIps.InsertRange(cidr);
+                        if (!allowedIps.InsertRange(cidr))
+                        {
+                            return;
+                        }
                     }
                 }
+                _allowedIps = allowedIps;
             }
             finally
             {

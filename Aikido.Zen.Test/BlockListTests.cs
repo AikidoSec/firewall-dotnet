@@ -126,6 +126,63 @@ namespace Aikido.Zen.Test
             Assert.That(_blockList.IsIpAllowedForEndpoint(context)); // Should allow when no restrictions
         }
 
+        [TestCase("9.9.9.9/invalid")]
+        [TestCase("9.9.9.9/33")]
+        [TestCase("invalid")]
+        [TestCase("1.1.1.0/24", "9.9.9.9/invalid")]
+        [TestCase("9.9.9.9/invalid", "1.1.1.0/24")]
+        public void UpdateAllowedIps_InvalidUpdatePreservesPreviousRules(params string[] ranges)
+        {
+            _blockList.UpdateAllowedIps(new[] { "9.9.9.0/24" });
+
+            _blockList.UpdateAllowedIps(ranges);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(_blockList.IsIPAllowed("8.8.8.8"), Is.False);
+                Assert.That(_blockList.IsIPAllowed("9.9.9.9"), Is.True);
+                Assert.That(_blockList.IsIPAllowed("1.1.1.1"), Is.False);
+                Assert.That(_blockList.IsEmpty(), Is.False);
+            });
+
+            _blockList.UpdateAllowedIps(Array.Empty<string>());
+
+            Assert.That(_blockList.IsIPAllowed("8.8.8.8"), Is.True);
+            Assert.That(_blockList.IsEmpty(), Is.True);
+        }
+
+        [TestCase("9.9.9.9/invalid")]
+        [TestCase("9.9.9.9/33")]
+        [TestCase("invalid")]
+        [TestCase("1.1.1.0/24", "9.9.9.9/invalid")]
+        [TestCase("9.9.9.9/invalid", "1.1.1.0/24")]
+        public void UpdateAllowedIpsPerEndpoint_InvalidUpdatePreservesPreviousRules(params string[] ranges)
+        {
+            var endpoint = new EndpointConfig
+            {
+                Method = "GET", Route = "/restricted", AllowedIPAddresses = new[] { "9.9.9.0/24" }
+            };
+            _blockList.UpdateAllowedIpsPerEndpoint(new[] { endpoint });
+
+            _blockList.UpdateAllowedIpsPerEndpoint(new[]
+            {
+                new EndpointConfig { Method = "GET", Route = "/restricted", AllowedIPAddresses = ranges }
+            });
+
+            var context = new Context { Method = "GET", Url = "http://localhost/restricted", Route = "/restricted", RemoteAddress = "8.8.8.8" };
+            Assert.That(_blockList.IsBlocked(context, out _), Is.True);
+            context.RemoteAddress = "9.9.9.9";
+            Assert.That(_blockList.IsBlocked(context, out _), Is.False);
+            context.RemoteAddress = "1.1.1.1";
+            Assert.That(_blockList.IsBlocked(context, out _), Is.True);
+
+            endpoint.AllowedIPAddresses = Array.Empty<string>();
+            _blockList.UpdateAllowedIpsPerEndpoint(new[] { endpoint });
+
+            context.RemoteAddress = "8.8.8.8";
+            Assert.That(_blockList.IsBlocked(context, out _), Is.False);
+        }
+
         [Test]
         public void UpdateBlockedIps_WithSingleIp_ShouldBlockSpecificIP()
         {
