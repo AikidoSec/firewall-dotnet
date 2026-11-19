@@ -10,7 +10,7 @@
       <ProjectReference Include="..\..\..\Aikido.Zen.DotNetCore\Aikido.Zen.DotNetCore.csproj" />
       <PackageReference Include="MySql.Data" Version="9.1.0" />
       <PackageReference Include="BouncyCastle.Cryptography" Version="2.7.0" />
-      <PackageReference Include="MySqlConnector" Version="2.4.0" />
+      <PackageReference Include="MySqlConnector" Version="2.6.1" />
   </ItemGroup>
 
     <ItemGroup>
