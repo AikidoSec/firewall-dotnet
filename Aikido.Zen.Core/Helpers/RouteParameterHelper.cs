@@ -23,7 +23,7 @@ namespace Aikido.Zen.Core.Helpers
         private static readonly Regex ObjectIdRegex = new Regex(@"^[0-9a-f]{24}$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         private static readonly Regex UlidRegex = new Regex(@"^[0-9A-HJKMNP-TV-Z]{26}$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         private static readonly Regex NumberRegex = new Regex(@"^\d+$", RegexOptions.Compiled);
-        private static readonly Regex DateRegex = new Regex(@"^\d{4}-\d{2}-\d{2}|\d{2}-\d{2}-\d{4}$", RegexOptions.Compiled);
+        private static readonly Regex DateRegex = new Regex(@"\A(?:\d{4}-\d{2}-\d{2}|\d{2}-\d{2}-\d{4})\z", RegexOptions.Compiled);
         private static readonly Regex EmailRegex = new Regex(@"^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$", RegexOptions.Compiled);
         private static readonly Regex HashRegex = new Regex(@"^(?:[a-f0-9]{32}|[a-f0-9]{40}|[a-f0-9]{64}|[a-f0-9]{128})$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         private static readonly int[] HashLengths = new[] { 32, 40, 64, 128 };
