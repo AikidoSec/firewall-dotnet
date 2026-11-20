@@ -214,7 +214,7 @@ namespace Aikido.Zen.Core.Models.Ip
                 foreach (var matchingEndpoint in matchingEndpoints.Where(e => (e.AllowedIPAddresses?.Count() ?? 0) > 0))
                 {
                     var endpointConfig = _endpointConfigs.First(x => x.Config == matchingEndpoint);
-                    if (endpointConfig.AllowedIPs.HasItems && !endpointConfig.AllowedIPs.IsIpInRange(context.RemoteAddress))
+                    if (!IsIPAllowed(endpointConfig.AllowedIPs, context.RemoteAddress))
                     {
                         return false; // If IP is not allowed for this endpoint, return false
                     }
@@ -266,23 +266,16 @@ namespace Aikido.Zen.Core.Models.Ip
             _lock.EnterReadLock();
             try
             {
-                if (!_allowedIps.HasItems)
-                {
-                    return true; // If no allowed IPs are defined, all IPs are allowed
-                }
-
-                if (!IPHelper.IsValidIp(ip))
-                {
-                    return false; // Invalid IPs are not allowed when there are allowed IPs
-                }
-
-                return _allowedIps.IsIpInRange(ip);
+                return IsIPAllowed(_allowedIps, ip);
             }
             finally
             {
                 _lock.ExitReadLock();
             }
         }
+
+        private static bool IsIPAllowed(IPRange allowedIps, string ip) =>
+            !allowedIps.HasItems || allowedIps.IsIpInRange(ip);
 
         /// <summary>
         /// Checks if access should be blocked based on IP and URL.
@@ -332,7 +325,7 @@ namespace Aikido.Zen.Core.Models.Ip
                 _blockedIpLists.Any(list => list.Range.HasItems) == false &&
                 _bypassedIps.HasItems == false &&
                 _endpointConfigs.Any() == false;
-                
+
         }
     }
 }
