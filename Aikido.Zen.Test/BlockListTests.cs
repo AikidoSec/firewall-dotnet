@@ -288,6 +288,43 @@ namespace Aikido.Zen.Test
             Assert.That(_blockList.IsEmpty(), Is.False);
         }
 
+        [TestCase("0.0.0.0/0", "8.8.8.8", "2606:4700::1111")]
+        [TestCase("::/0", "2606:4700::1111", "8.8.8.8")]
+        public void ZeroPrefixRanges_AreAppliedToIpLists(string range, string includedIp, string excludedIp)
+        {
+            var ips = new[] { range };
+            _blockList.UpdateBlockedIps(new[] { ("all", (IEnumerable<string>)ips) });
+            _blockList.UpdateBypassedIps(ips);
+            _blockList.UpdateAllowedIps(ips);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(_blockList.IsEmpty(), Is.False);
+                Assert.That(_blockList.IsIPBlocked(includedIp), Is.True);
+                Assert.That(_blockList.IsIPBlocked(excludedIp), Is.False);
+                Assert.That(_blockList.GetMatchingBlockedIPListKeys(includedIp), Is.EqualTo(new[] { "all" }));
+                Assert.That(_blockList.IsIPBypassed(includedIp), Is.True);
+                Assert.That(_blockList.IsIPBypassed(excludedIp), Is.False);
+                Assert.That(_blockList.IsIPAllowed(includedIp), Is.True);
+                Assert.That(_blockList.IsIPAllowed(excludedIp), Is.False);
+            });
+        }
+
+        [TestCase("0.0.0.0/0", "8.8.8.8", "2606:4700::1111")]
+        [TestCase("::/0", "2606:4700::1111", "8.8.8.8")]
+        public void ZeroPrefixRanges_AreAppliedToEndpointAllowlists(string range, string includedIp, string excludedIp)
+        {
+            _blockList.UpdateAllowedIpsPerEndpoint(new[]
+            {
+                new EndpointConfig { Method = "GET", Route = "/test", AllowedIPAddresses = new[] { range } }
+            });
+            var context = new Context { Method = "GET", Route = "/test", Url = "http://localhost/test", RemoteAddress = includedIp };
+
+            Assert.That(_blockList.IsIpAllowedForEndpoint(context), Is.True);
+            context.RemoteAddress = excludedIp;
+            Assert.That(_blockList.IsIpAllowedForEndpoint(context), Is.False);
+        }
+
         [Test]
         public void IsIPAllowed_WithEmptyAllowedIpAddresses_ShouldAllowIP()
         {

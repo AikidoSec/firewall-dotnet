@@ -153,6 +153,20 @@ namespace Aikido.Zen.Test
             Assert.That(_ipRange.HasItems, Is.False);
         }
 
+        [TestCase("0.0.0.0/0", "8.8.8.8", "2606:4700::1111")]
+        [TestCase("::/0", "2606:4700::1111", "8.8.8.8")]
+        public void HasItems_WithZeroPrefixRangeRecognizesAddressFamily(string range, string includedIp, string excludedIp)
+        {
+            _ipRange.InsertRange(range);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(_ipRange.HasItems, Is.True);
+                Assert.That(_ipRange.IsIpInRange(includedIp), Is.True);
+                Assert.That(_ipRange.IsIpInRange(excludedIp), Is.False);
+            });
+        }
+
         [Test]
         public void ShouldWorkWithZeroZeroZeroZero()
         {

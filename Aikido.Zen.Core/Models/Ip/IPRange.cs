@@ -30,7 +30,8 @@ class IPRange
 {
     private readonly TrieNode _ipv4Root;
     private readonly TrieNode _ipv6Root;
-    public bool HasItems => _ipv4Root.Children.Any(child => child != null) ||
+    public bool HasItems => _ipv4Root.IsTerminal || _ipv6Root.IsTerminal ||
+                           _ipv4Root.Children.Any(child => child != null) ||
                            _ipv6Root.Children.Any(child => child != null);
     private readonly ReaderWriterLockSlim _lock = new ReaderWriterLockSlim();
 
