@@ -274,8 +274,10 @@ namespace Aikido.Zen.Core.Models.Ip
             }
         }
 
-        private static bool IsIPAllowed(IPRange allowedIps, string ip) =>
-            !allowedIps.HasItems || allowedIps.IsIpInRange(ip);
+        private static bool IsIPAllowed(IPRange allowedIps, string ip)
+        {
+            return !allowedIps.HasItems || allowedIps.IsIpInRange(ip);
+        }
 
         /// <summary>
         /// Checks if access should be blocked based on IP and URL.
