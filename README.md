@@ -141,6 +141,11 @@ using Microsoft.AspNet.Identity;
     // other middleware like UseEndpoints() or MapControllers() need to come after UseZenFirewall
 ```
 
+#### Client IPs behind proxies
+
+- By default, Zen extracts the client IP from the `X-Forwarded-For` header by taking the rightmost public IP. Configure your proxy to supply trustworthy client IPs. If you use a different header, set `AIKIDO_CLIENT_IP_HEADER=your-custom-header`.
+- If you use [ASP.NET Core's `UseForwardedHeaders`](https://learn.microsoft.com/en-us/aspnet/core/host-and-deploy/proxy-load-balancer) to resolve client IPs, set `AIKIDO_TRUST_PROXY=false` so Zen uses the already resolved IP address. Ensure the middleware is configured properly and runs before `UseZenFirewall`.
+
 ### .NET Framework
 
 Ensure that your project runs on .NET Framework 4.6 or higher.
