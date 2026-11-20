@@ -54,6 +54,13 @@ namespace Aikido.Zen.Test.Helpers
             Assert.That(RouteParameterHelper.BuildRouteFromUrl("/posts/01-05-2023"), Is.EqualTo("/posts/:date"));
         }
 
+        [TestCase("/posts/2023-05-01-article")]
+        [TestCase("/posts/3-article-01-05-2023")]
+        public void BuildRouteFromUrl_SlugsContainingDates_PreservesSlug(string path)
+        {
+            Assert.That(RouteParameterHelper.BuildRouteFromUrl(path), Is.EqualTo(path));
+        }
+
         [Test]
         public void BuildRouteFromUrl_CommaNumbers_IgnoresCommaNumbers()
         {
