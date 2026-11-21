@@ -143,8 +143,10 @@ using Microsoft.AspNet.Identity;
 
 #### Client IPs behind proxies
 
-- By default, Zen extracts the client IP from the `X-Forwarded-For` header by taking the rightmost public IP. Configure your proxy to supply trustworthy client IPs. If you use a different header, set `AIKIDO_CLIENT_IP_HEADER=your-custom-header`.
-- If you use [ASP.NET Core's `UseForwardedHeaders`](https://learn.microsoft.com/en-us/aspnet/core/host-and-deploy/proxy-load-balancer) to resolve client IPs, set `AIKIDO_TRUST_PROXY=false` so Zen uses the already resolved IP address. Ensure the middleware is configured properly and runs before `UseZenFirewall`.
+`AIKIDO_TRUST_PROXY` controls how Zen determines the client IP:
+
+- **`true` (default when unset):** Zen selects the rightmost valid public IP from `X-Forwarded-For`, falling back to the request's current remote IP if none is found. Configure your proxy to supply trustworthy client IPs, and additionally set `AIKIDO_CLIENT_IP_HEADER=your-custom-header` if it uses a different header.
+- **`false`:** Zen uses the request's current remote IP directly. Set this if you use [ASP.NET Core's `UseForwardedHeaders`](https://learn.microsoft.com/en-us/aspnet/core/host-and-deploy/proxy-load-balancer), ensuring it is configured properly and runs before `UseZenFirewall`.
 
 ### .NET Framework
 
