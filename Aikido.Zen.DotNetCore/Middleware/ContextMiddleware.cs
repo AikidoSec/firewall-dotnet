@@ -264,7 +264,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
             }
 
             var headerValues = httpContext.Request?.Headers?[EnvironmentHelper.ClientIpHeader];
-            var headerValue = string.Join(",", headerValues?.ToArray() ?? Array.Empty<string>());
+            var headerValue = headerValues.ToString();
             var clientIpFromHeader = IPHeaderHelper.GetClientIpFromHeader(headerValue);
 
             return clientIpFromHeader ?? remoteIpAddress;
