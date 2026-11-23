@@ -141,13 +141,6 @@ using Microsoft.AspNet.Identity;
     // other middleware like UseEndpoints() or MapControllers() need to come after UseZenFirewall
 ```
 
-#### Client IPs behind proxies
-
-`AIKIDO_TRUST_PROXY` controls how Zen determines the client IP:
-
-- **`true` (default when unset):** Zen selects the rightmost valid public IP from `X-Forwarded-For`, falling back to the request's current remote IP if none is found. Configure your proxy to supply trustworthy client IPs, and additionally set `AIKIDO_CLIENT_IP_HEADER=your-custom-header` if it uses a different header.
-- **`false`:** Zen uses the request's current remote IP directly. Set this if you use [ASP.NET Core's `UseForwardedHeaders`](https://learn.microsoft.com/en-us/aspnet/core/host-and-deploy/proxy-load-balancer), ensuring it is configured properly and runs before `UseZenFirewall`.
-
 ### .NET Framework
 
 Ensure that your project runs on .NET Framework 4.6 or higher.
@@ -241,6 +234,7 @@ public void Configuration(IAppBuilder app)
 
 ## Guides
 
+- [Proxy settings](docs/proxy.md) — client IP configuration for ASP.NET Core and ASP.NET Framework
 - [Troubleshooting](docs/troubleshooting.md) — common issues and how to debug Zen
 - [Azure Key Vault](docs/azure-key-vault.md) — using Azure Key Vault with Zen
 - [AWS Secrets Manager](docs/aws-secrets-manager.md) — using AWS Secrets Manager with Zen
