@@ -19,8 +19,6 @@ Out-of-process IIS hosting can enable forwarding automatically, so check the hos
 
 The request's current remote IP is `HttpContext.Connection.RemoteIpAddress`. With Zen's header parsing disabled, Zen uses its value when `UseZenFirewall` runs, including any changes made by earlier middleware.
 
-ASP.NET Core forwarding can also update the request scheme, host, and path base, depending on its configuration. Zen's client IP parsing does not configure those fields.
-
 ## ASP.NET Framework
 
 ASP.NET Framework does not have ASP.NET Core's `UseForwardedHeaders` middleware. Zen uses the same header selection described above, reading the configured header from IIS server variables.
