@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.Linq;
 using System.Net;
 
@@ -8,11 +9,28 @@ namespace Aikido.Zen.Core.Helpers
     {
         internal static bool ShouldTrustProxy(string setting)
         {
-            return setting == null || setting == "true" || setting == "1";
+            return string.IsNullOrEmpty(setting) ||
+                string.Equals(setting, "true", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(setting, "yes", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(setting, "y", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(setting, "on", StringComparison.OrdinalIgnoreCase) ||
+                TryGetHopCount(setting, out _);
         }
 
-        internal static string GetClientIpFromHeader(string header)
+        internal static string GetClientIpFromHeader(string header, string trustProxy = null)
         {
+            if (TryGetHopCount(trustProxy, out var hopCount))
+            {
+                var entries = header?.Split(',');
+                if (entries == null || hopCount > entries.Length)
+                {
+                    return null;
+                }
+
+                var clientIp = ParseSingleIp(entries[entries.Length - hopCount].Trim());
+                return IPHelper.IsValidIp(clientIp) ? clientIp : null;
+            }
+
             foreach (var ip in ParseIpHeader(header).Reverse())
             {
                 if (IPHelper.IsValidIp(ip) && !IPHelper.IsPrivateOrLocalIp(ip))
@@ -22,6 +40,11 @@ namespace Aikido.Zen.Core.Helpers
             }
 
             return null;
+        }
+
+        private static bool TryGetHopCount(string setting, out int hopCount)
+        {
+            return int.TryParse(setting, NumberStyles.None, CultureInfo.InvariantCulture, out hopCount) && hopCount > 0;
         }
 
         /// <summary>

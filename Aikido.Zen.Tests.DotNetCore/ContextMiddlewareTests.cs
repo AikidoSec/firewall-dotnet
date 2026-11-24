@@ -1249,10 +1249,20 @@ namespace Aikido.Zen.Tests.DotNetCore
         }
 
         [TestCase("true", null, "8.8.8.8")]
+        [TestCase("TRUE", null, "8.8.8.8")]
+        [TestCase("YeS", "Connecting-IP", "8.8.8.8")]
         [TestCase(null, null, "8.8.8.8")]
         [TestCase("false", null, "9.9.9.9")]
         [TestCase("true", "Connecting-IP", "8.8.8.8")]
         [TestCase("false", "Connecting-IP", "9.9.9.9")]
+        [TestCase("1", null, "9.9.9.9")]
+        [TestCase("2", null, "10.42.0.10")]
+        [TestCase("3", null, "8.8.8.8")]
+        [TestCase("4", null, "9.9.9.9")]
+        [TestCase("5", null, "7.7.7.7")]
+        [TestCase("6", null, "9.9.9.9")]
+        [TestCase("0", null, "9.9.9.9")]
+        [TestCase("2", "Connecting-IP", "10.42.0.10")]
         public async Task InvokeAsync_UsesConfiguredProxyPolicy_ForRepeatedHeaders(
             string? trustProxy, string? headerName, string expectedIp)
         {

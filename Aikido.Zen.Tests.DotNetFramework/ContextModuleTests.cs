@@ -31,6 +31,49 @@ namespace Aikido.Zen.Tests.DotNetFramework
             _contextModule = new ContextModule();
         }
 
+        [TestCase("true", null, "8.8.8.8")]
+        [TestCase("TRUE", null, "8.8.8.8")]
+        [TestCase("YeS", "Connecting-IP", "8.8.8.8")]
+        [TestCase(null, null, "8.8.8.8")]
+        [TestCase("false", null, "9.9.9.9")]
+        [TestCase("1", null, "9.9.9.9")]
+        [TestCase("2", null, "10.42.0.10")]
+        [TestCase("3", null, "8.8.8.8")]
+        [TestCase("4", null, "9.9.9.9")]
+        [TestCase("5", null, "7.7.7.7")]
+        [TestCase("2", "Connecting-IP", "10.42.0.10")]
+        [TestCase("false", "Connecting-IP", "9.9.9.9")]
+        public void GetClientIp_UsesConfiguredProxyPolicy_ForCombinedHeader(
+            string trustProxy, string headerName, string expectedIp)
+        {
+            var originalTrust = Environment.GetEnvironmentVariable("AIKIDO_TRUST_PROXY");
+            var originalHeader = Environment.GetEnvironmentVariable("AIKIDO_CLIENT_IP_HEADER");
+            try
+            {
+                Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", trustProxy);
+                Environment.SetEnvironmentVariable("AIKIDO_CLIENT_IP_HEADER", headerName);
+                var name = headerName ?? "X-Forwarded-For";
+                var request = new Mock<SimpleWorkerRequest>("/", Path.GetTempPath(), "api/test", "", new StringWriter())
+                {
+                    CallBase = true
+                };
+                request.Setup(r => r.GetRemoteAddress()).Returns("9.9.9.9");
+                request.Setup(r => r.GetUnknownRequestHeaders()).Returns(new[]
+                {
+                    new[] { name, "7.7.7.7,,8.8.8.8,10.42.0.10," }
+                });
+                var context = new HttpContext(request.Object);
+                var getClientIp = typeof(ContextModule).GetMethod("GetClientIp", BindingFlags.NonPublic | BindingFlags.Static);
+
+                Assert.That(getClientIp.Invoke(null, new object[] { context }), Is.EqualTo(expectedIp));
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", originalTrust);
+                Environment.SetEnvironmentVariable("AIKIDO_CLIENT_IP_HEADER", originalHeader);
+            }
+        }
+
         [TestCase("session=first", 1)]
         [TestCase("session=first; session=second", 1)]
         [TestCase("session=first; session=second; session=third", 1)]

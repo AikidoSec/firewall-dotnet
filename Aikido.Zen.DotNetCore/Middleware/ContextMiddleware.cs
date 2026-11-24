@@ -257,15 +257,17 @@ namespace Aikido.Zen.DotNetCore.Middleware
         private static string GetClientIp(HttpContext httpContext)
         {
             var remoteIpAddress = httpContext.Connection?.RemoteIpAddress?.ToString() ?? string.Empty;
+            var trustProxy = EnvironmentHelper.TrustProxy;
 
-            if (!IPHeaderHelper.ShouldTrustProxy(EnvironmentHelper.TrustProxy))
+            if (!IPHeaderHelper.ShouldTrustProxy(trustProxy))
             {
                 return remoteIpAddress;
             }
 
             var headerValues = httpContext.Request?.Headers?[EnvironmentHelper.ClientIpHeader];
-            var headerValue = headerValues.ToString();
-            var clientIpFromHeader = IPHeaderHelper.GetClientIpFromHeader(headerValue);
+            // StringValues.ToString() drops empty values, which would shift the selected hop.
+            var headerValue = string.Join(",", headerValues?.ToArray() ?? Array.Empty<string>());
+            var clientIpFromHeader = IPHeaderHelper.GetClientIpFromHeader(headerValue, trustProxy);
 
             return clientIpFromHeader ?? remoteIpAddress;
         }

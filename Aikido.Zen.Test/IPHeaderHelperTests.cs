@@ -89,5 +89,62 @@ namespace Aikido.Zen.Test.Helpers
         {
             Assert.That(IPHeaderHelper.GetClientIpFromHeader(header), Is.EqualTo(expected));
         }
+
+        [TestCase(null, true)]
+        [TestCase("", true)]
+        [TestCase("true", true)]
+        [TestCase("TRUE", true)]
+        [TestCase("TrUe", true)]
+        [TestCase("yes", true)]
+        [TestCase("YES", true)]
+        [TestCase("YeS", true)]
+        [TestCase("y", true)]
+        [TestCase("Y", true)]
+        [TestCase("on", true)]
+        [TestCase("ON", true)]
+        [TestCase("oN", true)]
+        [TestCase("1", true)]
+        [TestCase("2", true)]
+        [TestCase("002", true)]
+        [TestCase("2147483647", true)]
+        [TestCase("false", false)]
+        [TestCase("FALSE", false)]
+        [TestCase("FaLsE", false)]
+        [TestCase("no", false)]
+        [TestCase("NO", false)]
+        [TestCase("n", false)]
+        [TestCase("N", false)]
+        [TestCase("off", false)]
+        [TestCase("OFF", false)]
+        [TestCase("0", false)]
+        [TestCase("-1", false)]
+        [TestCase("+2", false)]
+        [TestCase("2.0", false)]
+        [TestCase(" 2", false)]
+        [TestCase(" true ", false)]
+        [TestCase("2147483648", false)]
+        [TestCase("invalid", false)]
+        public void ShouldTrustProxy_RecognizesBooleanValuesAndHopCounts(string? setting, bool expected)
+        {
+            Assert.That(IPHeaderHelper.ShouldTrustProxy(setting), Is.EqualTo(expected));
+        }
+
+        [TestCase("7.7.7.7, 8.8.8.8, 10.0.0.1", "1", "10.0.0.1")]
+        [TestCase("7.7.7.7, 8.8.8.8, 10.0.0.1", "2", "8.8.8.8")]
+        [TestCase("7.7.7.7, 8.8.8.8, 10.0.0.1", "3", "7.7.7.7")]
+        [TestCase("7.7.7.7, 8.8.8.8, 10.0.0.1", "002", "8.8.8.8")]
+        [TestCase("7.7.7.7, 8.8.8.8, 10.0.0.1", "4", null)]
+        [TestCase("7.7.7.7, unknown, 10.0.0.1", "2", null)]
+        [TestCase("7.7.7.7, , 10.0.0.1", "2", null)]
+        [TestCase("7.7.7.7, 10.0.0.1,", "1", null)]
+        [TestCase("127.0.0.1:443, 8.8.8.8", "2", "127.0.0.1")]
+        [TestCase("2606:4700::1111, [fd00::1]:443", "1", "fd00::1")]
+        [TestCase("7.7.7.7", "2147483647", null)]
+        [TestCase("", "1", null)]
+        [TestCase(null, "1", null)]
+        public void GetClientIpFromHeader_SelectsExactHop(string? header, string trustProxy, string? expected)
+        {
+            Assert.That(IPHeaderHelper.GetClientIpFromHeader(header, trustProxy), Is.EqualTo(expected));
+        }
     }
 }

@@ -374,10 +374,16 @@ namespace Aikido.Zen.Test
             Assert.That(result, Is.True);
         }
 
-        [Test]
-        public void IsRequestToItself_WhenTrustProxyDisabled_ReturnsFalse()
+        [TestCase("false", false)]
+        [TestCase("OFF", false)]
+        [TestCase("N", false)]
+        [TestCase("TRUE", true)]
+        [TestCase("YeS", true)]
+        [TestCase("0", false)]
+        [TestCase("2", true)]
+        public void IsRequestToItself_UsesConfiguredProxyTrust(string trustProxy, bool expected)
         {
-            Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", "false");
+            Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", trustProxy);
 
             var rightUri = new Uri("https://aikido.dev/admin");
             var result = SSRFDetector.IsRequestToItself(
@@ -385,7 +391,7 @@ namespace Aikido.Zen.Test
                 rightUri.Host,
                 rightUri.Port);
 
-            Assert.That(result, Is.False);
+            Assert.That(result, Is.EqualTo(expected));
         }
 
         [TestCase("http://localhost:8080/outbound", "http://localhost:8080", true)]
