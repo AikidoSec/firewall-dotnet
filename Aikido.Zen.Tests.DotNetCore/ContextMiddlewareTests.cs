@@ -11,7 +11,6 @@ using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.DotNetCore;
 using Aikido.Zen.DotNetCore.Middleware;
-using Aikido.Zen.DotNetCore.StartupFilters;
 using Aikido.Zen.Tests.Mocks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -21,6 +20,8 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Routing.Patterns;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Primitives;
 using Moq;
 using NUnit.Framework;
 
@@ -55,6 +56,7 @@ namespace Aikido.Zen.Tests.DotNetCore
 
             _mockHttpContext = new Mock<HttpContext>();
             _mockHttpContext.Setup(c => c.Connection).Returns(_mockConnection.Object);
+            _mockHttpContext.SetupGet(c => c.Features).Returns(new FeatureCollection());
 
             _getClientIpMethod = typeof(ContextMiddleware).GetMethod("GetClientIp", BindingFlags.NonPublic | BindingFlags.Static)!;
 
@@ -813,10 +815,7 @@ namespace Aikido.Zen.Tests.DotNetCore
 
         private string GetClientIp()
         {
-            _mockHttpContext.SetupGet(context => context.Items).Returns(new Dictionary<object, object?>());
-            var context = _mockHttpContext.Object;
-            ContextMiddleware.CaptureClientIpHeader(context);
-            return (string)_getClientIpMethod.Invoke(null, new object[] { context })!;
+            return (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
         }
 
         [Test]
@@ -1249,11 +1248,13 @@ namespace Aikido.Zen.Tests.DotNetCore
             Assert.That(result6, Is.EqualTo("5.6.7.8"));
         }
 
-        [TestCase(false, false)]
-        [TestCase(true, false)]
-        [TestCase(true, true)]
-        public async Task InvokeAsync_UsesOriginalHeader_WhenForwardingRunsBeforeZen(
-            bool hostAddsForwarding, bool filterAlreadyRegistered)
+        [TestCase("true", null, "8.8.8.8")]
+        [TestCase(null, null, "8.8.8.8")]
+        [TestCase("false", null, "9.9.9.9")]
+        [TestCase("true", "Connecting-IP", "8.8.8.8")]
+        [TestCase("false", "Connecting-IP", "9.9.9.9")]
+        public async Task InvokeAsync_UsesConfiguredProxyPolicy_ForRepeatedHeaders(
+            string? trustProxy, string? headerName, string expectedIp)
         {
             var originalDisable = Environment.GetEnvironmentVariable("AIKIDO_DISABLE");
             var originalTrust = Environment.GetEnvironmentVariable("AIKIDO_TRUST_PROXY");
@@ -1261,7 +1262,49 @@ namespace Aikido.Zen.Tests.DotNetCore
             try
             {
                 Environment.SetEnvironmentVariable("AIKIDO_DISABLE", "false");
-                Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", "true");
+                Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", trustProxy);
+                Environment.SetEnvironmentVariable("AIKIDO_CLIENT_IP_HEADER", headerName);
+                Agent.Instance.Context.Config.Clear();
+                Agent.Instance.ClearContext();
+
+                var context = new DefaultHttpContext();
+                context.Connection.RemoteIpAddress = IPAddress.Parse("9.9.9.9");
+                context.Request.Headers[headerName ?? "X-Forwarded-For"] =
+                    new StringValues(new[] { "7.7.7.7", "", "8.8.8.8", "10.42.0.10", "" });
+
+                await _contextMiddleware.InvokeAsync(context, requestContext =>
+                {
+                    var aikidoContext = requestContext.Items["Aikido.Zen.Context"] as Context;
+                    Assert.That(aikidoContext?.RemoteAddress, Is.EqualTo(expectedIp));
+                    return Task.CompletedTask;
+                });
+            }
+            finally
+            {
+                Agent.Instance.ClearContext();
+                Agent.Instance.Context.Config.Clear();
+                Environment.SetEnvironmentVariable("AIKIDO_DISABLE", originalDisable);
+                Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", originalTrust);
+                Environment.SetEnvironmentVariable("AIKIDO_CLIENT_IP_HEADER", originalHeader);
+            }
+        }
+
+        [TestCase(false, false, true)]
+        [TestCase(false, true, true)]
+        [TestCase(true, false, true)]
+        [TestCase(false, false, false)]
+        [TestCase(false, true, false)]
+        [TestCase(true, false, false)]
+        public async Task InvokeAsync_WhenProxyTrustDisabled_UsesAspNetCoreConnectionIp(
+            bool hostAddsForwarding, bool inlineOptions, bool trustedPeer)
+        {
+            var originalDisable = Environment.GetEnvironmentVariable("AIKIDO_DISABLE");
+            var originalTrust = Environment.GetEnvironmentVariable("AIKIDO_TRUST_PROXY");
+            var originalHeader = Environment.GetEnvironmentVariable("AIKIDO_CLIENT_IP_HEADER");
+            try
+            {
+                Environment.SetEnvironmentVariable("AIKIDO_DISABLE", "false");
+                Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", "false");
                 Environment.SetEnvironmentVariable("AIKIDO_CLIENT_IP_HEADER", null);
 
                 var builder = WebApplication.CreateBuilder(new[] { $"--ForwardedHeaders_Enabled={hostAddsForwarding}" });
@@ -1270,18 +1313,26 @@ namespace Aikido.Zen.Tests.DotNetCore
                 {
                     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor;
                     options.ForwardLimit = 2;
-                    options.KnownProxies.Add(IPAddress.Loopback);
+                    options.KnownIPNetworks.Clear();
+                    options.KnownProxies.Clear();
+                    if (trustedPeer)
+                    {
+                        options.KnownProxies.Add(IPAddress.Loopback);
+                    }
                     options.KnownProxies.Add(IPAddress.Parse("10.42.0.10"));
                 });
-                if (filterAlreadyRegistered)
-                {
-                    builder.Services.AddSingleton<IStartupFilter, ZenStartupFilter>();
-                }
                 builder.Services.AddZenFirewall();
                 await using var app = builder.Build();
                 if (!hostAddsForwarding)
                 {
-                    app.UseForwardedHeaders();
+                    if (inlineOptions)
+                    {
+                        app.UseForwardedHeaders(app.Services.GetRequiredService<IOptions<ForwardedHeadersOptions>>().Value);
+                    }
+                    else
+                    {
+                        app.UseForwardedHeaders();
+                    }
                 }
 
                 app.UseRouting();
@@ -1292,7 +1343,10 @@ namespace Aikido.Zen.Tests.DotNetCore
                 await app.StartAsync();
                 using var client = new HttpClient();
                 client.DefaultRequestHeaders.Add("X-Forwarded-For", "7.7.7.7, 8.8.8.8, 10.42.0.10");
-                Assert.That(await client.GetStringAsync(app.Urls.Single()), Is.EqualTo("8.8.8.8|7.7.7.7|8.8.8.8"));
+                var expected = trustedPeer
+                    ? "8.8.8.8|7.7.7.7|8.8.8.8"
+                    : "127.0.0.1|7.7.7.7, 8.8.8.8, 10.42.0.10|127.0.0.1";
+                Assert.That(await client.GetStringAsync(app.Urls.Single()), Is.EqualTo(expected));
             }
             finally
             {
