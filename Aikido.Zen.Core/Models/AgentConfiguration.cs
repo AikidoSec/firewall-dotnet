@@ -31,6 +31,7 @@ namespace Aikido.Zen.Core.Models
         private readonly object _endpointsLock = new object();
         private readonly object _monitoringLock = new object();
         private volatile bool _blockNewOutgoingRequests;
+        private volatile RequestCountExclusions _requestCountExclusions;
 
         public long ConfigLastUpdated { get; set; } = 0;
         public int HeartbeatIntervalInMS { get; private set; } = 0;
@@ -50,6 +51,7 @@ namespace Aikido.Zen.Core.Models
             _domains.Clear();
             _enabledFeatures.Clear();
             _blockNewOutgoingRequests = false;
+            _requestCountExclusions = null;
             _blockList = new BlockList();
             HeartbeatIntervalInMS = 0;
         }
@@ -82,6 +84,19 @@ namespace Aikido.Zen.Core.Models
         public bool IsFeatureEnabled(string feature)
         {
             return _enabledFeatures.ContainsKey(feature);
+        }
+
+        internal bool IsExcludedFromRequestCount(string route)
+        {
+            var exclusions = _requestCountExclusions;
+            if (exclusions == null || string.IsNullOrEmpty(route)) return false;
+            if (exclusions.Exact.Contains(route)) return true;
+
+            foreach (var suffix in exclusions.Suffix)
+            {
+                if (route.EndsWith(suffix, StringComparison.Ordinal)) return true;
+            }
+            return false;
         }
 
         /// <summary>
@@ -287,6 +302,16 @@ namespace Aikido.Zen.Core.Models
             if (response.EnabledFeatures != null)
             {
                 UpdateEnabledFeatures(response.EnabledFeatures);
+            }
+
+            var exclusions = response.RequestCountExclusions;
+            if (exclusions != null)
+            {
+                _requestCountExclusions = new RequestCountExclusions
+                {
+                    Exact = new HashSet<string>(exclusions.Exact ?? Enumerable.Empty<string>(), StringComparer.Ordinal),
+                    Suffix = exclusions.Suffix?.Where(suffix => !string.IsNullOrEmpty(suffix)).ToArray() ?? Array.Empty<string>()
+                };
             }
         }
 

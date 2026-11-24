@@ -66,5 +66,10 @@ namespace Aikido.Zen.Core.Api
         /// Null means the field was omitted from the backend response.
         /// </summary>
         public IEnumerable<string> EnabledFeatures { get; set; }
+
+        /// <summary>
+        /// Gets or sets the routes excluded from the total request count.
+        /// </summary>
+        public RequestCountExclusions RequestCountExclusions { get; set; }
     }
 }

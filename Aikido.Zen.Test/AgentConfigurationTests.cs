@@ -3,6 +3,7 @@ using Aikido.Zen.Core;
 using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.Core.Models.Events;
+using System.Text.Json;
 
 namespace Aikido.Zen.Test
 {
@@ -33,6 +34,7 @@ namespace Aikido.Zen.Test
                 }],
                 BypassedIPAddresses = ["123.123.123.123"],
                 EnabledFeatures = new List<string> { "realtime_updates" },
+                RequestCountExclusions = new RequestCountExclusions { Exact = ["/test"] },
                 ConfigUpdatedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
             });
             var context = new Context
@@ -54,6 +56,7 @@ namespace Aikido.Zen.Test
             Assert.That(_config.BlockList.IsIPBypassed("123.123.123.123"), Is.False);
             Assert.That(_config.BlockList.IsEmpty(), Is.True);
             Assert.That(_config.IsFeatureEnabled("realtime_updates"), Is.False);
+            Assert.That(_config.IsExcludedFromRequestCount("/test"), Is.False);
         }
 
         [Test]
@@ -151,6 +154,42 @@ namespace Aikido.Zen.Test
 
             // Assert
             Assert.That(_config.IsFeatureEnabled("realtime_updates"), Is.True);
+        }
+
+        [TestCase("/status", true)]
+        [TestCase("/status/details", false)]
+        [TestCase("/STATUS", false)]
+        [TestCase("/healthz", true)]
+        [TestCase("/api/healthz", true)]
+        [TestCase("/api/HEALTHZ", false)]
+        [TestCase("/api/healthz/live", false)]
+        [TestCase("/", false)]
+        [TestCase("", false)]
+        [TestCase(null, false)]
+        public void RequestCountExclusions_MatchExactRoutesAndSuffixes(string? route, bool expected)
+        {
+            var response = JsonSerializer.Deserialize<ReportingAPIResponse>(
+                """{"requestCountExclusions":{"exact":["/status"],"suffix":["/healthz","",null]}}""", ZenApi.JsonSerializerOptions);
+            _config.UpdateConfig(response);
+
+            Assert.That(_config.IsExcludedFromRequestCount(route), Is.EqualTo(expected));
+        }
+
+        [TestCase("{}", true, true)]
+        [TestCase("""{"requestCountExclusions":null}""", true, true)]
+        [TestCase("""{"requestCountExclusions":{"exact":["/status"]}}""", true, false)]
+        [TestCase("""{"requestCountExclusions":{"exact":null,"suffix":["/healthz"]}}""", false, true)]
+        [TestCase("""{"requestCountExclusions":{"exact":[],"suffix":[]}}""", false, false)]
+        [TestCase("""{"requestCountExclusions":{}}""", false, false)]
+        public void UpdateConfig_AppliesRequestCountExclusionUpdates(string update, bool exact, bool suffix)
+        {
+            var initial = JsonSerializer.Deserialize<ReportingAPIResponse>(
+                """{"requestCountExclusions":{"exact":["/status"],"suffix":["/healthz"]}}""", ZenApi.JsonSerializerOptions);
+            _config.UpdateConfig(initial);
+            _config.UpdateConfig(JsonSerializer.Deserialize<ReportingAPIResponse>(update, ZenApi.JsonSerializerOptions));
+
+            Assert.That(_config.IsExcludedFromRequestCount("/status"), Is.EqualTo(exact));
+            Assert.That(_config.IsExcludedFromRequestCount("/api/healthz"), Is.EqualTo(suffix));
         }
 
         [Test]
