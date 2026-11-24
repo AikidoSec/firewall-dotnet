@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Aikido.Zen.Core;
+using Aikido.Zen.Core.Api;
 using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.DotNetCore;
@@ -79,7 +80,7 @@ namespace Aikido.Zen.Tests.DotNetCore
         [TestCase(true, 200)]
         [TestCase(true, 302)]
         [TestCase(false, 200)]
-        public async Task InvokeAsync_EndpointProtectionControlsRequestReporting(bool forceProtectionOff, int statusCode)
+        public async Task InvokeAsync_ReportsDiscoveredRoutesAndRequestTotal(bool forceProtectionOff, int statusCode)
         {
             var originalDisable = Environment.GetEnvironmentVariable("AIKIDO_DISABLE");
             try
@@ -87,30 +88,39 @@ namespace Aikido.Zen.Tests.DotNetCore
                 Environment.SetEnvironmentVariable("AIKIDO_DISABLE", "false");
                 Agent.Instance.Context.Config.Clear();
                 Agent.Instance.ClearContext();
-                Agent.Instance.Context.Config.UpdateRatelimitedRoutes(new[]
+                Agent.Instance.Context.Config.UpdateConfig(new ReportingAPIResponse
                 {
-                    new EndpointConfig { Route = "/api/test", Method = "GET", ForceProtectionOff = forceProtectionOff }
+                    Endpoints = new[] { new EndpointConfig { Route = "/orders", Method = "GET", ForceProtectionOff = forceProtectionOff } },
+                    RequestCountExclusions = new RequestCountExclusions
+                    {
+                        Exact = new HashSet<string> { "/status" },
+                        Suffix = new[] { "/healthz" }
+                    }
                 });
-                var context = new DefaultHttpContext();
-                context.Request.Scheme = "http";
-                context.Request.Host = new HostString("test.local");
-                context.Request.Path = "/api/test";
-                context.Request.Method = "GET";
-                var nextCalled = false;
-
-                await _contextMiddleware.InvokeAsync(context, httpContext =>
+                var paths = new[] { "/status", "/api/healthz", "/orders" };
+                var handled = 0;
+                foreach (var path in paths)
                 {
-                    nextCalled = true;
-                    httpContext.Response.StatusCode = statusCode;
-                    return Task.CompletedTask;
-                });
+                    var context = new DefaultHttpContext();
+                    context.Request.Scheme = "http";
+                    context.Request.Host = new HostString("test.local");
+                    context.Request.Path = path;
+                    context.Request.Method = "GET";
+                    await _contextMiddleware.InvokeAsync(context, httpContext =>
+                    {
+                        handled++;
+                        httpContext.Response.StatusCode = statusCode;
+                        return Task.CompletedTask;
+                    });
+                }
 
                 var heartbeat = Aikido.Zen.Core.Models.Events.Heartbeat.Create(Agent.Instance.Context);
+                var expectedRoutes = forceProtectionOff ? new[] { "/status", "/api/healthz" } : paths;
                 Assert.Multiple(() =>
                 {
-                    Assert.That(nextCalled, Is.True);
+                    Assert.That(handled, Is.EqualTo(paths.Length));
                     Assert.That(heartbeat.Stats.Requests.Total, Is.EqualTo(forceProtectionOff ? 0 : 1));
-                    Assert.That(heartbeat.Routes.Count(), Is.EqualTo(forceProtectionOff ? 0 : 1));
+                    Assert.That(heartbeat.Routes.Select(route => route.Path), Is.EquivalentTo(expectedRoutes));
                 });
             }
             finally

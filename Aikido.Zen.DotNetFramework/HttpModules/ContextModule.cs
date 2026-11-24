@@ -176,7 +176,10 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 if (RouteHelper.ShouldAddRoute(aikidoContext, statusCode))
                 {
                     Agent.Instance.AddRoute(aikidoContext);
-                    Agent.Instance.IncrementTotalRequestCount();
+                    if (!Agent.Instance.Context.Config.IsExcludedFromRequestCount(aikidoContext.Route))
+                    {
+                        Agent.Instance.IncrementTotalRequestCount();
+                    }
                 }
             }
             catch (Exception ex)

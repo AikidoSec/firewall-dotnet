@@ -82,7 +82,10 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 {
                     LogHelper.DebugLog(Agent.Logger, "Adding route");
                     Agent.Instance.AddRoute(context);
-                    Agent.Instance.IncrementTotalRequestCount();
+                    if (!Agent.Instance.Context.Config.IsExcludedFromRequestCount(context.Route))
+                    {
+                        Agent.Instance.IncrementTotalRequestCount();
+                    }
                 }
             }
             catch (Exception ex)
