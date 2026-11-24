@@ -247,41 +247,34 @@ namespace Aikido.Zen.Tests.DotNetFramework
         [TestCase(true, 200)]
         [TestCase(true, 302)]
         [TestCase(false, 200)]
-        public void EndRequest_EndpointProtectionControlsRequestReporting(bool forceProtectionOff, int statusCode)
+        public void EndRequest_ReportsDiscoveredRoutesAndRequestTotal(bool forceProtectionOff, int statusCode)
         {
             var originalHttpContext = HttpContext.Current;
             try
             {
                 Agent.Instance.Context.Config.Clear();
                 Agent.Instance.ClearContext();
-                Agent.Instance.Context.Config.UpdateRatelimitedRoutes(new[]
+                Agent.Instance.Context.Config.UpdateConfig(new ReportingAPIResponse
                 {
-                    new EndpointConfig { Route = "/api/test", Method = "GET", ForceProtectionOff = forceProtectionOff }
+                    Endpoints = new[] { new EndpointConfig { Route = "/orders", Method = "GET", ForceProtectionOff = forceProtectionOff } },
+                    RequestCountExclusions = new RequestCountExclusions
+                    {
+                        Exact = new HashSet<string> { "/status" },
+                        Suffix = new[] { "/healthz" }
+                    }
                 });
-                var httpContext = new HttpContext(
-                    new HttpRequest(string.Empty, "http://test.local/api/test", string.Empty),
-                    new HttpResponse(new StringWriter()));
-                httpContext.Response.StatusCode = statusCode;
-                HttpContext.Current = httpContext;
-                Aikido.Zen.DotNetFramework.Zen.SetCurrentContext(new Context
+                var paths = new[] { "/status", "/api/healthz", "/orders" };
+                foreach (var path in paths)
                 {
-                    Route = "/api/test",
-                    Path = "/api/test",
-                    Method = "GET",
-                    Url = "http://test.local/api/test"
-                });
-                var application = new HttpApplication();
-                typeof(HttpApplication).GetField("_context", BindingFlags.NonPublic | BindingFlags.Instance)
-                    .SetValue(application, httpContext);
-
-                typeof(ContextModule).GetMethod("Context_EndRequest", BindingFlags.NonPublic | BindingFlags.Instance)
-                    .Invoke(_contextModule, new object[] { application, EventArgs.Empty });
+                    EndGetRequest(path, statusCode);
+                }
 
                 var heartbeat = Aikido.Zen.Core.Models.Events.Heartbeat.Create(Agent.Instance.Context);
+                var expectedRoutes = forceProtectionOff ? new[] { "/status", "/api/healthz" } : paths;
                 Assert.Multiple(() =>
                 {
                     Assert.That(heartbeat.Stats.Requests.Total, Is.EqualTo(forceProtectionOff ? 0 : 1));
-                    Assert.That(heartbeat.Routes.Count(), Is.EqualTo(forceProtectionOff ? 0 : 1));
+                    Assert.That(heartbeat.Routes.Select(route => route.Path), Is.EquivalentTo(expectedRoutes));
                     Assert.That(Aikido.Zen.DotNetFramework.Zen.GetContext(), Is.Null);
                 });
             }
@@ -292,6 +285,20 @@ namespace Aikido.Zen.Tests.DotNetFramework
                 Agent.Instance.ClearContext();
                 Agent.Instance.Context.Config.Clear();
             }
+        }
+
+        private void EndGetRequest(string path, int statusCode)
+        {
+            var url = "http://test.local" + path;
+            var httpContext = new HttpContext(new HttpRequest(string.Empty, url, string.Empty), new HttpResponse(new StringWriter()));
+            httpContext.Response.StatusCode = statusCode;
+            HttpContext.Current = httpContext;
+            Aikido.Zen.DotNetFramework.Zen.SetCurrentContext(new Context { Route = path, Path = path, Method = "GET", Url = url });
+            var application = new HttpApplication();
+            typeof(HttpApplication).GetField("_context", BindingFlags.NonPublic | BindingFlags.Instance)
+                .SetValue(application, httpContext);
+            typeof(ContextModule).GetMethod("Context_EndRequest", BindingFlags.NonPublic | BindingFlags.Instance)
+                .Invoke(_contextModule, new object[] { application, EventArgs.Empty });
         }
 
         [Test]
