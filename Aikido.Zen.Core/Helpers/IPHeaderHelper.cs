@@ -1,25 +1,16 @@
 using System;
-using System.Globalization;
 using System.Linq;
 using System.Net;
+using Aikido.Zen.Core.Models;
 
 namespace Aikido.Zen.Core.Helpers
 {
     internal class IPHeaderHelper
     {
-        internal static bool ShouldTrustProxy(string setting)
+        internal static string GetClientIpFromHeader(string header, TrustProxyConfig trustProxyConfig)
         {
-            return string.IsNullOrEmpty(setting) ||
-                string.Equals(setting, "true", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(setting, "yes", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(setting, "y", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(setting, "on", StringComparison.OrdinalIgnoreCase) ||
-                TryGetHopCount(setting, out _);
-        }
-
-        internal static string GetClientIpFromHeader(string header, string trustProxy = null)
-        {
-            if (TryGetHopCount(trustProxy, out var hopCount))
+            var hopCount = trustProxyConfig.HopCount;
+            if (hopCount > 0)
             {
                 var entries = header?.Split(',');
                 if (entries == null || hopCount > entries.Length)
@@ -40,11 +31,6 @@ namespace Aikido.Zen.Core.Helpers
             }
 
             return null;
-        }
-
-        private static bool TryGetHopCount(string setting, out int hopCount)
-        {
-            return int.TryParse(setting, NumberStyles.None, CultureInfo.InvariantCulture, out hopCount) && hopCount > 0;
         }
 
         /// <summary>

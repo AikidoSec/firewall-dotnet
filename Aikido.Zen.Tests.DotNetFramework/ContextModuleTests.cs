@@ -11,6 +11,7 @@ using System.Web.Hosting;
 using System.Web.Routing;
 using Aikido.Zen.Core;
 using Aikido.Zen.Core.Api;
+using Aikido.Zen.Core.Helpers;
 using Aikido.Zen.Core.Models;
 using Aikido.Zen.DotNetFramework.HttpModules;
 using Moq;
@@ -65,7 +66,11 @@ namespace Aikido.Zen.Tests.DotNetFramework
                 var context = new HttpContext(request.Object);
                 var getClientIp = typeof(ContextModule).GetMethod("GetClientIp", BindingFlags.NonPublic | BindingFlags.Static);
 
-                Assert.That(getClientIp.Invoke(null, new object[] { context }), Is.EqualTo(expectedIp));
+                Assert.That(getClientIp.Invoke(null, new object[]
+                {
+                    context,
+                    TrustProxyConfig.Parse(trustProxy)
+                }), Is.EqualTo(expectedIp));
             }
             finally
             {

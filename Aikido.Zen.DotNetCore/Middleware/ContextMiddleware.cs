@@ -33,7 +33,8 @@ namespace Aikido.Zen.DotNetCore.Middleware
             {
                 try
                 {
-                    var remoteAddress = GetClientIp(httpContext);
+                    var trustProxyConfig = Agent.Instance.Context.TrustProxyConfig;
+                    var remoteAddress = GetClientIp(httpContext, trustProxyConfig);
                     if (Agent.Instance.Context.Config.BlockList.IsIPBypassed(remoteAddress))
                     {
                         // Store bypass marker context so patches can still honor bypass.
@@ -254,12 +255,11 @@ namespace Aikido.Zen.DotNetCore.Middleware
         /// </summary>
         /// <param name="httpContext">The HTTP context containing the request information</param>
         /// <returns>The client IP address as a string</returns>
-        private static string GetClientIp(HttpContext httpContext)
+        private static string GetClientIp(HttpContext httpContext, TrustProxyConfig trustProxyConfig)
         {
             var remoteIpAddress = httpContext.Connection?.RemoteIpAddress?.ToString() ?? string.Empty;
-            var trustProxy = EnvironmentHelper.TrustProxy;
 
-            if (!IPHeaderHelper.ShouldTrustProxy(trustProxy))
+            if (!trustProxyConfig.Enabled)
             {
                 return remoteIpAddress;
             }
@@ -267,7 +267,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
             var headerValues = httpContext.Request?.Headers?[EnvironmentHelper.ClientIpHeader];
             // StringValues.ToString() drops empty values, which would shift the selected hop.
             var headerValue = string.Join(",", headerValues?.ToArray() ?? Array.Empty<string>());
-            var clientIpFromHeader = IPHeaderHelper.GetClientIpFromHeader(headerValue, trustProxy);
+            var clientIpFromHeader = IPHeaderHelper.GetClientIpFromHeader(headerValue, trustProxyConfig);
 
             return clientIpFromHeader ?? remoteIpAddress;
         }

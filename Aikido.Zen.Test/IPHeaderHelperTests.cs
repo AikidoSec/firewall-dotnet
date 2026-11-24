@@ -1,4 +1,5 @@
 using Aikido.Zen.Core.Helpers;
+using Aikido.Zen.Core.Models;
 
 namespace Aikido.Zen.Test.Helpers
 {
@@ -87,7 +88,7 @@ namespace Aikido.Zen.Test.Helpers
         [TestCase(null, null)]
         public void GetClientIpFromHeader_SelectsRightmostPublicIp(string? header, string? expected)
         {
-            Assert.That(IPHeaderHelper.GetClientIpFromHeader(header), Is.EqualTo(expected));
+            Assert.That(IPHeaderHelper.GetClientIpFromHeader(header, TrustProxyConfig.Parse(null)), Is.EqualTo(expected));
         }
 
         [TestCase(null, true)]
@@ -124,9 +125,9 @@ namespace Aikido.Zen.Test.Helpers
         [TestCase(" true ", false)]
         [TestCase("2147483648", false)]
         [TestCase("invalid", false)]
-        public void ShouldTrustProxy_RecognizesBooleanValuesAndHopCounts(string? setting, bool expected)
+        public void TrustProxyConfig_Parse_RecognizesBooleanValuesAndHopCounts(string? setting, bool expected)
         {
-            Assert.That(IPHeaderHelper.ShouldTrustProxy(setting), Is.EqualTo(expected));
+            Assert.That(TrustProxyConfig.Parse(setting).Enabled, Is.EqualTo(expected));
         }
 
         [TestCase("7.7.7.7, 8.8.8.8, 10.0.0.1", "1", "10.0.0.1")]
@@ -144,7 +145,7 @@ namespace Aikido.Zen.Test.Helpers
         [TestCase(null, "1", null)]
         public void GetClientIpFromHeader_SelectsExactHop(string? header, string trustProxy, string? expected)
         {
-            Assert.That(IPHeaderHelper.GetClientIpFromHeader(header, trustProxy), Is.EqualTo(expected));
+            Assert.That(IPHeaderHelper.GetClientIpFromHeader(header, TrustProxyConfig.Parse(trustProxy)), Is.EqualTo(expected));
         }
     }
 }
