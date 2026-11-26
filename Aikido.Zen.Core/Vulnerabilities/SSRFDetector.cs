@@ -56,7 +56,11 @@ namespace Aikido.Zen.Core.Vulnerabilities
             {
                 foreach (var userInput in context.ParsedUserInput)
                 {
-                    if (!FindHostnameInUserInput(userInput.Value, hostname, port))
+                    var isHostHeader = string.Equals(userInput.Location, "headers.Host", StringComparison.OrdinalIgnoreCase);
+                    var matchesHostname = isHostHeader
+                        ? MatchesUrlHostAndPort(userInput.Value, hostname, port)
+                        : FindHostnameInUserInput(userInput.Value, hostname, port);
+                    if (!matchesHostname)
                     {
                         continue;
                     }

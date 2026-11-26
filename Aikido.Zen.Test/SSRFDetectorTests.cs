@@ -192,6 +192,24 @@ namespace Aikido.Zen.Test
             Assert.That(result.AttackKind, Is.Null);
         }
 
+        [TestCase("query.host", AttackKind.Ssrf)]
+        [TestCase("headers.host", null)]
+        public void Detect_WhenBareHostnameMatchesTargetOnAnotherPort(string location, AttackKind? expected)
+        {
+            var context = new Context
+            {
+                Url = "https://portal.example.test/",
+                ParsedUserInput = new List<UserInput> { new UserInput(location, "portal.example.test") }
+            };
+
+            var result = SSRFDetector.Detect(
+                new Uri("https://portal.example.test:8443/"),
+                IPAddress.Parse("10.20.30.40"),
+                context);
+
+            Assert.That(result.AttackKind, Is.EqualTo(expected));
+        }
+
         [Test]
         public void Detect_WhenPrivateImdsAddressHasNoUserInput_BlocksStoredSsrf()
         {
