@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
 using Aikido.Zen.Core.Helpers;
@@ -195,6 +196,26 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 return false;
             }
 
+            switch (Uri.CheckHostName(userInput))
+            {
+                case UriHostNameType.Dns:
+                    // "API.Example.Test." and "api.example.test" name the same host.
+                    return NormalizeHostname(userInput) == NormalizeHostname(hostname);
+                case UriHostNameType.IPv4:
+                case UriHostNameType.IPv6:
+                    // "2001:db8:0:0:0:0:0:1" and "[2001:db8::1]" have the same address bytes.
+                    return IPAddress.TryParse(userInput, out var inputAddress)
+                        && IPAddress.TryParse(hostname, out var destinationAddress)
+                        && inputAddress.GetAddressBytes().SequenceEqual(destinationAddress.GetAddressBytes());
+                default:
+                    // "api.example.test:443" specifies port 443 and "https://api.example.test" implies 443.
+                    return MatchesUrlHostAndPort(userInput, hostname, port);
+            }
+        }
+
+        private static bool MatchesUrlHostAndPort(string userInput, string hostname, int? port)
+        {
+            // An input like "example.test/path" can use the default port for either HTTP or HTTPS.
             foreach (var candidate in new[] { userInput, $"http://{userInput}", $"https://{userInput}" })
             {
                 if (!Uri.TryCreate(candidate, UriKind.Absolute, out var userUri))
