@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using Aikido.Zen.DotNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
@@ -70,6 +71,35 @@ namespace Aikido.Zen.Tests.DotNetCore
             app.UseRouting();
 
             Assert.DoesNotThrow(() => app.UseZenFirewall());
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        [Platform("Win")]
+        [NonParallelizable]
+        public void UseZenFirewall_SelectsTheRunningJitUnlessConfigured(bool hasEnvironmentOverride)
+        {
+            var jitPath = Path.Combine(RuntimeEnvironment.GetRuntimeDirectory(), "clrjit.dll");
+            var originalData = AppContext.GetData("MonoMod.JitPath");
+            var originalEnvironment = Environment.GetEnvironmentVariable("MONOMOD_JitPath");
+            try
+            {
+                AppDomain.CurrentDomain.SetData("MonoMod.JitPath", null);
+                Environment.SetEnvironmentVariable("MONOMOD_JitPath", hasEnvironmentOverride ? jitPath : null);
+
+                var builder = WebApplication.CreateBuilder();
+                builder.Services.AddZenFirewall();
+                using var app = builder.Build();
+                app.UseRouting();
+                app.UseZenFirewall();
+
+                Assert.That(AppContext.GetData("MonoMod.JitPath"), Is.EqualTo(hasEnvironmentOverride ? null : jitPath));
+            }
+            finally
+            {
+                AppDomain.CurrentDomain.SetData("MonoMod.JitPath", originalData);
+                Environment.SetEnvironmentVariable("MONOMOD_JitPath", originalEnvironment);
+            }
         }
 
         [Test]
