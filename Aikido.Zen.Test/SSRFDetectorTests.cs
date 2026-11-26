@@ -388,7 +388,7 @@ namespace Aikido.Zen.Test
         [TestCase("", "localhost", 80, false)]
         public void FindHostnameInUserInput_ReturnsExpectedResult(string userInput, string hostname, int port, bool expected)
         {
-            var result = SSRFDetector.FindHostnameInUserInput(userInput, hostname, port);
+            var result = SSRFDetector.FindHostnameInUserInput(new UserInput("query.host", userInput), hostname, port);
 
             Assert.That(result, Is.EqualTo(expected));
         }
@@ -396,7 +396,8 @@ namespace Aikido.Zen.Test
         [Test]
         public void FindHostnameInUserInput_WhenPortIsNotProvided_MatchesHostOnly()
         {
-            var result = SSRFDetector.FindHostnameInUserInput("https://aikido.dev/admin", "aikido.dev", null);
+            var input = new UserInput("query.url", "https://aikido.dev/admin");
+            var result = SSRFDetector.FindHostnameInUserInput(input, "aikido.dev", null);
 
             Assert.That(result, Is.True);
         }
