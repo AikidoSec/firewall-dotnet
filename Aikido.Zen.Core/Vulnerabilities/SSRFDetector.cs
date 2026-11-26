@@ -198,8 +198,8 @@ namespace Aikido.Zen.Core.Vulnerabilities
             }
 
             // Keep the port check for Host because a fixed backend can share the incoming hostname.
-            var isHostHeader = string.Equals(userInput.Location, "headers.Host", StringComparison.OrdinalIgnoreCase);
-            if (!isHostHeader)
+            var isFromHostHeader = string.Equals(userInput.Location, "headers.Host", StringComparison.OrdinalIgnoreCase);
+            if (!isFromHostHeader)
             {
                 switch (Uri.CheckHostName(value))
                 {
