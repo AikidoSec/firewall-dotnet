@@ -38,6 +38,18 @@ namespace Aikido.Zen.DotNetCore
                 throw new InvalidOperationException("Aikido.Zen.DotNetCore.Zen.Initialize must be called before Zen.Start().");
             }
 
+            // IIS can load both JITs in the same worker, and MonoMod may pick the .NET Framework JIT.
+            // Set MonoMod.JitPath to the running CoreCLR's clrjit.dll before Harmony installs its hooks.
+            if (OperatingSystem.IsWindows() && AppContext.GetData("MonoMod.JitPath") == null &&
+                string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MONOMOD_JitPath")))
+            {
+                var jitPath = Path.Combine(RuntimeEnvironment.GetRuntimeDirectory(), "clrjit.dll");
+                if (File.Exists(jitPath))
+                {
+                    AppDomain.CurrentDomain.SetData("MonoMod.JitPath", jitPath);
+                }
+            }
+
             AgentInfoHelper.SetAgentAssembly(typeof(Zen).Assembly);
             var options = _serviceProvider.GetRequiredService<IOptions<AikidoOptions>>();
 
