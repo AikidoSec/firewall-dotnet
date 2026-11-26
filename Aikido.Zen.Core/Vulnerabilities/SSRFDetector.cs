@@ -197,6 +197,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
                 return false;
             }
 
+            // Keep the port check for Host because a fixed backend can share the incoming hostname.
             var isHostHeader = string.Equals(userInput.Location, "headers.Host", StringComparison.OrdinalIgnoreCase);
             if (!isHostHeader)
             {
