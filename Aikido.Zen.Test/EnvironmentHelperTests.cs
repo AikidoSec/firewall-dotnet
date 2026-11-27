@@ -28,7 +28,13 @@ namespace Aikido.Zen.Test.Helpers
         [TestCase("OFF", false)]
         [TestCase("invalid", false)]
         [TestCase("2", false)]
-        [TestCase(" true ", false)]
+        [TestCase(" true ", true)]
+        [TestCase("\tYeS\r\n", true)]
+        [TestCase(" 1 ", true)]
+        [TestCase(" false ", false)]
+        [TestCase(" 0 ", false)]
+        [TestCase(" ", false)]
+        [TestCase("\t\r\n", false)]
         public void BooleanSettings_UseTheSameAcceptedValues(string? value, bool expected)
         {
             var variableNames = new[]
@@ -67,6 +73,8 @@ namespace Aikido.Zen.Test.Helpers
         [TestCase(null, true, true)]
         [TestCase("", false, false)]
         [TestCase("", true, true)]
+        [TestCase(" ", true, false)]
+        [TestCase("\t\r\n", false, false)]
         [TestCase("invalid", true, false)]
         [TestCase("0", true, false)]
         public void GetBoolFromString_UsesDefaultOnlyForMissingOrEmptyValues(string? value, bool defaultValue, bool expected)
@@ -80,6 +88,10 @@ namespace Aikido.Zen.Test.Helpers
         [TestCase("YES", false, true)]
         [TestCase("0", true, false)]
         [TestCase("2", true, false)]
+        [TestCase(" 1 ", true, true)]
+        [TestCase(" 1 ", false, false)]
+        [TestCase(" true ", false, true)]
+        [TestCase(" 2 ", true, false)]
         public void GetBoolFromString_RespectsNumericPolicy(string value, bool acceptNumeric, bool expected)
         {
             Assert.That(EnvironmentHelper.GetBoolFromString(value, acceptNumeric), Is.EqualTo(expected));

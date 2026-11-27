@@ -16,7 +16,7 @@ namespace Aikido.Zen.Core.Models
 
         internal static TrustProxyConfig Parse(string setting)
         {
-            if (int.TryParse(setting, NumberStyles.None, CultureInfo.InvariantCulture, out var hopCount) && hopCount > 0)
+            if (int.TryParse(setting?.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out var hopCount) && hopCount > 0)
             {
                 return new TrustProxyConfig(true, hopCount);
             }

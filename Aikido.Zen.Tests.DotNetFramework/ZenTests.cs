@@ -23,6 +23,8 @@ namespace Aikido.Zen.Tests.DotNetFramework
         [TestCase("yes")]
         [TestCase("Y")]
         [TestCase("ON")]
+        [TestCase(" true ")]
+        [TestCase("\t1\r\n")]
         public void Start_WhenDisabled_DoesNotRequireHttpContext(string value)
         {
             var originalDisable = Environment.GetEnvironmentVariable("AIKIDO_DISABLE");

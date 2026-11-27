@@ -68,7 +68,8 @@ namespace Aikido.Zen.Core.Helpers
         internal static bool RealtimeConfigUpdatesEnabled => GetBoolFromString(Environment.GetEnvironmentVariable("AIKIDO_FEATURE_SSE"), acceptNumeric: true);
 
         /// <summary>
-        /// Accepts "true", "yes", "y", and "on" case-insensitively, plus "1" when <paramref name="acceptNumeric"/> is enabled.
+        /// Accepts "true", "yes", "y", and "on" case-insensitively and ignoring surrounding whitespace.
+        /// Also accepts "1" when <paramref name="acceptNumeric"/> is enabled.
         /// Uses <paramref name="defaultValue"/> for missing or empty values; all other values return false.
         /// </summary>
         internal static bool GetBoolFromString(string value, bool acceptNumeric, bool defaultValue = false)
@@ -77,6 +78,8 @@ namespace Aikido.Zen.Core.Helpers
             {
                 return defaultValue;
             }
+
+            value = value.Trim();
 
             if (acceptNumeric && value == "1")
             {
