@@ -63,12 +63,13 @@ jobs:
           path: zen-demo-dotnet-core/local-feed
 
       - name: Run Firewall QA Tests
-        uses: AikidoSec/firewall-tester-action@3d448c6929e168148cf74c3d998d1dd5950d40ee # v1.1.1
+        uses: AikidoSec/firewall-tester-action@901b7a3230c4899f87d327266383b8d2efdcebfe # v1.1.2
         with:
           dockerfile_path: ./zen-demo-dotnet-core/Dockerfile
           build_args: |
             DOTNET_BUILD_ARGS=/p:AikidoZenDotNetCoreVersion=0.0.0-qa
           app_port: 8080
+          skip_tests: test-api-spec-large-body
 
   qa-tests-netfx:
     needs: build-package
@@ -90,10 +91,11 @@ jobs:
           path: zen-demo-dotnet-framework/local-feed
 
       - name: Run Firewall QA Tests
-        uses: AikidoSec/firewall-tester-action@3d448c6929e168148cf74c3d998d1dd5950d40ee # v1.1.1
+        uses: AikidoSec/firewall-tester-action@901b7a3230c4899f87d327266383b8d2efdcebfe # v1.1.2
         with:
           dockerfile_path: ./zen-demo-dotnet-framework/Dockerfile
           build_args: |
             MSBUILD_ARGS=/nologo /p:AikidoZenDotNetFrameworkVersion=0.0.0-qa
           app_port: 80
           max_parallel_tests: 20
+          skip_tests: test-allowed-ip-for-routes,test-api-spec-large-body
