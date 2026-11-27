@@ -78,8 +78,12 @@ namespace Aikido.Zen.Core.Helpers
                 return defaultValue;
             }
 
-            return (acceptNumeric && value == "1") ||
-                string.Equals(value, "true", StringComparison.OrdinalIgnoreCase) ||
+            if (acceptNumeric && value == "1")
+            {
+                return true;
+            }
+
+            return string.Equals(value, "true", StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(value, "yes", StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(value, "y", StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(value, "on", StringComparison.OrdinalIgnoreCase);
