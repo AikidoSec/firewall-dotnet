@@ -825,7 +825,11 @@ namespace Aikido.Zen.Tests.DotNetCore
 
         private string GetClientIp()
         {
-            return (string)_getClientIpMethod.Invoke(null, new object[] { _mockHttpContext.Object })!;
+            return (string)_getClientIpMethod.Invoke(null, new object[]
+            {
+                _mockHttpContext.Object,
+                TrustProxyConfig.Parse(EnvironmentHelper.TrustProxy)
+            })!;
         }
 
         [Test]
@@ -1259,10 +1263,20 @@ namespace Aikido.Zen.Tests.DotNetCore
         }
 
         [TestCase("true", null, "8.8.8.8")]
+        [TestCase("TRUE", null, "8.8.8.8")]
+        [TestCase("YeS", "Connecting-IP", "8.8.8.8")]
         [TestCase(null, null, "8.8.8.8")]
         [TestCase("false", null, "9.9.9.9")]
         [TestCase("true", "Connecting-IP", "8.8.8.8")]
         [TestCase("false", "Connecting-IP", "9.9.9.9")]
+        [TestCase("1", null, "9.9.9.9")]
+        [TestCase("2", null, "10.42.0.10")]
+        [TestCase("3", null, "8.8.8.8")]
+        [TestCase("4", null, "9.9.9.9")]
+        [TestCase("5", null, "7.7.7.7")]
+        [TestCase("6", null, "9.9.9.9")]
+        [TestCase("0", null, "9.9.9.9")]
+        [TestCase("2", "Connecting-IP", "10.42.0.10")]
         public async Task InvokeAsync_UsesConfiguredProxyPolicy_ForRepeatedHeaders(
             string? trustProxy, string? headerName, string expectedIp)
         {
@@ -1274,8 +1288,7 @@ namespace Aikido.Zen.Tests.DotNetCore
                 Environment.SetEnvironmentVariable("AIKIDO_DISABLE", "false");
                 Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", trustProxy);
                 Environment.SetEnvironmentVariable("AIKIDO_CLIENT_IP_HEADER", headerName);
-                Agent.Instance.Context.Config.Clear();
-                Agent.Instance.ClearContext();
+                Agent.NewInstance(new ZenApi(Mock.Of<IReportingAPIClient>(), Mock.Of<IRuntimeAPIClient>()));
 
                 var context = new DefaultHttpContext();
                 context.Connection.RemoteIpAddress = IPAddress.Parse("9.9.9.9");
@@ -1316,6 +1329,7 @@ namespace Aikido.Zen.Tests.DotNetCore
                 Environment.SetEnvironmentVariable("AIKIDO_DISABLE", "false");
                 Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", "false");
                 Environment.SetEnvironmentVariable("AIKIDO_CLIENT_IP_HEADER", null);
+                Agent.NewInstance(new ZenApi(Mock.Of<IReportingAPIClient>(), Mock.Of<IRuntimeAPIClient>()));
 
                 var builder = WebApplication.CreateBuilder(new[] { $"--ForwardedHeaders_Enabled={hostAddsForwarding}" });
                 builder.WebHost.UseUrls("http://127.0.0.1:0");

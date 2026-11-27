@@ -22,6 +22,8 @@ namespace Aikido.Zen.Core.Models
         private readonly ConcurrentLFUDictionary<string, Route> _routes = new ConcurrentLFUDictionary<string, Route>(MaxRoutes);
         private readonly ConcurrentDictionary<string, Package> _packages = new ConcurrentDictionary<string, Package>();
 
+        internal TrustProxyConfig TrustProxyConfig { get; } = TrustProxyConfig.Parse(EnvironmentHelper.TrustProxy);
+
         public bool ContextMiddlewareInstalled { get; set; } = false;
         public bool BlockingMiddlewareInstalled { get; set; } = false;
 

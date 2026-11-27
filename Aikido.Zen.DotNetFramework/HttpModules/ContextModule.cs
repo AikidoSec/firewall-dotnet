@@ -57,7 +57,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             var user = Zen.SetUserAction(httpContext);
             aikidoContext.User = user;
 
-            var clientIp = GetClientIp(httpContext);
+            var clientIp = GetClientIp(httpContext, Agent.Instance.Context.TrustProxyConfig);
             Agent.Instance.CaptureUser(user, clientIp);
         }
 
@@ -83,12 +83,13 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             var httpContext = ((HttpApplication)sender).Context;
             try
             {
-                string clientIp = GetClientIp(httpContext);
-
                 if (EnvironmentHelper.IsDisabled)
                 {
                     return;
                 }
+
+                var trustProxyConfig = Agent.Instance.Context.TrustProxyConfig;
+                string clientIp = GetClientIp(httpContext, trustProxyConfig);
 
                 // Store bypass marker context so patches can still honor bypass
                 if (Agent.Instance.Context.Config.BlockList.IsIPBypassed(clientIp))
@@ -192,13 +193,13 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             }
         }
 
-        private static string GetClientIp(HttpContext httpContext)
+        private static string GetClientIp(HttpContext httpContext, TrustProxyConfig trustProxyConfig)
         {
             var serverVariables = httpContext.Request.ServerVariables;
-            var ipHeader = IPHeaderHelper.ShouldTrustProxy(EnvironmentHelper.TrustProxy)
+            var ipHeader = trustProxyConfig.Enabled
                 ? serverVariables[$"HTTP_{EnvironmentHelper.ClientIpHeader.ToUpper().Replace("-", "_")}"]
                 : null;
-            return IPHeaderHelper.GetClientIpFromHeader(ipHeader) ?? serverVariables["REMOTE_ADDR"];
+            return IPHeaderHelper.GetClientIpFromHeader(ipHeader, trustProxyConfig) ?? serverVariables["REMOTE_ADDR"];
         }
 
         /// <summary>

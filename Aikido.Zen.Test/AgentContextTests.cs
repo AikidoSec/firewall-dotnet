@@ -14,6 +14,30 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
+        public void TrustProxyConfig_IsCapturedOnceAndPreservedWhenClearingMonitoringData()
+        {
+            var originalTrustProxy = Environment.GetEnvironmentVariable("AIKIDO_TRUST_PROXY");
+            try
+            {
+                Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", "2");
+                var context = new AgentContext();
+                Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", "false");
+                context.Clear();
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(context.TrustProxyConfig.Enabled, Is.True);
+                    Assert.That(context.TrustProxyConfig.HopCount, Is.EqualTo(2));
+                    Assert.That(new AgentContext().TrustProxyConfig.Enabled, Is.False);
+                });
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", originalTrustProxy);
+            }
+        }
+
+        [Test]
         public void UpdateBlockedUsers_ShouldUpdateBlockedUsersList()
         {
             // Arrange

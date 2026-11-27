@@ -48,7 +48,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
             }
 
             Uri.TryCreate(context?.Url, UriKind.Absolute, out var serverUri);
-            var isRequestToItself = IsRequestToItself(serverUri, hostname, port);
+            var isRequestToItself = IsRequestToItself(serverUri, hostname, port, Agent.Instance.Context.TrustProxyConfig);
 
             // User-controlled URLs or host-like values that resolve to private/local IPs are request SSRF.
             if (!isRequestToItself && !IsRequestToServiceHostname(hostname) && context?.ParsedUserInput != null)
@@ -224,9 +224,9 @@ namespace Aikido.Zen.Core.Vulnerabilities
             return false;
         }
 
-        internal static bool IsRequestToItself(Uri serverUri, string outboundHostname, int? outboundPort)
+        internal static bool IsRequestToItself(Uri serverUri, string outboundHostname, int? outboundPort, TrustProxyConfig trustProxyConfig)
         {
-            if (!IPHeaderHelper.ShouldTrustProxy(EnvironmentHelper.TrustProxy))
+            if (!trustProxyConfig.Enabled)
             {
                 return false;
             }

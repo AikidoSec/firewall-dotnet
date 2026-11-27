@@ -1,18 +1,27 @@
 using System;
 using System.Linq;
 using System.Net;
+using Aikido.Zen.Core.Models;
 
 namespace Aikido.Zen.Core.Helpers
 {
     internal class IPHeaderHelper
     {
-        internal static bool ShouldTrustProxy(string setting)
+        internal static string GetClientIpFromHeader(string header, TrustProxyConfig trustProxyConfig)
         {
-            return setting == null || setting == "true" || setting == "1";
-        }
+            var hopCount = trustProxyConfig.HopCount;
+            if (hopCount > 0)
+            {
+                var entries = header?.Split(',');
+                if (entries == null || hopCount > entries.Length)
+                {
+                    return null;
+                }
 
-        internal static string GetClientIpFromHeader(string header)
-        {
+                var clientIp = ParseSingleIp(entries[entries.Length - hopCount].Trim());
+                return IPHelper.IsValidIp(clientIp) ? clientIp : null;
+            }
+
             foreach (var ip in ParseIpHeader(header).Reverse())
             {
                 if (IPHelper.IsValidIp(ip) && !IPHelper.IsPrivateOrLocalIp(ip))
