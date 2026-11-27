@@ -26,6 +26,11 @@ namespace Aikido.Zen.Core.Helpers
             {
                 if (IPHelper.IsValidIp(ip) && !IPHelper.IsPrivateOrLocalIp(ip))
                 {
+                    if (trustProxyConfig.TrustedProxies?.IsIpInRange(ip) == true)
+                    {
+                        continue;
+                    }
+
                     return ip;
                 }
             }

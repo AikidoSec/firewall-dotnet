@@ -4,6 +4,7 @@
 
 - **`true` (default when unset or empty):** Zen selects the rightmost valid public IP from `X-Forwarded-For`, falling back to the request's current remote IP if none is found. Configure your proxy to supply trustworthy client IPs.
 - **A positive integer:** Zen selects that header entry counting from the right. For example, `AIKIDO_TRUST_PROXY=2` selects the second entry from the right. The selected IP can be public or private. If it is missing, empty, or invalid, Zen falls back to the request's current remote IP.
+- **Proxy IPs or CIDR ranges:** For example, `AIKIDO_TRUST_PROXY=10.0.0.0/8,203.0.113.10`. Zen reads the header only when the request's current remote IP belongs to a configured proxy. It selects the rightmost valid public IP outside those ranges, falling back to the request's current remote IP if none is found. Invalid entries are ignored; if none are valid, no proxies are trusted.
 - **`false`:** Zen uses the request's current remote IP directly and ignores the client IP header.
 
 Boolean values are case-insensitive: `true`, `yes`, `y`, and `on` enable header parsing; `false`, `no`, `n`, `off`, and `0` disable it.

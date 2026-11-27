@@ -120,7 +120,7 @@ namespace Aikido.Zen.Test.Helpers
         [TestCase("0", false)]
         [TestCase("-1", false)]
         [TestCase("+2", false)]
-        [TestCase("2.0", false)]
+        [TestCase("2.0", true)]
         [TestCase(" 2", true)]
         [TestCase(" true ", true)]
         [TestCase(" yes ", true)]
@@ -132,6 +132,46 @@ namespace Aikido.Zen.Test.Helpers
         public void TrustProxyConfig_Parse_RecognizesBooleanValuesAndHopCounts(string? setting, bool expected)
         {
             Assert.That(TrustProxyConfig.Parse(setting).Enabled, Is.EqualTo(expected));
+        }
+
+        [TestCase(null, null, true)]
+        [TestCase("false", null, false)]
+        [TestCase("2", null, true)]
+        [TestCase("10.0.0.0/8", "10.1.2.3", true)]
+        [TestCase("10.0.0.0/8", "8.8.8.8", false)]
+        [TestCase("10.0.0.0/8", null, false)]
+        [TestCase("10.0.0.0/8", "", false)]
+        [TestCase("10.0.0.0/8", "invalid", false)]
+        [TestCase("10.0.0.0/8", "::ffff:10.1.2.3", true)]
+        [TestCase("9.9.9.9", "9.9.9.9", true)]
+        [TestCase("9.9.9.9", "9.9.9.8", false)]
+        [TestCase(" 10.0.0.0/8, , fd00::/8 ", "fd00::1234", true)]
+        [TestCase("bad.example,10.0.0.0/8", "10.1.2.3", true)]
+        [TestCase("bad.example,10.0.0.0/33", "10.1.2.3", false)]
+        [TestCase("10.0.0.0/8junk", "10.1.2.3", false)]
+        [TestCase("fd00::/129", "fd00::1", false)]
+        [TestCase("0.0.0.0/0", "8.8.8.8", true)]
+        [TestCase("0.0.0.0/0", "2001:4860::8888", false)]
+        [TestCase("::/0", "2001:4860::8888", true)]
+        [TestCase("::/0", "8.8.8.8", false)]
+        public void TrustProxyConfig_IsTrustedProxy_ChecksConnectionIp(string? setting, string? connectionIp, bool expected)
+        {
+            Assert.That(TrustProxyConfig.Parse(setting).IsTrustedProxy(connectionIp), Is.EqualTo(expected));
+        }
+
+        [TestCase("8.8.8.8, 9.9.9.9", "9.9.9.9", "8.8.8.8")]
+        [TestCase("8.8.8.8, 9.9.9.9, 10.1.2.3", "10.0.0.0/8,9.9.9.0/24", "8.8.8.8")]
+        [TestCase("8.8.8.8, 7.7.7.7, 9.9.9.9", "9.9.9.0/24", "7.7.7.7")]
+        [TestCase("8.8.8.8, unknown,, 9.9.9.9,", "9.9.9.0/24", "8.8.8.8")]
+        [TestCase("2001:4860::8888, [2606:4700::1111]:443", "2606:4700::/32", "2001:4860::8888")]
+        [TestCase("8.8.8.8, ::ffff:9.9.9.9", "9.9.9.0/24", "8.8.8.8")]
+        [TestCase("9.9.9.9, 10.1.2.3", "9.9.9.0/24", null)]
+        [TestCase("8.8.8.8", "0.0.0.0/0", null)]
+        [TestCase("", "9.9.9.0/24", null)]
+        [TestCase(null, "9.9.9.0/24", null)]
+        public void GetClientIpFromHeader_SkipsConfiguredProxyRanges(string? header, string setting, string? expected)
+        {
+            Assert.That(IPHeaderHelper.GetClientIpFromHeader(header, TrustProxyConfig.Parse(setting)), Is.EqualTo(expected));
         }
 
         [TestCase("7.7.7.7, 8.8.8.8, 10.0.0.1", "1", "10.0.0.1")]
