@@ -79,6 +79,30 @@ namespace Aikido.Zen.Test
             });
         }
 
+        [TestCase("::ffff:192.0.2.1", "192.0.2.1", true)]
+        [TestCase("::ffff:192.0.2.1/128", "192.0.2.1", true)]
+        [TestCase("::ffff:192.0.2.1", "192.0.2.2", false)]
+        [TestCase("192.0.2.1", "::ffff:192.0.2.1", true)]
+        [TestCase("::ffff:192.0.2.1", "::ffff:192.0.2.1", true)]
+        [TestCase("::ffff:192.0.2.0/120", "192.0.2.0", true)]
+        [TestCase("::ffff:192.0.2.0/120", "192.0.2.255", true)]
+        [TestCase("::ffff:192.0.2.0/120", "192.0.3.0", false)]
+        [TestCase("::ffff:192.0.2.128/121", "192.0.2.128", true)]
+        [TestCase("::ffff:192.0.2.128/121", "192.0.2.127", false)]
+        [TestCase("::ffff:192.0.2.0/120", "::ffff:192.0.2.1", true)]
+        [TestCase("192.0.2.0/24", "::ffff:192.0.3.1", false)]
+        [TestCase("::ffff:0.0.0.0/96", "0.0.0.0", true)]
+        [TestCase("::ffff:0.0.0.0/96", "255.255.255.255", true)]
+        [TestCase("::ffff:0.0.0.0/96", "2606:4700::1111", false)]
+        [TestCase("::ffff:0.0.0.0/95", "8.8.8.8", false)]
+        [TestCase("::ffff:0.0.0.0/95", "::ffff:8.8.8.8", true)]
+        public void IsIpInRange_MatchesIPv4MappedAddresses(string range, string ip, bool expected)
+        {
+            _ipRange.InsertRange(range);
+
+            Assert.That(_ipRange.IsIpInRange(ip), Is.EqualTo(expected));
+        }
+
         [Test]
         public void IsIpInRange_WithEmptyRange_ShouldReturnFalse()
         {
