@@ -13,13 +13,11 @@ class TrieNode
 {
     public bool IsTerminal { get; set; }
     public TrieNode[] Children { get; private set; }
-    public string Value { get; set; }
 
     public TrieNode()
     {
         IsTerminal = false;
         Children = new TrieNode[2];
-        Value = null;
     }
 }
 
@@ -61,6 +59,14 @@ class IPRange
             (!int.TryParse(parts[1], NumberStyles.None, CultureInfo.InvariantCulture, out prefixLength) || prefixLength > maxPrefix))
         {
             return;
+        }
+
+        // IPv4-mapped prefixes include 96 IPv6 bits before the IPv4 network bits.
+        if (ipAddress.IsIPv4MappedToIPv6 && prefixLength >= 96)
+        {
+            ipAddress = ipAddress.MapToIPv4();
+            prefixLength -= 96;
+            isIPv6 = false;
         }
 
         _lock.EnterWriteLock();
