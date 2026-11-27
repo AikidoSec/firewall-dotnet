@@ -57,8 +57,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             var user = Zen.SetUserAction(httpContext);
             aikidoContext.User = user;
 
-            var clientIp = GetClientIp(httpContext, Agent.Instance.Context.TrustProxyConfig);
-            Agent.Instance.CaptureUser(user, clientIp);
+            Agent.Instance.CaptureUser(user, aikidoContext.RemoteAddress);
         }
 
         internal static void PopulateRateLimitGroup(HttpContext httpContext)
@@ -89,7 +88,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                 }
 
                 var trustProxyConfig = Agent.Instance.Context.TrustProxyConfig;
-                string clientIp = GetClientIp(httpContext, trustProxyConfig);
+                string clientIp = GetClientIp(httpContext, trustProxyConfig, out var isBehindTrustedProxy);
 
                 // Store bypass marker context so patches can still honor bypass
                 if (Agent.Instance.Context.Config.BlockList.IsIPBypassed(clientIp))
@@ -106,6 +105,7 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
                     Query = FlattenQueryParameters(httpContext.Request.QueryString),
                     Headers = FlattenHeaders(httpContext.Request.Headers),
                     RemoteAddress = clientIp,
+                    IsBehindTrustedProxy = isBehindTrustedProxy,
                     Cookies = httpContext.Request.Cookies.AllKeys.Distinct().ToDictionary(k => k, k => httpContext.Request.Cookies[k].Value),
                     // User is resolved later in PostAuthenticateRequest and then backfilled into this context.
                     UserAgent = httpContext.Request.UserAgent,
@@ -193,13 +193,18 @@ namespace Aikido.Zen.DotNetFramework.HttpModules
             }
         }
 
-        private static string GetClientIp(HttpContext httpContext, TrustProxyConfig trustProxyConfig)
+        private static string GetClientIp(HttpContext httpContext, TrustProxyConfig trustProxyConfig, out bool isBehindTrustedProxy)
         {
             var serverVariables = httpContext.Request.ServerVariables;
-            var ipHeader = trustProxyConfig.Enabled
-                ? serverVariables[$"HTTP_{EnvironmentHelper.ClientIpHeader.ToUpper().Replace("-", "_")}"]
-                : null;
-            return IPHeaderHelper.GetClientIpFromHeader(ipHeader, trustProxyConfig) ?? serverVariables["REMOTE_ADDR"];
+            var connectionIp = serverVariables["REMOTE_ADDR"];
+            isBehindTrustedProxy = trustProxyConfig.IsTrustedProxy(connectionIp);
+            if (!isBehindTrustedProxy)
+            {
+                return connectionIp;
+            }
+
+            var ipHeader = serverVariables[$"HTTP_{EnvironmentHelper.ClientIpHeader.ToUpper().Replace("-", "_")}"];
+            return IPHeaderHelper.GetClientIpFromHeader(ipHeader, trustProxyConfig) ?? connectionIp;
         }
 
         /// <summary>

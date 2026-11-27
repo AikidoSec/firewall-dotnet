@@ -11,14 +11,11 @@ namespace Aikido.Zen.Test
     [TestFixture]
     public class SSRFDetectorTests
     {
-        private string? _originalTrustProxy;
         private Agent _agent = null!;
 
         [SetUp]
         public void SetUp()
         {
-            _originalTrustProxy = Environment.GetEnvironmentVariable("AIKIDO_TRUST_PROXY");
-            Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", "true");
             _agent = Agent.NewInstance(new ZenApi(Mock.Of<IReportingAPIClient>(), Mock.Of<IRuntimeAPIClient>()));
         }
 
@@ -26,7 +23,6 @@ namespace Aikido.Zen.Test
         public void TearDown()
         {
             _agent.Dispose();
-            Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", _originalTrustProxy);
         }
 
         [Test]
@@ -126,6 +122,7 @@ namespace Aikido.Zen.Test
             var context = new Context
             {
                 Url = "http://localhost:8080/api/request",
+                IsBehindTrustedProxy = true,
                 ParsedUserInput = new List<UserInput> { new UserInput("query.url", "http://localhost:8080/admin") }
             };
 
@@ -138,10 +135,8 @@ namespace Aikido.Zen.Test
         }
 
         [Test]
-        public void Detect_WhenTrustProxyDisabledAndPrivateTargetMatchesUserInput_BlocksSsrf()
+        public void Detect_WhenRequestIsNotBehindTrustedProxyAndPrivateTargetMatchesUserInput_BlocksSsrf()
         {
-            Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", "false");
-            _agent = Agent.NewInstance(new ZenApi(Mock.Of<IReportingAPIClient>(), Mock.Of<IRuntimeAPIClient>()));
             var context = new Context
             {
                 Url = "http://localhost:8080/api/request",
@@ -165,18 +160,16 @@ namespace Aikido.Zen.Test
             });
         }
 
-        [TestCase("true", null)]
-        [TestCase("false", AttackKind.Ssrf)]
-        public void Detect_UsesAgentProxyConfig_WhenEnvironmentChanges(string trustProxy, AttackKind? expected)
+        [TestCase(true, null)]
+        [TestCase(false, AttackKind.Ssrf)]
+        public void Detect_UsesRequestProxyTrust(bool isBehindTrustedProxy, AttackKind? expected)
         {
-            Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", trustProxy);
-            _agent = Agent.NewInstance(new ZenApi(Mock.Of<IReportingAPIClient>(), Mock.Of<IRuntimeAPIClient>()));
             var context = new Context
             {
                 Url = "http://app.local/request",
+                IsBehindTrustedProxy = isBehindTrustedProxy,
                 ParsedUserInput = new List<UserInput> { new UserInput("query.url", "http://app.local/admin") }
             };
-            Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", trustProxy == "true" ? "false" : "true");
 
             var result = SSRFDetector.Detect(new Uri("http://app.local/admin"), IPAddress.Loopback, context);
 
@@ -413,23 +406,16 @@ namespace Aikido.Zen.Test
             Assert.That(result, Is.True);
         }
 
-        [TestCase("false", false)]
-        [TestCase("OFF", false)]
-        [TestCase("N", false)]
-        [TestCase("TRUE", true)]
-        [TestCase("YeS", true)]
-        [TestCase("0", false)]
-        [TestCase("2", true)]
-        public void IsRequestToItself_UsesConfiguredProxyTrust(string trustProxy, bool expected)
+        [TestCase(false, false)]
+        [TestCase(true, true)]
+        public void IsRequestToItself_RequiresTrustedProxy(bool isBehindTrustedProxy, bool expected)
         {
-            Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", trustProxy);
-
             var rightUri = new Uri("https://aikido.dev/admin");
             var result = SSRFDetector.IsRequestToItself(
                 new Uri("https://aikido.dev"),
                 rightUri.Host,
                 rightUri.Port,
-                TrustProxyConfig.Parse(trustProxy));
+                isBehindTrustedProxy);
 
             Assert.That(result, Is.EqualTo(expected));
         }
@@ -442,7 +428,7 @@ namespace Aikido.Zen.Test
         public void IsRequestToItself_WhenComparingCurrentRequestToOutboundTarget_ReturnsExpectedResult(string serverUrl, string outboundUrl, bool expected)
         {
             var outboundUri = new Uri(outboundUrl);
-            var result = SSRFDetector.IsRequestToItself(new Uri(serverUrl), outboundUri.Host, outboundUri.Port, TrustProxyConfig.Parse("true"));
+            var result = SSRFDetector.IsRequestToItself(new Uri(serverUrl), outboundUri.Host, outboundUri.Port, true);
 
             Assert.That(result, Is.EqualTo(expected));
         }
@@ -451,7 +437,7 @@ namespace Aikido.Zen.Test
         [TestCase(" ")]
         public void IsRequestToItself_WhenOutboundHostnameIsBlank_ReturnsFalse(string outboundHostname)
         {
-            var result = SSRFDetector.IsRequestToItself(new Uri("http://localhost/outbound"), outboundHostname, 80, TrustProxyConfig.Parse("true"));
+            var result = SSRFDetector.IsRequestToItself(new Uri("http://localhost/outbound"), outboundHostname, 80, true);
 
             Assert.That(result, Is.False);
         }

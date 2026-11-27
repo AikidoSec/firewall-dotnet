@@ -34,7 +34,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
                 try
                 {
                     var trustProxyConfig = Agent.Instance.Context.TrustProxyConfig;
-                    var remoteAddress = GetClientIp(httpContext, trustProxyConfig);
+                    var remoteAddress = GetClientIp(httpContext, trustProxyConfig, out var isBehindTrustedProxy);
                     if (Agent.Instance.Context.Config.BlockList.IsIPBypassed(remoteAddress))
                     {
                         // Store bypass marker context so patches can still honor bypass.
@@ -45,6 +45,7 @@ namespace Aikido.Zen.DotNetCore.Middleware
                         context = await CaptureContextAsync(httpContext, remoteAddress);
                     }
 
+                    context.IsBehindTrustedProxy = isBehindTrustedProxy;
                     httpContext.Items["Aikido.Zen.Context"] = context;
                 }
                 catch (Exception e)
@@ -258,11 +259,12 @@ namespace Aikido.Zen.DotNetCore.Middleware
         /// </summary>
         /// <param name="httpContext">The HTTP context containing the request information</param>
         /// <returns>The client IP address as a string</returns>
-        private static string GetClientIp(HttpContext httpContext, TrustProxyConfig trustProxyConfig)
+        private static string GetClientIp(HttpContext httpContext, TrustProxyConfig trustProxyConfig, out bool isBehindTrustedProxy)
         {
             var remoteIpAddress = httpContext.Connection?.RemoteIpAddress?.ToString() ?? string.Empty;
+            isBehindTrustedProxy = trustProxyConfig.IsTrustedProxy(remoteIpAddress);
 
-            if (!trustProxyConfig.Enabled)
+            if (!isBehindTrustedProxy)
             {
                 return remoteIpAddress;
             }

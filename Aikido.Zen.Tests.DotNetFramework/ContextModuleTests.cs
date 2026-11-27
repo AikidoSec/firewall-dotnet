@@ -44,6 +44,12 @@ namespace Aikido.Zen.Tests.DotNetFramework
         [TestCase("5", null, "7.7.7.7")]
         [TestCase("2", "Connecting-IP", "10.42.0.10")]
         [TestCase("false", "Connecting-IP", "9.9.9.9")]
+        [TestCase("9.9.9.0/24", null, "8.8.8.8")]
+        [TestCase("9.9.9.0/24,8.8.8.8", null, "7.7.7.7")]
+        [TestCase("10.0.0.0/8", null, "9.9.9.9")]
+        [TestCase("9.9.9.9", "Connecting-IP", "8.8.8.8")]
+        [TestCase("0.0.0.0/0", null, "9.9.9.9")]
+        [TestCase("9.9.9.9/33", null, "9.9.9.9")]
         public void GetClientIp_UsesConfiguredProxyPolicy_ForCombinedHeader(
             string trustProxy, string headerName, string expectedIp)
         {
@@ -65,17 +71,67 @@ namespace Aikido.Zen.Tests.DotNetFramework
                 });
                 var context = new HttpContext(request.Object);
                 var getClientIp = typeof(ContextModule).GetMethod("GetClientIp", BindingFlags.NonPublic | BindingFlags.Static);
+                var trustProxyConfig = TrustProxyConfig.Parse(trustProxy);
 
                 Assert.That(getClientIp.Invoke(null, new object[]
                 {
                     context,
-                    TrustProxyConfig.Parse(trustProxy)
+                    trustProxyConfig,
+                    false
                 }), Is.EqualTo(expectedIp));
             }
             finally
             {
                 Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", originalTrust);
                 Environment.SetEnvironmentVariable("AIKIDO_CLIENT_IP_HEADER", originalHeader);
+            }
+        }
+
+        [TestCase("10.1.2.3", "8.8.8.8", true)]
+        [TestCase("9.9.9.9", "9.9.9.9", false)]
+        public async Task BeginRequest_CapturesProxyTrust(string connectionIp, string expectedClientIp, bool expectedTrust)
+        {
+            var originalHttpContext = HttpContext.Current;
+            var originalDisable = Environment.GetEnvironmentVariable("AIKIDO_DISABLE");
+            var originalTrust = Environment.GetEnvironmentVariable("AIKIDO_TRUST_PROXY");
+            Environment.SetEnvironmentVariable("AIKIDO_DISABLE", "false");
+            Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", "10.0.0.0/8");
+            var agent = Agent.NewInstance(new ZenApi(Mock.Of<IReportingAPIClient>(), Mock.Of<IRuntimeAPIClient>()));
+            try
+            {
+                var request = new Mock<SimpleWorkerRequest>("/", Path.GetTempPath(), "api/test", "", new StringWriter())
+                {
+                    CallBase = true
+                };
+                request.Setup(r => r.GetRemoteAddress()).Returns(connectionIp);
+                request.Setup(r => r.GetUnknownRequestHeaders()).Returns(new[]
+                {
+                    new[] { "X-Forwarded-For", "8.8.8.8" }
+                });
+                var httpContext = new HttpContext(request.Object);
+                HttpContext.Current = httpContext;
+                var application = new HttpApplication();
+                typeof(HttpApplication).GetField("_context", BindingFlags.NonPublic | BindingFlags.Instance)
+                    .SetValue(application, httpContext);
+
+                await (Task)typeof(ContextModule).GetMethod("Context_BeginRequestAsync", BindingFlags.NonPublic | BindingFlags.Instance)
+                    .Invoke(_contextModule, new object[] { application, EventArgs.Empty });
+
+                var context = Aikido.Zen.DotNetFramework.Zen.GetContext();
+                Assert.That(context, Is.Not.Null);
+                Assert.Multiple(() =>
+                {
+                    Assert.That(context.RemoteAddress, Is.EqualTo(expectedClientIp));
+                    Assert.That(context.IsBehindTrustedProxy, Is.EqualTo(expectedTrust));
+                });
+            }
+            finally
+            {
+                Aikido.Zen.DotNetFramework.Zen.ClearCurrentContext();
+                agent.Dispose();
+                HttpContext.Current = originalHttpContext;
+                Environment.SetEnvironmentVariable("AIKIDO_DISABLE", originalDisable);
+                Environment.SetEnvironmentVariable("AIKIDO_TRUST_PROXY", originalTrust);
             }
         }
 
@@ -599,6 +655,7 @@ namespace Aikido.Zen.Tests.DotNetFramework
                     Assert.That(aikidoContext.User, Is.SameAs(user));
                     Assert.That(capturedUser, Is.Not.Null);
                     Assert.That(capturedUser.Name, Is.EqualTo(user.Name));
+                    Assert.That(capturedUser.LastIpAddress, Is.EqualTo(aikidoContext.RemoteAddress));
                 });
             }
             finally

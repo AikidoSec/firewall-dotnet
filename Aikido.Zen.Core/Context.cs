@@ -36,6 +36,8 @@ namespace Aikido.Zen.Core
 
         internal bool Bypassed { get; set; }
 
+        internal bool IsBehindTrustedProxy { get; set; }
+
         public bool ConsumedRateLimitForIP { get; set; }
         public bool ConsumedRateLimitForUser { get; set; }
 
