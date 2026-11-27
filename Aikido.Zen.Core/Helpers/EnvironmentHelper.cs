@@ -15,7 +15,7 @@ namespace Aikido.Zen.Core.Helpers
         /// <summary>
         /// Determines if the system is in dry mode by checking the environment variable.
         /// </summary>
-        internal static bool DryMode => !GetBooleanValue("AIKIDO_BLOCK");
+        internal static bool DryMode => !GetBoolFromString(Environment.GetEnvironmentVariable("AIKIDO_BLOCK"), acceptNumeric: true);
 
         /// <summary>
         /// Gets the maximum number of API discovery samples from the environment variables.
@@ -30,18 +30,18 @@ namespace Aikido.Zen.Core.Helpers
         /// <summary>
         /// Determines if the system is in debugging mode by checking the environment variable.
         /// </summary>
-        internal static bool IsDebugging => GetBooleanValue("AIKIDO_DEBUG");
+        internal static bool IsDebugging => GetBoolFromString(Environment.GetEnvironmentVariable("AIKIDO_DEBUG"), acceptNumeric: true);
 
         /// <summary>
         /// Determines if the system is disabled by checking the environment variable.
         /// </summary>
-        internal static bool IsDisabled => GetBooleanValue("AIKIDO_DISABLE");
+        internal static bool IsDisabled => GetBoolFromString(Environment.GetEnvironmentVariable("AIKIDO_DISABLE"), acceptNumeric: true);
 
         /// <summary>
         /// Determines whether to block SQL queries that fail tokenization when user input is present.
         /// Defaults to false (allow by default).
         /// </summary>
-        internal static bool BlockInvalidSql => GetBooleanValue("AIKIDO_BLOCK_INVALID_SQL");
+        internal static bool BlockInvalidSql => GetBoolFromString(Environment.GetEnvironmentVariable("AIKIDO_BLOCK_INVALID_SQL"), acceptNumeric: true);
 
         /// <summary>
         /// Determines whether to trust the X-Forwarded-For header.
@@ -59,27 +59,30 @@ namespace Aikido.Zen.Core.Helpers
         /// Determines whether to skip the ASP.NET Core endpoint routing startup guard.
         /// Defaults to false so route discovery and endpoint-specific policies use complete routing information.
         /// </summary>
-        internal static bool DisableEndpointRoutingCheck => GetBooleanValue("AIKIDO_DISABLE_ENDPOINT_ROUTING_CHECK");
+        internal static bool DisableEndpointRoutingCheck => GetBoolFromString(Environment.GetEnvironmentVariable("AIKIDO_DISABLE_ENDPOINT_ROUTING_CHECK"), acceptNumeric: true);
 
         /// <summary>
         /// Determines whether realtime SSE config notifications are enabled.
         /// The one-minute config poll remains active as a fallback.
         /// </summary>
-        internal static bool RealtimeConfigUpdatesEnabled => GetBooleanValue("AIKIDO_FEATURE_SSE");
+        internal static bool RealtimeConfigUpdatesEnabled => GetBoolFromString(Environment.GetEnvironmentVariable("AIKIDO_FEATURE_SSE"), acceptNumeric: true);
 
         /// <summary>
-        /// Helper method to determine if an environment variable is set to "true" or "1".
+        /// Accepts "true", "yes", "y", and "on" case-insensitively, plus "1" when <paramref name="acceptNumeric"/> is enabled.
+        /// Uses <paramref name="defaultValue"/> for missing or empty values; all other values return false.
         /// </summary>
-        /// <param name="variableName">The name of the environment variable to check.</param>
-        /// <returns>True if the environment variable is set to "true" or "1"; otherwise, false.</returns>
-        private static bool GetBooleanValue(string variableName, bool defaultValue = false)
+        internal static bool GetBoolFromString(string value, bool acceptNumeric, bool defaultValue = false)
         {
-            var value = Environment.GetEnvironmentVariable(variableName);
-            if (value == null)
+            if (string.IsNullOrEmpty(value))
             {
                 return defaultValue;
             }
-            return value == "true" || value == "1";
+
+            return (acceptNumeric && value == "1") ||
+                string.Equals(value, "true", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(value, "yes", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(value, "y", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(value, "on", StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>

@@ -16,6 +16,31 @@ namespace Aikido.Zen.Tests.DotNetFramework
 {
     public class ZenTests
     {
+        [TestCase("true")]
+        [TestCase("TRUE")]
+        [TestCase("TrUe")]
+        [TestCase("1")]
+        [TestCase("yes")]
+        [TestCase("Y")]
+        [TestCase("ON")]
+        public void Start_WhenDisabled_DoesNotRequireHttpContext(string value)
+        {
+            var originalDisable = Environment.GetEnvironmentVariable("AIKIDO_DISABLE");
+            var originalContext = HttpContext.Current;
+            try
+            {
+                Environment.SetEnvironmentVariable("AIKIDO_DISABLE", value);
+                HttpContext.Current = null;
+
+                Assert.DoesNotThrow(() => FrameworkZen.Start());
+            }
+            finally
+            {
+                HttpContext.Current = originalContext;
+                Environment.SetEnvironmentVariable("AIKIDO_DISABLE", originalDisable);
+            }
+        }
+
         [TestCase(false, "test-token", true)]
         [TestCase(true, "test-token", false)]
         [TestCase(false, null, false)]

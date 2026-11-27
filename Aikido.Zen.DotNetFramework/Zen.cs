@@ -35,7 +35,7 @@ namespace Aikido.Zen.DotNetFramework
 
             // initialize the options, this will ensure the environment variables are set
             AikidoConfiguration.Init();
-            if (Environment.GetEnvironmentVariable("AIKIDO_DISABLE") == "true")
+            if (EnvironmentHelper.IsDisabled)
             {
                 return;
             }
