@@ -231,6 +231,24 @@ namespace Aikido.Zen.Test
             Assert.That(result.AttackKind, Is.Null);
         }
 
+        [TestCase("query.host", AttackKind.Ssrf)]
+        [TestCase("headers.host", null)]
+        public void Detect_WhenBareHostnameMatchesTargetOnAnotherPort(string location, AttackKind? expected)
+        {
+            var context = new Context
+            {
+                Url = "https://portal.example.test/",
+                ParsedUserInput = new List<UserInput> { new UserInput(location, "portal.example.test") }
+            };
+
+            var result = SSRFDetector.Detect(
+                new Uri("https://portal.example.test:8443/"),
+                IPAddress.Parse("10.20.30.40"),
+                context);
+
+            Assert.That(result.AttackKind, Is.EqualTo(expected));
+        }
+
         [Test]
         public void Detect_WhenPrivateImdsAddressHasNoUserInput_BlocksStoredSsrf()
         {
@@ -391,6 +409,15 @@ namespace Aikido.Zen.Test
 
         [TestCase("http://localhost", "localhost", 80, true)]
         [TestCase("localhost", "localhost", 80, true)]
+        [TestCase("API.Example.Test.", "api.example.test", 8443, true)]
+        [TestCase("192.0.2.1", "192.0.2.1", 8443, true)]
+        [TestCase("2001:0db8:0:0:0:0:0:1", "[2001:db8::1]", 8443, true)]
+        [TestCase("[2001:db8::1]", "[2001:db8::1]", 8443, true)]
+        [TestCase("[2001:db8::1]:443", "[2001:db8::1]", 8443, false)]
+        [TestCase("other.example.test", "api.example.test", 8443, false)]
+        [TestCase("user@api.example.test", "api.example.test", 8443, false)]
+        [TestCase("api.example.test:443", "api.example.test", 8443, false)]
+        [TestCase("https://api.example.test", "api.example.test", 8443, false)]
         [TestCase("localhost/path/path", "localhost", 80, true)]
         [TestCase("localhost:8080/admin", "localhost", 8080, true)]
         [TestCase("localhost:8080/admin", "localhost", 4321, false)]
@@ -400,7 +427,7 @@ namespace Aikido.Zen.Test
         [TestCase("", "localhost", 80, false)]
         public void FindHostnameInUserInput_ReturnsExpectedResult(string userInput, string hostname, int port, bool expected)
         {
-            var result = SSRFDetector.FindHostnameInUserInput(userInput, hostname, port);
+            var result = SSRFDetector.FindHostnameInUserInput(new UserInput("query.host", userInput), hostname, port);
 
             Assert.That(result, Is.EqualTo(expected));
         }
@@ -408,7 +435,8 @@ namespace Aikido.Zen.Test
         [Test]
         public void FindHostnameInUserInput_WhenPortIsNotProvided_MatchesHostOnly()
         {
-            var result = SSRFDetector.FindHostnameInUserInput("https://aikido.dev/admin", "aikido.dev", null);
+            var input = new UserInput("query.url", "https://aikido.dev/admin");
+            var result = SSRFDetector.FindHostnameInUserInput(input, "aikido.dev", null);
 
             Assert.That(result, Is.True);
         }

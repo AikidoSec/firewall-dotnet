@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
 using Aikido.Zen.Core.Helpers;
@@ -55,7 +56,7 @@ namespace Aikido.Zen.Core.Vulnerabilities
             {
                 foreach (var userInput in context.ParsedUserInput)
                 {
-                    if (!FindHostnameInUserInput(userInput.Value, hostname, port))
+                    if (!FindHostnameInUserInput(userInput, hostname, port))
                     {
                         continue;
                     }
@@ -188,13 +189,39 @@ namespace Aikido.Zen.Core.Vulnerabilities
             return metadata;
         }
 
-        internal static bool FindHostnameInUserInput(string userInput, string hostname, int? port)
+        internal static bool FindHostnameInUserInput(UserInput userInput, string hostname, int? port)
         {
-            if (string.IsNullOrWhiteSpace(userInput) || string.IsNullOrWhiteSpace(hostname))
+            var value = userInput.Value;
+            if (string.IsNullOrWhiteSpace(value) || string.IsNullOrWhiteSpace(hostname))
             {
                 return false;
             }
 
+            // Keep the port check for Host because a fixed backend can share the incoming hostname.
+            var isFromHostHeader = string.Equals(userInput.Location, "headers.Host", StringComparison.OrdinalIgnoreCase);
+            if (!isFromHostHeader)
+            {
+                switch (Uri.CheckHostName(value))
+                {
+                    case UriHostNameType.Dns:
+                        // "API.Example.Test." and "api.example.test" name the same host.
+                        return NormalizeHostname(value) == NormalizeHostname(hostname);
+                    case UriHostNameType.IPv4:
+                    case UriHostNameType.IPv6:
+                        // "2001:db8:0:0:0:0:0:1" and "[2001:db8::1]" have the same address bytes.
+                        return IPAddress.TryParse(value, out var inputAddress)
+                            && IPAddress.TryParse(hostname, out var destinationAddress)
+                            && inputAddress.GetAddressBytes().SequenceEqual(destinationAddress.GetAddressBytes());
+                }
+            }
+
+            return MatchesUrlHostAndPort(value, hostname, port);
+        }
+
+        private static bool MatchesUrlHostAndPort(string userInput, string hostname, int? port)
+        {
+            // "api.example.test:443" specifies port 443 and "https://api.example.test" implies 443.
+            // An input like "example.test/path" can use the default port for either HTTP or HTTPS.
             foreach (var candidate in new[] { userInput, $"http://{userInput}", $"https://{userInput}" })
             {
                 if (!Uri.TryCreate(candidate, UriKind.Absolute, out var userUri))
