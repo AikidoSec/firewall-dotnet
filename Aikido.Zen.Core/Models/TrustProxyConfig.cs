@@ -1,5 +1,5 @@
-using System;
 using System.Globalization;
+using Aikido.Zen.Core.Helpers;
 
 namespace Aikido.Zen.Core.Models
 {
@@ -16,18 +16,12 @@ namespace Aikido.Zen.Core.Models
 
         internal static TrustProxyConfig Parse(string setting)
         {
-            if (int.TryParse(setting, NumberStyles.None, CultureInfo.InvariantCulture, out var hopCount) && hopCount > 0)
+            if (int.TryParse(setting?.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out var hopCount) && hopCount > 0)
             {
                 return new TrustProxyConfig(true, hopCount);
             }
 
-            var enabled = string.IsNullOrEmpty(setting) ||
-                string.Equals(setting, "true", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(setting, "yes", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(setting, "y", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(setting, "on", StringComparison.OrdinalIgnoreCase);
-
-            return new TrustProxyConfig(enabled);
+            return new TrustProxyConfig(EnvironmentHelper.GetBoolFromString(setting, acceptNumeric: false, defaultValue: true));
         }
     }
 }

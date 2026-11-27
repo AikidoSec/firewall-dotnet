@@ -5,6 +5,98 @@ namespace Aikido.Zen.Test.Helpers
 {
     public class EnvironmentHelperTests
     {
+        [TestCase(null, false)]
+        [TestCase("", false)]
+        [TestCase("true", true)]
+        [TestCase("TRUE", true)]
+        [TestCase("TrUe", true)]
+        [TestCase("1", true)]
+        [TestCase("yes", true)]
+        [TestCase("YES", true)]
+        [TestCase("YeS", true)]
+        [TestCase("y", true)]
+        [TestCase("Y", true)]
+        [TestCase("on", true)]
+        [TestCase("ON", true)]
+        [TestCase("oN", true)]
+        [TestCase("false", false)]
+        [TestCase("FALSE", false)]
+        [TestCase("0", false)]
+        [TestCase("no", false)]
+        [TestCase("N", false)]
+        [TestCase("off", false)]
+        [TestCase("OFF", false)]
+        [TestCase("invalid", false)]
+        [TestCase("2", false)]
+        [TestCase(" true ", true)]
+        [TestCase("\tYeS\r\n", true)]
+        [TestCase(" 1 ", true)]
+        [TestCase(" false ", false)]
+        [TestCase(" 0 ", false)]
+        [TestCase(" ", false)]
+        [TestCase("\t\r\n", false)]
+        public void BooleanSettings_UseTheSameAcceptedValues(string? value, bool expected)
+        {
+            var variableNames = new[]
+            {
+                "AIKIDO_BLOCK", "AIKIDO_DEBUG", "AIKIDO_DISABLE", "AIKIDO_BLOCK_INVALID_SQL",
+                "AIKIDO_DISABLE_ENDPOINT_ROUTING_CHECK", "AIKIDO_FEATURE_SSE"
+            };
+            var originalValues = variableNames.ToDictionary(name => name, Environment.GetEnvironmentVariable);
+            try
+            {
+                foreach (var name in variableNames)
+                {
+                    Environment.SetEnvironmentVariable(name, value);
+                }
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(EnvironmentHelper.DryMode, Is.EqualTo(!expected));
+                    Assert.That(EnvironmentHelper.IsDebugging, Is.EqualTo(expected));
+                    Assert.That(EnvironmentHelper.IsDisabled, Is.EqualTo(expected));
+                    Assert.That(EnvironmentHelper.BlockInvalidSql, Is.EqualTo(expected));
+                    Assert.That(EnvironmentHelper.DisableEndpointRoutingCheck, Is.EqualTo(expected));
+                    Assert.That(EnvironmentHelper.RealtimeConfigUpdatesEnabled, Is.EqualTo(expected));
+                });
+            }
+            finally
+            {
+                foreach (var original in originalValues)
+                {
+                    Environment.SetEnvironmentVariable(original.Key, original.Value);
+                }
+            }
+        }
+
+        [TestCase(null, false, false)]
+        [TestCase(null, true, true)]
+        [TestCase("", false, false)]
+        [TestCase("", true, true)]
+        [TestCase(" ", true, false)]
+        [TestCase("\t\r\n", false, false)]
+        [TestCase("invalid", true, false)]
+        [TestCase("0", true, false)]
+        public void GetBoolFromString_UsesDefaultOnlyForMissingOrEmptyValues(string? value, bool defaultValue, bool expected)
+        {
+            Assert.That(EnvironmentHelper.GetBoolFromString(value, acceptNumeric: true, defaultValue: defaultValue), Is.EqualTo(expected));
+        }
+
+        [TestCase("1", true, true)]
+        [TestCase("1", false, false)]
+        [TestCase("true", false, true)]
+        [TestCase("YES", false, true)]
+        [TestCase("0", true, false)]
+        [TestCase("2", true, false)]
+        [TestCase(" 1 ", true, true)]
+        [TestCase(" 1 ", false, false)]
+        [TestCase(" true ", false, true)]
+        [TestCase(" 2 ", true, false)]
+        public void GetBoolFromString_RespectsNumericPolicy(string value, bool acceptNumeric, bool expected)
+        {
+            Assert.That(EnvironmentHelper.GetBoolFromString(value, acceptNumeric), Is.EqualTo(expected));
+        }
+
         [Test]
         public void Token_ShouldReturnExpectedValue()
         {
